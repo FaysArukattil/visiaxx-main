@@ -1,10 +1,11 @@
+// lib/core/services/speech_service.dart
 import 'dart:async';
-import 'package:speech_to_text/speech_to_text.dart';
-import 'package:speech_to_text/speech_recognition_result.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
-/// Enhanced speech recognition service for voice input during tests
+/// Enhanced speech recognition service for voice input
 /// Features: continuous listening, last-value buffer, auto-retry, confidence scoring
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
@@ -76,7 +77,8 @@ class SpeechService {
 
       _isInitialized = await _speechToText.initialize(
         onError: (error) {
-          debugPrint('[SpeechService] Speech error: ${error.errorMsg}');
+          final msg = error.errorMsg ?? 'Unknown error';
+          debugPrint('[SpeechService] Speech error: $msg');
           _consecutiveErrors++;
           _isListening = false;
           onListeningStopped?.call();
@@ -84,13 +86,14 @@ class SpeechService {
           // Auto-retry on transient errors
           if (_autoRetryEnabled &&
               _consecutiveErrors < _maxRetries &&
-              (error.errorMsg.contains('network') ||
-                  error.errorMsg.contains('timeout') ||
-                  error.errorMsg.contains('no speech'))) {
+              (msg.contains('network') ||
+                  msg.contains('timeout') ||
+                  msg.contains('no speech') ||
+                  msg.contains('notListening'))) {
             debugPrint('[SpeechService] Auto-retrying after error...');
             _scheduleAutoRestart();
           } else {
-            onError?.call(error.errorMsg);
+            onError?.call(msg);
           }
         },
         onStatus: (status) {
@@ -220,7 +223,7 @@ class SpeechService {
     double minConfidence,
   ) {
     final recognized = result.recognizedWords.toLowerCase().trim();
-    final confidence = result.confidence;
+    final confidence = result.confidence ?? 0.0;
 
     debugPrint(
       '[SpeechService] Recognized: "$recognized" (confidence: ${(confidence * 100).toStringAsFixed(0)}%)',
@@ -280,7 +283,11 @@ class SpeechService {
     _autoRetryEnabled = false;
 
     if (_isListening) {
-      await _speechToText.stop();
+      try {
+        await _speechToText.stop();
+      } catch (e) {
+        debugPrint('[SpeechService] stop error: $e');
+      }
       _isListening = false;
       onListeningStopped?.call();
     }
@@ -292,7 +299,12 @@ class SpeechService {
     _autoRestartTimer?.cancel();
     _autoRetryEnabled = false;
 
-    await _speechToText.cancel();
+    try {
+      await _speechToText.cancel();
+    } catch (e) {
+      debugPrint('[SpeechService] cancel error: $e');
+    }
+
     _isListening = false;
     _lastRecognizedValue = null;
     _lastConfidence = 0.0;
@@ -300,6 +312,7 @@ class SpeechService {
   }
 
   /// Finalize with last recognized value
+  /// NOTE: synchronous because callers expect a direct value
   String? finalizeWithLastValue() {
     _bufferTimer?.cancel();
     final value = _lastRecognizedValue;
@@ -314,185 +327,72 @@ class SpeechService {
   /// Check if speech recognition is available
   bool get isAvailable => _isInitialized;
 
-  /// Parse direction from speech - ULTIMATE EDITION with ALL possible slang and variations
+  /// Parse direction from speech - robust handling of variations
   static String? parseDirection(String speech) {
     final normalized = speech.toLowerCase().trim();
-    
+
     // Remove common filler words
     final cleaned = normalized
         .replaceAll(RegExp(r'\b(go|move|turn|direction|side|the|to|towards?)\b'), '')
         .trim();
 
-    // ============= UP VARIATIONS =============
-    // Direct matches (highest priority)
-    if (normalized == 'up' || cleaned == 'up' ||
-        normalized == 'u' || cleaned == 'u') return 'up';
-    
-    // Common mishearings
-    if (normalized == 'app' || normalized == 'a' || 
-        normalized == 'uh' || normalized == 'ah' ||
-        normalized == 'op' || normalized == 'oop' ||
-        normalized == 'ep' || normalized == 'eep') return 'up';
-    
-    // Contains checks for UP
-    if (normalized.contains('up') || cleaned.contains('up') ||
-        normalized.contains('upp') || normalized.contains('uhp') ||
-        normalized.contains('uup') || normalized.contains('oop') ||
-        normalized.contains('aap') || normalized.contains('aup') ||
-        normalized.contains('ap ') || normalized.contains(' ap')) return 'up';
-    
-    // Hindi/Indian variations for UP
-    if (normalized.contains('upar') || normalized.contains('uper') ||
-        normalized.contains('uppar') || normalized.contains('oopar') ||
-        normalized.contains('upr') || normalized.contains('upor') ||
-        normalized.contains('upaar') || normalized.contains('upeer') ||
-        normalized.contains('upur') || normalized.contains('upir')) return 'up';
-    
-    // English synonyms for UP
-    if (normalized.contains('upper') || normalized.contains('upward') ||
-        normalized.contains('upside') || normalized.contains('above') ||
-        normalized.contains('top') || normalized.contains('ceiling') ||
-        normalized.contains('sky') || normalized.contains('overhead') ||
-        normalized.contains('high') || normalized.contains('higher') ||
-        normalized.contains('ascend') || normalized.contains('rise') ||
-        normalized.contains('elevat')) return 'up';
-    
-    // Phonetic variations
-    if (normalized.contains('uhp') || normalized.contains('awp') ||
-        normalized.contains('ope') || normalized.contains('upe')) return 'up';
+    // Direct / simple matches
+    if (normalized == 'up' || cleaned == 'up' || normalized == 'u' || cleaned == 'u') {
+      return 'up';
+    }
+    if (normalized == 'down' || cleaned == 'down' || normalized == 'd' || cleaned == 'd') {
+      return 'down';
+    }
+    if (normalized == 'left' || cleaned == 'left' || normalized == 'l' || cleaned == 'l') {
+      return 'left';
+    }
+    if (normalized == 'right' || cleaned == 'right' || normalized == 'r' || cleaned == 'r') {
+      return 'right';
+    }
 
-    // ============= DOWN VARIATIONS =============
-    // Direct matches
-    if (normalized == 'down' || cleaned == 'down' ||
-        normalized == 'd' || cleaned == 'd') return 'down';
-    
-    // Common mishearings
-    if (normalized == 'dawn' || normalized == 'dun' ||
-        normalized == 'don' || normalized == 'town' ||
-        normalized == 'daun') return 'down';
-    
-    // Contains checks for DOWN
-    if (normalized.contains('down') || cleaned.contains('down') ||
-        normalized.contains('dwn') || normalized.contains('doun') ||
-        normalized.contains('daun') || normalized.contains('dowm') ||
-        normalized.contains('donw')) return 'down';
-    
-    // Hindi/Indian variations for DOWN
-    if (normalized.contains('neeche') || normalized.contains('neche') ||
-        normalized.contains('nichay') || normalized.contains('niche') ||
-        normalized.contains('neechi') || normalized.contains('neecha') ||
-        normalized.contains('neechey') || normalized.contains('nichey') ||
-        normalized.contains('necha') || normalized.contains('nicha') ||
-        normalized.contains('neech') || normalized.contains('nich')) return 'down';
-    
-    // English synonyms for DOWN
-    if (normalized.contains('downward') || normalized.contains('below') ||
-        normalized.contains('bottom') || normalized.contains('floor') ||
-        normalized.contains('ground') || normalized.contains('under') ||
-        normalized.contains('beneath') || normalized.contains('lower') ||
-        normalized.contains('descend') || normalized.contains('drop') ||
-        normalized.contains('fall')) return 'down';
-    
-    // Phonetic variations
-    if (normalized.contains('dahn') || normalized.contains('doun')) return 'down';
+    // Up variations
+    final upCandidates = [
+      'up', 'upar', 'upper', 'upward', 'above', 'top', 'rise', 'ascend', 'oopar', 'uppar', 'uup', 'app'
+    ];
+    for (final c in upCandidates) {
+      if (normalized.contains(c) || cleaned.contains(c)) return 'up';
+    }
 
-    // ============= RIGHT VARIATIONS =============
-    // Direct matches
-    if (normalized == 'right' || cleaned == 'right' ||
-        normalized == 'r' || cleaned == 'r') return 'right';
-    
-    // Common mishearings
-    if (normalized == 'rite' || normalized == 'write' ||
-        normalized == 'wright' || normalized == 'rit' ||
-        normalized == 'ryt' || normalized == 'ryte') return 'right';
-    
-    // Contains checks for RIGHT
-    if (normalized.contains('right') || cleaned.contains('right') ||
-        normalized.contains('rite') || normalized.contains('wright') ||
-        normalized.contains('write') || normalized.contains('ryt') ||
-        normalized.contains('righte') || normalized.contains('righ') ||
-        normalized.contains('riht') || normalized.contains('rigth')) return 'right';
-    
-    // Hindi/Indian variations for RIGHT
-    if (normalized.contains('daya') || normalized.contains('dayan') ||
-        normalized.contains('dayen') || normalized.contains('dayein') ||
-        normalized.contains('daine') || normalized.contains('dahina') ||
-        normalized.contains('dahine') || normalized.contains('dahin') ||
-        normalized.contains('daya') || normalized.contains('daaya') ||
-        normalized.contains('dayaa') || normalized.contains('dya') ||
-        normalized.contains('dye') || normalized.contains('dai')) return 'right';
-    
-    // English synonyms for RIGHT
-    if (normalized.contains('rightward') || normalized.contains('rightside') ||
-        normalized.contains('starboard') || normalized.contains('dexter') ||
-        normalized.contains('clockwise')) return 'right';
-    
-    // Phonetic variations
-    if (normalized.contains('rayt') || normalized.contains('rait') ||
-        normalized.contains('riet') || normalized.contains('reet')) return 'right';
+    // Down variations
+    final downCandidates = [
+      'down', 'neeche', 'niche', 'below', 'bottom', 'floor', 'ground', 'lower', 'descend', 'drop'
+    ];
+    for (final c in downCandidates) {
+      if (normalized.contains(c) || cleaned.contains(c)) return 'down';
+    }
 
-    // ============= LEFT VARIATIONS =============
-    // Direct matches
-    if (normalized == 'left' || cleaned == 'left' ||
-        normalized == 'l' || cleaned == 'l') return 'left';
-    
-    // Common mishearings
-    if (normalized == 'lef' || normalized == 'lift' ||
-        normalized == 'laft' || normalized == 'lef') return 'left';
-    
-    // Contains checks for LEFT
-    if (normalized.contains('left') || cleaned.contains('left') ||
-        normalized.contains('lef') || normalized.contains('laft') ||
-        normalized.contains('lefte') || normalized.contains('lft') ||
-        normalized.contains('lefft') || normalized.contains('leff')) return 'left';
-    
-    // Hindi/Indian variations for LEFT
-    if (normalized.contains('baya') || normalized.contains('bayan') ||
-        normalized.contains('bayen') || normalized.contains('bayein') ||
-        normalized.contains('baine') || normalized.contains('baaya') ||
-        normalized.contains('bayaa') || normalized.contains('bya') ||
-        normalized.contains('bye') || normalized.contains('bai') ||
-        normalized.contains('baye') || normalized.contains('baay')) return 'left';
-    
-    // English synonyms for LEFT
-    if (normalized.contains('leftward') || normalized.contains('leftside') ||
-        normalized.contains('port') || normalized.contains('sinister') ||
-        normalized.contains('counter') && normalized.contains('clock')) return 'left';
-    
-    // Phonetic variations
-    if (normalized.contains('laeft') || normalized.contains('lefft')) return 'left';
+    // Right variations
+    final rightCandidates = [
+      'right', 'rite', 'write', 'daya', 'dahina', 'starboard', 'clockwise', 'rayt'
+    ];
+    for (final c in rightCandidates) {
+      if (normalized.contains(c) || cleaned.contains(c)) return 'right';
+    }
 
-    // ============= COMPASS DIRECTIONS =============
-    if (normalized.contains('north') || normalized.contains('uttar') ||
-        normalized.contains('utter')) return 'up';
-    
-    if (normalized.contains('south') || normalized.contains('dakshin') ||
-        normalized.contains('dakshan')) return 'down';
-    
-    if (normalized.contains('east') || normalized.contains('purva') ||
-        normalized.contains('poorva') || normalized.contains('purv')) return 'right';
-    
-    if (normalized.contains('west') || normalized.contains('paschim') ||
-        normalized.contains('pashchim') || normalized.contains('pascham')) return 'left';
+    // Left variations
+    final leftCandidates = [
+      'left', 'laft', 'baya', 'bayen', 'port', 'counterclockwise', 'laeft'
+    ];
+    for (final c in leftCandidates) {
+      if (normalized.contains(c) || cleaned.contains(c)) return 'left';
+    }
 
-    // ============= SLANG & COLLOQUIAL =============
-    // Indian English slang
-    if (normalized.contains('uppar') || normalized.contains('oppar') ||
-        normalized.contains('oopar')) return 'up';
-    
-    if (normalized.contains('niche') || normalized.contains('nichey')) return 'down';
-    
-    if (normalized.contains('right side') || normalized.contains('right hand') ||
-        normalized.contains('right waala')) return 'right';
-    
-    if (normalized.contains('left side') || normalized.contains('left hand') ||
-        normalized.contains('left waala')) return 'left';
+    // Compass words
+    if (normalized.contains('north') || normalized.contains('uttar')) return 'up';
+    if (normalized.contains('south') || normalized.contains('dakshin')) return 'down';
+    if (normalized.contains('east') || normalized.contains('purva')) return 'right';
+    if (normalized.contains('west') || normalized.contains('paschim')) return 'left';
 
-    // ============= NUMERIC/GAMING SLANG =============
-    if (normalized.contains('8') && !normalized.contains('18')) return 'up'; // numpad 8
-    if (normalized.contains('2') && !normalized.contains('12') && !normalized.contains('20')) return 'down'; // numpad 2
-    if (normalized.contains('6') && !normalized.contains('16')) return 'right'; // numpad 6
-    if (normalized.contains('4') && !normalized.contains('14') && !normalized.contains('40')) return 'left'; // numpad 4
+    // Numeric gaming keys
+    if (normalized.contains(RegExp(r'\b8\b')) && !normalized.contains('18')) return 'up';
+    if (normalized.contains(RegExp(r'\b2\b')) && !normalized.contains('12') && !normalized.contains('20')) return 'down';
+    if (normalized.contains(RegExp(r'\b6\b')) && !normalized.contains('16')) return 'right';
+    if (normalized.contains(RegExp(r'\b4\b')) && !normalized.contains('14') && !normalized.contains('40')) return 'left';
 
     return null;
   }
@@ -541,10 +441,6 @@ class SpeechService {
       'twenty-two': '22',
       'twenty one': '21',
       'twenty-one': '21',
-      'seventy four': '74',
-      'seventy-four': '74',
-      'forty two': '42',
-      'forty-two': '42',
       'nineteen': '19',
       'eighteen': '18',
       'seventeen': '17',
@@ -596,44 +492,14 @@ class SpeechService {
         digitResult += singleDigits[word]!;
       }
     }
-    if (digitResult.isNotEmpty && digitResult.length <= 2) {
+    if (digitResult.isNotEmpty && digitResult.length <= 3) {
       return digitResult;
     }
 
     // Check for digit string
-    final digitMatch = RegExp(r'\b\d{1,2}\b').firstMatch(normalized);
+    final digitMatch = RegExp(r'\b\d{1,3}\b').firstMatch(normalized);
     if (digitMatch != null) {
       return digitMatch.group(0);
-    }
-
-    return null;
-  }
-
-  /// Parse yes/no from speech
-  static bool? parseYesNo(String speech) {
-    final normalized = speech.toLowerCase().trim();
-
-    // Positive
-    if (normalized.contains('yes') ||
-        normalized.contains('yeah') ||
-        normalized.contains('yep') ||
-        normalized.contains('yup') ||
-        normalized.contains('correct') ||
-        normalized.contains('right') ||
-        normalized.contains('affirmative') ||
-        normalized.contains('true') ||
-        normalized.contains('sure')) {
-      return true;
-    }
-
-    // Negative
-    if (normalized.contains('no') ||
-        normalized.contains('nope') ||
-        normalized.contains('nah') ||
-        normalized.contains('negative') ||
-        normalized.contains('false') ||
-        normalized.contains('wrong')) {
-      return false;
     }
 
     return null;
@@ -650,7 +516,11 @@ class SpeechService {
   void dispose() {
     _bufferTimer?.cancel();
     _autoRestartTimer?.cancel();
-    _speechToText.stop();
-    _speechToText.cancel();
+    try {
+      _speechToText.stop();
+      _speechToText.cancel();
+    } catch (e) {
+      debugPrint('[SpeechService] dispose error: $e');
+    }
   }
 }
