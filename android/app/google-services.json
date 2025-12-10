@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "172938802712",
+    "project_id": "visiaxx-fd860",
+    "storage_bucket": "visiaxx-fd860.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:172938802712:android:208463a0bb1fc65b5c356d",
+        "android_client_info": {
+          "package_name": "com.example.visiaxx"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIYR7nXIjj6TSmaAIWbz-3vCdjz3b-AP0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

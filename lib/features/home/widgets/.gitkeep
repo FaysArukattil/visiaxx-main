@@ -1,0 +1,7 @@
+import 'package:flutter/material.dart';
+
+/// Home screen widgets directory for test category cards and app bar
+class HomeWidgets {
+  // This file serves as a marker for the widgets directory
+  // Individual widget files will be created here
+}

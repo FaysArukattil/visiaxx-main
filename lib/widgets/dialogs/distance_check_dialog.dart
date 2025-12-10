@@ -1,0 +1,78 @@
+import 'package:flutter/material.dart';
+
+/// Distance check dialog to ensure proper viewing distance
+class DistanceCheckDialog extends StatelessWidget {
+  final double recommendedDistance; // in cm
+
+  const DistanceCheckDialog({
+    super.key,
+    this.recommendedDistance = 40.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.straighten, color: Colors.blue),
+          SizedBox(width: 8),
+          Text('Viewing Distance'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'For accurate results, maintain a viewing distance of approximately ${recommendedDistance.toInt()} cm from the screen.',
+            style: const TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            color: Colors.blue.shade50,
+            child: const Padding(
+              padding: EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tips for proper distance:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text('• Sit comfortably with your back straight'),
+                  Text('• Keep the screen at eye level'),
+                  Text('• Ensure good lighting in the room'),
+                  Text('• Remove any glare from the screen'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Row(
+            children: [
+              Icon(Icons.info_outline, size: 20, color: Colors.orange),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'You can use a ruler or measuring tape to verify the distance.',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('I\'m Ready'),
+        ),
+      ],
+    );
+  }
+}

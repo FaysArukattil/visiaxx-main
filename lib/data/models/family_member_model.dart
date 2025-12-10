@@ -1,0 +1,78 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+/// Family member model for storing family member profiles
+class FamilyMemberModel {
+  final String id;
+  final String firstName;
+  final int age;
+  final String sex;
+  final String relationship;
+  final DateTime createdAt;
+
+  FamilyMemberModel({
+    required this.id,
+    required this.firstName,
+    required this.age,
+    required this.sex,
+    required this.relationship,
+    required this.createdAt,
+  });
+
+  /// Create FamilyMemberModel from Firestore document
+  factory FamilyMemberModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return FamilyMemberModel(
+      id: doc.id,
+      firstName: data['firstName'] ?? '',
+      age: data['age'] ?? 0,
+      sex: data['sex'] ?? '',
+      relationship: data['relationship'] ?? '',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  /// Create FamilyMemberModel from Map
+  factory FamilyMemberModel.fromMap(Map<String, dynamic> data, String id) {
+    return FamilyMemberModel(
+      id: id,
+      firstName: data['firstName'] ?? '',
+      age: data['age'] ?? 0,
+      sex: data['sex'] ?? '',
+      relationship: data['relationship'] ?? '',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  /// Convert FamilyMemberModel to Firestore document
+  Map<String, dynamic> toFirestore() {
+    return {
+      'firstName': firstName,
+      'age': age,
+      'sex': sex,
+      'relationship': relationship,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
+  }
+
+  /// Create a copy with updated fields
+  FamilyMemberModel copyWith({
+    String? id,
+    String? firstName,
+    int? age,
+    String? sex,
+    String? relationship,
+    DateTime? createdAt,
+  }) {
+    return FamilyMemberModel(
+      id: id ?? this.id,
+      firstName: firstName ?? this.firstName,
+      age: age ?? this.age,
+      sex: sex ?? this.sex,
+      relationship: relationship ?? this.relationship,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  String toString() => firstName;
+}

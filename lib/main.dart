@@ -1,0 +1,88 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'firebase_options.dart';
+import 'core/theme/app_theme.dart';
+import 'core/constants/app_colors.dart';
+
+// Screens
+import 'features/auth/screens/splashscreen.dart';
+import 'features/auth/screens/loginscreen.dart';
+import 'features/auth/screens/registration_screen.dart';
+import 'features/home/screens/home_screen.dart';
+import 'features/quick_vision_test/screens/profile_selection_screen.dart';
+import 'features/quick_vision_test/screens/questionnaire_screen.dart';
+import 'features/quick_vision_test/screens/test_instructions_screen.dart';
+import 'features/quick_vision_test/screens/visual_acuity_test_screen.dart';
+import 'features/quick_vision_test/screens/color_vision_test_screen.dart';
+import 'features/quick_vision_test/screens/amsler_grid_test_screen.dart';
+import 'features/quick_vision_test/screens/quick_test_result_screen.dart';
+import 'features/results/screens/my_results_screen.dart';
+import 'features/practitioner/screens/practitioner_dashboard_screen.dart';
+
+// Providers
+import 'data/providers/test_session_provider.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Set preferred orientations
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  
+  // Set system UI overlay style
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: AppColors.background,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
+  
+  runApp(const VisiaxApp());
+}
+
+class VisiaxApp extends StatelessWidget {
+  const VisiaxApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TestSessionProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Visiaxx - Digital Eye Clinic',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.light,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const SplashScreen(),
+          '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegistrationScreen(),
+          '/home': (context) => const HomeScreen(),
+          '/quick-test': (context) => const ProfileSelectionScreen(),
+          '/questionnaire': (context) => const QuestionnaireScreen(),
+          '/test-instructions': (context) => const TestInstructionsScreen(),
+          '/visual-acuity-test': (context) => const VisualAcuityTestScreen(),
+          '/color-vision-test': (context) => const ColorVisionTestScreen(),
+          '/amsler-grid-test': (context) => const AmslerGridTestScreen(),
+          '/quick-test-result': (context) => const QuickTestResultScreen(),
+          '/my-results': (context) => const MyResultsScreen(),
+          '/practitioner-dashboard': (context) => const PractitionerDashboardScreen(),
+        },
+      ),
+    );
+  }
+}
