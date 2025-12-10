@@ -2,49 +2,57 @@ import 'dart:async';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart';
 
-/// Speech recognition service for voice input during tests
-/// Enhanced to support continuous listening with last-value capture
+/// Enhanced speech recognition service for voice input during tests
+/// Features: continuous listening, last-value buffer, auto-retry, confidence scoring
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
   bool _isInitialized = false;
   bool _isListening = false;
-  
+
   // Store the last recognized value for buffer mechanism
   String? _lastRecognizedValue;
+  double _lastConfidence = 0.0;
   Timer? _bufferTimer;
-  
+  Timer? _autoRestartTimer;
+
+  // Auto-retry configuration
+  int _consecutiveErrors = 0;
+  static const int _maxRetries = 3;
+  bool _autoRetryEnabled = false;
+
   // Callbacks
   Function(String recognized)? onResult;
   Function(String error)? onError;
-  /// Called whenever speech is detected (for visual feedback)
   Function(String partialResult)? onSpeechDetected;
-  /// Called when listening starts (for UI indicator)
   Function()? onListeningStarted;
-  /// Called when listening stops
   Function()? onListeningStopped;
+  Function(double level)? onSoundLevelChange;
 
   /// Check and request microphone permission
   Future<bool> _requestMicrophonePermission() async {
     try {
       var status = await Permission.microphone.status;
-      print('[SpeechService] Microphone permission status: $status');
-      
+      debugPrint('[SpeechService] Microphone permission status: $status');
+
       if (status.isDenied) {
         status = await Permission.microphone.request();
-        print('[SpeechService] Permission request result: $status');
+        debugPrint('[SpeechService] Permission request result: $status');
       }
-      
+
       if (status.isPermanentlyDenied) {
-        print('[SpeechService] Microphone permission permanently denied');
-        onError?.call('Microphone permission is permanently denied. Please enable it in Settings.');
+        debugPrint('[SpeechService] Microphone permission permanently denied');
+        onError?.call(
+          'Microphone permission is permanently denied. Please enable it in Settings.',
+        );
         return false;
       }
-      
+
       return status.isGranted;
     } catch (e) {
-      print('[SpeechService] Permission check error: $e');
-      // If permission_handler fails, try to continue anyway
+      debugPrint('[SpeechService] Permission check error: $e');
+      // Try to continue anyway - some devices don't need explicit permission
       return true;
     }
   }
@@ -52,143 +60,204 @@ class SpeechService {
   /// Initialize speech recognition
   Future<bool> initialize() async {
     if (_isInitialized) {
-      print('[SpeechService] Already initialized');
+      debugPrint('[SpeechService] Already initialized');
       return true;
     }
 
     try {
-      // First check microphone permission
+      // Check microphone permission first
       final hasPermission = await _requestMicrophonePermission();
       if (!hasPermission) {
-        print('[SpeechService] No microphone permission');
+        debugPrint('[SpeechService] No microphone permission');
         return false;
       }
-      
-      print('[SpeechService] Initializing speech recognition...');
-      
+
+      debugPrint('[SpeechService] Initializing speech recognition...');
+
       _isInitialized = await _speechToText.initialize(
         onError: (error) {
-          print('[SpeechService] Speech error: ${error.errorMsg}');
+          debugPrint('[SpeechService] Speech error: ${error.errorMsg}');
+          _consecutiveErrors++;
           _isListening = false;
           onListeningStopped?.call();
-          onError?.call(error.errorMsg);
+
+          // Auto-retry on transient errors
+          if (_autoRetryEnabled &&
+              _consecutiveErrors < _maxRetries &&
+              (error.errorMsg.contains('network') ||
+                  error.errorMsg.contains('timeout') ||
+                  error.errorMsg.contains('no speech'))) {
+            debugPrint('[SpeechService] Auto-retrying after error...');
+            _scheduleAutoRestart();
+          } else {
+            onError?.call(error.errorMsg);
+          }
         },
         onStatus: (status) {
-          print('[SpeechService] Status changed: $status');
+          debugPrint('[SpeechService] Status changed: $status');
           if (status == 'done' || status == 'notListening') {
             _isListening = false;
             onListeningStopped?.call();
+
+            // Auto-restart if enabled
+            if (_autoRetryEnabled && _consecutiveErrors < _maxRetries) {
+              _scheduleAutoRestart();
+            }
           } else if (status == 'listening') {
+            _isListening = true;
+            _consecutiveErrors = 0; // Reset on successful start
             onListeningStarted?.call();
           }
         },
-        debugLogging: true,
+        debugLogging: kDebugMode,
       );
-      
-      print('[SpeechService] Initialization result: $_isInitialized');
-      
+
+      debugPrint('[SpeechService] Initialization result: $_isInitialized');
+
       if (!_isInitialized) {
         onError?.call('Speech recognition not available on this device');
       }
-      
+
       return _isInitialized;
     } catch (e) {
-      print('[SpeechService] Initialization error: $e');
+      debugPrint('[SpeechService] Initialization error: $e');
       onError?.call('Failed to initialize speech recognition: $e');
       return false;
     }
   }
 
-  /// Start listening for speech with continuous mode (captures last value)
+  /// Schedule auto-restart after a brief delay
+  void _scheduleAutoRestart() {
+    _autoRestartTimer?.cancel();
+    _autoRestartTimer = Timer(const Duration(milliseconds: 500), () {
+      if (_autoRetryEnabled && !_isListening) {
+        debugPrint('[SpeechService] Auto-restarting...');
+        startListening(autoRestart: true);
+      }
+    });
+  }
+
+  /// Start listening for speech with continuous mode
   /// bufferMs: Wait this many milliseconds after last speech before finalizing
+  /// autoRestart: Automatically restart listening after it stops
+  /// minConfidence: Minimum confidence threshold (0.0 to 1.0)
   Future<void> startListening({
     Duration? listenFor,
     Duration? pauseFor,
     int bufferMs = 500,
-    bool autoRestart = false, // Auto-restart after stopping
+    bool autoRestart = false,
+    double minConfidence = 0.5,
   }) async {
-    print('[SpeechService] startListening called');
-    
+    debugPrint('[SpeechService] startListening called');
+
     if (!_isInitialized) {
-      print('[SpeechService] Not initialized, attempting to initialize...');
+      debugPrint(
+        '[SpeechService] Not initialized, attempting to initialize...',
+      );
       final success = await initialize();
       if (!success) {
-        print('[SpeechService] Initialization failed, cannot start listening');
+        debugPrint(
+          '[SpeechService] Initialization failed, cannot start listening',
+        );
         onError?.call('Speech recognition not available');
         return;
       }
     }
 
-    // If already listening, stop and restart for fresh session
+    // Stop if already listening
     if (_isListening) {
-      print('[SpeechService] Already listening, stopping first...');
-      await _speechToText.stop();
-      _isListening = false;
-      await Future.delayed(const Duration(milliseconds: 100));
+      debugPrint('[SpeechService] Already listening, stopping first...');
+      await stopListening();
+      await Future.delayed(const Duration(milliseconds: 200));
     }
 
-    _isListening = true;
+    _autoRetryEnabled = autoRestart;
     _lastRecognizedValue = null;
+    _lastConfidence = 0.0;
     _bufferTimer?.cancel();
-    
-    print('[SpeechService] Starting to listen...');
-    onListeningStarted?.call();
-    
+
+    debugPrint('[SpeechService] Starting to listen...');
+
     try {
-      // Get available locales and use English if available
+      // Get available locales and prefer English
       final locales = await _speechToText.locales();
       String? localeId;
       for (final locale in locales) {
-        if (locale.localeId.startsWith('en')) {
+        if (locale.localeId.startsWith('en_')) {
           localeId = locale.localeId;
           break;
         }
       }
-      print('[SpeechService] Using locale: ${localeId ?? "default"}');
-      
+      debugPrint('[SpeechService] Using locale: ${localeId ?? "default"}');
+
       await _speechToText.listen(
-        onResult: (result) => _onSpeechResultContinuous(result, bufferMs),
-        listenFor: listenFor ?? const Duration(seconds: 10), // Longer listen time
-        pauseFor: pauseFor ?? const Duration(seconds: 2), // Shorter pause for quicker whispers
-        partialResults: true, // Enable continuous recognition
-        cancelOnError: false, // Don't cancel on error
-        listenMode: ListenMode.dictation, // Dictation mode for better sensitivity
+        onResult: (result) =>
+            _onSpeechResultContinuous(result, bufferMs, minConfidence),
+        listenFor: listenFor ?? const Duration(seconds: 30),
+        pauseFor: pauseFor ?? const Duration(seconds: 3),
+        partialResults: true,
+        cancelOnError: false,
+        listenMode: ListenMode.dictation,
         localeId: localeId,
         onSoundLevelChange: (level) {
-          // Can be used to show audio level feedback
-          print('[SpeechService] Sound level: $level');
+          onSoundLevelChange?.call(level);
         },
       );
-      print('[SpeechService] Listen started successfully');
+
+      debugPrint('[SpeechService] Listen started successfully');
     } catch (e) {
-      print('[SpeechService] Error starting listen: $e');
+      debugPrint('[SpeechService] Error starting listen: $e');
       _isListening = false;
       onListeningStopped?.call();
       onError?.call('Failed to start listening: $e');
     }
   }
 
-  /// Handle continuous speech results - stores last value with buffer
-  void _onSpeechResultContinuous(SpeechRecognitionResult result, int bufferMs) {
+  /// Handle continuous speech results with confidence filtering
+  void _onSpeechResultContinuous(
+    SpeechRecognitionResult result,
+    int bufferMs,
+    double minConfidence,
+  ) {
     final recognized = result.recognizedWords.toLowerCase().trim();
-    
+    final confidence = result.confidence;
+
+    debugPrint(
+      '[SpeechService] Recognized: "$recognized" (confidence: ${(confidence * 100).toStringAsFixed(0)}%)',
+    );
+
     if (recognized.isNotEmpty) {
-      // Notify that speech was detected (for visual feedback)
+      // Always notify for visual feedback
       onSpeechDetected?.call(recognized);
-      
-      // Store as potential last value
-      _lastRecognizedValue = recognized;
-      
-      // Reset buffer timer - wait for more input
-      _bufferTimer?.cancel();
-      
-      if (result.finalResult) {
-        // If this is the final result, call immediately
-        onResult?.call(recognized);
+
+      // Only store if confidence meets threshold
+      if (confidence >= minConfidence) {
+        _lastRecognizedValue = recognized;
+        _lastConfidence = confidence;
+
+        debugPrint(
+          '[SpeechService] Accepted with confidence ${(confidence * 100).toStringAsFixed(0)}%',
+        );
       } else {
-        // Otherwise, wait for buffer period before finalizing
+        debugPrint(
+          '[SpeechService] Rejected - low confidence ${(confidence * 100).toStringAsFixed(0)}%',
+        );
+      }
+
+      // Reset buffer timer
+      _bufferTimer?.cancel();
+
+      if (result.finalResult && _lastRecognizedValue != null) {
+        // Final result - call immediately
+        debugPrint('[SpeechService] Final result: $_lastRecognizedValue');
+        onResult?.call(_lastRecognizedValue!);
+      } else if (_lastRecognizedValue != null) {
+        // Partial result - wait for buffer period
         _bufferTimer = Timer(Duration(milliseconds: bufferMs), () {
           if (_lastRecognizedValue != null && _isListening) {
+            debugPrint(
+              '[SpeechService] Buffer timeout - using last value: $_lastRecognizedValue',
+            );
             onResult?.call(_lastRecognizedValue!);
           }
         });
@@ -196,12 +265,20 @@ class SpeechService {
     }
   }
 
-  /// Get the last recognized value (useful for manual submission)
+  /// Get the last recognized value with confidence
+  Map<String, dynamic> getLastRecognized() {
+    return {'value': _lastRecognizedValue, 'confidence': _lastConfidence};
+  }
+
+  /// Get the last recognized value (simplified)
   String? get lastRecognizedValue => _lastRecognizedValue;
 
   /// Stop listening
   Future<void> stopListening() async {
     _bufferTimer?.cancel();
+    _autoRestartTimer?.cancel();
+    _autoRetryEnabled = false;
+
     if (_isListening) {
       await _speechToText.stop();
       _isListening = false;
@@ -209,20 +286,25 @@ class SpeechService {
     }
   }
 
-  /// Cancel listening
+  /// Cancel listening completely
   Future<void> cancel() async {
     _bufferTimer?.cancel();
+    _autoRestartTimer?.cancel();
+    _autoRetryEnabled = false;
+
     await _speechToText.cancel();
     _isListening = false;
     _lastRecognizedValue = null;
+    _lastConfidence = 0.0;
     onListeningStopped?.call();
   }
 
-  /// Finalize with last recognized value (call when timeout occurs)
+  /// Finalize with last recognized value
   String? finalizeWithLastValue() {
     _bufferTimer?.cancel();
     final value = _lastRecognizedValue;
     _lastRecognizedValue = null;
+    _lastConfidence = 0.0;
     return value;
   }
 
@@ -232,67 +314,133 @@ class SpeechService {
   /// Check if speech recognition is available
   bool get isAvailable => _isInitialized;
 
-  /// Parse direction from speech for visual acuity test
+  /// Parse direction from speech (enhanced with more variations)
   static String? parseDirection(String speech) {
     final normalized = speech.toLowerCase().trim();
-    
+
     // Direct matches
     if (normalized.contains('right')) return 'right';
     if (normalized.contains('left')) return 'left';
     if (normalized.contains('up')) return 'up';
     if (normalized.contains('down')) return 'down';
-    
-    // Phonetic variations
-    if (normalized.contains('write') || normalized.contains('wright')) return 'right';
-    if (normalized.contains('lift') || normalized.contains('lef')) return 'left';
-    if (normalized.contains('app') || normalized.contains('uhp')) return 'up';
-    if (normalized.contains('dawn') || normalized.contains('dun')) return 'down';
-    
+
+    // Phonetic variations and homophones
+    if (normalized.contains('write') ||
+        normalized.contains('wright') ||
+        normalized.contains('rite'))
+      return 'right';
+    if (normalized.contains('lift') || normalized.contains('lef'))
+      return 'left';
+    if (normalized.contains('app') ||
+        normalized.contains('uhp') ||
+        normalized.contains('top'))
+      return 'up';
+    if (normalized.contains('dawn') ||
+        normalized.contains('dun') ||
+        normalized.contains('bottom'))
+      return 'down';
+
+    // Compass directions
+    if (normalized.contains('east')) return 'right';
+    if (normalized.contains('west')) return 'left';
+    if (normalized.contains('north')) return 'up';
+    if (normalized.contains('south')) return 'down';
+
     return null;
   }
 
-  /// Parse number from speech for color vision test
-  /// Supports: spoken numbers, digit-by-digit input, and numeric strings
+  /// Parse number from speech (enhanced with better recognition)
   static String? parseNumber(String speech) {
     final normalized = speech.toLowerCase().trim();
-    
-    // Single digit words (for combining into multi-digit numbers)
+
+    // Single digit words
     const singleDigits = {
-      'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
-      'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
-      'to': '2', 'too': '2', 'for': '4', 'fore': '4', // Common homophones
+      'zero': '0',
+      'one': '1',
+      'two': '2',
+      'three': '3',
+      'four': '4',
+      'five': '5',
+      'six': '6',
+      'seven': '7',
+      'eight': '8',
+      'nine': '9',
+      'to': '2',
+      'too': '2',
+      'for': '4',
+      'fore': '4',
+      'oh': '0',
+      'o': '0',
     };
-    
-    // Full number word to digit mapping
+
+    // Full number words (sorted by length for longest match first)
     const numberWords = {
-      'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
-      'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
-      'ten': '10', 'eleven': '11', 'twelve': '12', 'thirteen': '13',
-      'fourteen': '14', 'fifteen': '15', 'sixteen': '16', 'seventeen': '17',
-      'eighteen': '18', 'nineteen': '19', 'twenty': '20',
-      'twenty one': '21', 'twenty two': '22', 'twenty three': '23',
-      'twenty four': '24', 'twenty five': '25', 'twenty six': '26',
-      'twenty seven': '27', 'twenty eight': '28', 'twenty nine': '29',
-      'thirty': '30', 'forty': '40', 'forty two': '42', 'fifty': '50', 
-      'sixty': '60', 'seventy': '70', 'seventy four': '74', 
-      'eighty': '80', 'ninety': '90',
-      // Hyphenated compound numbers
-      'forty-two': '42',
-      'seventy-four': '74',
+      'twenty nine': '29',
       'twenty-nine': '29',
+      'twenty eight': '28',
+      'twenty-eight': '28',
+      'twenty seven': '27',
+      'twenty-seven': '27',
+      'twenty six': '26',
+      'twenty-six': '26',
+      'twenty five': '25',
+      'twenty-five': '25',
+      'twenty four': '24',
+      'twenty-four': '24',
+      'twenty three': '23',
+      'twenty-three': '23',
+      'twenty two': '22',
+      'twenty-two': '22',
+      'twenty one': '21',
+      'twenty-one': '21',
+      'seventy four': '74',
+      'seventy-four': '74',
+      'forty two': '42',
+      'forty-two': '42',
+      'nineteen': '19',
+      'eighteen': '18',
+      'seventeen': '17',
+      'sixteen': '16',
+      'fifteen': '15',
+      'fourteen': '14',
+      'thirteen': '13',
+      'twelve': '12',
+      'eleven': '11',
+      'ninety': '90',
+      'eighty': '80',
+      'seventy': '70',
+      'sixty': '60',
+      'fifty': '50',
+      'forty': '40',
+      'thirty': '30',
+      'twenty': '20',
+      'ten': '10',
+      'nine': '9',
+      'eight': '8',
+      'seven': '7',
+      'six': '6',
+      'five': '5',
+      'four': '4',
+      'three': '3',
+      'two': '2',
+      'one': '1',
+      'zero': '0',
     };
-    
-    // Check for full number words first (longest match first)
+
+    // Check full number words (longest first)
     final sortedEntries = numberWords.entries.toList()
       ..sort((a, b) => b.key.length.compareTo(a.key.length));
-    
+
     for (final entry in sortedEntries) {
-      if (normalized.contains(entry.key)) {
+      if (normalized == entry.key ||
+          normalized.contains(' ${entry.key} ') ||
+          normalized.startsWith('${entry.key} ') ||
+          normalized.endsWith(' ${entry.key}')) {
         return entry.value;
       }
     }
-    
-    // Try digit-by-digit parsing (e.g., "one two" → 12, "seven four" → 74)
+
+    // Try digit-by-digit parsing (e.g., "seven four" → "74")
     final words = normalized.split(RegExp(r'[\s,]+'));
     String digitResult = '';
     for (final word in words) {
@@ -300,45 +448,61 @@ class SpeechService {
         digitResult += singleDigits[word]!;
       }
     }
-    if (digitResult.isNotEmpty) {
+    if (digitResult.isNotEmpty && digitResult.length <= 2) {
       return digitResult;
     }
-    
-    // Check for digit string (e.g., "12", "74")
-    final digitMatch = RegExp(r'\d+').firstMatch(normalized);
+
+    // Check for digit string
+    final digitMatch = RegExp(r'\b\d{1,2}\b').firstMatch(normalized);
     if (digitMatch != null) {
       return digitMatch.group(0);
     }
-    
+
     return null;
   }
 
-  /// Parse yes/no from speech for Amsler grid test
+  /// Parse yes/no from speech
   static bool? parseYesNo(String speech) {
     final normalized = speech.toLowerCase().trim();
-    
-    if (normalized.contains('yes') || 
-        normalized.contains('yeah') || 
+
+    // Positive
+    if (normalized.contains('yes') ||
+        normalized.contains('yeah') ||
         normalized.contains('yep') ||
+        normalized.contains('yup') ||
         normalized.contains('correct') ||
-        normalized.contains('affirmative')) {
+        normalized.contains('right') ||
+        normalized.contains('affirmative') ||
+        normalized.contains('true') ||
+        normalized.contains('sure')) {
       return true;
     }
-    
-    if (normalized.contains('no') || 
-        normalized.contains('nope') || 
-        normalized.contains('negative')) {
+
+    // Negative
+    if (normalized.contains('no') ||
+        normalized.contains('nope') ||
+        normalized.contains('nah') ||
+        normalized.contains('negative') ||
+        normalized.contains('false') ||
+        normalized.contains('wrong')) {
       return false;
     }
-    
+
     return null;
   }
+
+  /// Get confidence of last recognition (0.0 to 1.0)
+  double get lastConfidence => _lastConfidence;
+
+  /// Get confidence percentage string
+  String get lastConfidencePercent =>
+      '${(_lastConfidence * 100).toStringAsFixed(0)}%';
 
   /// Dispose resources
   void dispose() {
     _bufferTimer?.cancel();
+    _autoRestartTimer?.cancel();
     _speechToText.stop();
     _speechToText.cancel();
   }
 }
-

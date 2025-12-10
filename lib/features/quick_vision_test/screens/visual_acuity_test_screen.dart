@@ -12,6 +12,7 @@ import '../../../core/services/speech_service.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../data/models/visiual_acuity_result.dart';
 import '../../../data/providers/test_session_provider.dart';
+import 'distance_calibration_screen.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
 /// Implements Visiaxx specification for 1-meter testing
@@ -22,10 +23,14 @@ class VisualAcuityTestScreen extends StatefulWidget {
   State<VisualAcuityTestScreen> createState() => _VisualAcuityTestScreenState();
 }
 
-class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen> {
+class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
+    with WidgetsBindingObserver {
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  
+  // Distance monitoring service
+  final DistanceDetectionService _distanceService = DistanceDetectionService();
   
   // Test state
   int _currentLevel = 0;
@@ -65,6 +70,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen> {
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   bool _isDistanceOk = false;
   bool _useDistanceMonitoring = true; // Enabled for real-time distance display
+  bool _isTestPausedForDistance = false; // Test is paused due to wrong distance
+  DistanceStatus? _lastSpokenDistanceStatus; // Track last spoken guidance
   
   final Random _random = Random();
   
@@ -74,7 +81,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initServices();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handle app lifecycle for camera
+    if (state == AppLifecycleState.inactive) {
+      _distanceService.stopMonitoring();
+    } else if (state == AppLifecycleState.resumed && !_showDistanceCalibration) {
+      _startContinuousDistanceMonitoring();
+    }
   }
 
   @override
@@ -113,14 +131,37 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen> {
       if (mounted) setState(() => _isListening = false);
     };
     
-    // Start with distance calibration (or skip if not using)
-    if (_useDistanceMonitoring) {
-      _showDistanceCalibration = true;
+    // Always start with distance calibration using the new screen
+    if (_useDistanceMonitoring && _showDistanceCalibration) {
+      // Wait for build to complete, then show calibration screen
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showCalibrationScreen();
+      });
     } else {
       // Skip distance calibration and start directly
       _showDistanceCalibration = false;
       _startEyeTest();
     }
+  }
+
+  /// Shows the distance calibration screen as a full-screen overlay
+  void _showCalibrationScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DistanceCalibrationScreen(
+          targetDistanceCm: 40.0,
+          toleranceCm: 5.0,
+          onCalibrationComplete: () {
+            Navigator.of(context).pop();
+            _onDistanceCalibrationComplete();
+          },
+          onSkip: () {
+            Navigator.of(context).pop();
+            _onDistanceCalibrationComplete();
+          },
+        ),
+      ),
+    );
   }
 
   void _handleSpeechDetected(String partialResult) {
@@ -136,7 +177,159 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen> {
     setState(() {
       _showDistanceCalibration = false;
     });
+    // Start continuous distance monitoring after calibration
+    _startContinuousDistanceMonitoring();
     _startEyeTest();
+  }
+
+  /// Start continuous distance monitoring during the test
+  Future<void> _startContinuousDistanceMonitoring() async {
+    if (!_useDistanceMonitoring) return;
+    
+    // Set up distance update callback
+    _distanceService.onDistanceUpdate = _handleDistanceUpdate;
+    _distanceService.onError = (msg) => debugPrint('[DistanceMonitor] $msg');
+    
+    // Initialize and start camera if not already running
+    if (!_distanceService.isReady) {
+      await _distanceService.initializeCamera();
+    }
+    
+    if (!_distanceService.isMonitoring) {
+      await _distanceService.startMonitoring();
+    }
+  }
+
+  /// Handle real-time distance updates
+  void _handleDistanceUpdate(double distance, DistanceStatus status) {
+    if (!mounted) return;
+    
+    final wasOk = _isDistanceOk;
+    final newIsOk = status == DistanceStatus.optimal;
+    
+    setState(() {
+      _currentDistance = distance;
+      _distanceStatus = status;
+      _isDistanceOk = newIsOk;
+    });
+    
+    // Check if we need to pause/resume the test
+    if (_showE && _waitingForResponse) {
+      if (!newIsOk && !_isTestPausedForDistance) {
+        // Need to pause - distance is wrong
+        _pauseTestForDistance();
+      } else if (newIsOk && _isTestPausedForDistance) {
+        // Can resume - distance is now correct
+        _resumeTestAfterDistance();
+      }
+    }
+    
+    // Speak guidance if status changed (and not while test is active)
+    if (status != _lastSpokenDistanceStatus && _isTestPausedForDistance) {
+      _lastSpokenDistanceStatus = status;
+      _speakDistanceGuidance(status);
+    }
+  }
+
+  /// Speak distance guidance
+  void _speakDistanceGuidance(DistanceStatus status) {
+    switch (status) {
+      case DistanceStatus.tooClose:
+        _ttsService.speak('Move back, you are too close');
+        break;
+      case DistanceStatus.tooFar:
+        _ttsService.speak('Move closer, you are too far');
+        break;
+      case DistanceStatus.optimal:
+        _ttsService.speak('Good, distance is correct');
+        break;
+      case DistanceStatus.noFaceDetected:
+        _ttsService.speak('Position your face in view');
+        break;
+    }
+  }
+
+  /// Pause the test due to incorrect distance
+  void _pauseTestForDistance() {
+    setState(() {
+      _isTestPausedForDistance = true;
+    });
+    
+    // Cancel the countdown timer (pause it)
+    _eCountdownTimer?.cancel();
+    _eDisplayTimer?.cancel();
+    
+    // Stop speech recognition temporarily
+    _speechService.stopListening();
+    
+    // Announce the pause
+    _ttsService.speak('Test paused. Please adjust your distance.');
+    
+    // Haptic feedback
+    HapticFeedback.heavyImpact();
+  }
+
+  /// Resume the test after distance is corrected
+  void _resumeTestAfterDistance() {
+    if (!_isTestPausedForDistance) return;
+    
+    setState(() {
+      _isTestPausedForDistance = false;
+    });
+    
+    // Announce resume
+    _ttsService.speak('Resuming test');
+    
+    // Restart the countdown timer with remaining time
+    _restartEDisplayTimer();
+    
+    // Restart speech recognition
+    _speechService.startListening(
+      listenFor: Duration(seconds: _eDisplayCountdown + 1),
+      bufferMs: 300,
+    );
+    
+    // Haptic feedback
+    HapticFeedback.mediumImpact();
+  }
+
+  /// Restart the E display timer with remaining time
+  void _restartEDisplayTimer() {
+    if (_eDisplayCountdown <= 0) {
+      // If no time left, record no response
+      _recordResponse(null);
+      return;
+    }
+    
+    // Restart countdown timer
+    _eCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _isTestPausedForDistance) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _eDisplayCountdown--;
+      });
+      if (_eDisplayCountdown <= 0) {
+        timer.cancel();
+      }
+    });
+    
+    // Restart main display timer
+    _eDisplayTimer = Timer(
+      Duration(seconds: _eDisplayCountdown),
+      () {
+        if (_waitingForResponse && !_isTestPausedForDistance) {
+          final lastValue = _speechService.finalizeWithLastValue();
+          if (lastValue != null) {
+            final direction = SpeechService.parseDirection(lastValue);
+            _recordResponse(direction);
+          } else {
+            _recordResponse(null);
+          }
+        }
+      },
+    );
   }
 
   void _startEyeTest() {
@@ -733,70 +926,19 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen> {
   }
 
   Widget _buildDistanceCalibrationView() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
+    // This view is shown briefly while navigating to the calibration screen
+    // The actual calibration happens in DistanceCalibrationScreen
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            _isDistanceOk ? Icons.check_circle : Icons.straighten,
-            size: 80,
-            color: _isDistanceOk ? AppColors.success : AppColors.warning,
-          ),
+          const CircularProgressIndicator(),
           const SizedBox(height: 24),
           Text(
-            'Position Yourself',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Hold your device at 1 meter (arm\'s length) distance',
-            textAlign: TextAlign.center,
+            'Opening Distance Calibration...',
             style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Distance indicator
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'Target: 90-110 cm',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _currentDistance > 0 
-                      ? '${_currentDistance.toStringAsFixed(0)} cm'
-                      : 'Measuring...',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: _isDistanceOk ? AppColors.success : AppColors.warning,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 40),
-          // Skip button (for testing without camera)
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _onDistanceCalibrationComplete,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(_isDistanceOk ? 'Start Test' : 'Skip Calibration'),
-              ),
             ),
           ),
         ],
