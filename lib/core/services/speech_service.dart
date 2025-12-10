@@ -1,11 +1,10 @@
-// lib/core/services/speech_service.dart
 import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart';
 
-/// Enhanced speech recognition service for voice input
+/// Enhanced speech recognition service for voice input during tests
 /// Features: continuous listening, last-value buffer, auto-retry, confidence scoring
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
@@ -77,8 +76,7 @@ class SpeechService {
 
       _isInitialized = await _speechToText.initialize(
         onError: (error) {
-          final msg = error.errorMsg ?? 'Unknown error';
-          debugPrint('[SpeechService] Speech error: $msg');
+          debugPrint('[SpeechService] Speech error: ${error.errorMsg}');
           _consecutiveErrors++;
           _isListening = false;
           onListeningStopped?.call();
@@ -86,14 +84,13 @@ class SpeechService {
           // Auto-retry on transient errors
           if (_autoRetryEnabled &&
               _consecutiveErrors < _maxRetries &&
-              (msg.contains('network') ||
-                  msg.contains('timeout') ||
-                  msg.contains('no speech') ||
-                  msg.contains('notListening'))) {
+              (error.errorMsg.contains('network') ||
+                  error.errorMsg.contains('timeout') ||
+                  error.errorMsg.contains('no speech'))) {
             debugPrint('[SpeechService] Auto-retrying after error...');
             _scheduleAutoRestart();
           } else {
-            onError?.call(msg);
+            onError?.call(error.errorMsg);
           }
         },
         onStatus: (status) {
@@ -223,7 +220,7 @@ class SpeechService {
     double minConfidence,
   ) {
     final recognized = result.recognizedWords.toLowerCase().trim();
-    final confidence = result.confidence ?? 0.0;
+    final confidence = result.confidence;
 
     debugPrint(
       '[SpeechService] Recognized: "$recognized" (confidence: ${(confidence * 100).toStringAsFixed(0)}%)',
@@ -283,11 +280,7 @@ class SpeechService {
     _autoRetryEnabled = false;
 
     if (_isListening) {
-      try {
-        await _speechToText.stop();
-      } catch (e) {
-        debugPrint('[SpeechService] stop error: $e');
-      }
+      await _speechToText.stop();
       _isListening = false;
       onListeningStopped?.call();
     }
@@ -299,12 +292,7 @@ class SpeechService {
     _autoRestartTimer?.cancel();
     _autoRetryEnabled = false;
 
-    try {
-      await _speechToText.cancel();
-    } catch (e) {
-      debugPrint('[SpeechService] cancel error: $e');
-    }
-
+    await _speechToText.cancel();
     _isListening = false;
     _lastRecognizedValue = null;
     _lastConfidence = 0.0;
@@ -312,7 +300,6 @@ class SpeechService {
   }
 
   /// Finalize with last recognized value
-  /// NOTE: synchronous because callers expect a direct value
   String? finalizeWithLastValue() {
     _bufferTimer?.cancel();
     final value = _lastRecognizedValue;
@@ -327,72 +314,37 @@ class SpeechService {
   /// Check if speech recognition is available
   bool get isAvailable => _isInitialized;
 
-  /// Parse direction from speech - robust handling of variations
+  /// Parse direction from speech (enhanced with more variations)
   static String? parseDirection(String speech) {
     final normalized = speech.toLowerCase().trim();
 
-    // Remove common filler words
-    final cleaned = normalized
-        .replaceAll(RegExp(r'\b(go|move|turn|direction|side|the|to|towards?)\b'), '')
-        .trim();
+    // Direct matches
+    if (normalized.contains('right')) return 'right';
+    if (normalized.contains('left')) return 'left';
+    if (normalized.contains('up')) return 'up';
+    if (normalized.contains('down')) return 'down';
 
-    // Direct / simple matches
-    if (normalized == 'up' || cleaned == 'up' || normalized == 'u' || cleaned == 'u') {
-      return 'up';
-    }
-    if (normalized == 'down' || cleaned == 'down' || normalized == 'd' || cleaned == 'd') {
-      return 'down';
-    }
-    if (normalized == 'left' || cleaned == 'left' || normalized == 'l' || cleaned == 'l') {
-      return 'left';
-    }
-    if (normalized == 'right' || cleaned == 'right' || normalized == 'r' || cleaned == 'r') {
+    // Phonetic variations and homophones
+    if (normalized.contains('write') ||
+        normalized.contains('wright') ||
+        normalized.contains('rite'))
       return 'right';
-    }
+    if (normalized.contains('lift') || normalized.contains('lef'))
+      return 'left';
+    if (normalized.contains('app') ||
+        normalized.contains('uhp') ||
+        normalized.contains('top'))
+      return 'up';
+    if (normalized.contains('dawn') ||
+        normalized.contains('dun') ||
+        normalized.contains('bottom'))
+      return 'down';
 
-    // Up variations
-    final upCandidates = [
-      'up', 'upar', 'upper', 'upward', 'above', 'top', 'rise', 'ascend', 'oopar', 'uppar', 'uup', 'app'
-    ];
-    for (final c in upCandidates) {
-      if (normalized.contains(c) || cleaned.contains(c)) return 'up';
-    }
-
-    // Down variations
-    final downCandidates = [
-      'down', 'neeche', 'niche', 'below', 'bottom', 'floor', 'ground', 'lower', 'descend', 'drop'
-    ];
-    for (final c in downCandidates) {
-      if (normalized.contains(c) || cleaned.contains(c)) return 'down';
-    }
-
-    // Right variations
-    final rightCandidates = [
-      'right', 'rite', 'write', 'daya', 'dahina', 'starboard', 'clockwise', 'rayt'
-    ];
-    for (final c in rightCandidates) {
-      if (normalized.contains(c) || cleaned.contains(c)) return 'right';
-    }
-
-    // Left variations
-    final leftCandidates = [
-      'left', 'laft', 'baya', 'bayen', 'port', 'counterclockwise', 'laeft'
-    ];
-    for (final c in leftCandidates) {
-      if (normalized.contains(c) || cleaned.contains(c)) return 'left';
-    }
-
-    // Compass words
-    if (normalized.contains('north') || normalized.contains('uttar')) return 'up';
-    if (normalized.contains('south') || normalized.contains('dakshin')) return 'down';
-    if (normalized.contains('east') || normalized.contains('purva')) return 'right';
-    if (normalized.contains('west') || normalized.contains('paschim')) return 'left';
-
-    // Numeric gaming keys
-    if (normalized.contains(RegExp(r'\b8\b')) && !normalized.contains('18')) return 'up';
-    if (normalized.contains(RegExp(r'\b2\b')) && !normalized.contains('12') && !normalized.contains('20')) return 'down';
-    if (normalized.contains(RegExp(r'\b6\b')) && !normalized.contains('16')) return 'right';
-    if (normalized.contains(RegExp(r'\b4\b')) && !normalized.contains('14') && !normalized.contains('40')) return 'left';
+    // Compass directions
+    if (normalized.contains('east')) return 'right';
+    if (normalized.contains('west')) return 'left';
+    if (normalized.contains('north')) return 'up';
+    if (normalized.contains('south')) return 'down';
 
     return null;
   }
@@ -441,6 +393,10 @@ class SpeechService {
       'twenty-two': '22',
       'twenty one': '21',
       'twenty-one': '21',
+      'seventy four': '74',
+      'seventy-four': '74',
+      'forty two': '42',
+      'forty-two': '42',
       'nineteen': '19',
       'eighteen': '18',
       'seventeen': '17',
@@ -492,14 +448,44 @@ class SpeechService {
         digitResult += singleDigits[word]!;
       }
     }
-    if (digitResult.isNotEmpty && digitResult.length <= 3) {
+    if (digitResult.isNotEmpty && digitResult.length <= 2) {
       return digitResult;
     }
 
     // Check for digit string
-    final digitMatch = RegExp(r'\b\d{1,3}\b').firstMatch(normalized);
+    final digitMatch = RegExp(r'\b\d{1,2}\b').firstMatch(normalized);
     if (digitMatch != null) {
       return digitMatch.group(0);
+    }
+
+    return null;
+  }
+
+  /// Parse yes/no from speech
+  static bool? parseYesNo(String speech) {
+    final normalized = speech.toLowerCase().trim();
+
+    // Positive
+    if (normalized.contains('yes') ||
+        normalized.contains('yeah') ||
+        normalized.contains('yep') ||
+        normalized.contains('yup') ||
+        normalized.contains('correct') ||
+        normalized.contains('right') ||
+        normalized.contains('affirmative') ||
+        normalized.contains('true') ||
+        normalized.contains('sure')) {
+      return true;
+    }
+
+    // Negative
+    if (normalized.contains('no') ||
+        normalized.contains('nope') ||
+        normalized.contains('nah') ||
+        normalized.contains('negative') ||
+        normalized.contains('false') ||
+        normalized.contains('wrong')) {
+      return false;
     }
 
     return null;
@@ -516,11 +502,7 @@ class SpeechService {
   void dispose() {
     _bufferTimer?.cancel();
     _autoRestartTimer?.cancel();
-    try {
-      _speechToText.stop();
-      _speechToText.cancel();
-    } catch (e) {
-      debugPrint('[SpeechService] dispose error: $e');
-    }
+    _speechToText.stop();
+    _speechToText.cancel();
   }
 }
