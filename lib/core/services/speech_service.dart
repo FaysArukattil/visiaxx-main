@@ -321,7 +321,11 @@ class SpeechService {
     // Direct matches
     if (normalized.contains('right')) return 'right';
     if (normalized.contains('left')) return 'left';
-    if (normalized.contains('up')) return 'up';
+    if (normalized.contains('up') ||
+        normalized.contains('upward') ||
+        normalized.contains('upper') ||
+        normalized.contains('top'))
+      return 'up';
     if (normalized.contains('down')) return 'down';
 
     // Phonetic variations and homophones
@@ -331,10 +335,7 @@ class SpeechService {
       return 'right';
     if (normalized.contains('lift') || normalized.contains('lef'))
       return 'left';
-    if (normalized.contains('app') ||
-        normalized.contains('uhp') ||
-        normalized.contains('top'))
-      return 'up';
+    if (normalized.contains('app') || normalized.contains('uhp')) return 'up';
     if (normalized.contains('dawn') ||
         normalized.contains('dun') ||
         normalized.contains('bottom'))

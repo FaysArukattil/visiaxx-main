@@ -17,12 +17,8 @@ class AppAssets {
   static const String carousel1 = '$_imagesPath/carousel 1.png';
   static const String carousel2 = '$_imagesPath/carousel 2.png';
   static const String carousel3 = '$_imagesPath/carousel 3.png';
-  
-  static const List<String> carouselImages = [
-    carousel1,
-    carousel2,
-    carousel3,
-  ];
+
+  static const List<String> carouselImages = [carousel1, carousel2, carousel3];
 
   // Relaxation Image (for 10-second eye rest)
   static const String relaxationImage = '$_imagesPath/releaxing image.png';
@@ -42,10 +38,10 @@ class AppAssets {
 
   // Expected answers for Ishihara plates (in order) - Visiaxx specification
   static const List<String> ishiharaExpectedAnswers = [
-    '74',  // Plate 1
-    '12',  // Plate 2
-    '6',   // Plate 3
-    '42',  // Plate 4
+    '74', // Plate 1
+    '12', // Plate 2
+    '64', // Plate 3 - Changed from 6 since speech can't detect "six"
+    '42', // Plate 4
   ];
 
   // Amsler Grid
@@ -53,7 +49,8 @@ class AppAssets {
 
   // Navigation Icons
   static const String quickTestIcon = '$_iconsPath/quick_test.png';
-  static const String comprehensiveTestIcon = '$_iconsPath/comprehensive_test.png';
+  static const String comprehensiveTestIcon =
+      '$_iconsPath/comprehensive_test.png';
   static const String resultsIcon = '$_iconsPath/results.png';
   static const String consultationIcon = '$_iconsPath/consultation.png';
   static const String videosIcon = '$_iconsPath/videos.png';

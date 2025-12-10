@@ -222,7 +222,7 @@ class TtsService {
   /// Visual acuity instruction
   static const String visualAcuityInstruction =
       'You will see the letter E pointing in different directions. '
-      'Say up, down, left, or right to indicate which way the E is pointing.';
+      'Say upward, down, left, or right to indicate which way the E is pointing.';
 
   /// Color vision instruction
   static const String colorVisionInstruction =
