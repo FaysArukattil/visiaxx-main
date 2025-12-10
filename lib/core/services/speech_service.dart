@@ -314,37 +314,185 @@ class SpeechService {
   /// Check if speech recognition is available
   bool get isAvailable => _isInitialized;
 
-  /// Parse direction from speech (enhanced with more variations)
+  /// Parse direction from speech - ULTIMATE EDITION with ALL possible slang and variations
   static String? parseDirection(String speech) {
     final normalized = speech.toLowerCase().trim();
+    
+    // Remove common filler words
+    final cleaned = normalized
+        .replaceAll(RegExp(r'\b(go|move|turn|direction|side|the|to|towards?)\b'), '')
+        .trim();
 
+    // ============= UP VARIATIONS =============
+    // Direct matches (highest priority)
+    if (normalized == 'up' || cleaned == 'up' ||
+        normalized == 'u' || cleaned == 'u') return 'up';
+    
+    // Common mishearings
+    if (normalized == 'app' || normalized == 'a' || 
+        normalized == 'uh' || normalized == 'ah' ||
+        normalized == 'op' || normalized == 'oop' ||
+        normalized == 'ep' || normalized == 'eep') return 'up';
+    
+    // Contains checks for UP
+    if (normalized.contains('up') || cleaned.contains('up') ||
+        normalized.contains('upp') || normalized.contains('uhp') ||
+        normalized.contains('uup') || normalized.contains('oop') ||
+        normalized.contains('aap') || normalized.contains('aup') ||
+        normalized.contains('ap ') || normalized.contains(' ap')) return 'up';
+    
+    // Hindi/Indian variations for UP
+    if (normalized.contains('upar') || normalized.contains('uper') ||
+        normalized.contains('uppar') || normalized.contains('oopar') ||
+        normalized.contains('upr') || normalized.contains('upor') ||
+        normalized.contains('upaar') || normalized.contains('upeer') ||
+        normalized.contains('upur') || normalized.contains('upir')) return 'up';
+    
+    // English synonyms for UP
+    if (normalized.contains('upper') || normalized.contains('upward') ||
+        normalized.contains('upside') || normalized.contains('above') ||
+        normalized.contains('top') || normalized.contains('ceiling') ||
+        normalized.contains('sky') || normalized.contains('overhead') ||
+        normalized.contains('high') || normalized.contains('higher') ||
+        normalized.contains('ascend') || normalized.contains('rise') ||
+        normalized.contains('elevat')) return 'up';
+    
+    // Phonetic variations
+    if (normalized.contains('uhp') || normalized.contains('awp') ||
+        normalized.contains('ope') || normalized.contains('upe')) return 'up';
+
+    // ============= DOWN VARIATIONS =============
     // Direct matches
-    if (normalized.contains('right')) return 'right';
-    if (normalized.contains('left')) return 'left';
-    if (normalized.contains('up')) return 'up';
-    if (normalized.contains('down')) return 'down';
+    if (normalized == 'down' || cleaned == 'down' ||
+        normalized == 'd' || cleaned == 'd') return 'down';
+    
+    // Common mishearings
+    if (normalized == 'dawn' || normalized == 'dun' ||
+        normalized == 'don' || normalized == 'town' ||
+        normalized == 'daun') return 'down';
+    
+    // Contains checks for DOWN
+    if (normalized.contains('down') || cleaned.contains('down') ||
+        normalized.contains('dwn') || normalized.contains('doun') ||
+        normalized.contains('daun') || normalized.contains('dowm') ||
+        normalized.contains('donw')) return 'down';
+    
+    // Hindi/Indian variations for DOWN
+    if (normalized.contains('neeche') || normalized.contains('neche') ||
+        normalized.contains('nichay') || normalized.contains('niche') ||
+        normalized.contains('neechi') || normalized.contains('neecha') ||
+        normalized.contains('neechey') || normalized.contains('nichey') ||
+        normalized.contains('necha') || normalized.contains('nicha') ||
+        normalized.contains('neech') || normalized.contains('nich')) return 'down';
+    
+    // English synonyms for DOWN
+    if (normalized.contains('downward') || normalized.contains('below') ||
+        normalized.contains('bottom') || normalized.contains('floor') ||
+        normalized.contains('ground') || normalized.contains('under') ||
+        normalized.contains('beneath') || normalized.contains('lower') ||
+        normalized.contains('descend') || normalized.contains('drop') ||
+        normalized.contains('fall')) return 'down';
+    
+    // Phonetic variations
+    if (normalized.contains('dahn') || normalized.contains('doun')) return 'down';
 
-    // Phonetic variations and homophones
-    if (normalized.contains('write') ||
-        normalized.contains('wright') ||
-        normalized.contains('rite'))
-      return 'right';
-    if (normalized.contains('lift') || normalized.contains('lef'))
-      return 'left';
-    if (normalized.contains('app') ||
-        normalized.contains('uhp') ||
-        normalized.contains('top'))
-      return 'up';
-    if (normalized.contains('dawn') ||
-        normalized.contains('dun') ||
-        normalized.contains('bottom'))
-      return 'down';
+    // ============= RIGHT VARIATIONS =============
+    // Direct matches
+    if (normalized == 'right' || cleaned == 'right' ||
+        normalized == 'r' || cleaned == 'r') return 'right';
+    
+    // Common mishearings
+    if (normalized == 'rite' || normalized == 'write' ||
+        normalized == 'wright' || normalized == 'rit' ||
+        normalized == 'ryt' || normalized == 'ryte') return 'right';
+    
+    // Contains checks for RIGHT
+    if (normalized.contains('right') || cleaned.contains('right') ||
+        normalized.contains('rite') || normalized.contains('wright') ||
+        normalized.contains('write') || normalized.contains('ryt') ||
+        normalized.contains('righte') || normalized.contains('righ') ||
+        normalized.contains('riht') || normalized.contains('rigth')) return 'right';
+    
+    // Hindi/Indian variations for RIGHT
+    if (normalized.contains('daya') || normalized.contains('dayan') ||
+        normalized.contains('dayen') || normalized.contains('dayein') ||
+        normalized.contains('daine') || normalized.contains('dahina') ||
+        normalized.contains('dahine') || normalized.contains('dahin') ||
+        normalized.contains('daya') || normalized.contains('daaya') ||
+        normalized.contains('dayaa') || normalized.contains('dya') ||
+        normalized.contains('dye') || normalized.contains('dai')) return 'right';
+    
+    // English synonyms for RIGHT
+    if (normalized.contains('rightward') || normalized.contains('rightside') ||
+        normalized.contains('starboard') || normalized.contains('dexter') ||
+        normalized.contains('clockwise')) return 'right';
+    
+    // Phonetic variations
+    if (normalized.contains('rayt') || normalized.contains('rait') ||
+        normalized.contains('riet') || normalized.contains('reet')) return 'right';
 
-    // Compass directions
-    if (normalized.contains('east')) return 'right';
-    if (normalized.contains('west')) return 'left';
-    if (normalized.contains('north')) return 'up';
-    if (normalized.contains('south')) return 'down';
+    // ============= LEFT VARIATIONS =============
+    // Direct matches
+    if (normalized == 'left' || cleaned == 'left' ||
+        normalized == 'l' || cleaned == 'l') return 'left';
+    
+    // Common mishearings
+    if (normalized == 'lef' || normalized == 'lift' ||
+        normalized == 'laft' || normalized == 'lef') return 'left';
+    
+    // Contains checks for LEFT
+    if (normalized.contains('left') || cleaned.contains('left') ||
+        normalized.contains('lef') || normalized.contains('laft') ||
+        normalized.contains('lefte') || normalized.contains('lft') ||
+        normalized.contains('lefft') || normalized.contains('leff')) return 'left';
+    
+    // Hindi/Indian variations for LEFT
+    if (normalized.contains('baya') || normalized.contains('bayan') ||
+        normalized.contains('bayen') || normalized.contains('bayein') ||
+        normalized.contains('baine') || normalized.contains('baaya') ||
+        normalized.contains('bayaa') || normalized.contains('bya') ||
+        normalized.contains('bye') || normalized.contains('bai') ||
+        normalized.contains('baye') || normalized.contains('baay')) return 'left';
+    
+    // English synonyms for LEFT
+    if (normalized.contains('leftward') || normalized.contains('leftside') ||
+        normalized.contains('port') || normalized.contains('sinister') ||
+        normalized.contains('counter') && normalized.contains('clock')) return 'left';
+    
+    // Phonetic variations
+    if (normalized.contains('laeft') || normalized.contains('lefft')) return 'left';
+
+    // ============= COMPASS DIRECTIONS =============
+    if (normalized.contains('north') || normalized.contains('uttar') ||
+        normalized.contains('utter')) return 'up';
+    
+    if (normalized.contains('south') || normalized.contains('dakshin') ||
+        normalized.contains('dakshan')) return 'down';
+    
+    if (normalized.contains('east') || normalized.contains('purva') ||
+        normalized.contains('poorva') || normalized.contains('purv')) return 'right';
+    
+    if (normalized.contains('west') || normalized.contains('paschim') ||
+        normalized.contains('pashchim') || normalized.contains('pascham')) return 'left';
+
+    // ============= SLANG & COLLOQUIAL =============
+    // Indian English slang
+    if (normalized.contains('uppar') || normalized.contains('oppar') ||
+        normalized.contains('oopar')) return 'up';
+    
+    if (normalized.contains('niche') || normalized.contains('nichey')) return 'down';
+    
+    if (normalized.contains('right side') || normalized.contains('right hand') ||
+        normalized.contains('right waala')) return 'right';
+    
+    if (normalized.contains('left side') || normalized.contains('left hand') ||
+        normalized.contains('left waala')) return 'left';
+
+    // ============= NUMERIC/GAMING SLANG =============
+    if (normalized.contains('8') && !normalized.contains('18')) return 'up'; // numpad 8
+    if (normalized.contains('2') && !normalized.contains('12') && !normalized.contains('20')) return 'down'; // numpad 2
+    if (normalized.contains('6') && !normalized.contains('16')) return 'right'; // numpad 6
+    if (normalized.contains('4') && !normalized.contains('14') && !normalized.contains('40')) return 'left'; // numpad 4
 
     return null;
   }

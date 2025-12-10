@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/family_member_model.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -41,7 +42,17 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
 
   void _selectSelf() {
     final provider = context.read<TestSessionProvider>();
-    provider.selectSelfProfile('demo_user_id', 'Demo User');
+    final user = FirebaseAuth.instance.currentUser;
+    
+    // Use actual user data if available, otherwise fallback to Guest
+    final String userId = user?.uid ?? 'guest_id';
+    // displayName might be null, try to use part of email or fallback
+    String userName = user?.displayName ?? 'User';
+    if (userName == 'User' && user?.email != null) {
+      userName = user!.email!.split('@')[0];
+    }
+    
+    provider.selectSelfProfile(userId, userName);
     provider.startTest();
     Navigator.pushNamed(context, '/questionnaire');
   }
