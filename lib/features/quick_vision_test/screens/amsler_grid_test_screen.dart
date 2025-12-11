@@ -318,8 +318,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
                 bottom: 12,
                 child: _buildDistanceIndicator(),
               ),
-            // Distance warning overlay
-            if (!_isDistanceOk &&
+            // Distance warning overlay - only show when explicitly paused
+            if (_isTestPausedForDistance &&
                 _testingStarted &&
                 !_testComplete &&
                 !_eyeSwitchPending)
@@ -1025,6 +1025,24 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
               Text(
                 'Acceptable range: 35cm - 45cm',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              // Skip button to bypass distance detection
+              TextButton(
+                onPressed: () {
+                  // Force distance OK and resume test
+                  setState(() {
+                    _isDistanceOk = true;
+                    _isTestPausedForDistance = false;
+                  });
+                },
+                child: Text(
+                  'Skip Distance Check',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ),
             ],
           ),

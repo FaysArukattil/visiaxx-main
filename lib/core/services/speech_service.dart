@@ -321,36 +321,55 @@ class SpeechService {
     debugPrint('[SpeechService] parseDirection input: "$s"');
 
     // ============ UP Detection ============
-    // Direct: up, upward, upwards
-    if (s.contains('upward') || s.contains('upwards')) {
-      debugPrint('[SpeechService] Matched: upward/upwards → UP');
+    // Direct variations: upward, upwards, up ward (space), upword (mishear)
+    if (s.contains('upward') ||
+        s.contains('upwards') ||
+        s.contains('up ward') ||
+        s.contains('upword') ||
+        s.contains('apward') ||
+        s.contains('uhpward')) {
+      debugPrint('[SpeechService] Matched: upward variants → UP');
       return 'up';
     }
-    if (s.contains('up')) {
+    // Direct: up (check after upward to avoid partial matches)
+    if (s.contains('up') ||
+        s == 'up' ||
+        s.startsWith('up ') ||
+        s.endsWith(' up')) {
       debugPrint('[SpeechService] Matched: up → UP');
       return 'up';
     }
-    // Positional: top, upper, above
-    if (s.contains('top') || s.contains('upper') || s.contains('above')) {
-      debugPrint('[SpeechService] Matched: top/upper/above → UP');
+    // Positional: top, upper, above, ceiling, sky
+    if (s.contains('top') ||
+        s.contains('upper') ||
+        s.contains('above') ||
+        s.contains('ceiling') ||
+        s.contains('sky')) {
+      debugPrint('[SpeechService] Matched: positional → UP');
       return 'up';
     }
-    // Mishears: app, op, uhp, aap, oop
+    // Mishears for "up" and "upward": app, op, uhp, aap, oop, award, aboard
     if (s.contains('app') ||
+        s == 'op' ||
         s.contains(' op ') ||
         s.contains('uhp') ||
         s.contains('aap') ||
-        s.contains('oop')) {
-      debugPrint('[SpeechService] Matched: mishear (app/op/uhp) → UP');
+        s.contains('oop') ||
+        s.contains('aboard') ||
+        (s.contains('award') && !s.contains('down'))) {
+      debugPrint('[SpeechService] Matched: mishear → UP');
       return 'up';
     }
 
     // ============ DOWN Detection ============
-    // Direct: down, downward, downwards
-    if (s.contains('downward') || s.contains('downwards')) {
+    // Direct: downward, downwards, down ward (space)
+    if (s.contains('downward') ||
+        s.contains('downwards') ||
+        s.contains('down ward')) {
       debugPrint('[SpeechService] Matched: downward/downwards → DOWN');
       return 'down';
     }
+    // Direct: down
     if (s.contains('down')) {
       debugPrint('[SpeechService] Matched: down → DOWN');
       return 'down';
@@ -360,14 +379,21 @@ class SpeechService {
       debugPrint('[SpeechService] Matched: bottom → DOWN');
       return 'down';
     }
-    // Positional: lower, below, beneath
-    if (s.contains('lower') || s.contains('below') || s.contains('beneath')) {
-      debugPrint('[SpeechService] Matched: lower/below/beneath → DOWN');
+    // Positional: lower, below, beneath, floor, ground
+    if (s.contains('lower') ||
+        s.contains('below') ||
+        s.contains('beneath') ||
+        s.contains('floor') ||
+        s.contains('ground')) {
+      debugPrint('[SpeechService] Matched: positional → DOWN');
       return 'down';
     }
-    // Mishears: dawn, bott, dun
-    if (s.contains('dawn') || s.contains('bott') || s.contains('dun')) {
-      debugPrint('[SpeechService] Matched: mishear (dawn/bott/dun) → DOWN');
+    // Mishears: dawn, bott, dun, done
+    if (s.contains('dawn') ||
+        s.contains('bott') ||
+        s.contains('dun') ||
+        s == 'done') {
+      debugPrint('[SpeechService] Matched: mishear → DOWN');
       return 'down';
     }
 
@@ -388,9 +414,9 @@ class SpeechService {
       );
       return 'right';
     }
-    // Mishears: ride (with 't'), bright (contains right)
-    if (s.contains('righ') || s.contains('rait')) {
-      debugPrint('[SpeechService] Matched: mishear (righ/rait) → RIGHT');
+    // Mishears: righ, rait, rice
+    if (s.contains('righ') || s.contains('rait') || s == 'rice') {
+      debugPrint('[SpeechService] Matched: mishear → RIGHT');
       return 'right';
     }
 
@@ -404,14 +430,17 @@ class SpeechService {
       debugPrint('[SpeechService] Matched: left → LEFT');
       return 'left';
     }
-    // Homophones: lift
-    if (s.contains('lift')) {
-      debugPrint('[SpeechService] Matched: homophone (lift) → LEFT');
+    // Homophones: lift, loft
+    if (s.contains('lift') || s.contains('loft')) {
+      debugPrint('[SpeechService] Matched: homophone → LEFT');
       return 'left';
     }
-    // Mishears: lef, laughed, laf
-    if (s.contains('lef') || s.contains('laughed') || s.contains('laf')) {
-      debugPrint('[SpeechService] Matched: mishear (lef/laughed/laf) → LEFT');
+    // Mishears: lef, laughed, laf, less
+    if (s.contains('lef') ||
+        s.contains('laughed') ||
+        s.contains('laf') ||
+        s == 'less') {
+      debugPrint('[SpeechService] Matched: mishear → LEFT');
       return 'left';
     }
 

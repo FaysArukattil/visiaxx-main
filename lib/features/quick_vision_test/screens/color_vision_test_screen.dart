@@ -43,7 +43,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
   // Distance monitoring
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
-  bool _isDistanceOk = false;
+  bool _isDistanceOk = true; // Start as true to avoid initial blocking
   bool _isTestPausedForDistance = false;
   DistanceStatus? _lastSpokenDistanceStatus;
   Timer? _distanceAutoSkipTimer; // Auto-skip after 10 seconds
@@ -403,8 +403,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
                 bottom: 12,
                 child: _buildDistanceIndicator(),
               ),
-            // Distance warning overlay
-            if (!_isDistanceOk && _showingPlate && !_testComplete)
+            // Distance warning overlay - only show when explicitly paused
+            if (_isTestPausedForDistance && _showingPlate && !_testComplete)
               _buildDistanceWarningOverlay(),
           ],
         ),

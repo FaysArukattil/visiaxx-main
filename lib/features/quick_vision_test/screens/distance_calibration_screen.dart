@@ -319,27 +319,35 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Camera preview - SIMPLEST possible approach
+        // Camera preview - use AspectRatio for proper sizing
         if (_cameraController != null && _cameraController!.value.isInitialized)
-          Container(
-            color: Colors.black,
-            child: CameraPreview(_cameraController!),
+          Positioned.fill(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _cameraController!.value.previewSize?.height ?? 100,
+                height: _cameraController!.value.previewSize?.width ?? 100,
+                child: CameraPreview(_cameraController!),
+              ),
+            ),
           )
         else
-          // Show loading state
-          Container(
-            color: Colors.black,
-            child: const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(color: Colors.white),
-                  SizedBox(height: 16),
-                  Text(
-                    'Initializing camera...',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ],
+          // Show loading state with a visible background
+          Positioned.fill(
+            child: Container(
+              color: Colors.grey.shade900,
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: 16),
+                    Text(
+                      'Starting camera...',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

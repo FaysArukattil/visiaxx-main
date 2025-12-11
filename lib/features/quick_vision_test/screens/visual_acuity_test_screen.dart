@@ -68,7 +68,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   // Distance monitoring
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
-  bool _isDistanceOk = false;
+  bool _isDistanceOk = true; // Start as true to avoid blocking on init
   bool _useDistanceMonitoring = true; // Enabled for real-time distance display
   bool _isTestPausedForDistance = false; // Test is paused due to wrong distance
   DistanceStatus? _lastSpokenDistanceStatus; // Track last spoken guidance
@@ -675,8 +675,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   child: _buildDistanceIndicator(),
                 ),
 
-              // Distance warning overlay when out of range
-              if (_useDistanceMonitoring && !_isDistanceOk && _showE)
+              // Distance warning overlay when explicitly paused
+              if (_useDistanceMonitoring && _isTestPausedForDistance && _showE)
                 _buildDistanceWarningOverlay(),
             ],
           ),
@@ -778,6 +778,30 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Text(
                 'Acceptable range: 92cm - 108cm',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              // Skip button to bypass distance detection
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isDistanceOk = true;
+                    _isTestPausedForDistance = false;
+                  });
+                  _restartEDisplayTimer();
+                  _speechService.startListening(
+                    listenFor: Duration(seconds: _eDisplayCountdown + 1),
+                    bufferMs: 300,
+                    autoRestart: true,
+                    minConfidence: 0.2,
+                  );
+                },
+                child: Text(
+                  'Skip Distance Check',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ),
             ],
           ),
