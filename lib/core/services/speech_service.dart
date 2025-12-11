@@ -314,38 +314,141 @@ class SpeechService {
   /// Check if speech recognition is available
   bool get isAvailable => _isInitialized;
 
-  /// Parse direction from speech (enhanced with more variations)
+  /// Parse direction from speech (enhanced with extensive mishearing variations)
   static String? parseDirection(String speech) {
     final normalized = speech.toLowerCase().trim();
 
-    // Direct matches
-    if (normalized.contains('right')) return 'right';
-    if (normalized.contains('left')) return 'left';
-    if (normalized.contains('up') ||
-        normalized.contains('upward') ||
-        normalized.contains('upper') ||
-        normalized.contains('top'))
-      return 'up';
-    if (normalized.contains('down')) return 'down';
+    // Remove common filler words to isolate the direction
+    final cleaned = normalized
+        .replaceAll(RegExp(r'\b(the|a|an|to|go|move|swipe|point)\b'), '')
+        .trim();
 
-    // Phonetic variations and homophones
-    if (normalized.contains('write') ||
-        normalized.contains('wright') ||
-        normalized.contains('rite'))
-      return 'right';
-    if (normalized.contains('lift') || normalized.contains('lef'))
-      return 'left';
-    if (normalized.contains('app') || normalized.contains('uhp')) return 'up';
-    if (normalized.contains('dawn') ||
-        normalized.contains('dun') ||
-        normalized.contains('bottom'))
-      return 'down';
+    // UP variations - extensive matching (including Indian accents)
+    final upPatterns = [
+      // Direct matches
+      'up', 'upward', 'upwards', 'upper', 'top', 'above',
+      // Common mishearings
+      'uup', 'uhp', 'app', 'ap', 'upp', 'yup',
+      // Phonetic variations
+      'op', 'oop', 'uh', 'ub', 'ep', 'eph',
+      // Similar sounds
+      'cap', // when isolated as a single word, might be "up"
+      // Indian accent variations (South & North)
+      'aap', 'aapu', 'appa', 'appu', 'upe', 'uppe',
+      'ape', 'eep', 'eup', 'ab', 'abb',
+      // Vowel substitutions common in Indian English
+      'aep', 'aip', 'ayp', 'epp', 'ip', 'ipp',
+      // Additional phonetic for Indian accents
+      'hup', 'hap', 'kap', 'aps', 'aab',
+    ];
 
-    // Compass directions
-    if (normalized.contains('east')) return 'right';
-    if (normalized.contains('west')) return 'left';
-    if (normalized.contains('north')) return 'up';
-    if (normalized.contains('south')) return 'down';
+    // DOWN variations - extensive matching (including Indian accents)
+    final downPatterns = [
+      // Direct matches
+      'down', 'downward', 'downwards', 'lower', 'bottom', 'below',
+      // Common mishearings
+      'dawn', 'donee', 'dahne', 'daawn', 'doun', 'doon', 'dun',
+      // Phonetic variations
+      'ton', 'town', 'dan', 'dane', 'dahn', 'doan',
+      // Similar sounds
+      'done', 'don', 'donne', 'downe', 'downn',
+      // Indian accent variations (South & North)
+      'daun', 'daan', 'davn', 'thon', 'thaun', 'thaan',
+      'dhun', 'dhaan', 'dhown', 'dhaun', 'taun', 'taan',
+      // Retroflex variations
+      'ddon', 'ddawn', 'ddoun', 'dhawn', 'dhaawn',
+      // T/D confusion and vowel substitutions
+      'doen', 'toun', 'thown', 'thaown', 'dund', 'downd',
+      // Additional for Indian accents
+      'niche', 'neech', 'bottom', 'tala',
+    ];
+
+    // RIGHT variations - extensive matching (including Indian accents)
+    final rightPatterns = [
+      // Direct matches
+      'right', 'rightward', 'rightwards',
+      // Common homophones
+      'write', 'wright', 'rite', 'ryte',
+      // Phonetic variations
+      'righ', 'rait', 'riht', 'righte', 'ryght',
+      // Similar sounds
+      'riet', 'wight', 'rated', 'righted',
+      // Indian accent variations (South & North)
+      'rightu', 'raitu', 'raight', 'raightu', 'writu',
+      'righta', 'raita', 'rytu', 'rythu', 'righd',
+      // V/W confusion common in South Indian
+      'vrite', 'vright', 'wite', 'vait',
+      // Retroflex variations
+      'rright', 'rryte', 'rraight', 'rrite',
+      // Vowel substitutions
+      'rayt', 'raet', 'raete', 'raittu',
+      // Compass (with Indian variations)
+      'east', 'eastward', 'eest', 'estu', 'esta', 'purva',
+    ];
+
+    // LEFT variations - extensive matching (including Indian accents)
+    final leftPatterns = [
+      // Direct matches
+      'left', 'leftward', 'leftwards',
+      // Common mishearings
+      'lef', 'laft', 'lehft', 'lafft', 'leaft',
+      // Phonetic variations
+      'leff', 'lefft', 'lift', 'leaft', 'laeft',
+      // Similar sounds
+      'laughed', 'lek', 'lept', 'let',
+      // Indian accent variations (South & North)
+      'lepht', 'lephtu', 'laeftu', 'leftu',
+      'lephta', 'laefta', 'lapht', 'leptu', 'leftd',
+      // T/D confusion
+      'lefd', 'laftu', 'lephd', 'lafd',
+      // Retroflex variations
+      'lleft', 'llef', 'llepht', 'lleaft',
+      // Vowel substitutions
+      'laift', 'lipt', 'lept',
+      // F/PH confusion
+      'lep', 'laph', 'lefh',
+      // Compass (with Indian variations)
+      'west', 'westward', 'westu', 'vesta', 'vwest', 'paschim',
+    ];
+
+    // Helper function to check if any pattern matches
+    bool containsPattern(List<String> patterns) {
+      for (final pattern in patterns) {
+        // Check for exact word match first (most reliable)
+        if (RegExp(r'\b' + pattern + r'\b').hasMatch(cleaned) ||
+            RegExp(r'\b' + pattern + r'\b').hasMatch(normalized)) {
+          return true;
+        }
+        // Fallback to contains check
+        if (cleaned.contains(pattern) || normalized.contains(pattern)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Check patterns in priority order
+    // Check UP first as 'app' might be common
+    if (containsPattern(upPatterns)) return 'up';
+
+    // Check DOWN
+    if (containsPattern(downPatterns)) return 'down';
+
+    // Check RIGHT
+    if (containsPattern(rightPatterns)) return 'right';
+
+    // Check LEFT
+    if (containsPattern(leftPatterns)) return 'left';
+
+    // Additional fuzzy matching for very short inputs
+    // If input is very short (1-3 chars), use phonetic matching
+    if (cleaned.length <= 3) {
+      // Single letter or very short
+      if (cleaned.startsWith('u') || cleaned.startsWith('a')) return 'up';
+      if (cleaned.startsWith('d')) return 'down';
+      if (cleaned.startsWith('r') || cleaned.startsWith('w')) return 'right';
+      if (cleaned.startsWith('l')) return 'left';
+    }
 
     return null;
   }
