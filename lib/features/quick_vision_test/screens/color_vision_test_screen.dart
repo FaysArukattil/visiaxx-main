@@ -46,6 +46,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
   bool _isDistanceOk = false;
   bool _isTestPausedForDistance = false;
   DistanceStatus? _lastSpokenDistanceStatus;
+  Timer? _distanceAutoSkipTimer; // Auto-skip after 10 seconds
 
   // Timer
   Timer? _plateTimer;
@@ -179,10 +180,35 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
       'Test paused. Please adjust your distance to 40 centimeters.',
     );
     HapticFeedback.heavyImpact();
+
+    // Auto-skip after 10 seconds if distance not corrected
+    _distanceAutoSkipTimer?.cancel();
+    _distanceAutoSkipTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted && _isTestPausedForDistance) {
+        debugPrint('[ColorVisionTest] Auto-skipping distance check after 10s');
+        _forceSkipDistanceCheck();
+      }
+    });
+  }
+
+  /// Force skip distance check and resume test
+  void _forceSkipDistanceCheck() {
+    _distanceAutoSkipTimer?.cancel();
+    setState(() {
+      _isDistanceOk = true;
+      _isTestPausedForDistance = false;
+    });
+    _ttsService.speak('Resuming test');
+    _restartPlateTimer();
+    _speechService.startListening(
+      listenFor: Duration(seconds: _timeRemaining + 2),
+    );
   }
 
   void _resumeTestAfterDistance() {
     if (!_isTestPausedForDistance) return;
+    _distanceAutoSkipTimer
+        ?.cancel(); // Cancel auto-skip since distance is OK now
     setState(() => _isTestPausedForDistance = false);
     _ttsService.speak('Resuming test');
     _restartPlateTimer();
@@ -353,6 +379,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
   @override
   void dispose() {
     _plateTimer?.cancel();
+    _distanceAutoSkipTimer?.cancel(); // Cancel auto-skip timer
     _answerController.dispose();
     _distanceService.dispose();
     _ttsService.dispose();
@@ -830,6 +857,28 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
               Text(
                 'Acceptable range: 35cm - 45cm',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              // Skip button to bypass distance detection
+              TextButton(
+                onPressed: () {
+                  // Force distance OK and resume test
+                  setState(() {
+                    _isDistanceOk = true;
+                    _isTestPausedForDistance = false;
+                  });
+                  _restartPlateTimer();
+                  _speechService.startListening(
+                    listenFor: Duration(seconds: _timeRemaining + 2),
+                  );
+                },
+                child: Text(
+                  'Skip Distance Check',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ),
             ],
           ),
