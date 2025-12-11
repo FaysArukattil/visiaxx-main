@@ -22,7 +22,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   bool _hasSaved = false;
   String? _saveError;
   TestResultModel? _savedResult;
-  
+
   final TestResultService _testResultService = TestResultService();
   final PdfExportService _pdfExportService = PdfExportService();
 
@@ -30,29 +30,31 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   void initState() {
     super.initState();
     // Save results to Firebase when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) => _saveResultsToFirebase());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _saveResultsToFirebase(),
+    );
   }
 
   Future<void> _saveResultsToFirebase() async {
     if (_hasSaved) return;
-    
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    
+
     setState(() {
       _isSaving = true;
       _saveError = null;
     });
-    
+
     try {
       final provider = context.read<TestSessionProvider>();
       final result = provider.buildTestResult(user.uid);
-      
+
       final resultId = await _testResultService.saveTestResult(
         userId: user.uid,
         result: result,
       );
-      
+
       if (mounted) {
         setState(() {
           _hasSaved = true;
@@ -74,7 +76,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<TestSessionProvider>();
     final overallStatus = provider.getOverallStatus();
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Test Results'),
@@ -98,7 +100,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           children: [
             // Overall status header
             _buildStatusHeader(provider, overallStatus),
-            
+
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -107,26 +109,26 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   // Patient info card
                   _buildPatientInfoCard(provider),
                   const SizedBox(height: 20),
-                  
+
                   // Visual Acuity Results
                   _buildSectionTitle('Visual Acuity', Icons.visibility),
                   _buildVisualAcuityCard(provider),
                   const SizedBox(height: 20),
-                  
+
                   // Color Vision Results
                   _buildSectionTitle('Color Vision', Icons.palette),
                   _buildColorVisionCard(provider),
                   const SizedBox(height: 20),
-                  
+
                   // Amsler Grid Results
                   _buildSectionTitle('Amsler Grid', Icons.grid_on),
                   _buildAmslerGridCard(provider),
                   const SizedBox(height: 20),
-                  
+
                   // Recommendation
                   _buildRecommendationCard(provider),
                   const SizedBox(height: 24),
-                  
+
                   // Action buttons
                   _buildActionButtons(provider),
                 ],
@@ -142,7 +144,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     Color backgroundColor;
     Color textColor;
     IconData statusIcon;
-    
+
     switch (status) {
       case TestStatus.normal:
         backgroundColor = AppColors.success;
@@ -160,7 +162,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         statusIcon = Icons.error;
         break;
     }
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
@@ -168,10 +170,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            backgroundColor,
-            backgroundColor.withOpacity(0.8),
-          ],
+          colors: [backgroundColor, backgroundColor.withOpacity(0.8)],
         ),
       ),
       child: Column(
@@ -189,9 +188,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const SizedBox(height: 8),
           Text(
             DateFormat('MMMM dd, yyyy • h:mm a').format(DateTime.now()),
-            style: TextStyle(
-              color: textColor.withOpacity(0.9),
-            ),
+            style: TextStyle(color: textColor.withOpacity(0.9)),
           ),
         ],
       ),
@@ -200,12 +197,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   Widget _buildPatientInfoCard(TestSessionProvider provider) {
     final familyMember = provider.selectedFamilyMember;
-    final String name = familyMember?.firstName ?? 
+    final String name =
+        familyMember?.firstName ??
         (provider.profileName.isEmpty ? 'User' : provider.profileName);
     final int? age = familyMember?.age;
     final String? sex = familyMember?.sex;
-    final String testDate = DateFormat('MMM dd, yyyy • h:mm a').format(DateTime.now());
-    
+    final String testDate = DateFormat(
+      'MMM dd, yyyy • h:mm a',
+    ).format(DateTime.now());
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -263,9 +263,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: familyMember != null 
+                  color: familyMember != null
                       ? AppColors.info.withOpacity(0.1)
                       : AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -273,7 +276,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 child: Text(
                   familyMember != null ? 'Family' : 'Self',
                   style: TextStyle(
-                    color: familyMember != null ? AppColors.info : AppColors.primary,
+                    color: familyMember != null
+                        ? AppColors.info
+                        : AppColors.primary,
                     fontWeight: FontWeight.w500,
                     fontSize: 11,
                   ),
@@ -291,7 +296,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
+                Icon(
+                  Icons.calendar_today,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   testDate,
@@ -317,10 +326,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const SizedBox(width: 8),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -330,7 +336,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Widget _buildVisualAcuityCard(TestSessionProvider provider) {
     final rightResult = provider.visualAcuityRight;
     final leftResult = provider.visualAcuityLeft;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -357,11 +363,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   AppColors.rightEye,
                 ),
               ),
-              Container(
-                width: 1,
-                height: 80,
-                color: AppColors.border,
-              ),
+              Container(width: 1, height: 80, color: AppColors.border),
               Expanded(
                 child: _buildEyeResult(
                   'Left Eye',
@@ -406,28 +408,19 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             const SizedBox(width: 4),
             Text(
               eye,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: color, fontWeight: FontWeight.w500),
             ),
           ],
         ),
         const SizedBox(height: 8),
         Text(
           score,
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           status,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -447,10 +440,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -459,7 +449,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Widget _buildColorVisionCard(TestSessionProvider provider) {
     final result = provider.colorVision;
     final isNormal = result?.isNormal ?? true;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -481,7 +471,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isNormal 
+                  color: isNormal
                       ? AppColors.success.withOpacity(0.1)
                       : AppColors.warning.withOpacity(0.1),
                   shape: BoxShape.circle,
@@ -533,7 +523,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               ),
               if ((result?.correctAnswers ?? 0) < (result?.totalPlates ?? 0))
                 Expanded(
-                  flex: (result?.totalPlates ?? 0) - (result?.correctAnswers ?? 0),
+                  flex:
+                      (result?.totalPlates ?? 0) -
+                      (result?.correctAnswers ?? 0),
                   child: Container(
                     height: 8,
                     decoration: BoxDecoration(
@@ -547,10 +539,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const SizedBox(height: 8),
           Text(
             '${result?.correctAnswers ?? 0}/${result?.totalPlates ?? 0} plates correct',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
         ],
       ),
@@ -560,7 +549,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Widget _buildAmslerGridCard(TestSessionProvider provider) {
     final rightResult = provider.amslerGridRight;
     final leftResult = provider.amslerGridLeft;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -585,11 +574,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   AppColors.rightEye,
                 ),
               ),
-              Container(
-                width: 1,
-                height: 80,
-                color: AppColors.border,
-              ),
+              Container(width: 1, height: 80, color: AppColors.border),
               Expanded(
                 child: _buildAmslerEyeResult(
                   'Left Eye',
@@ -610,15 +595,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: AppColors.warning, size: 20),
+                  const Icon(
+                    Icons.info_outline,
+                    color: AppColors.warning,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Distortions detected. Please consult an eye care professional.',
-                      style: TextStyle(
-                        color: AppColors.warning,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: AppColors.warning, fontSize: 12),
                     ),
                   ),
                 ],
@@ -632,7 +618,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   Widget _buildAmslerEyeResult(String eye, dynamic result, Color color) {
     final isNormal = result?.isNormal ?? true;
-    
+
     return Column(
       children: [
         Row(
@@ -642,10 +628,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             const SizedBox(width: 4),
             Text(
               eye,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: color, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -653,7 +636,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: isNormal 
+            color: isNormal
                 ? AppColors.success.withOpacity(0.1)
                 : AppColors.warning.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
@@ -670,10 +653,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const SizedBox(height: 8),
           Text(
             '${result.distortionPoints.length} area(s) marked',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
       ],
@@ -682,11 +662,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   Widget _buildRecommendationCard(TestSessionProvider provider) {
     final status = provider.getOverallStatus();
-    
+
     Color bgColor;
     Color borderColor;
     IconData icon;
-    
+
     switch (status) {
       case TestStatus.normal:
         bgColor = AppColors.success.withOpacity(0.1);
@@ -704,7 +684,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         icon = Icons.priority_high;
         break;
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -721,20 +701,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               const SizedBox(width: 8),
               const Text(
                 'Recommendation',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             provider.getRecommendation(),
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              height: 1.5,
-            ),
+            style: TextStyle(color: AppColors.textPrimary, height: 1.5),
           ),
         ],
       ),
@@ -749,7 +723,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: _isGeneratingPdf ? null : _generatePdf,
-            icon: _isGeneratingPdf 
+            icon: _isGeneratingPdf
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -761,7 +735,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 : const Icon(Icons.download),
             label: Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(_isGeneratingPdf ? 'Generating...' : 'Download PDF Report'),
+              child: Text(
+                _isGeneratingPdf ? 'Generating...' : 'Download PDF Report',
+              ),
             ),
           ),
         ),
@@ -771,13 +747,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Share with doctor
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Share feature coming soon')),
-                  );
-                },
-                icon: const Icon(Icons.share),
+                onPressed: _isGeneratingPdf ? null : _sharePdf,
+                icon: _isGeneratingPdf
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.share),
                 label: const Padding(
                   padding: EdgeInsets.all(12),
                   child: Text('Share'),
@@ -820,16 +797,13 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Future<void> _generatePdf() async {
     final provider = context.read<TestSessionProvider>();
     final user = FirebaseAuth.instance.currentUser;
-    
+
     setState(() => _isGeneratingPdf = true);
-    
+
     try {
       final result = _savedResult ?? provider.buildTestResult(user?.uid ?? '');
-      await _pdfExportService.sharePdf(
-        result,
-        userName: provider.profileName,
-      );
-      
+      await _pdfExportService.sharePdf(result, userName: provider.profileName);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -843,6 +817,40 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to generate PDF: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGeneratingPdf = false);
+      }
+    }
+  }
+
+  Future<void> _sharePdf() async {
+    final provider = context.read<TestSessionProvider>();
+    final user = FirebaseAuth.instance.currentUser;
+
+    setState(() => _isGeneratingPdf = true);
+
+    try {
+      final result = _savedResult ?? provider.buildTestResult(user?.uid ?? '');
+      await _pdfExportService.sharePdf(result, userName: provider.profileName);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Preparing report for sharing...'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share PDF: $e'),
             backgroundColor: AppColors.error,
           ),
         );

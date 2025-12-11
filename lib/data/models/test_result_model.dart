@@ -70,11 +70,11 @@ class TestResultModel {
       profileId: data['profileId'] ?? '',
       profileName: data['profileName'] ?? '',
       profileType: data['profileType'] ?? 'self',
-      timestamp: data['timestamp'] is Timestamp 
+      timestamp: data['timestamp'] is Timestamp
           ? (data['timestamp'] as Timestamp).toDate()
-          : (data['timestamp'] != null 
-              ? DateTime.parse(data['timestamp'].toString())
-              : DateTime.now()),
+          : (data['timestamp'] != null
+                ? DateTime.parse(data['timestamp'].toString())
+                : DateTime.now()),
       testType: data['testType'] ?? 'quick',
       questionnaire: data['questionnaire'] != null
           ? QuestionnaireModel.fromFirestore(data['questionnaire'])
@@ -160,28 +160,51 @@ class TestResultModel {
     AmslerGridResult? amslerRight,
     AmslerGridResult? amslerLeft,
   }) {
-    // Check for urgent conditions
+    // Check for URGENT conditions (severe/bilateral issues)
+    // Urgent if: Both eyes have Amsler distortions OR either eye has extensive distortions
+    final rightDistortions = amslerRight?.distortionPoints.length ?? 0;
+    final leftDistortions = amslerLeft?.distortionPoints.length ?? 0;
+
+    if ((amslerRight?.hasDistortions ?? false) &&
+        (amslerLeft?.hasDistortions ?? false)) {
+      // Both eyes have distortions - urgent
+      return TestStatus.urgent;
+    }
+
+    if (rightDistortions >= 5 || leftDistortions >= 5) {
+      // Extensive distortions in one eye (5+ marked areas) - urgent
+      return TestStatus.urgent;
+    }
+
+    // Check visual acuity thresholds for urgent
+    // logMAR >= 0.7 is 20/100 or worse (legally impaired)
+    if (vaRight != null &&
+        vaLeft != null &&
+        vaRight.logMAR >= 0.7 &&
+        vaLeft.logMAR >= 0.7) {
+      // Both eyes significantly impaired - urgent
+      return TestStatus.urgent;
+    }
+
+    if ((vaRight?.logMAR ?? 0) >= 0.9 || (vaLeft?.logMAR ?? 0) >= 0.9) {
+      // One eye severely impaired (20/160 or worse) - urgent
+      return TestStatus.urgent;
+    }
+
+    // Check for REVIEW conditions (moderate concerns)
+    // Review if: Any Amsler distortions (but not urgent level)
     if ((amslerRight?.hasDistortions ?? false) ||
         (amslerLeft?.hasDistortions ?? false)) {
-      return TestStatus.urgent;
+      return TestStatus.review;
     }
 
-    // Check visual acuity thresholds
-    if (vaRight != null && vaRight.logMAR >= 0.5) {
-      return TestStatus.urgent;
-    }
-    if (vaLeft != null && vaLeft.logMAR >= 0.5) {
-      return TestStatus.urgent;
-    }
-
-    // Check for review conditions
+    // Review if: Color vision issues
     if (colorVision != null && !colorVision.isNormal) {
       return TestStatus.review;
     }
-    if (vaRight != null && vaRight.logMAR >= 0.3) {
-      return TestStatus.review;
-    }
-    if (vaLeft != null && vaLeft.logMAR >= 0.3) {
+
+    // Review if: Moderate VA impairment (20/40 to 20/100)
+    if ((vaRight?.logMAR ?? 0) >= 0.3 || (vaLeft?.logMAR ?? 0) >= 0.3) {
       return TestStatus.review;
     }
 

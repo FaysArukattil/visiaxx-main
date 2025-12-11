@@ -14,35 +14,40 @@ class TestInstructionsScreen extends StatefulWidget {
 class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
   final TtsService _ttsService = TtsService();
   int _currentStep = 0;
-  
+
   final List<_InstructionStep> _steps = [
     _InstructionStep(
       title: 'Prepare Your Space',
-      description: 'Find a well-lit room and sit comfortably. '
+      description:
+          'Find a well-lit room and sit comfortably. '
           'Make sure your screen brightness is at maximum.',
       icon: Icons.light_mode,
     ),
     _InstructionStep(
       title: 'Maintain Distance',
-      description: 'Position yourself 40cm (approximately 16 inches) away from the screen. '
+      description:
+          'Position yourself 40cm (approximately 16 inches) away from the screen. '
           'The app will use your camera to monitor distance.',
       icon: Icons.straighten,
     ),
     _InstructionStep(
       title: 'Cover One Eye',
-      description: 'You will test each eye separately. '
+      description:
+          'You will test each eye separately. '
           'Cover one eye gently without pressing on it.',
       icon: Icons.visibility_off,
     ),
     _InstructionStep(
       title: 'Relax Your Eyes',
-      description: 'Before each test item, look at the relaxation image for 10 seconds. '
+      description:
+          'Before each test item, look at the relaxation image for 10 seconds. '
           'This helps reduce eye strain for accurate results.',
       icon: Icons.self_improvement,
     ),
     _InstructionStep(
       title: 'How to Respond',
-      description: 'Use the arrow buttons or voice commands (Up, Down, Left, Right) '
+      description:
+          'Use the arrow buttons or voice commands (Upward, Bottom, Left, Right) '
           'to indicate the direction the E is pointing.',
       icon: Icons.touch_app,
     ),
@@ -61,7 +66,9 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
 
   void _speakCurrentStep() {
     if (_currentStep < _steps.length) {
-      _ttsService.speak('${_steps[_currentStep].title}. ${_steps[_currentStep].description}');
+      _ttsService.speak(
+        '${_steps[_currentStep].title}. ${_steps[_currentStep].description}',
+      );
     }
   }
 
@@ -152,8 +159,8 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                   Text(
                     _steps[_currentStep].title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -161,9 +168,9 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                   Text(
                     _steps[_currentStep].description,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
@@ -191,7 +198,11 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.landscape, size: 48, color: AppColors.primary),
+                                Icon(
+                                  Icons.landscape,
+                                  size: 48,
+                                  color: AppColors.primary,
+                                ),
                                 SizedBox(height: 8),
                                 Text('Relaxation Image'),
                               ],
@@ -227,7 +238,9 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                               Expanded(
                                 child: Container(
                                   height: 2,
-                                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   child: CustomPaint(
                                     painter: _DashedLinePainter(),
                                   ),
@@ -286,8 +299,8 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(
-                        _currentStep == _steps.length - 1 
-                            ? 'Start Test' 
+                        _currentStep == _steps.length - 1
+                            ? 'Start Test'
                             : 'Next',
                       ),
                     ),
@@ -327,11 +340,7 @@ class _DashedLinePainter extends CustomPainter {
     double startX = 0;
 
     while (startX < size.width) {
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(startX + dashWidth, 0),
-        paint,
-      );
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
       startX += dashWidth + dashSpace;
     }
   }

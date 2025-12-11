@@ -27,13 +27,17 @@ class DistanceDetectionService {
   // Distance calculation using IPD (more accurate than face width)
   static const double _averageIPDCm = 6.3;
 
-  // Target distance: 40cm as per specification
-  static const double targetDistanceCm = 40.0;
-  static const double toleranceCm = 5.0;
+  // Default target distance and tolerance
+  static const double _defaultTargetDistanceCm = 100.0;
+  static const double _defaultToleranceCm = 8.0;
+
+  // Instance-specific distance parameters (can be customized per test)
+  final double targetDistanceCm;
+  final double toleranceCm;
 
   // Smoothing for stable readings
   double _smoothedDistance = 0.0;
-  static const double _smoothingAlpha = 0.3;
+  static const double _smoothingFactor = 0.3;
 
   // Processing interval
   static const int _processingIntervalMs = 250;
@@ -42,17 +46,19 @@ class DistanceDetectionService {
   int _consecutiveErrors = 0;
   static const int _maxConsecutiveErrors = 10;
 
-  DistanceDetectionService()
-    : _faceDetector = FaceDetector(
-        options: FaceDetectorOptions(
-          enableContours: false,
-          enableClassification: false,
-          enableLandmarks: true,
-          enableTracking: true,
-          performanceMode: FaceDetectorMode.fast,
-          minFaceSize: 0.15,
-        ),
-      );
+  DistanceDetectionService({
+    this.targetDistanceCm = _defaultTargetDistanceCm,
+    this.toleranceCm = _defaultToleranceCm,
+  }) : _faceDetector = FaceDetector(
+         options: FaceDetectorOptions(
+           enableContours: false,
+           enableClassification: false,
+           enableLandmarks: true,
+           enableTracking: true,
+           performanceMode: FaceDetectorMode.fast,
+           minFaceSize: 0.15,
+         ),
+       );
 
   /// Initialize camera for face detection
   Future<CameraController?> initializeCamera() async {
@@ -144,9 +150,10 @@ class DistanceDetectionService {
           if (_smoothedDistance == 0.0) {
             _smoothedDistance = distance;
           } else {
+            // Apply smoothing: smooth = alpha * new + (1-alpha) * old
             _smoothedDistance =
-                _smoothingAlpha * distance +
-                (1 - _smoothingAlpha) * _smoothedDistance;
+                _smoothingFactor * distance +
+                (1 - _smoothingFactor) * _smoothedDistance;
           }
 
           final status = _getDistanceStatus(_smoothedDistance);
@@ -258,7 +265,7 @@ class DistanceDetectionService {
   Stream<Map<String, dynamic>>? get distanceStream => _streamController?.stream;
 
   /// Get acceptable distance range
-  static String get acceptableRange =>
+  String get acceptableRange =>
       '${(targetDistanceCm - toleranceCm).toInt()}-${(targetDistanceCm + toleranceCm).toInt()} cm';
 
   /// Format distance string
@@ -283,13 +290,13 @@ class DistanceDetectionService {
 
   /// Get target distance message
   static String getTargetDistanceMessage() {
-    return 'Maintain 40cm distance (about arm\'s length)';
+    return 'Maintain 1 meter distance (about arm\'s length extended)';
   }
 
   /// Check if current distance is acceptable
-  bool isDistanceAcceptable(double distanceCm) {
-    final status = _getDistanceStatus(distanceCm);
-    return status == DistanceStatus.optimal;
+  bool isDistanceAcceptable(double distance) {
+    return distance >= (targetDistanceCm - toleranceCm) &&
+        distance <= (targetDistanceCm + toleranceCm);
   }
 
   /// Check if service is ready

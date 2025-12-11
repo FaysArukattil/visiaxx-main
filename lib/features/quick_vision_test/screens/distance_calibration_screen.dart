@@ -10,13 +10,13 @@ import '../../../core/services/tts_service.dart';
 class DistanceCalibrationScreen extends StatefulWidget {
   /// Target distance in cm (default 40cm for near vision test)
   final double targetDistanceCm;
-  
+
   /// Tolerance in cm (default ±5cm)
   final double toleranceCm;
-  
+
   /// Callback when calibration is complete and distance is verified
   final VoidCallback onCalibrationComplete;
-  
+
   /// Optional callback when user skips calibration
   final VoidCallback? onSkip;
 
@@ -29,32 +29,38 @@ class DistanceCalibrationScreen extends StatefulWidget {
   });
 
   @override
-  State<DistanceCalibrationScreen> createState() => _DistanceCalibrationScreenState();
+  State<DistanceCalibrationScreen> createState() =>
+      _DistanceCalibrationScreenState();
 }
 
-class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> 
+class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
     with WidgetsBindingObserver {
-  final DistanceDetectionService _distanceService = DistanceDetectionService();
+  late final DistanceDetectionService _distanceService;
   final TtsService _ttsService = TtsService();
-  
+
   CameraController? _cameraController;
   bool _isInitializing = true;
   bool _hasError = false;
   String? _errorMessage;
-  
+
   // Distance state
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   bool _isDistanceStable = false;
   int _stableReadingsCount = 0;
   static const int _requiredStableReadings = 5;
-  
+
   // Last spoken guidance (to avoid repeating)
   DistanceStatus? _lastSpokenStatus;
 
   @override
   void initState() {
     super.initState();
+    // Initialize distance service with widget's target parameters
+    _distanceService = DistanceDetectionService(
+      targetDistanceCm: widget.targetDistanceCm,
+      toleranceCm: widget.toleranceCm,
+    );
     WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
   }
@@ -82,14 +88,14 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
 
     try {
       await _ttsService.initialize();
-      
+
       // Set up distance service callbacks
       _distanceService.onDistanceUpdate = _handleDistanceUpdate;
       _distanceService.onError = _handleError;
-      
+
       // Initialize camera
       _cameraController = await _distanceService.initializeCamera();
-      
+
       if (_cameraController == null) {
         setState(() {
           _hasError = true;
@@ -98,20 +104,23 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
         });
         return;
       }
-      
+
       // Start monitoring
       await _distanceService.startMonitoring();
-      
+
       setState(() {
         _isInitializing = false;
       });
-      
-      // Speak instructions
+
+      // Speak instructions with correct target distance
+      final distanceText = widget.targetDistanceCm >= 100
+          ? '1 meter'
+          : '${widget.targetDistanceCm.toInt()} centimeters';
+
       _ttsService.speak(
-        'Position yourself at arm\'s length from the screen, about 40 centimeters. '
-        'Look at the camera and I will guide you.'
+        'Position yourself at $distanceText from the screen. '
+        'Look at the camera and I will guide you.',
       );
-      
     } catch (e) {
       setState(() {
         _hasError = true;
@@ -123,11 +132,11 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
 
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
-    
+
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
-      
+
       // Check stability
       if (status == DistanceStatus.optimal) {
         _stableReadingsCount++;
@@ -141,7 +150,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
         _isDistanceStable = false;
       }
     });
-    
+
     // Speak guidance if status changed
     if (status != _lastSpokenStatus) {
       _lastSpokenStatus = status;
@@ -211,8 +220,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
         child: _isInitializing
             ? _buildLoadingView()
             : _hasError
-                ? _buildErrorView()
-                : _buildCameraView(),
+            ? _buildErrorView()
+            : _buildCameraView(),
       ),
     );
   }
@@ -243,7 +252,11 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.camera_alt_outlined, size: 80, color: Colors.white54),
+            const Icon(
+              Icons.camera_alt_outlined,
+              size: 80,
+              color: Colors.white54,
+            ),
             const SizedBox(height: 24),
             Text(
               'Camera Not Available',
@@ -254,7 +267,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              _errorMessage ?? 'Unable to access the camera for distance measurement.',
+              _errorMessage ??
+                  'Unable to access the camera for distance measurement.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
@@ -295,7 +309,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
               ),
             ),
           ),
-        
+
         // Overlay gradient (top)
         Positioned(
           top: 0,
@@ -315,7 +329,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
             ),
           ),
         ),
-        
+
         // Overlay gradient (bottom)
         Positioned(
           bottom: 0,
@@ -335,7 +349,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
             ),
           ),
         ),
-        
+
         // Face guide frame
         Center(
           child: Container(
@@ -350,7 +364,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
             ),
           ),
         ),
-        
+
         // Content overlay
         Positioned.fill(
           child: Column(
@@ -382,27 +396,27 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
                   ],
                 ),
               ),
-              
+
               const Spacer(),
-              
+
               // Distance display
               _buildDistanceDisplay(),
-              
+
               const SizedBox(height: 12),
-              
+
               // Guidance message
               _buildGuidanceMessage(),
-              
+
               const SizedBox(height: 24),
-              
+
               // Progress indicator
               _buildProgressIndicator(),
-              
+
               const SizedBox(height: 32),
-              
+
               // Action buttons
               _buildActionButtons(),
-              
+
               const SizedBox(height: 32),
             ],
           ),
@@ -421,7 +435,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
       child: Column(
         children: [
           Text(
-            _currentDistance > 0 
+            _currentDistance > 0
                 ? '${_currentDistance.toStringAsFixed(0)} cm'
                 : '--',
             style: TextStyle(
@@ -446,7 +460,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
   Widget _buildGuidanceMessage() {
     final message = _getGuidanceMessage();
     final icon = _getGuidanceIcon();
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
@@ -476,15 +490,15 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
     final progress = _distanceStatus == DistanceStatus.optimal
         ? _stableReadingsCount / _requiredStableReadings
         : 0.0;
-    
+
     return Column(
       children: [
         Text(
-          _isDistanceStable 
+          _isDistanceStable
               ? 'Distance locked! Ready to continue.'
               : _distanceStatus == DistanceStatus.optimal
-                  ? 'Hold still...'
-                  : 'Adjust your position',
+              ? 'Hold still...'
+              : 'Adjust your position',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.8),
             fontSize: 14,
@@ -503,7 +517,9 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
             widthFactor: progress.clamp(0.0, 1.0),
             child: Container(
               decoration: BoxDecoration(
-                color: _isDistanceStable ? AppColors.success : AppColors.warning,
+                color: _isDistanceStable
+                    ? AppColors.success
+                    : AppColors.warning,
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -580,7 +596,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
     if (_isDistanceStable) {
       return 'Perfect! Distance locked';
     }
-    
+
     switch (_distanceStatus) {
       case DistanceStatus.optimal:
         return 'Hold still...';
@@ -597,7 +613,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
     if (_isDistanceStable) {
       return Icons.check_circle;
     }
-    
+
     switch (_distanceStatus) {
       case DistanceStatus.optimal:
         return Icons.hourglass_empty;

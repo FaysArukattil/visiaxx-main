@@ -340,6 +340,10 @@ class SpeechService {
       'aep', 'aip', 'ayp', 'epp', 'ip', 'ipp',
       // Additional phonetic for Indian accents
       'hup', 'hap', 'kap', 'aps', 'aab',
+      // NEW: Requested variations
+      'apward', 'apwards', 'appward', 'aapward', 'apwerd',
+      // Double consonants
+      'uup', 'upp', 'uupp',
     ];
 
     // DOWN variations - extensive matching (including Indian accents)
@@ -361,6 +365,10 @@ class SpeechService {
       'doen', 'toun', 'thown', 'thaown', 'dund', 'downd',
       // Additional for Indian accents
       'niche', 'neech', 'bottom', 'tala',
+      // NEW: Requested variations
+      'bbottom', 'bbotom', 'botom', 'bottam', 'bottem',
+      // Double consonants
+      'ddown', 'dowwn', 'botttom',
     ];
 
     // RIGHT variations - extensive matching (including Indian accents)
@@ -384,6 +392,10 @@ class SpeechService {
       'rayt', 'raet', 'raete', 'raittu',
       // Compass (with Indian variations)
       'east', 'eastward', 'eest', 'estu', 'esta', 'purva',
+      // NEW: Requested variations
+      'wright', 'wryt', 'wrigh', 'wwright', 'rrite',
+      // Double consonants
+      'rright', 'rightt', 'riight',
     ];
 
     // LEFT variations - extensive matching (including Indian accents)
@@ -391,24 +403,33 @@ class SpeechService {
       // Direct matches
       'left', 'leftward', 'leftwards',
       // Common mishearings
-      'lef', 'laft', 'lehft', 'lafft', 'leaft',
+      'lef', 'laft', 'lehft', 'lafft', 'leaft', 'lefht',
       // Phonetic variations
-      'leff', 'lefft', 'lift', 'leaft', 'laeft',
+      'leff', 'lefft', 'lift', 'leaft', 'laeft', 'lepht',
       // Similar sounds
-      'laughed', 'lek', 'lept', 'let',
+      'laughed', 'lek', 'lept', 'let', 'leh',
       // Indian accent variations (South & North)
-      'lepht', 'lephtu', 'laeftu', 'leftu',
+      'lephtu', 'laeftu', 'leftu', 'laftu',
       'lephta', 'laefta', 'lapht', 'leptu', 'leftd',
       // T/D confusion
-      'lefd', 'laftu', 'lephd', 'lafd',
+      'lefd', 'lephd', 'lafd', 'leftd', 'lefhd',
       // Retroflex variations
-      'lleft', 'llef', 'llepht', 'lleaft',
+      'lleft', 'llef', 'llepht', 'lleaft', 'llaft',
       // Vowel substitutions
-      'laift', 'lipt', 'lept',
-      // F/PH confusion
-      'lep', 'laph', 'lefh',
+      'laift', 'lipt', 'lept', 'laeft',
+      // F/PH/FT confusion
+      'lep', 'laph', 'lefh', 'laff', 'leff', 'laft',
+      // Additional variations for better recognition
+      'lef', 'laft', 'lehf', 'laft', 'leaft', 'laef',
+      'laft', 'lif', 'lyft', 'lephd', 'lefhd',
+      // Short forms
+      'lft', 'lf', 'lph',
       // Compass (with Indian variations)
       'west', 'westward', 'westu', 'vesta', 'vwest', 'paschim',
+      // NEW: Requested variations
+      'lehft', 'lehf', 'lleft', 'llef', 'leftt',
+      // Double consonants
+      'lefft', 'lleeft',
     ];
 
     // Helper function to check if any pattern matches
