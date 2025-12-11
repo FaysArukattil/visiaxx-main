@@ -19,7 +19,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   bool _isLoading = true;
   String? _error;
   List<TestResultModel> _results = [];
-  
+
   final TestResultService _testResultService = TestResultService();
   final PdfExportService _pdfExportService = PdfExportService();
 
@@ -34,19 +34,29 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       _isLoading = true;
       _error = null;
     });
-    
+
     try {
       final user = FirebaseAuth.instance.currentUser;
+      debugPrint('[MyResults] Loading results for user: ${user?.uid}');
+
       if (user == null) {
+        debugPrint('[MyResults] ❌ No user logged in');
         setState(() {
           _results = [];
           _isLoading = false;
+          _error = 'Please log in to view results';
         });
         return;
       }
-      
+
+      debugPrint('[MyResults] Fetching from Firebase...');
       final results = await _testResultService.getTestResults(user.uid);
-      
+      debugPrint('[MyResults] ✅ Loaded ${results.length} results');
+
+      if (results.isNotEmpty) {
+        debugPrint('[MyResults] First result: ${results.first.toJson()}');
+      }
+
       if (mounted) {
         setState(() {
           _results = results;
@@ -54,6 +64,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         });
       }
     } catch (e) {
+      debugPrint('[MyResults] ❌ ERROR loading results: $e');
+
       if (mounted) {
         setState(() {
           _error = 'Failed to load results: $e';
@@ -67,22 +79,26 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     if (_selectedFilter == 'all') return _results;
     return _results.where((r) {
       switch (_selectedFilter) {
-        case 'normal': return r.overallStatus == TestStatus.normal;
-        case 'review': return r.overallStatus == TestStatus.review;
-        case 'urgent': return r.overallStatus == TestStatus.urgent;
-        default: return true;
+        case 'normal':
+          return r.overallStatus == TestStatus.normal;
+        case 'review':
+          return r.overallStatus == TestStatus.review;
+        case 'urgent':
+          return r.overallStatus == TestStatus.urgent;
+        default:
+          return true;
       }
     }).toList();
   }
 
   Future<void> _downloadPdf(TestResultModel result) async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Generating PDF...')),
-      );
-      
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Generating PDF...')));
+
       await _pdfExportService.sharePdf(result);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -103,6 +119,66 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     }
   }
 
+  /// Show confirmation dialog before deleting
+  Future<void> _confirmDeleteResult(TestResultModel result) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Result?'),
+        content: Text(
+          'Are you sure you want to delete the test result from ${result.profileName.isEmpty ? 'Self' : result.profileName}?\n\nThis action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteResult(result);
+    }
+  }
+
+  /// Delete a test result from Firebase
+  Future<void> _deleteResult(TestResultModel result) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await _testResultService.deleteTestResult(user.uid, result.id);
+
+      setState(() {
+        _results.removeWhere((r) => r.id == result.id);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Result deleted successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,34 +189,33 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         elevation: 0,
         foregroundColor: Colors.grey[900],
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadResults,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadResults),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? _buildErrorState()
-              : Column(
-                  children: [
-                    _buildFilters(),
-                    Expanded(
-                      child: _filteredResults.isEmpty
-                          ? _buildEmptyState()
-                          : RefreshIndicator(
-                              onRefresh: _loadResults,
-                              child: ListView.separated(
-                                padding: const EdgeInsets.all(16),
-                                itemCount: _filteredResults.length,
-                                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                                itemBuilder: (context, index) => _buildResultCard(_filteredResults[index]),
-                              ),
-                            ),
-                    ),
-                  ],
+          ? _buildErrorState()
+          : Column(
+              children: [
+                _buildFilters(),
+                Expanded(
+                  child: _filteredResults.isEmpty
+                      ? _buildEmptyState()
+                      : RefreshIndicator(
+                          onRefresh: _loadResults,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _filteredResults.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) =>
+                                _buildResultCard(_filteredResults[index]),
+                          ),
+                        ),
                 ),
+              ],
+            ),
     );
   }
 
@@ -174,7 +249,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         decoration: BoxDecoration(
           color: isSelected ? (color ?? AppColors.primary) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? (color ?? AppColors.primary) : AppColors.border),
+          border: Border.all(
+            color: isSelected ? (color ?? AppColors.primary) : AppColors.border,
+          ),
         ),
         child: Text(
           label,
@@ -199,7 +276,11 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             const SizedBox(height: 16),
             Text(
               'Error loading results',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[900]),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[900],
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -233,7 +314,11 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.visibility_outlined, size: 40, color: AppColors.primary),
+              child: const Icon(
+                Icons.visibility_outlined,
+                size: 40,
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 24),
             Text(
@@ -260,7 +345,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('Start Quick Test'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -272,9 +360,15 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   Widget _buildResultCard(TestResultModel result) {
     Color statusColor;
     switch (result.overallStatus) {
-      case TestStatus.normal: statusColor = AppColors.success; break;
-      case TestStatus.review: statusColor = AppColors.warning; break;
-      case TestStatus.urgent: statusColor = AppColors.error; break;
+      case TestStatus.normal:
+        statusColor = AppColors.success;
+        break;
+      case TestStatus.review:
+        statusColor = AppColors.warning;
+        break;
+      case TestStatus.urgent:
+        statusColor = AppColors.error;
+        break;
     }
 
     return Container(
@@ -282,7 +376,13 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +395,11 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 backgroundColor: AppColors.primary.withOpacity(0.1),
                 child: Text(
                   result.profileName.isNotEmpty ? result.profileName[0] : '?',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 14,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -304,25 +408,39 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      result.profileName.isNotEmpty ? result.profileName : 'Self',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      result.profileName.isNotEmpty
+                          ? result.profileName
+                          : 'Self',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     Text(
-                      DateFormat('MMM dd, yyyy • h:mm a').format(result.timestamp),
+                      DateFormat(
+                        'MMM dd, yyyy • h:mm a',
+                      ).format(result.timestamp),
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   result.overallStatus.label,
-                  style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
                 ),
               ),
             ],
@@ -331,12 +449,25 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           // Results grid
           Row(
             children: [
-              _buildMiniResult('VA (R)', result.visualAcuityRight?.snellenScore ?? 'N/A'),
-              _buildMiniResult('VA (L)', result.visualAcuityLeft?.snellenScore ?? 'N/A'),
-              _buildMiniResult('Color', result.colorVision?.isNormal == true ? 'Normal' : 'Check'),
-              _buildMiniResult('Amsler', 
-                (result.amslerGridRight?.hasDistortions != true && result.amslerGridLeft?.hasDistortions != true) 
-                    ? 'Normal' : 'Check'),
+              _buildMiniResult(
+                'VA (R)',
+                result.visualAcuityRight?.snellenScore ?? 'N/A',
+              ),
+              _buildMiniResult(
+                'VA (L)',
+                result.visualAcuityLeft?.snellenScore ?? 'N/A',
+              ),
+              _buildMiniResult(
+                'Color',
+                result.colorVision?.isNormal == true ? 'Normal' : 'Check',
+              ),
+              _buildMiniResult(
+                'Amsler',
+                (result.amslerGridRight?.hasDistortions != true &&
+                        result.amslerGridLeft?.hasDistortions != true)
+                    ? 'Normal'
+                    : 'Check',
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -347,21 +478,32 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => _showResultDetails(result),
                   icon: const Icon(Icons.visibility, size: 16),
-                  label: const Text('View Details'),
+                  label: const Text('View'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => _downloadPdf(result),
                   icon: const Icon(Icons.download, size: 16),
-                  label: const Text('Download PDF'),
+                  label: const Text('PDF'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Delete button
+              IconButton(
+                onPressed: () => _confirmDeleteResult(result),
+                icon: const Icon(Icons.delete_outline, size: 20),
+                color: AppColors.error,
+                tooltip: 'Delete result',
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.error.withValues(alpha: 0.1),
                 ),
               ),
             ],
@@ -446,32 +588,51 @@ class _ResultDetailSheet extends StatelessWidget {
               style: TextStyle(color: Colors.grey[600]),
             ),
             const SizedBox(height: 24),
-            
+
             // Visual Acuity
             _buildSection('Visual Acuity', [
-              _buildDetailRow('Right Eye', result.visualAcuityRight?.snellenScore ?? 'N/A'),
-              _buildDetailRow('Left Eye', result.visualAcuityLeft?.snellenScore ?? 'N/A'),
+              _buildDetailRow(
+                'Right Eye',
+                result.visualAcuityRight?.snellenScore ?? 'N/A',
+              ),
+              _buildDetailRow(
+                'Left Eye',
+                result.visualAcuityLeft?.snellenScore ?? 'N/A',
+              ),
             ]),
-            
+
             // Color Vision
             _buildSection('Color Vision', [
-              _buildDetailRow('Score', '${result.colorVision?.correctAnswers ?? 0}/${result.colorVision?.totalPlates ?? 0}'),
+              _buildDetailRow(
+                'Score',
+                '${result.colorVision?.correctAnswers ?? 0}/${result.colorVision?.totalPlates ?? 0}',
+              ),
               _buildDetailRow('Status', result.colorVision?.status ?? 'N/A'),
             ]),
-            
+
             // Amsler Grid
             if (result.amslerGridRight != null || result.amslerGridLeft != null)
               _buildSection('Amsler Grid', [
                 if (result.amslerGridRight != null)
-                  _buildDetailRow('Right Eye', result.amslerGridRight!.hasDistortions ? 'Distortions detected' : 'Normal'),
+                  _buildDetailRow(
+                    'Right Eye',
+                    result.amslerGridRight!.hasDistortions
+                        ? 'Distortions detected'
+                        : 'Normal',
+                  ),
                 if (result.amslerGridLeft != null)
-                  _buildDetailRow('Left Eye', result.amslerGridLeft!.hasDistortions ? 'Distortions detected' : 'Normal'),
+                  _buildDetailRow(
+                    'Left Eye',
+                    result.amslerGridLeft!.hasDistortions
+                        ? 'Distortions detected'
+                        : 'Normal',
+                  ),
               ]),
-            
+
             // Questionnaire Summary
             if (result.questionnaire != null)
               _buildQuestionnaireSection(result.questionnaire!),
-            
+
             // Recommendation
             const SizedBox(height: 16),
             Container(
@@ -483,9 +644,15 @@ class _ResultDetailSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Recommendation', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Recommendation',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
-                  Text(result.recommendation, style: const TextStyle(fontSize: 13)),
+                  Text(
+                    result.recommendation,
+                    style: const TextStyle(fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -500,7 +667,10 @@ class _ResultDetailSheet extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
         const SizedBox(height: 8),
         ...children,
         const SizedBox(height: 16),
@@ -528,13 +698,20 @@ class _ResultDetailSheet extends StatelessWidget {
     if (questionnaire.chiefComplaints.hasItching) complaints.add('Itching');
     if (questionnaire.chiefComplaints.hasHeadache) complaints.add('Headache');
     if (questionnaire.chiefComplaints.hasDryness) complaints.add('Dryness');
-    if (questionnaire.chiefComplaints.hasStickyDischarge) complaints.add('Sticky Discharge');
-    
+    if (questionnaire.chiefComplaints.hasStickyDischarge)
+      complaints.add('Sticky Discharge');
+
     return _buildSection('Questionnaire Responses', [
-      _buildDetailRow('Complaints', complaints.isEmpty ? 'None' : complaints.join(', ')),
+      _buildDetailRow(
+        'Complaints',
+        complaints.isEmpty ? 'None' : complaints.join(', '),
+      ),
       if (questionnaire.currentMedications != null)
         _buildDetailRow('Medications', questionnaire.currentMedications),
-      _buildDetailRow('Recent Surgery', questionnaire.hasRecentSurgery ? 'Yes' : 'No'),
+      _buildDetailRow(
+        'Recent Surgery',
+        questionnaire.hasRecentSurgery ? 'Yes' : 'No',
+      ),
     ]);
   }
 }

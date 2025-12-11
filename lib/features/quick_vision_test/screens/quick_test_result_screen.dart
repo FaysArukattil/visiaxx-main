@@ -39,7 +39,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     if (_hasSaved) return;
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    debugPrint('[QuickTestResult] Current user: ${user?.uid}');
+
+    if (user == null) {
+      debugPrint(
+        '[QuickTestResult] ERROR: No user logged in, cannot save results',
+      );
+      return;
+    }
 
     setState(() {
       _isSaving = true;
@@ -50,9 +57,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       final provider = context.read<TestSessionProvider>();
       final result = provider.buildTestResult(user.uid);
 
+      debugPrint('[QuickTestResult] Saving test result for user: ${user.uid}');
+      debugPrint('[QuickTestResult] Result data: ${result.toJson()}');
+
       final resultId = await _testResultService.saveTestResult(
         userId: user.uid,
         result: result,
+      );
+
+      debugPrint(
+        '[QuickTestResult] ✅ Result saved successfully with ID: $resultId',
       );
 
       if (mounted) {
@@ -61,13 +75,33 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           _isSaving = false;
           _savedResult = result.copyWith(id: resultId);
         });
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Results saved successfully!'),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
+      debugPrint('[QuickTestResult] ❌ ERROR saving results: $e');
+
       if (mounted) {
         setState(() {
           _saveError = e.toString();
           _isSaving = false;
         });
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save: $e'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
     }
   }
@@ -770,7 +804,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 icon: const Icon(Icons.history),
                 label: const Padding(
                   padding: EdgeInsets.all(12),
-                  child: Text('History'),
+                  child: Text('History', style: TextStyle(fontSize: 13)),
                 ),
               ),
             ),

@@ -287,10 +287,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Restart the countdown timer with remaining time
     _restartEDisplayTimer();
 
-    // Restart speech recognition
+    // Restart speech recognition with continuous retry
     _speechService.startListening(
       listenFor: Duration(seconds: _eDisplayCountdown + 1),
       bufferMs: 300,
+      autoRestart: true, // CRITICAL: Keep listening and auto-retry
+      minConfidence: 0.2, // LOWERED: Accept more results for reliability
     );
 
     // Haptic feedback
@@ -389,10 +391,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     _eDisplayStartTime = DateTime.now();
 
-    // Start listening for voice input
+    // Start listening for voice input with continuous retry
     _speechService.startListening(
       listenFor: Duration(seconds: TestConstants.eDisplayDurationSeconds + 1),
       bufferMs: 300, // Short buffer for quick response
+      autoRestart: true, // CRITICAL: Keep listening and auto-retry
+      minConfidence: 0.2, // LOWERED: Accept more results for reliability
     );
 
     // Start countdown timer for display
@@ -444,7 +448,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void _recordResponse(String? userResponse) {
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
-    _speechService.stopListening();
+    _speechService.cancel(); // Use cancel() to fully stop auto-restart
 
     final responseTime = _eDisplayStartTime != null
         ? DateTime.now().difference(_eDisplayStartTime!).inMilliseconds

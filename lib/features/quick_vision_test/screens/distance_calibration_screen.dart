@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
@@ -53,6 +54,9 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
   // Last spoken guidance (to avoid repeating)
   DistanceStatus? _lastSpokenStatus;
 
+  // Auto-skip timeout - prevents getting stuck
+  Timer? _autoSkipTimer;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +67,14 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
     );
     WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
+
+    // Start auto-skip timer - auto skip after 30 seconds no matter what
+    _autoSkipTimer = Timer(const Duration(seconds: 30), () {
+      if (mounted && !_isDistanceStable) {
+        debugPrint('[DistanceCalibration] Auto-skipping due to timeout');
+        _onSkipPressed();
+      }
+    });
   }
 
   @override
@@ -111,6 +123,15 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
       setState(() {
         _isInitializing = false;
       });
+
+      // Debug logging to verify camera state
+      debugPrint('[DistanceCalibration] Camera initialized successfully');
+      debugPrint(
+        '[DistanceCalibration] Preview size: ${_cameraController!.value.previewSize}',
+      );
+      debugPrint(
+        '[DistanceCalibration] Aspect ratio: ${_cameraController!.value.aspectRatio}',
+      );
 
       // Speak instructions with correct target distance
       final distanceText = widget.targetDistanceCm >= 100
@@ -205,6 +226,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
 
   @override
   void dispose() {
+    _autoSkipTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _disposeCamera();
     _distanceService.dispose();
@@ -294,18 +316,29 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
 
   Widget _buildCameraView() {
     return Stack(
+      fit: StackFit.expand,
       children: [
-        // Camera preview (full screen)
+        // Camera preview - SIMPLEST possible approach
         if (_cameraController != null && _cameraController!.value.isInitialized)
-          Positioned.fill(
-            child: ClipRect(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _cameraController!.value.previewSize?.height ?? 480,
-                  height: _cameraController!.value.previewSize?.width ?? 640,
-                  child: CameraPreview(_cameraController!),
-                ),
+          Container(
+            color: Colors.black,
+            child: CameraPreview(_cameraController!),
+          )
+        else
+          // Show loading state
+          Container(
+            color: Colors.black,
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 16),
+                  Text(
+                    'Initializing camera...',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
               ),
             ),
           ),

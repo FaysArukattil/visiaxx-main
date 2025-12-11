@@ -26,7 +26,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
     _InstructionStep(
       title: 'Maintain Distance',
       description:
-          'Position yourself 40cm (approximately 16 inches) away from the screen. '
+          'Position yourself 100cm (approximately  1 meter) away from the screen. '
           'The app will use your camera to monitor distance.',
       icon: Icons.straighten,
     ),

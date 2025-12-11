@@ -1,13 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../../data/models/test_result_model.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   /// Collection paths
   static const String _testResultsCollection = 'test_results';
-  
+
   /// Save a complete test result to Firebase
   /// Returns the document ID of the saved result
   Future<String> saveTestResult({
@@ -15,14 +16,21 @@ class TestResultService {
     required TestResultModel result,
   }) async {
     try {
+      debugPrint('[TestResultService] Saving result for user: $userId');
+      debugPrint(
+        '[TestResultService] Collection path: $_testResultsCollection/$userId/results',
+      );
+
       final docRef = await _firestore
           .collection(_testResultsCollection)
           .doc(userId)
           .collection('results')
           .add(result.toJson());
-      
+
+      debugPrint('[TestResultService] ✅ Saved with ID: ${docRef.id}');
       return docRef.id;
     } catch (e) {
+      debugPrint('[TestResultService] ❌ Save ERROR: $e');
       throw Exception('Failed to save test result: $e');
     }
   }
@@ -30,33 +38,49 @@ class TestResultService {
   /// Get all test results for a user
   Future<List<TestResultModel>> getTestResults(String userId) async {
     try {
+      debugPrint('[TestResultService] Getting results for user: $userId');
+      debugPrint(
+        '[TestResultService] Query path: $_testResultsCollection/$userId/results',
+      );
+
       final snapshot = await _firestore
           .collection(_testResultsCollection)
           .doc(userId)
           .collection('results')
           .orderBy('timestamp', descending: true)
           .get();
-      
+
+      debugPrint('[TestResultService] Found ${snapshot.docs.length} documents');
+
       final List<TestResultModel> results = [];
       for (final doc in snapshot.docs) {
         try {
           // Get document data as Map and add the ID
           final data = doc.data();
           data['id'] = doc.id;
+          debugPrint('[TestResultService] Loading doc ${doc.id}');
           results.add(TestResultModel.fromJson(data));
         } catch (e) {
           // Skip malformed documents but log error
-          print('Error parsing test result ${doc.id}: $e');
+          debugPrint('[TestResultService] ❌ Error parsing ${doc.id}: $e');
         }
       }
+
+      debugPrint(
+        '[TestResultService] ✅ Successfully loaded ${results.length} results',
+      );
       return results;
     } catch (e) {
+      debugPrint('[TestResultService] ❌ Get ERROR: $e');
       throw Exception('Failed to get test results: $e');
     }
   }
 
   /// Get a specific test result by ID
-  Future<TestResultModel?> getTestResultById(String userId, String resultId) async {
+  Future<TestResultModel?> getTestResultById(
+    String userId,
+    String resultId,
+  ) async {
     try {
       final doc = await _firestore
           .collection(_testResultsCollection)
@@ -64,9 +88,9 @@ class TestResultService {
           .collection('results')
           .doc(resultId)
           .get();
-      
+
       if (!doc.exists || doc.data() == null) return null;
-      
+
       final data = doc.data()!;
       data['id'] = doc.id;
       return TestResultModel.fromJson(data);
@@ -88,7 +112,7 @@ class TestResultService {
           .where('profileId', isEqualTo: profileId)
           .orderBy('timestamp', descending: true)
           .get();
-      
+
       return snapshot.docs
           .map((doc) => TestResultModel.fromJson({...doc.data(), 'id': doc.id}))
           .toList();
@@ -121,9 +145,9 @@ class TestResultService {
           .orderBy('timestamp', descending: true)
           .limit(1)
           .get();
-      
+
       if (snapshot.docs.isEmpty) return null;
-      
+
       final doc = snapshot.docs.first;
       return TestResultModel.fromJson({...doc.data(), 'id': doc.id});
     } catch (e) {
@@ -142,22 +166,22 @@ class TestResultService {
           .doc(practitionerId)
           .collection('patients')
           .get();
-      
+
       final patientIds = patientsSnapshot.docs.map((d) => d.id).toList();
-      
+
       if (patientIds.isEmpty) return [];
-      
+
       // Get results for each patient
       final List<TestResultModel> allResults = [];
-      
+
       for (final patientId in patientIds) {
         final results = await getTestResults(patientId);
         allResults.addAll(results);
       }
-      
+
       // Sort by timestamp descending
       allResults.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      
+
       return allResults;
     } catch (e) {
       throw Exception('Failed to get practitioner patient results: $e');
@@ -165,14 +189,16 @@ class TestResultService {
   }
 
   /// Calculate average scores from multiple test attempts
-  static Map<String, double> calculateAverageScores(List<TestResultModel> results) {
+  static Map<String, double> calculateAverageScores(
+    List<TestResultModel> results,
+  ) {
     if (results.isEmpty) return {};
-    
+
     double totalLogMARRight = 0;
     double totalLogMARLeft = 0;
     int rightCount = 0;
     int leftCount = 0;
-    
+
     for (final result in results) {
       if (result.visualAcuityRight != null) {
         totalLogMARRight += result.visualAcuityRight!.logMAR;
@@ -183,7 +209,7 @@ class TestResultService {
         leftCount++;
       }
     }
-    
+
     return {
       'averageLogMARRight': rightCount > 0 ? totalLogMARRight / rightCount : 0,
       'averageLogMARLeft': leftCount > 0 ? totalLogMARLeft / leftCount : 0,

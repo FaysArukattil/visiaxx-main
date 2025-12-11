@@ -77,7 +77,9 @@ class TestResultModel {
                 : DateTime.now()),
       testType: data['testType'] ?? 'quick',
       questionnaire: data['questionnaire'] != null
-          ? QuestionnaireModel.fromFirestore(data['questionnaire'])
+          ? QuestionnaireModel.fromMap(
+              data['questionnaire'] as Map<String, dynamic>,
+            )
           : null,
       visualAcuityRight: data['visualAcuityRight'] != null
           ? VisualAcuityResult.fromMap(data['visualAcuityRight'])
