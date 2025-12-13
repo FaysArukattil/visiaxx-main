@@ -1,27 +1,29 @@
 /// Test configuration constants for vision tests
+/// 
+/// Visual Acuity sizing follows the Visiaxx specification for 1-meter testing:
+/// - 6/60: 14.5mm, 6/36: 9.09mm, 6/24: 5.82mm, 6/18: 4.85mm
+/// - 6/12: 2.91mm, 6/9: 2.17mm, 6/6: 1.455mm
 class TestConstants {
   TestConstants._();
 
   // Visual Acuity Test Settings
   static const int relaxationDurationSeconds = 10;
-  static const int eDisplayDurationSeconds = 5;
+  static const int eDisplayDurationSeconds = 5; // 5 seconds per E as per user requirement
   static const int maxTriesPerLevel = 3;
   static const int minCorrectToAdvance = 2;
-  static const int totalLevelsVA = 11;
+  static const int totalLevelsVA = 7; // 7 levels for quick test (6/60 to 6/6)
 
-  // Visual Acuity E Sizes (in logical pixels, representing 20/xx vision)
+  // Visual Acuity E Sizes for 1-meter testing
+  // sizeMm is the actual size in millimeters as per Visiaxx specification
+  // The 'size' in pixels is calculated at runtime based on device pixels per mm
   static const List<VisualAcuityLevel> visualAcuityLevels = [
-    VisualAcuityLevel(size: 180.0, snellen: '20/200', logMAR: 1.0),
-    VisualAcuityLevel(size: 144.0, snellen: '20/160', logMAR: 0.9),
-    VisualAcuityLevel(size: 108.0, snellen: '20/120', logMAR: 0.8),
-    VisualAcuityLevel(size: 90.0, snellen: '20/100', logMAR: 0.7),
-    VisualAcuityLevel(size: 72.0, snellen: '20/80', logMAR: 0.6),
-    VisualAcuityLevel(size: 54.0, snellen: '20/60', logMAR: 0.5),
-    VisualAcuityLevel(size: 45.0, snellen: '20/50', logMAR: 0.4),
-    VisualAcuityLevel(size: 36.0, snellen: '20/40', logMAR: 0.3),
-    VisualAcuityLevel(size: 27.0, snellen: '20/30', logMAR: 0.2),
-    VisualAcuityLevel(size: 18.0, snellen: '20/20', logMAR: 0.0),
-    VisualAcuityLevel(size: 14.0, snellen: '20/15', logMAR: -0.1),
+    VisualAcuityLevel(sizeMm: 14.5, snellen: '6/60', logMAR: 1.0),   // Largest
+    VisualAcuityLevel(sizeMm: 9.09, snellen: '6/36', logMAR: 0.78),
+    VisualAcuityLevel(sizeMm: 5.82, snellen: '6/24', logMAR: 0.60),
+    VisualAcuityLevel(sizeMm: 4.85, snellen: '6/18', logMAR: 0.48),
+    VisualAcuityLevel(sizeMm: 2.91, snellen: '6/12', logMAR: 0.30),
+    VisualAcuityLevel(sizeMm: 2.17, snellen: '6/9', logMAR: 0.18),
+    VisualAcuityLevel(sizeMm: 1.455, snellen: '6/6', logMAR: 0.0),  // Smallest (normal vision)
   ];
 
   // E Rotations (directions)
@@ -32,17 +34,21 @@ class TestConstants {
     EDirection.down,
   ];
 
-  // Distance Monitoring (using face detection)
-  static const double targetDistanceMeters = 3.0;
-  static const double distanceToleranceMeters = 0.2;
-  static const double minAcceptableDistance = 2.8;
-  static const double maxAcceptableDistance = 3.2;
+  // Distance Monitoring (using face detection) - 40cm with ±5cm tolerance
+  static const double targetDistanceMeters = 0.4;
+  static const double targetDistanceCm = 40.0;
+  static const double distanceToleranceMeters = 0.05;
+  static const double distanceToleranceCm = 5.0;
+  static const double minAcceptableDistance = 0.35; // 35cm
+  static const double maxAcceptableDistance = 0.45; // 45cm
+  static const double minAcceptableDistanceCm = 35.0;
+  static const double maxAcceptableDistanceCm = 45.0;
 
   // Face Detection Settings
   static const double referenceFaceWidthCm = 14.0; // Average human face width
   static const double focalLengthPixels = 500.0; // Camera focal length (calibrated)
 
-  // Color Vision Test Settings
+  // Color Vision Test Settings (Quick test: 3-5 plates)
   static const int colorVisionTimePerPlateSeconds = 10;
   static const int totalIshiharaPlates = 4;
 
@@ -73,17 +79,29 @@ class TestConstants {
   ];
 }
 
-/// Represents a visual acuity level with E size and Snellen notation
+/// Represents a visual acuity level with E size in mm and Snellen notation
 class VisualAcuityLevel {
-  final double size;
+  /// Size of the E in millimeters (physical size at 1 meter)
+  final double sizeMm;
   final String snellen;
   final double logMAR;
 
   const VisualAcuityLevel({
-    required this.size,
+    required this.sizeMm,
     required this.snellen,
     required this.logMAR,
   });
+
+  /// Calculate the size in logical pixels based on device pixels per mm
+  /// pixelsPerMm should be calculated as: MediaQuery.of(context).devicePixelRatio * 
+  /// (MediaQuery.of(context).size.width / devicePhysicalWidthMm)
+  /// A reasonable default for most phones is approximately 6-8 pixels per mm
+  double getSizeInPixels(double pixelsPerMm) {
+    return sizeMm * pixelsPerMm;
+  }
+
+  /// Legacy getter for backward compatibility - uses default pixels per mm
+  double get size => sizeMm * 6.0; // Default ~6 pixels per mm for most devices
 }
 
 /// Direction enum for Tumbling E chart

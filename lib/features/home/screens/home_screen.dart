@@ -32,10 +32,31 @@ class _HomeScreenState extends State<HomeScreen> {
     {'code': 'or', 'name': 'Odia', 'native': 'ଓଡ଼ିଆ'},
   ];
 
-  final List<String> _carouselImages = [
-    'assets/images/carousel 1.png',
-    'assets/images/carousel 2.png',
-    'assets/images/carousel 3.png',
+  final List<Map<String, dynamic>> _carouselSlides = [
+    {
+      'heading': 'Who We Are',
+      'content': 'Vision Optocare reshapes eye care with mobile-first technology and optometric precision.',
+      'supportText': 'Built by professionals',
+      'hasImages': true,
+    },
+    {
+      'heading': 'Our Product',
+      'content': 'Visiaxx Digital Eye Clinic App conducts clinically approved vision screenings from your smartphone.',
+      'supportText': 'Smart. Clinical. Mobile-first.',
+      'hasImages': false,
+    },
+    {
+      'heading': 'Our Mission',
+      'content': 'Deliver high-quality, validated eye-care solutions through intuitive digital platforms.',
+      'supportText': 'Accessible eye care everywhere.',
+      'hasImages': false,
+    },
+    {
+      'heading': 'Our Vision',
+      'content': 'Create a future where comprehensive eye care is universally accessible and technology-driven.',
+      'supportText': 'Redefining digital eye health.',
+      'hasImages': false,
+    },
   ];
 
   @override
@@ -180,6 +201,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildHeader(),
                     const SizedBox(height: 20),
+                    _buildTagline(),
+                    const SizedBox(height: 16),
                     _buildCarousel(),
                     const SizedBox(height: 16),
                     _buildCarouselIndicators(),
@@ -206,10 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: Logo + Actions
           Row(
             children: [
-              // App Logo - Enlarged
               Container(
                 width: 120,
                 height: 52,
@@ -236,7 +257,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const Spacer(),
-              // Language selector
               GestureDetector(
                 onTap: _showLanguageSelector,
                 child: Container(
@@ -261,7 +281,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Profile menu
               PopupMenuButton<String>(
                 offset: const Offset(0, 50),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -292,7 +311,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          // Greeting
           Text(
             'Hello, $_userName 👋',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -310,38 +328,106 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildTagline() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primary.withValues(alpha: 0.1), AppColors.primary.withValues(alpha: 0.05)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.remove_red_eye, color: AppColors.primary, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              'Your Vision, Our Priority',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCarousel() {
     return CarouselSlider(
       options: CarouselOptions(
-        height: 180,
+        height: 200,
         autoPlay: true,
-        autoPlayInterval: const Duration(seconds: 4),
+        autoPlayInterval: const Duration(seconds: 5),
         enlargeCenterPage: true,
-        enlargeFactor: 0.12,
-        viewportFraction: 0.9,
+        enlargeFactor: 0.1,
+        viewportFraction: 0.92,
         onPageChanged: (index, reason) => setState(() => _currentCarouselIndex = index),
       ),
-      items: _carouselImages.map((imagePath) {
+      items: _carouselSlides.map((slide) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              )
+            ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              imagePath,
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.grey[100],
-                  child: Center(child: Icon(Icons.image_outlined, size: 48, color: Colors.grey[400])),
-                );
-              },
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              children: [
+                // Decorative circles
+                Positioned(
+                  right: -30,
+                  top: -30,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: -20,
+                  bottom: -20,
+                  child: Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                    ),
+                  ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: slide['hasImages'] as bool
+                      ? _buildSlideWithImages(slide)
+                      : _buildSlideWithoutImages(slide),
+                ),
+              ],
             ),
           ),
         );
@@ -349,11 +435,156 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildSlideWithImages(Map<String, dynamic> slide) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Text content (left side)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                slide['heading'] as String,
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                slide['content'] as String,
+                style: TextStyle(
+                  color: Colors.grey[800],
+                  fontSize: 11.5,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                slide['supportText'] as String,
+                style: TextStyle(
+                  color: AppColors.primary.withValues(alpha: 0.8),
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Founder images (right side) - staggered diagonally
+        SizedBox(
+          width: 70,
+          height: 190,
+          child: Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                child: _buildFounderImage('assets/images/founder_image_1.png'),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: _buildFounderImage('assets/images/founder_image_2.png'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFounderImage(String imagePath) {
+    return Container(
+      width: 50,
+      height: 100,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.asset(
+          imagePath,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.white.withValues(alpha: 0.2),
+              child: Icon(
+                Icons.person,
+                color: Colors.white.withValues(alpha: 0.6),
+                size: 28,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSlideWithoutImages(Map<String, dynamic> slide) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          slide['heading'] as String,
+          style: TextStyle(
+            color: AppColors.primary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          slide['content'] as String,
+          style: TextStyle(
+            color: Colors.grey[800],
+            fontSize: 13,
+            height: 1.5,
+          ),
+          maxLines: 4,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            slide['supportText'] as String,
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCarouselIndicators() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
-        _carouselImages.length,
+        _carouselSlides.length,
         (index) => AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           margin: const EdgeInsets.symmetric(horizontal: 4),

@@ -4,37 +4,41 @@ import 'package:flutter/material.dart';
 class DirectionSelector extends StatelessWidget {
   final Function(int) onDirectionSelected;
 
-  const DirectionSelector({
-    super.key,
-    required this.onDirectionSelected,
-  });
+  const DirectionSelector({super.key, required this.onDirectionSelected});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildDirectionButton(0, Icons.arrow_upward),
+        _buildDirectionButton(0, 'Upward'),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildDirectionButton(270, Icons.arrow_back),
-            const SizedBox(width: 80),
-            _buildDirectionButton(90, Icons.arrow_forward),
+            _buildDirectionButton(270, 'Left'),
+            const SizedBox(width: 40),
+            _buildDirectionButton(90, 'Right'),
           ],
         ),
-        _buildDirectionButton(180, Icons.arrow_downward),
+        const SizedBox(height: 12),
+        _buildDirectionButton(180, 'Down'),
       ],
     );
   }
 
-  Widget _buildDirectionButton(int rotation, IconData icon) {
-    return IconButton(
+  Widget _buildDirectionButton(int rotation, String label) {
+    return ElevatedButton(
       onPressed: () => onDirectionSelected(rotation),
-      icon: Icon(icon, size: 48),
-      style: IconButton.styleFrom(
+      style: ElevatedButton.styleFrom(
         backgroundColor: Colors.blue.shade100,
-        padding: const EdgeInsets.all(20),
+        foregroundColor: Colors.blue.shade900,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        minimumSize: const Size(100, 50),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }

@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/services/speech_service.dart';
+import '../../../core/services/distance_detection_service.dart';
 import '../../../data/models/color_vision_result.dart';
 import '../../../data/providers/test_session_provider.dart';
+import 'distance_calibration_screen.dart';
 
 /// Color Vision Test using Ishihara plates
 class ColorVisionTestScreen extends StatefulWidget {
@@ -20,18 +23,35 @@ class ColorVisionTestScreen extends StatefulWidget {
 class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
+  final DistanceDetectionService _distanceService = DistanceDetectionService(
+    targetDistanceCm: 40.0,
+    toleranceCm: 5.0,
+  );
   final TextEditingController _answerController = TextEditingController();
-  
+
   // Test state
   int _currentPlate = 0;
   final List<PlateResponse> _responses = [];
   bool _testComplete = false;
   bool _showingPlate = false;
-  
+  bool _showDistanceCalibration = true;
+
+  // Voice recognition feedback
+  bool _isListening = false;
+  String? _lastDetectedSpeech;
+
+  // Distance monitoring
+  double _currentDistance = 0;
+  DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
+  bool _isDistanceOk = true; // Start as true to avoid initial blocking
+  bool _isTestPausedForDistance = false;
+  DistanceStatus? _lastSpokenDistanceStatus;
+  Timer? _distanceAutoSkipTimer; // Auto-skip after 10 seconds
+
   // Timer
   Timer? _plateTimer;
   int _timeRemaining = TestConstants.colorVisionTimePerPlateSeconds;
-  
+
   @override
   void initState() {
     super.initState();
@@ -41,12 +61,186 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
   Future<void> _initServices() async {
     await _ttsService.initialize();
     await _speechService.initialize();
-    
+
+    // Set up speech service callbacks
     _speechService.onResult = _handleVoiceResponse;
-    
+    _speechService.onSpeechDetected = (text) {
+      if (mounted) setState(() => _lastDetectedSpeech = text);
+    };
+    _speechService.onListeningStarted = () {
+      if (mounted) setState(() => _isListening = true);
+    };
+    _speechService.onListeningStopped = () {
+      if (mounted) setState(() => _isListening = false);
+    };
+
+    // Show distance calibration first
+    if (_showDistanceCalibration) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showCalibrationScreen();
+      });
+    } else {
+      _startTest();
+    }
+  }
+
+  /// Show distance calibration screen
+  void _showCalibrationScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DistanceCalibrationScreen(
+          targetDistanceCm: 40.0,
+          toleranceCm: 5.0,
+          onCalibrationComplete: () {
+            Navigator.of(context).pop();
+            _onDistanceCalibrationComplete();
+          },
+          onSkip: () {
+            Navigator.of(context).pop();
+            _onDistanceCalibrationComplete();
+          },
+        ),
+      ),
+    );
+  }
+
+  void _onDistanceCalibrationComplete() {
+    setState(() {
+      _showDistanceCalibration = false;
+    });
+    _startContinuousDistanceMonitoring();
+    _startTest();
+  }
+
+  /// Start continuous distance monitoring
+  Future<void> _startContinuousDistanceMonitoring() async {
+    _distanceService.onDistanceUpdate = _handleDistanceUpdate;
+    _distanceService.onError = (msg) => debugPrint('[DistanceMonitor] $msg');
+
+    if (!_distanceService.isReady) {
+      await _distanceService.initializeCamera();
+    }
+
+    if (!_distanceService.isMonitoring) {
+      await _distanceService.startMonitoring();
+    }
+  }
+
+  /// Handle real-time distance updates
+  void _handleDistanceUpdate(double distance, DistanceStatus status) {
+    if (!mounted) return;
+
+    // Custom distance check for 40cm +/- 5cm
+    final isOk = distance >= 35 && distance <= 45;
+
+    setState(() {
+      _currentDistance = distance;
+      _distanceStatus = status;
+      _isDistanceOk = isOk;
+    });
+
+    // Pause/resume logic
+    if (_showingPlate && !_testComplete) {
+      if (!isOk && !_isTestPausedForDistance) {
+        _pauseTestForDistance();
+      } else if (isOk && _isTestPausedForDistance) {
+        _resumeTestAfterDistance();
+      }
+    }
+
+    // Speak guidance if status changed
+    if (status != _lastSpokenDistanceStatus && _isTestPausedForDistance) {
+      _lastSpokenDistanceStatus = status;
+      _speakDistanceGuidance(status);
+    }
+  }
+
+  void _speakDistanceGuidance(DistanceStatus status) {
+    switch (status) {
+      case DistanceStatus.tooClose:
+        _ttsService.speak('Move back, you are too close');
+        break;
+      case DistanceStatus.tooFar:
+        _ttsService.speak('Move closer, you are too far');
+        break;
+      case DistanceStatus.optimal:
+        _ttsService.speak('Good, distance is correct');
+        break;
+      case DistanceStatus.noFaceDetected:
+        _ttsService.speak('Position your face in view');
+        break;
+    }
+  }
+
+  void _pauseTestForDistance() {
+    setState(() => _isTestPausedForDistance = true);
+    _plateTimer?.cancel();
+    _speechService.stopListening();
+    _ttsService.speak(
+      'Test paused. Please adjust your distance to 40 centimeters.',
+    );
+    HapticFeedback.heavyImpact();
+
+    // Auto-skip after 10 seconds if distance not corrected
+    _distanceAutoSkipTimer?.cancel();
+    _distanceAutoSkipTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted && _isTestPausedForDistance) {
+        debugPrint('[ColorVisionTest] Auto-skipping distance check after 10s');
+        _forceSkipDistanceCheck();
+      }
+    });
+  }
+
+  /// Force skip distance check and resume test
+  void _forceSkipDistanceCheck() {
+    _distanceAutoSkipTimer?.cancel();
+    setState(() {
+      _isDistanceOk = true;
+      _isTestPausedForDistance = false;
+    });
+    _ttsService.speak('Resuming test');
+    _restartPlateTimer();
+    _speechService.startListening(
+      listenFor: Duration(seconds: _timeRemaining + 2),
+    );
+  }
+
+  void _resumeTestAfterDistance() {
+    if (!_isTestPausedForDistance) return;
+    _distanceAutoSkipTimer
+        ?.cancel(); // Cancel auto-skip since distance is OK now
+    setState(() => _isTestPausedForDistance = false);
+    _ttsService.speak('Resuming test');
+    _restartPlateTimer();
+    _speechService.startListening(
+      listenFor: Duration(seconds: _timeRemaining + 2),
+    );
+    HapticFeedback.mediumImpact();
+  }
+
+  void _restartPlateTimer() {
+    if (_timeRemaining <= 0) {
+      _submitAnswer('');
+      return;
+    }
+
+    _plateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _isTestPausedForDistance) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _timeRemaining--);
+      if (_timeRemaining <= 0) {
+        timer.cancel();
+        _submitAnswer('');
+      }
+    });
+  }
+
+  void _startTest() {
     // Start the test
     Future.delayed(const Duration(milliseconds: 500), () {
-      _showNextPlate();
+      if (mounted) _showNextPlate();
     });
   }
 
@@ -56,14 +250,27 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
       return;
     }
 
+    // Clear previous state
+    _lastDetectedSpeech = null;
+    _answerController.clear();
+
     setState(() {
       _showingPlate = true;
       _timeRemaining = TestConstants.colorVisionTimePerPlateSeconds;
-      _answerController.clear();
     });
 
     _ttsService.speakColorVisionPrompt();
-    _speechService.startListening();
+
+    // Start fresh voice listening for this plate
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _speechService.startListening(
+          listenFor: Duration(
+            seconds: TestConstants.colorVisionTimePerPlateSeconds + 2,
+          ),
+        );
+      }
+    });
 
     // Start countdown timer
     _plateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -103,7 +310,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
       expectedAnswer: expectedAnswer,
       userAnswer: answer.isEmpty ? 'No response' : answer,
       isCorrect: isCorrect,
-      responseTimeMs: (TestConstants.colorVisionTimePerPlateSeconds - _timeRemaining) * 1000,
+      responseTimeMs:
+          (TestConstants.colorVisionTimePerPlateSeconds - _timeRemaining) *
+          1000,
     );
 
     _responses.add(response);
@@ -113,7 +322,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
 
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
-      
+
       setState(() {
         _currentPlate++;
       });
@@ -158,7 +367,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
     context.read<TestSessionProvider>().setColorVisionResult(result);
 
     setState(() => _testComplete = true);
-    _ttsService.speak('Color vision test complete. Moving to Amsler grid test.');
+    _ttsService.speak(
+      'Color vision test complete. Moving to Amsler grid test.',
+    );
   }
 
   void _proceedToAmslerTest() {
@@ -168,7 +379,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
   @override
   void dispose() {
     _plateTimer?.cancel();
+    _distanceAutoSkipTimer?.cancel(); // Cancel auto-skip timer
     _answerController.dispose();
+    _distanceService.dispose();
     _ttsService.dispose();
     _speechService.dispose();
     super.dispose();
@@ -178,11 +391,23 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.testBackground,
-      appBar: AppBar(
-        title: const Text('Color Vision Test'),
-      ),
+      appBar: AppBar(title: const Text('Color Vision Test')),
       body: SafeArea(
-        child: _testComplete ? _buildCompleteView() : _buildTestView(),
+        child: Stack(
+          children: [
+            _testComplete ? _buildCompleteView() : _buildTestView(),
+            // Distance indicator
+            if (!_showDistanceCalibration && !_testComplete)
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: _buildDistanceIndicator(),
+              ),
+            // Distance warning overlay - only show when explicitly paused
+            if (_isTestPausedForDistance && _showingPlate && !_testComplete)
+              _buildDistanceWarningOverlay(),
+          ],
+        ),
       ),
     );
   }
@@ -209,9 +434,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
               ),
               // Timer
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: _timeRemaining <= 3 
+                  color: _timeRemaining <= 3
                       ? AppColors.error.withOpacity(0.1)
                       : AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -221,14 +449,18 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
                     Icon(
                       Icons.timer,
                       size: 16,
-                      color: _timeRemaining <= 3 ? AppColors.error : AppColors.primary,
+                      color: _timeRemaining <= 3
+                          ? AppColors.error
+                          : AppColors.primary,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${_timeRemaining}s',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: _timeRemaining <= 3 ? AppColors.error : AppColors.primary,
+                        color: _timeRemaining <= 3
+                            ? AppColors.error
+                            : AppColors.primary,
                       ),
                     ),
                   ],
@@ -237,51 +469,96 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
             ],
           ),
         ),
-        // Plate display
+        // Plate display - use LayoutBuilder to maintain consistent plate size
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                // Ishihara plate image
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.cardShadow,
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Calculate a fixed plate size that won't change with input
+              final plateSize = constraints.maxWidth - 48;
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    // Voice listening indicator
+                    if (_isListening)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                      ],
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.mic, size: 16, color: AppColors.success),
+                            const SizedBox(width: 6),
+                            Text(
+                              _lastDetectedSpeech != null
+                                  ? 'Heard: $_lastDetectedSpeech'
+                                  : 'Listening...',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    // Ishihara plate image - fixed size container
+                    SizedBox(
+                      width: plateSize,
+                      height:
+                          plateSize * 0.7, // Smaller to leave room for input
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.cardShadow,
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child:
+                            _showingPlate &&
+                                _currentPlate < AppAssets.ishiharaPlates.length
+                            ? Image.asset(
+                                AppAssets.ishiharaPlates[_currentPlate],
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) =>
+                                    _buildPlaceholderPlate(),
+                              )
+                            : _buildFeedbackView(),
+                      ),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: _showingPlate && _currentPlate < AppAssets.ishiharaPlates.length
-                        ? Image.asset(
-                            AppAssets.ishiharaPlates[_currentPlate],
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => _buildPlaceholderPlate(),
-                          )
-                        : _buildFeedbackView(),
-                  ),
+                    const SizedBox(height: 12),
+                    // Question
+                    Text(
+                      'What number do you see?',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Say the number or type it',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Number input - compact design
+                    _buildNumberInput(),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                // Question
-                Text(
-                  'What number do you see?',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Enter the number or say it aloud',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 16),
-                // Number input
-                _buildNumberInput(),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ],
@@ -315,12 +592,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
     if (_responses.isEmpty) {
       return _buildPlaceholderPlate();
     }
-    
+
     final lastResponse = _responses.last;
     final isCorrect = lastResponse.isCorrect;
-    
+
     return Container(
-      color: isCorrect 
+      color: isCorrect
           ? AppColors.success.withOpacity(0.1)
           : AppColors.error.withOpacity(0.1),
       child: Center(
@@ -379,7 +656,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
         SizedBox(
           height: 60,
           child: ElevatedButton(
-            onPressed: _showingPlate 
+            onPressed: _showingPlate
                 ? () => _submitAnswer(_answerController.text)
                 : null,
             child: const Padding(
@@ -394,7 +671,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
 
   Widget _buildCompleteView() {
     final result = context.read<TestSessionProvider>().colorVision;
-    
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -404,14 +681,16 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
           Icon(
             result?.isNormal == true ? Icons.check_circle : Icons.warning,
             size: 80,
-            color: result?.isNormal == true ? AppColors.success : AppColors.warning,
+            color: result?.isNormal == true
+                ? AppColors.success
+                : AppColors.warning,
           ),
           const SizedBox(height: 24),
           Text(
             'Color Vision Test Complete!',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -451,8 +730,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
                   result?.status ?? 'Unknown',
                   style: TextStyle(
                     fontSize: 16,
-                    color: result?.isNormal == true 
-                        ? AppColors.success 
+                    color: result?.isNormal == true
+                        ? AppColors.success
                         : AppColors.warning,
                     fontWeight: FontWeight.w500,
                   ),
@@ -482,6 +761,128 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDistanceIndicator() {
+    Color indicatorColor;
+    String distanceText;
+
+    if (_currentDistance > 0) {
+      distanceText = '${_currentDistance.toStringAsFixed(0)}cm';
+
+      // 40cm ±5cm = 35-45cm acceptable range
+      if (_currentDistance >= 35 && _currentDistance <= 45) {
+        indicatorColor = AppColors.success;
+      } else if (_currentDistance >= 30 && _currentDistance <= 50) {
+        indicatorColor = AppColors.warning;
+      } else {
+        indicatorColor = AppColors.error;
+      }
+    } else {
+      distanceText = 'No face';
+      indicatorColor = AppColors.error;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: indicatorColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: indicatorColor, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.straighten, size: 14, color: indicatorColor),
+          const SizedBox(width: 4),
+          Text(
+            distanceText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: indicatorColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDistanceWarningOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.85),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
+              const SizedBox(height: 16),
+              Text(
+                'Test Paused',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.error,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please maintain 40cm distance',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _currentDistance > 0
+                    ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
+                    : 'Face not detected',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _currentDistance > 0
+                      ? AppColors.primary
+                      : AppColors.error,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Acceptable range: 35cm - 45cm',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              // Skip button to bypass distance detection
+              TextButton(
+                onPressed: () {
+                  // Force distance OK and resume test
+                  setState(() {
+                    _isDistanceOk = true;
+                    _isTestPausedForDistance = false;
+                  });
+                  _restartPlateTimer();
+                  _speechService.startListening(
+                    listenFor: Duration(seconds: _timeRemaining + 2),
+                  );
+                },
+                child: Text(
+                  'Skip Distance Check',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

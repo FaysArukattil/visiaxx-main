@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_colors.dart';
-
 // Screens
 import 'features/auth/screens/splashscreen.dart';
 import 'features/auth/screens/loginscreen.dart';
@@ -20,32 +19,31 @@ import 'features/quick_vision_test/screens/amsler_grid_test_screen.dart';
 import 'features/quick_vision_test/screens/quick_test_result_screen.dart';
 import 'features/results/screens/my_results_screen.dart';
 import 'features/practitioner/screens/practitioner_dashboard_screen.dart';
-
 // Providers
 import 'data/providers/test_session_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  // Set system UI FIRST
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
   );
   
-  // Set preferred orientations
+  // Set orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
   
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: AppColors.background,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
+  // Initialize Firebase (keep this)
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
   
   runApp(const VisiaxApp());
