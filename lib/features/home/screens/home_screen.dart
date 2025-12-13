@@ -35,25 +35,29 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Map<String, dynamic>> _carouselSlides = [
     {
       'heading': 'Who We Are',
-      'content': 'Vision Optocare reshapes eye care with mobile-first technology and optometric precision.',
+      'content':
+          'Vision Optocare reshapes eye care with mobile-first technology and optometric precision.',
       'supportText': 'Built by professionals',
       'hasImages': true,
     },
     {
       'heading': 'Our Product',
-      'content': 'Visiaxx Digital Eye Clinic App conducts clinically approved vision screenings from your smartphone.',
+      'content':
+          'Visiaxx Digital Eye Clinic App conducts clinically approved vision screenings from your smartphone.',
       'supportText': 'Smart. Clinical. Mobile-first.',
       'hasImages': false,
     },
     {
       'heading': 'Our Mission',
-      'content': 'Deliver high-quality, validated eye-care solutions through intuitive digital platforms.',
+      'content':
+          'Deliver high-quality, validated eye-care solutions through intuitive digital platforms.',
       'supportText': 'Accessible eye care everywhere.',
       'hasImages': false,
     },
     {
       'heading': 'Our Vision',
-      'content': 'Create a future where comprehensive eye care is universally accessible and technology-driven.',
+      'content':
+          'Create a future where comprehensive eye care is universally accessible and technology-driven.',
       'supportText': 'Redefining digital eye health.',
       'hasImages': false,
     },
@@ -133,9 +137,9 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 'Select Language',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const Divider(height: 1),
@@ -160,7 +164,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           language['code']!.toUpperCase(),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? AppColors.primary : Colors.grey[600],
+                            color: isSelected
+                                ? AppColors.primary
+                                : Colors.grey[600],
                           ),
                         ),
                       ),
@@ -168,12 +174,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: Text(
                       language['name']!,
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         color: isSelected ? AppColors.primary : null,
                       ),
                     ),
-                    subtitle: Text(language['native']!, style: TextStyle(color: Colors.grey[600])),
-                    trailing: isSelected ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+                    subtitle: Text(
+                      language['native']!,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(
+                            Icons.check_circle,
+                            color: AppColors.primary,
+                          )
+                        : null,
                     onTap: () {
                       setState(() => _selectedLanguage = language['name']!);
                       Navigator.pop(context);
@@ -260,7 +276,10 @@ class _HomeScreenState extends State<HomeScreen> {
               GestureDetector(
                 onTap: _showLanguageSelector,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -273,9 +292,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: 6),
                       Text(
                         selectedLang['code']!.toUpperCase(),
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.grey[800]),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: Colors.grey[800],
+                        ),
                       ),
-                      Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.grey[600]),
+                      Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 18,
+                        color: Colors.grey[600],
+                      ),
                     ],
                   ),
                 ),
@@ -283,15 +310,47 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 12),
               PopupMenuButton<String>(
                 offset: const Offset(0, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 onSelected: (value) {
                   if (value == 'logout') _handleLogout();
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'profile', child: Row(children: [Icon(Icons.person_outline, size: 20), SizedBox(width: 12), Text('My Profile')])),
-                  const PopupMenuItem(value: 'settings', child: Row(children: [Icon(Icons.settings_outlined, size: 20), SizedBox(width: 12), Text('Settings')])),
+                  const PopupMenuItem(
+                    value: 'profile',
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_outline, size: 20),
+                        SizedBox(width: 12),
+                        Text('My Profile'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'settings',
+                    child: Row(
+                      children: [
+                        Icon(Icons.settings_outlined, size: 20),
+                        SizedBox(width: 12),
+                        Text('Settings'),
+                      ],
+                    ),
+                  ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(value: 'logout', child: Row(children: [Icon(Icons.logout, size: 20, color: AppColors.error), SizedBox(width: 12), Text('Logout', style: TextStyle(color: AppColors.error))])),
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, size: 20, color: AppColors.error),
+                        SizedBox(width: 12),
+                        Text(
+                          'Logout',
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
                 child: Container(
                   width: 44,
@@ -303,7 +362,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Center(
                     child: Text(
                       _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -314,14 +377,16 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             'Hello, $_userName 👋',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[900],
-                ),
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[900],
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'How can we help you today?',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
           ),
         ],
       ),
@@ -335,7 +400,10 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppColors.primary.withValues(alpha: 0.1), AppColors.primary.withValues(alpha: 0.05)],
+            colors: [
+              AppColors.primary.withValues(alpha: 0.1),
+              AppColors.primary.withValues(alpha: 0.05),
+            ],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
@@ -371,7 +439,8 @@ class _HomeScreenState extends State<HomeScreen> {
         enlargeCenterPage: true,
         enlargeFactor: 0.1,
         viewportFraction: 0.92,
-        onPageChanged: (index, reason) => setState(() => _currentCarouselIndex = index),
+        onPageChanged: (index, reason) =>
+            setState(() => _currentCarouselIndex = index),
       ),
       items: _carouselSlides.map((slide) {
         return Container(
@@ -388,7 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
-              )
+              ),
             ],
           ),
           child: ClipRRect(
@@ -552,11 +621,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
         Text(
           slide['content'] as String,
-          style: TextStyle(
-            color: Colors.grey[800],
-            fontSize: 13,
-            height: 1.5,
-          ),
+          style: TextStyle(color: Colors.grey[800], fontSize: 13, height: 1.5),
           maxLines: 4,
           overflow: TextOverflow.ellipsis,
         ),
@@ -591,7 +656,9 @@ class _HomeScreenState extends State<HomeScreen> {
           width: _currentCarouselIndex == index ? 24 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: _currentCarouselIndex == index ? AppColors.primary : Colors.grey[300],
+            color: _currentCarouselIndex == index
+                ? AppColors.primary
+                : Colors.grey[300],
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -602,7 +669,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Colors.grey[900])),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: Colors.grey[900],
+        ),
+      ),
     );
   }
 
@@ -613,25 +686,69 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              Expanded(child: _ServiceCard(icon: Icons.speed_rounded, title: 'Quick Test', onTap: () => Navigator.pushNamed(context, '/quick-test'))),
+              Expanded(
+                child: _ServiceCard(
+                  icon: Icons.speed_rounded,
+                  title: 'Quick Test',
+                  onTap: () => Navigator.pushNamed(context, '/quick-test'),
+                ),
+              ),
               const SizedBox(width: 16),
-              Expanded(child: _ServiceCard(icon: Icons.assessment_rounded, title: 'Full Exam', onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon!'))))),
+              Expanded(
+                child: _ServiceCard(
+                  icon: Icons.assessment_rounded,
+                  title: 'Full Eye Exam',
+                  onTap: () => ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Coming soon!'))),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _ServiceCard(icon: Icons.history_rounded, title: 'My Results', onTap: () => Navigator.pushNamed(context, '/my-results'))),
+              Expanded(
+                child: _ServiceCard(
+                  icon: Icons.history_rounded,
+                  title: 'My Results',
+                  onTap: () => Navigator.pushNamed(context, '/my-results'),
+                ),
+              ),
               const SizedBox(width: 16),
-              Expanded(child: _ServiceCard(icon: Icons.calendar_month_rounded, title: 'Consultation', onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon!'))))),
+              Expanded(
+                child: _ServiceCard(
+                  icon: Icons.calendar_month_rounded,
+                  title: 'Consultation',
+                  onTap: () => ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Coming soon!'))),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _ServiceCard(icon: Icons.self_improvement_rounded, title: 'Eye Exercises', onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon!'))))),
+              Expanded(
+                child: _ServiceCard(
+                  icon: Icons.self_improvement_rounded,
+                  title: 'Eye Exercises',
+                  onTap: () => ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Coming soon!'))),
+                ),
+              ),
               const SizedBox(width: 16),
-              Expanded(child: _ServiceCard(icon: Icons.lightbulb_outline_rounded, title: 'Eye Care Tips', onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Coming soon!'))))),
+              Expanded(
+                child: _ServiceCard(
+                  icon: Icons.lightbulb_outline_rounded,
+                  title: 'Eye Care Tips',
+                  onTap: () => ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Coming soon!'))),
+                ),
+              ),
             ],
           ),
         ],
@@ -645,7 +762,11 @@ class _ServiceCard extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
 
-  const _ServiceCard({required this.icon, required this.title, required this.onTap});
+  const _ServiceCard({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -657,7 +778,13 @@ class _ServiceCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,7 +801,11 @@ class _ServiceCard extends StatelessWidget {
             const Spacer(),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1A1A2E)),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: Color(0xFF1A1A2E),
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
