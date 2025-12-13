@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/family_member_service.dart';
 import '../../../data/models/family_member_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 
@@ -15,13 +13,9 @@ class ProfileSelectionScreen extends StatefulWidget {
 }
 
 class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
-  List<FamilyMemberModel> _familyMembers = [];
+  final List<FamilyMemberModel> _familyMembers = [];
   bool _showAddForm = false;
-  bool _isLoading = true;
-
-  // Service
-  final FamilyMemberService _familyMemberService = FamilyMemberService();
-
+  
   // Form controllers
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -39,36 +33,6 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _loadFamilyMembers();
-  }
-
-  /// Load family members from Firebase
-  Future<void> _loadFamilyMembers() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    try {
-      final members = await _familyMemberService.getFamilyMembers(user.uid);
-      if (mounted) {
-        setState(() {
-          _familyMembers = members;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('[ProfileSelection] Error loading family members: $e');
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  @override
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
@@ -77,17 +41,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
 
   void _selectSelf() {
     final provider = context.read<TestSessionProvider>();
-    final user = FirebaseAuth.instance.currentUser;
-
-    // Use actual user data if available, otherwise fallback to Guest
-    final String userId = user?.uid ?? 'guest_id';
-    // displayName might be null, try to use part of email or fallback
-    String userName = user?.displayName ?? 'User';
-    if (userName == 'User' && user?.email != null) {
-      userName = user!.email!.split('@')[0];
-    }
-
-    provider.selectSelfProfile(userId, userName);
+    provider.selectSelfProfile('demo_user_id', 'Demo User');
     provider.startTest();
     Navigator.pushNamed(context, '/questionnaire');
   }
@@ -99,19 +53,8 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     Navigator.pushNamed(context, '/questionnaire');
   }
 
-  Future<void> _addFamilyMember() async {
+  void _addFamilyMember() {
     if (_formKey.currentState!.validate()) {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please log in to add family members'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
-      }
-
       final newMember = FamilyMemberModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         firstName: _nameController.text,
@@ -121,44 +64,28 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         createdAt: DateTime.now(),
       );
 
-      try {
-        // Save to Firebase
-        final savedId = await _familyMemberService.saveFamilyMember(
-          userId: user.uid,
-          member: newMember,
-        );
+      setState(() {
+        _familyMembers.add(newMember);
+        _showAddForm = false;
+        _nameController.clear();
+        _ageController.clear();
+      });
 
-        // Update local list with Firebase ID
-        final savedMember = newMember.copyWith(id: savedId);
-
-        setState(() {
-          _familyMembers.insert(0, savedMember);
-          _showAddForm = false;
-          _nameController.clear();
-          _ageController.clear();
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${newMember.firstName} added successfully'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${newMember.firstName} added successfully'),
+          backgroundColor: AppColors.success,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Who is taking the test?')),
+      appBar: AppBar(
+        title: const Text('Who is taking the test?'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -199,14 +126,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               const SizedBox(height: 16),
             ],
             // Family members list
-            if (_isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            else if (_familyMembers.isEmpty && !_showAddForm)
+            if (_familyMembers.isEmpty && !_showAddForm)
               Container(
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
@@ -311,7 +231,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white,
+            ),
           ],
         ),
       ),
@@ -391,9 +314,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           children: [
             Text(
               'Add Family Member',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -437,7 +360,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     value: _selectedSex,
-                    decoration: const InputDecoration(labelText: 'Sex *'),
+                    decoration: const InputDecoration(
+                      labelText: 'Sex *',
+                    ),
                     items: const [
                       DropdownMenuItem(value: 'Male', child: Text('Male')),
                       DropdownMenuItem(value: 'Female', child: Text('Female')),
@@ -452,7 +377,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: _selectedRelationship,
-              decoration: const InputDecoration(labelText: 'Relationship *'),
+              decoration: const InputDecoration(
+                labelText: 'Relationship *',
+              ),
               items: _relationships.map((r) {
                 return DropdownMenuItem(value: r, child: Text(r));
               }).toList(),

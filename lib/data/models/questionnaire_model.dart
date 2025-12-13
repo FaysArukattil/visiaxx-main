@@ -26,20 +26,11 @@ class QuestionnaireModel {
 
   factory QuestionnaireModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    return QuestionnaireModel.fromMap(data, doc.id);
-  }
-
-  /// Create from a Map (used when parsing nested data)
-  factory QuestionnaireModel.fromMap(Map<String, dynamic> data, [String? id]) {
     return QuestionnaireModel(
-      id: id ?? data['id'] ?? '',
+      id: doc.id,
       profileId: data['profileId'] ?? '',
       profileType: data['profileType'] ?? 'self',
-      timestamp: data['timestamp'] is Timestamp
-          ? (data['timestamp'] as Timestamp).toDate()
-          : (data['timestamp'] != null
-                ? DateTime.parse(data['timestamp'].toString())
-                : DateTime.now()),
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       chiefComplaints: ChiefComplaints.fromMap(data['chiefComplaints'] ?? {}),
       systemicIllness: SystemicIllness.fromMap(data['systemicIllness'] ?? {}),
       currentMedications: data['currentMedications'],
@@ -107,8 +98,7 @@ class ChiefComplaints {
       hasHeadache: data['hasHeadache'] ?? false,
       hasDryness: data['hasDryness'] ?? false,
       hasStickyDischarge: data['hasStickyDischarge'] ?? false,
-      hasPreviousCataractOperation:
-          data['hasPreviousCataractOperation'] ?? false,
+      hasPreviousCataractOperation: data['hasPreviousCataractOperation'] ?? false,
       hasFamilyGlaucomaHistory: data['hasFamilyGlaucomaHistory'] ?? false,
       rednessFollowUp: data['rednessFollowUp'] != null
           ? RednesFollowUp.fromMap(data['rednessFollowUp'])
@@ -173,10 +163,8 @@ class ChiefComplaints {
       hasHeadache: hasHeadache ?? this.hasHeadache,
       hasDryness: hasDryness ?? this.hasDryness,
       hasStickyDischarge: hasStickyDischarge ?? this.hasStickyDischarge,
-      hasPreviousCataractOperation:
-          hasPreviousCataractOperation ?? this.hasPreviousCataractOperation,
-      hasFamilyGlaucomaHistory:
-          hasFamilyGlaucomaHistory ?? this.hasFamilyGlaucomaHistory,
+      hasPreviousCataractOperation: hasPreviousCataractOperation ?? this.hasPreviousCataractOperation,
+      hasFamilyGlaucomaHistory: hasFamilyGlaucomaHistory ?? this.hasFamilyGlaucomaHistory,
       rednessFollowUp: rednessFollowUp ?? this.rednessFollowUp,
       wateringFollowUp: wateringFollowUp ?? this.wateringFollowUp,
       itchingFollowUp: itchingFollowUp ?? this.itchingFollowUp,
@@ -252,10 +240,10 @@ class HeadacheFollowUp {
   }
 
   Map<String, dynamic> toMap() => {
-    'location': location,
-    'duration': duration,
-    'painType': painType,
-  };
+        'location': location,
+        'duration': duration,
+        'painType': painType,
+      };
 }
 
 class DrynessFollowUp {
@@ -275,9 +263,9 @@ class DrynessFollowUp {
   }
 
   Map<String, dynamic> toMap() => {
-    'acBlowingOnFace': acBlowingOnFace,
-    'screenTimeHours': screenTimeHours,
-  };
+        'acBlowingOnFace': acBlowingOnFace,
+        'screenTimeHours': screenTimeHours,
+      };
 }
 
 class DischargeFollowUp {
@@ -300,10 +288,10 @@ class DischargeFollowUp {
   }
 
   Map<String, dynamic> toMap() => {
-    'color': color,
-    'isRegular': isRegular,
-    'startDate': startDate,
-  };
+        'color': color,
+        'isRegular': isRegular,
+        'startDate': startDate,
+      };
 }
 
 /// Systemic illness tracking
