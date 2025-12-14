@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:visiaxx/core/utils/app_logger.dart';
+import 'package:visiaxx/features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/test_constants.dart';
@@ -13,6 +15,7 @@ import '../../../core/services/distance_detection_service.dart';
 import '../../../data/models/visiual_acuity_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import 'distance_calibration_screen.dart';
+import 'cover_right_eye_instruction_screen.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
 /// Implements Visiaxx specification for 1-meter testing
@@ -467,6 +470,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
 
     _responses.add(record);
+    AppLogger.logLongDistance(
+      eye: _currentEye.toUpperCase(),
+      plateNumber: _responses.length,
+      snellen: TestConstants.visualAcuityLevels[_currentLevel].snellen,
+      fontSize: TestConstants.visualAcuityLevels[_currentLevel].flutterFontSize,
+      expected: _currentDirection.label.toLowerCase(),
+      userSaid: userResponse ?? 'no response',
+      correct: isCorrect,
+    );
     _totalResponses++;
 
     // Voice confirmation feedback
@@ -508,6 +520,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   void _evaluateAndContinue() {
     setState(() => _showResult = false);
+
+    // ✅ CRITICAL: Stop after 7 plates (responses) per eye
+    if (_responses.length >= 7) {
+      // Force complete after 7 plates
+      _completeEyeTest();
+      return;
+    }
 
     // Check if we should advance, stay, or stop
     if (_correctAtLevel >= TestConstants.minCorrectToAdvance) {
@@ -614,7 +633,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _proceedToColorTest() {
-    Navigator.pushReplacementNamed(context, '/color-vision-test');
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const BothEyesOpenInstructionScreen(),
+      ),
+    );
   }
 
   @override
@@ -1225,43 +1249,24 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildEyeSwitchView() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.visibility_off, size: 80, color: AppColors.primary),
-          const SizedBox(height: 24),
-          Text(
-            'Right Eye Complete!',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+    // Navigate to instruction screen instead of showing inline
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_eyeSwitchPending) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CoverRightEyeInstructionScreen(),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Now let\'s test your left eye.\n\nCover your RIGHT eye and tap Continue when ready.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 16,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 40),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _switchToLeftEye,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Continue with Left Eye'),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+        ).then((_) {
+          // When returning from instruction screen, switch to left eye
+          if (mounted) {
+            _switchToLeftEye();
+          }
+        });
+      }
+    });
+
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _buildTestCompleteView() {

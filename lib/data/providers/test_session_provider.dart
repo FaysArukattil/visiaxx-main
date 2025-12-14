@@ -5,6 +5,7 @@ import '../../data/models/visiual_acuity_result.dart';
 import '../../data/models/color_vision_result.dart';
 import '../../data/models/amsler_grid_result.dart';
 import '../../data/models/test_result_model.dart';
+import '../models/short_distance_result.dart';
 
 /// Provider for managing test session state
 class TestSessionProvider extends ChangeNotifier {
@@ -23,6 +24,7 @@ class TestSessionProvider extends ChangeNotifier {
   ColorVisionResult? _colorVision;
   AmslerGridResult? _amslerGridRight;
   AmslerGridResult? _amslerGridLeft;
+  ShortDistanceResult? _shortDistance;
 
   // Current test state
   String _currentEye = 'right';
@@ -42,6 +44,7 @@ class TestSessionProvider extends ChangeNotifier {
   AmslerGridResult? get amslerGridLeft => _amslerGridLeft;
   String get currentEye => _currentEye;
   bool get isTestInProgress => _isTestInProgress;
+  ShortDistanceResult? get shortDistance => _shortDistance;
 
   /// Set profile for self-testing
   void selectSelfProfile(String userId, String userName) {
@@ -107,6 +110,11 @@ class TestSessionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setShortDistanceResult(ShortDistanceResult result) {
+    _shortDistance = result;
+    notifyListeners();
+  }
+
   /// Get overall test status
   TestStatus getOverallStatus() {
     return TestResultModel.calculateOverallStatus(
@@ -127,6 +135,7 @@ class TestSessionProvider extends ChangeNotifier {
   bool get areAllTestsComplete {
     return _visualAcuityRight != null &&
         _visualAcuityLeft != null &&
+        _shortDistance != null &&
         _colorVision != null &&
         _amslerGridRight != null &&
         _amslerGridLeft != null;
@@ -151,6 +160,7 @@ class TestSessionProvider extends ChangeNotifier {
       questionnaire: _questionnaire,
       visualAcuityRight: _visualAcuityRight,
       visualAcuityLeft: _visualAcuityLeft,
+      shortDistance: _shortDistance,
       colorVision: _colorVision,
       amslerGridRight: _amslerGridRight,
       amslerGridLeft: _amslerGridLeft,
@@ -168,12 +178,14 @@ class TestSessionProvider extends ChangeNotifier {
     _questionnaire = null;
     _visualAcuityRight = null;
     _visualAcuityLeft = null;
+    _shortDistance = null;
     _colorVision = null;
     _amslerGridRight = null;
     _amslerGridLeft = null;
     _currentEye = 'right';
     _isTestInProgress = false;
     _testStartTime = null;
+
     notifyListeners();
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:visiaxx/features/results/screens/speech_log_viewer_screen.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_colors.dart';
@@ -19,12 +20,18 @@ import 'features/quick_vision_test/screens/amsler_grid_test_screen.dart';
 import 'features/quick_vision_test/screens/quick_test_result_screen.dart';
 import 'features/results/screens/my_results_screen.dart';
 import 'features/practitioner/screens/practitioner_dashboard_screen.dart';
+import '/core/utils/app_logger.dart';
+import 'features/quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
+import 'features/quick_vision_test/screens/cover_right_eye_instruction_screen.dart';
+import 'features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
+import 'features/quick_vision_test/screens/short_distance_test_screen.dart';
+
 // Providers
 import 'data/providers/test_session_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Set system UI FIRST
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -34,18 +41,16 @@ void main() async {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
-  
+
   // Set orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
+
   // Initialize Firebase (keep this)
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await AppLogger.initialize();
   runApp(const VisiaxApp());
 }
 
@@ -55,9 +60,7 @@ class VisiaxApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => TestSessionProvider()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => TestSessionProvider())],
       child: MaterialApp(
         title: 'Visiaxx - Digital Eye Clinic',
         debugShowCheckedModeBanner: false,
@@ -78,7 +81,16 @@ class VisiaxApp extends StatelessWidget {
           '/amsler-grid-test': (context) => const AmslerGridTestScreen(),
           '/quick-test-result': (context) => const QuickTestResultScreen(),
           '/my-results': (context) => const MyResultsScreen(),
-          '/practitioner-dashboard': (context) => const PractitionerDashboardScreen(),
+          '/speech-logs': (context) => const SpeechLogViewerScreen(),
+          '/practitioner-dashboard': (context) =>
+              const PractitionerDashboardScreen(),
+          '/cover-left-eye-instruction': (context) =>
+              const CoverLeftEyeInstructionScreen(),
+          '/cover-right-eye-instruction': (context) =>
+              const CoverRightEyeInstructionScreen(),
+          '/both-eyes-open-instruction': (context) =>
+              const BothEyesOpenInstructionScreen(),
+          '/short-distance-test': (context) => const ShortDistanceTestScreen(),
         },
       ),
     );

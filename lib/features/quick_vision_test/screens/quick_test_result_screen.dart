@@ -149,6 +149,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   _buildVisualAcuityCard(provider),
                   const SizedBox(height: 20),
 
+                  // Short Distance Results
+                  _buildSectionTitle(
+                    'Reading Test (Near Vision)',
+                    Icons.text_fields,
+                  ),
+                  _buildShortDistanceCard(provider),
+                  const SizedBox(height: 20),
+
                   // Color Vision Results
                   _buildSectionTitle('Color Vision', Icons.palette),
                   _buildColorVisionCard(provider),
@@ -808,6 +816,19 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 ),
               ),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/speech-logs');
+                },
+                icon: const Icon(Icons.article_outlined),
+                label: const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text('Logs', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -860,6 +881,161 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         setState(() => _isGeneratingPdf = false);
       }
     }
+  }
+
+  Widget _buildShortDistanceCard(TestSessionProvider provider) {
+    final result = provider.shortDistance;
+
+    if (result == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.cardShadow,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            'No reading test data available',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    final isGood = result.averageSimilarity >= 70.0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // Status icon
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isGood
+                      ? AppColors.success.withOpacity(0.1)
+                      : AppColors.warning.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isGood ? Icons.check : Icons.warning,
+                  color: isGood ? AppColors.success : AppColors.warning,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result.status,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: isGood ? AppColors.success : AppColors.warning,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Best Acuity: ${result.bestAcuity}',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Score display
+              Column(
+                children: [
+                  Text(
+                    '${result.averageSimilarity.toStringAsFixed(0)}%',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Text(
+                    'Match',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Progress bar
+          Row(
+            children: [
+              Expanded(
+                flex: result.correctSentences,
+                child: Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              if (result.correctSentences < result.totalSentences)
+                Expanded(
+                  flex: result.totalSentences - result.correctSentences,
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Stats
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem(
+                'Sentences',
+                '${result.correctSentences}/${result.totalSentences}',
+              ),
+              Container(width: 1, height: 30, color: AppColors.border),
+              _buildStatItem(
+                'Accuracy',
+                '${(result.accuracy * 100).toStringAsFixed(0)}%',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _sharePdf() async {

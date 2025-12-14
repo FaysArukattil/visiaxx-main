@@ -3,6 +3,7 @@ import 'questionnaire_model.dart';
 import 'visiual_acuity_result.dart';
 import 'color_vision_result.dart';
 import 'amsler_grid_result.dart';
+import 'short_distance_result.dart';
 
 /// Test result status
 enum TestStatus {
@@ -28,6 +29,7 @@ class TestResultModel {
   final QuestionnaireModel? questionnaire;
   final VisualAcuityResult? visualAcuityRight;
   final VisualAcuityResult? visualAcuityLeft;
+  final ShortDistanceResult? shortDistance;
   final ColorVisionResult? colorVision;
   final AmslerGridResult? amslerGridRight;
   final AmslerGridResult? amslerGridLeft;
@@ -48,6 +50,7 @@ class TestResultModel {
     this.questionnaire,
     this.visualAcuityRight,
     this.visualAcuityLeft,
+    this.shortDistance,
     this.colorVision,
     this.amslerGridRight,
     this.amslerGridLeft,
@@ -87,6 +90,9 @@ class TestResultModel {
       visualAcuityLeft: data['visualAcuityLeft'] != null
           ? VisualAcuityResult.fromMap(data['visualAcuityLeft'])
           : null,
+      shortDistance: data['shortDistance'] != null
+          ? ShortDistanceResult.fromMap(data['shortDistance'])
+          : null,
       colorVision: data['colorVision'] != null
           ? ColorVisionResult.fromMap(data['colorVision'])
           : null,
@@ -121,6 +127,7 @@ class TestResultModel {
       'questionnaire': questionnaire?.toFirestore(),
       'visualAcuityRight': visualAcuityRight?.toMap(),
       'visualAcuityLeft': visualAcuityLeft?.toMap(),
+      'shortDistance': shortDistance?.toMap(),
       'colorVision': colorVision?.toMap(),
       'amslerGridRight': amslerGridRight?.toMap(),
       'amslerGridLeft': amslerGridLeft?.toMap(),
@@ -143,6 +150,7 @@ class TestResultModel {
       'questionnaire': questionnaire?.toFirestore(),
       'visualAcuityRight': visualAcuityRight?.toMap(),
       'visualAcuityLeft': visualAcuityLeft?.toMap(),
+      'shortDistance': shortDistance?.toMap(),
       'colorVision': colorVision?.toMap(),
       'amslerGridRight': amslerGridRight?.toMap(),
       'amslerGridLeft': amslerGridLeft?.toMap(),
@@ -236,6 +244,7 @@ class TestResultModel {
     QuestionnaireModel? questionnaire,
     VisualAcuityResult? visualAcuityRight,
     VisualAcuityResult? visualAcuityLeft,
+    ShortDistanceResult? shortDistance,
     ColorVisionResult? colorVision,
     AmslerGridResult? amslerGridRight,
     AmslerGridResult? amslerGridLeft,
@@ -256,6 +265,7 @@ class TestResultModel {
       questionnaire: questionnaire ?? this.questionnaire,
       visualAcuityRight: visualAcuityRight ?? this.visualAcuityRight,
       visualAcuityLeft: visualAcuityLeft ?? this.visualAcuityLeft,
+      shortDistance: shortDistance ?? this.shortDistance,
       colorVision: colorVision ?? this.colorVision,
       amslerGridRight: amslerGridRight ?? this.amslerGridRight,
       amslerGridLeft: amslerGridLeft ?? this.amslerGridLeft,
