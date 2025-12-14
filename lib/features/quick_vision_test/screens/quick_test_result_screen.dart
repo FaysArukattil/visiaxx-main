@@ -784,54 +784,85 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        // Secondary actions
+
+        // Secondary actions - Fixed with Flexible and proper constraints
         Row(
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _isGeneratingPdf ? null : _sharePdf,
-                icon: _isGeneratingPdf
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.share),
-                label: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text('Share'),
+            // Share button
+            Flexible(
+              flex: 1,
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _isGeneratingPdf ? null : _sharePdf,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.share, size: 20),
+                        SizedBox(height: 4),
+                        Text('Share', style: TextStyle(fontSize: 11)),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/my-results');
-                },
-                icon: const Icon(Icons.history),
-                label: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text('History', style: TextStyle(fontSize: 13)),
+
+            // History button
+            Flexible(
+              flex: 1,
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/my-results');
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.history, size: 20),
+                        SizedBox(height: 4),
+                        Text('History', style: TextStyle(fontSize: 11)),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/speech-logs');
-                },
-                icon: const Icon(Icons.article_outlined),
-                label: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text('Logs', style: TextStyle(fontSize: 13)),
+
+            // Logs button
+            Flexible(
+              flex: 1,
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/speech-logs');
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.article_outlined, size: 20),
+                        SizedBox(height: 4),
+                        Text('Logs', style: TextStyle(fontSize: 11)),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
+
         // Retake test
         TextButton.icon(
           onPressed: () {

@@ -356,16 +356,20 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 🔥 FIXED: Camera preview with proper aspect ratio handling
+        // 🔥 FIXED: Full-screen camera preview without cropping
         if (_cameraController != null && _cameraController!.value.isInitialized)
-          Center(
-            child: AspectRatio(
-              aspectRatio: _cameraController!.value.aspectRatio,
-              child: CameraPreview(_cameraController!),
+          Positioned.fill(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _cameraController!.value.previewSize!.height,
+                height: _cameraController!.value.previewSize!.width,
+                child: CameraPreview(_cameraController!),
+              ),
             ),
           )
         else
-          // Loading state with gray background instead of black
+          // Loading state with gray background
           Container(
             color: Colors.grey.shade800,
             child: const Center(
@@ -417,17 +421,18 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
           ),
         ),
 
-        // Face guide frame
+        // Face guide frame - centered and responsive
         Center(
           child: Container(
-            width: 220,
-            height: 280,
+            width: MediaQuery.of(context).size.width * 0.6,
+            height: MediaQuery.of(context).size.width * 0.75,
+            constraints: const BoxConstraints(maxWidth: 280, maxHeight: 350),
             decoration: BoxDecoration(
               border: Border.all(
                 color: _getStatusColor().withOpacity(0.6),
                 width: 3,
               ),
-              borderRadius: BorderRadius.circular(120),
+              borderRadius: BorderRadius.circular(140),
             ),
           ),
         ),
@@ -459,7 +464,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 48), // Balance for close button
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
@@ -468,22 +473,18 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
 
               // Distance display
               _buildDistanceDisplay(),
-
               const SizedBox(height: 12),
 
               // Guidance message
               _buildGuidanceMessage(),
-
               const SizedBox(height: 24),
 
               // Progress indicator
               _buildProgressIndicator(),
-
               const SizedBox(height: 32),
 
               // Action buttons
               _buildActionButtons(),
-
               const SizedBox(height: 32),
             ],
           ),

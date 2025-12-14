@@ -12,6 +12,7 @@ import '../../data/models/questionnaire_model.dart';
 /// Service for generating PDF reports of test results
 class PdfExportService {
   /// Generate and save a PDF report
+  /// Generate and save a PDF report
   Future<File> generatePdfReport(
     TestResultModel result, {
     String? userName,
@@ -26,23 +27,39 @@ class PdfExportService {
         header: (context) => _buildHeader(context, userName),
         footer: (context) => _buildFooter(context),
         build: (context) => [
+          // Title Section
           _buildTitleSection(result, userName, userAge),
           pw.SizedBox(height: 20),
+
+          // Visual Acuity Section (Distance Vision - 1 meter)
           _buildVisualAcuitySection(result),
           pw.SizedBox(height: 20),
+
+          // Short Distance Section (Reading Test - 40cm) 🆕
           if (result.shortDistance != null) ...[
             _buildShortDistanceSection(result),
             pw.SizedBox(height: 20),
           ],
+
+          // Color Vision Section
           _buildColorVisionSection(result),
           pw.SizedBox(height: 20),
-          if (result.amslerGridRight != null || result.amslerGridLeft != null)
+
+          // Amsler Grid Section
+          if (result.amslerGridRight != null ||
+              result.amslerGridLeft != null) ...[
             _buildAmslerGridSection(result),
-          pw.SizedBox(height: 20),
+            pw.SizedBox(height: 20),
+          ],
+
+          // Overall Status Section
           _buildOverallStatusSection(result),
           pw.SizedBox(height: 20),
-          if (result.questionnaire != null)
+
+          // Questionnaire Section
+          if (result.questionnaire != null) ...[
             _buildQuestionnaireSection(result.questionnaire!),
+          ],
         ],
       ),
     );
@@ -106,31 +123,45 @@ class PdfExportService {
         header: (context) => _buildHeader(context, userName),
         footer: (context) => _buildFooter(context),
         build: (context) => [
+          // Title Section
           _buildTitleSection(result, userName, userAge),
           pw.SizedBox(height: 20),
+
+          // Visual Acuity Section (Distance Vision - 1 meter)
           _buildVisualAcuitySection(result),
           pw.SizedBox(height: 20),
-          // 🆕 ADD THIS LINE - Short Distance Section
+
+          // Short Distance Section (Reading Test - 40cm) 🆕
           if (result.shortDistance != null) ...[
             _buildShortDistanceSection(result),
             pw.SizedBox(height: 20),
           ],
+
+          // Color Vision Section
           _buildColorVisionSection(result),
           pw.SizedBox(height: 20),
-          if (result.amslerGridRight != null || result.amslerGridLeft != null)
+
+          // Amsler Grid Section
+          if (result.amslerGridRight != null ||
+              result.amslerGridLeft != null) ...[
             _buildAmslerGridSection(result),
-          pw.SizedBox(height: 20),
+            pw.SizedBox(height: 20),
+          ],
+
+          // Overall Status Section
           _buildOverallStatusSection(result),
           pw.SizedBox(height: 20),
-          if (result.questionnaire != null)
+
+          // Questionnaire Section
+          if (result.questionnaire != null) ...[
             _buildQuestionnaireSection(result.questionnaire!),
+          ],
         ],
       ),
     );
 
     return pdf;
   }
-
   // 2. THEN: Add this NEW METHOD at the bottom of the file (before the closing brace):
 
   pw.Widget _buildShortDistanceSection(TestResultModel result) {

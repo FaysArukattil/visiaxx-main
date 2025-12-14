@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../core/constants/app_colors.dart';
 
 /// Widget to display Snellen notation indicator for visual acuity tests
 /// Shows small, unobtrusive text like "6/60", "6/36" etc.

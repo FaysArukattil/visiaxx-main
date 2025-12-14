@@ -1162,25 +1162,19 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               alignment: Alignment.center,
               children: [
                 // The Tumbling E - centered
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Transform.rotate(
-                      angle: _currentDirection.rotationDegrees * pi / 180,
-                      child: Text(
-                        'E',
-                        style: TextStyle(
-                          fontSize: eSize.clamp(14.0, 200.0),
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'sans-serif',
-                          color: Colors.black,
-                        ),
-                      ),
+                Transform.rotate(
+                  angle: _currentDirection.rotationDegrees * pi / 180,
+                  child: Text(
+                    'E',
+                    style: TextStyle(
+                      fontSize: eSize.clamp(14.0, 200.0),
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'sans-serif',
+                      color: Colors.black,
                     ),
-                  ],
+                  ),
                 ),
-                // 🆕 Snellen size indicator - positioned in bottom-right of E area
+                // 🆕 Size indicator - positioned in bottom-right
                 Positioned(
                   bottom: 40,
                   right: 40,
@@ -1190,7 +1184,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             ),
           ),
         ),
-        // Instruction text at bottom
+        // Instruction text
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(

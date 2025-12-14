@@ -24,10 +24,14 @@ class ShortDistanceTestScreen extends StatefulWidget {
 }
 
 class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
-  String _accumulatedSpeech =
-      ''; // Accumulate speech across multiple detections
-  Timer? _speechBufferTimer; // Timer to detect end of speech
-  static const Duration _speechBufferDelay = Duration(milliseconds: 1500);
+  // 🆕 UPDATED: Enhanced speech tracking
+  String _accumulatedSpeech = '';
+  Timer? _speechBufferTimer;
+  List<String> _speechChunks = []; // Track all speech chunks
+  static const Duration _speechBufferDelay = Duration(
+    milliseconds: 2000,
+  ); // Increased to 2s
+
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
 
@@ -78,11 +82,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     await _speechService.initialize();
 
     _speechService.onResult = _handleVoiceResponse;
-    _speechService.onSpeechDetected = (text) {
-      if (mounted) {
-        setState(() => _recognizedText = text);
-      }
-    };
+    _speechService.onSpeechDetected =
+        _handleSpeechDetected; // 🆕 Using new handler
     _speechService.onListeningStarted = () {
       if (mounted) setState(() => _isListening = true);
     };
@@ -110,14 +111,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     await _distanceService.startMonitoring();
   }
 
+  // 🆕 UPDATED: Clear chunks on new sentence
   void _showNextSentence() {
     if (_currentScreen >= TestConstants.shortDistanceSentences.length) {
       _completeTest();
       return;
     }
 
-    // Reset speech state
+    // Reset ALL speech state
     _accumulatedSpeech = '';
+    _speechChunks.clear(); // Clear chunks
     _speechBufferTimer?.cancel();
 
     setState(() {
@@ -129,26 +132,22 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
       _showKeyboard = false;
     });
 
-    // Speak instruction
     _ttsService.speak('Read the sentence on screen');
 
-    // Start listening after a delay
+    // Start listening after delay
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted && _waitingForResponse && !_showKeyboard) {
         _startListening();
       }
     });
 
-    // Auto-timeout after 20 seconds (increased from 15)
-    _listeningTimer = Timer(const Duration(seconds: 20), () {
+    // Auto-timeout (increased to 25 seconds)
+    _listeningTimer = Timer(const Duration(seconds: 25), () {
       if (_waitingForResponse) {
-        // Use accumulated speech if available
         final finalText = _accumulatedSpeech.trim();
 
         if (finalText.isNotEmpty) {
-          debugPrint(
-            '[ShortDistance] ⏱️ Timeout - using accumulated: $finalText',
-          );
+          debugPrint('[Speech] ⏱️ Timeout - using: "$finalText"');
           _processSentence(finalText);
         } else if (_inputController.text.trim().isNotEmpty) {
           _processSentence(_inputController.text.trim());
@@ -159,14 +158,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     });
   }
 
+  // 🆕 UPDATED: Start listening with optimal settings
   Future<void> _startListening() async {
-    _accumulatedSpeech = ''; // Clear accumulated speech
+    _accumulatedSpeech = '';
+    _speechChunks.clear();
 
     await _speechService.startListening(
-      listenFor: const Duration(seconds: 20), // Longer duration
-      bufferMs: 800, // Longer buffer to capture pauses
-      autoRestart: true, // CRITICAL: Auto-restart on silence
-      minConfidence: 0.2, // Lower confidence threshold
+      listenFor: const Duration(seconds: 25), // Longer duration
+      bufferMs: 1000, // Even longer buffer for pauses
+      autoRestart: true, // Keep listening
+      minConfidence: 0.15, // Even lower threshold
     );
   }
 
@@ -186,44 +187,55 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     }
   }
 
+  // 🆕 IMPROVED: Better speech accumulation with word merging
   void _handleSpeechDetected(String partialResult) {
     if (!mounted || !_waitingForResponse) return;
+
+    debugPrint('[Speech] 🎤 Detected: "$partialResult"');
 
     // Cancel existing buffer timer
     _speechBufferTimer?.cancel();
 
-    // Accumulate speech intelligently
-    if (partialResult.isNotEmpty) {
-      // If accumulated speech is empty or new result is longer, update it
-      if (_accumulatedSpeech.isEmpty ||
-          partialResult.length > _accumulatedSpeech.length) {
-        _accumulatedSpeech = partialResult;
-      } else {
-        // Try to merge: if new result contains words not in accumulated, append them
-        final accWords = _accumulatedSpeech.toLowerCase().split(' ').toSet();
-        final newWords = partialResult.toLowerCase().split(' ');
+    if (partialResult.trim().isEmpty) return;
 
-        for (final word in newWords) {
-          if (!accWords.contains(word) && word.length > 2) {
-            _accumulatedSpeech += ' $word';
-          }
+    // Clean the input
+    final cleaned = partialResult.trim().toLowerCase();
+
+    // Add to chunks if it's new content
+    if (_speechChunks.isEmpty || !_speechChunks.last.contains(cleaned)) {
+      _speechChunks.add(cleaned);
+    }
+
+    // Smart merging: combine all unique words from chunks
+    final allWords = <String>[];
+    final seenWords = <String>{};
+
+    for (final chunk in _speechChunks) {
+      for (final word in chunk.split(' ')) {
+        final cleanWord = word.trim();
+        if (cleanWord.isNotEmpty && !seenWords.contains(cleanWord)) {
+          allWords.add(cleanWord);
+          seenWords.add(cleanWord);
         }
       }
-
-      setState(() {
-        _recognizedText = _accumulatedSpeech.trim();
-      });
-
-      // Set a timer to process the accumulated speech after user stops talking
-      _speechBufferTimer = Timer(_speechBufferDelay, () {
-        if (_accumulatedSpeech.trim().isNotEmpty && _waitingForResponse) {
-          debugPrint(
-            '[ShortDistance] 📝 Processing accumulated: $_accumulatedSpeech',
-          );
-          _processSentence(_accumulatedSpeech.trim());
-        }
-      });
     }
+
+    // Build accumulated speech from unique words
+    _accumulatedSpeech = allWords.join(' ');
+
+    debugPrint('[Speech] 📝 Accumulated: "$_accumulatedSpeech"');
+
+    setState(() {
+      _recognizedText = _accumulatedSpeech;
+    });
+
+    // Set timer to process after user stops speaking
+    _speechBufferTimer = Timer(_speechBufferDelay, () {
+      if (_accumulatedSpeech.trim().isNotEmpty && _waitingForResponse) {
+        debugPrint('[Speech] ✅ Processing final: "$_accumulatedSpeech"');
+        _processSentence(_accumulatedSpeech.trim());
+      }
+    });
   }
 
   void _processSentence(String userSaid) {
@@ -340,10 +352,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     _ttsService.speak('Reading test complete');
   }
 
+  // 🆕 UPDATED: Clear chunks in dispose
   @override
   void dispose() {
     _listeningTimer?.cancel();
     _speechBufferTimer?.cancel();
+    _speechChunks.clear(); // Clear chunks
     _inputController.dispose();
     _ttsService.dispose();
     _speechService.dispose();
@@ -386,7 +400,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
 
             // Distance indicator in bottom right
             Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
-            // 🆕 Distance warning overlay - ADDED THIS
+            // Distance warning overlay
             if (_isDistanceOk == false && _showSentence && _waitingForResponse)
               _buildDistanceWarningOverlay(),
           ],
@@ -499,7 +513,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 🆕 Snellen indicator positioned above sentence
+            // 🆕 Size indicator at top-right
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
