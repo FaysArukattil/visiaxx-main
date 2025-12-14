@@ -601,6 +601,24 @@ class _ResultDetailSheet extends StatelessWidget {
               ),
             ]),
 
+            // 🆕 Short Distance (Reading Test)
+            if (result.shortDistance != null)
+              _buildSection('Reading Test (Near Vision)', [
+                _buildDetailRow(
+                  'Best Acuity',
+                  result.shortDistance!.bestAcuity,
+                ),
+                _buildDetailRow(
+                  'Sentences',
+                  '${result.shortDistance!.correctSentences}/${result.shortDistance!.totalSentences}',
+                ),
+                _buildDetailRow(
+                  'Average Match',
+                  '${result.shortDistance!.averageSimilarity.toStringAsFixed(1)}%',
+                ),
+                _buildDetailRow('Status', result.shortDistance!.status),
+              ]),
+
             // Color Vision
             _buildSection('Color Vision', [
               _buildDetailRow(

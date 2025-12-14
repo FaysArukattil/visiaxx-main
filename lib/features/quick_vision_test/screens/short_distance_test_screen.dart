@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
 import 'package:visiaxx/core/utils/fuzzy_matcher.dart';
+import 'package:visiaxx/widgets/common/snellen_size_indicator.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/services/speech_service.dart';
@@ -23,6 +24,10 @@ class ShortDistanceTestScreen extends StatefulWidget {
 }
 
 class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
+  String _accumulatedSpeech =
+      ''; // Accumulate speech across multiple detections
+  Timer? _speechBufferTimer; // Timer to detect end of speech
+  static const Duration _speechBufferDelay = Duration(milliseconds: 1500);
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
 
@@ -111,6 +116,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
       return;
     }
 
+    // Reset speech state
+    _accumulatedSpeech = '';
+    _speechBufferTimer?.cancel();
+
     setState(() {
       _showSentence = true;
       _waitingForResponse = true;
@@ -124,18 +133,23 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     _ttsService.speak('Read the sentence on screen');
 
     // Start listening after a delay
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted && _waitingForResponse && !_showKeyboard) {
         _startListening();
       }
     });
 
-    // Auto-timeout after 15 seconds
-    _listeningTimer = Timer(const Duration(seconds: 15), () {
+    // Auto-timeout after 20 seconds (increased from 15)
+    _listeningTimer = Timer(const Duration(seconds: 20), () {
       if (_waitingForResponse) {
-        final lastValue = _speechService.finalizeWithLastValue();
-        if (lastValue != null && lastValue.isNotEmpty) {
-          _processSentence(lastValue);
+        // Use accumulated speech if available
+        final finalText = _accumulatedSpeech.trim();
+
+        if (finalText.isNotEmpty) {
+          debugPrint(
+            '[ShortDistance] ⏱️ Timeout - using accumulated: $finalText',
+          );
+          _processSentence(finalText);
         } else if (_inputController.text.trim().isNotEmpty) {
           _processSentence(_inputController.text.trim());
         } else {
@@ -146,17 +160,70 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   }
 
   Future<void> _startListening() async {
+    _accumulatedSpeech = ''; // Clear accumulated speech
+
     await _speechService.startListening(
-      listenFor: const Duration(seconds: 15),
-      bufferMs: 500,
-      autoRestart: false,
-      minConfidence: 0.3,
+      listenFor: const Duration(seconds: 20), // Longer duration
+      bufferMs: 800, // Longer buffer to capture pauses
+      autoRestart: true, // CRITICAL: Auto-restart on silence
+      minConfidence: 0.2, // Lower confidence threshold
     );
   }
 
   void _handleVoiceResponse(String recognized) {
     if (!_waitingForResponse) return;
-    _processSentence(recognized);
+
+    _speechBufferTimer?.cancel();
+
+    // If we have accumulated speech, use that; otherwise use the recognized result
+    final finalText = _accumulatedSpeech.isNotEmpty
+        ? _accumulatedSpeech.trim()
+        : recognized.trim();
+
+    if (finalText.isNotEmpty) {
+      debugPrint('[ShortDistance] 🎤 Final recognized: $finalText');
+      _processSentence(finalText);
+    }
+  }
+
+  void _handleSpeechDetected(String partialResult) {
+    if (!mounted || !_waitingForResponse) return;
+
+    // Cancel existing buffer timer
+    _speechBufferTimer?.cancel();
+
+    // Accumulate speech intelligently
+    if (partialResult.isNotEmpty) {
+      // If accumulated speech is empty or new result is longer, update it
+      if (_accumulatedSpeech.isEmpty ||
+          partialResult.length > _accumulatedSpeech.length) {
+        _accumulatedSpeech = partialResult;
+      } else {
+        // Try to merge: if new result contains words not in accumulated, append them
+        final accWords = _accumulatedSpeech.toLowerCase().split(' ').toSet();
+        final newWords = partialResult.toLowerCase().split(' ');
+
+        for (final word in newWords) {
+          if (!accWords.contains(word) && word.length > 2) {
+            _accumulatedSpeech += ' $word';
+          }
+        }
+      }
+
+      setState(() {
+        _recognizedText = _accumulatedSpeech.trim();
+      });
+
+      // Set a timer to process the accumulated speech after user stops talking
+      _speechBufferTimer = Timer(_speechBufferDelay, () {
+        if (_accumulatedSpeech.trim().isNotEmpty && _waitingForResponse) {
+          debugPrint(
+            '[ShortDistance] 📝 Processing accumulated: $_accumulatedSpeech',
+          );
+          _processSentence(_accumulatedSpeech.trim());
+        }
+      });
+    }
   }
 
   void _processSentence(String userSaid) {
@@ -276,6 +343,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   @override
   void dispose() {
     _listeningTimer?.cancel();
+    _speechBufferTimer?.cancel();
     _inputController.dispose();
     _ttsService.dispose();
     _speechService.dispose();
@@ -318,7 +386,85 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
 
             // Distance indicator in bottom right
             Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
+            // 🆕 Distance warning overlay - ADDED THIS
+            if (_isDistanceOk == false && _showSentence && _waitingForResponse)
+              _buildDistanceWarningOverlay(),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDistanceWarningOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.85),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
+              const SizedBox(height: 16),
+              Text(
+                'Please Adjust Distance',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.error,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Maintain 40cm distance for accurate results',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _currentDistance > 0
+                    ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
+                    : 'Face not detected',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _currentDistance > 0
+                      ? AppColors.primary
+                      : AppColors.error,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Acceptable range: 35cm - 45cm',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              // Skip button
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isDistanceOk = true;
+                  });
+                  // Resume listening if it was stopped
+                  if (!_isListening && !_showKeyboard) {
+                    _startListening();
+                  }
+                },
+                child: Text(
+                  'Continue Anyway',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -353,16 +499,14 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Snellen notation
-            Text(
-              sentence.snellen,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
+            // 🆕 Snellen indicator positioned above sentence
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SnellenSizeIndicator(snellenNotation: sentence.snellen),
+              ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
 
             // The sentence
             Text(

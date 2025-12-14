@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
+import 'package:visiaxx/widgets/common/snellen_size_indicator.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/test_constants.dart';
@@ -1157,64 +1158,55 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         // Main E display area
         Expanded(
           child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                // Current level info - wrapped to prevent overflow
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'Size: ${level.snellen}',
-                    style: TextStyle(color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // The Tumbling E - using sans-serif font as per spec
-                Transform.rotate(
-                  angle: _currentDirection.rotationDegrees * pi / 180,
-                  child: Text(
-                    'E',
-                    style: TextStyle(
-                      fontSize: eSize.clamp(
-                        14.0,
-                        200.0,
-                      ), // Clamp to reasonable range
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'sans-serif', // Sans-serif as per spec
-                      color: Colors.black,
+                // The Tumbling E - centered
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Transform.rotate(
+                      angle: _currentDirection.rotationDegrees * pi / 180,
+                      child: Text(
+                        'E',
+                        style: TextStyle(
+                          fontSize: eSize.clamp(14.0, 200.0),
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'sans-serif',
+                          color: Colors.black,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                // Instruction - wrapped to prevent overflow
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Which way is the E pointing?',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 16,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Use buttons or say: Upward, Bottom, Left, Right',
-                        style: TextStyle(
-                          color: AppColors.textTertiary,
-                          fontSize: 12,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+                // 🆕 Snellen size indicator - positioned in bottom-right of E area
+                Positioned(
+                  bottom: 40,
+                  right: 40,
+                  child: SnellenSizeIndicator(snellenNotation: level.snellen),
                 ),
               ],
             ),
+          ),
+        ),
+        // Instruction text at bottom
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            children: [
+              Text(
+                'Which way is the E pointing?',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Use buttons or say: Upward, Bottom, Left, Right',
+                style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ],

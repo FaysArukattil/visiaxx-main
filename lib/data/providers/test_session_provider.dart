@@ -113,6 +113,9 @@ class TestSessionProvider extends ChangeNotifier {
   void setShortDistanceResult(ShortDistanceResult result) {
     _shortDistance = result;
     notifyListeners();
+    debugPrint(
+      '✅ [TestSessionProvider] Short distance result saved: ${result.toMap()}',
+    );
   }
 
   /// Get overall test status
@@ -149,7 +152,9 @@ class TestSessionProvider extends ChangeNotifier {
 
   /// Build complete test result model
   TestResultModel buildTestResult(String userId) {
-    return TestResultModel(
+    final overallStatus = getOverallStatus();
+    final recommendation = getRecommendation();
+    final result = TestResultModel(
       id: '', // Will be set by Firestore
       userId: userId,
       profileId: _profileId,
@@ -167,6 +172,10 @@ class TestSessionProvider extends ChangeNotifier {
       overallStatus: getOverallStatus(),
       recommendation: getRecommendation(),
     );
+    debugPrint(
+      '✅ [TestSessionProvider] Built test result with short distance: ${result.shortDistance != null}',
+    );
+    return result;
   }
 
   /// Reset the test session

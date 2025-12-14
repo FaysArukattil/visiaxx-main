@@ -106,27 +106,61 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
       _distanceService.onDistanceUpdate = _handleDistanceUpdate;
       _distanceService.onError = _handleError;
 
-      // Initialize camera
-      _cameraController = await _distanceService.initializeCamera();
+      debugPrint('[DistanceCalibration] 🔥 Initializing camera...');
 
-      if (_cameraController == null) {
-        setState(() {
-          _hasError = true;
-          _errorMessage = 'Failed to initialize camera';
-          _isInitializing = false;
-        });
-        return;
+      // Initialize camera with retry logic
+      int retries = 0;
+      const maxRetries = 3;
+
+      while (retries < maxRetries && _cameraController == null) {
+        try {
+          _cameraController = await _distanceService.initializeCamera();
+
+          if (_cameraController != null &&
+              _cameraController!.value.isInitialized) {
+            debugPrint(
+              '[DistanceCalibration] ✅ Camera initialized successfully',
+            );
+            break;
+          }
+
+          retries++;
+          if (retries < maxRetries) {
+            debugPrint(
+              '[DistanceCalibration] ⚠️ Retry $retries/$maxRetries...',
+            );
+            await Future.delayed(Duration(milliseconds: 500 * retries));
+          }
+        } catch (e) {
+          debugPrint(
+            '[DistanceCalibration] ❌ Camera init attempt $retries failed: $e',
+          );
+          retries++;
+          if (retries < maxRetries) {
+            await Future.delayed(Duration(milliseconds: 500 * retries));
+          }
+        }
+      }
+
+      if (_cameraController == null ||
+          !_cameraController!.value.isInitialized) {
+        throw Exception(
+          'Failed to initialize camera after $maxRetries attempts',
+        );
       }
 
       // Start monitoring
       await _distanceService.startMonitoring();
 
-      setState(() {
-        _isInitializing = false;
-      });
+      // Force a rebuild to show camera preview
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
+      }
 
-      // Debug logging to verify camera state
-      debugPrint('[DistanceCalibration] Camera initialized successfully');
+      // Debug logging
+      debugPrint('[DistanceCalibration] Camera preview ready');
       debugPrint(
         '[DistanceCalibration] Preview size: ${_cameraController!.value.previewSize}',
       );
@@ -134,7 +168,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
         '[DistanceCalibration] Aspect ratio: ${_cameraController!.value.aspectRatio}',
       );
 
-      // Speak instructions with correct target distance
+      // Speak instructions
       final distanceText = widget.targetDistanceCm >= 100
           ? '1 meter'
           : '${widget.targetDistanceCm.toInt()} centimeters';
@@ -144,11 +178,14 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
         'Look at the camera and I will guide you.',
       );
     } catch (e) {
-      setState(() {
-        _hasError = true;
-        _errorMessage = 'Camera error: $e';
-        _isInitializing = false;
-      });
+      debugPrint('[DistanceCalibration] ❌ Fatal error: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Camera error: $e';
+          _isInitializing = false;
+        });
+      }
     }
   }
 
@@ -319,35 +356,29 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Camera preview - use AspectRatio for proper sizing
+        // 🔥 FIXED: Camera preview with proper aspect ratio handling
         if (_cameraController != null && _cameraController!.value.isInitialized)
-          Positioned.fill(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: _cameraController!.value.previewSize?.height ?? 100,
-                height: _cameraController!.value.previewSize?.width ?? 100,
-                child: CameraPreview(_cameraController!),
-              ),
+          Center(
+            child: AspectRatio(
+              aspectRatio: _cameraController!.value.aspectRatio,
+              child: CameraPreview(_cameraController!),
             ),
           )
         else
-          // Show loading state with a visible background
-          Positioned.fill(
-            child: Container(
-              color: Colors.grey.shade900,
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: Colors.white),
-                    SizedBox(height: 16),
-                    Text(
-                      'Starting camera...',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                ),
+          // Loading state with gray background instead of black
+          Container(
+            color: Colors.grey.shade800,
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 16),
+                  Text(
+                    'Initializing camera...',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ],
               ),
             ),
           ),
@@ -363,10 +394,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.8),
-                  Colors.transparent,
-                ],
+                colors: [Colors.black.withOpacity(0.7), Colors.transparent],
               ),
             ),
           ),
@@ -383,10 +411,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.9),
-                  Colors.transparent,
-                ],
+                colors: [Colors.black.withOpacity(0.85), Colors.transparent],
               ),
             ),
           ),
@@ -399,7 +424,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
             height: 280,
             decoration: BoxDecoration(
               border: Border.all(
-                color: _getStatusColor().withValues(alpha: 0.6),
+                color: _getStatusColor().withOpacity(0.6),
                 width: 3,
               ),
               borderRadius: BorderRadius.circular(120),
