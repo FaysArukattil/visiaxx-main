@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:visiaxx/features/quick_vision_test/screens/visual_acuity_test_screen.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 
@@ -132,8 +133,16 @@ class _CoverRightEyeInstructionScreenState extends State {
                 child: ElevatedButton(
                   onPressed: _buttonEnabled
                       ? () {
-                          // Pop back to visual acuity test screen which will handle left eye
-                          Navigator.of(context).pop();
+                          // 🔥 Navigate with startWithLeftEye flag
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const VisualAcuityTestScreen(
+                                    startWithLeftEye: true,
+                                  ),
+                            ),
+                          );
                         }
                       : null,
                   style: ElevatedButton.styleFrom(

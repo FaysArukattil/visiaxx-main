@@ -20,7 +20,9 @@ import 'cover_right_eye_instruction_screen.dart';
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
 /// Implements Visiaxx specification for 1-meter testing
 class VisualAcuityTestScreen extends StatefulWidget {
-  const VisualAcuityTestScreen({super.key});
+  const VisualAcuityTestScreen({super.key, this.startWithLeftEye = false});
+
+  final bool startWithLeftEye;
 
   @override
   State<VisualAcuityTestScreen> createState() => _VisualAcuityTestScreenState();
@@ -124,6 +126,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _pixelsPerMm = _pixelsPerMm.clamp(5.0, 10.0);
   }
 
+  // Replace the entire _initServices() method with this complete version
+
   Future<void> _initServices() async {
     await _ttsService.initialize();
     await _speechService.initialize();
@@ -138,7 +142,28 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       if (mounted) setState(() => _isListening = false);
     };
 
-    // Always start with distance calibration using the new screen
+    // 🔥 KEY FIX: Check if we should start with left eye
+    final provider = context.read<TestSessionProvider>();
+
+    if (widget.startWithLeftEye ||
+        (provider.currentEye == 'left' && provider.visualAcuityRight != null)) {
+      // We're starting/resuming left eye - NO calibration needed
+      debugPrint(
+        '🔥 [VisualAcuity] Starting LEFT EYE test - skipping calibration',
+      );
+      _showDistanceCalibration = false;
+      _currentEye = 'left';
+      provider.switchEye();
+
+      // Start test immediately
+      _startEyeTest();
+      return;
+    }
+
+    // First time (right eye) - show calibration
+    debugPrint(
+      '🔥 [VisualAcuity] Starting RIGHT EYE test - showing calibration',
+    );
     if (_useDistanceMonitoring && _showDistanceCalibration) {
       // Wait for build to complete, then show calibration screen
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1252,17 +1277,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Navigate to instruction screen instead of showing inline
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_eyeSwitchPending) {
-        Navigator.push(
+        // Use pushReplacement to avoid navigation stack issues
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => const CoverRightEyeInstructionScreen(),
           ),
-        ).then((_) {
-          // When returning from instruction screen, switch to left eye
-          if (mounted) {
-            _switchToLeftEye();
-          }
-        });
+        );
       }
     });
 
