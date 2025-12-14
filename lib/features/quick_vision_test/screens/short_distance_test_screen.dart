@@ -8,8 +8,10 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/services/speech_service.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/services/distance_detection_service.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/short_distance_result.dart';
+import '../../../core/services/distance_detection_service.dart';
 
 /// Short distance reading test - both eyes open, 40cm distance
 class ShortDistanceTestScreen extends StatefulWidget {
@@ -23,6 +25,17 @@ class ShortDistanceTestScreen extends StatefulWidget {
 class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
+
+  // Distance monitoring service
+  final DistanceDetectionService _distanceService = DistanceDetectionService(
+    targetDistanceCm: 40.0,
+    toleranceCm: 5.0,
+  );
+
+  // Distance monitoring state
+  double _currentDistance = 0;
+  DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
+  bool _isDistanceOk = true;
 
   // Test state
   int _currentScreen = 0;
@@ -40,6 +53,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   String? _recognizedText;
   Timer? _listeningTimer;
 
+  // Text input
+  final TextEditingController _inputController = TextEditingController();
+  bool _showKeyboard = false;
+
   // Result feedback
   bool _lastResultCorrect = false;
   double _lastSimilarity = 0.0;
@@ -48,6 +65,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   void initState() {
     super.initState();
     _initServices();
+    _startDistanceMonitoring();
   }
 
   Future<void> _initServices() async {
@@ -71,6 +89,22 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     _showNextSentence();
   }
 
+  Future<void> _startDistanceMonitoring() async {
+    _distanceService.onDistanceUpdate = (distance, status) {
+      if (!mounted) return;
+      setState(() {
+        _currentDistance = distance;
+        _distanceStatus = status;
+        _isDistanceOk = status == DistanceStatus.optimal;
+      });
+    };
+
+    _distanceService.onError = (msg) => debugPrint('[ShortDistance] $msg');
+
+    await _distanceService.initializeCamera();
+    await _distanceService.startMonitoring();
+  }
+
   void _showNextSentence() {
     if (_currentScreen >= TestConstants.shortDistanceSentences.length) {
       _completeTest();
@@ -82,24 +116,28 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
       _waitingForResponse = true;
       _showResult = false;
       _recognizedText = null;
+      _inputController.clear();
+      _showKeyboard = false;
     });
 
     // Speak instruction
     _ttsService.speak('Read the sentence on screen');
 
-    // Start listening
+    // Start listening after a delay
     Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted && _waitingForResponse) {
+      if (mounted && _waitingForResponse && !_showKeyboard) {
         _startListening();
       }
     });
 
-    // Auto-timeout after 10 seconds
-    _listeningTimer = Timer(const Duration(seconds: 10), () {
+    // Auto-timeout after 15 seconds
+    _listeningTimer = Timer(const Duration(seconds: 15), () {
       if (_waitingForResponse) {
         final lastValue = _speechService.finalizeWithLastValue();
         if (lastValue != null && lastValue.isNotEmpty) {
           _processSentence(lastValue);
+        } else if (_inputController.text.trim().isNotEmpty) {
+          _processSentence(_inputController.text.trim());
         } else {
           _processSentence(''); // No response
         }
@@ -109,7 +147,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
 
   Future<void> _startListening() async {
     await _speechService.startListening(
-      listenFor: const Duration(seconds: 10),
+      listenFor: const Duration(seconds: 15),
       bufferMs: 500,
       autoRestart: false,
       minConfidence: 0.3,
@@ -118,8 +156,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
 
   void _handleVoiceResponse(String recognized) {
     if (!_waitingForResponse) return;
-
-    // Process the sentence
     _processSentence(recognized);
   }
 
@@ -192,7 +228,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
       _showSentence = false;
     });
 
-    // Calculate best acuity (smallest font size where user passed)
+    // Calculate best acuity
     String bestAcuity = '6/60';
     for (final result in _results.reversed) {
       if (result.passed) {
@@ -240,8 +276,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   @override
   void dispose() {
     _listeningTimer?.cancel();
+    _inputController.dispose();
     _ttsService.dispose();
     _speechService.dispose();
+    _distanceService.stopMonitoring();
+    _distanceService.dispose();
     super.dispose();
   }
 
@@ -262,16 +301,23 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
         ),
       ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            _buildProgressBar(),
-            Expanded(
-              child: _showSentence
-                  ? _buildSentenceView()
-                  : const Center(child: CircularProgressIndicator()),
+            Column(
+              children: [
+                _buildProgressBar(),
+                Expanded(
+                  child: _showSentence
+                      ? _buildSentenceView()
+                      : const Center(child: CircularProgressIndicator()),
+                ),
+                if (_isListening && !_showKeyboard) _buildListeningIndicator(),
+                if (_showResult) _buildResultFeedback(),
+              ],
             ),
-            if (_isListening) _buildListeningIndicator(),
-            if (_showResult) _buildResultFeedback(),
+
+            // Distance indicator in bottom right
+            Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
           ],
         ),
       ),
@@ -302,7 +348,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     final sentence = TestConstants.shortDistanceSentences[_currentScreen];
 
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -331,11 +377,95 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
             const SizedBox(height: 48),
 
             // Instruction
-            if (_waitingForResponse)
+            if (_waitingForResponse) ...[
               Text(
-                'Read this sentence aloud',
+                'Read this sentence aloud or type it',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               ),
+              const SizedBox(height: 24),
+
+              // Toggle buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Voice button
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _showKeyboard = false;
+                        _inputController.clear();
+                      });
+                      if (!_isListening) {
+                        _startListening();
+                      }
+                    },
+                    icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+                    label: Text(_isListening ? 'Listening...' : 'Speak'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isListening ? AppColors.success : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Type button
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _showKeyboard = !_showKeyboard;
+                      });
+                      if (_showKeyboard) {
+                        _speechService.cancel();
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          FocusScope.of(context).requestFocus(FocusNode());
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.keyboard),
+                    label: Text(_showKeyboard ? 'Hide Keyboard' : 'Type'),
+                  ),
+                ],
+              ),
+
+              // Text input field
+              if (_showKeyboard) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: TextField(
+                    controller: _inputController,
+                    autofocus: true,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText: 'Type the sentence here...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                    ),
+                    onSubmitted: (value) {
+                      if (value.trim().isNotEmpty) {
+                        _processSentence(value.trim());
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_inputController.text.trim().isNotEmpty) {
+                      _processSentence(_inputController.text.trim());
+                    }
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    child: Text('Submit'),
+                  ),
+                ),
+              ],
+            ],
           ],
         ),
       ),
@@ -398,6 +528,51 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDistanceIndicator() {
+    Color indicatorColor;
+    String distanceText;
+
+    if (_currentDistance > 0) {
+      distanceText = '${_currentDistance.toStringAsFixed(0)}cm';
+
+      // 40cm ±5cm = 35-45cm acceptable range
+      if (_currentDistance >= 35 && _currentDistance <= 45) {
+        indicatorColor = AppColors.success;
+      } else if (_currentDistance >= 30 && _currentDistance <= 50) {
+        indicatorColor = AppColors.warning;
+      } else {
+        indicatorColor = AppColors.error;
+      }
+    } else {
+      distanceText = 'No face';
+      indicatorColor = AppColors.error;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: indicatorColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: indicatorColor, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.straighten, size: 14, color: indicatorColor),
+          const SizedBox(width: 4),
+          Text(
+            distanceText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: indicatorColor,
+            ),
           ),
         ],
       ),

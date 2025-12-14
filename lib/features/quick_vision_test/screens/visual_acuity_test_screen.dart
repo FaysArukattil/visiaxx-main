@@ -155,6 +155,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _currentEye = 'left';
       provider.switchEye();
 
+      // 🔥 KEY: Resume continuous distance monitoring without recalibration
+      await _startContinuousDistanceMonitoring();
+
       // Start test immediately
       _startEyeTest();
       return;
@@ -218,17 +221,25 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Future<void> _startContinuousDistanceMonitoring() async {
     if (!_useDistanceMonitoring) return;
 
+    debugPrint('🔥 [DistanceMonitor] Starting/Resuming distance monitoring');
+
     // Set up distance update callback
     _distanceService.onDistanceUpdate = _handleDistanceUpdate;
     _distanceService.onError = (msg) => debugPrint('[DistanceMonitor] $msg');
 
     // Initialize and start camera if not already running
     if (!_distanceService.isReady) {
+      debugPrint('🔥 [DistanceMonitor] Initializing camera');
       await _distanceService.initializeCamera();
+    } else {
+      debugPrint('🔥 [DistanceMonitor] Camera already initialized, reusing');
     }
 
     if (!_distanceService.isMonitoring) {
+      debugPrint('🔥 [DistanceMonitor] Starting monitoring');
       await _distanceService.startMonitoring();
+    } else {
+      debugPrint('🔥 [DistanceMonitor] Monitoring already active');
     }
   }
 
@@ -657,7 +668,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _startEyeTest();
   }
 
-  void _proceedToColorTest() {
+  void _proceedToBothEyesTest() {
+    // Stop distance monitoring before navigating
+    _distanceService.stopMonitoring();
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -1274,10 +1288,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildEyeSwitchView() {
-    // Navigate to instruction screen instead of showing inline
+    // Navigate to instruction screen - only once
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_eyeSwitchPending) {
-        // Use pushReplacement to avoid navigation stack issues
+      if (_eyeSwitchPending && mounted) {
+        // Mark as handled immediately
+        setState(() {
+          _eyeSwitchPending = false;
+        });
+
+        // Navigate to instruction screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -1287,7 +1306,19 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
     });
 
-    return const Center(child: CircularProgressIndicator());
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 24),
+          Text(
+            'Preparing left eye test...',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTestCompleteView() {
@@ -1330,10 +1361,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _proceedToColorTest,
+              onPressed: _proceedToBothEyesTest,
               child: const Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('Continue to Color Vision Test'),
+                child: Text('Continue to Short Distance Test(Reading Test)'),
               ),
             ),
           ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_screen.dart';
+import 'package:visiaxx/features/quick_vision_test/screens/short_distance_test_screen.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 
@@ -117,10 +119,36 @@ class _BothEyesOpenInstructionScreenState extends State {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _buttonEnabled
-                      ? () => Navigator.pushReplacementNamed(
-                          context,
-                          '/short-distance-test',
-                        )
+                      ? () {
+                          // Navigate to distance calibration first
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DistanceCalibrationScreen(
+                                targetDistanceCm: 40.0,
+                                toleranceCm: 5.0,
+                                onCalibrationComplete: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ShortDistanceTestScreen(),
+                                    ),
+                                  );
+                                },
+                                onSkip: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ShortDistanceTestScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        }
                       : null,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.all(16),
