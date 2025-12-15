@@ -12,9 +12,9 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/short_distance_result.dart';
-import '../../../core/services/distance_detection_service.dart';
 
 /// Short distance reading test - both eyes open, 40cm distance
+/// ✅ ULTRA-RELIABLE voice recognition with continuous listening
 class ShortDistanceTestScreen extends StatefulWidget {
   const ShortDistanceTestScreen({super.key});
 
@@ -24,13 +24,11 @@ class ShortDistanceTestScreen extends StatefulWidget {
 }
 
 class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
-  // 🆕 UPDATED: Enhanced speech tracking
+  // ✅ ENHANCED: Speech tracking with chunk-based accumulation
   String _accumulatedSpeech = '';
   Timer? _speechBufferTimer;
-  List<String> _speechChunks = []; // Track all speech chunks
-  static const Duration _speechBufferDelay = Duration(
-    milliseconds: 2000,
-  ); // Increased to 2s
+  List<String> _speechChunks = [];
+  static const Duration _speechBufferDelay = Duration(milliseconds: 2000);
 
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
@@ -82,8 +80,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     await _speechService.initialize();
 
     _speechService.onResult = _handleVoiceResponse;
-    _speechService.onSpeechDetected =
-        _handleSpeechDetected; // 🆕 Using new handler
+    _speechService.onSpeechDetected = _handleSpeechDetected;
     _speechService.onListeningStarted = () {
       if (mounted) setState(() => _isListening = true);
     };
@@ -111,7 +108,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     await _distanceService.startMonitoring();
   }
 
-  // 🆕 UPDATED: Clear chunks on new sentence
+  /// ✅ UPDATED: Enhanced sentence flow with longer timeout
   void _showNextSentence() {
     if (_currentScreen >= TestConstants.shortDistanceSentences.length) {
       _completeTest();
@@ -120,7 +117,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
 
     // Reset ALL speech state
     _accumulatedSpeech = '';
-    _speechChunks.clear(); // Clear chunks
+    _speechChunks.clear();
     _speechBufferTimer?.cancel();
 
     setState(() {
@@ -141,57 +138,62 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
       }
     });
 
-    // Auto-timeout (increased to 25 seconds)
-    _listeningTimer = Timer(const Duration(seconds: 25), () {
+    // ✅ INCREASED timeout to 35 seconds for longer sentences
+    _listeningTimer = Timer(const Duration(seconds: 35), () {
       if (_waitingForResponse) {
         final finalText = _accumulatedSpeech.trim();
 
         if (finalText.isNotEmpty) {
-          debugPrint('[Speech] ⏱️ Timeout - using: "$finalText"');
+          debugPrint('[ShortDistance] ⏱️ Timeout - using: "$finalText"');
           _processSentence(finalText);
         } else if (_inputController.text.trim().isNotEmpty) {
           _processSentence(_inputController.text.trim());
         } else {
+          debugPrint('[ShortDistance] ⏱️ Timeout - NO RESPONSE');
           _processSentence(''); // No response
         }
       }
     });
   }
 
-  // 🆕 UPDATED: Start listening with optimal settings
+  /// ✅ ULTRA-RELIABLE: Start listening with optimal settings
   Future<void> _startListening() async {
     _accumulatedSpeech = '';
     _speechChunks.clear();
 
+    debugPrint('[ShortDistance] 🎤 Starting ULTRA-RELIABLE voice recognition');
+
     await _speechService.startListening(
-      listenFor: const Duration(seconds: 25), // Longer duration
-      bufferMs: 1000, // Even longer buffer for pauses
-      autoRestart: true, // Keep listening
-      minConfidence: 0.15, // Even lower threshold
+      listenFor: const Duration(seconds: 30), // ✅ LONGER duration
+      pauseFor: const Duration(seconds: 5), // ✅ LONGER pause tolerance
+      bufferMs: 2000, // ✅ LONGER buffer (2 seconds)
+      autoRestart: true, // ✅ Keep listening continuously
+      minConfidence: 0.1, // ✅ VERY LOW threshold - accept almost anything
     );
   }
 
+  /// ✅ Handle final voice response
   void _handleVoiceResponse(String recognized) {
     if (!_waitingForResponse) return;
 
     _speechBufferTimer?.cancel();
 
-    // If we have accumulated speech, use that; otherwise use the recognized result
+    // Use accumulated speech if available, otherwise use recognized result
     final finalText = _accumulatedSpeech.isNotEmpty
         ? _accumulatedSpeech.trim()
         : recognized.trim();
 
     if (finalText.isNotEmpty) {
-      debugPrint('[ShortDistance] 🎤 Final recognized: $finalText');
+      debugPrint('[ShortDistance] 🎤 Final recognized: "$finalText"');
       _processSentence(finalText);
     }
   }
 
-  // 🆕 IMPROVED: Better speech accumulation with word merging
+  /// ✅ IMPROVED: Smart speech accumulation with word merging
   void _handleSpeechDetected(String partialResult) {
     if (!mounted || !_waitingForResponse) return;
 
-    debugPrint('[Speech] 🎤 Detected: "$partialResult"');
+    debugPrint('[ShortDistance] 🎤 Detected: "$partialResult"');
 
     // Cancel existing buffer timer
     _speechBufferTimer?.cancel();
@@ -223,7 +225,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     // Build accumulated speech from unique words
     _accumulatedSpeech = allWords.join(' ');
 
-    debugPrint('[Speech] 📝 Accumulated: "$_accumulatedSpeech"');
+    debugPrint('[ShortDistance] 📝 Accumulated: "$_accumulatedSpeech"');
 
     setState(() {
       _recognizedText = _accumulatedSpeech;
@@ -232,12 +234,13 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     // Set timer to process after user stops speaking
     _speechBufferTimer = Timer(_speechBufferDelay, () {
       if (_accumulatedSpeech.trim().isNotEmpty && _waitingForResponse) {
-        debugPrint('[Speech] ✅ Processing final: "$_accumulatedSpeech"');
+        debugPrint('[ShortDistance] ✅ Processing final: "$_accumulatedSpeech"');
         _processSentence(_accumulatedSpeech.trim());
       }
     });
   }
 
+  /// Process the sentence response
   void _processSentence(String userSaid) {
     _listeningTimer?.cancel();
     _speechService.cancel();
@@ -352,12 +355,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     _ttsService.speak('Reading test complete');
   }
 
-  // 🆕 UPDATED: Clear chunks in dispose
   @override
   void dispose() {
     _listeningTimer?.cancel();
     _speechBufferTimer?.cancel();
-    _speechChunks.clear(); // Clear chunks
+    _speechChunks.clear();
     _inputController.dispose();
     _ttsService.dispose();
     _speechService.dispose();
@@ -400,7 +402,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
 
             // Distance indicator in bottom right
             Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
-            // Distance warning overlay
+
+            // ✅ Distance warning overlay (voice continues in background)
             if (_isDistanceOk == false && _showSentence && _waitingForResponse)
               _buildDistanceWarningOverlay(),
           ],
@@ -409,11 +412,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     );
   }
 
-  // ✅ FIX #6C: In short_distance_test_screen.dart
-  // Apply the SAME voice recognition fix as visual acuity
-
-  // FIND and REPLACE _buildDistanceWarningOverlay() method (around line 350):
-
+  /// ✅ FIXED: Distance warning that doesn't stop voice recognition
   Widget _buildDistanceWarningOverlay() {
     return Container(
       color: Colors.black.withOpacity(0.85),
@@ -533,6 +532,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     );
   }
 
+  /// ✅ IMPROVED: Better sentence view with prominent size indicator
   Widget _buildSentenceView() {
     final sentence = TestConstants.shortDistanceSentences[_currentScreen];
 
@@ -542,14 +542,32 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 🆕 Size indicator at top-right
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                SnellenSizeIndicator(snellenNotation: sentence.snellen),
-              ],
+            // ✅ PROMINENT Size indicator at top
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary, width: 2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.straighten, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    sentence.snellen,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 32),
 
             // The sentence
             Text(

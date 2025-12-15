@@ -1,7 +1,5 @@
-import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -30,34 +28,18 @@ class PdfExportService {
     return file;
   }
 
-  /// Print or share the PDF directly
-  Future<void> printOrSharePdf(
-    TestResultModel result, {
-    String? userName,
-    int? userAge,
-  }) async {
-    final pdf = await _buildPdfDocument(
-      result,
-      userName: userName,
-      userAge: userAge,
-    );
-    await Printing.layoutPdf(onLayout: (format) => pdf.save());
-  }
-
-  /// Share PDF file using share_plus for native sharing
+  /// Share PDF file
   Future<void> sharePdf(
     TestResultModel result, {
     String? userName,
     int? userAge,
   }) async {
-    // Generate PDF file
     final file = await generatePdfReport(
       result,
       userName: userName,
       userAge: userAge,
     );
 
-    // Share using share_plus for native share dialog
     await Share.shareXFiles(
       [XFile(file.path)],
       text: 'My Vision Test Report',
@@ -66,7 +48,7 @@ class PdfExportService {
     );
   }
 
-  /// Build PDF Document with all sections
+  /// ✅ BUILD PROFESSIONAL PDF
   Future<pw.Document> _buildPdfDocument(
     TestResultModel result, {
     String? userName,
@@ -83,35 +65,36 @@ class PdfExportService {
         build: (context) => [
           // Title Section
           _buildTitleSection(result, userName, userAge),
-          pw.SizedBox(height: 20),
+          pw.SizedBox(height: 24),
 
-          // Visual Acuity Section (Distance Vision - 1 meter)
-          _buildVisualAcuitySection(result),
-          pw.SizedBox(height: 20),
+          // Executive Summary
+          _buildExecutiveSummary(result),
+          pw.SizedBox(height: 24),
 
-          // Short Distance Section (Reading Test - 40cm)
+          // Visual Acuity Section - DETAILED
+          _buildVisualAcuityDetailedSection(result),
+          pw.SizedBox(height: 24),
+
+          // Short Distance Section - DETAILED
           if (result.shortDistance != null) ...[
-            _buildShortDistanceSection(result),
-            pw.SizedBox(height: 20),
+            _buildShortDistanceDetailedSection(result),
+            pw.SizedBox(height: 24),
           ],
 
-          // Color Vision Section
-          _buildColorVisionSection(result),
-          pw.SizedBox(height: 20),
+          // Color Vision Section - DETAILED
+          _buildColorVisionDetailedSection(result),
+          pw.SizedBox(height: 24),
 
-          // Amsler Grid Section
-          if (result.amslerGridRight != null ||
-              result.amslerGridLeft != null) ...[
-            _buildAmslerGridSection(result),
-            pw.SizedBox(height: 20),
-          ],
+          // Amsler Grid Section - DETAILED
+          _buildAmslerGridDetailedSection(result),
+          pw.SizedBox(height: 24),
 
-          // Overall Status Section
-          _buildOverallStatusSection(result),
-          pw.SizedBox(height: 20),
+          // Overall Assessment
+          _buildOverallAssessment(result),
 
-          // Questionnaire Section
+          // Questionnaire (if space allows)
           if (result.questionnaire != null) ...[
+            pw.SizedBox(height: 24),
             _buildQuestionnaireSection(result.questionnaire!),
           ],
         ],
@@ -121,238 +104,44 @@ class PdfExportService {
     return pdf;
   }
 
-  /// Build Short Distance Section (Reading Test - 40cm)
-  pw.Widget _buildShortDistanceSection(TestResultModel result) {
-    final shortDistance = result.shortDistance;
-
-    if (shortDistance == null) {
-      return pw.SizedBox.shrink();
-    }
-
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Reading Test (Near Vision - 40cm)'),
-        pw.SizedBox(height: 8),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(12),
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: PdfColors.grey300),
-            borderRadius: pw.BorderRadius.circular(4),
-          ),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Status row
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'Status:',
-                    style: pw.TextStyle(
-                      fontWeight: pw.FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                  pw.Text(
-                    shortDistance.status,
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      color: shortDistance.isNormal
-                          ? PdfColors.green700
-                          : PdfColors.orange700,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              pw.SizedBox(height: 8),
-              pw.Divider(color: PdfColors.grey300),
-              pw.SizedBox(height: 8),
-
-              // Stats grid
-              pw.Row(
-                children: [
-                  pw.Expanded(
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'Best Acuity:',
-                          style: const pw.TextStyle(
-                            fontSize: 10,
-                            color: PdfColors.grey700,
-                          ),
-                        ),
-                        pw.Text(
-                          shortDistance.bestAcuity,
-                          style: pw.TextStyle(
-                            fontSize: 13,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  pw.Expanded(
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'Sentences:',
-                          style: const pw.TextStyle(
-                            fontSize: 10,
-                            color: PdfColors.grey700,
-                          ),
-                        ),
-                        pw.Text(
-                          '${shortDistance.correctSentences}/${shortDistance.totalSentences}',
-                          style: pw.TextStyle(
-                            fontSize: 13,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              pw.SizedBox(height: 8),
-              pw.Row(
-                children: [
-                  pw.Expanded(
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'Average Match:',
-                          style: const pw.TextStyle(
-                            fontSize: 10,
-                            color: PdfColors.grey700,
-                          ),
-                        ),
-                        pw.Text(
-                          '${shortDistance.averageSimilarity.toStringAsFixed(1)}%',
-                          style: pw.TextStyle(
-                            fontSize: 13,
-                            fontWeight: pw.FontWeight.bold,
-                            color: shortDistance.averageSimilarity >= 70
-                                ? PdfColors.green700
-                                : PdfColors.orange700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  pw.Expanded(
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'Accuracy:',
-                          style: const pw.TextStyle(
-                            fontSize: 10,
-                            color: PdfColors.grey700,
-                          ),
-                        ),
-                        pw.Text(
-                          '${(shortDistance.accuracy * 100).toStringAsFixed(0)}%',
-                          style: pw.TextStyle(
-                            fontSize: 13,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // Detailed responses table (if space allows)
-        if (shortDistance.responses.isNotEmpty) ...[
-          pw.SizedBox(height: 12),
-          pw.Text(
-            'Detailed Results:',
-            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 6),
-          pw.Table(
-            border: pw.TableBorder.all(color: PdfColors.grey300),
-            columnWidths: {
-              0: const pw.FlexColumnWidth(0.5),
-              1: const pw.FlexColumnWidth(1.5),
-              2: const pw.FlexColumnWidth(1),
-              3: const pw.FlexColumnWidth(0.8),
-            },
-            children: [
-              // Header
-              pw.TableRow(
-                decoration: const pw.BoxDecoration(color: PdfColors.grey100),
-                children: [
-                  _buildTableCell('#', isHeader: true),
-                  _buildTableCell('Snellen', isHeader: true),
-                  _buildTableCell('Match %', isHeader: true),
-                  _buildTableCell('Result', isHeader: true),
-                ],
-              ),
-              // Data rows (limit to 7 for space)
-              ...shortDistance.responses.take(7).map((response) {
-                return pw.TableRow(
-                  children: [
-                    _buildTableCell('${response.screenNumber}'),
-                    _buildTableCell(response.snellen),
-                    _buildTableCell(
-                      '${response.similarity.toStringAsFixed(0)}%',
-                    ),
-                    pw.Padding(
-                      padding: const pw.EdgeInsets.all(8),
-                      child: pw.Text(
-                        response.passed ? '✓' : '✗',
-                        style: pw.TextStyle(
-                          fontSize: 10,
-                          color: response.passed
-                              ? PdfColors.green700
-                              : PdfColors.red700,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                        textAlign: pw.TextAlign.center,
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
   pw.Widget _buildHeader(pw.Context context, String? userName) {
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 10),
       decoration: const pw.BoxDecoration(
         border: pw.Border(
-          bottom: pw.BorderSide(width: 1, color: PdfColors.grey300),
+          bottom: pw.BorderSide(width: 2, color: PdfColors.blue800),
         ),
       ),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'VISIAXX',
+                style: pw.TextStyle(
+                  fontSize: 24,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue800,
+                ),
+              ),
+              pw.Text(
+                'Digital Eye Health Assessment',
+                style: const pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+            ],
+          ),
           pw.Text(
-            'VISIAXX',
+            'VISION TEST REPORT',
             style: pw.TextStyle(
-              fontSize: 20,
+              fontSize: 12,
               fontWeight: pw.FontWeight.bold,
               color: PdfColors.blue800,
             ),
-          ),
-          pw.Text(
-            'Digital Eye Clinic',
-            style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600),
           ),
         ],
       ),
@@ -371,11 +160,11 @@ class PdfExportService {
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
           pw.Text(
-            'Generated by Visiaxx App',
+            'Generated by Visiaxx App • Confidential Medical Document',
             style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
           ),
           pw.Text(
-            'Page ${context.pageNumber} of ${context.pagesCount}',
+            'Page ${context.pageNumber}/${context.pagesCount}',
             style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
           ),
         ],
@@ -389,58 +178,68 @@ class PdfExportService {
     int? userAge,
   ) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
+      padding: const pw.EdgeInsets.all(20),
       decoration: pw.BoxDecoration(
         color: PdfColors.blue50,
         borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColors.blue200, width: 1),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
-            'Vision Test Report',
-            style: pw.TextStyle(
-              fontSize: 24,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColors.blue900,
-            ),
-          ),
-          pw.SizedBox(height: 8),
           pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoRow(
-                      'Patient',
-                      result.profileName.isNotEmpty
-                          ? result.profileName
-                          : (userName ?? 'N/A'),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'PATIENT INFORMATION',
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue900,
                     ),
-                    if (userAge != null) _buildInfoRow('Age', '$userAge years'),
-                    _buildInfoRow('Test Type', result.testType.toUpperCase()),
-                  ],
-                ),
+                  ),
+                  pw.SizedBox(height: 8),
+                  _buildInfoRow(
+                    'Name',
+                    result.profileName.isNotEmpty
+                        ? result.profileName
+                        : (userName ?? 'N/A'),
+                  ),
+                  if (userAge != null) _buildInfoRow('Age', '$userAge years'),
+                  _buildInfoRow(
+                    'Profile',
+                    result.profileType == 'self' ? 'Self' : 'Family Member',
+                  ),
+                ],
               ),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoRow(
-                      'Date',
-                      DateFormat('MMM dd, yyyy').format(result.timestamp),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'TEST DETAILS',
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue900,
                     ),
-                    _buildInfoRow(
-                      'Time',
-                      DateFormat('h:mm a').format(result.timestamp),
-                    ),
-                    _buildInfoRow(
-                      'Report ID',
-                      result.id.substring(0, 8).toUpperCase(),
-                    ),
-                  ],
-                ),
+                  ),
+                  pw.SizedBox(height: 8),
+                  _buildInfoRow(
+                    'Date',
+                    DateFormat('MMM dd, yyyy').format(result.timestamp),
+                  ),
+                  _buildInfoRow(
+                    'Time',
+                    DateFormat('h:mm a').format(result.timestamp),
+                  ),
+                  _buildInfoRow(
+                    'Test ID',
+                    result.id.substring(0, 8).toUpperCase(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -456,189 +255,24 @@ class PdfExportService {
         children: [
           pw.Text(
             '$label: ',
-            style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+            style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
           ),
           pw.Text(
             value,
-            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
           ),
         ],
       ),
     );
   }
 
-  pw.Widget _buildVisualAcuitySection(TestResultModel result) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Visual Acuity Test (Distance Vision - 1 meter)'),
-        pw.SizedBox(height: 8),
-        pw.Table(
-          border: pw.TableBorder.all(color: PdfColors.grey300),
-          children: [
-            pw.TableRow(
-              decoration: const pw.BoxDecoration(color: PdfColors.grey100),
-              children: [
-                _buildTableCell('Eye', isHeader: true),
-                _buildTableCell('Snellen Score', isHeader: true),
-                _buildTableCell('LogMAR', isHeader: true),
-                _buildTableCell('Status', isHeader: true),
-              ],
-            ),
-            pw.TableRow(
-              children: [
-                _buildTableCell('Right Eye'),
-                _buildTableCell(
-                  result.visualAcuityRight?.snellenScore ?? 'N/A',
-                ),
-                _buildTableCell(
-                  result.visualAcuityRight?.logMAR.toStringAsFixed(2) ?? 'N/A',
-                ),
-                _buildTableCell(result.visualAcuityRight?.status ?? 'N/A'),
-              ],
-            ),
-            pw.TableRow(
-              children: [
-                _buildTableCell('Left Eye'),
-                _buildTableCell(result.visualAcuityLeft?.snellenScore ?? 'N/A'),
-                _buildTableCell(
-                  result.visualAcuityLeft?.logMAR.toStringAsFixed(2) ?? 'N/A',
-                ),
-                _buildTableCell(result.visualAcuityLeft?.status ?? 'N/A'),
-              ],
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  pw.Widget _buildColorVisionSection(TestResultModel result) {
-    final colorVision = result.colorVision;
-
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Color Vision Test (Ishihara)'),
-        pw.SizedBox(height: 8),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(12),
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: PdfColors.grey300),
-            borderRadius: pw.BorderRadius.circular(4),
-          ),
-          child: pw.Row(
-            children: [
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Score: ${colorVision?.correctAnswers ?? 0}/${colorVision?.totalPlates ?? 0}',
-                      style: pw.TextStyle(
-                        fontSize: 14,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 4),
-                    pw.Text(
-                      'Status: ${colorVision?.status ?? 'N/A'}',
-                      style: const pw.TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              if (colorVision?.deficiencyType != null)
-                pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.orange100,
-                    borderRadius: pw.BorderRadius.circular(4),
-                  ),
-                  child: pw.Text(
-                    colorVision!.deficiencyType!,
-                    style: const pw.TextStyle(
-                      fontSize: 10,
-                      color: PdfColors.orange900,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  pw.Widget _buildAmslerGridSection(TestResultModel result) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Amsler Grid Test'),
-        pw.SizedBox(height: 8),
-        pw.Table(
-          border: pw.TableBorder.all(color: PdfColors.grey300),
-          children: [
-            pw.TableRow(
-              decoration: const pw.BoxDecoration(color: PdfColors.grey100),
-              children: [
-                _buildTableCell('Eye', isHeader: true),
-                _buildTableCell('Distortions', isHeader: true),
-                _buildTableCell('Status', isHeader: true),
-              ],
-            ),
-            if (result.amslerGridRight != null)
-              pw.TableRow(
-                children: [
-                  _buildTableCell('Right Eye'),
-                  _buildTableCell(
-                    result.amslerGridRight!.hasDistortions
-                        ? 'Detected'
-                        : 'None',
-                  ),
-                  _buildTableCell(
-                    result.amslerGridRight!.hasDistortions
-                        ? 'Abnormal'
-                        : 'Normal',
-                  ),
-                ],
-              ),
-            if (result.amslerGridLeft != null)
-              pw.TableRow(
-                children: [
-                  _buildTableCell('Left Eye'),
-                  _buildTableCell(
-                    result.amslerGridLeft!.hasDistortions ? 'Detected' : 'None',
-                  ),
-                  _buildTableCell(
-                    result.amslerGridLeft!.hasDistortions
-                        ? 'Abnormal'
-                        : 'Normal',
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  pw.Widget _buildOverallStatusSection(TestResultModel result) {
-    PdfColor statusColor;
-    switch (result.overallStatus) {
-      case TestStatus.normal:
-        statusColor = PdfColors.green700;
-        break;
-      case TestStatus.review:
-        statusColor = PdfColors.orange700;
-        break;
-      case TestStatus.urgent:
-        statusColor = PdfColors.red700;
-        break;
-    }
+  /// ✅ EXECUTIVE SUMMARY
+  pw.Widget _buildExecutiveSummary(TestResultModel result) {
+    PdfColor statusColor = result.overallStatus == TestStatus.normal
+        ? PdfColors.green700
+        : result.overallStatus == TestStatus.review
+        ? PdfColors.orange700
+        : PdfColors.red700;
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -650,59 +284,123 @@ class PdfExportService {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
+          pw.Text(
+            'EXECUTIVE SUMMARY',
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 8),
           pw.Row(
             children: [
               pw.Text(
                 'Overall Status: ',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                ),
+                style: const pw.TextStyle(fontSize: 11),
               ),
               pw.Text(
                 result.overallStatus.label,
                 style: pw.TextStyle(
-                  fontSize: 14,
+                  fontSize: 11,
                   fontWeight: pw.FontWeight.bold,
                   color: statusColor,
                 ),
               ),
             ],
           ),
-          pw.SizedBox(height: 8),
+          pw.SizedBox(height: 4),
           pw.Text(
             result.recommendation,
-            style: const pw.TextStyle(fontSize: 11),
+            style: const pw.TextStyle(fontSize: 10),
           ),
         ],
       ),
     );
   }
 
-  pw.Widget _buildQuestionnaireSection(QuestionnaireModel questionnaire) {
-    final complaints = <String>[];
-    if (questionnaire.chiefComplaints.hasRedness) complaints.add('Redness');
-    if (questionnaire.chiefComplaints.hasWatering) complaints.add('Watering');
-    if (questionnaire.chiefComplaints.hasItching) complaints.add('Itching');
-    if (questionnaire.chiefComplaints.hasHeadache) complaints.add('Headache');
-    if (questionnaire.chiefComplaints.hasDryness) complaints.add('Dryness');
-    if (questionnaire.chiefComplaints.hasStickyDischarge)
-      complaints.add('Sticky Discharge');
+  /// ✅ VISUAL ACUITY - DETAILED
+  pw.Widget _buildVisualAcuityDetailedSection(TestResultModel result) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('DISTANCE VISION TEST (1 Meter)'),
+        pw.SizedBox(height: 8),
 
-    final conditions = <String>[];
-    if (questionnaire.systemicIllness.hasHypertension)
-      conditions.add('Hypertension');
-    if (questionnaire.systemicIllness.hasDiabetes) conditions.add('Diabetes');
-    if (questionnaire.systemicIllness.hasCopd) conditions.add('COPD');
-    if (questionnaire.systemicIllness.hasAsthma) conditions.add('Asthma');
-    if (questionnaire.systemicIllness.hasMigraine) conditions.add('Migraine');
-    if (questionnaire.systemicIllness.hasSinus) conditions.add('Sinus');
+        // Summary Table
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey300),
+          columnWidths: {
+            0: const pw.FlexColumnWidth(1),
+            1: const pw.FlexColumnWidth(1),
+            2: const pw.FlexColumnWidth(1),
+            3: const pw.FlexColumnWidth(2),
+          },
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+              children: [
+                _buildTableCell('Eye', isHeader: true),
+                _buildTableCell('Snellen', isHeader: true),
+                _buildTableCell('Score', isHeader: true),
+                _buildTableCell('Clinical Interpretation', isHeader: true),
+              ],
+            ),
+            // Right Eye
+            pw.TableRow(
+              children: [
+                _buildTableCell('Right'),
+                _buildTableCell(
+                  result.visualAcuityRight?.snellenScore ?? 'N/A',
+                ),
+                _buildTableCell(
+                  '${result.visualAcuityRight?.correctResponses ?? 0}/${result.visualAcuityRight?.totalResponses ?? 0}',
+                ),
+                _buildTableCell(
+                  _getVAInterpretation(result.visualAcuityRight?.logMAR),
+                ),
+              ],
+            ),
+            // Left Eye
+            pw.TableRow(
+              children: [
+                _buildTableCell('Left'),
+                _buildTableCell(result.visualAcuityLeft?.snellenScore ?? 'N/A'),
+                _buildTableCell(
+                  '${result.visualAcuityLeft?.correctResponses ?? 0}/${result.visualAcuityLeft?.totalResponses ?? 0}',
+                ),
+                _buildTableCell(
+                  _getVAInterpretation(result.visualAcuityLeft?.logMAR),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Clinical Note: Visual acuity measured using Tumbling E chart at 1 meter. Normal vision = 6/6 or better.',
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+        ),
+      ],
+    );
+  }
+
+  String _getVAInterpretation(double? logMAR) {
+    if (logMAR == null) return 'Not tested';
+    if (logMAR <= 0.0) return 'Excellent (Normal)';
+    if (logMAR <= 0.2) return 'Good';
+    if (logMAR <= 0.3) return 'Mild reduction';
+    if (logMAR <= 0.5) return 'Moderate reduction';
+    return 'Significant reduction - Requires attention';
+  }
+
+  /// ✅ SHORT DISTANCE - DETAILED (NO TABLE!)
+  pw.Widget _buildShortDistanceDetailedSection(TestResultModel result) {
+    final sd = result.shortDistance!;
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Patient History (Questionnaire)'),
+        _buildSectionTitle('NEAR VISION TEST (40cm - Reading)'),
         pw.SizedBox(height: 8),
+
         pw.Container(
           padding: const pw.EdgeInsets.all(12),
           decoration: pw.BoxDecoration(
@@ -712,58 +410,347 @@ class PdfExportService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
+              // Summary Row
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Performance:',
+                        style: pw.TextStyle(
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.Text(
+                        _getReadingPerformance(sd.averageSimilarity),
+                        style: const pw.TextStyle(fontSize: 9),
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(
+                        'Best Acuity:',
+                        style: pw.TextStyle(
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.Text(
+                        sd.bestAcuity,
+                        style: const pw.TextStyle(fontSize: 9),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 8),
+              pw.Divider(color: PdfColors.grey300),
+              pw.SizedBox(height: 8),
+
+              // Metrics
+              pw.Row(
+                children: [
+                  pw.Expanded(
+                    child: _buildMetricBox(
+                      'Sentences Read',
+                      '${sd.correctSentences}/${sd.totalSentences}',
+                    ),
+                  ),
+                  pw.SizedBox(width: 8),
+                  pw.Expanded(
+                    child: _buildMetricBox(
+                      'Accuracy',
+                      '${(sd.accuracy * 100).toStringAsFixed(0)}%',
+                    ),
+                  ),
+                  pw.SizedBox(width: 8),
+                  pw.Expanded(
+                    child: _buildMetricBox(
+                      'Match Quality',
+                      '${sd.averageSimilarity.toStringAsFixed(0)}%',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        pw.SizedBox(height: 6),
+        pw.Text(
+          'Clinical Note: Near vision assessed using sentence reading at 40cm. Tests reading ability and near visual acuity.',
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+        ),
+      ],
+    );
+  }
+
+  String _getReadingPerformance(double similarity) {
+    if (similarity >= 85) return 'Excellent';
+    if (similarity >= 70) return 'Good';
+    if (similarity >= 50) return 'Fair';
+    return 'Needs Improvement';
+  }
+
+  pw.Widget _buildMetricBox(String label, String value) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          label,
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+        ),
+        pw.Text(
+          value,
+          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  /// ✅ COLOR VISION - DETAILED
+  pw.Widget _buildColorVisionDetailedSection(TestResultModel result) {
+    final cv = result.colorVision;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('COLOR VISION TEST (Ishihara)'),
+        pw.SizedBox(height: 8),
+
+        if (cv != null) ...[
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'Result:',
+                          style: pw.TextStyle(
+                            fontSize: 10,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          cv.isNormal
+                              ? 'Normal Color Vision'
+                              : cv.deficiencyType ?? 'Abnormal',
+                          style: pw.TextStyle(
+                            fontSize: 9,
+                            color: cv.isNormal
+                                ? PdfColors.green700
+                                : PdfColors.orange700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Text(
+                          'Score:',
+                          style: pw.TextStyle(
+                            fontSize: 10,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          '${cv.correctAnswers}/${cv.totalPlates}',
+                          style: const pw.TextStyle(fontSize: 9),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                if (!cv.isNormal) ...[
+                  pw.SizedBox(height: 8),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(6),
+                    decoration: const pw.BoxDecoration(
+                      color: PdfColors.orange50,
+                      borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+                    ),
+                    child: pw.Text(
+                      'Finding: ${cv.deficiencyType ?? "Color vision deficiency detected"}',
+                      style: const pw.TextStyle(
+                        fontSize: 8,
+                        color: PdfColors.orange900,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Text(
+            'Clinical Note: Ishihara test screens for red-green color deficiencies. Professional confirmation recommended if abnormal.',
+            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+          ),
+        ] else
+          pw.Text(
+            'Not performed',
+            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500),
+          ),
+      ],
+    );
+  }
+
+  /// ✅ AMSLER GRID - DETAILED
+  pw.Widget _buildAmslerGridDetailedSection(TestResultModel result) {
+    final right = result.amslerGridRight;
+    final left = result.amslerGridLeft;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('AMSLER GRID TEST (Macular Assessment)'),
+        pw.SizedBox(height: 8),
+
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey300),
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+              children: [
+                _buildTableCell('Eye', isHeader: true),
+                _buildTableCell('Distortions', isHeader: true),
+                _buildTableCell('Status', isHeader: true),
+                _buildTableCell('Clinical Interpretation', isHeader: true),
+              ],
+            ),
+            if (right != null)
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Right'),
+                  _buildTableCell(right.hasDistortions ? 'Yes' : 'None'),
+                  _buildTableCell(right.isNormal ? 'Normal' : 'Abnormal'),
+                  _buildTableCell(
+                    _getAmslerInterpretation(right.hasDistortions),
+                  ),
+                ],
+              ),
+            if (left != null)
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Left'),
+                  _buildTableCell(left.hasDistortions ? 'Yes' : 'None'),
+                  _buildTableCell(left.isNormal ? 'Normal' : 'Abnormal'),
+                  _buildTableCell(
+                    _getAmslerInterpretation(left.hasDistortions),
+                  ),
+                ],
+              ),
+          ],
+        ),
+
+        pw.SizedBox(height: 6),
+        pw.Text(
+          'Clinical Note: Amsler grid tests central vision and macular health. Distortions may indicate macular conditions.',
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+        ),
+      ],
+    );
+  }
+
+  String _getAmslerInterpretation(bool hasDistortions) {
+    return hasDistortions
+        ? 'Distortions detected - Macular evaluation recommended'
+        : 'Normal central vision';
+  }
+
+  /// ✅ OVERALL ASSESSMENT
+  pw.Widget _buildOverallAssessment(TestResultModel result) {
+    PdfColor statusColor = result.overallStatus == TestStatus.normal
+        ? PdfColors.green700
+        : result.overallStatus == TestStatus.review
+        ? PdfColors.orange700
+        : PdfColors.red700;
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey50,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: statusColor, width: 2),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'PROFESSIONAL RECOMMENDATION',
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            result.recommendation,
+            style: const pw.TextStyle(fontSize: 10),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              color: statusColor.shade(50) as PdfColor?,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+            ),
+            child: pw.Text(
+              'Disclaimer: This is a screening tool only. Professional eye examination recommended for comprehensive evaluation.',
+              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildQuestionnaireSection(QuestionnaireModel q) {
+    final complaints = <String>[];
+    if (q.chiefComplaints.hasRedness) complaints.add('Redness');
+    if (q.chiefComplaints.hasWatering) complaints.add('Watering');
+    if (q.chiefComplaints.hasItching) complaints.add('Itching');
+    if (q.chiefComplaints.hasHeadache) complaints.add('Headache');
+    if (q.chiefComplaints.hasDryness) complaints.add('Dryness');
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('PATIENT HISTORY'),
+        pw.SizedBox(height: 8),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.grey300),
+            borderRadius: pw.BorderRadius.circular(4),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
               pw.Text(
-                'Chief Complaints:',
+                'Symptoms:',
                 style: pw.TextStyle(
+                  fontSize: 9,
                   fontWeight: pw.FontWeight.bold,
-                  fontSize: 11,
                 ),
               ),
               pw.Text(
                 complaints.isEmpty ? 'None reported' : complaints.join(', '),
-                style: const pw.TextStyle(fontSize: 10),
+                style: const pw.TextStyle(fontSize: 8),
               ),
-              pw.SizedBox(height: 8),
-              pw.Text(
-                'Systemic Conditions:',
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 11,
-                ),
-              ),
-              pw.Text(
-                conditions.isEmpty ? 'None reported' : conditions.join(', '),
-                style: const pw.TextStyle(fontSize: 10),
-              ),
-              if (questionnaire.currentMedications != null &&
-                  questionnaire.currentMedications!.isNotEmpty) ...[
-                pw.SizedBox(height: 8),
-                pw.Text(
-                  'Current Medications:',
-                  style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-                pw.Text(
-                  questionnaire.currentMedications!,
-                  style: const pw.TextStyle(fontSize: 10),
-                ),
-              ],
-              if (questionnaire.hasRecentSurgery) ...[
-                pw.SizedBox(height: 8),
-                pw.Text(
-                  'Recent Surgery:',
-                  style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-                pw.Text(
-                  questionnaire.surgeryDetails ?? 'Yes',
-                  style: const pw.TextStyle(fontSize: 10),
-                ),
-              ],
             ],
           ),
         ),
@@ -772,23 +759,31 @@ class PdfExportService {
   }
 
   pw.Widget _buildSectionTitle(String title) {
-    return pw.Text(
-      title,
-      style: pw.TextStyle(
-        fontSize: 14,
-        fontWeight: pw.FontWeight.bold,
-        color: PdfColors.blue800,
+    return pw.Container(
+      padding: const pw.EdgeInsets.only(bottom: 4),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(
+          bottom: pw.BorderSide(width: 1, color: PdfColors.blue800),
+        ),
+      ),
+      child: pw.Text(
+        title,
+        style: pw.TextStyle(
+          fontSize: 11,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColors.blue800,
+        ),
       ),
     );
   }
 
   pw.Widget _buildTableCell(String text, {bool isHeader = false}) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.all(8),
+      padding: const pw.EdgeInsets.all(6),
       child: pw.Text(
         text,
         style: pw.TextStyle(
-          fontSize: isHeader ? 11 : 10,
+          fontSize: isHeader ? 9 : 8,
           fontWeight: isHeader ? pw.FontWeight.bold : null,
         ),
         textAlign: pw.TextAlign.center,

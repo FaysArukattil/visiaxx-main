@@ -1101,39 +1101,80 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
   }
 
+  // ✅ FIX #1: In visual_acuity_test_screen.dart
+  // FIND the _buildEView() method and REPLACE with this:
+
   Widget _buildEView() {
     final level = TestConstants.visualAcuityLevels[_currentLevel];
-    final eSize = level.flutterFontSize; // ✅ Use corrected font size
+    final eSize = level.flutterFontSize;
 
     return Column(
       children: [
-        // Timer indicator
+        // Timer and Size indicator row - ALWAYS VISIBLE
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          color: AppColors.surface.withOpacity(0.9),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                Icons.timer,
-                size: 20,
-                color: _eDisplayCountdown <= 1
-                    ? AppColors.error
-                    : _isTestPausedForDistance
-                    ? AppColors.warning
-                    : AppColors.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _isTestPausedForDistance ? 'PAUSED' : '${_eDisplayCountdown}s',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: _eDisplayCountdown <= 1
-                      ? AppColors.error
-                      : _isTestPausedForDistance
-                      ? AppColors.warning
-                      : AppColors.primary,
+              // ✅ PROMINENT Size indicator on LEFT
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary, width: 2),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.straighten, size: 20, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      level.snellen,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Timer on RIGHT
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.timer,
+                    size: 20,
+                    color: _eDisplayCountdown <= 1
+                        ? AppColors.error
+                        : _isTestPausedForDistance
+                        ? AppColors.warning
+                        : AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isTestPausedForDistance
+                        ? 'PAUSED'
+                        : '${_eDisplayCountdown}s',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: _eDisplayCountdown <= 1
+                          ? AppColors.error
+                          : _isTestPausedForDistance
+                          ? AppColors.warning
+                          : AppColors.primary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1142,37 +1183,29 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         // Main E display area
         Expanded(
           child: Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // ✅ FIX: Use Transform.rotate with antialiasing for crisp rendering
-                Transform.rotate(
-                  angle: _currentDirection.rotationDegrees * pi / 180,
-                  child: Text(
-                    'E',
-                    style: TextStyle(
-                      fontSize: eSize,
-                      fontWeight: FontWeight.w900, // ✅ Bolder for clarity
-                      fontFamily: 'sans-serif',
-                      color: Colors.black,
-                      letterSpacing: 0,
-                      height: 1.0,
-                    ),
-                  ),
+            child: Transform.rotate(
+              angle: _currentDirection.rotationDegrees * pi / 180,
+              // ✅ FIX: Force antialiasing and proper rendering
+              filterQuality: FilterQuality.high,
+              child: Text(
+                'E',
+                style: TextStyle(
+                  fontSize: eSize,
+                  fontWeight: FontWeight.w900, // Maximum boldness
+                  fontFamily:
+                      'Courier', // ✅ CHANGED: Monospace font for uniform strokes
+                  color: Colors.black,
+                  letterSpacing: 0,
+                  height: 1.0,
                 ),
-
-                // ✅ Size indicator in bottom-right corner
-                Positioned(
-                  bottom: 40,
-                  right: 40,
-                  child: SnellenSizeIndicator(snellenNotation: level.snellen),
-                ),
-              ],
+                // ✅ Add text scaling to ensure crisp rendering
+                textScaleFactor: 1.0,
+              ),
             ),
           ),
         ),
 
-        // ✅ UPDATED: Instruction text with voice status
+        // Instruction text with voice status
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
@@ -1180,7 +1213,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // ✅ Show microphone icon when listening (even during pause)
                   if (_isListening)
                     Icon(
                       Icons.mic,
@@ -1213,7 +1245,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Text(
                 _isTestPausedForDistance
                     ? 'Voice recognition active - waiting to resume'
-                    : 'Use buttons or say: Upward, Bottom, Left, Right',
+                    : 'Use buttons or say: Up, Down, Left, Right',
                 style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
                 textAlign: TextAlign.center,
               ),

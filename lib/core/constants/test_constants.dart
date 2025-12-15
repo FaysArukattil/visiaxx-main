@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// Test configuration constants for vision tests
 ///
 /// Visual Acuity sizing follows the Visiaxx specification for 1-meter testing:
@@ -119,44 +121,44 @@ class TestConstants {
   // ✅ FIXED: Updated short distance font sizes to match visual acuity
   static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(
-      sentence: 'The quick brown fox jumps over the lazy dog',
+      sentence: 'The sky is blue',
       fontSize: 120.0,
       snellen: '6/60',
     ),
     ShortDistanceSentence(
-      sentence: 'Vision tests help monitor eye health regularly',
+      sentence: 'Birds fly high above',
       fontSize: 72.0,
       snellen: '6/36',
     ),
     ShortDistanceSentence(
-      sentence: 'Clear sight is important for daily activities',
+      sentence: 'Clear eyes see better',
       fontSize: 48.0,
       snellen: '6/24',
     ),
     ShortDistanceSentence(
-      sentence: 'Reading small text requires good visual acuity',
+      sentence: 'Reading requires good vision',
       fontSize: 36.0,
       snellen: '6/18',
     ),
     ShortDistanceSentence(
-      sentence: 'Regular eye exams detect problems early',
+      sentence: 'Regular eye check ups matter',
       fontSize: 24.0,
       snellen: '6/12',
     ),
     ShortDistanceSentence(
-      sentence: 'Sharp focus makes reading much easier',
+      sentence: 'Sharp focus helps you read clearly',
       fontSize: 18.0,
       snellen: '6/9',
     ),
     ShortDistanceSentence(
-      sentence: 'Healthy eyes see clearly at all distances',
+      sentence: 'Healthy eyes can see all text sizes easily',
       fontSize: 12.0,
       snellen: '6/6',
     ),
   ];
 
   void printFontSizes() {
-    print('=== ✅ CORRECTED FONT SIZE VERIFICATION ===');
+    debugPrint('=== ✅ CORRECTED FONT SIZE VERIFICATION ===');
     for (int i = 0; i < visualAcuityLevels.length; i++) {
       final level = visualAcuityLevels[i];
       print(
