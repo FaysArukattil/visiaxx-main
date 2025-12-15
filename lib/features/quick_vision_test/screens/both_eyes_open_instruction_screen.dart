@@ -3,26 +3,58 @@ import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_
 import 'package:visiaxx/features/quick_vision_test/screens/short_distance_test_screen.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/tts_service.dart';
 
 class BothEyesOpenInstructionScreen extends StatefulWidget {
   const BothEyesOpenInstructionScreen({super.key});
 
   @override
-  State createState() => _BothEyesOpenInstructionScreenState();
+  State<BothEyesOpenInstructionScreen> createState() =>
+      _BothEyesOpenInstructionScreenState();
 }
 
-class _BothEyesOpenInstructionScreenState extends State {
+class _BothEyesOpenInstructionScreenState
+    extends State<BothEyesOpenInstructionScreen> {
   bool _buttonEnabled = false;
+  final TtsService _ttsService = TtsService();
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize TTS and speak instructions
+    _initializeTts();
+
     // Enable button after 3 seconds
     Timer(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() => _buttonEnabled = true);
       }
     });
+  }
+
+  Future<void> _initializeTts() async {
+    await _ttsService.initialize();
+
+    // Wait a moment for screen to settle
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Speak the instructions
+    await _ttsService.speak(
+      'Now we will test your near vision for reading. '
+      'Keep both eyes open. '
+      'Hold your device at 40 centimeters from your eyes. '
+      'That is about the length from your elbow to your fingertips. '
+      'You will see sentences on the screen. '
+      'Read each sentence aloud clearly and completely.',
+      speechRate: 0.5,
+    );
+  }
+
+  @override
+  void dispose() {
+    _ttsService.dispose();
+    super.dispose();
   }
 
   @override
@@ -154,11 +186,30 @@ class _BothEyesOpenInstructionScreenState extends State {
                     padding: const EdgeInsets.all(16),
                     backgroundColor: AppColors.primary,
                   ),
-                  child: Text(
-                    _buttonEnabled
-                        ? 'Start Reading Test'
-                        : 'Please wait... (${3}s)',
-                    style: const TextStyle(fontSize: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (!_buttonEnabled)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 12),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Text(
+                        _buttonEnabled
+                            ? 'Start Reading Test'
+                            : 'Please wait...',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
                   ),
                 ),
               ),

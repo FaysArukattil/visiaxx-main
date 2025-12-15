@@ -12,56 +12,15 @@ import '../../data/models/questionnaire_model.dart';
 /// Service for generating PDF reports of test results
 class PdfExportService {
   /// Generate and save a PDF report
-  /// Generate and save a PDF report
   Future<File> generatePdfReport(
     TestResultModel result, {
     String? userName,
     int? userAge,
   }) async {
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(40),
-        header: (context) => _buildHeader(context, userName),
-        footer: (context) => _buildFooter(context),
-        build: (context) => [
-          // Title Section
-          _buildTitleSection(result, userName, userAge),
-          pw.SizedBox(height: 20),
-
-          // Visual Acuity Section (Distance Vision - 1 meter)
-          _buildVisualAcuitySection(result),
-          pw.SizedBox(height: 20),
-
-          // Short Distance Section (Reading Test - 40cm) 🆕
-          if (result.shortDistance != null) ...[
-            _buildShortDistanceSection(result),
-            pw.SizedBox(height: 20),
-          ],
-
-          // Color Vision Section
-          _buildColorVisionSection(result),
-          pw.SizedBox(height: 20),
-
-          // Amsler Grid Section
-          if (result.amslerGridRight != null ||
-              result.amslerGridLeft != null) ...[
-            _buildAmslerGridSection(result),
-            pw.SizedBox(height: 20),
-          ],
-
-          // Overall Status Section
-          _buildOverallStatusSection(result),
-          pw.SizedBox(height: 20),
-
-          // Questionnaire Section
-          if (result.questionnaire != null) ...[
-            _buildQuestionnaireSection(result.questionnaire!),
-          ],
-        ],
-      ),
+    final pdf = await _buildPdfDocument(
+      result,
+      userName: userName,
+      userAge: userAge,
     );
 
     final output = await getTemporaryDirectory();
@@ -106,9 +65,8 @@ class PdfExportService {
           'Visiaxx Vision Test Results - ${DateFormat('MMM dd, yyyy').format(result.timestamp)}',
     );
   }
-  // In pdf_export_service.dart
-  // 1. FIRST: Find _buildPdfDocument method (around line 56) and UPDATE the build section:
 
+  /// Build PDF Document with all sections
   Future<pw.Document> _buildPdfDocument(
     TestResultModel result, {
     String? userName,
@@ -131,7 +89,7 @@ class PdfExportService {
           _buildVisualAcuitySection(result),
           pw.SizedBox(height: 20),
 
-          // Short Distance Section (Reading Test - 40cm) 🆕
+          // Short Distance Section (Reading Test - 40cm)
           if (result.shortDistance != null) ...[
             _buildShortDistanceSection(result),
             pw.SizedBox(height: 20),
@@ -162,8 +120,8 @@ class PdfExportService {
 
     return pdf;
   }
-  // 2. THEN: Add this NEW METHOD at the bottom of the file (before the closing brace):
 
+  /// Build Short Distance Section (Reading Test - 40cm)
   pw.Widget _buildShortDistanceSection(TestResultModel result) {
     final shortDistance = result.shortDistance;
 
@@ -340,7 +298,7 @@ class PdfExportService {
                   _buildTableCell('Result', isHeader: true),
                 ],
               ),
-              // Data rows
+              // Data rows (limit to 7 for space)
               ...shortDistance.responses.take(7).map((response) {
                 return pw.TableRow(
                   children: [
@@ -513,7 +471,7 @@ class PdfExportService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Visual Acuity Test'),
+        _buildSectionTitle('Visual Acuity Test (Distance Vision - 1 meter)'),
         pw.SizedBox(height: 8),
         pw.Table(
           border: pw.TableBorder.all(color: PdfColors.grey300),
@@ -685,7 +643,7 @@ class PdfExportService {
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
-        color: statusColor.shade(50) as PdfColor?,
+        color: PdfColors.grey50,
         borderRadius: pw.BorderRadius.circular(8),
         border: pw.Border.all(color: statusColor, width: 2),
       ),

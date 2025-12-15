@@ -2,26 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/visual_acuity_test_screen.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/tts_service.dart';
 
 class CoverRightEyeInstructionScreen extends StatefulWidget {
   const CoverRightEyeInstructionScreen({super.key});
 
   @override
-  State createState() => _CoverRightEyeInstructionScreenState();
+  State<CoverRightEyeInstructionScreen> createState() =>
+      _CoverRightEyeInstructionScreenState();
 }
 
-class _CoverRightEyeInstructionScreenState extends State {
+class _CoverRightEyeInstructionScreenState
+    extends State<CoverRightEyeInstructionScreen> {
   bool _buttonEnabled = false;
+  final TtsService _ttsService = TtsService();
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize TTS and speak instructions
+    _initializeTts();
+
     // Enable button after 3 seconds
     Timer(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() => _buttonEnabled = true);
       }
     });
+  }
+
+  Future<void> _initializeTts() async {
+    await _ttsService.initialize();
+
+    // Wait a moment for screen to settle
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Speak the instructions
+    await _ttsService.speak(
+      'Cover your right eye with your palm or a paper. '
+      'Keep your left eye open. '
+      'Stand at one meter distance from the screen. '
+      'You will see the letter E pointing in different directions. '
+      'Say upward, down, left, or right to indicate the direction.',
+      speechRate: 0.5,
+    );
+  }
+
+  @override
+  void dispose() {
+    _ttsService.dispose();
+    super.dispose();
   }
 
   @override
@@ -133,7 +164,7 @@ class _CoverRightEyeInstructionScreenState extends State {
                 child: ElevatedButton(
                   onPressed: _buttonEnabled
                       ? () {
-                          // 🔥 Navigate with startWithLeftEye flag
+                          // Navigate with startWithLeftEye flag
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
@@ -149,11 +180,30 @@ class _CoverRightEyeInstructionScreenState extends State {
                     padding: const EdgeInsets.all(16),
                     backgroundColor: AppColors.leftEye,
                   ),
-                  child: Text(
-                    _buttonEnabled
-                        ? 'Start Left Eye Test'
-                        : 'Please wait... (${3}s)',
-                    style: const TextStyle(fontSize: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (!_buttonEnabled)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 12),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Text(
+                        _buttonEnabled
+                            ? 'Start Left Eye Test'
+                            : 'Please wait...',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
                   ),
                 ),
               ),

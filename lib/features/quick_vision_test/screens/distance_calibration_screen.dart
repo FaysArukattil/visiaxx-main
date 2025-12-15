@@ -6,7 +6,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../core/services/tts_service.dart';
 
-//
 /// Distance Calibration Screen with real camera preview and face detection
 /// Shows real-time distance and guidance to position correctly
 class DistanceCalibrationScreen extends StatefulWidget {
@@ -356,7 +355,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 🔥 FIXED: Full-screen camera preview without cropping
+        // ✅ FIX: Camera preview with proper error handling and fallback
         if (_cameraController != null && _cameraController!.value.isInitialized)
           Positioned.fill(
             child: FittedBox(
@@ -369,19 +368,37 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
             ),
           )
         else
-          // Loading state with gray background
+          // ✅ NEW: Gray fallback background instead of black
           Container(
-            color: Colors.grey.shade800,
-            child: const Center(
+            color: Colors.grey.shade300, // Changed from grey.shade800
+            child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(color: Colors.white),
-                  SizedBox(height: 16),
-                  Text(
-                    'Initializing camera...',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
                   ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _hasError
+                        ? 'Camera not available'
+                        : 'Initializing camera...',
+                    style: TextStyle(
+                      color: _hasError
+                          ? AppColors.error
+                          : AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (_hasError) ...[
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: _initializeCamera,
+                      child: const Text('Try Again'),
+                    ),
+                  ],
                 ],
               ),
             ),

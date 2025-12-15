@@ -127,8 +127,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _pixelsPerMm = _pixelsPerMm.clamp(5.0, 10.0);
   }
 
-  // Replace the entire _initServices() method with this complete version
-
   Future<void> _initServices() async {
     await _ttsService.initialize();
     await _speechService.initialize();
@@ -555,52 +553,32 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     } catch (_) {}
   }
 
+  // ✅ FIXED METHOD: Test exactly 7 plates (one per level)
   void _evaluateAndContinue() {
     setState(() => _showResult = false);
 
-    // ✅ CRITICAL: Stop after 7 plates (responses) per eye
+    // ✅ CRITICAL FIX: Always test all 7 plates (one per level)
+    // Stop ONLY after 7 total responses (one per Snellen level)
     if (_responses.length >= 7) {
-      // Force complete after 7 plates
+      debugPrint('✅ [VisualAcuity] Completed 7 plates - finishing test');
       _completeEyeTest();
       return;
     }
 
-    // Check if we should advance, stay, or stop
-    if (_correctAtLevel >= TestConstants.minCorrectToAdvance) {
-      // Advance to next level
-      _currentLevel++;
-      _correctAtLevel = 0;
-      _incorrectAtLevel = 0;
+    // After each response, move to NEXT level automatically
+    _currentLevel++;
+    _correctAtLevel = 0;
+    _incorrectAtLevel = 0;
 
-      if (_currentLevel >= TestConstants.visualAcuityLevels.length) {
-        // Test complete for this eye
-        _completeEyeTest();
-      } else {
-        _startRelaxation();
-      }
-    } else if (_incorrectAtLevel >=
-        TestConstants.maxTriesPerLevel -
-            TestConstants.minCorrectToAdvance +
-            1) {
-      // Failed this level, test complete for this eye
+    if (_currentLevel >= TestConstants.visualAcuityLevels.length) {
+      // Reached end of levels
+      debugPrint('✅ [VisualAcuity] Reached last level - finishing');
       _completeEyeTest();
-    } else if (_correctAtLevel + _incorrectAtLevel >=
-        TestConstants.maxTriesPerLevel) {
-      // Max tries at this level
-      if (_correctAtLevel >= TestConstants.minCorrectToAdvance) {
-        _currentLevel++;
-        if (_currentLevel >= TestConstants.visualAcuityLevels.length) {
-          _completeEyeTest();
-        } else {
-          _correctAtLevel = 0;
-          _incorrectAtLevel = 0;
-          _startRelaxation();
-        }
-      } else {
-        _completeEyeTest();
-      }
     } else {
-      // Continue at same level
+      // Continue to next level
+      debugPrint(
+        '✅ [VisualAcuity] Moving to level ${_currentLevel + 1} (plate ${_responses.length + 1}/7)',
+      );
       _startRelaxation();
     }
   }
@@ -689,6 +667,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _ttsService.dispose();
     _speechService.dispose();
     _audioPlayer.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -1124,7 +1103,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   Widget _buildEView() {
     final level = TestConstants.visualAcuityLevels[_currentLevel];
-    final eSize = level.getSizeInPixels(_pixelsPerMm);
+    final eSize = level.flutterFontSize; // ✅ Use corrected font size
 
     return Column(
       children: [
@@ -1139,42 +1118,50 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 size: 20,
                 color: _eDisplayCountdown <= 1
                     ? AppColors.error
+                    : _isTestPausedForDistance
+                    ? AppColors.warning
                     : AppColors.primary,
               ),
               const SizedBox(width: 8),
               Text(
-                '${_eDisplayCountdown}s',
+                _isTestPausedForDistance ? 'PAUSED' : '${_eDisplayCountdown}s',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: _eDisplayCountdown <= 1
                       ? AppColors.error
+                      : _isTestPausedForDistance
+                      ? AppColors.warning
                       : AppColors.primary,
                 ),
               ),
             ],
           ),
         ),
+
         // Main E display area
         Expanded(
           child: Center(
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // The Tumbling E - centered
+                // ✅ FIX: Use Transform.rotate with antialiasing for crisp rendering
                 Transform.rotate(
                   angle: _currentDirection.rotationDegrees * pi / 180,
                   child: Text(
                     'E',
                     style: TextStyle(
-                      fontSize: eSize.clamp(14.0, 200.0),
-                      fontWeight: FontWeight.bold,
+                      fontSize: eSize,
+                      fontWeight: FontWeight.w900, // ✅ Bolder for clarity
                       fontFamily: 'sans-serif',
                       color: Colors.black,
+                      letterSpacing: 0,
+                      height: 1.0,
                     ),
                   ),
                 ),
-                // 🆕 Size indicator - positioned in bottom-right
+
+                // ✅ Size indicator in bottom-right corner
                 Positioned(
                   bottom: 40,
                   right: 40,
@@ -1184,19 +1171,49 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             ),
           ),
         ),
-        // Instruction text
+
+        // ✅ UPDATED: Instruction text with voice status
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             children: [
-              Text(
-                'Which way is the E pointing?',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-                textAlign: TextAlign.center,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // ✅ Show microphone icon when listening (even during pause)
+                  if (_isListening)
+                    Icon(
+                      Icons.mic,
+                      size: 20,
+                      color: _isTestPausedForDistance
+                          ? AppColors.warning
+                          : AppColors.success,
+                    ),
+                  if (_isListening) const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      _isTestPausedForDistance
+                          ? 'Test paused - Adjust distance'
+                          : 'Which way is the E pointing?',
+                      style: TextStyle(
+                        color: _isTestPausedForDistance
+                            ? AppColors.warning
+                            : AppColors.textSecondary,
+                        fontSize: 16,
+                        fontWeight: _isTestPausedForDistance
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               Text(
-                'Use buttons or say: Upward, Bottom, Left, Right',
+                _isTestPausedForDistance
+                    ? 'Voice recognition active - waiting to resume'
+                    : 'Use buttons or say: Upward, Bottom, Left, Right',
                 style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
                 textAlign: TextAlign.center,
               ),

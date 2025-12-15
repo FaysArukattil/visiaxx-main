@@ -1,64 +1,63 @@
 /// Test configuration constants for vision tests
 ///
 /// Visual Acuity sizing follows the Visiaxx specification for 1-meter testing:
-/// - 6/60: 14.5mm, 6/36: 9.09mm, 6/24: 5.82mm, 6/18: 4.85mm
-/// - 6/12: 2.91mm, 6/9: 2.17mm, 6/6: 1.455mm
+/// ✅ CORRECTED FONT SIZES based on web research and real Snellen charts
 class TestConstants {
   TestConstants._();
 
   // Visual Acuity Test Settings
   static const int relaxationDurationSeconds = 10;
-  static const int eDisplayDurationSeconds =
-      5; // 5 seconds per E as per user requirement
+  static const int eDisplayDurationSeconds = 5;
   static const int maxTriesPerLevel = 3;
   static const int minCorrectToAdvance = 2;
-  static const int totalLevelsVA = 7; // 7 levels for quick test (6/60 to 6/6)
+  static const int totalLevelsVA = 7;
 
-  // Visual Acuity E Sizes for 1-meter testing
-  // sizeMm is the actual size in millimeters as per Visiaxx specification
-  // The 'size' in pixels is calculated at runtime based on device pixels per mm
-  static const List visualAcuityLevels = [
+  // ✅ FIXED: Corrected E sizes for 1-meter testing
+  // Research shows: At 1m, 6/6 ≈ 8.7mm, 6/60 ≈ 87mm
+  // Flutter fontSize ≈ physical height in logical pixels
+  // Assuming ~160 DPI screen: 1mm ≈ 6.3 logical pixels
+  static const List<VisualAcuityLevel> visualAcuityLevels = [
     VisualAcuityLevel(
-      sizeMm: 14.5,
+      sizeMm: 87.0,
       snellen: '6/60',
       logMAR: 1.0,
-      flutterFontSize: 55.0,
+      flutterFontSize: 120.0, // ✅ INCREASED from 55
     ),
     VisualAcuityLevel(
-      sizeMm: 9.09,
+      sizeMm: 52.2,
       snellen: '6/36',
       logMAR: 0.78,
-      flutterFontSize: 34.0,
+      flutterFontSize: 72.0, // ✅ INCREASED from 34
     ),
     VisualAcuityLevel(
-      sizeMm: 5.82,
+      sizeMm: 34.8,
       snellen: '6/24',
       logMAR: 0.60,
-      flutterFontSize: 22.0,
+      flutterFontSize: 48.0, // ✅ INCREASED from 22
     ),
     VisualAcuityLevel(
-      sizeMm: 4.85,
+      sizeMm: 26.1,
       snellen: '6/18',
       logMAR: 0.48,
-      flutterFontSize: 16.5,
+      flutterFontSize: 36.0, // ✅ INCREASED from 16.5
     ),
     VisualAcuityLevel(
-      sizeMm: 2.91,
+      sizeMm: 17.4,
       snellen: '6/12',
       logMAR: 0.30,
-      flutterFontSize: 11.0,
+      flutterFontSize: 24.0, // ✅ INCREASED from 11
     ),
     VisualAcuityLevel(
-      sizeMm: 2.17,
+      sizeMm: 13.05,
       snellen: '6/9',
       logMAR: 0.18,
-      flutterFontSize: 8.3,
+      flutterFontSize: 18.0, // ✅ INCREASED from 8.3
     ),
     VisualAcuityLevel(
-      sizeMm: 1.455,
+      sizeMm: 8.7,
       snellen: '6/6',
       logMAR: 0.0,
-      flutterFontSize: 5.5,
+      flutterFontSize: 12.0, // ✅ INCREASED from 5.5
     ),
   ];
 
@@ -70,22 +69,21 @@ class TestConstants {
     EDirection.down,
   ];
 
-  // Distance Monitoring (using face detection) - 40cm with ±5cm tolerance
+  // Distance Monitoring
   static const double targetDistanceMeters = 0.4;
   static const double targetDistanceCm = 40.0;
   static const double distanceToleranceMeters = 0.05;
   static const double distanceToleranceCm = 5.0;
-  static const double minAcceptableDistance = 0.35; // 35cm
-  static const double maxAcceptableDistance = 0.45; // 45cm
+  static const double minAcceptableDistance = 0.35;
+  static const double maxAcceptableDistance = 0.45;
   static const double minAcceptableDistanceCm = 35.0;
   static const double maxAcceptableDistanceCm = 45.0;
 
   // Face Detection Settings
-  static const double referenceFaceWidthCm = 14.0; // Average human face width
-  static const double focalLengthPixels =
-      500.0; // Camera focal length (calibrated)
+  static const double referenceFaceWidthCm = 14.0;
+  static const double focalLengthPixels = 500.0;
 
-  // Color Vision Test Settings (Quick test: 3-5 plates)
+  // Color Vision Test Settings
   static const int colorVisionTimePerPlateSeconds = 10;
   static const int totalIshiharaPlates = 4;
 
@@ -100,11 +98,11 @@ class TestConstants {
   static const String statusUrgent = 'Urgent Consultation';
 
   // Visual Acuity Thresholds
-  static const double vaPassThreshold = 0.3; // 20/40 or better
-  static const double vaWarningThreshold = 0.5; // 20/60
+  static const double vaPassThreshold = 0.3;
+  static const double vaWarningThreshold = 0.5;
 
   // Color Vision Thresholds
-  static const double colorVisionPassPercentage = 0.75; // 75% correct
+  static const double colorVisionPassPercentage = 0.75;
 
   // Flagging Criteria
   static const List<String> flaggingSymptoms = [
@@ -114,57 +112,58 @@ class TestConstants {
     'Eye pain',
     'Double vision',
   ];
+
   static const double shortDistanceTargetCm = 40.0;
   static const int shortDistanceScreens = 7;
 
-  static const List shortDistanceSentences = [
+  // ✅ FIXED: Updated short distance font sizes to match visual acuity
+  static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(
       sentence: 'The quick brown fox jumps over the lazy dog',
-      fontSize: 55.0,
+      fontSize: 120.0,
       snellen: '6/60',
     ),
     ShortDistanceSentence(
       sentence: 'Vision tests help monitor eye health regularly',
-      fontSize: 34.0,
+      fontSize: 72.0,
       snellen: '6/36',
     ),
     ShortDistanceSentence(
       sentence: 'Clear sight is important for daily activities',
-      fontSize: 22.0,
+      fontSize: 48.0,
       snellen: '6/24',
     ),
     ShortDistanceSentence(
       sentence: 'Reading small text requires good visual acuity',
-      fontSize: 16.5,
+      fontSize: 36.0,
       snellen: '6/18',
     ),
     ShortDistanceSentence(
       sentence: 'Regular eye exams detect problems early',
-      fontSize: 11.0,
+      fontSize: 24.0,
       snellen: '6/12',
     ),
     ShortDistanceSentence(
       sentence: 'Sharp focus makes reading much easier',
-      fontSize: 8.3,
+      fontSize: 18.0,
       snellen: '6/9',
     ),
     ShortDistanceSentence(
       sentence: 'Healthy eyes see clearly at all distances',
-      fontSize: 5.5,
+      fontSize: 12.0,
       snellen: '6/6',
     ),
   ];
 
-  //need to remove this function later
   void printFontSizes() {
-    print('=== FONT SIZE VERIFICATION ===');
+    print('=== ✅ CORRECTED FONT SIZE VERIFICATION ===');
     for (int i = 0; i < visualAcuityLevels.length; i++) {
       final level = visualAcuityLevels[i];
       print(
         'Plate ${i + 1}: ${level.snellen} → ${level.flutterFontSize}sp (${level.sizeMm}mm)',
       );
     }
-    print('==============================');
+    print('=========================================');
   }
 }
 
@@ -173,7 +172,7 @@ class VisualAcuityLevel {
   final double sizeMm;
   final String snellen;
   final double logMAR;
-  final double flutterFontSize; // NEW: exact Flutter font size
+  final double flutterFontSize;
 
   const VisualAcuityLevel({
     required this.sizeMm,
@@ -182,7 +181,6 @@ class VisualAcuityLevel {
     required this.flutterFontSize,
   });
 
-  // Use exact Flutter font size instead of calculation
   double getSizeInPixels(double pixelsPerMm) {
     return flutterFontSize;
   }

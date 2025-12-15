@@ -409,6 +409,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     );
   }
 
+  // ✅ FIX #6C: In short_distance_test_screen.dart
+  // Apply the SAME voice recognition fix as visual acuity
+
+  // FIND and REPLACE _buildDistanceWarningOverlay() method (around line 350):
+
   Widget _buildDistanceWarningOverlay() {
     return Container(
       color: Colors.black.withOpacity(0.85),
@@ -458,16 +463,40 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
+
+              // ✅ NEW: Show that voice is still listening
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.success, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.mic, color: AppColors.success, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Voice recognition active',
+                      style: TextStyle(
+                        color: AppColors.success,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Skip button
               TextButton(
                 onPressed: () {
                   setState(() {
                     _isDistanceOk = true;
                   });
-                  // Resume listening if it was stopped
-                  if (!_isListening && !_showKeyboard) {
-                    _startListening();
-                  }
+                  // ✅ No need to restart listening - it never stopped!
                 },
                 child: Text(
                   'Continue Anyway',
