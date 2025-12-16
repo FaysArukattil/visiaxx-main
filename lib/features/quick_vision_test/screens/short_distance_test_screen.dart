@@ -73,6 +73,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   void initState() {
     super.initState();
     _initServices();
+    // ✅ Start distance monitoring immediately (don't wait for initServices)
     _startDistanceMonitoring();
   }
 
@@ -94,23 +95,50 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   }
 
   Future<void> _startDistanceMonitoring() async {
-    _distanceService.onDistanceUpdate = (distance, status) {
-      if (!mounted) return;
+    try {
+      debugPrint('[ShortDistance] 📏 Starting distance monitoring...');
 
-      // ✅ Use centralized helper
-      final newIsOk = DistanceHelper.isDistanceAcceptable(distance, 40.0);
+      // ✅ Set up callbacks BEFORE initializing
+      _distanceService.onDistanceUpdate = (distance, status) {
+        if (!mounted) return;
 
-      setState(() {
-        _currentDistance = distance;
-        _distanceStatus = status;
-        _isDistanceOk = newIsOk;
-      });
-    };
+        debugPrint(
+          '[ShortDistance] 📏 Distance: ${distance.toStringAsFixed(0)}cm, Status: $status',
+        );
 
-    _distanceService.onError = (msg) => debugPrint('[ShortDistance] $msg');
+        // ✅ Use centralized helper
+        final newIsOk = DistanceHelper.isDistanceAcceptable(distance, 40.0);
 
-    await _distanceService.initializeCamera();
-    await _distanceService.startMonitoring();
+        setState(() {
+          _currentDistance = distance;
+          _distanceStatus = status;
+          _isDistanceOk = newIsOk;
+        });
+      };
+
+      _distanceService.onError = (msg) {
+        debugPrint('[ShortDistance] ⚠️ Distance error: $msg');
+      };
+
+      // ✅ Initialize camera with proper error handling
+      final camera = await _distanceService.initializeCamera();
+
+      if (camera == null) {
+        debugPrint('[ShortDistance] ❌ Failed to initialize camera');
+        return;
+      }
+
+      debugPrint('[ShortDistance] ✅ Camera initialized');
+
+      // ✅ Start monitoring with delay to ensure camera is ready
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      await _distanceService.startMonitoring();
+
+      debugPrint('[ShortDistance] ✅ Distance monitoring started');
+    } catch (e) {
+      debugPrint('[ShortDistance] ❌ Error starting distance monitoring: $e');
+    }
   }
 
   /// ✅ UPDATED: Enhanced sentence flow with longer timeout
@@ -362,14 +390,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
 
   @override
   void dispose() {
+    debugPrint('[ShortDistance] 🧹 Disposing resources...');
     _listeningTimer?.cancel();
     _speechBufferTimer?.cancel();
     _speechChunks.clear();
     _inputController.dispose();
     _ttsService.dispose();
     _speechService.dispose();
-    _distanceService.stopMonitoring();
-    _distanceService.dispose();
+    _distanceService.stopMonitoring().then((_) {
+      _distanceService.dispose();
+    });
     super.dispose();
   }
 
@@ -587,147 +617,216 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   }
 
   /// ✅ IMPROVED: Better sentence view with prominent size indicator
+  /// ✅ FIXED: No overflow when keyboard appears
   Widget _buildSentenceView() {
     final sentence = TestConstants.shortDistanceSentences[_currentScreen];
 
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // ✅ PROMINENT Size indicator at top
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary, width: 2),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.straighten, size: 20, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    sentence.snellen,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // ✅ Calculate available space dynamically
+        final hasKeyboard = MediaQuery.of(context).viewInsets.bottom > 0;
+
+        return Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: hasKeyboard ? 24 : 32,
             ),
-            const SizedBox(height: 32),
-
-            // The sentence
-            Text(
-              sentence.sentence,
-              style: TextStyle(
-                fontSize: sentence.fontSize,
-                fontWeight: FontWeight.bold,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 48),
-
-            // Instruction
-            if (_waitingForResponse) ...[
-              Text(
-                'Read this sentence aloud or type it',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-
-              // Toggle buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Voice button
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _showKeyboard = false;
-                        _inputController.clear();
-                      });
-                      if (!_isListening) {
-                        _startListening();
-                      }
-                    },
-                    icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
-                    label: Text(_isListening ? 'Listening...' : 'Speak'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isListening ? AppColors.success : null,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-
-                  // Type button
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _showKeyboard = !_showKeyboard;
-                      });
-                      if (_showKeyboard) {
-                        _speechService.cancel();
-                        Future.delayed(const Duration(milliseconds: 100), () {
-                          FocusScope.of(context).requestFocus(FocusNode());
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.keyboard),
-                    label: Text(_showKeyboard ? 'Hide Keyboard' : 'Type'),
-                  ),
-                ],
-              ),
-
-              // Text input field
-              if (_showKeyboard) ...[
-                const SizedBox(height: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // ✅ Size indicator - more compact when keyboard is open
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    controller: _inputController,
-                    autofocus: true,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 16),
-                    decoration: InputDecoration(
-                      hintText: 'Type the sentence here...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: hasKeyboard ? 16 : 20,
+                    vertical: hasKeyboard ? 8 : 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary, width: 2),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.straighten,
+                        size: hasKeyboard ? 16 : 20,
+                        color: AppColors.primary,
                       ),
-                      filled: true,
-                      fillColor: AppColors.surface,
+                      const SizedBox(width: 8),
+                      Text(
+                        sentence.snellen,
+                        style: TextStyle(
+                          fontSize: hasKeyboard ? 16 : 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: hasKeyboard ? 16 : 32),
+
+                // The sentence - smaller when keyboard is open
+                Text(
+                  sentence.sentence,
+                  style: TextStyle(
+                    fontSize: hasKeyboard
+                        ? sentence.fontSize * 0.8
+                        : sentence.fontSize,
+                    fontWeight: FontWeight.bold,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: hasKeyboard ? 24 : 48),
+
+                // Instruction
+                if (_waitingForResponse) ...[
+                  Text(
+                    'Read this sentence aloud or type it',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: hasKeyboard ? 12 : 14,
                     ),
-                    onSubmitted: (value) {
-                      if (value.trim().isNotEmpty) {
-                        _processSentence(value.trim());
-                      }
-                    },
                   ),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_inputController.text.trim().isNotEmpty) {
-                      _processSentence(_inputController.text.trim());
-                    }
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    child: Text('Submit'),
+                  SizedBox(height: hasKeyboard ? 12 : 24),
+
+                  // ✅ FIXED: Compact toggle buttons
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      // Voice button
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _showKeyboard = false;
+                            _inputController.clear();
+                          });
+                          if (!_isListening) {
+                            _startListening();
+                          }
+                        },
+                        icon: Icon(
+                          _isListening ? Icons.mic : Icons.mic_none,
+                          size: 18,
+                        ),
+                        label: Text(
+                          _isListening ? 'Listening...' : 'Speak',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isListening
+                              ? AppColors.success
+                              : null,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                        ),
+                      ),
+
+                      // Type button - changes to "Hide" when keyboard is open
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _showKeyboard = !_showKeyboard;
+                          });
+                          if (_showKeyboard) {
+                            _speechService.cancel();
+                            Future.delayed(
+                              const Duration(milliseconds: 100),
+                              () {
+                                FocusScope.of(
+                                  context,
+                                ).requestFocus(FocusNode());
+                              },
+                            );
+                          }
+                        },
+                        icon: Icon(
+                          _showKeyboard ? Icons.keyboard_hide : Icons.keyboard,
+                          size: 18,
+                        ),
+                        label: Text(
+                          _showKeyboard ? 'Hide' : 'Type',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+
+                  // ✅ FIXED: Compact text input field
+                  if (_showKeyboard) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth - 48,
+                      ),
+                      child: TextField(
+                        controller: _inputController,
+                        autofocus: true,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Type here...',
+                          hintStyle: const TextStyle(fontSize: 14),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          isDense: true,
+                        ),
+                        onSubmitted: (value) {
+                          if (value.trim().isNotEmpty) {
+                            _processSentence(value.trim());
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (_inputController.text.trim().isNotEmpty) {
+                          _processSentence(_inputController.text.trim());
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text(
+                        'Submit',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ],
               ],
-            ],
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
