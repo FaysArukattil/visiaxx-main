@@ -51,6 +51,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
   int _stableReadingsCount = 0;
   static const int _requiredStableReadings = 5;
 
+  bool _hasAutoNavigated = false;
+
   // Last spoken guidance (to avoid repeating)
   DistanceStatus? _lastSpokenStatus;
 
@@ -212,10 +214,21 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
           _isDistanceStable = true;
           // Vibrate to indicate success
           HapticFeedback.mediumImpact();
+
+          // ✅ AUTO-CONTINUE: Automatically proceed after 1 second
+          if (!_hasAutoNavigated) {
+            _hasAutoNavigated = true;
+            Future.delayed(const Duration(seconds: 1), () {
+              if (mounted && _isDistanceStable) {
+                _onContinuePressed();
+              }
+            });
+          }
         }
       } else {
         _stableReadingsCount = 0;
         _isDistanceStable = false;
+        _hasAutoNavigated = false; // Reset flag if user moves
       }
     });
 
@@ -557,7 +570,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            'Minimum: ${widget.targetDistanceCm.toInt()} cm',
+            'Target: ${widget.targetDistanceCm.toInt()} cm (±${widget.toleranceCm.toInt()} cm)',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.6),
               fontSize: 14,
@@ -606,7 +619,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
       children: [
         Text(
           _isDistanceStable
-              ? 'Distance locked! Ready to continue.'
+              ? 'Distance locked! Auto-continuing...'
               : _distanceStatus == DistanceStatus.optimal
               ? 'Hold still...'
               : 'Adjust your position',

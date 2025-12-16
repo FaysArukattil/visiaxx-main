@@ -259,16 +259,18 @@ class DistanceDetectionService {
     }
   }
 
-  /// Get distance status based on calculated distance
-  /// ✅ THIS WAS THE MISSING METHOD!
   DistanceStatus _getDistanceStatus(double distanceCm) {
     if (distanceCm <= 0) return DistanceStatus.noFaceDetected;
 
-    // ✅ NEW LOGIC: Only check minimum distance (no maximum limit)
-    if (distanceCm < targetDistanceCm) {
+    // Calculate acceptable range based on tolerance
+    final minDistance = targetDistanceCm - toleranceCm;
+    final maxDistance = targetDistanceCm + toleranceCm;
+
+    if (distanceCm < minDistance) {
       return DistanceStatus.tooClose;
+    } else if (distanceCm > maxDistance) {
+      return DistanceStatus.tooFar;
     } else {
-      // ✅ Any distance >= targetDistanceCm is acceptable
       return DistanceStatus.optimal;
     }
   }
@@ -278,7 +280,7 @@ class DistanceDetectionService {
 
   /// Get acceptable distance range
   String get acceptableRange =>
-      '${targetDistanceCm.toInt()}+ cm'; // ✅ Changed to "40+ cm" format
+      '${(targetDistanceCm - toleranceCm).toInt()}-${(targetDistanceCm + toleranceCm).toInt()} cm';
 
   /// Format distance string
   static String formatDistance(double distanceCm) {
@@ -286,13 +288,12 @@ class DistanceDetectionService {
     return '${distanceCm.toStringAsFixed(0)} cm';
   }
 
-  /// Get guidance message based on status
   static String getGuidanceMessage(DistanceStatus status) {
     switch (status) {
       case DistanceStatus.tooClose:
         return 'Move back - You are too close';
       case DistanceStatus.tooFar:
-        return 'Distance is good!'; // ✅ Not used anymore but kept for compatibility
+        return 'Move closer - You are too far';
       case DistanceStatus.optimal:
         return 'Perfect! Distance is correct';
       case DistanceStatus.noFaceDetected:
@@ -307,8 +308,10 @@ class DistanceDetectionService {
 
   /// Check if current distance is acceptable
   bool isDistanceAcceptable(double distance) {
-    // ✅ NEW: Only check minimum distance
-    return distance >= targetDistanceCm;
+    if (distance <= 0) return false;
+    final minDistance = targetDistanceCm - toleranceCm;
+    final maxDistance = targetDistanceCm + toleranceCm;
+    return distance >= minDistance && distance <= maxDistance;
   }
 
   /// Check if service is ready
