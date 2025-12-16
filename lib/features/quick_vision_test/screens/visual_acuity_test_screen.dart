@@ -1191,9 +1191,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 'E',
                 style: TextStyle(
                   fontSize: eSize,
-                  fontWeight: FontWeight.w900, // Maximum boldness
-                  fontFamily:
-                      'Courier', // ✅ CHANGED: Monospace font for uniform strokes
+                  fontWeight: FontWeight.bold, // Maximum boldness
+
                   color: Colors.black,
                   letterSpacing: 0,
                   height: 1.0,
