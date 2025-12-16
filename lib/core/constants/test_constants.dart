@@ -121,7 +121,7 @@ class TestConstants {
   // ✅ FIXED: Updated short distance font sizes to match visual acuity
   static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(
-      sentence: 'The sky is blue',
+      sentence: 'Can you see',
       fontSize: 120.0,
       snellen: '6/60',
     ),
@@ -195,7 +195,7 @@ enum EDirection {
   right(0, 'Right'),
   down(90, 'Down'),
   left(180, 'Left'),
-  up(270, 'Up');
+  up(270, 'Upper');
 
   final int rotationDegrees;
   final String label;

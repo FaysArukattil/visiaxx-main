@@ -1314,7 +1314,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Text(
                 _isTestPausedForDistance
                     ? 'Voice recognition active - waiting to resume'
-                    : 'Use buttons or say: Up, Down, Left, Right',
+                    : 'Use buttons or say: Upper or Upward, Down or Downward, Left, Right',
                 style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
                 textAlign: TextAlign.center,
               ),

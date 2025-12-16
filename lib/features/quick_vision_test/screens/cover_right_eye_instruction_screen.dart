@@ -151,7 +151,7 @@ class _CoverRightEyeInstructionScreenState
                     _buildInstructionItem(
                       Icons.mic,
                       'Voice Commands',
-                      'Say the direction the E is pointing:\nUP, DOWN, LEFT, or RIGHT',
+                      'Say the direction the E is pointing:\nUPPER or UPWARD, DOWN OR DOWNWARD, LEFT, RIGHT',
                     ),
                   ],
                 ),
