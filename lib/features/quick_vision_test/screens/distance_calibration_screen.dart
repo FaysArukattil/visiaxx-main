@@ -147,6 +147,16 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
           'Failed to initialize camera after $maxRetries attempts',
         );
       }
+      // ✅ DEBUG: Log camera details
+      debugPrint('=== CAMERA DEBUG INFO ===');
+      debugPrint(
+        'Camera initialized: ${_cameraController!.value.isInitialized}',
+      );
+      debugPrint('Preview size: ${_cameraController!.value.previewSize}');
+      debugPrint('Aspect ratio: ${_cameraController!.value.aspectRatio}');
+      debugPrint('Is streaming: ${_cameraController!.value.isStreamingImages}');
+      debugPrint('Error: ${_cameraController!.value.errorDescription}');
+      debugPrint('========================');
 
       // Start monitoring
       await _distanceService.startMonitoring();
@@ -356,54 +366,70 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
       fit: StackFit.expand,
       children: [
         // ✅ FIX: Camera preview with proper error handling and fallback
+        // ✅ ENHANCED: Better camera preview rendering
         if (_cameraController != null && _cameraController!.value.isInitialized)
           Positioned.fill(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: _cameraController!.value.previewSize!.height,
-                height: _cameraController!.value.previewSize!.width,
-                child: CameraPreview(_cameraController!),
+            child: OverflowBox(
+              alignment: Alignment.center,
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _cameraController!.value.previewSize!.height,
+                  height: _cameraController!.value.previewSize!.width,
+                  child: CameraPreview(_cameraController!),
+                ),
               ),
             ),
           )
         else
-          // ✅ NEW: Gray fallback background instead of black
+          // ✅ ENHANCED: Better loading state
           Container(
-            color: Colors.grey.shade300, // Changed from grey.shade800
+            color: Colors.black87, // Dark but not pure black
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
+                  // ✅ Add animated loading indicator
+                  SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 3,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  Text(
+                    _hasError ? 'Camera not available' : 'Starting camera...',
+                    style: TextStyle(
+                      color: _hasError ? AppColors.error : Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     _hasError
-                        ? 'Camera not available'
-                        : 'Initializing camera...',
-                    style: TextStyle(
-                      color: _hasError
-                          ? AppColors.error
-                          : AppColors.textPrimary,
-                      fontSize: 14,
-                    ),
+                        ? 'Please allow camera permission'
+                        : 'This may take a few seconds',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   if (_hasError) ...[
-                    const SizedBox(height: 8),
-                    TextButton(
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
                       onPressed: _initializeCamera,
-                      child: const Text('Try Again'),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try Again'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ],
                 ],
               ),
             ),
           ),
-
         // Overlay gradient (top)
         Positioned(
           top: 0,
@@ -531,7 +557,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            'Target: ${widget.targetDistanceCm.toInt()} ± ${widget.toleranceCm.toInt()} cm',
+            'Minimum: ${widget.targetDistanceCm.toInt()} cm',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.6),
               fontSize: 14,

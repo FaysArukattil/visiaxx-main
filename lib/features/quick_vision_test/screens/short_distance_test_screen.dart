@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
+import 'package:visiaxx/core/utils/distance_helper.dart';
 import 'package:visiaxx/core/utils/fuzzy_matcher.dart';
 import 'package:visiaxx/widgets/common/snellen_size_indicator.dart';
 import '../../../core/constants/app_colors.dart';
@@ -95,10 +96,14 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   Future<void> _startDistanceMonitoring() async {
     _distanceService.onDistanceUpdate = (distance, status) {
       if (!mounted) return;
+
+      // ✅ Use centralized helper
+      final newIsOk = DistanceHelper.isDistanceAcceptable(distance, 40.0);
+
       setState(() {
         _currentDistance = distance;
         _distanceStatus = status;
-        _isDistanceOk = status == DistanceStatus.optimal;
+        _isDistanceOk = newIsOk;
       });
     };
 
@@ -414,6 +419,20 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
 
   /// ✅ FIXED: Distance warning that doesn't stop voice recognition
   Widget _buildDistanceWarningOverlay() {
+    // ✅ Dynamic messages based on status
+    final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, 40.0);
+    final instruction = DistanceHelper.getDetailedInstruction(40.0);
+    final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
+
+    // ✅ Icon changes based on issue
+    final icon = _distanceStatus == DistanceStatus.noFaceDetected
+        ? Icons.face_retouching_off
+        : Icons.warning_rounded;
+
+    final iconColor = _distanceStatus == DistanceStatus.noFaceDetected
+        ? AppColors.error
+        : AppColors.warning;
+
     return Container(
       color: Colors.black.withOpacity(0.85),
       child: Center(
@@ -427,43 +446,78 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
+              Icon(icon, size: 60, color: iconColor),
               const SizedBox(height: 16),
               Text(
-                'Please Adjust Distance',
+                pauseReason, // ✅ Dynamic
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: AppColors.error,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
-                'Maintain 40cm distance for accurate results',
+                instruction, // ✅ Dynamic
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
-              Text(
-                _currentDistance > 0
-                    ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                    : 'Face not detected',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: _currentDistance > 0
-                      ? AppColors.primary
-                      : AppColors.error,
+
+              // ✅ Only show distance if face is detected
+              if (_distanceStatus != DistanceStatus.noFaceDetected) ...[
+                Text(
+                  _currentDistance > 0
+                      ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
+                      : 'Measuring...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Acceptable range: 35cm - 45cm',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
+                const SizedBox(height: 12),
+                Text(
+                  rangeText, // ✅ Dynamic
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ] else ...[
+                // ✅ Special message when no face
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Position your face in the camera',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 20),
 
-              // ✅ NEW: Show that voice is still listening
+              // ✅ Voice indicator
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -495,7 +549,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
                   setState(() {
                     _isDistanceOk = true;
                   });
-                  // ✅ No need to restart listening - it never stopped!
+                  // Voice continues in background - no need to restart
                 },
                 child: Text(
                   'Continue Anyway',
@@ -740,24 +794,13 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   }
 
   Widget _buildDistanceIndicator() {
-    Color indicatorColor;
-    String distanceText;
-
-    if (_currentDistance > 0) {
-      distanceText = '${_currentDistance.toStringAsFixed(0)}cm';
-
-      // 40cm ±5cm = 35-45cm acceptable range
-      if (_currentDistance >= 35 && _currentDistance <= 45) {
-        indicatorColor = AppColors.success;
-      } else if (_currentDistance >= 30 && _currentDistance <= 50) {
-        indicatorColor = AppColors.warning;
-      } else {
-        indicatorColor = AppColors.error;
-      }
-    } else {
-      distanceText = 'No face';
-      indicatorColor = AppColors.error;
-    }
+    final indicatorColor = DistanceHelper.getDistanceColor(
+      _currentDistance,
+      40.0,
+    );
+    final distanceText = _currentDistance > 0
+        ? '${_currentDistance.toStringAsFixed(0)}cm'
+        : 'No face';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

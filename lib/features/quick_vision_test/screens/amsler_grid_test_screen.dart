@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:visiaxx/core/utils/distance_helper.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/services/tts_service.dart';
@@ -98,30 +99,32 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
     _distanceService.onDistanceUpdate = (distance, status) {
       if (!mounted) return;
 
-      // Custom distance check for 40cm +/- 5cm
-      final isOk = distance >= 35 && distance <= 45;
+      // ✅ Use centralized helper
+      final newIsOk = DistanceHelper.isDistanceAcceptable(distance, 40.0);
+      final shouldPause = DistanceHelper.shouldPauseTest(status);
 
       setState(() {
         _currentDistance = distance;
         _distanceStatus = status;
-        _isDistanceOk = isOk;
+        _isDistanceOk = newIsOk;
       });
 
-      // Pause/resume logic - pause during test if distance is wrong
+      // ✅ AUTO PAUSE/RESUME during active test
       if (_testingStarted && !_testComplete && !_eyeSwitchPending) {
-        if (!isOk && !_isTestPausedForDistance) {
+        if (shouldPause && !_isTestPausedForDistance) {
           _pauseTestForDistance();
-        } else if (isOk && _isTestPausedForDistance) {
+        } else if (!shouldPause && _isTestPausedForDistance) {
           _resumeTestAfterDistance();
         }
       }
 
-      // Speak guidance if status changed
-      if (status != _lastSpokenDistanceStatus && _isTestPausedForDistance) {
+      // Speak guidance when paused and status changes
+      if (_isTestPausedForDistance && status != _lastSpokenDistanceStatus) {
         _lastSpokenDistanceStatus = status;
         _speakDistanceGuidance(status);
       }
     };
+
     _distanceService.onError = (msg) => debugPrint('[DistanceMonitor] $msg');
 
     if (!_distanceService.isReady) {
@@ -933,24 +936,13 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
   }
 
   Widget _buildDistanceIndicator() {
-    Color indicatorColor;
-    String distanceText;
-
-    if (_currentDistance > 0) {
-      distanceText = '${_currentDistance.toStringAsFixed(0)}cm';
-
-      // 40cm ±5cm = 35-45cm acceptable range
-      if (_currentDistance >= 35 && _currentDistance <= 45) {
-        indicatorColor = AppColors.success;
-      } else if (_currentDistance >= 30 && _currentDistance <= 50) {
-        indicatorColor = AppColors.warning;
-      } else {
-        indicatorColor = AppColors.error;
-      }
-    } else {
-      distanceText = 'No face';
-      indicatorColor = AppColors.error;
-    }
+    final indicatorColor = DistanceHelper.getDistanceColor(
+      _currentDistance,
+      40.0,
+    );
+    final distanceText = _currentDistance > 0
+        ? '${_currentDistance.toStringAsFixed(0)}cm'
+        : 'No face';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -978,6 +970,20 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
   }
 
   Widget _buildDistanceWarningOverlay() {
+    // ✅ Dynamic messages based on status
+    final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, 40.0);
+    final instruction = DistanceHelper.getDetailedInstruction(40.0);
+    final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
+
+    // ✅ Icon changes based on issue
+    final icon = _distanceStatus == DistanceStatus.noFaceDetected
+        ? Icons.face_retouching_off
+        : Icons.warning_rounded;
+
+    final iconColor = _distanceStatus == DistanceStatus.noFaceDetected
+        ? AppColors.error
+        : AppColors.warning;
+
     return Container(
       color: Colors.black.withOpacity(0.85),
       child: Center(
@@ -991,52 +997,117 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
+              Icon(icon, size: 60, color: iconColor),
               const SizedBox(height: 16),
               Text(
-                'Test Paused',
+                pauseReason, // ✅ Dynamic
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: AppColors.error,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
-                'Please maintain 40cm distance',
+                instruction, // ✅ Dynamic
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
-              Text(
-                _currentDistance > 0
-                    ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                    : 'Face not detected',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: _currentDistance > 0
-                      ? AppColors.primary
-                      : AppColors.error,
+
+              // ✅ Only show distance if face is detected
+              if (_distanceStatus != DistanceStatus.noFaceDetected) ...[
+                Text(
+                  _currentDistance > 0
+                      ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
+                      : 'Measuring...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  rangeText, // ✅ Dynamic: "Minimum 40 cm"
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ] else ...[
+                // ✅ Special message when no face
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Position your face in the camera',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 20),
+
+              // ✅ Show marking is paused
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.warning, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.pause_circle,
+                      color: AppColors.warning,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Marking paused',
+                      style: TextStyle(
+                        color: AppColors.warning,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Acceptable range: 35cm - 45cm',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 20),
-              // Skip button to bypass distance detection
+              const SizedBox(height: 16),
+
+              // Continue button
               TextButton(
                 onPressed: () {
-                  // Force distance OK and resume test
                   setState(() {
                     _isDistanceOk = true;
                     _isTestPausedForDistance = false;
                   });
                 },
                 child: Text(
-                  'Skip Distance Check',
+                  'Continue Anyway',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     decoration: TextDecoration.underline,

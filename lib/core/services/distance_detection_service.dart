@@ -85,6 +85,21 @@ class DistanceDetectionService {
       await _cameraController!.initialize();
 
       debugPrint('[DistanceService] Camera initialized');
+
+      // ✅ DEBUG: Comprehensive camera diagnostics
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('🎥 CAMERA DIAGNOSTICS');
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('✓ Initialized: ${_cameraController!.value.isInitialized}');
+      debugPrint('✓ Preview Size: ${_cameraController!.value.previewSize}');
+      debugPrint('✓ Aspect Ratio: ${_cameraController!.value.aspectRatio}');
+      debugPrint('✓ Streaming: ${_cameraController!.value.isStreamingImages}');
+      debugPrint('✓ Recording: ${_cameraController!.value.isRecordingVideo}');
+      if (_cameraController!.value.errorDescription != null) {
+        debugPrint('❌ Error: ${_cameraController!.value.errorDescription}');
+      }
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       return _cameraController;
     } catch (e) {
       onError?.call('Failed to initialize camera: $e');
@@ -245,17 +260,15 @@ class DistanceDetectionService {
   }
 
   /// Get distance status based on calculated distance
+  /// ✅ THIS WAS THE MISSING METHOD!
   DistanceStatus _getDistanceStatus(double distanceCm) {
     if (distanceCm <= 0) return DistanceStatus.noFaceDetected;
 
-    final minDistance = targetDistanceCm - toleranceCm;
-    final maxDistance = targetDistanceCm + toleranceCm;
-
-    if (distanceCm < minDistance) {
+    // ✅ NEW LOGIC: Only check minimum distance (no maximum limit)
+    if (distanceCm < targetDistanceCm) {
       return DistanceStatus.tooClose;
-    } else if (distanceCm > maxDistance) {
-      return DistanceStatus.tooFar;
     } else {
+      // ✅ Any distance >= targetDistanceCm is acceptable
       return DistanceStatus.optimal;
     }
   }
@@ -265,7 +278,7 @@ class DistanceDetectionService {
 
   /// Get acceptable distance range
   String get acceptableRange =>
-      '${(targetDistanceCm - toleranceCm).toInt()}-${(targetDistanceCm + toleranceCm).toInt()} cm';
+      '${targetDistanceCm.toInt()}+ cm'; // ✅ Changed to "40+ cm" format
 
   /// Format distance string
   static String formatDistance(double distanceCm) {
@@ -279,7 +292,7 @@ class DistanceDetectionService {
       case DistanceStatus.tooClose:
         return 'Move back - You are too close';
       case DistanceStatus.tooFar:
-        return 'Come closer - You are too far';
+        return 'Distance is good!'; // ✅ Not used anymore but kept for compatibility
       case DistanceStatus.optimal:
         return 'Perfect! Distance is correct';
       case DistanceStatus.noFaceDetected:
@@ -294,8 +307,8 @@ class DistanceDetectionService {
 
   /// Check if current distance is acceptable
   bool isDistanceAcceptable(double distance) {
-    return distance >= (targetDistanceCm - toleranceCm) &&
-        distance <= (targetDistanceCm + toleranceCm);
+    // ✅ NEW: Only check minimum distance
+    return distance >= targetDistanceCm;
   }
 
   /// Check if service is ready

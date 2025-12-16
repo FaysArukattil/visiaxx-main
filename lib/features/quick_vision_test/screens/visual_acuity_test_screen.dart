@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
+import 'package:visiaxx/core/utils/distance_helper.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
 import 'package:visiaxx/widgets/common/snellen_size_indicator.dart';
 import '../../../core/constants/app_colors.dart';
@@ -243,11 +244,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   /// Handle real-time distance updates
+  /// Handle real-time distance updates with auto pause/resume
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
     final wasOk = _isDistanceOk;
-    final newIsOk = status == DistanceStatus.optimal;
+    final wasPaused = _isTestPausedForDistance;
+
+    // ✅ NEW: Check using centralized helper
+    final newIsOk = DistanceHelper.isDistanceAcceptable(distance, 100.0);
+    final shouldPause = DistanceHelper.shouldPauseTest(status);
 
     setState(() {
       _currentDistance = distance;
@@ -255,19 +261,19 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _isDistanceOk = newIsOk;
     });
 
-    // Check if we need to pause/resume the test
+    // ✅ AUTO PAUSE/RESUME logic for active test
     if (_showE && _waitingForResponse) {
-      if (!newIsOk && !_isTestPausedForDistance) {
-        // Need to pause - distance is wrong
+      if (shouldPause && !_isTestPausedForDistance) {
+        // Need to pause - distance wrong or no face
         _pauseTestForDistance();
-      } else if (newIsOk && _isTestPausedForDistance) {
-        // Can resume - distance is now correct
+      } else if (!shouldPause && _isTestPausedForDistance) {
+        // Can resume - distance is now correct AND face detected
         _resumeTestAfterDistance();
       }
     }
 
-    // Speak guidance if status changed (and not while test is active)
-    if (status != _lastSpokenDistanceStatus && _isTestPausedForDistance) {
+    // Speak guidance only when paused and status changes
+    if (_isTestPausedForDistance && status != _lastSpokenDistanceStatus) {
       _lastSpokenDistanceStatus = status;
       _speakDistanceGuidance(status);
     }
@@ -729,25 +735,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildDistanceIndicator() {
-    Color indicatorColor;
-    String distanceText;
-
-    if (_currentDistance > 0) {
-      // Display in cm
-      distanceText = '${_currentDistance.toStringAsFixed(0)}cm';
-
-      // 100cm ±8cm = 92-108cm acceptable range
-      if (_currentDistance >= 92 && _currentDistance <= 108) {
-        indicatorColor = AppColors.success;
-      } else if (_currentDistance >= 85 && _currentDistance <= 115) {
-        indicatorColor = AppColors.warning;
-      } else {
-        indicatorColor = AppColors.error;
-      }
-    } else {
-      distanceText = 'No face';
-      indicatorColor = AppColors.error;
-    }
+    final indicatorColor = DistanceHelper.getDistanceColor(
+      _currentDistance,
+      100.0,
+    );
+    final distanceText = _currentDistance > 0
+        ? '${_currentDistance.toStringAsFixed(0)}cm'
+        : 'No face';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -775,6 +769,20 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildDistanceWarningOverlay() {
+    // ✅ Dynamic messages based on status
+    final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, 100.0);
+    final instruction = DistanceHelper.getDetailedInstruction(100.0);
+    final rangeText = DistanceHelper.getAcceptableRangeText(100.0);
+
+    // ✅ Icon changes based on issue
+    final icon = _distanceStatus == DistanceStatus.noFaceDetected
+        ? Icons.face_retouching_off
+        : Icons.warning_rounded;
+
+    final iconColor = _distanceStatus == DistanceStatus.noFaceDetected
+        ? AppColors.error
+        : AppColors.warning;
+
     return Container(
       color: Colors.black.withOpacity(0.85),
       child: Center(
@@ -788,42 +796,104 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
+              Icon(icon, size: 60, color: iconColor),
               const SizedBox(height: 16),
               Text(
-                'Test Paused',
+                pauseReason, // ✅ Dynamic title
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: AppColors.error,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
-                'Please maintain 1 meter distance',
+                instruction, // ✅ Dynamic instruction
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
-              Text(
-                _currentDistance > 0
-                    ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                    : 'Face not detected',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: _currentDistance > 0
-                      ? AppColors.primary
-                      : AppColors.error,
+
+              // ✅ Only show distance if face is detected
+              if (_distanceStatus != DistanceStatus.noFaceDetected) ...[
+                Text(
+                  _currentDistance > 0
+                      ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
+                      : 'Measuring...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  rangeText, // ✅ Dynamic range text
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ] else ...[
+                // ✅ Special message when no face
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Position your face in the camera',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 20),
+
+              // ✅ Voice indicator (always show it's listening)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.success, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.mic, color: AppColors.success, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Voice recognition active',
+                      style: TextStyle(
+                        color: AppColors.success,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Acceptable range: 92cm - 108cm',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 20),
-              // Skip button to bypass distance detection
+              const SizedBox(height: 16),
+
+              // Skip button
               TextButton(
                 onPressed: () {
                   setState(() {
@@ -839,7 +909,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   );
                 },
                 child: Text(
-                  'Skip Distance Check',
+                  'Continue Anyway',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     decoration: TextDecoration.underline,
