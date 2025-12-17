@@ -13,6 +13,7 @@ import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/services/speech_service.dart';
+import '../../../core/services/continuous_speech_manager.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../data/models/visiual_acuity_result.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -34,6 +35,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     with WidgetsBindingObserver {
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
+  late final ContinuousSpeechManager _continuousSpeech;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Distance monitoring service
@@ -78,6 +80,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   bool _isDistanceOk = true; // Start as true to avoid blocking on init
   bool _useDistanceMonitoring = true; // Enabled for real-time distance display
   bool _isTestPausedForDistance = false; // Test is paused due to wrong distance
+  bool _userDismissedDistanceWarning = false; // User clicked "Continue Anyway"
+  Timer? _distanceWarningReenableTimer; // Timer to re-enable warning after user dismissal
   DistanceStatus? _lastSpokenDistanceStatus; // Track last spoken guidance
 
   final Random _random = Random();
@@ -97,12 +101,124 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Handle app lifecycle for camera
-    if (state == AppLifecycleState.inactive) {
-      _distanceService.stopMonitoring();
-    } else if (state == AppLifecycleState.resumed &&
-        !_showDistanceCalibration) {
+    // Handle app lifecycle
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // App minimized or going to background
+      _handleAppPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      // App resumed
+      _handleAppResumed();
+    }
+  }
+
+  void _handleAppPaused() {
+    // Pause test timers
+    _eDisplayTimer?.cancel();
+    _eCountdownTimer?.cancel();
+    _relaxationTimer?.cancel();
+    
+    // Stop distance monitoring
+    _distanceService.stopMonitoring();
+    
+    // Stop speech recognition
+    _continuousSpeech.stop();
+    
+    setState(() {
+      _isTestPausedForDistance = true;
+    });
+  }
+
+  void _handleAppResumed() {
+    if (!mounted || _testComplete) return;
+    
+    // Show resume dialog
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted && !_testComplete) {
+        _showResumeDialog();
+      }
+    });
+  }
+
+  void _showResumeDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.pause_circle_outline, color: AppColors.primary, size: 28),
+            const SizedBox(width: 12),
+            const Text('Test Paused', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'The test was paused because the app was minimized.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Would you like to continue?',
+              style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+            child: const Text('Exit Test'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _resumeAfterPause();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Continue Test'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resumeAfterPause() {
+    setState(() {
+      _isTestPausedForDistance = false;
+    });
+    
+    // Resume distance monitoring if needed
+    if (!_showDistanceCalibration) {
       _startContinuousDistanceMonitoring();
+    }
+    
+    // Resume speech recognition
+    if (_showE && _waitingForResponse) {
+      _continuousSpeech.start(
+        listenDuration: const Duration(minutes: 10),
+        minConfidence: 0.05,
+        bufferMs: 300,
+      );
+      
+      // Restart the display timer with remaining time
+      _restartEDisplayTimer();
+    } else if (_showRelaxation) {
+      // Resume relaxation timer
+      _startRelaxation();
     }
   }
 
@@ -135,15 +251,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     await _ttsService.initialize();
     await _speechService.initialize();
 
-    // Set up speech service callbacks
-    _speechService.onResult = _handleVoiceResponse;
-    _speechService.onSpeechDetected = _handleSpeechDetected;
-    _speechService.onListeningStarted = () {
-      if (mounted) setState(() => _isListening = true);
+    // Initialize continuous speech manager
+    _continuousSpeech = ContinuousSpeechManager(_speechService);
+    _continuousSpeech.onFinalResult = _handleVoiceResponse;
+    _continuousSpeech.onSpeechDetected = _handleSpeechDetected;
+    _continuousSpeech.onListeningStateChanged = (isListening) {
+      if (mounted) setState(() => _isListening = isListening);
     };
-    _speechService.onListeningStopped = () {
-      if (mounted) setState(() => _isListening = false);
-    };
+    
+    // DON'T pause speech for TTS - let it run continuously
 
     // 🔥 KEY FIX: Check if we should start with left eye
     final provider = context.read<TestSessionProvider>();
@@ -203,6 +319,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _handleSpeechDetected(String partialResult) {
+    debugPrint('[VisualAcuity] 🎤 Speech detected: "$partialResult"');
     if (mounted) {
       setState(() {
         _lastDetectedSpeech = partialResult;
@@ -266,8 +383,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     // ✅ AUTO PAUSE/RESUME logic for active test
     if (_showE && _waitingForResponse) {
-      if (shouldPause && !_isTestPausedForDistance) {
-        // Need to pause - distance wrong or no face
+      if (shouldPause && !_isTestPausedForDistance && !_userDismissedDistanceWarning) {
+        // Need to pause - distance wrong or no face (only if user hasn't dismissed)
         _pauseTestForDistance();
       } else if (!shouldPause && _isTestPausedForDistance) {
         // Can resume - distance is now correct AND face detected
@@ -310,8 +427,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eCountdownTimer?.cancel();
     _eDisplayTimer?.cancel();
 
-    // Stop speech recognition temporarily
-    _speechService.stopListening();
+    // Keep speech recognition running even when paused
 
     // Announce the pause
     _ttsService.speak('Test paused. Please adjust your distance.');
@@ -334,16 +450,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Restart the countdown timer with remaining time
     _restartEDisplayTimer();
 
-    // Restart speech recognition with continuous retry
-    _speechService.startListening(
-      listenFor: Duration(seconds: _eDisplayCountdown + 1),
-      bufferMs: 300,
-      autoRestart: true, // CRITICAL: Keep listening and auto-retry
-      minConfidence: 0.2, // LOWERED: Accept more results for reliability
-    );
-
-    // Haptic feedback
-    HapticFeedback.mediumImpact();
+    // Speech recognition is already running continuously
   }
 
   /// Restart the E display timer with remaining time
@@ -371,7 +478,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Restart main display timer
     _eDisplayTimer = Timer(Duration(seconds: _eDisplayCountdown), () {
       if (_waitingForResponse && !_isTestPausedForDistance) {
-        final lastValue = _speechService.finalizeWithLastValue();
+        final lastValue = _continuousSpeech.getLastRecognized();
         if (lastValue != null) {
           final direction = SpeechService.parseDirection(lastValue);
           _recordResponse(direction);
@@ -438,13 +545,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     _eDisplayStartTime = DateTime.now();
 
-    // Start listening for voice input with continuous retry
-    _speechService.startListening(
-      listenFor: Duration(seconds: TestConstants.eDisplayDurationSeconds + 1),
-      bufferMs: 300, // Short buffer for quick response
-      autoRestart: true, // CRITICAL: Keep listening and auto-retry
-      minConfidence: 0.2, // LOWERED: Accept more results for reliability
-    );
+    // Start continuous speech recognition if not already running
+    if (!_continuousSpeech.isActive) {
+      _continuousSpeech.start(
+        listenDuration: const Duration(minutes: 10),
+        minConfidence: 0.05,
+        bufferMs: 300,
+      );
+    }
 
     // Start countdown timer for display
     _eCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -466,7 +574,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       () {
         if (_waitingForResponse) {
           // Use last recognized value if available
-          final lastValue = _speechService.finalizeWithLastValue();
+          final lastValue = _continuousSpeech.getLastRecognized();
           if (lastValue != null) {
             final direction = SpeechService.parseDirection(lastValue);
             _recordResponse(direction);
@@ -479,11 +587,23 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _handleVoiceResponse(String recognized) {
-    if (!_waitingForResponse) return;
+    debugPrint('[VisualAcuity] 🔥🔥🔥 _handleVoiceResponse called with: "$recognized"');
+    debugPrint('[VisualAcuity] Waiting for response: $_waitingForResponse');
+    
+    if (!_waitingForResponse) {
+      debugPrint('[VisualAcuity] ⚠️ NOT waiting for response - ignoring');
+      return;
+    }
 
+    debugPrint('[VisualAcuity] 🔍 Parsing direction from: "$recognized"');
     final direction = SpeechService.parseDirection(recognized);
+    debugPrint('[VisualAcuity] 📝 Parsed direction: $direction');
+    
     if (direction != null) {
+      debugPrint('[VisualAcuity] ✅ Recording direction: $direction');
       _recordResponse(direction);
+    } else {
+      debugPrint('[VisualAcuity] ❌ Direction is NULL - not recording');
     }
   }
 
@@ -495,7 +615,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void _recordResponse(String? userResponse) {
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
-    _speechService.cancel(); // Use cancel() to fully stop auto-restart
+    // Keep speech recognition running
 
     final responseTime = _eDisplayStartTime != null
         ? DateTime.now().difference(_eDisplayStartTime!).inMilliseconds
@@ -698,6 +818,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
     _autoNavigationTimer?.cancel();
+    _distanceWarningReenableTimer?.cancel();
+    _continuousSpeech.dispose();
     _ttsService.dispose();
     _speechService.dispose();
     _audioPlayer.dispose();
@@ -708,11 +830,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // Disable back navigation during test
+      canPop: true, // Allow back navigation
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && !_testComplete) {
-          // Show confirmation dialog
-          _showExitConfirmation();
+        if (didPop) {
+          // Clean up when going back
+          _continuousSpeech.stop();
+          _distanceService.stopMonitoring();
         }
       },
       child: Scaffold(
@@ -750,6 +873,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   right: 12,
                   bottom: _showE && _waitingForResponse ? 120 : 12,
                   child: _buildDistanceIndicator(),
+                ),
+
+              // Mic indicator (top right corner) - Always visible during test
+              if (_showE || _showRelaxation)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: _buildMicIndicator(),
                 ),
 
               // Distance warning overlay when explicitly paused
@@ -927,14 +1058,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   setState(() {
                     _isDistanceOk = true;
                     _isTestPausedForDistance = false;
+                    _userDismissedDistanceWarning = true;
                   });
+                  
+                  // Re-enable warning after 30 seconds
+                  _distanceWarningReenableTimer?.cancel();
+                  _distanceWarningReenableTimer = Timer(const Duration(seconds: 30), () {
+                    if (mounted) {
+                      setState(() => _userDismissedDistanceWarning = false);
+                    }
+                  });
+                  
                   _restartEDisplayTimer();
-                  _speechService.startListening(
-                    listenFor: Duration(seconds: _eDisplayCountdown + 1),
-                    bufferMs: 300,
-                    autoRestart: true,
-                    minConfidence: 0.2,
-                  );
                 },
                 child: Text(
                   'Continue Anyway',
@@ -980,98 +1115,116 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: AppColors.surface,
-      child: Column(
+      child: Row(
+        children: [
+          // Eye indicator
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 4,
+            ),
+            decoration: BoxDecoration(
+              color: _currentEye == 'right'
+                  ? AppColors.rightEye.withOpacity(0.1)
+                  : AppColors.leftEye.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.visibility,
+                  size: 14,
+                  color: _currentEye == 'right'
+                      ? AppColors.rightEye
+                      : AppColors.leftEye,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _currentEye.toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: _currentEye == 'right'
+                        ? AppColors.rightEye
+                        : AppColors.leftEye,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          // Level indicator (using first letter of eye: R or L)
+          Text(
+            '${_currentEye[0].toUpperCase()}${_currentLevel + 1}/${TestConstants.visualAcuityLevels.length}',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(width: 12),
+          // Score
+          Text(
+            '$_totalCorrect/$_totalResponses',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMicIndicator() {
+    // Determine state and color - GREEN when recognized!
+    final bool hasRecognized = _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
+    final Color indicatorColor = hasRecognized 
+        ? AppColors.success  // GREEN when we hear something
+        : (_isListening ? AppColors.primary : AppColors.textSecondary);
+    
+    String statusText;
+    IconData iconData;
+    
+    if (hasRecognized) {
+      statusText = 'Heard: $_lastDetectedSpeech';
+      iconData = Icons.mic;
+    } else if (_isListening) {
+      statusText = 'Listening...';
+      iconData = Icons.mic;
+    } else {
+      statusText = 'Mic Ready';
+      iconData = Icons.mic_off;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: indicatorColor.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: indicatorColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Main info row
-          Row(
-            children: [
-              // Eye indicator
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: _currentEye == 'right'
-                      ? AppColors.rightEye.withOpacity(0.1)
-                      : AppColors.leftEye.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.visibility,
-                      size: 14,
-                      color: _currentEye == 'right'
-                          ? AppColors.rightEye
-                          : AppColors.leftEye,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _currentEye.toUpperCase(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: _currentEye == 'right'
-                            ? AppColors.rightEye
-                            : AppColors.leftEye,
-                      ),
-                    ),
-                  ],
-                ),
+          Icon(iconData, size: 16, color: Colors.white),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 150),
+            child: Text(
+              statusText,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
               ),
-              const Spacer(),
-              // Level indicator
-              Text(
-                'L${_currentLevel + 1}/${TestConstants.visualAcuityLevels.length}',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-              ),
-              const SizedBox(width: 12),
-              // Score
-              Text(
-                '$_totalCorrect/$_totalResponses',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          // Voice indicator - separate row to avoid overflow
-          if (_isListening)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.mic, size: 14, color: AppColors.success),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        _lastDetectedSpeech ?? 'Listening...',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.success,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
+          ),
         ],
       ),
     );
@@ -1524,12 +1677,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Auto-continuing in $_autoNavigationCountdown second${_autoNavigationCountdown != 1 ? 's' : ''}...',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                Flexible(
+                  child: Text(
+                    'Continuing in $_autoNavigationCountdown...',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

@@ -512,12 +512,12 @@ class SpeechService {
     return null;
   }
 
-  /// Parse number from speech - PRODUCTION READY
-  /// Handles: 0-99, teens, tens, compounds, typos, mishears
+  /// Parse number from speech (0-99)
+  /// CRITICAL: Very aggressive matching for color vision test
   static String? parseNumber(String speech) {
     final s = speech.toLowerCase().trim();
     debugPrint('[SpeechService] 🔍 parseNumber input: "$s"');
-
+    
     // ============ Check for digit first (most reliable) ============
     final digitMatch = RegExp(r'\b(\d{1,2})\b').firstMatch(s);
     if (digitMatch != null) {

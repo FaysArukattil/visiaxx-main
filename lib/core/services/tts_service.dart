@@ -9,6 +9,9 @@ class TtsService {
   bool _isSpeaking = false;
   bool _isMuted = false;
 
+  // Callback for when speaking state changes
+  Function(bool)? onSpeakingStateChanged;
+
   // Queue for sequential speech
   final List<String> _speechQueue = [];
   bool _isProcessingQueue = false;
@@ -42,23 +45,27 @@ class TtsService {
       // Set up handlers
       _flutterTts.setStartHandler(() {
         _isSpeaking = true;
+        onSpeakingStateChanged?.call(true);
         debugPrint('[TTS] Speaking started');
       });
 
       _flutterTts.setCompletionHandler(() {
         _isSpeaking = false;
+        onSpeakingStateChanged?.call(false);
         debugPrint('[TTS] Speaking completed');
         _processNextInQueue();
       });
 
       _flutterTts.setErrorHandler((message) {
         _isSpeaking = false;
+        onSpeakingStateChanged?.call(false);
         debugPrint('[TTS] Error: $message');
         _processNextInQueue();
       });
 
       _flutterTts.setCancelHandler(() {
         _isSpeaking = false;
+        onSpeakingStateChanged?.call(false);
         debugPrint('[TTS] Speaking cancelled');
       });
 
@@ -368,9 +375,9 @@ class TtsService {
   /// Get queue size
   int get queueSize => _speechQueue.length;
 
-  /// Dispose TTS engine
-  Future<void> dispose() async {
-    await stop();
+  /// Dispose resources
+  void dispose() {
+    _flutterTts.stop();
     clearQueue();
   }
 }

@@ -538,7 +538,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      result?.resultSummary ?? 'Color vision appears normal',
+                      result?.status ?? 'Color vision appears normal',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,

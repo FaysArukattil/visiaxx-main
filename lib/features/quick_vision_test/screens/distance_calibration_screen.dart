@@ -34,8 +34,7 @@ class DistanceCalibrationScreen extends StatefulWidget {
       _DistanceCalibrationScreenState();
 }
 
-class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
-    with WidgetsBindingObserver {
+class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
   late final DistanceDetectionService _distanceService;
   final TtsService _ttsService = TtsService();
 
@@ -62,35 +61,9 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
   @override
   void initState() {
     super.initState();
-    // Initialize distance service with widget's target parameters
-    _distanceService = DistanceDetectionService(
-      targetDistanceCm: widget.targetDistanceCm,
-      toleranceCm: widget.toleranceCm,
-    );
-    WidgetsBinding.instance.addObserver(this);
+    // Don't add lifecycle observer during calibration
+    _distanceService = DistanceDetectionService();
     _initializeCamera();
-
-    // Start auto-skip timer - auto skip after 30 seconds no matter what
-    _autoSkipTimer = Timer(const Duration(seconds: 30), () {
-      if (mounted && !_isDistanceStable) {
-        debugPrint('[DistanceCalibration] Auto-skipping due to timeout');
-        _onSkipPressed();
-      }
-    });
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Handle app lifecycle changes for camera
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
-
-    if (state == AppLifecycleState.inactive) {
-      _disposeCamera();
-    } else if (state == AppLifecycleState.resumed) {
-      _initializeCamera();
-    }
   }
 
   Future<void> _initializeCamera() async {
@@ -286,8 +259,6 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen>
 
   @override
   void dispose() {
-    _autoSkipTimer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
     _disposeCamera();
     _distanceService.dispose();
     _ttsService.dispose();

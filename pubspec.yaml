@@ -53,6 +53,7 @@ dependencies:
   flutter_native_splash: ^2.4.4
   logger: ^2.6.2
   string_similarity: ^2.1.1
+  flutter_svg: ^2.2.3
 
 dev_dependencies:
   flutter_test:
@@ -86,4 +87,9 @@ flutter:
     - assets/images/
     - assets/images/icons/
     - assets/ishihara_plates/
+    - assets/ishihara_plates/Demo/
+    - assets/ishihara_plates/Diagnostic/Transformation plates/
+    - assets/ishihara_plates/Diagnostic/Vanishing plates/
+    - assets/ishihara_plates/Diagnostic/Hidden plates/
+    - assets/ishihara_plates/Classification/
     - assets/amsler_grid/

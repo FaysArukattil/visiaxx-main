@@ -549,7 +549,8 @@ class PdfExportService {
                         pw.Text(
                           cv.isNormal
                               ? 'Normal Color Vision'
-                              : cv.deficiencyType ?? 'Abnormal',
+                              : (cv.deficiencyType?.toString() ??
+                                    'Abnormal'), // Convert to string
                           style: pw.TextStyle(
                             fontSize: 9,
                             color: cv.isNormal
@@ -586,7 +587,7 @@ class PdfExportService {
                       borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
                     ),
                     child: pw.Text(
-                      'Finding: ${cv.deficiencyType ?? "Color vision deficiency detected"}',
+                      'Finding: ${cv.deficiencyType?.toString() ?? "Color vision deficiency detected"}', // Convert to string
                       style: const pw.TextStyle(
                         fontSize: 8,
                         color: PdfColors.orange900,
