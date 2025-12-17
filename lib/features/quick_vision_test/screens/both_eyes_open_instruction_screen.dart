@@ -15,31 +15,19 @@ class BothEyesOpenInstructionScreen extends StatefulWidget {
 
 class _BothEyesOpenInstructionScreenState
     extends State<BothEyesOpenInstructionScreen> {
-  bool _buttonEnabled = false;
+  int _countdown = 3; // Changed from _buttonEnabled to _countdown
   final TtsService _ttsService = TtsService();
 
   @override
   void initState() {
     super.initState();
-
-    // Initialize TTS and speak instructions
     _initializeTts();
-
-    // Enable button after 3 seconds
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _buttonEnabled = true);
-      }
-    });
+    _startCountdown(); // Start countdown instead of single timer
   }
 
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
-
-    // Wait a moment for screen to settle
     await Future.delayed(const Duration(milliseconds: 500));
-
-    // Speak the instructions
     await _ttsService.speak(
       'Now we will test your near vision for reading. '
       'Keep both eyes open. '
@@ -48,6 +36,53 @@ class _BothEyesOpenInstructionScreenState
       'You will see sentences on the screen. '
       'Read each sentence aloud clearly and completely.',
       speechRate: 0.5,
+    );
+  }
+
+  // NEW: Countdown timer that auto-navigates
+  void _startCountdown() {
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (_countdown > 0) {
+        setState(() => _countdown--);
+      } else {
+        timer.cancel();
+        _navigateToTest();
+      }
+    });
+  }
+
+  // NEW: Navigation method
+  void _navigateToTest() {
+    // Navigate to distance calibration first
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DistanceCalibrationScreen(
+          targetDistanceCm: 40.0,
+          toleranceCm: 5.0,
+          onCalibrationComplete: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ShortDistanceTestScreen(),
+              ),
+            );
+          },
+          onSkip: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ShortDistanceTestScreen(),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -146,71 +181,41 @@ class _BothEyesOpenInstructionScreenState
               ),
               const Spacer(),
 
-              // Start button
+              // UPDATED: Button with countdown
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _buttonEnabled
-                      ? () {
-                          // Navigate to distance calibration first
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DistanceCalibrationScreen(
-                                targetDistanceCm: 40.0,
-                                toleranceCm: 5.0,
-                                onCalibrationComplete: () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const ShortDistanceTestScreen(),
-                                    ),
-                                  );
-                                },
-                                onSkip: () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const ShortDistanceTestScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        }
-                      : null,
+                  onPressed: _countdown == 0 ? _navigateToTest : null,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.all(16),
                     backgroundColor: AppColors.primary,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (!_buttonEnabled)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 12),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                  child: _countdown > 0
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                                value: 1 - (_countdown / 3),
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Starting in $_countdown...',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        )
+                      : const Text(
+                          'Start Reading Test',
+                          style: TextStyle(fontSize: 16),
                         ),
-                      Text(
-                        _buttonEnabled
-                            ? 'Start Reading Test'
-                            : 'Please wait...',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],

@@ -14,31 +14,19 @@ class CoverRightEyeInstructionScreen extends StatefulWidget {
 
 class _CoverRightEyeInstructionScreenState
     extends State<CoverRightEyeInstructionScreen> {
-  bool _buttonEnabled = false;
+  int _countdown = 3; // Changed from _buttonEnabled to _countdown
   final TtsService _ttsService = TtsService();
 
   @override
   void initState() {
     super.initState();
-
-    // Initialize TTS and speak instructions
     _initializeTts();
-
-    // Enable button after 3 seconds
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _buttonEnabled = true);
-      }
-    });
+    _startCountdown(); // Start countdown instead of single timer
   }
 
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
-
-    // Wait a moment for screen to settle
     await Future.delayed(const Duration(milliseconds: 500));
-
-    // Speak the instructions
     await _ttsService.speak(
       'Cover your right eye with your palm or a paper. '
       'Keep your left eye open. '
@@ -46,6 +34,34 @@ class _CoverRightEyeInstructionScreenState
       'You will see the letter E pointing in different directions. '
       'Say upward, down, left, or right to indicate the direction.',
       speechRate: 0.5,
+    );
+  }
+
+  // NEW: Countdown timer that auto-navigates
+  void _startCountdown() {
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (_countdown > 0) {
+        setState(() => _countdown--);
+      } else {
+        timer.cancel();
+        _navigateToTest();
+      }
+    });
+  }
+
+  // NEW: Navigation method
+  void _navigateToTest() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            const VisualAcuityTestScreen(startWithLeftEye: true),
+      ),
     );
   }
 
@@ -151,60 +167,48 @@ class _CoverRightEyeInstructionScreenState
                     _buildInstructionItem(
                       Icons.mic,
                       'Voice Commands',
-                      'Say the direction the E is pointing:\nUPPER or UPWARD, DOWN OR DOWNWARD, LEFT, RIGHT',
+                      'Say the direction the E is pointing:\nUPPER or UPWARD, DOWN or DOWNWARD, LEFT, RIGHT',
                     ),
                   ],
                 ),
               ),
               const Spacer(),
 
-              // Start button
+              // UPDATED: Button with countdown
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _buttonEnabled
-                      ? () {
-                          // Navigate with startWithLeftEye flag
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const VisualAcuityTestScreen(
-                                    startWithLeftEye: true,
-                                  ),
-                            ),
-                          );
-                        }
-                      : null,
+                  onPressed: _countdown == 0 ? _navigateToTest : null,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.all(16),
                     backgroundColor: AppColors.leftEye,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (!_buttonEnabled)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 12),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                  child: _countdown > 0
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                                value: 1 - (_countdown / 3),
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Starting in $_countdown...',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        )
+                      : const Text(
+                          'Start Left Eye Test',
+                          style: TextStyle(fontSize: 16),
                         ),
-                      Text(
-                        _buttonEnabled
-                            ? 'Start Left Eye Test'
-                            : 'Please wait...',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],

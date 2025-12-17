@@ -69,6 +69,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   bool _lastResultCorrect = false;
   double _lastSimilarity = 0.0;
 
+  Timer? _autoNavigationTimer;
+  int _autoNavigationCountdown = 3;
+
   @override
   void initState() {
     super.initState();
@@ -337,10 +340,33 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     });
   }
 
+  void _startAutoNavigationTimer() {
+    _autoNavigationTimer?.cancel();
+
+    _autoNavigationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _autoNavigationCountdown--;
+      });
+
+      if (_autoNavigationCountdown <= 0) {
+        timer.cancel();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/color-vision-test');
+        }
+      }
+    });
+  }
+
   void _completeTest() {
     setState(() {
       _testComplete = true;
       _showSentence = false;
+      _autoNavigationCountdown = 3; // Initialize countdown
     });
 
     // Calculate best acuity
@@ -386,6 +412,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     provider.setShortDistanceResult(result);
 
     _ttsService.speak('Reading test complete');
+
+    // Start auto-navigation timer
+    _startAutoNavigationTimer();
   }
 
   @override
@@ -393,6 +422,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     debugPrint('[ShortDistance] 🧹 Disposing resources...');
     _listeningTimer?.cancel();
     _speechBufferTimer?.cancel();
+    _autoNavigationTimer?.cancel();
     _speechChunks.clear();
     _inputController.dispose();
     _ttsService.dispose();
@@ -951,11 +981,20 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
+
+            // Results card
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.cardShadow,
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
@@ -968,17 +1007,66 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 32),
+
+            // Auto-continue countdown indicator
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$_autoNavigationCountdown',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Auto-continuing in $_autoNavigationCountdown second${_autoNavigationCountdown != 1 ? 's' : ''}...',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             const Spacer(),
+
+            // Continue button (can click immediately or wait)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Navigator.pushReplacementNamed(
-                  context,
-                  '/color-vision-test',
-                ),
+                onPressed: () {
+                  _autoNavigationTimer?.cancel();
+                  Navigator.pushReplacementNamed(context, '/color-vision-test');
+                },
                 child: const Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text('Continue to Color Vision Test'),
+                  child: Text('Continue Now'),
                 ),
               ),
             ),

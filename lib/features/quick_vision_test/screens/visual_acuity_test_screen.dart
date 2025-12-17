@@ -85,6 +85,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   // Pixels per mm for this device (calculated based on screen metrics)
   double _pixelsPerMm = 6.0;
 
+  Timer? _autoNavigationTimer;
+  int _autoNavigationCountdown = 3;
+
   @override
   void initState() {
     super.initState();
@@ -628,11 +631,35 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         _eyeSwitchPending = true;
       });
     } else {
-      // Both eyes complete
+      // Both eyes complete - START AUTO-NAVIGATION TIMER
       setState(() {
         _testComplete = true;
+        _autoNavigationCountdown = 3; // Reset countdown
       });
+
+      // Start the auto-navigation countdown
+      _startAutoNavigationTimer();
     }
+  }
+
+  void _startAutoNavigationTimer() {
+    _autoNavigationTimer?.cancel();
+
+    _autoNavigationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _autoNavigationCountdown--;
+      });
+
+      if (_autoNavigationCountdown <= 0) {
+        timer.cancel();
+        _proceedToBothEyesTest();
+      }
+    });
   }
 
   void _switchToLeftEye() {
@@ -670,6 +697,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
+    _autoNavigationTimer?.cancel();
     _ttsService.dispose();
     _speechService.dispose();
     _audioPlayer.dispose();
@@ -1461,14 +1489,65 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 'N/A',
             AppColors.leftEye,
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 32),
+
+          // Auto-continue countdown indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.3),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$_autoNavigationCountdown',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Auto-continuing in $_autoNavigationCountdown second${_autoNavigationCountdown != 1 ? 's' : ''}...',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Continue button (now can be clicked immediately or wait for auto)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _proceedToBothEyesTest,
+              onPressed: () {
+                _autoNavigationTimer?.cancel();
+                _proceedToBothEyesTest();
+              },
               child: const Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('Continue to Short Distance Test(Reading Test)'),
+                child: Text('Continue Now'),
               ),
             ),
           ),
