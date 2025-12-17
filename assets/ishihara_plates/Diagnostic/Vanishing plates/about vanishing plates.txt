@@ -1,0 +1,11 @@
+Vanishing Plate:
+Purpose: To confirm red–green color vision deficiency.
+Normal color vision: Sees the number clearly.
+Color vision deficient: Cannot see the number.
+User recognition: The number disappears for color-deficient users.
+Diagnosis instruction: Failure to see the number on multiple vanishing plates confirms red–green color vision deficiency.
+Used to detect: Protanopia, protanomaly, deuteranopia, deuteranomaly.
+Diagnostic value: Yes.
+
+
+total needed:4

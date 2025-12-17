@@ -1,0 +1,11 @@
+Classification Plate:
+Purpose: To classify the type of red–green color vision deficiency.
+Normal color vision: Sees the standard correct number.
+Color vision deficient: Sees a different number depending on defect type.
+User recognition: Each plate produces different answers for protan and deutan defects.
+Diagnosis instruction: The majority response across classification plates determines the defect type.
+Used to classify: Protan-type vs Deutan-type color vision deficiency.
+Diagnostic value: Yes (classification only).
+
+
+need only :3

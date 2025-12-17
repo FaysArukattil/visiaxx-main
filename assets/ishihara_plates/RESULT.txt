@@ -1,0 +1,47 @@
+Ishihara Plate Reading Table
+
+Legend:
+X  = Plate cannot be read
+( ) = Number may be read but is unclear or faint
+
+---------------------------------------------------------------------------
+Plate | Normal Person | Red–Green Deficiency | Total Color Blindness
+---------------------------------------------------------------------------
+1     | 12            | 12                   | 12
+2     | 8             | 3                    | X
+3     | 6             | 5                    | X
+4     | 29            | 70                   | X
+5     | 57            | 35                   | X
+6     | 5             | 2                    | X
+7     | 3             | 5                    | X
+8     | 15            | 17                   | X
+9     | 74            | 21                   | X
+10    | 2             | X                    | X
+11    | 6             | X                    | X
+12    | 97            | X                    | X
+13    | 45            | X                    | X
+14    | 5             | X                    | X
+15    | 7             | X                    | X
+16    | 16            | X                    | X
+17    | 73            | X                    | X
+18    | X             | 5                    | X
+19    | X             | 2                    | X
+20    | X             | 45                   | X
+21    | X             | 73                   | X
+---------------------------------------------------------------------------
+
+
+Classification Plates (Protan vs Deutan)
+
+---------------------------------------------------------------------------
+Plate | Normal | Protan (Strong) | Protan (Mild) | Deutan (Strong) | Deutan (Mild)
+---------------------------------------------------------------------------
+22    | 26     | 6               | (2)6          | 2               | (2)6
+23    | 42     | 2               | (4)2          | 4               | (4)2
+24    | 35     | 5               | (3)5          | 3               | (3)5
+25    | 96     | 6               | (9)6          | 9               | (9)6
+---------------------------------------------------------------------------
+
+Note:
+- X indicates the plate cannot be read.
+- Numbers in parentheses indicate that the number may be perceived but is unclear.

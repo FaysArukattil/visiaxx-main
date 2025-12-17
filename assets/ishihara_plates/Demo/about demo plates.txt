@@ -1,0 +1,5 @@
+Demo Plate:
+Purpose: To demonstrate how the Ishihara test works.
+Normal color vision: Sees the number clearly (usually “12”).
+Color vision deficient: Also sees the same number clearly.
+Diagnostic value: None (used only for instruction).

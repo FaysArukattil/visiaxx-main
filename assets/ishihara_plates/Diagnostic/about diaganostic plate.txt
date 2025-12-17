@@ -1,0 +1,34 @@
+Diagnostic Plate:
+Purpose: To detect red–green color vision deficiency.
+Normal color vision: Sees the correct number.
+Color vision deficient: Sees an incorrect number or cannot see the number.
+Diagnosis instruction: If multiple diagnostic plates are read incorrectly, red–green color vision deficiency is suspected.
+Used to diagnose: Protanopia, protanomaly, deuteranopia, deuteranomaly.
+Diagnostic value: Yes.
+
+
+
+
+Protanopia:
+Description: Complete absence of red cone photoreceptors.
+User recognition: Fails to see red-based numbers or sees them as a different number.
+Typical response: Cannot identify the number or gives a wrong answer.
+Diagnosis rule: Consistent failure on plates designed for red perception indicates protanopia.
+
+Protanomaly:
+Description: Reduced sensitivity to red light.
+User recognition: Sees the number faintly or confuses it with a similar digit.
+Typical response: Incorrect or uncertain answers on some plates.
+Diagnosis rule: Partial errors on red–green diagnostic plates indicate protanomaly.
+
+Deuteranopia:
+Description: Complete absence of green cone photoreceptors.
+User recognition: Green-based numbers are not perceived correctly.
+Typical response: Wrong number or no number seen.
+Diagnosis rule: Repeated errors on green-sensitive plates indicate deuteranopia.
+
+Deuteranomaly:
+Description: Reduced sensitivity to green light.
+User recognition: Difficulty distinguishing green from red shades.
+Typical response: Occasional incorrect answers.
+Diagnosis rule: Mixed correct and incorrect responses on green–red plates indicate deuteranomaly.

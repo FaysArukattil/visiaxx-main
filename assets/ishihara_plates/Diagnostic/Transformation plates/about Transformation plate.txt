@@ -1,0 +1,14 @@
+Transformation Plate:
+
+Purpose: To differentiate normal color vision from red–green color vision deficiency.
+Normal color vision: Sees one specific number.
+Color vision deficient: Sees a different number.
+User recognition: The perceived number changes based on color vision status.
+Diagnosis instruction: If the transformed number is reported consistently across multiple plates, red–green color vision deficiency is suspected.
+Used to detect: Protanopia, protanomaly, deuteranopia, deuteranomaly.
+Diagnostic value: Yes.
+
+
+
+
+Total needed :4

@@ -1,0 +1,11 @@
+Hidden Digit Plate:
+Purpose: To identify red–green color vision deficiency.
+Normal color vision: Does not see any number.
+Color vision deficient: Sees a number clearly.
+User recognition: The number is visible only to color-deficient users.
+Diagnosis instruction: Seeing the hidden number indicates red–green color vision deficiency.
+Used to detect: Protanopia, protanomaly, deuteranopia, deuteranomaly.
+Diagnostic value: Yes.
+
+
+Total needed:2
