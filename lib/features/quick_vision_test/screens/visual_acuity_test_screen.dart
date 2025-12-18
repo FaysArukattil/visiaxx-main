@@ -75,6 +75,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   // Voice recognition feedback
   bool _isListening = false;
+  bool _isSpeechActive = false; // New: for waveform responsiveness
+  Timer? _speechActiveTimer; // New: for debouncing responsiveness
   String? _lastDetectedSpeech;
 
   // Distance monitoring
@@ -337,6 +339,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     if (mounted) {
       setState(() {
         _lastDetectedSpeech = partialResult;
+        _isSpeechActive = true;
+      });
+
+      // ✅ Make waveform responsive for 500ms
+      _speechActiveTimer?.cancel();
+      _speechActiveTimer = Timer(const Duration(milliseconds: 500), () {
+        if (mounted) setState(() => _isSpeechActive = false);
       });
 
       // ✅ Auto-erase recognized text after 2.5 seconds
@@ -866,10 +875,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   child: _buildDistanceIndicator(),
                 ),
 
-              // Mic indicator (top right corner) - matched to R/2 pill style
+              // Recognized text (bottom center)
               if (_showE || _showRelaxation)
-                Positioned(top: 12, right: 12, child: _buildMicIndicator()),
-
+                Positioned(
+                  bottom: _showE && _waitingForResponse ? 150 : 50,
+                  left: 0,
+                  right: 0,
+                  child: Center(child: _buildRecognizedTextIndicator()),
+                ),
               // Distance warning overlay when explicitly paused
               if (_useDistanceMonitoring && _isTestPausedForDistance && _showE)
                 _buildDistanceWarningOverlay(),
@@ -1145,78 +1158,80 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               ),
             ),
           ),
+          const SizedBox(width: 8),
+          // Score indicator (pill style)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              '$_totalCorrect/$_totalResponses',
+              style: TextStyle(
+                color: AppColors.success,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
           const Spacer(),
-          // Score
-          Text(
-            '$_totalCorrect/$_totalResponses',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          // Speech waveform (always visible, animates when listening)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _SpeechWaveform(
+                  isListening: _isListening,
+                  isTalking: _isSpeechActive,
+                  color: AppColors.success,
+                ),
+                const SizedBox(width: 6),
+                Icon(Icons.mic, size: 14, color: AppColors.success),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMicIndicator() {
+  Widget _buildRecognizedTextIndicator() {
     final bool hasRecognized =
         _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
 
-    // ✅ Only show when listening or has text (text will auto-erase via timer)
-    if (!_isListening && !hasRecognized) {
+    if (!hasRecognized) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // ✅ Matched to R/2 Pill Style in Green
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.success.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.success, width: 2),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_isListening) ...[
-                _SpeechWaveform(
-                  isListening: _isListening,
-                  color: AppColors.success,
-                ),
-                const SizedBox(width: 6),
-              ],
-              Icon(Icons.mic, size: 14, color: AppColors.success),
-              if (!hasRecognized && _isListening) ...[
-                const SizedBox(width: 4),
-                const Text(
-                  'LISTENING',
-                  style: TextStyle(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ],
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        _lastDetectedSpeech!,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
         ),
-        // ✅ Recognized text below - temporary
-        if (hasRecognized)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              _lastDetectedSpeech!,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.success,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ),
-      ],
+        textAlign: TextAlign.center,
+      ),
     );
   }
 
@@ -1777,9 +1792,14 @@ class _DirectionButton extends StatelessWidget {
 // ✅ NEW Waveform animation for microphone
 class _SpeechWaveform extends StatefulWidget {
   final bool isListening;
+  final bool isTalking; // NEW
   final Color color;
 
-  const _SpeechWaveform({required this.isListening, required this.color});
+  const _SpeechWaveform({
+    required this.isListening,
+    this.isTalking = false, // NEW
+    required this.color,
+  });
 
   @override
   State<_SpeechWaveform> createState() => _SpeechWaveformState();
@@ -1806,23 +1826,31 @@ class _SpeechWaveformState extends State<_SpeechWaveform>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isListening) return const SizedBox.shrink();
-
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: List.generate(5, (index) {
-            final double height =
-                5 +
-                12 * sin((_controller.value * 2 * pi) + (index * 0.8)).abs();
+            final double baseHeight = 5.0;
+            final double activeHeight = widget.isTalking ? 18.0 : 12.0;
+
+            final double height = widget.isListening
+                ? baseHeight +
+                      activeHeight *
+                          sin(
+                            (_controller.value * 2 * pi) + (index * 0.8),
+                          ).abs()
+                : baseHeight;
+
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 1.5),
               width: 2.5,
               height: height,
               decoration: BoxDecoration(
-                color: widget.color.withValues(alpha: 0.8),
+                color: widget.color.withValues(
+                  alpha: widget.isListening ? 0.8 : 0.3,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             );

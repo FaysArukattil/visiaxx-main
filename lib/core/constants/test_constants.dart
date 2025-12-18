@@ -137,32 +137,32 @@ class TestConstants {
       snellen: '6/60',
     ),
     ShortDistanceSentence(
-      sentence: 'Birds fly high above',
+      sentence: 'Seeing life',
       fontSize: 72.0,
       snellen: '6/36',
     ),
     ShortDistanceSentence(
-      sentence: 'Clear eyes see better',
+      sentence: 'Clear eyes',
       fontSize: 48.0,
       snellen: '6/24',
     ),
     ShortDistanceSentence(
-      sentence: 'Reading requires good visio  n',
+      sentence: 'Vision is good',
       fontSize: 36.0,
       snellen: '6/18',
     ),
     ShortDistanceSentence(
-      sentence: 'Regular eye check ups matter',
+      sentence: 'Look at the light',
       fontSize: 24.0,
       snellen: '6/12',
     ),
     ShortDistanceSentence(
-      sentence: 'Sharp focus helps you read clearly',
+      sentence: 'Eye tests matter',
       fontSize: 18.0,
       snellen: '6/9',
     ),
     ShortDistanceSentence(
-      sentence: 'Healthy eyes can see all text sizes easily',
+      sentence: 'Healthy vision',
       fontSize: 12.0,
       snellen: '6/6',
     ),

@@ -59,6 +59,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   // Voice recognition
   bool _isListening = false;
+  bool _isSpeechActive = false; // New: for waveform responsiveness
+  Timer? _speechActiveTimer; // New: for debouncing responsiveness
   String? _recognizedText;
   Timer? _listeningTimer;
   Timer? _speechEraserTimer; // ✅ Timer to clear recognized text
@@ -107,6 +109,20 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     };
     _speechService.onListeningStopped = () {
       if (mounted) setState(() => _isListening = false);
+    };
+
+    // ✅ Sync voice recognition to start AFTER TTS finishes
+    _ttsService.onSpeakingStateChanged = (isSpeaking) {
+      if (!isSpeaking &&
+          mounted &&
+          _waitingForResponse &&
+          !_isListening &&
+          !_showKeyboard) {
+        debugPrint(
+          '[ShortDistance] 🔊 TTS Finished - starting voice recognition',
+        );
+        _startListening();
+      }
     };
 
     // Start first sentence
@@ -182,14 +198,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       _showKeyboard = false;
     });
 
-    _ttsService.speak('Read the sentence on screen');
-
-    // Start listening after delay
-    Future.delayed(const Duration(milliseconds: 2000), () {
-      if (mounted && _waitingForResponse && !_showKeyboard) {
-        _startListening();
-      }
-    });
+    _ttsService.speak('Read the sentence out loud');
 
     // ✅ INCREASED timeout to 35 seconds for longer sentences
     _listeningTimer = Timer(const Duration(seconds: 35), () {
@@ -281,6 +290,13 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
     setState(() {
       _recognizedText = _accumulatedSpeech;
+      _isSpeechActive = true;
+    });
+
+    // ✅ Make waveform responsive for 500ms
+    _speechActiveTimer?.cancel();
+    _speechActiveTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) setState(() => _isSpeechActive = false);
     });
 
     // ✅ Auto-erase recognized text after 2.5 seconds
@@ -490,12 +506,18 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                       ? _buildSentenceView()
                       : const Center(child: CircularProgressIndicator()),
                 ),
-                if (_isListening ||
-                    (_recognizedText != null && _recognizedText!.isNotEmpty))
-                  _buildListeningIndicator(),
                 if (_showResult) _buildResultFeedback(),
               ],
             ),
+
+            // Recognized text (bottom center)
+            if (_recognizedText != null && _recognizedText!.isNotEmpty)
+              Positioned(
+                bottom: 120, // Lowered but visible
+                left: 0,
+                right: 0,
+                child: Center(child: _buildRecognizedTextIndicator()),
+              ),
 
             // Distance indicator in bottom right
             Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
@@ -673,6 +695,31 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           Text(
             '$_correctCount/${_results.length} correct',
             style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(width: 8),
+          // Speech waveform (always visible, animates when listening)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _SpeechWaveform(
+                  isListening: _isListening,
+                  isTalking: _isSpeechActive,
+                  color: AppColors.success,
+                ),
+                const SizedBox(width: 6),
+                Icon(Icons.mic, size: 14, color: AppColors.success),
+              ],
+            ),
           ),
         ],
       ),
@@ -893,67 +940,29 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     );
   }
 
-  Widget _buildListeningIndicator() {
-    // Determine state
+  Widget _buildRecognizedTextIndicator() {
     final bool hasSpeech =
         _recognizedText != null && _recognizedText!.isNotEmpty;
 
-    // ✅ Match R/2 pill style in Green
-    if (!_isListening && !hasSpeech) {
+    if (!hasSpeech) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.success.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.success, width: 2),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_isListening) ...[
-                _SpeechWaveform(
-                  isListening: _isListening,
-                  color: AppColors.success,
-                ),
-                const SizedBox(width: 6),
-              ],
-              Icon(Icons.mic, size: 14, color: AppColors.success),
-              if (!hasSpeech && _isListening) ...[
-                const SizedBox(width: 4),
-                const Text(
-                  'LISTENING',
-                  style: TextStyle(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ],
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        _recognizedText!,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
         ),
-        // ✅ Normalized text in green below
-        if (hasSpeech)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              _recognizedText!,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.success,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-      ],
+        textAlign: TextAlign.center,
+      ),
     );
   }
 
@@ -1154,9 +1163,14 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 // ✅ NEW Waveform animation for microphone
 class _SpeechWaveform extends StatefulWidget {
   final bool isListening;
+  final bool isTalking; // NEW
   final Color color;
 
-  const _SpeechWaveform({required this.isListening, required this.color});
+  const _SpeechWaveform({
+    required this.isListening,
+    this.isTalking = false, // NEW
+    required this.color,
+  });
 
   @override
   State<_SpeechWaveform> createState() => _SpeechWaveformState();
@@ -1183,23 +1197,31 @@ class _SpeechWaveformState extends State<_SpeechWaveform>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isListening) return const SizedBox.shrink();
-
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: List.generate(5, (index) {
-            final double height =
-                5 +
-                12 * sin((_controller.value * 2 * pi) + (index * 0.8)).abs();
+            final double baseHeight = 5.0;
+            final double activeHeight = widget.isTalking ? 18.0 : 12.0;
+
+            final double height = widget.isListening
+                ? baseHeight +
+                      activeHeight *
+                          sin(
+                            (_controller.value * 2 * pi) + (index * 0.8),
+                          ).abs()
+                : baseHeight;
+
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 1.5),
               width: 2.5,
               height: height,
               decoration: BoxDecoration(
-                color: widget.color.withValues(alpha: 0.8),
+                color: widget.color.withValues(
+                  alpha: widget.isListening ? 0.8 : 0.3,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             );
