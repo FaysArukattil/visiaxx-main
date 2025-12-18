@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
@@ -132,7 +133,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    final shouldPause = DistanceHelper.shouldPauseTest(status);
+    final shouldPause = DistanceHelper.shouldPauseTestForDistance(
+      distance,
+      status,
+      'short_distance',
+    );
 
     setState(() {
       _currentDistance = distance;
@@ -876,24 +881,73 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   }
 
   Widget _buildListeningIndicator() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: AppColors.success.withValues(alpha: 0.1),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.mic, color: AppColors.success, size: 20),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              _recognizedText ?? 'Listening...',
-              style: const TextStyle(color: AppColors.success, fontSize: 14),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
+    // Determine state
+    final bool hasSpeech =
+        _recognizedText != null && _recognizedText!.isNotEmpty;
+
+    // ✅ Hidden initially - only show when listening or speaking
+    if (!_isListening && !hasSpeech) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ✅ Wave animation while active
+              if (_isListening) ...[
+                _SpeechWaveform(
+                  isListening: _isListening,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Icon(
+                Icons.mic,
+                size: 20,
+                color: _isListening ? AppColors.primary : Colors.white,
+              ),
+            ],
+          ),
+        ),
+        // ✅ Recognized text in green below
+        if (hasSpeech)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _recognizedText!,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -1087,6 +1141,65 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+// ✅ NEW Waveform animation for microphone
+class _SpeechWaveform extends StatefulWidget {
+  final bool isListening;
+  final Color color;
+
+  const _SpeechWaveform({required this.isListening, required this.color});
+
+  @override
+  State<_SpeechWaveform> createState() => _SpeechWaveformState();
+}
+
+class _SpeechWaveformState extends State<_SpeechWaveform>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isListening) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(5, (index) {
+            final double height =
+                5 +
+                12 * sin((_controller.value * 2 * pi) + (index * 0.8)).abs();
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              width: 2.5,
+              height: height,
+              decoration: BoxDecoration(
+                color: widget.color.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

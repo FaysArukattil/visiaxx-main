@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../services/distance_detection_service.dart';
@@ -24,23 +26,22 @@ class DistanceHelper {
     double currentDistance,
     double targetDistance, {
     double tolerance = 5.0,
+    String? testType,
   }) {
     if (currentDistance <= 0) return AppColors.error;
 
-    final minDistance = targetDistance - tolerance;
-    final maxDistance = targetDistance + tolerance;
+    // Use test-specific floor if type is provided
+    final minDistance = testType != null
+        ? getMinimumDistanceForTest(testType)
+        : (targetDistance - tolerance);
 
-    // Within optimal range
-    if (currentDistance >= minDistance && currentDistance <= maxDistance) {
+    // Within optimal range or further back (which is safe)
+    if (currentDistance >= minDistance) {
       return AppColors.success;
     }
     // Too close
-    else if (currentDistance < minDistance) {
-      return AppColors.error;
-    }
-    // Too far
     else {
-      return AppColors.warning;
+      return AppColors.error;
     }
   }
 
@@ -53,7 +54,6 @@ class DistanceHelper {
       case DistanceStatus.tooClose:
         return 'Move back - You are too close';
       case DistanceStatus.tooFar:
-        return 'Move closer - You are too far';
       case DistanceStatus.optimal:
         return 'Perfect! Distance is correct';
       case DistanceStatus.noFaceDetected:
@@ -83,8 +83,7 @@ class DistanceHelper {
   /// Check if test should pause (no face or wrong distance)
   static bool shouldPauseTest(DistanceStatus status) {
     return status == DistanceStatus.noFaceDetected ||
-        status == DistanceStatus.tooClose ||
-        status == DistanceStatus.tooFar;
+        status == DistanceStatus.tooClose;
   }
 
   /// Get pause reason message
@@ -123,17 +122,17 @@ class DistanceHelper {
     }
   }
 
-  /// Get minimum acceptable distance for test type
+  /// Get minimum acceptable distance for test type (LENIENT FLOOR)
   static double getMinimumDistanceForTest(String testType) {
     switch (testType) {
       case 'visual_acuity':
-        return 100.0;
+        return 80.0; // ✅ User requested floor at 80cm for 1m test
       case 'short_distance':
       case 'amsler_grid':
       case 'color_vision':
-        return 40.0;
+        return 35.0; // ✅ User requested floor at 35cm for 40cm test
       default:
-        return 40.0;
+        return 35.0;
     }
   }
 
