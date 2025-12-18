@@ -30,7 +30,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   Timer? _speechBufferTimer;
   List<String> _speechChunks = [];
   static const Duration _speechBufferDelay = Duration(milliseconds: 2000);
-
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
 
@@ -225,6 +224,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     }
   }
 
+  /// ✅ IMPROVED: Smart speech accumulation with word merging
+  /// ✅ IMPROVED: Smart speech accumulation with word merging
   /// ✅ IMPROVED: Smart speech accumulation with word merging
   void _handleSpeechDetected(String partialResult) {
     if (!mounted || !_waitingForResponse) return;

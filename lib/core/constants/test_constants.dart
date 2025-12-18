@@ -14,6 +14,18 @@ class TestConstants {
   static const int minCorrectToAdvance = 2;
   static const int totalLevelsVA = 7;
 
+  static const double visualAcuityTargetCm = 100.0; // 1 meter
+  static const double visualAcuityToleranceCm = 10.0; // ±10cm
+
+  static const double shortDistanceTargetCm = 40.0; // 40cm
+  static const double shortDistanceToleranceCm = 5.0; // ±5cm
+
+  static const double colorVisionTargetCm = 40.0; // 40cm
+  static const double colorVisionToleranceCm = 5.0; // ±5cm
+
+  static const double amslerGridTargetCm = 40.0; // 40cm
+  static const double amslerGridToleranceCm = 5.0; // ±5cm
+
   // ✅ FIXED: Corrected E sizes for 1-meter testing
   // Research shows: At 1m, 6/6 ≈ 8.7mm, 6/60 ≈ 87mm
   // Flutter fontSize ≈ physical height in logical pixels
@@ -115,7 +127,6 @@ class TestConstants {
     'Double vision',
   ];
 
-  static const double shortDistanceTargetCm = 40.0;
   static const int shortDistanceScreens = 7;
 
   // ✅ FIXED: Updated short distance font sizes to match visual acuity
@@ -136,7 +147,7 @@ class TestConstants {
       snellen: '6/24',
     ),
     ShortDistanceSentence(
-      sentence: 'Reading requires good vision',
+      sentence: 'Reading requires good visio  n',
       fontSize: 36.0,
       snellen: '6/18',
     ),
@@ -195,7 +206,7 @@ enum EDirection {
   right(0, 'Right'),
   down(90, 'Down'),
   left(180, 'Left'),
-  up(270, 'Upper');
+  up(270, 'Up');
 
   final int rotationDegrees;
   final String label;

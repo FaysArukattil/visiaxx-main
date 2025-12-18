@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/core/constants/ishihara_plate_data.dart';
+import 'package:visiaxx/features/quick_vision_test/screens/color_vision_cover_eye_screen';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/services/tts_service.dart';
@@ -13,7 +14,6 @@ import '../../../core/utils/distance_helper.dart';
 import '../../../data/models/color_vision_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../widgets/ishihara_plate_viewer.dart';
-import 'cover_eye_instruction_screen.dart';
 import 'distance_calibration_screen.dart';
 import 'color_vision_instructions_screen.dart';
 
@@ -76,7 +76,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Handle app lifecycle
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _handleAppPaused();
     } else if (state == AppLifecycleState.resumed) {
       _handleAppResumed();
@@ -86,13 +87,13 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _handleAppPaused() {
     // Pause test timer
     _plateTimer?.cancel();
-    
+
     // Stop distance monitoring
     _distanceService.stopMonitoring();
-    
+
     // Stop speech recognition
     _continuousSpeech.stop();
-    
+
     setState(() {
       _isTestPausedForDistance = true;
     });
@@ -100,7 +101,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   void _handleAppResumed() {
     if (!mounted || _phase == TestPhase.complete) return;
-    
+
     // Show resume dialog
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _phase != TestPhase.complete) {
@@ -117,9 +118,16 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.pause_circle_outline, color: AppColors.primary, size: 28),
+            Icon(
+              Icons.pause_circle_outline,
+              color: AppColors.primary,
+              size: 28,
+            ),
             const SizedBox(width: 12),
-            const Text('Test Paused', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Test Paused',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Column(
@@ -133,7 +141,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             const SizedBox(height: 12),
             Text(
               'Would you like to continue?',
-              style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -143,9 +154,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Exit Test'),
           ),
           ElevatedButton(
@@ -157,7 +166,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Continue Test'),
           ),
@@ -170,14 +181,14 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     setState(() {
       _isTestPausedForDistance = false;
     });
-    
+
     // Resume distance monitoring
     _startContinuousDistanceMonitoring();
-    
+
     // Resume speech recognition
     if (_showingPlate) {
       _startContinuousSpeechRecognition();
-      
+
       // Restart the plate timer with remaining time
       _restartPlateTimer();
     }
@@ -215,7 +226,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     _continuousSpeech.onListeningStateChanged = (isListening) {
       if (mounted) setState(() => _isListening = isListening);
     };
-    
+
     // DON'T pause speech for TTS - let it run continuously
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -264,10 +275,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _showRightEyeInstruction() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => CoverEyeInstructionScreen(
+        builder: (context) => ColorVisionCoverEyeScreen(
           eyeToCover: 'left',
-          eyeBeingTested: 'right',
-          testName: 'Color Vision',
           onContinue: () {
             Navigator.of(context).pop();
             setState(() {
@@ -285,10 +294,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _showLeftEyeInstruction() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => CoverEyeInstructionScreen(
+        builder: (context) => ColorVisionCoverEyeScreen(
           eyeToCover: 'right',
-          eyeBeingTested: 'left',
-          testName: 'Color Vision',
+
           onContinue: () {
             Navigator.of(context).pop();
             setState(() {
@@ -325,7 +333,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     });
 
     // Auto-pause if distance is wrong (only if user hasn't dismissed)
-    if (!_isDistanceOk && !_isTestPausedForDistance && !_userDismissedDistanceWarning) {
+    if (!_isDistanceOk &&
+        !_isTestPausedForDistance &&
+        !_userDismissedDistanceWarning) {
       _pauseTestForDistance();
     } else if (_isDistanceOk && _isTestPausedForDistance) {
       _resumeTestAfterDistance();
@@ -413,7 +423,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _startContinuousSpeechRecognition() {
-    debugPrint('[ColorVision] Starting ULTRA-RELIABLE continuous speech recognition');
+    debugPrint(
+      '[ColorVision] Starting ULTRA-RELIABLE continuous speech recognition',
+    );
     _continuousSpeech.start(
       listenDuration: const Duration(minutes: 10), // Long duration
       minConfidence: 0.05, // EXTREMELY permissive
@@ -461,14 +473,16 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _handleVoiceResponse(String recognized) {
-    debugPrint('[ColorVision] 🔥🔥🔥 _handleVoiceResponse called with: "$recognized"');
+    debugPrint(
+      '[ColorVision] 🔥🔥🔥 _handleVoiceResponse called with: "$recognized"',
+    );
     debugPrint('[ColorVision] Current plate index: $_currentPlateIndex');
     debugPrint('[ColorVision] Showing plate: $_showingPlate');
-    
+
     debugPrint('[ColorVision] 🔍 Parsing number from: "$recognized"');
     final number = SpeechService.parseNumber(recognized);
     debugPrint('[ColorVision] 📝 Parsed number: $number');
-    
+
     if (number != null) {
       debugPrint('[ColorVision] ✅ Setting answer to: $number');
       _answerController.text = number;
@@ -540,7 +554,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _onEyeTestComplete() {
     // Stop continuous speech recognition when eye test is complete
     _continuousSpeech.stop();
-    
+
     if (_currentEye == 'right') {
       // Right eye done, move to left eye
       _ttsService.speak(
@@ -709,9 +723,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         _phase == TestPhase.leftEyeInstruction) {
       return Scaffold(
         backgroundColor: AppColors.testBackground,
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -735,21 +747,21 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             'Color Vision Test - ${_currentEye == 'right' ? 'Right' : 'Left'} Eye',
           ),
         ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            _buildTestView(),
-            Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
-            // Mic indicator - Always visible during test
-            if (_showingPlate)
+        body: SafeArea(
+          child: Stack(
+            children: [
+              _buildTestView(),
               Positioned(
-                top: 12,
                 right: 12,
-                child: _buildMicIndicator(),
+                bottom: 12,
+                child: _buildDistanceIndicator(),
               ),
-            if (_isTestPausedForDistance) _buildDistanceWarningOverlay(),
-          ],
-        ),
+              // Mic indicator - Always visible during test
+              if (_showingPlate)
+                Positioned(top: 12, right: 12, child: _buildMicIndicator()),
+              if (_isTestPausedForDistance) _buildDistanceWarningOverlay(),
+            ],
+          ),
         ),
       ),
     );
@@ -961,14 +973,16 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   Widget _buildMicIndicator() {
     // Determine state and color - GREEN when recognized!
-    final bool hasRecognized = _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
-    final Color indicatorColor = hasRecognized 
-        ? AppColors.success  // GREEN when we hear something
+    final bool hasRecognized =
+        _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
+    final Color indicatorColor = hasRecognized
+        ? AppColors
+              .success // GREEN when we hear something
         : (_isListening ? AppColors.primary : AppColors.textSecondary);
-    
+
     String statusText;
     IconData iconData;
-    
+
     if (hasRecognized) {
       statusText = 'Heard: $_lastDetectedSpeech';
       iconData = Icons.mic;
@@ -979,7 +993,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       statusText = 'Mic Ready';
       iconData = Icons.mic_off;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -1092,15 +1106,18 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                     _isTestPausedForDistance = false;
                     _userDismissedDistanceWarning = true;
                   });
-                  
+
                   // Re-enable warning after 30 seconds
                   _distanceWarningReenableTimer?.cancel();
-                  _distanceWarningReenableTimer = Timer(const Duration(seconds: 30), () {
-                    if (mounted) {
-                      setState(() => _userDismissedDistanceWarning = false);
-                    }
-                  });
-                  
+                  _distanceWarningReenableTimer = Timer(
+                    const Duration(seconds: 30),
+                    () {
+                      if (mounted) {
+                        setState(() => _userDismissedDistanceWarning = false);
+                      }
+                    },
+                  );
+
                   _ttsService.speak('Resuming test');
                   _restartPlateTimer();
                 },

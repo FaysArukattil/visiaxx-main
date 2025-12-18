@@ -300,20 +300,29 @@ class SpeechService {
     debugPrint('[SpeechService] 🔍 parseDirection input: "$s"');
 
     // UP Detection
-    if (s.contains('upward') ||
+    // UP Detection - MOST SPECIFIC FIRST
+    // Multi-word variants (check FIRST to avoid partial matches)
+    if (s.contains('upper') ||
+        s.contains('upward') ||
         s.contains('upwards') ||
         s.contains('up ward') ||
         s.contains('upword') ||
         s.contains('apward') ||
-        s.contains('uhpward')) {
-      debugPrint('[SpeechService] ✅ Matched: upward variants → UP');
+        s.contains('uhpward') ||
+        s.contains('up word') ||
+        s.contains('op word') ||
+        s.contains('op ward')) {
+      debugPrint('[SpeechService] ✅ Matched: upward/upper variants → UP');
       return 'up';
     }
-    if (s.contains('up') ||
-        s == 'up' ||
-        s.startsWith('up ') ||
-        s.endsWith(' up')) {
-      debugPrint('[SpeechService] ✅ Matched: up → UP');
+    // Single word "up" - check as whole word
+    if (s == 'up' || s == 'upp' || s == 'op') {
+      debugPrint('[SpeechService] ✅ Matched: up (exact) → UP');
+      return 'up';
+    }
+    // "up" as part of phrase
+    if (RegExp(r'\bup\b|\bupp\b|\bop\b').hasMatch(s)) {
+      debugPrint('[SpeechService] ✅ Matched: up (word boundary) → UP');
       return 'up';
     }
     if (s.contains('top') ||
@@ -392,12 +401,19 @@ class SpeechService {
     final s = speech.toLowerCase().trim();
     debugPrint('[SpeechService] 🔍 parseNumber input: "$s"');
 
-    // Check for digit first
-    final digitMatch = RegExp(r'\b(\d{1,2})\b').firstMatch(s);
+    // Check for digit first (including standalone digits)
+    final digitMatch = RegExp(r'(\d{1,2})').firstMatch(s);
     if (digitMatch != null) {
-      debugPrint('[SpeechService] ✅ Matched digit: ${digitMatch.group(1)}');
-      return digitMatch.group(1);
+      final num = digitMatch.group(1)!;
+      debugPrint('[SpeechService] ✅ Matched digit: $num');
+      return num;
     }
+
+    // ✅ NEW: Special cases for commonly confused numbers
+    if (s.contains('too') && !s.contains('twenty')) return '2';
+    if (s.contains('for') && !s.contains('forty')) return '4';
+    if (s.contains('ate') && !s.contains('eight')) return '8';
+    if (s.contains('won') && !s.contains('one')) return '1';
 
     // Priority numbers
     if (s.contains('twelve') || s.contains('twelf')) return '12';
