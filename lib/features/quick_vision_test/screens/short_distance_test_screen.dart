@@ -109,8 +109,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
         );
 
         // ✅ Use centralized helper
-        final newIsOk = DistanceHelper.isDistanceAcceptable(distance, 40.0);
-
+        // ✅ Use centralized helper with proper tolerance
+        final newIsOk = DistanceHelper.isDistanceAcceptable(
+          distance,
+          40.0,
+          tolerance: 5.0,
+        );
         setState(() {
           _currentDistance = distance;
           _distanceStatus = status;

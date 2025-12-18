@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_screen.dart';
-import 'package:visiaxx/features/quick_vision_test/screens/short_distance_test_screen.dart';
+import 'package:visiaxx/features/quick_vision_test/screens/short_distance_instruction_screen.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
@@ -56,32 +55,12 @@ class _BothEyesOpenInstructionScreenState
     });
   }
 
-  // NEW: Navigation method
+  // Navigate directly to instruction screen (which handles calibration)
   void _navigateToTest() {
-    // Navigate to distance calibration first
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => DistanceCalibrationScreen(
-          targetDistanceCm: 40.0,
-          toleranceCm: 5.0,
-          onCalibrationComplete: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ShortDistanceTestScreen(),
-              ),
-            );
-          },
-          onSkip: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ShortDistanceTestScreen(),
-              ),
-            );
-          },
-        ),
+        builder: (context) => const ShortDistanceInstructionScreen(),
       ),
     );
   }

@@ -174,16 +174,19 @@ class PlateResponse {
   final String userAnswer; // What user said/typed
   final bool isCorrect;
   final int responseTimeMs;
-  final bool wasDemo; // true for plate 1
+  final bool wasDemo;
+  final String?
+  selectionMethod; // NEW: 'normal', 'colorBlind', 'other', 'cantSee', null for legacy
 
-  PlateResponse({
+  const PlateResponse({
     required this.plateNumber,
     required this.category,
     required this.normalExpectedAnswer,
     required this.userAnswer,
     required this.isCorrect,
     required this.responseTimeMs,
-    required this.wasDemo,
+    this.wasDemo = false,
+    this.selectionMethod, // Optional for backward compatibility
   });
 
   Map<String, dynamic> toMap() {
@@ -195,6 +198,7 @@ class PlateResponse {
       'isCorrect': isCorrect,
       'responseTimeMs': responseTimeMs,
       'wasDemo': wasDemo,
+      'selectionMethod': selectionMethod,
     };
   }
 
@@ -208,6 +212,7 @@ class PlateResponse {
       isCorrect: map['isCorrect'] ?? false,
       responseTimeMs: map['responseTimeMs'] ?? 0,
       wasDemo: map['wasDemo'] ?? false,
+      selectionMethod: map['selectionMethod'], // Null for legacy data
     );
   }
 

@@ -35,7 +35,7 @@ class DistanceCalibrationScreen extends StatefulWidget {
 }
 
 class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
-  late final DistanceDetectionService _distanceService;
+  late DistanceDetectionService _distanceService;
   final TtsService _ttsService = TtsService();
 
   CameraController? _cameraController;
@@ -57,12 +57,26 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
 
   // Auto-skip timeout - prevents getting stuck
   Timer? _autoSkipTimer;
-
+  @override
   @override
   void initState() {
     super.initState();
-    // Don't add lifecycle observer during calibration
-    _distanceService = DistanceDetectionService();
+
+    // ✅ CRITICAL FIX: Initialize with widget parameters
+    _distanceService = DistanceDetectionService(
+      targetDistanceCm: widget.targetDistanceCm,
+      toleranceCm: widget.toleranceCm,
+    );
+
+    debugPrint('═══════════════════════════════════');
+    debugPrint('🎯 CALIBRATION INITIALIZED:');
+    debugPrint('   Target Distance: ${widget.targetDistanceCm}cm');
+    debugPrint('   Tolerance: ±${widget.toleranceCm}cm');
+    debugPrint(
+      '   Acceptable Range: ${widget.targetDistanceCm - widget.toleranceCm}cm - ${widget.targetDistanceCm + widget.toleranceCm}cm',
+    );
+    debugPrint('═══════════════════════════════════');
+
     _initializeCamera();
   }
 
