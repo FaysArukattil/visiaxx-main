@@ -61,6 +61,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   bool _isListening = false;
   String? _recognizedText;
   Timer? _listeningTimer;
+  Timer? _speechEraserTimer; // ✅ Timer to clear recognized text
 
   // Text input
   final TextEditingController _inputController = TextEditingController();
@@ -242,12 +243,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   }
 
   /// ✅ IMPROVED: Smart speech accumulation with word merging
-  /// ✅ IMPROVED: Smart speech accumulation with word merging
-  /// ✅ IMPROVED: Smart speech accumulation with word merging
   void _handleSpeechDetected(String partialResult) {
+    debugPrint('[ShortDistance] 🎤 Speech detected: "$partialResult"');
     if (!mounted || !_waitingForResponse) return;
-
-    debugPrint('[ShortDistance] 🎤 Detected: "$partialResult"');
 
     // Cancel existing buffer timer
     _speechBufferTimer?.cancel();
@@ -285,6 +283,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       _recognizedText = _accumulatedSpeech;
     });
 
+    // ✅ Auto-erase recognized text after 2.5 seconds
+    _speechEraserTimer?.cancel();
+    _speechEraserTimer = Timer(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        setState(() {
+          _recognizedText = null;
+        });
+      }
+    });
+
     // Set timer to process after user stops speaking
     _speechBufferTimer = Timer(_speechBufferDelay, () {
       if (_accumulatedSpeech.trim().isNotEmpty && _waitingForResponse) {
@@ -298,6 +306,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   void _processSentence(String userSaid) {
     _listeningTimer?.cancel();
     _speechService.cancel();
+    _speechEraserTimer
+        ?.cancel(); // Cancel eraser timer when processing sentence
 
     if (!_waitingForResponse) return;
 
@@ -438,6 +448,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   @override
   void dispose() {
     debugPrint('[ShortDistance] 🧹 Disposing resources...');
+    _speechEraserTimer?.cancel();
     _listeningTimer?.cancel();
     _speechBufferTimer?.cancel();
     _autoNavigationTimer?.cancel();
@@ -479,7 +490,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                       ? _buildSentenceView()
                       : const Center(child: CircularProgressIndicator()),
                 ),
-                if (_isListening && !_showKeyboard) _buildListeningIndicator(),
+                if (_isListening ||
+                    (_recognizedText != null && _recognizedText!.isNotEmpty))
+                  _buildListeningIndicator(),
                 if (_showResult) _buildResultFeedback(),
               ],
             ),
@@ -885,7 +898,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     final bool hasSpeech =
         _recognizedText != null && _recognizedText!.isNotEmpty;
 
-    // ✅ Hidden initially - only show when listening or speaking
+    // ✅ Match R/2 pill style in Green
     if (!_isListening && !hasSpeech) {
       return const SizedBox.shrink();
     }
@@ -895,56 +908,49 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: AppColors.success.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.success, width: 2),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ✅ Wave animation while active
               if (_isListening) ...[
                 _SpeechWaveform(
                   isListening: _isListening,
-                  color: AppColors.primary,
+                  color: AppColors.success,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
               ],
-              Icon(
-                Icons.mic,
-                size: 20,
-                color: _isListening ? AppColors.primary : Colors.white,
-              ),
+              Icon(Icons.mic, size: 14, color: AppColors.success),
+              if (!hasSpeech && _isListening) ...[
+                const SizedBox(width: 4),
+                const Text(
+                  'LISTENING',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
-        // ✅ Recognized text in green below
+        // ✅ Normalized text in green below
         if (hasSpeech)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              _recognizedText!,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.success,
+                fontWeight: FontWeight.bold,
               ),
-              child: Text(
-                _recognizedText!,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              textAlign: TextAlign.center,
             ),
           ),
       ],

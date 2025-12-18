@@ -83,6 +83,7 @@ class ContinuousSpeechManager {
     _shouldBeListening = true;
     _restartAttempts = 0;
     _allDetectedSpeech.clear();
+    _lastRecognizedValue = null; // ✅ Reset last recognized value on start
 
     // Don't start if paused for TTS
     if (_isPausedForTts) {

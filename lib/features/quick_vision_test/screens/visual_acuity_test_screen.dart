@@ -70,7 +70,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   bool _showRelaxation = false;
   bool _showE = false;
   bool _showResult = false;
-  bool _showTimeout = false;
   bool _testComplete = false;
   bool _waitingForResponse = false;
 
@@ -92,6 +91,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   Timer? _autoNavigationTimer;
   int _autoNavigationCountdown = 3;
+
+  Timer? _speechEraserTimer; // ✅ Timer to clear recognized text
 
   @override
   void initState() {
@@ -337,7 +338,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       setState(() {
         _lastDetectedSpeech = partialResult;
       });
-      // Show visual feedback that speech was detected
+
+      // ✅ Auto-erase recognized text after 2.5 seconds
+      _speechEraserTimer?.cancel();
+      _speechEraserTimer = Timer(const Duration(milliseconds: 2500), () {
+        if (mounted) {
+          setState(() {
+            _lastDetectedSpeech = null;
+          });
+        }
+      });
     }
   }
 
@@ -621,20 +631,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eCountdownTimer?.cancel();
     _continuousSpeech.stop(); // ✅ Stop listening immediately after response
 
-    // ✅ HANDLE NO RESPONSE: Rotate E instead of failing
+    // ✅ HANDLE NO RESPONSE: Rotate E in SAME size and try again
     if (userResponse == null) {
-      debugPrint('[VisualAcuity] Timeout - Rotating E');
-      setState(() {
-        _waitingForResponse = false;
-        _showE = false;
-        _showTimeout = true;
-      });
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() => _showTimeout = false);
-          _showTumblingE();
-        }
-      });
+      debugPrint(
+        '[VisualAcuity] Timeout - Rotating E (staying at level $_currentLevel)',
+      );
+      // Give a tiny delay for the user to see the "I didn't hear you" state if we had one
+      // But user wants it integrated, so we just rotate.
+      _showTumblingE(); // Direct rotation without changing size
       return;
     }
 
@@ -800,6 +804,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   @override
   void dispose() {
+    _speechEraserTimer?.cancel();
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
@@ -807,6 +812,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _continuousSpeech.dispose();
     _ttsService.dispose();
     _speechService.dispose();
+    _distanceService.stopMonitoring();
     _audioPlayer.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -860,7 +866,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   child: _buildDistanceIndicator(),
                 ),
 
-              // Mic indicator (top right corner) - Always visible during test
+              // Mic indicator (top right corner) - matched to R/2 pill style
               if (_showE || _showRelaxation)
                 Positioned(top: 12, right: 12, child: _buildMicIndicator()),
 
@@ -1151,66 +1157,63 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildMicIndicator() {
-    // Determine state and color
     final bool hasRecognized =
         _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
 
-    // ✅ Hidden initially - only show when listening or speaking
+    // ✅ Only show when listening or has text (text will auto-erase via timer)
     if (!_isListening && !hasRecognized) {
       return const SizedBox.shrink();
     }
 
-    // ✅ ONLY show mic icon/waveform when actually listening
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (_isListening)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ✅ Wave animation while active
+        // ✅ Matched to R/2 Pill Style in Green
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.success.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.success, width: 2),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isListening) ...[
                 _SpeechWaveform(
                   isListening: _isListening,
-                  color: AppColors.primary,
+                  color: AppColors.success,
                 ),
-                const SizedBox(width: 8),
-                Icon(Icons.mic, size: 20, color: AppColors.primary),
+                const SizedBox(width: 6),
               ],
-            ),
+              Icon(Icons.mic, size: 14, color: AppColors.success),
+              if (!hasRecognized && _isListening) ...[
+                const SizedBox(width: 4),
+                const Text(
+                  'LISTENING',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ],
           ),
-        // ✅ Recognized text in green below (shown even after listening stops)
+        ),
+        // ✅ Recognized text below - temporary
         if (hasRecognized)
           Padding(
-            padding: const EdgeInsets.only(top: 8, right: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              _lastDetectedSpeech!,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.success,
+                fontWeight: FontWeight.bold,
               ),
-              child: Text(
-                _lastDetectedSpeech!,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.right,
-              ),
+              textAlign: TextAlign.right,
             ),
           ),
       ],
@@ -1240,10 +1243,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     if (_showResult) {
       return _buildResultFeedback();
-    }
-
-    if (_showTimeout) {
-      return _buildTimeoutFeedback();
     }
 
     return const Center(child: CircularProgressIndicator());
@@ -1557,31 +1556,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               fontWeight: FontWeight.bold,
               color: isCorrect ? AppColors.success : AppColors.error,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeoutFeedback() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.mic_off, size: 100, color: AppColors.warning),
-          const SizedBox(height: 16),
-          Text(
-            'I didn\'t hear you',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.warning,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Rotating and trying again...',
-            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
           ),
         ],
       ),
