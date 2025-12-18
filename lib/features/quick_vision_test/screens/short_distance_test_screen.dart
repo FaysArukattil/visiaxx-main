@@ -203,7 +203,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
       listenFor: const Duration(seconds: 30), // ✅ LONGER duration
       pauseFor: const Duration(seconds: 5), // ✅ LONGER pause tolerance
       bufferMs: 2000, // ✅ LONGER buffer (2 seconds)
-      autoRestart: true, // ✅ Keep listening continuously
+      // autoRestart: true, // ✅ Keep listening continuously
       minConfidence: 0.1, // ✅ VERY LOW threshold - accept almost anything
     );
   }

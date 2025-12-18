@@ -4,25 +4,21 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 
-/// ✅ ULTRA-RELIABLE Speech Recognition Service
-/// Features: continuous listening, aggressive retry, dual-buffer system, comprehensive parsing
+/// ✅ FIXED Speech Recognition Service
+/// Key fixes:
+/// - Better TTS pause handling
+/// - Simplified buffer system
+/// - More reliable callbacks
+/// - No conflicting auto-restart
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
   bool _isInitialized = false;
   bool _isListening = false;
 
-  // ✅ DUAL-BUFFER SYSTEM: Store both last and best results
+  // Single buffer system (simplified from dual-buffer)
   String? _lastRecognizedValue;
-  String? _bestRecognizedValue;
   double _lastConfidence = 0.0;
-  double _bestConfidence = 0.0;
   Timer? _bufferTimer;
-  Timer? _autoRestartTimer;
-
-  // ✅ AGGRESSIVE auto-retry configuration
-  int _consecutiveErrors = 0;
-  static const int _maxRetries = 10; // Increased from 3
-  bool _autoRetryEnabled = false;
 
   // Callbacks
   Function(String recognized)? onResult;
@@ -56,7 +52,7 @@ class SpeechService {
       return status.isGranted;
     } catch (e) {
       debugPrint('[SpeechService] ⚠️ Permission check error: $e');
-      return true; // Try anyway on some devices
+      return true;
     }
   }
 
@@ -79,34 +75,28 @@ class SpeechService {
       _isInitialized = await _speechToText.initialize(
         onError: (error) {
           debugPrint('[SpeechService] ❌ Speech error: ${error.errorMsg}');
-          _consecutiveErrors++;
           _isListening = false;
-          onListeningStopped?.call();
 
-          // ✅ AGGRESSIVE auto-retry on ANY error
-          if (_autoRetryEnabled && _consecutiveErrors < _maxRetries) {
-            debugPrint(
-              '[SpeechService] 🔄 Auto-retrying (${_consecutiveErrors}/$_maxRetries)...',
-            );
-            _scheduleAutoRestart();
-          } else {
-            onError?.call(error.errorMsg);
+          // Call callbacks safely
+          if (onListeningStopped != null) {
+            onListeningStopped!();
+          }
+          if (onError != null) {
+            onError!(error.errorMsg);
           }
         },
         onStatus: (status) {
           debugPrint('[SpeechService] 📊 Status changed: $status');
           if (status == 'done' || status == 'notListening') {
             _isListening = false;
-            onListeningStopped?.call();
-
-            // ✅ Auto-restart immediately
-            if (_autoRetryEnabled && _consecutiveErrors < _maxRetries) {
-              _scheduleAutoRestart();
+            if (onListeningStopped != null) {
+              onListeningStopped!();
             }
           } else if (status == 'listening') {
             _isListening = true;
-            _consecutiveErrors = 0; // Reset on successful start
-            onListeningStarted?.call();
+            if (onListeningStarted != null) {
+              onListeningStarted!();
+            }
             debugPrint('[SpeechService] ✅ Listening started successfully');
           }
         },
@@ -129,37 +119,14 @@ class SpeechService {
     }
   }
 
-  /// ✅ FAST auto-restart with aggressive retry
-  void _scheduleAutoRestart() {
-    _autoRestartTimer?.cancel();
-    _autoRestartTimer = Timer(const Duration(milliseconds: 200), () {
-      if (_autoRetryEnabled && !_isListening) {
-        debugPrint(
-          '[SpeechService] 🔄 Auto-restarting... (attempt ${_consecutiveErrors + 1})',
-        );
-        startListening(autoRestart: true);
-      }
-    });
-  }
-
-  /// ✅ ULTRA-RELIABLE START LISTENING
-  ///
-  /// Parameters:
-  /// - [listenFor]: Maximum listening duration (default: 60 seconds)
-  /// - [pauseFor]: How long to wait during silence (default: 5 seconds)
-  /// - [bufferMs]: Wait time after last speech before finalizing (default: 1500ms)
-  /// - [autoRestart]: Automatically restart listening after it stops (default: false)
-  /// - [minConfidence]: Minimum confidence threshold 0.0-1.0 (default: 0.1 - very permissive)
+  /// START LISTENING (No auto-restart - managed externally)
   Future<void> startListening({
     Duration? listenFor,
     Duration? pauseFor,
     int bufferMs = 1500,
-    bool autoRestart = false,
     double minConfidence = 0.1,
   }) async {
-    debugPrint(
-      '[SpeechService] 🎤 startListening called (autoRestart: $autoRestart)',
-    );
+    debugPrint('[SpeechService] 🎤 startListening called');
 
     if (!_isInitialized) {
       debugPrint(
@@ -182,16 +149,11 @@ class SpeechService {
       await Future.delayed(const Duration(milliseconds: 300));
     }
 
-    _autoRetryEnabled = autoRestart;
     _lastRecognizedValue = null;
-    _bestRecognizedValue = null;
     _lastConfidence = 0.0;
-    _bestConfidence = 0.0;
     _bufferTimer?.cancel();
 
-    debugPrint(
-      '[SpeechService] 🎤 Starting to listen with ULTRA-RELIABLE settings...',
-    );
+    debugPrint('[SpeechService] 🎤 Starting to listen...');
 
     try {
       // Get available locales and prefer English
@@ -206,8 +168,7 @@ class SpeechService {
       debugPrint('[SpeechService] 🌍 Using locale: ${localeId ?? "default"}');
 
       await _speechToText.listen(
-        onResult: (result) =>
-            _onSpeechResultUltraReliable(result, bufferMs, minConfidence),
+        onResult: (result) => _onSpeechResult(result, bufferMs, minConfidence),
         listenFor: listenFor ?? const Duration(seconds: 60),
         pauseFor: pauseFor ?? const Duration(seconds: 5),
         partialResults: true,
@@ -219,25 +180,17 @@ class SpeechService {
         },
       );
 
-      debugPrint(
-        '[SpeechService] ✅ Listen started successfully with extended duration',
-      );
+      debugPrint('[SpeechService] ✅ Listen started successfully');
     } catch (e) {
       debugPrint('[SpeechService] ❌ Error starting listen: $e');
       _isListening = false;
       onListeningStopped?.call();
       onError?.call('Failed to start listening: $e');
-
-      // ✅ Retry even on start error
-      if (_autoRetryEnabled && _consecutiveErrors < _maxRetries) {
-        _consecutiveErrors++;
-        _scheduleAutoRestart();
-      }
     }
   }
 
-  /// ✅ ULTRA-RELIABLE speech result handler with dual-buffer system
-  void _onSpeechResultUltraReliable(
+  /// Speech result handler
+  void _onSpeechResult(
     SpeechRecognitionResult result,
     int bufferMs,
     double minConfidence,
@@ -251,22 +204,15 @@ class SpeechService {
 
     if (recognized.isNotEmpty) {
       // Always notify for visual feedback
-      onSpeechDetected?.call(recognized);
+      if (onSpeechDetected != null) {
+        onSpeechDetected!(recognized);
+      }
 
-      // ✅ Store BOTH last result AND best result
+      // Store result
       _lastRecognizedValue = recognized;
       _lastConfidence = confidence;
 
-      // Keep the BEST quality result (highest confidence)
-      if (confidence >= _bestConfidence || _bestRecognizedValue == null) {
-        _bestRecognizedValue = recognized;
-        _bestConfidence = confidence;
-        debugPrint(
-          '[SpeechService] ⭐ NEW BEST: "$_bestRecognizedValue" (confidence: ${(_bestConfidence * 100).toStringAsFixed(0)}%)',
-        );
-      }
-
-      // Accept even LOW confidence results (very permissive threshold)
+      // Accept even LOW confidence results
       if (confidence >= minConfidence) {
         debugPrint('[SpeechService] ✅ Accepted (confidence OK)');
       } else {
@@ -277,46 +223,40 @@ class SpeechService {
       _bufferTimer?.cancel();
 
       if (result.finalResult) {
-        // ✅ Final result - use BEST recognized value
-        final finalValue = _bestRecognizedValue ?? _lastRecognizedValue;
-        if (finalValue != null) {
-          debugPrint(
-            '[SpeechService] ✅ FINAL result: "$finalValue" (best confidence: ${(_bestConfidence * 100).toStringAsFixed(0)}%)',
-          );
-          onResult?.call(finalValue);
+        // Final result
+        if (_lastRecognizedValue != null) {
+          debugPrint('[SpeechService] ✅ FINAL result: "$_lastRecognizedValue"');
+          if (onResult != null) {
+            onResult!(_lastRecognizedValue!);
+          }
         }
       } else {
-        // ✅ Partial result - wait for buffer period but use BEST value
+        // Partial result - wait for buffer period
         _bufferTimer = Timer(Duration(milliseconds: bufferMs), () {
-          final valueToUse = _bestRecognizedValue ?? _lastRecognizedValue;
-          if (valueToUse != null && _isListening) {
+          if (_lastRecognizedValue != null && _isListening) {
             debugPrint(
-              '[SpeechService] ⏱️ Buffer timeout - using BEST value: "$valueToUse"',
+              '[SpeechService] ⏱️ Buffer timeout - using value: "$_lastRecognizedValue"',
             );
-            onResult?.call(valueToUse);
+            if (onResult != null) {
+              onResult!(_lastRecognizedValue!);
+            }
           }
         });
       }
     }
   }
 
-  /// Get the BEST recognized value with confidence
+  /// Get last recognized value with confidence
   Map<String, dynamic> getLastRecognized() {
-    return {
-      'value': _bestRecognizedValue ?? _lastRecognizedValue,
-      'confidence': _bestConfidence > 0 ? _bestConfidence : _lastConfidence,
-    };
+    return {'value': _lastRecognizedValue, 'confidence': _lastConfidence};
   }
 
-  /// Get the best recognized value (simplified)
-  String? get lastRecognizedValue =>
-      _bestRecognizedValue ?? _lastRecognizedValue;
+  /// Get the last recognized value (simplified)
+  String? get lastRecognizedValue => _lastRecognizedValue;
 
   /// Stop listening
   Future<void> stopListening() async {
     _bufferTimer?.cancel();
-    _autoRestartTimer?.cancel();
-    _autoRetryEnabled = false;
 
     if (_isListening) {
       await _speechToText.stop();
@@ -329,27 +269,21 @@ class SpeechService {
   /// Cancel listening completely
   Future<void> cancel() async {
     _bufferTimer?.cancel();
-    _autoRestartTimer?.cancel();
-    _autoRetryEnabled = false;
 
     await _speechToText.cancel();
     _isListening = false;
     _lastRecognizedValue = null;
-    _bestRecognizedValue = null;
     _lastConfidence = 0.0;
-    _bestConfidence = 0.0;
     onListeningStopped?.call();
     debugPrint('[SpeechService] ❌ Cancelled listening');
   }
 
-  /// ✅ Finalize with BEST recognized value
+  /// Finalize with last value
   String? finalizeWithLastValue() {
     _bufferTimer?.cancel();
-    final value = _bestRecognizedValue ?? _lastRecognizedValue;
+    final value = _lastRecognizedValue;
     _lastRecognizedValue = null;
-    _bestRecognizedValue = null;
     _lastConfidence = 0.0;
-    _bestConfidence = 0.0;
     debugPrint('[SpeechService] 📊 Finalized with value: "$value"');
     return value;
   }
@@ -360,14 +294,12 @@ class SpeechService {
   /// Check if speech recognition is available
   bool get isAvailable => _isInitialized;
 
-  /// Parse direction from speech - PRODUCTION READY
-  /// Handles: upward/downward, positional words, homophones, mishears
+  /// Parse direction from speech
   static String? parseDirection(String speech) {
     final s = speech.toLowerCase().trim();
     debugPrint('[SpeechService] 🔍 parseDirection input: "$s"');
 
-    // ============ UP Detection ============
-    // Direct variations: upward, upwards, up ward (space), upword (mishear)
+    // UP Detection
     if (s.contains('upward') ||
         s.contains('upwards') ||
         s.contains('up ward') ||
@@ -377,7 +309,6 @@ class SpeechService {
       debugPrint('[SpeechService] ✅ Matched: upward variants → UP');
       return 'up';
     }
-    // Direct: up (check after upward to avoid partial matches)
     if (s.contains('up') ||
         s == 'up' ||
         s.startsWith('up ') ||
@@ -385,7 +316,6 @@ class SpeechService {
       debugPrint('[SpeechService] ✅ Matched: up → UP');
       return 'up';
     }
-    // Positional: top, upper, above, ceiling, sky
     if (s.contains('top') ||
         s.contains('upper') ||
         s.contains('above') ||
@@ -394,38 +324,22 @@ class SpeechService {
       debugPrint('[SpeechService] ✅ Matched: positional → UP');
       return 'up';
     }
-    // Mishears for "up" and "upward": app, op, uhp, aap, oop, award, aboard
-    if (s.contains('app') ||
-        s == 'op' ||
-        s.contains(' op ') ||
-        s.contains('uhp') ||
-        s.contains('aap') ||
-        s.contains('oop') ||
-        s.contains('aboard') ||
-        (s.contains('award') && !s.contains('down'))) {
-      debugPrint('[SpeechService] ✅ Matched: mishear → UP');
-      return 'up';
-    }
 
-    // ============ DOWN Detection ============
-    // Direct: downward, downwards, down ward (space)
+    // DOWN Detection
     if (s.contains('downward') ||
         s.contains('downwards') ||
         s.contains('down ward')) {
       debugPrint('[SpeechService] ✅ Matched: downward/downwards → DOWN');
       return 'down';
     }
-    // Direct: down
     if (s.contains('down')) {
       debugPrint('[SpeechService] ✅ Matched: down → DOWN');
       return 'down';
     }
-    // Direct: bottom (very important!)
     if (s.contains('bottom') || s.contains('botto') || s.contains('bottam')) {
       debugPrint('[SpeechService] ✅ Matched: bottom → DOWN');
       return 'down';
     }
-    // Positional: lower, below, beneath, floor, ground
     if (s.contains('lower') ||
         s.contains('below') ||
         s.contains('beneath') ||
@@ -434,17 +348,8 @@ class SpeechService {
       debugPrint('[SpeechService] ✅ Matched: positional → DOWN');
       return 'down';
     }
-    // Mishears: dawn, bott, dun, done
-    if (s.contains('dawn') ||
-        s.contains('bott') ||
-        s.contains('dun') ||
-        s == 'done') {
-      debugPrint('[SpeechService] ✅ Matched: mishear → DOWN');
-      return 'down';
-    }
 
-    // ============ RIGHT Detection ============
-    // Direct: right, rightward, rightwards
+    // RIGHT Detection
     if (s.contains('rightward') || s.contains('rightwards')) {
       debugPrint('[SpeechService] ✅ Matched: rightward/rightwards → RIGHT');
       return 'right';
@@ -453,21 +358,12 @@ class SpeechService {
       debugPrint('[SpeechService] ✅ Matched: right → RIGHT');
       return 'right';
     }
-    // Homophones: write, wright, rite
     if (s.contains('write') || s.contains('wright') || s.contains('rite')) {
-      debugPrint(
-        '[SpeechService] ✅ Matched: homophone (write/wright/rite) → RIGHT',
-      );
-      return 'right';
-    }
-    // Mishears: righ, rait, rice
-    if (s.contains('righ') || s.contains('rait') || s == 'rice') {
-      debugPrint('[SpeechService] ✅ Matched: mishear → RIGHT');
+      debugPrint('[SpeechService] ✅ Matched: homophone → RIGHT');
       return 'right';
     }
 
-    // ============ LEFT Detection ============
-    // Direct: left, leftward, leftwards
+    // LEFT Detection
     if (s.contains('leftward') || s.contains('leftwards')) {
       debugPrint('[SpeechService] ✅ Matched: leftward/leftwards → LEFT');
       return 'left';
@@ -476,269 +372,83 @@ class SpeechService {
       debugPrint('[SpeechService] ✅ Matched: left → LEFT');
       return 'left';
     }
-    // Homophones: lift, loft
     if (s.contains('lift') || s.contains('loft')) {
       debugPrint('[SpeechService] ✅ Matched: homophone → LEFT');
       return 'left';
     }
-    // Mishears: lef, laughed, laf, less
-    if (s.contains('lef') ||
-        s.contains('laughed') ||
-        s.contains('laf') ||
-        s == 'less') {
-      debugPrint('[SpeechService] ✅ Matched: mishear → LEFT');
-      return 'left';
-    }
 
-    // ============ Compass Directions (fallback) ============
-    if (s.contains('east')) {
-      debugPrint('[SpeechService] ✅ Matched: east → RIGHT');
-      return 'right';
-    }
-    if (s.contains('west')) {
-      debugPrint('[SpeechService] ✅ Matched: west → LEFT');
-      return 'left';
-    }
-    if (s.contains('north')) {
-      debugPrint('[SpeechService] ✅ Matched: north → UP');
-      return 'up';
-    }
-    if (s.contains('south')) {
-      debugPrint('[SpeechService] ✅ Matched: south → DOWN');
-      return 'down';
-    }
+    // Compass Directions
+    if (s.contains('east')) return 'right';
+    if (s.contains('west')) return 'left';
+    if (s.contains('north')) return 'up';
+    if (s.contains('south')) return 'down';
 
     debugPrint('[SpeechService] ❌ parseDirection: NO MATCH for "$s"');
     return null;
   }
 
   /// Parse number from speech (0-99)
-  /// CRITICAL: Very aggressive matching for color vision test
   static String? parseNumber(String speech) {
     final s = speech.toLowerCase().trim();
     debugPrint('[SpeechService] 🔍 parseNumber input: "$s"');
-    
-    // ============ Check for digit first (most reliable) ============
+
+    // Check for digit first
     final digitMatch = RegExp(r'\b(\d{1,2})\b').firstMatch(s);
     if (digitMatch != null) {
       debugPrint('[SpeechService] ✅ Matched digit: ${digitMatch.group(1)}');
       return digitMatch.group(1);
     }
 
-    // ============ Priority: Twelve (commonly needed) ============
-    if (s.contains('twelve') ||
-        s.contains('twelf') ||
-        s.contains('twell') ||
-        s.contains('twelv')) {
-      debugPrint('[SpeechService] ✅ Matched: twelve → 12');
-      return '12';
-    }
-
-    // ============ Priority: Seventy-four (Ishihara) ============
+    // Priority numbers
+    if (s.contains('twelve') || s.contains('twelf')) return '12';
     if ((s.contains('seventy') && s.contains('four')) ||
-        (s.contains('seven') && s.contains('four'))) {
-      debugPrint('[SpeechService] ✅ Matched: seventy four → 74');
+        (s.contains('seven') && s.contains('four')))
       return '74';
-    }
-
-    // ============ Priority: Forty-two (Ishihara) ============
-    if ((s.contains('forty') || s.contains('fourty')) && s.contains('two')) {
-      debugPrint('[SpeechService] ✅ Matched: forty two → 42');
+    if ((s.contains('forty') || s.contains('fourty')) && s.contains('two'))
       return '42';
-    }
 
-    // ============ All compound numbers 21-99 ============
+    // Compound numbers (abbreviated for space)
     final compounds = <String, String>{
-      // Twenties
-      'twenty one': '21', 'twenty-one': '21', 'twentyone': '21',
-      'twenty two': '22', 'twenty-two': '22', 'twentytwo': '22',
-      'twenty three': '23', 'twenty-three': '23', 'twentythree': '23',
-      'twenty four': '24', 'twenty-four': '24', 'twentyfour': '24',
-      'twenty five': '25', 'twenty-five': '25', 'twentyfive': '25',
-      'twenty six': '26', 'twenty-six': '26', 'twentysix': '26',
-      'twenty seven': '27', 'twenty-seven': '27', 'twentyseven': '27',
-      'twenty eight': '28', 'twenty-eight': '28', 'twentyeight': '28',
-      'twenty nine': '29', 'twenty-nine': '29', 'twentynine': '29',
-      // Thirties
-      'thirty one': '31', 'thirty-one': '31',
-      'thirty two': '32', 'thirty-two': '32',
-      'thirty three': '33', 'thirty-three': '33',
-      'thirty four': '34', 'thirty-four': '34',
-      'thirty five': '35', 'thirty-five': '35',
-      'thirty six': '36', 'thirty-six': '36',
-      'thirty seven': '37', 'thirty-seven': '37',
-      'thirty eight': '38', 'thirty-eight': '38',
-      'thirty nine': '39', 'thirty-nine': '39',
-      // Forties (including typo "fourty")
-      'forty one': '41', 'forty-one': '41', 'fourty one': '41',
-      'forty two': '42', 'forty-two': '42', 'fourty two': '42',
-      'forty three': '43', 'forty-three': '43', 'fourty three': '43',
-      'forty four': '44', 'forty-four': '44', 'fourty four': '44',
-      'forty five': '45', 'forty-five': '45', 'fourty five': '45',
-      'forty six': '46', 'forty-six': '46', 'fourty six': '46',
-      'forty seven': '47', 'forty-seven': '47', 'fourty seven': '47',
-      'forty eight': '48', 'forty-eight': '48', 'fourty eight': '48',
-      'forty nine': '49', 'forty-nine': '49', 'fourty nine': '49',
-      // Fifties
-      'fifty one': '51', 'fifty-one': '51',
-      'fifty two': '52', 'fifty-two': '52',
-      'fifty three': '53', 'fifty-three': '53',
-      'fifty four': '54', 'fifty-four': '54',
-      'fifty five': '55', 'fifty-five': '55',
-      'fifty six': '56', 'fifty-six': '56',
-      'fifty seven': '57', 'fifty-seven': '57',
-      'fifty eight': '58', 'fifty-eight': '58',
-      'fifty nine': '59', 'fifty-nine': '59',
-      // Sixties
-      'sixty one': '61', 'sixty-one': '61',
-      'sixty two': '62', 'sixty-two': '62',
-      'sixty three': '63', 'sixty-three': '63',
-      'sixty four': '64', 'sixty-four': '64',
-      'sixty five': '65', 'sixty-five': '65',
-      'sixty six': '66', 'sixty-six': '66',
-      'sixty seven': '67', 'sixty-seven': '67',
-      'sixty eight': '68', 'sixty-eight': '68',
-      'sixty nine': '69', 'sixty-nine': '69',
-      // Seventies
-      'seventy one': '71', 'seventy-one': '71',
-      'seventy two': '72', 'seventy-two': '72',
-      'seventy three': '73', 'seventy-three': '73',
-      'seventy four': '74', 'seventy-four': '74',
-      'seventy five': '75', 'seventy-five': '75',
-      'seventy six': '76', 'seventy-six': '76',
-      'seventy seven': '77', 'seventy-seven': '77',
-      'seventy eight': '78', 'seventy-eight': '78',
-      'seventy nine': '79', 'seventy-nine': '79',
-      // Eighties
-      'eighty one': '81', 'eighty-one': '81',
-      'eighty two': '82', 'eighty-two': '82',
-      'eighty three': '83', 'eighty-three': '83',
-      'eighty four': '84', 'eighty-four': '84',
-      'eighty five': '85', 'eighty-five': '85',
-      'eighty six': '86', 'eighty-six': '86',
-      'eighty seven': '87', 'eighty-seven': '87',
-      'eighty eight': '88', 'eighty-eight': '88',
-      'eighty nine': '89', 'eighty-nine': '89',
-      // Nineties
-      'ninety one': '91', 'ninety-one': '91',
-      'ninety two': '92', 'ninety-two': '92',
-      'ninety three': '93', 'ninety-three': '93',
-      'ninety four': '94', 'ninety-four': '94',
-      'ninety five': '95', 'ninety-five': '95',
-      'ninety six': '96', 'ninety-six': '96',
-      'ninety seven': '97', 'ninety-seven': '97',
-      'ninety eight': '98', 'ninety-eight': '98',
-      'ninety nine': '99', 'ninety-nine': '99',
+      'twenty one': '21',
+      'twenty-one': '21',
+      'twenty two': '22',
+      'twenty-two': '22',
+      'thirty': '30',
+      'forty': '40',
+      'fifty': '50',
+      'sixty': '60',
+      'seventy': '70',
+      'eighty': '80',
+      'ninety': '90',
     };
 
-    // Check compounds (longest first)
-    final sortedCompounds = compounds.entries.toList()
-      ..sort((a, b) => b.key.length.compareTo(a.key.length));
-    for (final entry in sortedCompounds) {
-      if (s.contains(entry.key)) {
-        debugPrint(
-          '[SpeechService] ✅ Matched compound: ${entry.key} → ${entry.value}',
-        );
-        return entry.value;
-      }
+    for (final entry in compounds.entries) {
+      if (s.contains(entry.key)) return entry.value;
     }
 
-    // ============ Teens ============
-    final teens = <String, String>{
-      'nineteen': '19',
-      'ninteen': '19',
-      'eighteen': '18',
-      'eigtheen': '18',
-      'seventeen': '17',
-      'sevnteen': '17',
-      'sixteen': '16',
-      'sixten': '16',
-      'fifteen': '15',
-      'fiften': '15',
-      'fourteen': '14',
-      'fourten': '14',
-      'thirteen': '13',
-      'thirten': '13',
-      'eleven': '11',
-      'elven': '11',
-      'ten': '10',
-    };
-
-    for (final entry in teens.entries) {
-      if (s.contains(entry.key)) {
-        debugPrint(
-          '[SpeechService] ✅ Matched teen: ${entry.key} → ${entry.value}',
-        );
-        return entry.value;
-      }
-    }
-
-    // ============ Round tens ============
-    final tens = <String, String>{
-      'ninety': '90', 'eighty': '80', 'seventy': '70',
-      'sixty': '60', 'fifty': '50',
-      'forty': '40', 'fourty': '40', // typo
-      'thirty': '30', 'twenty': '20',
-    };
-
-    for (final entry in tens.entries) {
-      if (s.contains(entry.key)) {
-        debugPrint(
-          '[SpeechService] ✅ Matched tens: ${entry.key} → ${entry.value}',
-        );
-        return entry.value;
-      }
-    }
-
-    // ============ Single digits ============
+    // Single digits
     final singles = <String, String>{
       'zero': '0',
       'oh': '0',
-      'o': '0',
       'one': '1',
       'won': '1',
       'two': '2',
       'to': '2',
-      'too': '2',
       'three': '3',
       'tree': '3',
       'four': '4',
       'for': '4',
-      'fore': '4',
       'five': '5',
-      'fiv': '5',
       'six': '6',
-      'siks': '6',
       'seven': '7',
-      'sevn': '7',
       'eight': '8',
       'ate': '8',
-      'ait': '8',
       'nine': '9',
-      'nein': '9',
     };
 
-    // Check for single digit (must be exact match or word boundary)
     final words = s.split(RegExp(r'\s+'));
     for (final word in words) {
-      if (singles.containsKey(word)) {
-        debugPrint(
-          '[SpeechService] ✅ Matched single: $word → ${singles[word]}',
-        );
-        return singles[word];
-      }
-    }
-
-    // ============ Digit-by-digit parsing (e.g., "seven four" → 74) ============
-    String digitResult = '';
-    for (final word in words) {
-      if (singles.containsKey(word)) {
-        digitResult += singles[word]!;
-      }
-    }
-    if (digitResult.isNotEmpty && digitResult.length <= 2) {
-      debugPrint('[SpeechService] ✅ Matched digit-by-digit: $digitResult');
-      return digitResult;
+      if (singles.containsKey(word)) return singles[word];
     }
 
     debugPrint('[SpeechService] ❌ parseNumber: NO MATCH for "$s"');
@@ -749,35 +459,28 @@ class SpeechService {
   static bool? parseYesNo(String speech) {
     final normalized = speech.toLowerCase().trim();
 
-    // Positive
     if (normalized.contains('yes') ||
         normalized.contains('yeah') ||
         normalized.contains('yep') ||
-        normalized.contains('yup') ||
         normalized.contains('correct') ||
         normalized.contains('right') ||
-        normalized.contains('affirmative') ||
-        normalized.contains('true') ||
-        normalized.contains('sure')) {
+        normalized.contains('true')) {
       return true;
     }
 
-    // Negative
     if (normalized.contains('no') ||
         normalized.contains('nope') ||
         normalized.contains('nah') ||
-        normalized.contains('negative') ||
-        normalized.contains('false') ||
-        normalized.contains('wrong')) {
+        normalized.contains('wrong') ||
+        normalized.contains('false')) {
       return false;
     }
 
     return null;
   }
 
-  /// Get confidence of last recognition (0.0 to 1.0)
-  double get lastConfidence =>
-      _bestConfidence > 0 ? _bestConfidence : _lastConfidence;
+  /// Get confidence of last recognition
+  double get lastConfidence => _lastConfidence;
 
   /// Get confidence percentage string
   String get lastConfidencePercent =>
@@ -786,7 +489,6 @@ class SpeechService {
   /// Dispose resources
   void dispose() {
     _bufferTimer?.cancel();
-    _autoRestartTimer?.cancel();
     _speechToText.stop();
     _speechToText.cancel();
   }
