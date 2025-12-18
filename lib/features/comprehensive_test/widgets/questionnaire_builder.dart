@@ -49,7 +49,10 @@ class QuestionnaireBuilder extends StatelessWidget {
       case 'yes_no':
         return _buildYesNoWidget(key);
       case 'multiple_choice':
-        return _buildMultipleChoiceWidget(key, question['options'] as List<String>);
+        return _buildMultipleChoiceWidget(
+          key,
+          question['options'] as List<String>,
+        );
       case 'text':
         return _buildTextFieldWidget(key);
       default:
@@ -78,15 +81,17 @@ class QuestionnaireBuilder extends StatelessWidget {
   }
 
   Widget _buildMultipleChoiceWidget(String key, List<String> options) {
-    return Column(
-      children: options.map((option) {
-        return RadioListTile<String>(
-          title: Text(option),
-          value: option,
-          groupValue: null, // TODO: Add state management
-          onChanged: (value) => onAnswerChanged(key, value),
-        );
-      }).toList(),
+    return RadioGroup<String>(
+      onChanged: (value) {
+        if (value != null) {
+          onAnswerChanged(key, value);
+        }
+      },
+      child: Column(
+        children: options.map((option) {
+          return RadioListTile<String>(title: Text(option), value: option);
+        }).toList(),
+      ),
     );
   }
 

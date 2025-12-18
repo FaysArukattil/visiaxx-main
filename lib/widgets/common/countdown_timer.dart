@@ -79,15 +79,15 @@ class _CountdownTimerState extends State<CountdownTimer> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'monospace',
-                ),
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+            ),
           ),
         ),
         const SizedBox(height: 16),

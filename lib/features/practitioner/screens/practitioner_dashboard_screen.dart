@@ -16,7 +16,7 @@ class _PractitionerDashboardScreenState
     extends State<PractitionerDashboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   // Demo data - would come from Firebase
   final List<_PatientResult> _allResults = [
     _PatientResult(
@@ -131,14 +131,8 @@ class _PractitionerDashboardScreenState
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'settings',
-                child: Text('Settings'),
-              ),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Text('Logout'),
-              ),
+              const PopupMenuItem(value: 'settings', child: Text('Settings')),
+              const PopupMenuItem(value: 'logout', child: Text('Logout')),
             ],
           ),
         ],
@@ -214,7 +208,10 @@ class _PractitionerDashboardScreenState
         controller: _tabController,
         children: [
           // Tab 1: Pending Reviews
-          _buildResultsList(_pendingResults, emptyMessage: 'No pending reviews'),
+          _buildResultsList(
+            _pendingResults,
+            emptyMessage: 'No pending reviews',
+          ),
           // Tab 2: Flagged Cases
           _buildResultsList(_flaggedResults, emptyMessage: 'No flagged cases'),
           // Tab 3: All Results
@@ -233,18 +230,11 @@ class _PractitionerDashboardScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 64,
-              color: AppColors.textTertiary,
-            ),
+            Icon(Icons.inbox_outlined, size: 64, color: AppColors.textTertiary),
             const SizedBox(height: 16),
             Text(
               emptyMessage,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -254,7 +244,7 @@ class _PractitionerDashboardScreenState
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: results.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         return _buildPatientCard(results[index]);
       },
@@ -283,7 +273,9 @@ class _PractitionerDashboardScreenState
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: result.isReviewed ? AppColors.border : statusColor.withOpacity(0.5),
+            color: result.isReviewed
+                ? AppColors.border
+                : statusColor.withValues(alpha: 0.5),
             width: result.isReviewed ? 1 : 2,
           ),
           boxShadow: [
@@ -303,9 +295,13 @@ class _PractitionerDashboardScreenState
                 // Patient avatar
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: statusColor.withOpacity(0.1),
+                  backgroundColor: statusColor.withValues(alpha: 0.1),
                   child: Text(
-                    result.patientName.split(' ').map((n) => n[0]).take(2).join(),
+                    result.patientName
+                        .split(' ')
+                        .map((n) => n[0])
+                        .take(2)
+                        .join(),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: statusColor,
@@ -367,7 +363,7 @@ class _PractitionerDashboardScreenState
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -415,7 +411,7 @@ class _PractitionerDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: AppColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -445,7 +441,7 @@ class _PractitionerDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.info.withOpacity(0.1),
+                  color: AppColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -477,9 +473,7 @@ class _PractitionerDashboardScreenState
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => _showPatientDetails(result),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: statusColor,
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: statusColor),
                   child: const Padding(
                     padding: EdgeInsets.all(12),
                     child: Text('Review & Add Notes'),
@@ -500,10 +494,7 @@ class _PractitionerDashboardScreenState
         children: [
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -511,10 +502,7 @@ class _PractitionerDashboardScreenState
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -577,10 +565,7 @@ class _PatientDetailSheet extends StatefulWidget {
   final _PatientResult result;
   final Function(String notes) onSave;
 
-  const _PatientDetailSheet({
-    required this.result,
-    required this.onSave,
-  });
+  const _PatientDetailSheet({required this.result, required this.onSave});
 
   @override
   State<_PatientDetailSheet> createState() => _PatientDetailSheetState();
@@ -643,7 +628,7 @@ class _PatientDetailSheetState extends State<_PatientDetailSheet> {
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundColor: statusColor.withOpacity(0.1),
+                  backgroundColor: statusColor.withValues(alpha: 0.1),
                   child: Text(
                     widget.result.patientName
                         .split(' ')
@@ -706,10 +691,7 @@ class _PatientDetailSheetState extends State<_PatientDetailSheet> {
             // Results section
             const Text(
               'Test Results',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
             _buildDetailRow('Visual Acuity (Right)', widget.result.vaRight),
@@ -720,10 +702,7 @@ class _PatientDetailSheetState extends State<_PatientDetailSheet> {
             // Practitioner notes
             const Text(
               'Practitioner Notes',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -773,9 +752,12 @@ class _PatientDetailSheetState extends State<_PatientDetailSheet> {
   }
 
   Widget _buildDetailRow(String label, String value) {
-    final isAbnormal = value.contains('Deficiency') ||
+    final isAbnormal =
+        value.contains('Deficiency') ||
         value.contains('Distortion') ||
-        (label.contains('VA') && !value.contains('20/20') && !value.contains('20/25'));
+        (label.contains('VA') &&
+            !value.contains('20/20') &&
+            !value.contains('20/25'));
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),

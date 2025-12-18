@@ -18,10 +18,10 @@ class SnellenSizeIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.textSecondary.withOpacity(0.1),
+        color: AppColors.textSecondary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: AppColors.textSecondary.withOpacity(0.3),
+          color: AppColors.textSecondary.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

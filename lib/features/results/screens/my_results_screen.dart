@@ -311,7 +311,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
@@ -378,7 +378,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -392,7 +392,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Text(
                   result.profileName.isNotEmpty ? result.profileName[0] : '?',
                   style: const TextStyle(
@@ -431,7 +431,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -656,7 +656,7 @@ class _ResultDetailSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.info.withOpacity(0.1),
+                color: AppColors.info.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -716,8 +716,9 @@ class _ResultDetailSheet extends StatelessWidget {
     if (questionnaire.chiefComplaints.hasItching) complaints.add('Itching');
     if (questionnaire.chiefComplaints.hasHeadache) complaints.add('Headache');
     if (questionnaire.chiefComplaints.hasDryness) complaints.add('Dryness');
-    if (questionnaire.chiefComplaints.hasStickyDischarge)
+    if (questionnaire.chiefComplaints.hasStickyDischarge) {
       complaints.add('Sticky Discharge');
+    }
 
     return _buildSection('Questionnaire Responses', [
       _buildDetailRow(

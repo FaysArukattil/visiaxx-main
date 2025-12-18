@@ -172,11 +172,11 @@ class TestConstants {
     debugPrint('=== ✅ CORRECTED FONT SIZE VERIFICATION ===');
     for (int i = 0; i < visualAcuityLevels.length; i++) {
       final level = visualAcuityLevels[i];
-      print(
+      debugPrint(
         'Plate ${i + 1}: ${level.snellen} → ${level.flutterFontSize}sp (${level.sizeMm}mm)',
       );
     }
-    print('=========================================');
+    debugPrint('=========================================');
   }
 }
 

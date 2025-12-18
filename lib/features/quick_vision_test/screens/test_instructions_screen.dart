@@ -168,7 +168,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                               width: isCompact ? 60 : 70,
                               height: isCompact ? 60 : 70,
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -287,7 +287,6 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
         return _buildRelaxationPreview(isCompact);
 
       case _StepType.basic:
-      default:
         return const SizedBox(height: 100);
     }
   }
@@ -296,7 +295,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
     return Container(
       padding: EdgeInsets.all(isCompact ? 16 : 20),
       decoration: BoxDecoration(
-        color: AppColors.info.withOpacity(0.1),
+        color: AppColors.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -362,7 +361,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                 child: Image.asset(
                   AppAssets.relaxationImage,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (context, error, stackTrace) => Container(
                     color: AppColors.surface,
                     child: Center(
                       child: Column(
@@ -391,10 +390,10 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
+                color: AppColors.success.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.success.withOpacity(0.3),
+                  color: AppColors.success.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),

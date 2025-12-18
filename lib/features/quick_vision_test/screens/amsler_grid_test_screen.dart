@@ -8,6 +8,7 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../data/models/amsler_grid_result.dart';
 import '../../../data/providers/test_session_provider.dart';
+import '../../../core/services/distance_skip_manager.dart';
 import 'distance_calibration_screen.dart';
 
 /// Amsler Grid Test for detecting macular degeneration
@@ -18,12 +19,14 @@ class AmslerGridTestScreen extends StatefulWidget {
   State<AmslerGridTestScreen> createState() => _AmslerGridTestScreenState();
 }
 
-class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
+class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
+    with WidgetsBindingObserver {
   final TtsService _ttsService = TtsService();
   final DistanceDetectionService _distanceService = DistanceDetectionService(
     targetDistanceCm: 40.0,
     toleranceCm: 5.0,
   );
+  final DistanceSkipManager _skipManager = DistanceSkipManager();
 
   // Test state
   String _currentEye = 'right';
@@ -35,7 +38,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
   // Distance monitoring
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
-  bool _isDistanceOk = false;
   bool _isTestPausedForDistance = false;
   DistanceStatus? _lastSpokenDistanceStatus;
 
@@ -54,7 +56,30 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initServices();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _handleAppPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      _handleAppResumed();
+    }
+  }
+
+  void _handleAppPaused() {
+    _distanceService.stopMonitoring();
+    setState(() {
+      _isTestPausedForDistance = true;
+    });
+  }
+
+  void _handleAppResumed() {
+    if (!mounted || _testComplete) return;
+    _startContinuousDistanceMonitoring();
   }
 
   Future<void> _initServices() async {
@@ -99,24 +124,28 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
     _distanceService.onDistanceUpdate = (distance, status) {
       if (!mounted) return;
 
-      // ✅ Use centralized helper
-      final newIsOk = DistanceHelper.isDistanceAcceptable(distance, 40.0);
       final shouldPause = DistanceHelper.shouldPauseTest(status);
 
       setState(() {
         _currentDistance = distance;
         _distanceStatus = status;
-        _isDistanceOk = newIsOk;
       });
 
-      // ✅ AUTO PAUSE/RESUME during active test
-      if (_testingStarted && !_testComplete && !_eyeSwitchPending) {
-        if (shouldPause && !_isTestPausedForDistance) {
-          _pauseTestForDistance();
-        } else if (!shouldPause && _isTestPausedForDistance) {
-          _resumeTestAfterDistance();
+      // ✅ Check if skip is active before pausing
+      _skipManager.canShowDistanceWarning(DistanceTestType.amslerGrid).then((
+        canShow,
+      ) {
+        if (!mounted) return;
+
+        // ✅ AUTO PAUSE/RESUME during active test
+        if (_testingStarted && !_testComplete && !_eyeSwitchPending) {
+          if (shouldPause && !_isTestPausedForDistance && canShow) {
+            _pauseTestForDistance();
+          } else if (!shouldPause && _isTestPausedForDistance) {
+            _resumeTestAfterDistance();
+          }
         }
-      }
+      });
 
       // Speak guidance when paused and status changes
       if (_isTestPausedForDistance && status != _lastSpokenDistanceStatus) {
@@ -286,6 +315,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _distanceService.dispose();
     _ttsService.dispose();
     super.dispose();
@@ -293,40 +323,53 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.testBackground,
-      appBar: AppBar(
-        title: Text('Amsler Grid - ${_currentEye.toUpperCase()} Eye'),
-        backgroundColor: _currentEye == 'right'
-            ? AppColors.rightEye.withOpacity(0.1)
-            : AppColors.leftEye.withOpacity(0.1),
-        actions: [
-          if (_testingStarted && !_eyeSwitchPending && !_testComplete)
-            IconButton(
-              icon: const Icon(Icons.undo),
-              onPressed: _undoLastPoint,
-              tooltip: 'Undo last mark',
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            _buildContent(),
-            // Distance indicator
-            if (!_showDistanceCalibration && !_testComplete)
-              Positioned(
-                right: 12,
-                bottom: 12,
-                child: _buildDistanceIndicator(),
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          _distanceService.stopMonitoring();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.testBackground,
+        appBar: AppBar(
+          title: Text('Amsler Grid - ${_currentEye.toUpperCase()} Eye'),
+          backgroundColor: _currentEye == 'right'
+              ? AppColors.rightEye.withValues(alpha: 0.1)
+              : AppColors.leftEye.withValues(alpha: 0.1),
+          actions: [
+            if (_testingStarted && !_eyeSwitchPending && !_testComplete)
+              IconButton(
+                icon: const Icon(Icons.undo),
+                onPressed: _undoLastPoint,
+                tooltip: 'Undo last mark',
               ),
-            // Distance warning overlay - only show when explicitly paused
-            if (_isTestPausedForDistance &&
-                _testingStarted &&
-                !_testComplete &&
-                !_eyeSwitchPending)
-              _buildDistanceWarningOverlay(),
+            if (_testingStarted && !_eyeSwitchPending && !_testComplete)
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _clearPoints,
+                tooltip: 'Reset marks',
+              ),
           ],
+        ),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              _buildContent(),
+              // Distance indicator
+              if (!_showDistanceCalibration && !_testComplete)
+                Positioned(
+                  right: 12,
+                  bottom: 12,
+                  child: _buildDistanceIndicator(),
+                ),
+              // Distance warning overlay - only show when explicitly paused
+              if (_isTestPausedForDistance &&
+                  _testingStarted &&
+                  !_testComplete &&
+                  !_eyeSwitchPending)
+                _buildDistanceWarningOverlay(),
+            ],
+          ),
         ),
       ),
     );
@@ -358,9 +401,9 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.info.withOpacity(0.1),
+              color: AppColors.info.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.info.withOpacity(0.3)),
+              border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,7 +461,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
             child: Image.asset(
               AppAssets.amslerGrid,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => _buildFallbackGrid(),
+              errorBuilder: (context, error, stackTrace) =>
+                  _buildFallbackGrid(),
             ),
           ),
           const SizedBox(height: 32),
@@ -426,7 +470,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.rightEye.withOpacity(0.1),
+              color: AppColors.rightEye.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -511,8 +555,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           color: _currentEye == 'right'
-              ? AppColors.rightEye.withOpacity(0.1)
-              : AppColors.leftEye.withOpacity(0.1),
+              ? AppColors.rightEye.withValues(alpha: 0.1)
+              : AppColors.leftEye.withValues(alpha: 0.1),
           child: Column(
             children: [
               Row(
@@ -594,7 +638,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
                           Image.asset(
                             AppAssets.amslerGrid,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => _buildFallbackGrid(),
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildFallbackGrid(),
                           ),
                           // Marked points
                           ...currentPoints.map(
@@ -607,7 +652,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
                                 decoration: BoxDecoration(
                                   color: _getPointColor(
                                     point.type,
-                                  ).withOpacity(0.5),
+                                  ).withValues(alpha: 0.5),
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: _getPointColor(point.type),
@@ -901,9 +946,9 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -947,7 +992,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.15),
+        color: indicatorColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: indicatorColor, width: 1.5),
       ),
@@ -985,7 +1030,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
         : AppColors.warning;
 
     return Container(
-      color: Colors.black.withOpacity(0.85),
+      color: Colors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1041,7 +1086,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1072,7 +1117,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: AppColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.warning, width: 1),
                 ),
@@ -1101,8 +1146,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen> {
               // Continue button
               TextButton(
                 onPressed: () {
+                  _skipManager.recordSkip(DistanceTestType.amslerGrid);
                   setState(() {
-                    _isDistanceOk = true;
                     _isTestPausedForDistance = false;
                   });
                 },

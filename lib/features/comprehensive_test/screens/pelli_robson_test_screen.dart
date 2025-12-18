@@ -15,9 +15,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Contrast Sensitivity Test'),
-      ),
+      appBar: AppBar(title: const Text('Contrast Sensitivity Test')),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -51,9 +49,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen> {
             ),
             const SizedBox(height: 24),
             // TODO: Add Pelli-Robson chart widget here
-            const Expanded(
-              child: Placeholder(),
-            ),
+            const Expanded(child: Placeholder()),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -86,7 +82,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen> {
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Text(_currentRow < _totalRows - 1 ? 'Next' : 'Finish'),
+                      child: Text(
+                        _currentRow < _totalRows - 1 ? 'Next' : 'Finish',
+                      ),
                     ),
                   ),
                 ),

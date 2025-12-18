@@ -77,7 +77,7 @@ class _BothEyesOpenInstructionScreenState
       backgroundColor: AppColors.testBackground,
       appBar: AppBar(
         title: const Text('Reading Test Instructions'),
-        backgroundColor: AppColors.primary.withOpacity(0.1),
+        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
       ),
       body: SafeArea(
         child: Padding(
@@ -90,7 +90,7 @@ class _BothEyesOpenInstructionScreenState
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -215,7 +215,7 @@ class _BothEyesOpenInstructionScreenState
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: AppColors.primary, size: 24),

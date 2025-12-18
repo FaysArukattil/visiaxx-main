@@ -16,14 +16,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Health Questionnaire'),
-      ),
+      appBar: AppBar(title: const Text('Health Questionnaire')),
       body: Column(
         children: [
-          LinearProgressIndicator(
-            value: (_currentPage + 1) / _totalPages,
-          ),
+          LinearProgressIndicator(value: (_currentPage + 1) / _totalPages),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -58,12 +54,17 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                         });
                       } else {
                         // Navigate to next test
-                        Navigator.pushNamed(context, '/comprehensive-visual-acuity');
+                        Navigator.pushNamed(
+                          context,
+                          '/comprehensive-visual-acuity',
+                        );
                       }
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Text(_currentPage < _totalPages - 1 ? 'Next' : 'Continue'),
+                      child: Text(
+                        _currentPage < _totalPages - 1 ? 'Next' : 'Continue',
+                      ),
                     ),
                   ),
                 ),
@@ -93,14 +94,23 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       children: [
         Text(
           'Personal Information',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
-        _buildYesNoQuestion('Do you currently wear glasses or contact lenses?', 'wears_glasses'),
-        _buildYesNoQuestion('Have you had any eye surgery in the past?', 'had_eye_surgery'),
-        _buildYesNoQuestion('Do you have a family history of eye diseases?', 'family_history'),
+        _buildYesNoQuestion(
+          'Do you currently wear glasses or contact lenses?',
+          'wears_glasses',
+        ),
+        _buildYesNoQuestion(
+          'Have you had any eye surgery in the past?',
+          'had_eye_surgery',
+        ),
+        _buildYesNoQuestion(
+          'Do you have a family history of eye diseases?',
+          'family_history',
+        ),
       ],
     );
   }
@@ -110,13 +120,19 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       children: [
         Text(
           'Symptoms',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
-        _buildYesNoQuestion('Do you experience frequent headaches?', 'headaches'),
-        _buildYesNoQuestion('Do you have difficulty reading?', 'reading_difficulty'),
+        _buildYesNoQuestion(
+          'Do you experience frequent headaches?',
+          'headaches',
+        ),
+        _buildYesNoQuestion(
+          'Do you have difficulty reading?',
+          'reading_difficulty',
+        ),
         _buildYesNoQuestion('Do you see halos around lights?', 'halos'),
         _buildYesNoQuestion('Do you experience eye strain?', 'eye_strain'),
       ],
@@ -128,13 +144,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       children: [
         Text(
           'Medical History',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
         _buildYesNoQuestion('Do you have diabetes?', 'diabetes'),
-        _buildYesNoQuestion('Do you have high blood pressure?', 'high_blood_pressure'),
+        _buildYesNoQuestion(
+          'Do you have high blood pressure?',
+          'high_blood_pressure',
+        ),
         _buildYesNoQuestion('Are you taking any medications?', 'medications'),
       ],
     );
@@ -150,39 +169,32 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           children: [
             Text(
               question,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text('Yes'),
-                    value: true,
-                    groupValue: _answers[key],
-                    onChanged: (value) {
-                      setState(() {
-                        _answers[key] = value;
-                      });
-                    },
+            RadioGroup<bool>(
+              groupValue: _answers[key],
+              onChanged: (value) {
+                setState(() {
+                  _answers[key] = value;
+                });
+              },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<bool>(
+                      title: const Text('Yes'),
+                      value: true,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: RadioListTile<bool>(
-                    title: const Text('No'),
-                    value: false,
-                    groupValue: _answers[key],
-                    onChanged: (value) {
-                      setState(() {
-                        _answers[key] = value;
-                      });
-                    },
+                  Expanded(
+                    child: RadioListTile<bool>(
+                      title: const Text('No'),
+                      value: false,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

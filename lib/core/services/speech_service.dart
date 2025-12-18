@@ -171,13 +171,16 @@ class SpeechService {
         onResult: (result) => _onSpeechResult(result, bufferMs, minConfidence),
         listenFor: listenFor ?? const Duration(seconds: 60),
         pauseFor: pauseFor ?? const Duration(seconds: 5),
-        partialResults: true,
-        cancelOnError: false,
-        listenMode: ListenMode.dictation,
-        localeId: localeId,
         onSoundLevelChange: (level) {
           onSoundLevelChange?.call(level);
         },
+        listenOptions: SpeechListenOptions(
+          partialResults: true,
+          cancelOnError: false,
+          listenMode: ListenMode.dictation,
+          onDevice: false, // Default
+        ),
+        localeId: localeId,
       );
 
       debugPrint('[SpeechService] ✅ Listen started successfully');
@@ -418,10 +421,12 @@ class SpeechService {
     // Priority numbers
     if (s.contains('twelve') || s.contains('twelf')) return '12';
     if ((s.contains('seventy') && s.contains('four')) ||
-        (s.contains('seven') && s.contains('four')))
+        (s.contains('seven') && s.contains('four'))) {
       return '74';
-    if ((s.contains('forty') || s.contains('fourty')) && s.contains('two'))
+    }
+    if ((s.contains('forty') || s.contains('fourty')) && s.contains('two')) {
       return '42';
+    }
 
     // Compound numbers (abbreviated for space)
     final compounds = <String, String>{

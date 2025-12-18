@@ -18,7 +18,7 @@ class RecommendationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -39,19 +39,19 @@ class RecommendationCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            ...recommendations.map((recommendation) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.check_circle, color: color, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(recommendation),
-                      ),
-                    ],
-                  ),
-                )),
+            ...recommendations.map(
+              (recommendation) => Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.check_circle, color: color, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(recommendation)),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

@@ -5,8 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:visiaxx/features/results/screens/speech_log_viewer_screen.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
-import 'core/constants/app_colors.dart';
-// Screens
 import 'features/auth/screens/splashscreen.dart';
 import 'features/auth/screens/loginscreen.dart';
 import 'features/auth/screens/registration_screen.dart';

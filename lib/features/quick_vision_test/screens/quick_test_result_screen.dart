@@ -18,9 +18,7 @@ class QuickTestResultScreen extends StatefulWidget {
 
 class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   bool _isGeneratingPdf = false;
-  bool _isSaving = false;
   bool _hasSaved = false;
-  String? _saveError;
   TestResultModel? _savedResult;
 
   final TestResultService _testResultService = TestResultService();
@@ -48,10 +46,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-      _saveError = null;
-    });
+    setState(() {});
 
     try {
       final provider = context.read<TestSessionProvider>();
@@ -72,7 +67,6 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       if (mounted) {
         setState(() {
           _hasSaved = true;
-          _isSaving = false;
           _savedResult = result.copyWith(id: resultId);
         });
 
@@ -89,10 +83,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       debugPrint('[QuickTestResult] ❌ ERROR saving results: $e');
 
       if (mounted) {
-        setState(() {
-          _saveError = e.toString();
-          _isSaving = false;
-        });
+        setState(() {});
 
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -212,7 +203,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [backgroundColor, backgroundColor.withOpacity(0.8)],
+          colors: [backgroundColor, backgroundColor.withValues(alpha: 0.8)],
         ),
       ),
       child: Column(
@@ -230,7 +221,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const SizedBox(height: 8),
           Text(
             DateFormat('MMMM dd, yyyy • h:mm a').format(DateTime.now()),
-            style: TextStyle(color: textColor.withOpacity(0.9)),
+            style: TextStyle(color: textColor.withValues(alpha: 0.9)),
           ),
         ],
       ),
@@ -268,7 +259,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : 'U',
                   style: const TextStyle(
@@ -311,8 +302,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: familyMember != null
-                      ? AppColors.info.withOpacity(0.1)
-                      : AppColors.primary.withOpacity(0.1),
+                      ? AppColors.info.withValues(alpha: 0.1)
+                      : AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -514,8 +505,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isNormal
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.warning.withOpacity(0.1),
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : AppColors.warning.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -571,7 +562,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   child: Container(
                     height: 8,
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.3),
+                      color: AppColors.error.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -632,7 +623,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
+                color: AppColors.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -679,8 +670,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: isNormal
-                ? AppColors.success.withOpacity(0.1)
-                : AppColors.warning.withOpacity(0.1),
+                ? AppColors.success.withValues(alpha: 0.1)
+                : AppColors.warning.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -711,18 +702,18 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
     switch (status) {
       case TestStatus.normal:
-        bgColor = AppColors.success.withOpacity(0.1);
-        borderColor = AppColors.success.withOpacity(0.3);
+        bgColor = AppColors.success.withValues(alpha: 0.1);
+        borderColor = AppColors.success.withValues(alpha: 0.3);
         icon = Icons.check_circle_outline;
         break;
       case TestStatus.review:
-        bgColor = AppColors.warning.withOpacity(0.1);
-        borderColor = AppColors.warning.withOpacity(0.3);
+        bgColor = AppColors.warning.withValues(alpha: 0.1);
+        borderColor = AppColors.warning.withValues(alpha: 0.3);
         icon = Icons.schedule;
         break;
       case TestStatus.urgent:
-        bgColor = AppColors.error.withOpacity(0.1);
-        borderColor = AppColors.error.withOpacity(0.3);
+        bgColor = AppColors.error.withValues(alpha: 0.1);
+        borderColor = AppColors.error.withValues(alpha: 0.3);
         icon = Icons.priority_high;
         break;
     }
@@ -964,8 +955,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isGood
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.warning.withOpacity(0.1),
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : AppColors.warning.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -1040,7 +1031,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   child: Container(
                     height: 8,
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.3),
+                      color: AppColors.error.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

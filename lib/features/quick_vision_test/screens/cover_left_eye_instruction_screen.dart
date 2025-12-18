@@ -68,7 +68,7 @@ class _CoverLeftEyeInstructionScreenState
       backgroundColor: AppColors.testBackground,
       appBar: AppBar(
         title: const Text('Test Instructions'),
-        backgroundColor: AppColors.rightEye.withOpacity(0.1),
+        backgroundColor: AppColors.rightEye.withValues(alpha: 0.1),
       ),
       body: SafeArea(
         child: Padding(
@@ -81,7 +81,7 @@ class _CoverLeftEyeInstructionScreenState
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: AppColors.rightEye.withOpacity(0.1),
+                  color: AppColors.rightEye.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Stack(
@@ -98,7 +98,7 @@ class _CoverLeftEyeInstructionScreenState
                         width: 60,
                         height: 80,
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                           borderRadius: const BorderRadius.only(
                             topLeft: Radius.circular(40),
                             bottomLeft: Radius.circular(40),
@@ -216,7 +216,7 @@ class _CoverLeftEyeInstructionScreenState
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: AppColors.primary, size: 24),

@@ -7,10 +7,7 @@ import '../../../core/services/tts_service.dart';
 class ColorVisionInstructionsScreen extends StatefulWidget {
   final VoidCallback onContinue;
 
-  const ColorVisionInstructionsScreen({
-    super.key,
-    required this.onContinue,
-  });
+  const ColorVisionInstructionsScreen({super.key, required this.onContinue});
 
   @override
   State<ColorVisionInstructionsScreen> createState() =>
@@ -139,7 +136,7 @@ class _ColorVisionInstructionsScreenState
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -154,9 +151,9 @@ class _ColorVisionInstructionsScreenState
                   Text(
                     _steps[_currentStep].title,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -244,7 +241,10 @@ class _ColorVisionInstructionsScreenState
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 2,
+        ),
       ),
       child: Column(
         children: [
@@ -271,10 +271,7 @@ class _ColorVisionInstructionsScreenState
           const SizedBox(height: 16),
           Text(
             'Example: Ishihara Plate',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
         ],
       ),
@@ -285,9 +282,9 @@ class _ColorVisionInstructionsScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.info.withOpacity(0.1),
+        color: AppColors.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.info.withOpacity(0.3)),
+        border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [

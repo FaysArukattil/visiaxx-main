@@ -1,0 +1,15 @@
+﻿Analyzing questionnaire_screen.dart...                          
+
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\quick_vision_test\screens\questionnaire_screen.dart:473:19 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\quick_vision_test\screens\questionnaire_screen.dart:474:19 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\quick_vision_test\screens\questionnaire_screen.dart:482:19 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\quick_vision_test\screens\questionnaire_screen.dart:483:19 - deprecated_member_use
+
+flutter : 4 issues found. (ran in 1.2s)
+At line:1 char:1
++ flutter analyze --no-pub lib/features/quick_vision_test/screens/quest ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (4 issues found. (ran in 1.2s):String) [ 
+   ], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

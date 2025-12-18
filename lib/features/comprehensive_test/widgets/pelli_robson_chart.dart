@@ -22,10 +22,7 @@ class PelliRobsonChart extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Read the letters below:',
-            style: TextStyle(fontSize: 16),
-          ),
+          const Text('Read the letters below:', style: TextStyle(fontSize: 16)),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -47,7 +44,7 @@ class PelliRobsonChart extends StatelessWidget {
         style: TextStyle(
           fontSize: 64,
           fontWeight: FontWeight.bold,
-          color: Colors.black.withOpacity(contrast.clamp(0.1, 1.0)),
+          color: Colors.black.withValues(alpha: contrast.clamp(0.1, 1.0)),
         ),
       );
     }).toList();

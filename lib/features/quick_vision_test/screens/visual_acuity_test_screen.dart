@@ -7,7 +7,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
-import 'package:visiaxx/widgets/common/snellen_size_indicator.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/test_constants.dart';
@@ -19,6 +18,7 @@ import '../../../data/models/visiual_acuity_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import 'distance_calibration_screen.dart';
 import 'cover_right_eye_instruction_screen.dart';
+import '../../../core/services/distance_skip_manager.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
 /// Implements Visiaxx specification for 1-meter testing
@@ -40,11 +40,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   // Distance monitoring service
   final DistanceDetectionService _distanceService = DistanceDetectionService();
+  final DistanceSkipManager _skipManager = DistanceSkipManager();
 
   // Test state
   int _currentLevel = 0;
   int _correctAtLevel = 0;
-  int _incorrectAtLevel = 0;
+  int _totalAtLevel = 0;
   int _totalCorrect = 0;
   int _totalResponses = 0;
   EDirection _currentDirection = EDirection.right;
@@ -77,11 +78,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   // Distance monitoring
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
-  bool _isDistanceOk = true; // Start as true to avoid blocking on init
-  bool _useDistanceMonitoring = true; // Enabled for real-time distance display
+  final bool _useDistanceMonitoring =
+      true; // Enabled for real-time distance display
   bool _isTestPausedForDistance = false; // Test is paused due to wrong distance
-  bool _userDismissedDistanceWarning = false; // User clicked "Continue Anyway"
-  Timer? _distanceWarningReenableTimer; // Timer to re-enable warning after user dismissal
   DistanceStatus? _lastSpokenDistanceStatus; // Track last spoken guidance
 
   final Random _random = Random();
@@ -102,7 +101,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Handle app lifecycle
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       // App minimized or going to background
       _handleAppPaused();
     } else if (state == AppLifecycleState.resumed) {
@@ -116,13 +116,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
-    
+
     // Stop distance monitoring
     _distanceService.stopMonitoring();
-    
+
     // Stop speech recognition
     _continuousSpeech.stop();
-    
+
     setState(() {
       _isTestPausedForDistance = true;
     });
@@ -130,7 +130,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   void _handleAppResumed() {
     if (!mounted || _testComplete) return;
-    
+
     // Show resume dialog
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && !_testComplete) {
@@ -147,9 +147,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.pause_circle_outline, color: AppColors.primary, size: 28),
+            Icon(
+              Icons.pause_circle_outline,
+              color: AppColors.primary,
+              size: 28,
+            ),
             const SizedBox(width: 12),
-            const Text('Test Paused', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Test Paused',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Column(
@@ -163,7 +170,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             const SizedBox(height: 12),
             Text(
               'Would you like to continue?',
-              style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -173,9 +183,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Exit Test'),
           ),
           ElevatedButton(
@@ -187,7 +195,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Continue Test'),
           ),
@@ -200,12 +210,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     setState(() {
       _isTestPausedForDistance = false;
     });
-    
+
     // Resume distance monitoring if needed
     if (!_showDistanceCalibration) {
       _startContinuousDistanceMonitoring();
     }
-    
+
     // Resume speech recognition
     if (_showE && _waitingForResponse) {
       _continuousSpeech.start(
@@ -213,7 +223,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         minConfidence: 0.05,
         bufferMs: 300,
       );
-      
+
       // Restart the display timer with remaining time
       _restartEDisplayTimer();
     } else if (_showRelaxation) {
@@ -258,10 +268,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _continuousSpeech.onListeningStateChanged = (isListening) {
       if (mounted) setState(() => _isListening = isListening);
     };
-    
+
     // DON'T pause speech for TTS - let it run continuously
 
     // 🔥 KEY FIX: Check if we should start with left eye
+    if (!mounted) return;
     final provider = context.read<TestSessionProvider>();
 
     if (widget.startWithLeftEye ||
@@ -368,28 +379,27 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    final wasOk = _isDistanceOk;
-    final wasPaused = _isTestPausedForDistance;
-
     // ✅ NEW: Check using centralized helper
-    final newIsOk = DistanceHelper.isDistanceAcceptable(distance, 100.0);
     final shouldPause = DistanceHelper.shouldPauseTest(status);
 
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
-      _isDistanceOk = newIsOk;
     });
 
     // ✅ AUTO PAUSE/RESUME logic for active test
     if (_showE && _waitingForResponse) {
-      if (shouldPause && !_isTestPausedForDistance && !_userDismissedDistanceWarning) {
-        // Need to pause - distance wrong or no face (only if user hasn't dismissed)
-        _pauseTestForDistance();
-      } else if (!shouldPause && _isTestPausedForDistance) {
-        // Can resume - distance is now correct AND face detected
-        _resumeTestAfterDistance();
-      }
+      _skipManager.canShowDistanceWarning(DistanceTestType.visualAcuity).then((
+        canShow,
+      ) {
+        if (!mounted) return;
+
+        if (shouldPause && !_isTestPausedForDistance && canShow) {
+          _pauseTestForDistance();
+        } else if (!shouldPause && _isTestPausedForDistance) {
+          _resumeTestAfterDistance();
+        }
+      });
     }
 
     // Speak guidance only when paused and status changes
@@ -531,8 +541,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _showTumblingE() {
-    // Generate random direction
-    final directions = EDirection.values;
+    final directions = EDirection.values
+        .where((d) => d != _currentDirection)
+        .toList();
     _currentDirection = directions[_random.nextInt(directions.length)];
 
     setState(() {
@@ -587,9 +598,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _handleVoiceResponse(String recognized) {
-    debugPrint('[VisualAcuity] 🔥🔥🔥 _handleVoiceResponse called with: "$recognized"');
+    debugPrint(
+      '[VisualAcuity] 🔥🔥🔥 _handleVoiceResponse called with: "$recognized"',
+    );
     debugPrint('[VisualAcuity] Waiting for response: $_waitingForResponse');
-    
+
     if (!_waitingForResponse) {
       debugPrint('[VisualAcuity] ⚠️ NOT waiting for response - ignoring');
       return;
@@ -598,7 +611,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     debugPrint('[VisualAcuity] 🔍 Parsing direction from: "$recognized"');
     final direction = SpeechService.parseDirection(recognized);
     debugPrint('[VisualAcuity] 📝 Parsed direction: $direction');
-    
+
     if (direction != null) {
       debugPrint('[VisualAcuity] ✅ Recording direction: $direction');
       _recordResponse(direction);
@@ -649,14 +662,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     if (userResponse != null) {
       if (isCorrect) {
         _correctAtLevel++;
+        _totalAtLevel++;
         _totalCorrect++;
         _ttsService.speakCorrect(userResponse);
       } else {
-        _incorrectAtLevel++;
+        _totalAtLevel++;
         _ttsService.speakIncorrect(userResponse);
       }
     } else {
-      _incorrectAtLevel++;
+      _totalAtLevel++;
     }
 
     setState(() {
@@ -672,43 +686,33 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     });
   }
 
-  void _playFeedbackSound(bool correct) async {
-    // Simple beep feedback
-    try {
-      // Using system sounds would be ideal, but for now we'll rely on TTS
-      if (correct) {
-        _ttsService.speak('Correct');
-      }
-    } catch (_) {}
-  }
-
   // ✅ FIXED METHOD: Test exactly 7 plates (one per level)
   void _evaluateAndContinue() {
     setState(() => _showResult = false);
 
-    // ✅ CRITICAL FIX: Always test all 7 plates (one per level)
-    // Stop ONLY after 7 total responses (one per Snellen level)
-    if (_responses.length >= 7) {
-      debugPrint('✅ [VisualAcuity] Completed 7 plates - finishing test');
-      _completeEyeTest();
-      return;
-    }
+    // Check if we pass this level
+    final levelPassed = _correctAtLevel >= TestConstants.minCorrectToAdvance;
+    final levelFailed = _totalAtLevel >= TestConstants.maxTriesPerLevel;
 
-    // After each response, move to NEXT level automatically
-    _currentLevel++;
-    _correctAtLevel = 0;
-    _incorrectAtLevel = 0;
+    if (levelPassed || levelFailed) {
+      // Move to NEXT level
+      _currentLevel++;
+      _correctAtLevel = 0;
+      _totalAtLevel = 0;
 
-    if (_currentLevel >= TestConstants.visualAcuityLevels.length) {
-      // Reached end of levels
-      debugPrint('✅ [VisualAcuity] Reached last level - finishing');
-      _completeEyeTest();
+      if (_currentLevel >= TestConstants.visualAcuityLevels.length) {
+        debugPrint('✅ [VisualAcuity] Finished all levels');
+        _completeEyeTest();
+      } else {
+        debugPrint('✅ [VisualAcuity] Moving to next level: $_currentLevel');
+        _startRelaxation();
+      }
     } else {
-      // Continue to next level
+      // Repeat SAME level (Rotate E)
       debugPrint(
-        '✅ [VisualAcuity] Moving to level ${_currentLevel + 1} (plate ${_responses.length + 1}/7)',
+        '🔄 [VisualAcuity] Retrying level $_currentLevel (try ${_totalAtLevel + 1})',
       );
-      _startRelaxation();
+      _showTumblingE();
     }
   }
 
@@ -782,24 +786,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     });
   }
 
-  void _switchToLeftEye() {
-    setState(() {
-      _currentEye = 'left';
-      _eyeSwitchPending = false;
-      _currentLevel = 0;
-      _correctAtLevel = 0;
-      _incorrectAtLevel = 0;
-      _totalCorrect = 0;
-      _totalResponses = 0;
-      _responses.clear();
-    });
-
-    final provider = context.read<TestSessionProvider>();
-    provider.switchEye();
-
-    _startEyeTest();
-  }
-
   void _proceedToBothEyesTest() {
     // Stop distance monitoring before navigating
     _distanceService.stopMonitoring();
@@ -818,7 +804,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
     _autoNavigationTimer?.cancel();
-    _distanceWarningReenableTimer?.cancel();
     _continuousSpeech.dispose();
     _ttsService.dispose();
     _speechService.dispose();
@@ -843,8 +828,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         appBar: AppBar(
           title: Text('Visual Acuity - ${_currentEye.toUpperCase()} Eye'),
           backgroundColor: _currentEye == 'right'
-              ? AppColors.rightEye.withOpacity(0.1)
-              : AppColors.leftEye.withOpacity(0.1),
+              ? AppColors.rightEye.withValues(alpha: 0.1)
+              : AppColors.leftEye.withValues(alpha: 0.1),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: _showExitConfirmation,
@@ -877,11 +862,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
               // Mic indicator (top right corner) - Always visible during test
               if (_showE || _showRelaxation)
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: _buildMicIndicator(),
-                ),
+                Positioned(top: 12, right: 12, child: _buildMicIndicator()),
 
               // Distance warning overlay when explicitly paused
               if (_useDistanceMonitoring && _isTestPausedForDistance && _showE)
@@ -905,7 +886,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.15),
+        color: indicatorColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: indicatorColor, width: 1.5),
       ),
@@ -943,7 +924,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: Colors.black.withOpacity(0.85),
+      color: Colors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -999,7 +980,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1030,7 +1011,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.success, width: 1),
                 ),
@@ -1055,20 +1036,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               // Skip button
               TextButton(
                 onPressed: () {
+                  _skipManager.recordSkip(DistanceTestType.visualAcuity);
                   setState(() {
-                    _isDistanceOk = true;
                     _isTestPausedForDistance = false;
-                    _userDismissedDistanceWarning = true;
                   });
-                  
-                  // Re-enable warning after 30 seconds
-                  _distanceWarningReenableTimer?.cancel();
-                  _distanceWarningReenableTimer = Timer(const Duration(seconds: 30), () {
-                    if (mounted) {
-                      setState(() => _userDismissedDistanceWarning = false);
-                    }
-                  });
-                  
+
                   _restartEDisplayTimer();
                 },
                 child: Text(
@@ -1119,14 +1091,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         children: [
           // Eye indicator
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 4,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: _currentEye == 'right'
-                  ? AppColors.rightEye.withOpacity(0.1)
-                  : AppColors.leftEye.withOpacity(0.1),
+                  ? AppColors.rightEye.withValues(alpha: 0.1)
+                  : AppColors.leftEye.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -1163,10 +1132,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           // Score
           Text(
             '$_totalCorrect/$_totalResponses',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
         ],
       ),
@@ -1175,14 +1141,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   Widget _buildMicIndicator() {
     // Determine state and color - GREEN when recognized!
-    final bool hasRecognized = _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
-    final Color indicatorColor = hasRecognized 
-        ? AppColors.success  // GREEN when we hear something
+    final bool hasRecognized =
+        _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
+    final Color indicatorColor = hasRecognized
+        ? AppColors
+              .success // GREEN when we hear something
         : (_isListening ? AppColors.primary : AppColors.textSecondary);
-    
+
     String statusText;
     IconData iconData;
-    
+
     if (hasRecognized) {
       statusText = 'Heard: $_lastDetectedSpeech';
       iconData = Icons.mic;
@@ -1193,15 +1161,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       statusText = 'Mic Ready';
       iconData = Icons.mic_off;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.9),
+        color: indicatorColor.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: indicatorColor.withOpacity(0.3),
+            color: indicatorColor.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1298,8 +1266,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             child: Image.asset(
               AppAssets.relaxationImage,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: AppColors.primary.withOpacity(0.1),
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: AppColors.primary.withValues(alpha: 0.1),
                 child: const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1364,7 +1332,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         // Timer and Size indicator row - ALWAYS VISIBLE
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: AppColors.surface.withOpacity(0.9),
+          color: AppColors.surface.withValues(alpha: 0.9),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1375,7 +1343,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.primary, width: 2),
                 ),
@@ -1449,7 +1417,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   height: 1.0,
                 ),
                 // ✅ Add text scaling to ensure crisp rendering
-                textScaleFactor: 1.0,
+                textScaler: TextScaler.noScaling,
               ),
             ),
           ),
@@ -1648,10 +1616,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.primary.withOpacity(0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 width: 1.5,
               ),
             ),
@@ -1716,9 +1684,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1774,7 +1742,7 @@ class _DirectionButton extends StatelessWidget {
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(16),
-        child: Container(
+        child: SizedBox(
           width: 70,
           height: 70,
           child: Icon(_icon, color: Colors.white, size: 32),

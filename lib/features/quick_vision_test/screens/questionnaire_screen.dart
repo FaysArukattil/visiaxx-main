@@ -14,13 +14,13 @@ class QuestionnaireScreen extends StatefulWidget {
 
 class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   int _currentStep = 0;
-  
+
   // Chief complaints
   ChiefComplaints _chiefComplaints = ChiefComplaints();
-  
+
   // Systemic illness
   SystemicIllness _systemicIllness = SystemicIllness();
-  
+
   // Other fields
   final _medicationsController = TextEditingController();
   bool _hasRecentSurgery = false;
@@ -150,9 +150,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pre-Test Questions'),
-      ),
+      appBar: AppBar(title: const Text('Pre-Test Questions')),
       body: Column(
         children: [
           // Progress indicator
@@ -199,7 +197,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   blurRadius: 10,
                   offset: const Offset(0, -4),
                 ),
-                
               ],
             ),
             child: Row(
@@ -210,8 +207,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                       onPressed: _previousStep,
                       child: const Padding(
                         padding: EdgeInsets.all(16),
-                        child: Text('Back',
-                            style: TextStyle(fontSize: 13)),
+                        child: Text('Back', style: TextStyle(fontSize: 13)),
                       ),
                     ),
                   ),
@@ -222,8 +218,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                     onPressed: _nextStep,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Text(_currentStep == 3 ? 'Continue' : 'Next',
-                          style: const TextStyle(fontSize: 13)),
+                      child: Text(
+                        _currentStep == 3 ? 'Continue' : 'Next',
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
                   ),
                 ),
@@ -256,9 +254,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       children: [
         Text(
           'Chief Complaints',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
@@ -346,7 +344,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   }
 
   Widget _buildFollowUpQuestionsStep() {
-    final hasFollowUps = _chiefComplaints.hasRedness ||
+    final hasFollowUps =
+        _chiefComplaints.hasRedness ||
         _chiefComplaints.hasWatering ||
         _chiefComplaints.hasItching ||
         _chiefComplaints.hasHeadache ||
@@ -377,9 +376,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       children: [
         Text(
           'Tell us more',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
         if (_chiefComplaints.hasRedness) ...[
@@ -405,27 +404,27 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           ),
           const SizedBox(height: 12),
           Text('Pattern:', style: TextStyle(color: AppColors.textSecondary)),
-          Row(
-            children: [
-              Expanded(
-                child: RadioListTile<String>(
-                  title: const Text('Continuous'),
-                  value: 'continuous',
-                  groupValue: _wateringPattern,
-                  onChanged: (v) => setState(() => _wateringPattern = v!),
-                  contentPadding: EdgeInsets.zero,
+          RadioGroup<String>(
+            groupValue: _wateringPattern,
+            onChanged: (v) => setState(() => _wateringPattern = v!),
+            child: Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: const Text('Continuous'),
+                    value: 'continuous',
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: RadioListTile<String>(
-                  title: const Text('Intermittent'),
-                  value: 'intermittent',
-                  groupValue: _wateringPattern,
-                  onChanged: (v) => setState(() => _wateringPattern = v!),
-                  contentPadding: EdgeInsets.zero,
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: const Text('Intermittent'),
+                    value: 'intermittent',
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 20),
         ],
@@ -465,27 +464,27 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           ),
           const SizedBox(height: 12),
           Text('Pain type:', style: TextStyle(color: AppColors.textSecondary)),
-          Row(
-            children: [
-              Expanded(
-                child: RadioListTile<String>(
-                  title: const Text('Throbbing'),
-                  value: 'throbbing',
-                  groupValue: _headachePainType,
-                  onChanged: (v) => setState(() => _headachePainType = v!),
-                  contentPadding: EdgeInsets.zero,
+          RadioGroup<String>(
+            groupValue: _headachePainType,
+            onChanged: (v) => setState(() => _headachePainType = v!),
+            child: Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: const Text('Throbbing'),
+                    value: 'throbbing',
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: RadioListTile<String>(
-                  title: const Text('Mild/Dull'),
-                  value: 'mild',
-                  groupValue: _headachePainType,
-                  onChanged: (v) => setState(() => _headachePainType = v!),
-                  contentPadding: EdgeInsets.zero,
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: const Text('Mild/Dull'),
+                    value: 'mild',
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 20),
         ],
@@ -509,7 +508,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         ],
         if (_chiefComplaints.hasStickyDischarge) ...[
           _buildSectionTitle('About Discharge'),
-          Text('Color of discharge:', style: TextStyle(color: AppColors.textSecondary)),
+          Text(
+            'Color of discharge:',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
           Wrap(
             spacing: 8,
             children: [
@@ -555,9 +557,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       children: [
         Text(
           'Medical History',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
@@ -629,9 +631,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       children: [
         Text(
           'Additional Information',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 24),
         Text(
@@ -668,7 +670,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.info.withOpacity(0.1),
+            color: AppColors.info.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -693,10 +695,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: AppColors.primary,
-        ),
+        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
       ),
     );
   }
@@ -711,18 +710,24 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: value ? AppColors.primary.withOpacity(0.05) : AppColors.surface,
+        color: value
+            ? AppColors.primary.withValues(alpha: 0.05)
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: value ? AppColors.primary : AppColors.border,
-        ),
+        border: Border.all(color: value ? AppColors.primary : AppColors.border),
       ),
       child: CheckboxListTile(
         value: value,
         onChanged: (v) => onChanged(v ?? false),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-        secondary: Icon(icon, color: value ? AppColors.primary : AppColors.textSecondary),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        secondary: Icon(
+          icon,
+          color: value ? AppColors.primary : AppColors.textSecondary,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         controlAffinity: ListTileControlAffinity.trailing,
       ),

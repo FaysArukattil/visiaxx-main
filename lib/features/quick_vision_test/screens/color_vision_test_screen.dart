@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/core/constants/ishihara_plate_data.dart';
-import 'package:visiaxx/features/quick_vision_test/screens/color_vision_cover_eye_screen';
+import 'package:visiaxx/features/quick_vision_test/screens/color_vision_cover_eye_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/services/tts_service.dart';
-import '../../../core/services/speech_service.dart';
-import '../../../core/services/continuous_speech_manager.dart';
 import '../../../core/services/distance_detection_service.dart';
+import '../../../core/services/distance_skip_manager.dart';
 import '../../../core/utils/distance_helper.dart';
 import '../../../data/models/color_vision_result.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -18,7 +17,7 @@ import 'distance_calibration_screen.dart';
 import 'color_vision_instructions_screen.dart';
 
 /// Clinical-grade Color Vision Test
-/// Tests BOTH eyes separately with 14 Ishihara plates each
+/// Tests BOTH eyes separately using Ishihara plates
 class ColorVisionTestScreen extends StatefulWidget {
   const ColorVisionTestScreen({super.key});
 
@@ -29,15 +28,13 @@ class ColorVisionTestScreen extends StatefulWidget {
 class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     with WidgetsBindingObserver {
   final TtsService _ttsService = TtsService();
-  final SpeechService _speechService = SpeechService();
-  late final ContinuousSpeechManager _continuousSpeech;
   final DistanceDetectionService _distanceService = DistanceDetectionService(
     targetDistanceCm: 40.0,
     toleranceCm: 5.0,
   );
-  final TextEditingController _answerController = TextEditingController();
+  final DistanceSkipManager _skipManager = DistanceSkipManager();
 
-  // Test configuration from IshiharaPlateData
+  // Test configuration
   late List<IshiharaPlateConfig> _testPlates;
 
   // Test state
@@ -48,12 +45,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   final List<PlateResponse> _leftEyeResponses = [];
 
   bool _showingPlate = false;
-  bool _isListening = false;
-  String? _lastDetectedSpeech;
 
   // Distance monitoring
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
+  List<String> _currentOptions = []; // Current plate options
   bool _isDistanceOk = true;
   bool _isTestPausedForDistance = false;
   bool _userDismissedDistanceWarning = false;
@@ -75,7 +71,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Handle app lifecycle
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       _handleAppPaused();
@@ -85,15 +80,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _handleAppPaused() {
-    // Pause test timer
     _plateTimer?.cancel();
-
-    // Stop distance monitoring
     _distanceService.stopMonitoring();
-
-    // Stop speech recognition
-    _continuousSpeech.stop();
-
     setState(() {
       _isTestPausedForDistance = true;
     });
@@ -101,8 +89,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   void _handleAppResumed() {
     if (!mounted || _phase == TestPhase.complete) return;
-
-    // Show resume dialog
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _phase != TestPhase.complete) {
         _showResumeDialog();
@@ -130,24 +116,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'The test was paused because the app was minimized.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Would you like to continue?',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+        content: const Text('The test was paused. Would you like to continue?'),
         actions: [
           TextButton(
             onPressed: () {
@@ -165,7 +134,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -181,20 +149,14 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     setState(() {
       _isTestPausedForDistance = false;
     });
-
-    // Resume distance monitoring
     _startContinuousDistanceMonitoring();
-
-    // Resume speech recognition
     if (_showingPlate) {
-      _startContinuousSpeechRecognition();
-
-      // Restart the plate timer with remaining time
       _restartPlateTimer();
     }
   }
 
   void _restartPlateTimer() {
+    _plateTimer?.cancel();
     if (_timeRemaining <= 0) {
       _submitAnswer('');
       return;
@@ -215,20 +177,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   Future<void> _initServices() async {
     await _ttsService.initialize();
-    await _speechService.initialize();
-
-    // Initialize continuous speech manager
-    _continuousSpeech = ContinuousSpeechManager(_speechService);
-    _continuousSpeech.onFinalResult = _handleVoiceResponse;
-    _continuousSpeech.onSpeechDetected = (text) {
-      if (mounted) setState(() => _lastDetectedSpeech = text);
-    };
-    _continuousSpeech.onListeningStateChanged = (isListening) {
-      if (mounted) setState(() => _isListening = isListening);
-    };
-
-    // DON'T pause speech for TTS - let it run continuously
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showInitialInstructions();
     });
@@ -296,7 +244,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       MaterialPageRoute(
         builder: (context) => ColorVisionCoverEyeScreen(
           eyeToCover: 'right',
-
           onContinue: () {
             Navigator.of(context).pop();
             setState(() {
@@ -332,20 +279,24 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       _isDistanceOk = newIsOk;
     });
 
-    // Auto-pause if distance is wrong (only if user hasn't dismissed)
-    if (!_isDistanceOk &&
-        !_isTestPausedForDistance &&
-        !_userDismissedDistanceWarning) {
-      _pauseTestForDistance();
-    } else if (_isDistanceOk && _isTestPausedForDistance) {
-      _resumeTestAfterDistance();
-    }
+    _skipManager.canShowDistanceWarning(DistanceTestType.colorVision).then((
+      canShow,
+    ) {
+      if (!mounted) return;
+      if (!_isDistanceOk &&
+          !_isTestPausedForDistance &&
+          !_userDismissedDistanceWarning &&
+          canShow) {
+        _pauseTestForDistance();
+      } else if (_isDistanceOk && _isTestPausedForDistance) {
+        _resumeTestAfterDistance();
+      }
+    });
   }
 
   void _pauseTestForDistance() {
     setState(() => _isTestPausedForDistance = true);
     _plateTimer?.cancel();
-    // Keep speech recognition running even when paused
     _ttsService.speak(
       'Test paused. Please adjust your distance to 40 centimeters.',
     );
@@ -364,7 +315,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     setState(() => _isTestPausedForDistance = false);
     _ttsService.speak('Resuming test');
     _restartPlateTimer();
-    // Speech recognition is already running continuously
   }
 
   void _resumeTestAfterDistance() {
@@ -373,64 +323,13 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     setState(() => _isTestPausedForDistance = false);
     _ttsService.speak('Resuming test');
     _restartPlateTimer();
-    // Speech recognition is already running continuously
     HapticFeedback.mediumImpact();
   }
 
-  // Navigation through test phases
-  // void _showRightEyeInstruction() {
-  //   Navigator.of(context).push(
-  //     MaterialPageRoute(
-  //       builder: (context) => CoverLeftEyeInstructionScreen(
-  //         onContinue: () {
-  //           Navigator.of(context).pop();
-  //           setState(() {
-  //             _phase = TestPhase.rightEyeTest;
-  //             _currentEye = 'right';
-  //             _currentPlateIndex = 0;
-  //           });
-  //           _startEyeTest();
-  //         },
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // void _showLeftEyeInstruction() {
-  //   Navigator.of(context).push(
-  //     MaterialPageRoute(
-  //       builder: (context) => CoverRightEyeInstructionScreen(
-  //         onContinue: () {
-  //           Navigator.of(context).pop();
-  //           setState(() {
-  //             _phase = TestPhase.leftEyeTest;
-  //             _currentEye = 'left';
-  //             _currentPlateIndex = 0;
-  //           });
-  //           _startEyeTest();
-  //         },
-  //       ),
-  //     ),
-  //   );
-  // }
-
   void _startEyeTest() {
-    // Start continuous speech recognition for the entire eye test
-    _startContinuousSpeechRecognition();
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _showNextPlate();
     });
-  }
-
-  void _startContinuousSpeechRecognition() {
-    debugPrint(
-      '[ColorVision] Starting ULTRA-RELIABLE continuous speech recognition',
-    );
-    _continuousSpeech.start(
-      listenDuration: const Duration(minutes: 10), // Long duration
-      minConfidence: 0.05, // EXTREMELY permissive
-      bufferMs: 800, // Fast response
-    );
   }
 
   void _showNextPlate() {
@@ -439,8 +338,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       return;
     }
 
-    _lastDetectedSpeech = null;
-    _answerController.clear();
     _plateStartTime = DateTime.now();
 
     setState(() {
@@ -450,58 +347,26 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
     final plate = _testPlates[_currentPlateIndex];
     if (plate.isDemo) {
-      _ttsService.speak(
-        'Demo plate. This is plate ${plate.plateNumber}. What number do you see?',
-      );
+      _ttsService.speak('Demo plate. What number do you see?');
     } else {
       _ttsService.speak('What number do you see?');
     }
 
-    // Speech recognition is already running continuously, no need to restart
-
-    _plateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted || _isTestPausedForDistance) {
-        timer.cancel();
-        return;
-      }
-      setState(() => _timeRemaining--);
-      if (_timeRemaining <= 0) {
-        timer.cancel();
-        _submitAnswer('');
-      }
+    setState(() {
+      _currentOptions = _getOptionsForPlate(plate);
     });
-  }
 
-  void _handleVoiceResponse(String recognized) {
-    debugPrint(
-      '[ColorVision] 🔥🔥🔥 _handleVoiceResponse called with: "$recognized"',
-    );
-    debugPrint('[ColorVision] Current plate index: $_currentPlateIndex');
-    debugPrint('[ColorVision] Showing plate: $_showingPlate');
-
-    debugPrint('[ColorVision] 🔍 Parsing number from: "$recognized"');
-    final number = SpeechService.parseNumber(recognized);
-    debugPrint('[ColorVision] 📝 Parsed number: $number');
-
-    if (number != null) {
-      debugPrint('[ColorVision] ✅ Setting answer to: $number');
-      _answerController.text = number;
-      _submitAnswer(number);
-    } else {
-      debugPrint('[ColorVision] ❌ Number is NULL - not submitting');
-    }
+    _restartPlateTimer();
   }
 
   void _submitAnswer(String answer) {
     _plateTimer?.cancel();
-    // Don't stop speech recognition - it continues throughout the test
 
     final plate = _testPlates[_currentPlateIndex];
     final responseTime = _plateStartTime != null
         ? DateTime.now().difference(_plateStartTime!).inMilliseconds
         : 0;
 
-    // Check if answer is correct
     final isCorrect = _checkAnswer(answer.trim(), plate);
 
     final response = PlateResponse(
@@ -514,14 +379,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       wasDemo: plate.isDemo,
     );
 
-    // Store in appropriate eye's responses
     if (_currentEye == 'right') {
       _rightEyeResponses.add(response);
     } else {
       _leftEyeResponses.add(response);
     }
 
-    // Show brief feedback
     setState(() => _showingPlate = false);
 
     Future.delayed(const Duration(milliseconds: 800), () {
@@ -538,25 +401,16 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   bool _checkAnswer(String answer, IshiharaPlateConfig plate) {
     if (answer.isEmpty) return false;
-
-    // Normalize answers
     final normalized = answer.replaceAll(' ', '').toLowerCase();
     final expected = plate.normalAnswer.replaceAll(' ', '').toLowerCase();
-
-    // Check for 'x' or 'nothing' for hidden plates
     if (normalized == 'x' || normalized == 'nothing' || normalized == 'none') {
       return expected == 'x';
     }
-
     return normalized == expected;
   }
 
   void _onEyeTestComplete() {
-    // Stop continuous speech recognition when eye test is complete
-    _continuousSpeech.stop();
-
     if (_currentEye == 'right') {
-      // Right eye done, move to left eye
       _ttsService.speak(
         'Right eye test complete. Now we will test your left eye.',
       );
@@ -567,7 +421,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         }
       });
     } else {
-      // Both eyes done
       _completeTest();
     }
   }
@@ -575,11 +428,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _completeTest() {
     setState(() => _phase = TestPhase.complete);
 
-    // Analyze results for both eyes
     final rightEyeResult = _analyzeEyeResult(_rightEyeResponses, 'right');
     final leftEyeResult = _analyzeEyeResult(_leftEyeResponses, 'left');
 
-    // Determine overall status
     final overallStatus = _determineOverallStatus(
       rightEyeResult,
       leftEyeResult,
@@ -603,7 +454,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       severity: severity,
       recommendation: recommendation,
       timestamp: DateTime.now(),
-      totalDurationSeconds: 0, // Calculate if needed
+      totalDurationSeconds: 0,
     );
 
     context.read<TestSessionProvider>().setColorVisionResult(result);
@@ -646,12 +497,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     ColorVisionEyeResult left,
   ) {
     final statuses = [right.status, left.status];
-    if (statuses.contains(ColorVisionStatus.severe))
+    if (statuses.contains(ColorVisionStatus.severe)) {
       return ColorVisionStatus.severe;
-    if (statuses.contains(ColorVisionStatus.moderate))
+    }
+    if (statuses.contains(ColorVisionStatus.moderate)) {
       return ColorVisionStatus.moderate;
-    if (statuses.contains(ColorVisionStatus.mild))
+    }
+    if (statuses.contains(ColorVisionStatus.mild)) {
       return ColorVisionStatus.mild;
+    }
     return ColorVisionStatus.normal;
   }
 
@@ -663,8 +517,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         left.status == ColorVisionStatus.normal) {
       return DeficiencyType.none;
     }
-    // For now, return generic red-green deficiency
-    // Advanced classification would analyze specific plate patterns
     return DeficiencyType.redGreenDeficiency;
   }
 
@@ -705,23 +557,19 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     _plateTimer?.cancel();
     _distanceAutoSkipTimer?.cancel();
     _distanceWarningReenableTimer?.cancel();
-    _answerController.dispose();
     _distanceService.dispose();
-    _continuousSpeech.dispose();
     _ttsService.dispose();
-    _speechService.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Don't show main UI until we're in test phase
     if (_phase == TestPhase.initialInstructions ||
         _phase == TestPhase.calibration ||
         _phase == TestPhase.rightEyeInstruction ||
         _phase == TestPhase.leftEyeInstruction) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.testBackground,
         body: Center(child: CircularProgressIndicator()),
       );
@@ -732,20 +580,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     }
 
     return PopScope(
-      canPop: true, // Allow back navigation
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
-          // Clean up when going back
-          _continuousSpeech.stop();
           _distanceService.stopMonitoring();
         }
       },
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
         appBar: AppBar(
-          title: Text(
-            'Color Vision Test - ${_currentEye == 'right' ? 'Right' : 'Left'} Eye',
-          ),
+          title: Text('Color Vision Test - ${_currentEye.toUpperCase()} Eye'),
         ),
         body: SafeArea(
           child: Stack(
@@ -756,9 +599,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 bottom: 12,
                 child: _buildDistanceIndicator(),
               ),
-              // Mic indicator - Always visible during test
-              if (_showingPlate)
-                Positioned(top: 12, right: 12, child: _buildMicIndicator()),
               if (_isTestPausedForDistance) _buildDistanceWarningOverlay(),
             ],
           ),
@@ -792,8 +632,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 ),
                 decoration: BoxDecoration(
                   color: _timeRemaining <= 3
-                      ? AppColors.error.withOpacity(0.1)
-                      : AppColors.primary.withOpacity(0.1),
+                      ? AppColors.error.withValues(alpha: 0.1)
+                      : AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -839,14 +679,14 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Say the number or type it',
+                  'Select the number you see',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
                 ),
-                const SizedBox(height: 16),
-                _buildNumberInput(),
+                const SizedBox(height: 24),
+                _buildOptionButtons(),
               ],
             ),
           ),
@@ -855,40 +695,90 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     );
   }
 
-  Widget _buildNumberInput() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _answerController,
-            keyboardType: TextInputType.text,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              hintText: 'Enter number or X',
-              filled: true,
-              fillColor: AppColors.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        SizedBox(
+  Widget _buildOptionButtons() {
+    if (_currentPlateIndex >= _testPlates.length) {
+      return const SizedBox.shrink();
+    }
+
+    final plate = _testPlates[_currentPlateIndex];
+    final options = _currentOptions.isNotEmpty
+        ? _currentOptions
+        : _getOptionsForPlate(plate);
+
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      alignment: WrapAlignment.center,
+      children: options.map((option) {
+        return SizedBox(
+          width: (MediaQuery.of(context).size.width - 64) / 2,
           height: 60,
           child: ElevatedButton(
-            onPressed: _showingPlate
-                ? () => _submitAnswer(_answerController.text)
-                : null,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Submit'),
+            onPressed: () {
+              _submitAnswer(option);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.surface,
+              foregroundColor: AppColors.textPrimary,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: AppColors.border, width: 1),
+              ),
+            ),
+            child: Text(
+              option,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
-        ),
-      ],
+        );
+      }).toList(),
     );
+  }
+
+  List<String> _getOptionsForPlate(IshiharaPlateConfig plate) {
+    final List<String> options = [];
+    options.add(plate.normalAnswer);
+
+    if (plate.deficientAnswer != null &&
+        plate.deficientAnswer != plate.normalAnswer) {
+      options.add(plate.deficientAnswer!);
+    }
+
+    if (plate.category == PlateCategory.classification) {
+      if (plate.protanStrongAnswer != null &&
+          !options.contains(plate.protanStrongAnswer)) {
+        options.add(plate.protanStrongAnswer!);
+      }
+      if (plate.deutanStrongAnswer != null &&
+          !options.contains(plate.deutanStrongAnswer)) {
+        options.add(plate.deutanStrongAnswer!);
+      }
+    }
+
+    if (!options.contains('X') && plate.normalAnswer != 'X') {
+      options.add('X');
+    }
+
+    final List<String> commonNumbers = [
+      '5',
+      '8',
+      '2',
+      '6',
+      '3',
+      '7',
+      '12',
+      '74',
+    ];
+    for (final num in commonNumbers) {
+      if (options.length >= 4) break;
+      if (!options.contains(num)) {
+        options.add(num);
+      }
+    }
+
+    options.shuffle();
+    return options.take(4).toList();
   }
 
   Widget _buildCompleteView() {
@@ -944,11 +834,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Right Eye: ${result?.rightEye.correctAnswers ?? 0}/13',
+                    'Right Eye: ${result?.rightEye.correctAnswers ?? 0}/${_testPlates.length}',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                   Text(
-                    'Left Eye: ${result?.leftEye.correctAnswers ?? 0}/13',
+                    'Left Eye: ${result?.leftEye.correctAnswers ?? 0}/${_testPlates.length}',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
@@ -971,65 +861,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     );
   }
 
-  Widget _buildMicIndicator() {
-    // Determine state and color - GREEN when recognized!
-    final bool hasRecognized =
-        _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
-    final Color indicatorColor = hasRecognized
-        ? AppColors
-              .success // GREEN when we hear something
-        : (_isListening ? AppColors.primary : AppColors.textSecondary);
-
-    String statusText;
-    IconData iconData;
-
-    if (hasRecognized) {
-      statusText = 'Heard: $_lastDetectedSpeech';
-      iconData = Icons.mic;
-    } else if (_isListening) {
-      statusText = 'Listening...';
-      iconData = Icons.mic;
-    } else {
-      statusText = 'Mic Ready';
-      iconData = Icons.mic_off;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: indicatorColor.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(iconData, size: 16, color: Colors.white),
-          const SizedBox(width: 6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 150),
-            child: Text(
-              statusText,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildDistanceIndicator() {
     final indicatorColor = DistanceHelper.getDistanceColor(
       _currentDistance,
@@ -1042,7 +873,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.15),
+        color: indicatorColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: indicatorColor, width: 1.5),
       ),
@@ -1069,7 +900,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     final instruction = DistanceHelper.getDetailedInstruction(40.0);
 
     return Container(
-      color: Colors.black.withOpacity(0.85),
+      color: Colors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1102,12 +933,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               ElevatedButton(
                 onPressed: () {
                   _distanceAutoSkipTimer?.cancel();
+                  _skipManager.recordSkip(DistanceTestType.colorVision);
                   setState(() {
                     _isTestPausedForDistance = false;
                     _userDismissedDistanceWarning = true;
                   });
 
-                  // Re-enable warning after 30 seconds
                   _distanceWarningReenableTimer?.cancel();
                   _distanceWarningReenableTimer = Timer(
                     const Duration(seconds: 30),

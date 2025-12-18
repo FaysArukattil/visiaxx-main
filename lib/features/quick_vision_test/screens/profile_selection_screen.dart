@@ -138,6 +138,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           _ageController.clear();
         });
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${newMember.firstName} added successfully'),
@@ -145,6 +146,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           ),
         );
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to save: $e'),
@@ -264,14 +266,14 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color, color.withOpacity(0.8)],
+            colors: [color, color.withValues(alpha: 0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha: 0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -282,7 +284,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: Colors.white, size: 36),
@@ -304,7 +306,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 14,
                     ),
                   ),
@@ -331,7 +333,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.secondary.withOpacity(0.1),
+              backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
               radius: 28,
               child: Text(
                 member.firstName[0].toUpperCase(),
@@ -382,7 +384,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Form(
         key: _formKey,
@@ -436,7 +438,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedSex,
+                    initialValue: _selectedSex,
                     decoration: const InputDecoration(labelText: 'Sex *'),
                     items: const [
                       DropdownMenuItem(value: 'Male', child: Text('Male')),
@@ -451,7 +453,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedRelationship,
+              initialValue: _selectedRelationship,
               decoration: const InputDecoration(labelText: 'Relationship *'),
               items: _relationships.map((r) {
                 return DropdownMenuItem(value: r, child: Text(r));

@@ -1,6 +1,3 @@
-/// Clinical-grade Ishihara plate configuration
-/// Based on standard 38-plate edition with 14 plates selected per eye
-
 enum PlateCategory {
   demo, // Plate 1 - not scored
   transformation, // Plates 2-9 - show different numbers

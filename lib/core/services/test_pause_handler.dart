@@ -109,8 +109,8 @@ class TestPauseHandler {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.primary.withOpacity(0.2),
-                      AppColors.primary.withOpacity(0.1),
+                      AppColors.primary.withValues(alpha: 0.2),
+                      AppColors.primary.withValues(alpha: 0.1),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -201,7 +201,7 @@ class TestPauseHandler {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: BorderSide(
-                          color: AppColors.error.withOpacity(0.3),
+                          color: AppColors.error.withValues(alpha: 0.3),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(

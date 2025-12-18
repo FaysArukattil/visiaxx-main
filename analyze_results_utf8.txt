@@ -1,0 +1,19 @@
+﻿Analyzing lib...                                                
+
+   info - Dangling library doc comment - lib\core\constants\ishihara_plate_data.dart:1:1 - dangling_library_doc_comments
+   info - 'printTime' is deprecated and shouldn't be used. Use `dateTimeFormat` with `DateTimeFormat.onlyTimeAndSinceStart` or `DateTimeFormat.none` instead - lib\core\utils\app_logger.dart:25:11 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\core\utils\app_logger.dart:31:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\utils\app_logger.dart:33:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\utils\app_logger.dart:83:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\utils\app_logger.dart:97:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\utils\app_logger.dart:110:7 - avoid_print
+   info - Dangling library doc comment - lib\data\models\color_vision_result.dart:1:1 - dangling_library_doc_comments
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\auth\screens\registration_screen.dart:241:25 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\comprehensive_test\screens\questionnaire_screen.dart:165:21 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\comprehensive_test\screens\questionnaire_screen.dart:166:21 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\comprehensive_test\screens\questionnaire_screen.dart:177:21 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\comprehensive_test\screens\questionnaire_screen.dart:178:21 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\comprehensive_test\widgets\questionnaire_builder.dart:89:11 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\comprehensive_test\widgets\questionnaire_builder.dart:90:11 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\practitioner\screens\practitioner_dashboard_screen.dart:247:29 - unnecessary_underscores
+

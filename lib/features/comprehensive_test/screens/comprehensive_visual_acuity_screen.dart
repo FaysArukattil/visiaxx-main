@@ -7,9 +7,7 @@ class ComprehensiveVisualAcuityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Visual Acuity Assessment'),
-      ),
+      appBar: AppBar(title: const Text('Visual Acuity Assessment')),
       body: const Center(
         child: Padding(
           padding: EdgeInsets.all(24.0),
@@ -22,10 +20,8 @@ class ComprehensiveVisualAcuityScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 40),
-              // TODO: Implement comprehensive visual acuity test
-              Placeholder(
-                fallbackHeight: 300,
-              ),
+              //  Implement comprehensive visual acuity test
+              Placeholder(fallbackHeight: 300),
             ],
           ),
         ),

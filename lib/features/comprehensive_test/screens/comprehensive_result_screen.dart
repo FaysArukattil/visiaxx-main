@@ -18,9 +18,9 @@ class ComprehensiveResultScreen extends StatelessWidget {
           children: [
             Text(
               'Comprehensive Assessment Results',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             Expanded(
@@ -29,10 +29,7 @@ class ComprehensiveResultScreen extends StatelessWidget {
                   _buildResultSection(
                     context,
                     title: 'Visual Acuity',
-                    results: [
-                      'Right Eye: 20/25',
-                      'Left Eye: 20/30',
-                    ],
+                    results: ['Right Eye: 20/25', 'Left Eye: 20/30'],
                     status: 'Good',
                     color: Colors.green,
                   ),
@@ -40,9 +37,7 @@ class ComprehensiveResultScreen extends StatelessWidget {
                   _buildResultSection(
                     context,
                     title: 'Contrast Sensitivity',
-                    results: [
-                      'Score: 1.65 log units',
-                    ],
+                    results: ['Score: 1.65 log units'],
                     status: 'Normal',
                     color: Colors.green,
                   ),
@@ -50,9 +45,7 @@ class ComprehensiveResultScreen extends StatelessWidget {
                   _buildResultSection(
                     context,
                     title: 'Color Vision',
-                    results: [
-                      'Ishihara Test: 5/5',
-                    ],
+                    results: ['Ishihara Test: 5/5'],
                     status: 'Normal',
                     color: Colors.green,
                   ),
@@ -82,7 +75,9 @@ class ComprehensiveResultScreen extends StatelessWidget {
                           SizedBox(height: 8),
                           Text('• Maintain good lighting when reading'),
                           SizedBox(height: 8),
-                          Text('• Consider consulting an optometrist for prescription update'),
+                          Text(
+                            '• Consider consulting an optometrist for prescription update',
+                          ),
                         ],
                       ),
                     ),
@@ -94,9 +89,7 @@ class ComprehensiveResultScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {
-                      // TODO: Generate PDF report
-                    },
+                    onPressed: () {},
                     child: const Padding(
                       padding: EdgeInsets.all(16.0),
                       child: Row(
@@ -158,26 +151,28 @@ class ComprehensiveResultScreen extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     status,
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            ...results.map((result) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(result),
-                )),
+            ...results.map(
+              (result) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(result),
+              ),
+            ),
           ],
         ),
       ),

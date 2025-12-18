@@ -7,9 +7,7 @@ class ComprehensiveIntroScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Comprehensive Eye Test'),
-      ),
+      appBar: AppBar(title: const Text('Comprehensive Eye Test')),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -17,9 +15,9 @@ class ComprehensiveIntroScreen extends StatelessWidget {
           children: [
             Text(
               'Comprehensive Vision Assessment',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Text(
@@ -101,7 +99,7 @@ class ComprehensiveIntroScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: Theme.of(context).primaryColor),
@@ -119,10 +117,7 @@ class ComprehensiveIntroScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
+                Text(description, style: TextStyle(color: Colors.grey[600])),
                 const SizedBox(height: 4),
                 Text(
                   duration,

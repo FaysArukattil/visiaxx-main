@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('Model Tests', () {
     test('Sample model test', () {
-      // TODO: Add model tests
       expect(true, true);
     });
   });

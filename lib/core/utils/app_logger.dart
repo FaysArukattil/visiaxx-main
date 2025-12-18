@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -21,15 +22,15 @@ class AppLogger {
           lineLength: 200,
           colors: false,
           printEmojis: false,
-          printTime: true,
+          dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
         ),
         output: MultiOutput([ConsoleOutput(), FileOutput(file: _logFile!)]),
       );
 
       _isInitialized = true;
-      print('[AppLogger] ✅ Initialized. Log file: ${_logFile!.path}');
+      debugPrint('[AppLogger] ✅ Initialized. Log file: ${_logFile!.path}');
     } catch (e) {
-      print('[AppLogger] ❌ Initialization failed: $e');
+      debugPrint('[AppLogger] ❌ Initialization failed: $e');
     }
   }
 
@@ -79,7 +80,7 @@ class AppLogger {
     try {
       _logFile?.writeAsStringSync('$message\n', mode: FileMode.append);
     } catch (e) {
-      print('[AppLogger] Write error: $e');
+      debugPrint('[AppLogger] Write error: $e');
     }
   }
 
@@ -93,7 +94,7 @@ class AppLogger {
         return await _logFile!.readAsString();
       }
     } catch (e) {
-      print('[AppLogger] Read error: $e');
+      debugPrint('[AppLogger] Read error: $e');
     }
     return 'No logs available';
   }
@@ -103,10 +104,10 @@ class AppLogger {
     try {
       if (_logFile != null && await _logFile!.exists()) {
         await _logFile!.writeAsString('');
-        print('[AppLogger] Logs cleared');
+        debugPrint('[AppLogger] Logs cleared');
       }
     } catch (e) {
-      print('[AppLogger] Clear error: $e');
+      debugPrint('[AppLogger] Clear error: $e');
     }
   }
 }

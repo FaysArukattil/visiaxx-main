@@ -1,6 +1,3 @@
-/// Enhanced Color Vision Test Result - Clinical Grade
-/// Tests both eyes separately with 14 Ishihara plates per eye
-
 enum ColorVisionStatus {
   normal, // 12-13 correct out of 13
   mild, // 9-11 correct

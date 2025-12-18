@@ -91,7 +91,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               width: 2,
             ),
           ),
@@ -186,7 +186,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
               vertical: widget.isCompact ? 10 : 12,
             ),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.primary, width: 2),
             ),
@@ -267,14 +267,14 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
               boxShadow: isActive && pressProgress > 0
                   ? [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.4),
+                        color: AppColors.primary.withValues(alpha: 0.4),
                         blurRadius: 12,
                         spreadRadius: 2,
                       ),
                     ]
                   : [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),

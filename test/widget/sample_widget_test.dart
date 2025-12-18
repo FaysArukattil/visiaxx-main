@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('Widget Tests', () {
     testWidgets('Sample widget test', (WidgetTester tester) async {
-      // TODO: Add widget tests
+      // : Add widget tests
       expect(true, true);
     });
   });

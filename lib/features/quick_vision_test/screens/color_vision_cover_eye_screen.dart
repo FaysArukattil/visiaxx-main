@@ -32,7 +32,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     final eyeBeingTested = widget.eyeToCover == 'left' ? 'right' : 'left';
     await _ttsService.speak(
       'Cover your ${widget.eyeToCover} eye with your palm or a paper. '
@@ -69,15 +69,15 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
   @override
   Widget build(BuildContext context) {
     final eyeBeingTested = widget.eyeToCover == 'left' ? 'right' : 'left';
-    final eyeColor = eyeBeingTested == 'right' 
-        ? AppColors.rightEye 
+    final eyeColor = eyeBeingTested == 'right'
+        ? AppColors.rightEye
         : AppColors.leftEye;
 
     return Scaffold(
       backgroundColor: AppColors.testBackground,
       appBar: AppBar(
         title: const Text('Test Instructions'),
-        backgroundColor: eyeColor.withOpacity(0.1),
+        backgroundColor: eyeColor.withValues(alpha: 0.1),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -91,17 +91,13 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: eyeColor.withOpacity(0.1),
+                    color: eyeColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Icon(
-                        Icons.visibility,
-                        size: 60,
-                        color: eyeColor,
-                      ),
+                      Icon(Icons.visibility, size: 60, color: eyeColor),
                       // Cover appropriate side
                       Positioned(
                         left: widget.eyeToCover == 'left' ? 0 : null,
@@ -110,7 +106,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                           width: 60,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withValues(alpha: 0.7),
                             borderRadius: BorderRadius.only(
                               topLeft: widget.eyeToCover == 'left'
                                   ? const Radius.circular(40)
@@ -148,7 +144,10 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
 
                 Text(
                   'Focus with your ${eyeBeingTested.toUpperCase()} eye only',
-                  style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: AppColors.textSecondary,
+                  ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.visible,
@@ -212,9 +211,10 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: const AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                   value: 1 - (_countdown / 3),
                                 ),
                               ),
@@ -254,7 +254,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: AppColors.primary, size: 24),

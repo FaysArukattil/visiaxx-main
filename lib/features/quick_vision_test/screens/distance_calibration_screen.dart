@@ -55,9 +55,6 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
   // Last spoken guidance (to avoid repeating)
   DistanceStatus? _lastSpokenStatus;
 
-  // Auto-skip timeout - prevents getting stuck
-  Timer? _autoSkipTimer;
-  @override
   @override
   void initState() {
     super.initState();
@@ -439,7 +436,10 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+                colors: [
+                  Colors.black.withValues(alpha: 0.7),
+                  Colors.transparent,
+                ],
               ),
             ),
           ),
@@ -456,7 +456,10 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
-                colors: [Colors.black.withOpacity(0.85), Colors.transparent],
+                colors: [
+                  Colors.black.withValues(alpha: 0.85),
+                  Colors.transparent,
+                ],
               ),
             ),
           ),
@@ -470,7 +473,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
             constraints: const BoxConstraints(maxWidth: 280, maxHeight: 350),
             decoration: BoxDecoration(
               border: Border.all(
-                color: _getStatusColor().withOpacity(0.6),
+                color: _getStatusColor().withValues(alpha: 0.6),
                 width: 3,
               ),
               borderRadius: BorderRadius.circular(140),

@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
 import 'package:visiaxx/core/utils/fuzzy_matcher.dart';
-import 'package:visiaxx/widgets/common/snellen_size_indicator.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/services/speech_service.dart';
@@ -13,6 +11,7 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/short_distance_result.dart';
+import '../../../core/services/distance_skip_manager.dart';
 
 /// Short distance reading test - both eyes open, 40cm distance
 /// ✅ ULTRA-RELIABLE voice recognition with continuous listening
@@ -24,11 +23,12 @@ class ShortDistanceTestScreen extends StatefulWidget {
       _ShortDistanceTestScreenState();
 }
 
-class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
+class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
+    with WidgetsBindingObserver {
   // ✅ ENHANCED: Speech tracking with chunk-based accumulation
   String _accumulatedSpeech = '';
   Timer? _speechBufferTimer;
-  List<String> _speechChunks = [];
+  final List<String> _speechChunks = [];
   static const Duration _speechBufferDelay = Duration(milliseconds: 2000);
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
@@ -38,6 +38,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     targetDistanceCm: 40.0,
     toleranceCm: 5.0,
   );
+  final DistanceSkipManager _skipManager = DistanceSkipManager();
 
   // Distance monitoring state
   double _currentDistance = 0;
@@ -74,9 +75,23 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initServices();
-    // ✅ Start distance monitoring immediately (don't wait for initServices)
     _startDistanceMonitoring();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _distanceService.stopMonitoring();
+      _speechService.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      _startDistanceMonitoring();
+      if (_waitingForResponse && !_showKeyboard) {
+        _startListening();
+      }
+    }
   }
 
   Future<void> _initServices() async {
@@ -101,49 +116,42 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
       debugPrint('[ShortDistance] 📏 Starting distance monitoring...');
 
       // ✅ Set up callbacks BEFORE initializing
-      _distanceService.onDistanceUpdate = (distance, status) {
-        if (!mounted) return;
-
-        debugPrint(
-          '[ShortDistance] 📏 Distance: ${distance.toStringAsFixed(0)}cm, Status: $status',
-        );
-
-        // ✅ Use centralized helper
-        // ✅ Use centralized helper with proper tolerance
-        final newIsOk = DistanceHelper.isDistanceAcceptable(
-          distance,
-          40.0,
-          tolerance: 5.0,
-        );
-        setState(() {
-          _currentDistance = distance;
-          _distanceStatus = status;
-          _isDistanceOk = newIsOk;
-        });
-      };
-
-      _distanceService.onError = (msg) {
-        debugPrint('[ShortDistance] ⚠️ Distance error: $msg');
-      };
-
-      // ✅ Initialize camera with proper error handling
-      final camera = await _distanceService.initializeCamera();
-
-      if (camera == null) {
-        debugPrint('[ShortDistance] ❌ Failed to initialize camera');
-        return;
-      }
-
-      debugPrint('[ShortDistance] ✅ Camera initialized');
-
-      // ✅ Start monitoring with delay to ensure camera is ready
-      await Future.delayed(const Duration(milliseconds: 500));
+      // ✅ Set up callbacks
+      _distanceService.onDistanceUpdate = _handleDistanceUpdate;
+      _distanceService.onError = (msg) =>
+          debugPrint('[ShortDistance] ⚠️ Distance error: $msg');
 
       await _distanceService.startMonitoring();
 
       debugPrint('[ShortDistance] ✅ Distance monitoring started');
     } catch (e) {
       debugPrint('[ShortDistance] ❌ Error starting distance monitoring: $e');
+    }
+  }
+
+  void _handleDistanceUpdate(double distance, DistanceStatus status) {
+    if (!mounted) return;
+
+    final shouldPause = DistanceHelper.shouldPauseTest(status);
+
+    setState(() {
+      _currentDistance = distance;
+      _distanceStatus = status;
+    });
+
+    if (_showSentence && _waitingForResponse) {
+      _skipManager.canShowDistanceWarning(DistanceTestType.shortDistance).then((
+        canShow,
+      ) {
+        if (!mounted) return;
+        setState(() {
+          _isDistanceOk = !shouldPause || !canShow;
+        });
+      });
+    } else {
+      setState(() {
+        _isDistanceOk = true;
+      });
     }
   }
 
@@ -435,6 +443,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     _distanceService.stopMonitoring().then((_) {
       _distanceService.dispose();
     });
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -448,7 +457,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
       backgroundColor: AppColors.testBackground,
       appBar: AppBar(
         title: const Text('Reading Test'),
-        backgroundColor: AppColors.primary.withOpacity(0.1),
+        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: _showExitConfirmation,
@@ -499,7 +508,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
         : AppColors.warning;
 
     return Container(
-      color: Colors.black.withOpacity(0.85),
+      color: Colors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -555,7 +564,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -586,7 +595,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.success, width: 1),
                 ),
@@ -611,6 +620,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
               // Skip button
               TextButton(
                 onPressed: () {
+                  _skipManager.recordSkip(DistanceTestType.shortDistance);
                   setState(() {
                     _isDistanceOk = true;
                   });
@@ -679,7 +689,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
                     vertical: hasKeyboard ? 8 : 10,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: AppColors.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.primary, width: 2),
                   ),
@@ -775,12 +785,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
                           });
                           if (_showKeyboard) {
                             _speechService.cancel();
+                            final focusScope = FocusScope.of(context);
                             Future.delayed(
                               const Duration(milliseconds: 100),
                               () {
-                                FocusScope.of(
-                                  context,
-                                ).requestFocus(FocusNode());
+                                if (!mounted) return;
+                                focusScope.requestFocus(FocusNode());
                               },
                             );
                           }
@@ -868,7 +878,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
   Widget _buildListeningIndicator() {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: AppColors.success.withOpacity(0.1),
+      color: AppColors.success.withValues(alpha: 0.1),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -891,8 +901,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       color: _lastResultCorrect
-          ? AppColors.success.withOpacity(0.1)
-          : AppColors.error.withOpacity(0.1),
+          ? AppColors.success.withValues(alpha: 0.1)
+          : AppColors.error.withValues(alpha: 0.1),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -939,7 +949,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.15),
+        color: indicatorColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: indicatorColor, width: 1.5),
       ),
