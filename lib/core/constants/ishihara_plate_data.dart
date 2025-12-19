@@ -38,10 +38,10 @@ class IshiharaPlateData {
   /// The 14 plates used in test (excluding demo from scoring)
   static const List<int> testPlateNumbers = [
     1, // Demo
-    2, 3, 4, 5, 6, 7, 8, 9, // Transformation (8)
-    10, 11, // Vanishing (2)
+    2, 3, 4, 5, // Transformation (4)
+    10, 9, 12, 13, // Vanishing (3) + 1 Trans (9)
     18, 19, // Hidden (2)
-    22, 23, // Classification (2)
+    22, 23, 24, // Classification (3)
   ];
 
   /// All 25 available plates
@@ -96,7 +96,7 @@ class IshiharaPlateData {
       category: PlateCategory.transformation,
       normalAnswer: '5',
       deficientAnswer: '2',
-      isUsedInTest: true,
+      isUsedInTest: false,
     ),
     IshiharaPlateConfig(
       plateNumber: 7,
@@ -104,7 +104,7 @@ class IshiharaPlateData {
       category: PlateCategory.transformation,
       normalAnswer: '3',
       deficientAnswer: '5',
-      isUsedInTest: true,
+      isUsedInTest: false,
     ),
     IshiharaPlateConfig(
       plateNumber: 8,
@@ -112,7 +112,7 @@ class IshiharaPlateData {
       category: PlateCategory.transformation,
       normalAnswer: '15',
       deficientAnswer: '17',
-      isUsedInTest: true,
+      isUsedInTest: false,
     ),
     IshiharaPlateConfig(
       plateNumber: 9,
@@ -138,7 +138,7 @@ class IshiharaPlateData {
       category: PlateCategory.vanishing,
       normalAnswer: '6',
       deficientAnswer: null, // Cannot see
-      isUsedInTest: true,
+      isUsedInTest: false,
     ),
     IshiharaPlateConfig(
       plateNumber: 12,
@@ -146,7 +146,7 @@ class IshiharaPlateData {
       category: PlateCategory.vanishing,
       normalAnswer: '97',
       deficientAnswer: null,
-      isUsedInTest: false,
+      isUsedInTest: true,
     ),
     IshiharaPlateConfig(
       plateNumber: 13,
@@ -154,7 +154,7 @@ class IshiharaPlateData {
       category: PlateCategory.vanishing,
       normalAnswer: '45',
       deficientAnswer: null,
-      isUsedInTest: false,
+      isUsedInTest: true,
     ),
     IshiharaPlateConfig(
       plateNumber: 14,
@@ -255,7 +255,7 @@ class IshiharaPlateData {
       protanMildAnswer: '35',
       deutanStrongAnswer: '3',
       deutanMildAnswer: '35',
-      isUsedInTest: false,
+      isUsedInTest: true,
     ),
     IshiharaPlateConfig(
       plateNumber: 25,

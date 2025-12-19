@@ -12,6 +12,8 @@ enum DeficiencyType {
   protanomaly, // Weak red (mild)
   deuteranopia, // No green cones (severe)
   deuteranomaly, // Weak green (mild)
+  protan,
+  deutan,
 }
 
 enum DeficiencySeverity { none, mild, moderate, severe }
@@ -248,6 +250,10 @@ extension DeficiencyTypeExtension on DeficiencyType {
         return 'Deuteranopia (Green Deficiency - Severe)';
       case DeficiencyType.deuteranomaly:
         return 'Deuteranomaly (Green Deficiency - Mild)';
+      case DeficiencyType.protan:
+        return 'Protan (Red Deficiency)';
+      case DeficiencyType.deutan:
+        return 'Deutan (Green Deficiency)';
     }
   }
 }

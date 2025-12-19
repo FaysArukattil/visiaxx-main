@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
+import '../widgets/color_vision_response_animation.dart';
 
 /// Initial instruction screen for Color Vision Test
 /// Explains how the Ishihara plate test works
@@ -30,10 +31,10 @@ class _ColorVisionInstructionsScreenState
     _InstructionStep(
       title: 'How to Respond',
       description:
-          'Look at each plate and identify the number you see. '
-          'Say the number out loud and it will be automatically filled, or type it in the text box. '
-          'If you cannot see a number, say "X" or "nothing".',
-      icon: Icons.mic,
+          'Look at each plate and identify the number. '
+          'You will see 4 options: what a normal person sees, what a color deficient person sees, a random number, and "Nothing". '
+          'Tap the option that matches what you see.',
+      icon: Icons.touch_app,
     ),
   ];
 
@@ -114,11 +115,11 @@ class _ColorVisionInstructionsScreenState
           // Main content
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
                   // Step indicator
                   Text(
@@ -129,50 +130,51 @@ class _ColorVisionInstructionsScreenState
                       fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
                   // Icon
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       _steps[_currentStep].icon,
-                      size: 50,
+                      size: 30,
                       color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 12),
 
                   // Title
                   Text(
                     _steps[_currentStep].title,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // Description
                   Text(
                     _steps[_currentStep].description,
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 16,
-                      height: 1.6,
+                      fontSize: 14,
+                      height: 1.4,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
 
-                  // Visual example for first step
-                  if (_currentStep == 0) _buildPlateExample(),
-                  if (_currentStep == 1) _buildResponseExample(),
+                  _currentStep == 0
+                      ? _buildPlateExample()
+                      : _buildResponseExample(),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -237,7 +239,7 @@ class _ColorVisionInstructionsScreenState
 
   Widget _buildPlateExample() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
@@ -250,8 +252,8 @@ class _ColorVisionInstructionsScreenState
         children: [
           // Simulated plate
           Container(
-            width: 200,
-            height: 200,
+            width: 160,
+            height: 160,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.grey.shade200,
@@ -261,17 +263,17 @@ class _ColorVisionInstructionsScreenState
               child: Text(
                 '12',
                 style: TextStyle(
-                  fontSize: 80,
+                  fontSize: 60,
                   fontWeight: FontWeight.bold,
                   color: Colors.grey.shade400,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             'Example: Ishihara Plate',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
         ],
       ),
@@ -279,57 +281,7 @@ class _ColorVisionInstructionsScreenState
   }
 
   Widget _buildResponseExample() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.mic, color: AppColors.info, size: 32),
-              const SizedBox(width: 16),
-              Text(
-                'Say: "Twelve"',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.info,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'OR',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.keyboard, color: AppColors.info, size: 32),
-              const SizedBox(width: 16),
-              Text(
-                'Type: "12"',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.info,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return const ColorVisionResponseAnimation();
   }
 }
 

@@ -14,12 +14,15 @@ import '../../../data/models/color_vision_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../widgets/ishihara_plate_viewer.dart';
 import 'distance_calibration_screen.dart';
+import 'amsler_grid_test_screen.dart';
 import 'color_vision_instructions_screen.dart';
 
 /// Clinical-grade Color Vision Test
 /// Tests BOTH eyes separately using Ishihara plates
 class ColorVisionTestScreen extends StatefulWidget {
-  const ColorVisionTestScreen({super.key});
+  final void Function(ColorVisionResult)? onComplete;
+
+  const ColorVisionTestScreen({super.key, this.onComplete});
 
   @override
   State<ColorVisionTestScreen> createState() => _ColorVisionTestScreenState();
@@ -60,6 +63,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   Timer? _plateTimer;
   int _timeRemaining = TestConstants.colorVisionTimePerPlateSeconds;
   DateTime? _plateStartTime;
+  int _selectedOptionIndex = -1; // Added for visual feedback
 
   @override
   void initState() {
@@ -158,7 +162,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _restartPlateTimer() {
     _plateTimer?.cancel();
     if (_timeRemaining <= 0) {
-      _submitAnswer('');
+      _submitAnswer('', -1);
       return;
     }
 
@@ -170,7 +174,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       setState(() => _timeRemaining--);
       if (_timeRemaining <= 0) {
         timer.cancel();
-        _submitAnswer('');
+        _submitAnswer('', -1);
       }
     });
   }
@@ -354,13 +358,21 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
     setState(() {
       _currentOptions = _getOptionsForPlate(plate);
+      _selectedOptionIndex = -1; // Reset for next plate
     });
 
     _restartPlateTimer();
   }
 
-  void _submitAnswer(String answer) {
+  void _submitAnswer(String answer, int index) {
+    if (_selectedOptionIndex != -1) return; // Prevent double taps
+
+    setState(() {
+      _selectedOptionIndex = index;
+    });
+
     _plateTimer?.cancel();
+    HapticFeedback.lightImpact();
 
     final plate = _testPlates[_currentPlateIndex];
     final responseTime = _plateStartTime != null
@@ -385,11 +397,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       _leftEyeResponses.add(response);
     }
 
-    setState(() => _showingPlate = false);
-
-    Future.delayed(const Duration(milliseconds: 800), () {
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
-      setState(() => _currentPlateIndex++);
+      setState(() {
+        _showingPlate = false;
+        _currentPlateIndex++;
+      });
 
       if (_currentPlateIndex < _testPlates.length) {
         _showNextPlate();
@@ -414,7 +427,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       _ttsService.speak(
         'Right eye test complete. Now we will test your left eye.',
       );
-      setState(() => _phase = TestPhase.leftEyeInstruction);
+      setState(() {
+        _phase = TestPhase.leftEyeInstruction;
+        _currentEye = 'left';
+        _currentPlateIndex = 0;
+      });
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) {
           _showLeftEyeInstruction();
@@ -458,7 +475,18 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     );
 
     context.read<TestSessionProvider>().setColorVisionResult(result);
-    _ttsService.speak('Color vision test complete.');
+    _ttsService.speak(
+      'Color vision test complete. Redirecting to Amsler Grid test in 5 seconds.',
+    );
+    widget.onComplete?.call(result);
+
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AmslerGridTestScreen()),
+        );
+      }
+    });
   }
 
   ColorVisionEyeResult _analyzeEyeResult(
@@ -469,8 +497,19 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     final correctAnswers = diagnosticResponses.where((r) => r.isCorrect).length;
     final totalDiagnostic = diagnosticResponses.length;
 
+    final classificationPlates = diagnosticResponses.where(
+      (r) => r.category == PlateCategory.classification.name,
+    );
+
     ColorVisionStatus status;
-    if (correctAnswers >= 12) {
+    DeficiencyType? detectedType;
+
+    // Ishihara 14-plate criteria adapted:
+    // Normal: 0-1 errors
+    // Borderline: 2-3 errors
+    // Deficient: 4+ errors
+    // Since we use 13 diagnostic plates (4 trans, 4 van, 2 hidden, 3 classification)
+    if (correctAnswers >= 11) {
       status = ColorVisionStatus.normal;
     } else if (correctAnswers >= 9) {
       status = ColorVisionStatus.mild;
@@ -480,15 +519,35 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       status = ColorVisionStatus.severe;
     }
 
+    if (status != ColorVisionStatus.normal) {
+      detectedType = DeficiencyType.redGreenDeficiency;
+
+      // Determine Protan vs Deutan from classification plates
+      int protanScore = 0;
+      int deutanScore = 0;
+
+      for (var response in classificationPlates) {
+        final plate = IshiharaPlateData.getPlate(response.plateNumber);
+        if (plate != null) {
+          if (response.userAnswer == plate.protanStrongAnswer) protanScore++;
+          if (response.userAnswer == plate.deutanStrongAnswer) deutanScore++;
+        }
+      }
+
+      if (protanScore > deutanScore) {
+        detectedType = DeficiencyType.protan;
+      } else if (deutanScore > protanScore) {
+        detectedType = DeficiencyType.deutan;
+      }
+    }
+
     return ColorVisionEyeResult(
       eye: eye,
       correctAnswers: correctAnswers,
       totalDiagnosticPlates: totalDiagnostic,
       responses: responses,
       status: status,
-      detectedType: status != ColorVisionStatus.normal
-          ? DeficiencyType.redGreenDeficiency
-          : null,
+      detectedType: detectedType,
     );
   }
 
@@ -517,6 +576,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         left.status == ColorVisionStatus.normal) {
       return DeficiencyType.none;
     }
+
+    // If both have specific types, use them. If they differ, generic RG.
+    if (right.detectedType == left.detectedType && right.detectedType != null) {
+      return right.detectedType!;
+    }
+
     return DeficiencyType.redGreenDeficiency;
   }
 
@@ -709,21 +774,31 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       spacing: 16,
       runSpacing: 16,
       alignment: WrapAlignment.center,
-      children: options.map((option) {
+      children: List.generate(options.length, (index) {
+        final option = options[index];
+        final isSelected = _selectedOptionIndex == index;
+
         return SizedBox(
           width: (MediaQuery.of(context).size.width - 64) / 2,
           height: 60,
           child: ElevatedButton(
             onPressed: () {
-              _submitAnswer(option);
+              _submitAnswer(option, index);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              foregroundColor: AppColors.textPrimary,
-              elevation: 2,
+              backgroundColor: isSelected
+                  ? AppColors.primary
+                  : AppColors.surface,
+              foregroundColor: isSelected
+                  ? Colors.white
+                  : AppColors.textPrimary,
+              elevation: isSelected ? 4 : 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: AppColors.border, width: 1),
+                side: BorderSide(
+                  color: isSelected ? AppColors.primary : AppColors.border,
+                  width: 2,
+                ),
               ),
             ),
             child: Text(
@@ -732,45 +807,86 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             ),
           ),
         );
-      }).toList(),
+      }),
     );
   }
 
   List<String> _getOptionsForPlate(IshiharaPlateConfig plate) {
     final List<String> options = [];
+
+    // 1. Normal see number
     options.add(plate.normalAnswer);
 
+    // 2. Color vision see number (deficient)
     if (plate.deficientAnswer != null &&
-        plate.deficientAnswer != plate.normalAnswer) {
+        plate.deficientAnswer != plate.normalAnswer &&
+        plate.deficientAnswer != 'X') {
       options.add(plate.deficientAnswer!);
-    }
-
-    if (plate.category == PlateCategory.classification) {
+    } else if (plate.category == PlateCategory.classification) {
+      // For classification, use BOTH alternates if available
       if (plate.protanStrongAnswer != null &&
-          !options.contains(plate.protanStrongAnswer)) {
+          plate.protanStrongAnswer != plate.normalAnswer) {
         options.add(plate.protanStrongAnswer!);
       }
       if (plate.deutanStrongAnswer != null &&
-          !options.contains(plate.deutanStrongAnswer)) {
-        options.add(plate.deutanStrongAnswer!);
+          plate.deutanStrongAnswer != plate.normalAnswer) {
+        if (!options.contains(plate.deutanStrongAnswer)) {
+          options.add(plate.deutanStrongAnswer!);
+        }
       }
     }
 
-    if (!options.contains('X') && plate.normalAnswer != 'X') {
-      options.add('X');
+    // Random numbers pool
+    final List<String> commonNumbers = [
+      '2',
+      '3',
+      '5',
+      '6',
+      '7',
+      '8',
+      '12',
+      '15',
+      '16',
+      '26',
+      '29',
+      '35',
+      '42',
+      '45',
+      '57',
+      '70',
+      '73',
+      '74',
+      '96',
+      '97',
+    ];
+
+    // User special requirements for specific test plate indices:
+    // Plate 13 (Plate 23): replace option 57 with 4
+    // Plate 14 (Plate 24): replace option 7 with 3
+    final List<String> randomizedPool = List.from(commonNumbers);
+    if (plate.plateNumber == 23) randomizedPool.remove('57');
+    if (plate.plateNumber == 24) randomizedPool.remove('7');
+
+    randomizedPool.shuffle();
+    for (var num in randomizedPool) {
+      if (options.length >= 3) break;
+      if (!options.contains(num)) {
+        options.add(num);
+      }
     }
 
-    final List<String> commonNumbers = [
-      '5',
-      '8',
-      '2',
-      '6',
-      '3',
-      '7',
-      '12',
-      '74',
-    ];
-    for (final num in commonNumbers) {
+    // 4. "Nothing" or "X"
+    if (!options.contains('Nothing') && !options.contains('X')) {
+      if (plate.normalAnswer == 'X') {
+        // If normal is X, then we already have X in options[0] (but let's rename to Nothing)
+        options[0] = 'Nothing';
+      } else {
+        options.add('Nothing');
+      }
+    }
+
+    // Fill up to 4 if still missing
+    for (var num in commonNumbers) {
       if (options.length >= 4) break;
       if (!options.contains(num)) {
         options.add(num);
