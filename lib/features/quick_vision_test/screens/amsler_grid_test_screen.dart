@@ -638,32 +638,39 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   child: GestureDetector(
                     onPanStart: _onPanStart,
                     onPanUpdate: _onPanUpdate,
-                    child: RepaintBoundary(
-                      key: _gridKey,
-                      child: SizedBox(
-                        width: gridSize,
-                        height: gridSize,
-                        child: Stack(
-                          children: [
-                            // Grid image
-                            Image.asset(
-                              AppAssets.amslerGrid,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildFallbackGrid(),
-                            ),
-                            // Custom Painter for strokes
-                            Positioned.fill(
-                              child: CustomPaint(
-                                painter: AmslerGridPainter(
-                                  points: currentPoints,
-                                  distortionColor: _getPointColor('distortion'),
-                                  missingColor: _getPointColor('missing'),
-                                  blurryColor: _getPointColor('blurry'),
+                    child: Container(
+                      color: Colors.white,
+                      child: RepaintBoundary(
+                        key: _gridKey,
+                        child: SizedBox(
+                          width: gridSize,
+                          height: gridSize,
+                          child: Stack(
+                            children: [
+                              // Grid image
+                              Image.asset(
+                                AppAssets.amslerGrid,
+                                width: gridSize,
+                                height: gridSize,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildFallbackGrid(),
+                              ),
+                              // Custom Painter for strokes
+                              Positioned.fill(
+                                child: CustomPaint(
+                                  painter: AmslerGridPainter(
+                                    points: currentPoints,
+                                    distortionColor: _getPointColor(
+                                      'distortion',
+                                    ),
+                                    missingColor: _getPointColor('missing'),
+                                    blurryColor: _getPointColor('blurry'),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),

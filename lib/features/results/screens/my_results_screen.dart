@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../data/models/test_result_model.dart';
+import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 
 /// My Results screen showing test history with Firebase integration and PDF export
 class MyResultsScreen extends StatefulWidget {
@@ -22,6 +24,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
   final TestResultService _testResultService = TestResultService();
   final PdfExportService _pdfExportService = PdfExportService();
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   @override
   void initState() {
@@ -155,16 +158,19 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     try {
       await _testResultService.deleteTestResult(user.uid, result.id);
 
-      setState(() {
-        _results.removeWhere((r) => r.id == result.id);
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Result deleted successfully'),
-            backgroundColor: AppColors.success,
+      final index = _results.indexWhere((r) => r.id == result.id);
+      if (index != -1) {
+        final removedItem = _results.removeAt(index);
+        _listKey.currentState?.removeItem(
+          index,
+          (context, animation) => SizeTransition(
+            sizeFactor: animation,
+            child: FadeTransition(
+              opacity: animation,
+              child: _buildResultCard(removedItem),
+            ),
           ),
+          duration: const Duration(milliseconds: 300),
         );
       }
     } catch (e) {
@@ -192,25 +198,38 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadResults),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
+      body: _error != null
           ? _buildErrorState()
           : Column(
               children: [
                 _buildFilters(),
                 Expanded(
-                  child: _filteredResults.isEmpty
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _filteredResults.isEmpty
                       ? _buildEmptyState()
                       : RefreshIndicator(
                           onRefresh: _loadResults,
-                          child: ListView.separated(
+                          child: AnimatedList(
+                            key: _listKey,
                             padding: const EdgeInsets.all(16),
-                            itemCount: _filteredResults.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) =>
-                                _buildResultCard(_filteredResults[index]),
+                            initialItemCount: _filteredResults.length,
+                            itemBuilder: (context, index, animation) {
+                              if (index >= _filteredResults.length)
+                                return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: FadeTransition(
+                                  opacity: animation,
+                                  child: SizeTransition(
+                                    sizeFactor: animation,
+                                    child: _buildResultCard(
+                                      _filteredResults[index],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
                 ),
@@ -446,29 +465,39 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Results grid
-          Row(
-            children: [
-              _buildMiniResult(
-                'VA (R)',
-                result.visualAcuityRight?.snellenScore ?? 'N/A',
+          // Results grid - Now triggers quick summary on tap
+          GestureDetector(
+            onTap: () => _showResultDetails(result),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
               ),
-              _buildMiniResult(
-                'VA (L)',
-                result.visualAcuityLeft?.snellenScore ?? 'N/A',
+              child: Row(
+                children: [
+                  _buildMiniResult(
+                    'VA (R)',
+                    result.visualAcuityRight?.snellenScore ?? 'N/A',
+                  ),
+                  _buildMiniResult(
+                    'VA (L)',
+                    result.visualAcuityLeft?.snellenScore ?? 'N/A',
+                  ),
+                  _buildMiniResult(
+                    'Color',
+                    result.colorVision?.isNormal == true ? 'Normal' : 'Check',
+                  ),
+                  _buildMiniResult(
+                    'Amsler',
+                    (result.amslerGridRight?.hasDistortions != true &&
+                            result.amslerGridLeft?.hasDistortions != true)
+                        ? 'Normal'
+                        : 'Check',
+                  ),
+                ],
               ),
-              _buildMiniResult(
-                'Color',
-                result.colorVision?.isNormal == true ? 'Normal' : 'Check',
-              ),
-              _buildMiniResult(
-                'Amsler',
-                (result.amslerGridRight?.hasDistortions != true &&
-                        result.amslerGridLeft?.hasDistortions != true)
-                    ? 'Normal'
-                    : 'Check',
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 16),
           // Action buttons
@@ -476,7 +505,16 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _showResultDetails(result),
+                  onPressed: () {
+                    // Navigate to full-page result view
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            QuickTestResultScreen(historicalResult: result),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.visibility, size: 16),
                   label: const Text('View'),
                   style: OutlinedButton.styleFrom(
@@ -631,20 +669,29 @@ class _ResultDetailSheet extends StatelessWidget {
             // Amsler Grid
             if (result.amslerGridRight != null || result.amslerGridLeft != null)
               _buildSection('Amsler Grid', [
-                if (result.amslerGridRight != null)
+                if (result.amslerGridRight != null) ...[
                   _buildDetailRow(
                     'Right Eye',
                     result.amslerGridRight!.hasDistortions
                         ? 'Distortions detected'
                         : 'Normal',
                   ),
-                if (result.amslerGridLeft != null)
+                  if (result.amslerGridRight?.annotatedImagePath != null)
+                    _buildGridImage(
+                      result.amslerGridRight!.annotatedImagePath!,
+                    ),
+                ],
+                if (result.amslerGridLeft != null) ...[
+                  const SizedBox(height: 12),
                   _buildDetailRow(
                     'Left Eye',
                     result.amslerGridLeft!.hasDistortions
                         ? 'Distortions detected'
                         : 'Normal',
                   ),
+                  if (result.amslerGridLeft?.annotatedImagePath != null)
+                    _buildGridImage(result.amslerGridLeft!.annotatedImagePath!),
+                ],
               ]),
 
             // Questionnaire Summary
@@ -705,6 +752,39 @@ class _ResultDetailSheet extends StatelessWidget {
           Text(label, style: TextStyle(color: Colors.grey[600])),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGridImage(String path) {
+    final isNetwork = path.startsWith('http');
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: isNetwork
+              ? Image.network(
+                  path,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.broken_image, size: 40),
+                )
+              : Image.file(
+                  File(path),
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.broken_image, size: 40),
+                ),
+        ),
       ),
     );
   }

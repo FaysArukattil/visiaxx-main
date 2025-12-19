@@ -12,7 +12,8 @@ import '../../../data/models/color_vision_result.dart';
 
 /// Comprehensive results screen displaying all test data
 class QuickTestResultScreen extends StatefulWidget {
-  const QuickTestResultScreen({super.key});
+  final TestResultModel? historicalResult;
+  const QuickTestResultScreen({super.key, this.historicalResult});
 
   @override
   State<QuickTestResultScreen> createState() => _QuickTestResultScreenState();
@@ -29,10 +30,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   @override
   void initState() {
     super.initState();
-    // Save results to Firebase when screen loads
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _saveResultsToFirebase(),
-    );
+    // Only save results to Firebase if this is a new test (just completed)
+    if (widget.historicalResult == null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _saveResultsToFirebase(),
+      );
+    } else {
+      _hasSaved = true;
+      _savedResult = widget.historicalResult;
+    }
   }
 
   Future<void> _saveResultsToFirebase() async {
@@ -102,82 +108,98 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TestSessionProvider>();
-    final overallStatus = provider.getOverallStatus();
+    final isHistorical = widget.historicalResult != null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Test Results'),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () {
-              provider.reset();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Overall status header
-            _buildStatusHeader(provider, overallStatus),
+    // Use historical data if available, otherwise use current session data
+    final overallStatus = isHistorical
+        ? widget.historicalResult!.overallStatus
+        : provider.getOverallStatus();
+    final timestamp = isHistorical
+        ? widget.historicalResult!.timestamp
+        : DateTime.now();
 
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Patient info card
-                  _buildPatientInfoCard(provider),
-                  const SizedBox(height: 20),
-
-                  // Visual Acuity Results
-                  _buildSectionTitle('Visual Acuity', Icons.visibility),
-                  _buildVisualAcuityCard(provider),
-                  const SizedBox(height: 20),
-
-                  // Short Distance Results
-                  _buildSectionTitle(
-                    'Reading Test (Near Vision)',
-                    Icons.text_fields,
-                  ),
-                  _buildShortDistanceCard(provider),
-                  const SizedBox(height: 20),
-
-                  // Color Vision Results
-                  _buildSectionTitle('Color Vision', Icons.palette),
-                  _buildColorVisionCard(provider),
-                  const SizedBox(height: 20),
-
-                  // Amsler Grid Results
-                  _buildSectionTitle('Amsler Grid', Icons.grid_on),
-                  _buildAmslerGridCard(provider),
-                  const SizedBox(height: 20),
-
-                  // Recommendation
-                  _buildRecommendationCard(provider),
-                  const SizedBox(height: 24),
-
-                  // Action buttons
-                  _buildDisclaimer(),
-                  const SizedBox(height: 24),
-                  _buildActionButtons(provider),
-                ],
-              ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        provider.reset();
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Test Results'),
+          automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home),
+              onPressed: () {
+                provider.reset();
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
             ),
           ],
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Overall status header
+              _buildStatusHeader(overallStatus, timestamp),
+
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Patient info card
+                    _buildPatientInfoCard(provider),
+                    const SizedBox(height: 20),
+
+                    // Visual Acuity Results
+                    _buildSectionTitle('Visual Acuity', Icons.visibility),
+                    _buildVisualAcuityCard(provider),
+                    const SizedBox(height: 20),
+
+                    // Short Distance Results
+                    _buildSectionTitle(
+                      'Reading Test (Near Vision)',
+                      Icons.text_fields,
+                    ),
+                    _buildShortDistanceCard(provider),
+                    const SizedBox(height: 20),
+
+                    // Color Vision Results
+                    _buildSectionTitle('Color Vision', Icons.palette),
+                    _buildColorVisionCard(provider),
+                    const SizedBox(height: 20),
+
+                    // Amsler Grid Results
+                    _buildSectionTitle('Amsler Grid', Icons.grid_on),
+                    _buildAmslerGridCard(provider),
+                    const SizedBox(height: 20),
+
+                    // Recommendation
+                    _buildRecommendationCard(provider),
+                    const SizedBox(height: 24),
+
+                    // Action buttons
+                    _buildDisclaimer(),
+                    const SizedBox(height: 24),
+                    _buildActionButtons(provider),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStatusHeader(TestSessionProvider provider, TestStatus status) {
+  Widget _buildStatusHeader(TestStatus status, DateTime timestamp) {
     Color backgroundColor;
     Color textColor;
     IconData statusIcon;
@@ -224,7 +246,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            DateFormat('MMMM dd, yyyy • h:mm a').format(DateTime.now()),
+            DateFormat('MMMM dd, yyyy • h:mm a').format(timestamp),
             style: TextStyle(color: textColor.withValues(alpha: 0.9)),
           ),
         ],
@@ -233,15 +255,30 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildPatientInfoCard(TestSessionProvider provider) {
-    final familyMember = provider.selectedFamilyMember;
-    final String name =
-        familyMember?.firstName ??
-        (provider.profileName.isEmpty ? 'User' : provider.profileName);
-    final int? age = familyMember?.age;
-    final String? sex = familyMember?.sex;
-    final String testDate = DateFormat(
-      'MMM dd, yyyy • h:mm a',
-    ).format(DateTime.now());
+    String name;
+    int? age;
+    String? sex;
+    String testDate;
+    bool isFamily = false;
+
+    if (widget.historicalResult != null) {
+      name = widget.historicalResult!.profileName.isEmpty
+          ? 'User'
+          : widget.historicalResult!.profileName;
+      testDate = DateFormat(
+        'MMM dd, yyyy • h:mm a',
+      ).format(widget.historicalResult!.timestamp);
+      isFamily = widget.historicalResult!.profileType == 'family';
+    } else {
+      final familyMember = provider.selectedFamilyMember;
+      name =
+          familyMember?.firstName ??
+          (provider.profileName.isEmpty ? 'User' : provider.profileName);
+      age = familyMember?.age;
+      sex = familyMember?.sex;
+      testDate = DateFormat('MMM dd, yyyy • h:mm a').format(DateTime.now());
+      isFamily = familyMember != null;
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -305,17 +342,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: familyMember != null
+                  color: isFamily
                       ? AppColors.info.withValues(alpha: 0.1)
                       : AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  familyMember != null ? 'Family' : 'Self',
+                  isFamily ? 'Family' : 'Self',
                   style: TextStyle(
-                    color: familyMember != null
-                        ? AppColors.info
-                        : AppColors.primary,
+                    color: isFamily ? AppColors.info : AppColors.primary,
                     fontWeight: FontWeight.w500,
                     fontSize: 11,
                   ),
@@ -371,8 +406,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildVisualAcuityCard(TestSessionProvider provider) {
-    final rightResult = provider.visualAcuityRight;
-    final leftResult = provider.visualAcuityLeft;
+    final rightResult =
+        widget.historicalResult?.visualAcuityRight ??
+        provider.visualAcuityRight;
+    final leftResult =
+        widget.historicalResult?.visualAcuityLeft ?? provider.visualAcuityLeft;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -539,7 +577,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildColorVisionCard(TestSessionProvider provider) {
-    final result = provider.colorVision;
+    final result = widget.historicalResult?.colorVision ?? provider.colorVision;
     final isNormal = result?.isNormal ?? true;
 
     return Container(
@@ -670,8 +708,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildAmslerGridCard(TestSessionProvider provider) {
-    final rightResult = provider.amslerGridRight;
-    final leftResult = provider.amslerGridLeft;
+    final rightResult =
+        widget.historicalResult?.amslerGridRight ?? provider.amslerGridRight;
+    final leftResult =
+        widget.historicalResult?.amslerGridLeft ?? provider.amslerGridLeft;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -912,7 +952,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildRecommendationCard(TestSessionProvider provider) {
-    final status = provider.getOverallStatus();
+    final status =
+        widget.historicalResult?.overallStatus ?? provider.getOverallStatus();
 
     Color bgColor;
     Color borderColor;
@@ -958,7 +999,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            provider.getRecommendation(),
+            widget.historicalResult?.recommendation ??
+                provider.getRecommendation(),
             style: TextStyle(color: AppColors.textPrimary, height: 1.5),
           ),
         ],
@@ -967,6 +1009,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildActionButtons(TestSessionProvider provider) {
+    final isHistorical = widget.historicalResult != null;
+
     return Column(
       children: [
         // Primary action - Download PDF
@@ -1003,7 +1047,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: _isGeneratingPdf ? null : _sharePdf,
+                  onPressed: _isGeneratingPdf
+                      ? null
+                      : _generatePdf, // Use _generatePdf as it handles sharing too
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Column(
@@ -1020,30 +1066,32 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             ),
             const SizedBox(width: 12),
 
-            // History button
-            Flexible(
-              flex: 1,
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/my-results');
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.history, size: 20),
-                        SizedBox(height: 4),
-                        Text('History', style: TextStyle(fontSize: 11)),
-                      ],
+            // History button - Only show if not already coming from history
+            if (!isHistorical) ...[
+              Flexible(
+                flex: 1,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/my-results');
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.history, size: 20),
+                          SizedBox(height: 4),
+                          Text('History', style: TextStyle(fontSize: 11)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
+              const SizedBox(width: 12),
+            ],
 
             // Logs button
             Flexible(
@@ -1083,7 +1131,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             );
           },
           icon: const Icon(Icons.replay),
-          label: const Text('Retake Test'),
+          label: Text(isHistorical ? 'Start New Test' : 'Retake Test'),
         ),
       ],
     );
@@ -1096,8 +1144,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     setState(() => _isGeneratingPdf = true);
 
     try {
-      final result = _savedResult ?? provider.buildTestResult(user?.uid ?? '');
-      await _pdfExportService.sharePdf(result, userName: provider.profileName);
+      final result =
+          widget.historicalResult ??
+          _savedResult ??
+          provider.buildTestResult(user?.uid ?? '');
+      await _pdfExportService.sharePdf(
+        result,
+        userName: widget.historicalResult?.profileName ?? provider.profileName,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1124,7 +1178,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildShortDistanceCard(TestSessionProvider provider) {
-    final result = provider.shortDistance;
+    final result =
+        widget.historicalResult?.shortDistance ?? provider.shortDistance;
 
     if (result == null) {
       return Container(
@@ -1276,39 +1331,5 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _sharePdf() async {
-    final provider = context.read<TestSessionProvider>();
-    final user = FirebaseAuth.instance.currentUser;
-
-    setState(() => _isGeneratingPdf = true);
-
-    try {
-      final result = _savedResult ?? provider.buildTestResult(user?.uid ?? '');
-      await _pdfExportService.sharePdf(result, userName: provider.profileName);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Preparing report for sharing...'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to share PDF: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isGeneratingPdf = false);
-      }
-    }
   }
 }
