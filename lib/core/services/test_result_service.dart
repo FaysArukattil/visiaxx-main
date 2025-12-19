@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../../data/models/test_result_model.dart';
 
 /// Service for storing and retrieving test results from Firebase
@@ -17,21 +19,85 @@ class TestResultService {
   }) async {
     try {
       debugPrint('[TestResultService] Saving result for user: $userId');
-      debugPrint(
-        '[TestResultService] Collection path: $_testResultsCollection/$userId/results',
-      );
+
+      // 1. Upload images if they exist
+      final updatedResult = await _uploadImagesIfExist(userId, result);
 
       final docRef = await _firestore
           .collection(_testResultsCollection)
           .doc(userId)
           .collection('results')
-          .add(result.toJson());
+          .add(updatedResult.toFirestore());
 
       debugPrint('[TestResultService] ✅ Saved with ID: ${docRef.id}');
       return docRef.id;
     } catch (e) {
       debugPrint('[TestResultService] ❌ Save ERROR: $e');
       throw Exception('Failed to save test result: $e');
+    }
+  }
+
+  Future<TestResultModel> _uploadImagesIfExist(
+    String userId,
+    TestResultModel result,
+  ) async {
+    final amslerRight = result.amslerGridRight;
+    final amslerLeft = result.amslerGridLeft;
+
+    String? rightUrl;
+    String? leftUrl;
+
+    if (amslerRight?.annotatedImagePath != null &&
+        !amslerRight!.annotatedImagePath!.startsWith('http')) {
+      rightUrl = await _uploadFile(
+        userId,
+        amslerRight.annotatedImagePath!,
+        'amsler_right',
+      );
+    }
+
+    if (amslerLeft?.annotatedImagePath != null &&
+        !amslerLeft!.annotatedImagePath!.startsWith('http')) {
+      leftUrl = await _uploadFile(
+        userId,
+        amslerLeft.annotatedImagePath!,
+        'amsler_left',
+      );
+    }
+
+    if (rightUrl == null && leftUrl == null) return result;
+
+    return result.copyWith(
+      amslerGridRight: rightUrl != null
+          ? amslerRight?.copyWith(annotatedImagePath: rightUrl)
+          : amslerRight,
+      amslerGridLeft: leftUrl != null
+          ? amslerLeft?.copyWith(annotatedImagePath: leftUrl)
+          : amslerLeft,
+    );
+  }
+
+  Future<String?> _uploadFile(
+    String userId,
+    String localPath,
+    String type,
+  ) async {
+    try {
+      final file = File(localPath);
+      if (!await file.exists()) return null;
+
+      final fileName = '${type}_${DateTime.now().millisecondsSinceEpoch}.png';
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('test_results')
+          .child(userId)
+          .child(fileName);
+
+      await ref.putFile(file);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      debugPrint('[TestResultService] Error uploading file: $e');
+      return null;
     }
   }
 

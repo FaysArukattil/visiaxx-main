@@ -18,9 +18,31 @@ class AmslerGridResult {
     required this.hasBlurryAreas,
     required this.distortionPoints,
     required this.status,
-    this.annotatedImagePath,
+    this.annotatedImagePath, // This will store the captured image path
     this.description,
   });
+
+  AmslerGridResult copyWith({
+    String? eye,
+    bool? hasDistortions,
+    bool? hasMissingAreas,
+    bool? hasBlurryAreas,
+    List<DistortionPoint>? distortionPoints,
+    String? status,
+    String? annotatedImagePath,
+    String? description,
+  }) {
+    return AmslerGridResult(
+      eye: eye ?? this.eye,
+      hasDistortions: hasDistortions ?? this.hasDistortions,
+      hasMissingAreas: hasMissingAreas ?? this.hasMissingAreas,
+      hasBlurryAreas: hasBlurryAreas ?? this.hasBlurryAreas,
+      distortionPoints: distortionPoints ?? this.distortionPoints,
+      status: status ?? this.status,
+      annotatedImagePath: annotatedImagePath ?? this.annotatedImagePath,
+      description: description ?? this.description,
+    );
+  }
 
   factory AmslerGridResult.fromMap(Map<String, dynamic> data) {
     return AmslerGridResult(
@@ -28,7 +50,8 @@ class AmslerGridResult {
       hasDistortions: data['hasDistortions'] ?? false,
       hasMissingAreas: data['hasMissingAreas'] ?? false,
       hasBlurryAreas: data['hasBlurryAreas'] ?? false,
-      distortionPoints: (data['distortionPoints'] as List<dynamic>?)
+      distortionPoints:
+          (data['distortionPoints'] as List<dynamic>?)
               ?.map((e) => DistortionPoint.fromMap(e))
               .toList() ??
           [],
@@ -51,8 +74,7 @@ class AmslerGridResult {
     };
   }
 
-  bool get isNormal =>
-      !hasDistortions && !hasMissingAreas && !hasBlurryAreas;
+  bool get isNormal => !hasDistortions && !hasMissingAreas && !hasBlurryAreas;
 
   bool get needsAttention =>
       hasDistortions || hasMissingAreas || hasBlurryAreas;
@@ -61,12 +83,12 @@ class AmslerGridResult {
     if (isNormal) {
       return 'No distortions detected';
     }
-    
+
     List<String> issues = [];
     if (hasDistortions) issues.add('wavy/distorted lines');
     if (hasMissingAreas) issues.add('missing areas');
     if (hasBlurryAreas) issues.add('blurry areas');
-    
+
     return 'Detected: ${issues.join(', ')}';
   }
 
@@ -86,12 +108,14 @@ class DistortionPoint {
   final double y;
   final String type; // 'distortion', 'missing', 'blurry'
   final double radius;
+  final bool isStrokeStart;
 
   DistortionPoint({
     required this.x,
     required this.y,
     required this.type,
     this.radius = 10.0,
+    this.isStrokeStart = false,
   });
 
   factory DistortionPoint.fromMap(Map<String, dynamic> data) {
@@ -100,6 +124,7 @@ class DistortionPoint {
       y: (data['y'] ?? 0.0).toDouble(),
       type: data['type'] ?? 'distortion',
       radius: (data['radius'] ?? 10.0).toDouble(),
+      isStrokeStart: data['isStrokeStart'] ?? false,
     );
   }
 
@@ -109,6 +134,7 @@ class DistortionPoint {
       'y': y,
       'type': type,
       'radius': radius,
+      'isStrokeStart': isStrokeStart,
     };
   }
 

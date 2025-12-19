@@ -3,6 +3,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+
 import 'package:intl/intl.dart';
 import '../../data/models/test_result_model.dart';
 import '../../data/models/questionnaire_model.dart';
@@ -660,7 +661,84 @@ class PdfExportService {
           ],
         ),
 
-        pw.SizedBox(height: 6),
+        if ((right?.annotatedImagePath != null) ||
+            (left?.annotatedImagePath != null)) ...[
+          pw.SizedBox(height: 12),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+            children: [
+              if (right?.annotatedImagePath != null)
+                pw.Column(
+                  children: [
+                    pw.Text(
+                      'Right Eye Tracing',
+                      style: pw.TextStyle(
+                        fontSize: 8,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Container(
+                      width: 140,
+                      height: 140,
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColors.grey300),
+                      ),
+                      child: pw.Image(
+                        pw.MemoryImage(
+                          File(right!.annotatedImagePath!).readAsBytesSync(),
+                        ),
+                        fit: pw.BoxFit.contain,
+                      ),
+                    ),
+                  ],
+                ),
+              if (left?.annotatedImagePath != null)
+                pw.Column(
+                  children: [
+                    pw.Text(
+                      'Left Eye Tracing',
+                      style: pw.TextStyle(
+                        fontSize: 8,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Container(
+                      width: 140,
+                      height: 140,
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColors.grey300),
+                      ),
+                      child: pw.Image(
+                        pw.MemoryImage(
+                          File(left!.annotatedImagePath!).readAsBytesSync(),
+                        ),
+                        fit: pw.BoxFit.contain,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
+
+        pw.SizedBox(height: 12),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.start,
+          children: [
+            pw.Text(
+              'Marking Legend: ',
+              style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+            ),
+            _buildPdfLegendItem('Wavy / Distortion', PdfColors.red),
+            pw.SizedBox(width: 10),
+            _buildPdfLegendItem('Missing Area', PdfColors.orange),
+            pw.SizedBox(width: 10),
+            _buildPdfLegendItem('Blurry Area', PdfColors.blue),
+          ],
+        ),
+        pw.SizedBox(height: 8),
         pw.Text(
           'Clinical Note: Amsler grid tests central vision and macular health. Distortions may indicate macular conditions.',
           style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
@@ -702,16 +780,31 @@ class PdfExportService {
             result.recommendation,
             style: const pw.TextStyle(fontSize: 10),
           ),
-          pw.SizedBox(height: 8),
           pw.Container(
             padding: const pw.EdgeInsets.all(8),
             decoration: pw.BoxDecoration(
-              color: statusColor.shade(50) as PdfColor?,
+              color: PdfColors.green50,
               borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+              border: pw.Border.all(color: PdfColors.green200),
             ),
-            child: pw.Text(
-              'Disclaimer: This is a screening tool only. Professional eye examination recommended for comprehensive evaluation.',
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+            child: pw.Row(
+              children: [
+                pw.Text(
+                  '(!)',
+                  style: pw.TextStyle(
+                    color: PdfColors.green800,
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+                pw.SizedBox(width: 8),
+                pw.Expanded(
+                  child: pw.Text(
+                    'Disclaimer: This vision test is a screening tool and is not a substitute for a professional eye examination. If you have concerns about your vision, please seek professional medical advice.',
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.green800),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -789,6 +882,20 @@ class PdfExportService {
         ),
         textAlign: pw.TextAlign.center,
       ),
+    );
+  }
+
+  pw.Widget _buildPdfLegendItem(String label, PdfColor color) {
+    return pw.Row(
+      children: [
+        pw.Container(
+          width: 6,
+          height: 6,
+          decoration: pw.BoxDecoration(color: color, shape: pw.BoxShape.circle),
+        ),
+        pw.SizedBox(width: 4),
+        pw.Text(label, style: const pw.TextStyle(fontSize: 7)),
+      ],
     );
   }
 }

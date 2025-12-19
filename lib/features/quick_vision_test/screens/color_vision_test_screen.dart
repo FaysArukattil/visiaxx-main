@@ -275,7 +275,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    final newIsOk = DistanceHelper.isDistanceAcceptable(distance, 40.0);
+    final newIsOk = !DistanceHelper.shouldPauseTest(status);
 
     setState(() {
       _currentDistance = distance;
@@ -416,23 +416,21 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     if (answer.isEmpty) return false;
     final normalized = answer.replaceAll(' ', '').toLowerCase();
     final expected = plate.normalAnswer.replaceAll(' ', '').toLowerCase();
-    if (normalized == 'x' || normalized == 'nothing' || normalized == 'none') {
-      return expected == 'x';
+    if (normalized == 'nothing' || normalized == 'none' || normalized == 'x') {
+      return expected == 'nothing';
     }
     return normalized == expected;
   }
 
   void _onEyeTestComplete() {
     if (_currentEye == 'right') {
+      _ttsService.stop();
       _ttsService.speak(
         'Right eye test complete. Now we will test your left eye.',
       );
-      setState(() {
-        _phase = TestPhase.leftEyeInstruction;
-        _currentEye = 'left';
-        _currentPlateIndex = 0;
-      });
-      Future.delayed(const Duration(milliseconds: 1500), () {
+
+      // Delay to let the TTS finish and show the eye switch view
+      Future.delayed(const Duration(milliseconds: 2000), () {
         if (mounted) {
           _showLeftEyeInstruction();
         }
@@ -504,16 +502,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     ColorVisionStatus status;
     DeficiencyType? detectedType;
 
-    // Ishihara 14-plate criteria adapted:
-    // Normal: 0-1 errors
-    // Borderline: 2-3 errors
-    // Deficient: 4+ errors
-    // Since we use 13 diagnostic plates (4 trans, 4 van, 2 hidden, 3 classification)
+    // Standard 14-plate criteria adapted for 13 diagnostic plates:
+    // Normal: 0-2 error (11-13 correct)
+    // Borderline: 3-5 errors (8-10 correct)
+    // Deficient: 6+ errors (<=7 correct)
     if (correctAnswers >= 11) {
       status = ColorVisionStatus.normal;
-    } else if (correctAnswers >= 9) {
+    } else if (correctAnswers >= 8) {
       status = ColorVisionStatus.mild;
-    } else if (correctAnswers >= 6) {
+    } else if (correctAnswers >= 5) {
       status = ColorVisionStatus.moderate;
     } else {
       status = ColorVisionStatus.severe;
@@ -786,24 +783,71 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               _submitAnswer(option, index);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: isSelected
-                  ? AppColors.primary
-                  : AppColors.surface,
-              foregroundColor: isSelected
-                  ? Colors.white
-                  : AppColors.textPrimary,
-              elevation: isSelected ? 4 : 2,
+              padding: EdgeInsets.zero,
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: isSelected ? AppColors.primary : AppColors.border,
-                  width: 2,
-                ),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: Text(
-              option,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            child: Builder(
+              builder: (context) {
+                final isCorrect = _checkAnswer(option, plate);
+                final isWrong = isSelected && !isCorrect;
+
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isSelected && !isCorrect
+                        ? Colors.red.withValues(alpha: 0.2)
+                        : isSelected && isCorrect
+                        ? Colors.green.withValues(alpha: 0.2)
+                        : isSelected
+                        ? AppColors.primary.withValues(alpha: 0.2)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? (isCorrect
+                                ? Colors.green
+                                : (isWrong ? Colors.red : AppColors.primary))
+                          : AppColors.primary.withValues(alpha: 0.3),
+                      width: isSelected ? 3 : 2,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color:
+                                  (isCorrect
+                                          ? Colors.green
+                                          : (isWrong
+                                                ? Colors.red
+                                                : AppColors.primary))
+                                      .withValues(alpha: 0.4),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Center(
+                    child: Text(
+                      option,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected
+                            ? (isCorrect
+                                  ? Colors.green
+                                  : (isWrong ? Colors.red : AppColors.primary))
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         );
@@ -820,7 +864,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     // 2. Color vision see number (deficient)
     if (plate.deficientAnswer != null &&
         plate.deficientAnswer != plate.normalAnswer &&
-        plate.deficientAnswer != 'X') {
+        plate.deficientAnswer != 'Nothing') {
       options.add(plate.deficientAnswer!);
     } else if (plate.category == PlateCategory.classification) {
       // For classification, use BOTH alternates if available
@@ -875,10 +919,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       }
     }
 
-    // 4. "Nothing" or "X"
-    if (!options.contains('Nothing') && !options.contains('X')) {
-      if (plate.normalAnswer == 'X') {
-        // If normal is X, then we already have X in options[0] (but let's rename to Nothing)
+    // 4. "Nothing"
+    if (!options.contains('Nothing')) {
+      if (plate.normalAnswer == 'Nothing') {
+        // If normal is Nothing, then we already have Nothing in options[0]
         options[0] = 'Nothing';
       } else {
         options.add('Nothing');

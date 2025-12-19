@@ -39,7 +39,7 @@ class IshiharaPlateData {
   static const List<int> testPlateNumbers = [
     1, // Demo
     2, 3, 4, 5, // Transformation (4)
-    10, 9, 12, 13, // Vanishing (3) + 1 Trans (9)
+    10, 11, 12, 13, // Vanishing (4)
     18, 19, // Hidden (2)
     22, 23, 24, // Classification (3)
   ];
@@ -120,7 +120,7 @@ class IshiharaPlateData {
       category: PlateCategory.transformation,
       normalAnswer: '74',
       deficientAnswer: '21',
-      isUsedInTest: true,
+      isUsedInTest: false,
     ),
 
     // Plates 10-11 - VANISHING (only 2 used, rest skipped)
@@ -129,7 +129,7 @@ class IshiharaPlateData {
       svgPath: 'assets/ishihara_plates/Diagnostic/Vanishing plates/0010.svg',
       category: PlateCategory.vanishing,
       normalAnswer: '2',
-      deficientAnswer: null, // Cannot see
+      deficientAnswer: 'Nothing', // Cannot see
       isUsedInTest: true,
     ),
     IshiharaPlateConfig(
@@ -137,15 +137,15 @@ class IshiharaPlateData {
       svgPath: 'assets/ishihara_plates/Diagnostic/Vanishing plates/0011.svg',
       category: PlateCategory.vanishing,
       normalAnswer: '6',
-      deficientAnswer: null, // Cannot see
-      isUsedInTest: false,
+      deficientAnswer: 'Nothing', // Cannot see
+      isUsedInTest: true,
     ),
     IshiharaPlateConfig(
       plateNumber: 12,
       svgPath: 'assets/ishihara_plates/Diagnostic/Vanishing plates/0012.svg',
       category: PlateCategory.vanishing,
       normalAnswer: '97',
-      deficientAnswer: null,
+      deficientAnswer: 'Nothing',
       isUsedInTest: true,
     ),
     IshiharaPlateConfig(
@@ -153,7 +153,7 @@ class IshiharaPlateData {
       svgPath: 'assets/ishihara_plates/Diagnostic/Vanishing plates/0013.svg',
       category: PlateCategory.vanishing,
       normalAnswer: '45',
-      deficientAnswer: null,
+      deficientAnswer: 'Nothing',
       isUsedInTest: true,
     ),
     IshiharaPlateConfig(
@@ -194,7 +194,7 @@ class IshiharaPlateData {
       plateNumber: 18,
       svgPath: 'assets/ishihara_plates/Diagnostic/Hidden plates/18.svg',
       category: PlateCategory.hidden,
-      normalAnswer: 'X', // Cannot see
+      normalAnswer: 'Nothing', // Cannot see
       deficientAnswer: '5',
       isUsedInTest: true,
     ),
@@ -202,7 +202,7 @@ class IshiharaPlateData {
       plateNumber: 19,
       svgPath: 'assets/ishihara_plates/Diagnostic/Hidden plates/19.svg',
       category: PlateCategory.hidden,
-      normalAnswer: 'X', // Cannot see
+      normalAnswer: 'Nothing', // Cannot see
       deficientAnswer: '2',
       isUsedInTest: true,
     ),

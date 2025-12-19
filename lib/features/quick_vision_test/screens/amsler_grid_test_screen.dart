@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui' as ui;
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
@@ -9,6 +13,7 @@ import '../../../core/services/distance_detection_service.dart';
 import '../../../data/models/amsler_grid_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/services/distance_skip_manager.dart';
+import 'amsler_grid_instructions_screen.dart';
 import 'distance_calibration_screen.dart';
 
 /// Amsler Grid Test for detecting macular degeneration
@@ -27,6 +32,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     toleranceCm: 5.0,
   );
   final DistanceSkipManager _skipManager = DistanceSkipManager();
+  final GlobalKey _gridKey = GlobalKey();
 
   // Test state
   String _currentEye = 'right';
@@ -84,14 +90,28 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   Future<void> _initServices() async {
     await _ttsService.initialize();
-    _ttsService.speak(TtsService.amslerGridInstruction);
 
-    // Show distance calibration first
-    if (_showDistanceCalibration) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showCalibrationScreen();
-      });
-    }
+    // Show instruction screen first
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showInitialInstructions();
+    });
+  }
+
+  void _showInitialInstructions() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => AmslerGridInstructionsScreen(
+          onContinue: () {
+            Navigator.of(context).pop();
+            if (_showDistanceCalibration) {
+              _showCalibrationScreen();
+            } else {
+              _startTest();
+            }
+          },
+        ),
+      ),
+    );
   }
 
   /// Show distance calibration screen
@@ -117,6 +137,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   void _onDistanceCalibrationComplete() {
     setState(() => _showDistanceCalibration = false);
     _startContinuousDistanceMonitoring();
+    _startTest();
   }
 
   /// Start continuous distance monitoring
@@ -204,11 +225,20 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     _ttsService.speakEyeInstruction(_currentEye);
   }
 
-  void _addDistortionPoint(Offset position) {
+  void _onPanStart(DragStartDetails details) {
+    _addDistortionPoint(details.localPosition, isStrokeStart: true);
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    _addDistortionPoint(details.localPosition, isStrokeStart: false);
+  }
+
+  void _addDistortionPoint(Offset position, {bool isStrokeStart = false}) {
     final point = DistortionPoint(
       x: position.dx,
       y: position.dy,
       type: _markingMode,
+      isStrokeStart: isStrokeStart,
     );
 
     setState(() {
@@ -240,7 +270,40 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     });
   }
 
-  void _completeCurrentEye() {
+  Future<String?> _captureGridImage() async {
+    try {
+      final boundary =
+          _gridKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return null;
+
+      final bytes = byteData.buffer.asUint8List();
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName =
+          'amsler_${_currentEye}_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsBytes(bytes);
+
+      debugPrint('[AmslerGrid] Captured image saved at: ${file.path}');
+      return file.path;
+    } catch (e) {
+      debugPrint('[AmslerGrid] Error capturing image: $e');
+      return null;
+    }
+  }
+
+  Future<void> _completeCurrentEye() async {
+    // Capture the grid image before saving
+    String? imagePath;
+    try {
+      imagePath = await _captureGridImage();
+    } catch (e) {
+      debugPrint('[AmslerGrid] Error capturing grid image: $e');
+    }
+
     // Save result for current eye
     final points = _currentEye == 'right' ? _rightEyePoints : _leftEyePoints;
 
@@ -277,6 +340,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       distortionPoints: List.from(points),
       status: status,
       description: description,
+      annotatedImagePath: imagePath,
     );
 
     final provider = context.read<TestSessionProvider>();
@@ -385,163 +449,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     }
 
     if (!_testingStarted) {
-      return _buildInstructionsView();
+      return const Center(child: CircularProgressIndicator());
     }
 
     return _buildTestView();
-  }
-
-  Widget _buildInstructionsView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Instructions card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.info.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.info_outline, color: AppColors.info),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Instructions',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.info,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildInstructionItem(
-                  '1',
-                  'Hold the screen at normal reading distance (about 30cm)',
-                ),
-                _buildInstructionItem(
-                  '2',
-                  'Cover your LEFT eye to test your RIGHT eye first',
-                ),
-                _buildInstructionItem('3', 'Look at the center dot'),
-                _buildInstructionItem(
-                  '4',
-                  'Note any wavy, distorted, or missing lines',
-                ),
-                _buildInstructionItem(
-                  '5',
-                  'Tap on any problem areas you notice',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Preview grid
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cardShadow,
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Image.asset(
-              AppAssets.amslerGrid,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) =>
-                  _buildFallbackGrid(),
-            ),
-          ),
-          const SizedBox(height: 32),
-          // Current eye indicator
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.rightEye.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.visibility, color: AppColors.rightEye),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Testing RIGHT eye first',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Cover your LEFT eye',
-                  style: TextStyle(
-                    color: AppColors.rightEye,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _startTest,
-            child: const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Start Test'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInstructionItem(String number, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: AppColors.info,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(text, style: const TextStyle(height: 1.3))),
-        ],
-      ),
-    );
   }
 
   Widget _buildTestView() {
@@ -626,48 +537,35 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
                 return Center(
                   child: GestureDetector(
-                    onTapDown: (details) {
-                      _addDistortionPoint(details.localPosition);
-                    },
-                    child: SizedBox(
-                      width: gridSize,
-                      height: gridSize,
-                      child: Stack(
-                        children: [
-                          // Grid image
-                          Image.asset(
-                            AppAssets.amslerGrid,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) =>
-                                _buildFallbackGrid(),
-                          ),
-                          // Marked points
-                          ...currentPoints.map(
-                            (point) => Positioned(
-                              left: point.x - 15,
-                              top: point.y - 15,
-                              child: Container(
-                                width: 30,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: _getPointColor(
-                                    point.type,
-                                  ).withValues(alpha: 0.5),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: _getPointColor(point.type),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Icon(
-                                  _getPointIcon(point.type),
-                                  size: 16,
-                                  color: _getPointColor(point.type),
+                    onPanStart: _onPanStart,
+                    onPanUpdate: _onPanUpdate,
+                    child: RepaintBoundary(
+                      key: _gridKey,
+                      child: SizedBox(
+                        width: gridSize,
+                        height: gridSize,
+                        child: Stack(
+                          children: [
+                            // Grid image
+                            Image.asset(
+                              AppAssets.amslerGrid,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildFallbackGrid(),
+                            ),
+                            // Custom Painter for strokes
+                            Positioned.fill(
+                              child: CustomPaint(
+                                painter: AmslerGridPainter(
+                                  points: currentPoints,
+                                  distortionColor: _getPointColor('distortion'),
+                                  missingColor: _getPointColor('missing'),
+                                  blurryColor: _getPointColor('blurry'),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -790,19 +688,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         return AppColors.info;
       default:
         return AppColors.error;
-    }
-  }
-
-  IconData _getPointIcon(String type) {
-    switch (type) {
-      case 'distortion':
-        return Icons.waves;
-      case 'missing':
-        return Icons.visibility_off;
-      case 'blurry':
-        return Icons.blur_on;
-      default:
-        return Icons.error;
     }
   }
 
@@ -1212,4 +1097,60 @@ class _AmslerGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Painter for rendering Amsler grid user strokes
+class AmslerGridPainter extends CustomPainter {
+  final List<DistortionPoint> points;
+  final Color distortionColor;
+  final Color missingColor;
+  final Color blurryColor;
+
+  AmslerGridPainter({
+    required this.points,
+    required this.distortionColor,
+    required this.missingColor,
+    required this.blurryColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.isEmpty) return;
+
+    final Map<String, Paint> paints = {
+      'distortion': Paint()
+        ..color = distortionColor
+        ..strokeWidth = 3.0
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke,
+      'missing': Paint()
+        ..color = missingColor
+        ..strokeWidth =
+            10.0 // Missing areas are thicker
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke,
+      'blurry': Paint()
+        ..color = blurryColor
+        ..strokeWidth = 6.0
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke,
+    };
+
+    for (int i = 0; i < points.length; i++) {
+      if (points[i].isStrokeStart) continue;
+      if (i > 0 && !points[i].isStrokeStart) {
+        // Draw line between current point and previous if previous is same type and same eye
+        if (points[i].type == points[i - 1].type) {
+          canvas.drawLine(
+            points[i - 1].offset,
+            points[i].offset,
+            paints[points[i].type]!,
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant AmslerGridPainter oldDelegate) => true;
 }

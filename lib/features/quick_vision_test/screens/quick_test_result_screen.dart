@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -163,6 +164,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   const SizedBox(height: 24),
 
                   // Action buttons
+                  _buildDisclaimer(),
+                  const SizedBox(height: 24),
                   _buildActionButtons(provider),
                 ],
               ),
@@ -617,6 +620,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               ),
             ],
           ),
+          const Divider(height: 32),
+          _buildAmslerLegend(),
           if ((rightResult?.hasDistortions ?? false) ||
               (leftResult?.hasDistortions ?? false)) ...[
             const SizedBox(height: 16),
@@ -644,6 +649,94 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmslerLegend() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Marking Legend:',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildLegendItem('Wavy', AppColors.error),
+            _buildLegendItem('Missing', AppColors.warning),
+            _buildLegendItem('Blurry', AppColors.info),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDisclaimer() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.success,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'DISCLAIMER:',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'This vision test is a screening tool and is not a substitute for a professional eye examination by a qualified optometrist or ophthalmologist. If you have concerns about your vision, please seek professional medical advice.',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -687,6 +780,29 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Text(
             '${result.distortionPoints.length} area(s) marked',
             style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          ),
+        ],
+        if (result != null && result.annotatedImagePath != null) ...[
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: color.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Image.file(
+                File(result.annotatedImagePath!),
+                height: 120,
+                width: 120,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.broken_image,
+                  color: color.withValues(alpha: 0.5),
+                  size: 40,
+                ),
+              ),
+            ),
           ),
         ],
       ],
