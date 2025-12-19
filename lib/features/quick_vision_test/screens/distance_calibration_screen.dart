@@ -133,6 +133,12 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           'Failed to initialize camera after $maxRetries attempts',
         );
       }
+
+      // Add a listener to ensure UI updates on any controller changes
+      _cameraController!.addListener(() {
+        if (mounted) setState(() {});
+      });
+
       // ✅ DEBUG: Log camera details
       debugPrint('=== CAMERA DEBUG INFO ===');
       debugPrint(
@@ -143,6 +149,9 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
       debugPrint('Is streaming: ${_cameraController!.value.isStreamingImages}');
       debugPrint('Error: ${_cameraController!.value.errorDescription}');
       debugPrint('========================');
+
+      // Small delay before starting monitoring to let camera stabilize
+      await Future.delayed(const Duration(milliseconds: 200));
 
       // Start monitoring
       await _distanceService.startMonitoring();

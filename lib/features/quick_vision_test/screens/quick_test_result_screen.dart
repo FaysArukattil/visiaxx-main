@@ -9,6 +9,7 @@ import '../../../core/services/pdf_export_service.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/color_vision_result.dart';
+import '../../../data/models/pelli_robson_result.dart';
 
 /// Comprehensive results screen displaying all test data
 class QuickTestResultScreen extends StatefulWidget {
@@ -186,6 +187,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     _buildAmslerGridCard(provider),
                     const SizedBox(height: 20),
 
+                    // Pelli-Robson Contrast Sensitivity Results (if available)
+                    if (_hasPelliRobsonResults(provider)) ...[
+                      _buildSectionTitle(
+                        'Contrast Sensitivity',
+                        Icons.contrast,
+                      ),
+                      _buildPelliRobsonCard(provider),
+                      const SizedBox(height: 20),
+                    ],
+
                     // Recommendation
                     _buildRecommendationCard(provider),
                     const SizedBox(height: 24),
@@ -268,7 +279,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
     if (widget.historicalResult != null) {
       name = widget.historicalResult!.profileName.isEmpty
-          ? 'User'
+          ? (provider.profileName.isEmpty ? 'User' : provider.profileName)
           : widget.historicalResult!.profileName;
       testDate = DateFormat(
         'MMM dd, yyyy • h:mm a',
@@ -548,9 +559,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        Text(
-          score,
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            score,
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -840,6 +854,257 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
       ],
+    );
+  }
+
+  // ========== PELLI-ROBSON CONTRAST SENSITIVITY ==========
+
+  bool _hasPelliRobsonResults(TestSessionProvider provider) {
+    return widget.historicalResult?.pelliRobson != null ||
+        provider.pelliRobson != null;
+  }
+
+  Widget _buildPelliRobsonCard(TestSessionProvider provider) {
+    final result = widget.historicalResult?.pelliRobson ?? provider.pelliRobson;
+
+    if (result == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Overall category header
+          _buildPelliRobsonOverallHeader(result),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 16),
+
+          // Short distance result
+          _buildPelliRobsonDistanceResult(
+            'Near Vision (40cm)',
+            result.shortDistance,
+            Icons.smartphone,
+          ),
+          const SizedBox(height: 16),
+
+          // Long distance result
+          _buildPelliRobsonDistanceResult(
+            'Distance Vision (1m)',
+            result.longDistance,
+            Icons.visibility,
+          ),
+          const SizedBox(height: 16),
+
+          // Explanation
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.info.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: AppColors.info, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'What This Means',
+                      style: TextStyle(
+                        color: AppColors.info,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  result.userSummary,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPelliRobsonOverallHeader(PelliRobsonResult result) {
+    Color categoryColor;
+    IconData categoryIcon;
+
+    switch (result.overallCategory) {
+      case 'Excellent':
+        categoryColor = AppColors.success;
+        categoryIcon = Icons.star;
+        break;
+      case 'Normal':
+        categoryColor = AppColors.info;
+        categoryIcon = Icons.check_circle;
+        break;
+      case 'Borderline':
+        categoryColor = AppColors.warning;
+        categoryIcon = Icons.warning_amber;
+        break;
+      case 'Reduced':
+      default:
+        categoryColor = AppColors.error;
+        categoryIcon = Icons.error;
+    }
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: categoryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(categoryIcon, color: categoryColor, size: 28),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Contrast Sensitivity',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                result.overallCategory,
+                style: TextStyle(
+                  color: categoryColor,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Average score badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: categoryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '${result.averageScore.toStringAsFixed(2)} log CS',
+            style: TextStyle(
+              color: categoryColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPelliRobsonDistanceResult(
+    String label,
+    PelliRobsonSingleResult result,
+    IconData icon,
+  ) {
+    Color categoryColor;
+
+    switch (result.category) {
+      case 'Excellent':
+        categoryColor = AppColors.success;
+        break;
+      case 'Normal':
+        categoryColor = AppColors.info;
+        break;
+      case 'Borderline':
+        categoryColor = AppColors.warning;
+        break;
+      case 'Reduced':
+      default:
+        categoryColor = AppColors.error;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.textSecondary, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Last correct triplet: ${result.lastFullTriplet.isNotEmpty ? result.lastFullTriplet : 'N/A'}',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: categoryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  result.category,
+                  style: TextStyle(
+                    color: categoryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${result.adjustedScore.toStringAsFixed(2)} log CS',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

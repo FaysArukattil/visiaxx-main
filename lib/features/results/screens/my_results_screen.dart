@@ -389,14 +389,24 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         break;
     }
 
+    final bool isComprehensive = result.testType == 'comprehensive';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isComprehensive ? const Color(0xFFF0F7FF) : Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: isComprehensive
+            ? Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                width: 1.5,
+              )
+            : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: isComprehensive
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -440,6 +450,28 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                       ).format(result.timestamp),
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
+                    if (isComprehensive) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'FULL EXAMINATION',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -470,8 +502,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  width: 1,
+                ),
               ),
               child: Row(
                 children: [
@@ -487,13 +523,19 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                     'Color',
                     result.colorVision?.isNormal == true ? 'Normal' : 'Check',
                   ),
-                  _buildMiniResult(
-                    'Amsler',
-                    (result.amslerGridRight?.hasDistortions != true &&
-                            result.amslerGridLeft?.hasDistortions != true)
-                        ? 'Normal'
-                        : 'Check',
-                  ),
+                  if (isComprehensive && result.pelliRobson != null)
+                    _buildMiniResult(
+                      'Contrast',
+                      '${result.pelliRobson!.averageScore.toStringAsFixed(1)}',
+                    )
+                  else
+                    _buildMiniResult(
+                      'Amsler',
+                      (result.amslerGridRight?.hasDistortions != true &&
+                              result.amslerGridLeft?.hasDistortions != true)
+                          ? 'Normal'
+                          : 'Check',
+                    ),
                 ],
               ),
             ),
@@ -556,7 +598,11 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         children: [
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: AppColors.primary,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
@@ -691,6 +737,20 @@ class _ResultDetailSheet extends StatelessWidget {
                   if (result.amslerGridLeft?.annotatedImagePath != null)
                     _buildGridImage(result.amslerGridLeft!.annotatedImagePath!),
                 ],
+              ]),
+
+            // Pelli-Robson
+            if (result.pelliRobson != null)
+              _buildSection('Contrast Sensitivity', [
+                _buildDetailRow(
+                  'Near (40cm)',
+                  '${result.pelliRobson!.shortDistance.adjustedScore.toStringAsFixed(2)} log CS',
+                ),
+                _buildDetailRow(
+                  'Distance (1m)',
+                  '${result.pelliRobson!.longDistance.adjustedScore.toStringAsFixed(2)} log CS',
+                ),
+                _buildDetailRow('Status', result.pelliRobson!.overallCategory),
               ]),
 
             // Questionnaire Summary

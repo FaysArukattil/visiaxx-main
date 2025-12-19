@@ -40,6 +40,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   bool _testingStarted = false;
   bool _eyeSwitchPending = false;
   bool _testComplete = false;
+  bool _isNavigatingToNextTest = false;
   bool _showDistanceCalibration = true;
 
   // Distance monitoring
@@ -438,15 +439,35 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     provider.setAmslerGridResult(result);
 
     if (_currentEye == 'right') {
-      setState(() {
-        _eyeSwitchPending = true;
-      });
+      _showCoverEyeInstruction('right');
     } else {
+      _distanceService.stopMonitoring();
       setState(() {
         _testComplete = true;
       });
       _ttsService.speak(TtsService.testComplete);
+
+      // Auto-continue to Contrast Test after 5 seconds if in comprehensive mode
+      if (provider.isComprehensiveTest) {
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted && _testComplete) {
+            _showContrastTransition();
+          }
+        });
+      }
     }
+  }
+
+  void _showContrastTransition() {
+    if (_isNavigatingToNextTest) return;
+    _isNavigatingToNextTest = true;
+
+    final provider = context.read<TestSessionProvider>();
+    if (!provider.isComprehensiveTest) {
+      Navigator.pushReplacementNamed(context, '/quick-test-result');
+      return;
+    }
+    Navigator.pushReplacementNamed(context, '/pelli-robson-test');
   }
 
   void _switchToLeftEye() {
@@ -465,7 +486,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   void _completeAllTests() {
-    Navigator.pushReplacementNamed(context, '/quick-test-result');
+    _showContrastTransition();
   }
 
   @override
@@ -962,19 +983,33 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _completeAllTests,
-                  icon: const Icon(Icons.analytics_outlined),
-                  label: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                  onPressed: provider.isComprehensiveTest
+                      ? _showContrastTransition
+                      : _completeAllTests,
+                  icon: Icon(
+                    provider.isComprehensiveTest
+                        ? Icons.arrow_forward
+                        : Icons.analytics_outlined,
+                  ),
+                  label: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
-                      'View Detailed Analysis',
-                      style: TextStyle(
+                      provider.isComprehensiveTest
+                          ? 'Continue to Contrast Test'
+                          : 'View Detailed Analysis',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: provider.isComprehensiveTest
+                        ? AppColors.primary
+                        : null,
+                    foregroundColor: provider.isComprehensiveTest
+                        ? Colors.white
+                        : null,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

@@ -23,6 +23,8 @@ import 'features/quick_vision_test/screens/cover_left_eye_instruction_screen.dar
 import 'features/quick_vision_test/screens/cover_right_eye_instruction_screen.dart';
 import 'features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
 import 'features/quick_vision_test/screens/short_distance_test_screen.dart';
+import 'features/comprehensive_test/screens/pelli_robson_test_screen.dart';
+import 'features/comprehensive_test/screens/comprehensive_intro_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -89,6 +91,8 @@ class VisiaxApp extends StatelessWidget {
           '/both-eyes-open-instruction': (context) =>
               const BothEyesOpenInstructionScreen(),
           '/short-distance-test': (context) => const ShortDistanceTestScreen(),
+          '/comprehensive-test': (context) => const ComprehensiveIntroScreen(),
+          '/pelli-robson-test': (context) => const PelliRobsonTestScreen(),
         },
       ),
     );

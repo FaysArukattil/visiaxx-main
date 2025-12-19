@@ -698,9 +698,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _ServiceCard(
                   icon: Icons.assessment_rounded,
                   title: 'Full Eye Exam',
-                  onTap: () => ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Coming soon!'))),
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/comprehensive-test'),
                 ),
               ),
             ],

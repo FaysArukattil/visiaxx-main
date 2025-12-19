@@ -6,7 +6,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 
 class BothEyesOpenInstructionScreen extends StatefulWidget {
-  const BothEyesOpenInstructionScreen({super.key});
+  final VoidCallback? onContinue;
+  const BothEyesOpenInstructionScreen({super.key, this.onContinue});
 
   @override
   State<BothEyesOpenInstructionScreen> createState() =>
@@ -56,7 +57,11 @@ class _BothEyesOpenInstructionScreenState
         setState(() => _countdown--);
       } else {
         timer.cancel();
-        _navigateToTest();
+        if (widget.onContinue != null) {
+          widget.onContinue!();
+        } else {
+          _navigateToTest();
+        }
       }
     });
   }
@@ -239,7 +244,9 @@ class _BothEyesOpenInstructionScreenState
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _countdown == 0 ? _navigateToTest : null,
+                    onPressed: _countdown == 0
+                        ? (widget.onContinue ?? _navigateToTest)
+                        : null,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                       backgroundColor: AppColors.primary,

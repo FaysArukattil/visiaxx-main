@@ -7,6 +7,7 @@ import '../../data/models/visiual_acuity_result.dart';
 import '../../data/models/color_vision_result.dart';
 import '../../data/models/amsler_grid_result.dart';
 import '../../data/models/test_result_model.dart';
+import '../../data/models/pelli_robson_result.dart';
 import '../models/short_distance_result.dart';
 
 /// Provider for managing test session state
@@ -27,11 +28,15 @@ class TestSessionProvider extends ChangeNotifier {
   AmslerGridResult? _amslerGridRight;
   AmslerGridResult? _amslerGridLeft;
   ShortDistanceResult? _shortDistance;
+  PelliRobsonResult? _pelliRobson;
 
   // Current test state
   String _currentEye = 'right';
   bool _isTestInProgress = false;
   DateTime? _testStartTime;
+
+  // Comprehensive test mode flag
+  bool _isComprehensiveTest = false;
 
   // Getters
   String get profileType => _profileType;
@@ -47,6 +52,8 @@ class TestSessionProvider extends ChangeNotifier {
   String get currentEye => _currentEye;
   bool get isTestInProgress => _isTestInProgress;
   ShortDistanceResult? get shortDistance => _shortDistance;
+  PelliRobsonResult? get pelliRobson => _pelliRobson;
+  bool get isComprehensiveTest => _isComprehensiveTest;
 
   /// Set profile for self-testing
   void selectSelfProfile(String userId, String userName) {
@@ -78,6 +85,18 @@ class TestSessionProvider extends ChangeNotifier {
     _testStartTime = DateTime.now();
     _currentEye = 'right';
     notifyListeners();
+  }
+
+  /// Start a comprehensive test session
+  void startComprehensiveTest() {
+    _isComprehensiveTest = true;
+    startTest();
+  }
+
+  /// Start a quick test session
+  void startQuickTest() {
+    _isComprehensiveTest = false;
+    startTest();
   }
 
   /// Switch to testing the other eye
@@ -120,6 +139,15 @@ class TestSessionProvider extends ChangeNotifier {
     );
   }
 
+  /// Set Pelli-Robson result
+  void setPelliRobsonResult(PelliRobsonResult result) {
+    _pelliRobson = result;
+    notifyListeners();
+    debugPrint(
+      '✅ [TestSessionProvider] Pelli-Robson result saved: ${result.overallCategory}',
+    );
+  }
+
   /// Get overall test status
   TestStatus getOverallStatus() {
     return TestResultModel.calculateOverallStatus(
@@ -128,6 +156,7 @@ class TestSessionProvider extends ChangeNotifier {
       colorVision: _colorVision,
       amslerRight: _amslerGridRight,
       amslerLeft: _amslerGridLeft,
+      pelliRobson: _pelliRobson,
     );
   }
 
@@ -136,14 +165,20 @@ class TestSessionProvider extends ChangeNotifier {
     return TestResultModel.generateRecommendation(getOverallStatus());
   }
 
-  /// Check if all tests are complete
+  /// Check if all tests are complete (depends on test mode)
   bool get areAllTestsComplete {
-    return _visualAcuityRight != null &&
+    final quickTestsComplete =
+        _visualAcuityRight != null &&
         _visualAcuityLeft != null &&
         _shortDistance != null &&
         _colorVision != null &&
         _amslerGridRight != null &&
         _amslerGridLeft != null;
+
+    if (_isComprehensiveTest) {
+      return quickTestsComplete && _pelliRobson != null;
+    }
+    return quickTestsComplete;
   }
 
   /// Get test duration in seconds
@@ -163,7 +198,7 @@ class TestSessionProvider extends ChangeNotifier {
       profileName: _profileName,
       profileType: _profileType,
       timestamp: DateTime.now(),
-      testType: 'quick',
+      testType: _isComprehensiveTest ? 'comprehensive' : 'quick',
       questionnaire: _questionnaire,
       visualAcuityRight: _visualAcuityRight,
       visualAcuityLeft: _visualAcuityLeft,
@@ -171,11 +206,12 @@ class TestSessionProvider extends ChangeNotifier {
       colorVision: _colorVision,
       amslerGridRight: _amslerGridRight,
       amslerGridLeft: _amslerGridLeft,
+      pelliRobson: _pelliRobson,
       overallStatus: getOverallStatus(),
       recommendation: getRecommendation(),
     );
     debugPrint(
-      '✅ [TestSessionProvider] Built test result with short distance: ${result.shortDistance != null}',
+      '✅ [TestSessionProvider] Built test result with pelli-robson: ${result.pelliRobson != null}',
     );
     return result;
   }
@@ -193,9 +229,11 @@ class TestSessionProvider extends ChangeNotifier {
     _colorVision = null;
     _amslerGridRight = null;
     _amslerGridLeft = null;
+    _pelliRobson = null;
     _currentEye = 'right';
     _isTestInProgress = false;
     _testStartTime = null;
+    _isComprehensiveTest = false;
 
     notifyListeners();
   }

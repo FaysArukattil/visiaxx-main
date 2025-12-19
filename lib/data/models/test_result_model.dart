@@ -4,6 +4,7 @@ import 'visiual_acuity_result.dart';
 import 'color_vision_result.dart';
 import 'amsler_grid_result.dart';
 import 'short_distance_result.dart';
+import 'pelli_robson_result.dart';
 
 /// Test result status
 enum TestStatus {
@@ -33,6 +34,7 @@ class TestResultModel {
   final ColorVisionResult? colorVision;
   final AmslerGridResult? amslerGridRight;
   final AmslerGridResult? amslerGridLeft;
+  final PelliRobsonResult? pelliRobson;
   final TestStatus overallStatus;
   final String recommendation;
   final String? pdfUrl;
@@ -54,6 +56,7 @@ class TestResultModel {
     this.colorVision,
     this.amslerGridRight,
     this.amslerGridLeft,
+    this.pelliRobson,
     required this.overallStatus,
     required this.recommendation,
     this.pdfUrl,
@@ -101,6 +104,9 @@ class TestResultModel {
           : null,
       amslerGridLeft: data['amslerGridLeft'] != null
           ? AmslerGridResult.fromMap(data['amslerGridLeft'])
+          : null,
+      pelliRobson: data['pelliRobson'] != null
+          ? PelliRobsonResult.fromMap(data['pelliRobson'])
           : null,
       overallStatus: TestStatus.values.firstWhere(
         (s) => s.name == data['overallStatus'],
@@ -154,6 +160,7 @@ class TestResultModel {
       'colorVision': colorVision?.toMap(),
       'amslerGridRight': amslerGridRight?.toMap(),
       'amslerGridLeft': amslerGridLeft?.toMap(),
+      'pelliRobson': pelliRobson?.toMap(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,
@@ -169,6 +176,7 @@ class TestResultModel {
     ColorVisionResult? colorVision,
     AmslerGridResult? amslerRight,
     AmslerGridResult? amslerLeft,
+    PelliRobsonResult? pelliRobson,
   }) {
     // Check for URGENT conditions (severe/bilateral issues)
     // Urgent if: Both eyes have Amsler distortions OR either eye has extensive distortions
@@ -218,6 +226,11 @@ class TestResultModel {
       return TestStatus.review;
     }
 
+    // Review if: Pelli-Robson shows reduced contrast sensitivity
+    if (pelliRobson != null && pelliRobson.needsReferral) {
+      return TestStatus.review;
+    }
+
     return TestStatus.normal;
   }
 
@@ -248,6 +261,7 @@ class TestResultModel {
     ColorVisionResult? colorVision,
     AmslerGridResult? amslerGridRight,
     AmslerGridResult? amslerGridLeft,
+    PelliRobsonResult? pelliRobson,
     TestStatus? overallStatus,
     String? recommendation,
     String? pdfUrl,
@@ -269,6 +283,7 @@ class TestResultModel {
       colorVision: colorVision ?? this.colorVision,
       amslerGridRight: amslerGridRight ?? this.amslerGridRight,
       amslerGridLeft: amslerGridLeft ?? this.amslerGridLeft,
+      pelliRobson: pelliRobson ?? this.pelliRobson,
       overallStatus: overallStatus ?? this.overallStatus,
       recommendation: recommendation ?? this.recommendation,
       pdfUrl: pdfUrl ?? this.pdfUrl,

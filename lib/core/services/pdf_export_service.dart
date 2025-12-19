@@ -91,6 +91,12 @@ class PdfExportService {
           _buildAmslerGridDetailedSection(result),
           pw.SizedBox(height: 24),
 
+          // Pelli-Robson Contrast Sensitivity Section - DETAILED
+          if (result.pelliRobson != null) ...[
+            _buildPelliRobsonDetailedSection(result),
+            pw.SizedBox(height: 24),
+          ],
+
           // Overall Assessment
           _buildOverallAssessment(result),
 
@@ -810,6 +816,91 @@ class PdfExportService {
         ),
       ],
     );
+  }
+
+  /// ✅ PELLI-ROBSON - DETAILED
+  pw.Widget _buildPelliRobsonDetailedSection(TestResultModel result) {
+    if (result.pelliRobson == null) return pw.SizedBox();
+    final pr = result.pelliRobson!;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('PELLI-ROBSON CONTRAST SENSITIVITY TEST'),
+        pw.SizedBox(height: 8),
+
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey300),
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+              children: [
+                _buildTableCell('Test Distance', isHeader: true),
+                _buildTableCell('Log CS Score', isHeader: true),
+                _buildTableCell('Category', isHeader: true),
+                _buildTableCell('Clinical Interpretation', isHeader: true),
+              ],
+            ),
+            // Near Test (40cm)
+            pw.TableRow(
+              children: [
+                _buildTableCell('Near (40cm)'),
+                _buildTableCell(
+                  pr.shortDistance.adjustedScore.toStringAsFixed(2),
+                ),
+                _buildTableCell(pr.shortDistance.category),
+                _buildTableCell(
+                  _getPelliRobsonInterpretation(pr.shortDistance.adjustedScore),
+                ),
+              ],
+            ),
+            // Distance Test (1m)
+            pw.TableRow(
+              children: [
+                _buildTableCell('Distance (1m)'),
+                _buildTableCell(
+                  pr.longDistance.adjustedScore.toStringAsFixed(2),
+                ),
+                _buildTableCell(pr.longDistance.category),
+                _buildTableCell(
+                  _getPelliRobsonInterpretation(pr.longDistance.adjustedScore),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Clinical Summary:',
+          style: pw.TextStyle(
+            fontSize: 9,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.blue900,
+          ),
+        ),
+        pw.Text(
+          pr.clinicalSummary,
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
+        ),
+        pw.Text(
+          pr.userSummary,
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Note: Log Contrast Sensitivity (Log CS) measures the ability to detect low contrast patterns. Higher scores indicate better sensitivity.',
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+        ),
+      ],
+    );
+  }
+
+  String _getPelliRobsonInterpretation(double score) {
+    if (score >= 1.65) return 'Normal (Good)';
+    if (score >= 1.35) return 'Mild impairment';
+    if (score >= 1.05) return 'Moderate impairment';
+    return 'Significant impairment - Action recommended';
   }
 
   String _getAmslerInterpretation(bool hasDistortions) {
