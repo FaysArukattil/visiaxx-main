@@ -321,8 +321,78 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     _restartPlateTimer();
   }
 
+  void _showExitConfirmation() {
+    // Pause services while dialog is shown
+    _plateTimer?.cancel();
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
+    setState(() {
+      _isTestPausedForDistance = true;
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Test?'),
+        content: const Text(
+          'Your progress will be lost. What would you like to do?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Resume test
+              if (_phase != TestPhase.complete) {
+                _resumeTestAfterDistance();
+              }
+            },
+            child: const Text('Continue Test'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _resetTest();
+            },
+            child: const Text('Retest', style: TextStyle(color: Colors.orange)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetTest() {
+    _plateTimer?.cancel();
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
+    setState(() {
+      _phase = TestPhase.initialInstructions;
+      _currentEye = 'right';
+      _currentPlateIndex = 0;
+      _rightEyeResponses.clear();
+      _leftEyeResponses.clear();
+      _showingPlate = false;
+      _timeRemaining = TestConstants.colorVisionTimePerPlateSeconds;
+      _isTestPausedForDistance = false;
+    });
+
+    _initServices();
+  }
+
   void _resumeTestAfterDistance() {
-    if (!_isTestPausedForDistance) return;
     _distanceAutoSkipTimer?.cancel();
     setState(() => _isTestPausedForDistance = false);
     _ttsService.speak('Resuming test');
@@ -642,15 +712,19 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     }
 
     return PopScope(
+      canPop: false, // Prevent accidental exit
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          _distanceService.stopMonitoring();
-        }
+        if (didPop) return;
+        _showExitConfirmation();
       },
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
         appBar: AppBar(
           title: Text('Color Vision Test - ${_currentEye.toUpperCase()} Eye'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showExitConfirmation,
+          ),
         ),
         body: SafeArea(
           child: Stack(

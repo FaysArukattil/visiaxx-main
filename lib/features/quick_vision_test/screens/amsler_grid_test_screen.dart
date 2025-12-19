@@ -230,6 +230,78 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     HapticFeedback.heavyImpact();
   }
 
+  void _showExitConfirmation() {
+    // Pause services while dialog is shown
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
+    setState(() {
+      _isTestPausedForDistance = true;
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Test?'),
+        content: const Text(
+          'Your progress will be lost. What would you like to do?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Resume test
+              if (!_testComplete) {
+                _resumeTestAfterDistance();
+              }
+            },
+            child: const Text('Continue Test'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _resetTest();
+            },
+            child: const Text('Retest', style: TextStyle(color: Colors.orange)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetTest() {
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
+    setState(() {
+      _currentEye = 'right';
+      _testingStarted = false;
+      _eyeSwitchPending = false;
+      _testComplete = false;
+      _showDistanceCalibration = true;
+      _isTestPausedForDistance = false;
+      _rightEyePoints.clear();
+      _leftEyePoints.clear();
+      _allLinesStraight = null;
+      _hasMissingAreas = null;
+      _hasDistortions = null;
+    });
+
+    _initServices();
+  }
+
   void _resumeTestAfterDistance() {
     if (!_isTestPausedForDistance) return;
     setState(() => _isTestPausedForDistance = false);
@@ -406,11 +478,15 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_testComplete) {
+      return _buildCompleteView();
+    }
+
     return PopScope(
+      canPop: false, // Prevent accidental exit
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          _distanceService.stopMonitoring();
-        }
+        if (didPop) return;
+        _showExitConfirmation();
       },
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
@@ -419,6 +495,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           backgroundColor: _currentEye == 'right'
               ? AppColors.rightEye.withValues(alpha: 0.1)
               : AppColors.leftEye.withValues(alpha: 0.1),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showExitConfirmation,
+          ),
           actions: [
             if (_testingStarted && !_eyeSwitchPending && !_testComplete)
               IconButton(

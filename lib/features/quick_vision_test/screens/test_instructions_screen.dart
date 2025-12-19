@@ -85,7 +85,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
       _speakCurrentStep();
     } else {
       _ttsService.stop();
-      Navigator.pushNamed(context, '/cover-left-eye-instruction');
+      Navigator.pushReplacementNamed(context, '/cover-left-eye-instruction');
     }
   }
 
@@ -102,170 +102,222 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Test Instructions'),
+  void _showExitConfirmation() {
+    _ttsService.stop();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Test?'),
+        content: const Text(
+          'Your progress will be lost. What would you like to do?',
+        ),
         actions: [
-          IconButton(
-            icon: Icon(
-              _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
-            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Continue Test'),
+          ),
+          TextButton(
             onPressed: () {
-              if (_ttsService.isSpeaking) {
-                _ttsService.stop();
-              } else {
-                _speakCurrentStep();
-              }
-              setState(() {});
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
             },
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Progress bar
-          LinearProgressIndicator(
-            value: (_currentStep + 1) / _steps.length,
-            backgroundColor: AppColors.border,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Test Instructions'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showExitConfirmation,
           ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
+              ),
+              onPressed: () {
+                if (_ttsService.isSpeaking) {
+                  _ttsService.stop();
+                } else {
+                  _speakCurrentStep();
+                }
+                setState(() {});
+              },
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Progress bar
+            LinearProgressIndicator(
+              value: (_currentStep + 1) / _steps.length,
+              backgroundColor: AppColors.border,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
+            ),
 
-          // Main content (responsive layout)
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final availableHeight = constraints.maxHeight;
-                final isCompact = availableHeight < 600;
+            // Main content (responsive layout)
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final availableHeight = constraints.maxHeight;
+                  final isCompact = availableHeight < 600;
 
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: availableHeight),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: isCompact ? 8 : 16,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Step indicator
-                          Text(
-                            'Step ${_currentStep + 1} of ${_steps.length}',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                              fontSize: isCompact ? 12 : 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: isCompact ? 12 : 16),
-
-                          // Step icon (hidden for relaxation to give more space)
-                          if (_steps[_currentStep].type != _StepType.relaxation)
-                            Container(
-                              width: isCompact ? 60 : 70,
-                              height: isCompact ? 60 : 70,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                _steps[_currentStep].icon,
-                                size: isCompact ? 30 : 35,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          if (_steps[_currentStep].type != _StepType.relaxation)
-                            SizedBox(height: isCompact ? 12 : 16),
-
-                          // Step title
-                          Text(
-                            _steps[_currentStep].title,
-                            style: TextStyle(
-                              fontSize: isCompact ? 20 : 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: isCompact ? 8 : 12),
-
-                          // Step description
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              _steps[_currentStep].description,
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: availableHeight),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: isCompact ? 8 : 16,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Step indicator
+                            Text(
+                              'Step ${_currentStep + 1} of ${_steps.length}',
                               style: TextStyle(
                                 color: AppColors.textSecondary,
-                                fontSize: isCompact ? 13 : 15,
-                                height: 1.4,
+                                fontWeight: FontWeight.w500,
+                                fontSize: isCompact ? 12 : 14,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                          ),
-                          SizedBox(height: isCompact ? 16 : 24),
+                            SizedBox(height: isCompact ? 12 : 16),
 
-                          // Step-specific content
-                          _buildStepContent(isCompact),
+                            // Step icon (hidden for relaxation to give more space)
+                            if (_steps[_currentStep].type !=
+                                _StepType.relaxation)
+                              Container(
+                                width: isCompact ? 60 : 70,
+                                height: isCompact ? 60 : 70,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _steps[_currentStep].icon,
+                                  size: isCompact ? 30 : 35,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            if (_steps[_currentStep].type !=
+                                _StepType.relaxation)
+                              SizedBox(height: isCompact ? 12 : 16),
 
-                          SizedBox(height: isCompact ? 12 : 16),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
+                            // Step title
+                            Text(
+                              _steps[_currentStep].title,
+                              style: TextStyle(
+                                fontSize: isCompact ? 20 : 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: isCompact ? 8 : 12),
 
-          // Fixed navigation buttons at bottom
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cardShadow,
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                children: [
-                  if (_currentStep > 0)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _previousStep,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('Back'),
+                            // Step description
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              child: Text(
+                                _steps[_currentStep].description,
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: isCompact ? 13 : 15,
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            SizedBox(height: isCompact ? 16 : 24),
+
+                            // Step-specific content
+                            _buildStepContent(isCompact),
+
+                            SizedBox(height: isCompact ? 12 : 16),
+                          ],
                         ),
                       ),
                     ),
-                  if (_currentStep > 0) const SizedBox(width: 16),
-                  Expanded(
-                    flex: _currentStep == 0 ? 1 : 1,
-                    child: ElevatedButton(
-                      onPressed: _nextStep,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          _currentStep == _steps.length - 1
-                              ? 'Start Test'
-                              : 'Next',
-                        ),
-                      ),
-                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Fixed navigation buttons at bottom
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.cardShadow,
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    if (_currentStep > 0)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _previousStep,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Text('Back'),
+                          ),
+                        ),
+                      ),
+                    if (_currentStep > 0) const SizedBox(width: 16),
+                    Expanded(
+                      flex: _currentStep == 0 ? 1 : 1,
+                      child: ElevatedButton(
+                        onPressed: _nextStep,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            _currentStep == _steps.length - 1
+                                ? 'Start Test'
+                                : 'Next',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

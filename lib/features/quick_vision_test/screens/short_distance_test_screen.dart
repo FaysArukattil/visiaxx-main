@@ -138,11 +138,15 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     try {
       debugPrint('[ShortDistance] 📏 Starting distance monitoring...');
 
-      // ✅ Set up callbacks BEFORE initializing
       // ✅ Set up callbacks
       _distanceService.onDistanceUpdate = _handleDistanceUpdate;
       _distanceService.onError = (msg) =>
           debugPrint('[ShortDistance] ⚠️ Distance error: $msg');
+
+      // ✅ Initialize camera before monitoring
+      if (!_distanceService.isReady) {
+        await _distanceService.initializeCamera();
+      }
 
       await _distanceService.startMonitoring();
 
@@ -494,47 +498,60 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       return _buildCompleteView();
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.testBackground,
-      appBar: AppBar(
-        title: const Text('Reading Test'),
-        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _showExitConfirmation,
+    return PopScope(
+      canPop: false, // Prevent accidental exit
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.testBackground,
+        appBar: AppBar(
+          title: const Text('Reading Test'),
+          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showExitConfirmation,
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                _buildProgressBar(),
-                Expanded(
-                  child: _showSentence
-                      ? _buildSentenceView()
-                      : const Center(child: CircularProgressIndicator()),
-                ),
-                if (_showResult) _buildResultFeedback(),
-              ],
-            ),
-
-            // Recognized text (bottom center)
-            if (_recognizedText != null && _recognizedText!.isNotEmpty)
-              Positioned(
-                bottom: 120, // Lowered but visible
-                left: 0,
-                right: 0,
-                child: Center(child: _buildRecognizedTextIndicator()),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  _buildProgressBar(),
+                  Expanded(
+                    child: _showSentence
+                        ? _buildSentenceView()
+                        : const Center(child: CircularProgressIndicator()),
+                  ),
+                  if (_showResult) _buildResultFeedback(),
+                ],
               ),
 
-            // Distance indicator in bottom right
-            Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
+              // Recognized text (bottom center)
+              if (_recognizedText != null && _recognizedText!.isNotEmpty)
+                Positioned(
+                  bottom: 120, // Lowered but visible
+                  left: 0,
+                  right: 0,
+                  child: Center(child: _buildRecognizedTextIndicator()),
+                ),
 
-            // ✅ Distance warning overlay (voice continues in background)
-            if (_isDistanceOk == false && _showSentence && _waitingForResponse)
-              _buildDistanceWarningOverlay(),
-          ],
+              // Distance indicator in bottom right
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: _buildDistanceIndicator(),
+              ),
+
+              // ✅ Distance warning overlay (voice continues in background)
+              if (_isDistanceOk == false &&
+                  _showSentence &&
+                  _waitingForResponse)
+                _buildDistanceWarningOverlay(),
+            ],
+          ),
         ),
       ),
     );
@@ -1150,26 +1167,74 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   }
 
   void _showExitConfirmation() {
+    // Pause services while dialog is shown
+    _speechService.stopListening();
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Exit Test?'),
-        content: const Text('Your progress will be lost.'),
+        content: const Text(
+          'Your progress will be lost. What would you like to do?',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              // Resume test
+              if (!_testComplete) {
+                _startDistanceMonitoring();
+                if (_waitingForResponse && !_isListening) {
+                  _startListening();
+                }
+              }
+            },
             child: const Text('Continue Test'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context);
+              _resetTest();
+            },
+            child: const Text('Retest', style: TextStyle(color: Colors.orange)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
             },
             child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  void _resetTest() {
+    setState(() {
+      _currentScreen = 0;
+      _results.clear();
+      _testComplete = false;
+      _showSentence = true;
+      _showResult = false;
+      _isListening = false;
+      _recognizedText = '';
+      _isDistanceOk = true;
+    });
+
+    _speechService.stopListening();
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
+    _showNextSentence();
+    _startDistanceMonitoring();
   }
 }
 

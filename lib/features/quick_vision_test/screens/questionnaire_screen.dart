@@ -147,88 +147,133 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     Navigator.pushNamed(context, '/test-instructions');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pre-Test Questions')),
-      body: Column(
-        children: [
-          // Progress indicator
-          LinearProgressIndicator(
-            value: (_currentStep + 1) / 4,
-            backgroundColor: AppColors.border,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+  void _showExitConfirmation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Test?'),
+        content: const Text(
+          'Your progress will be lost. What would you like to do?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Continue Test'),
           ),
-          // Step indicator
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(4, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: index <= _currentStep
-                        ? AppColors.primary
-                        : AppColors.border,
-                  ),
-                );
-              }),
-            ),
-          ),
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: _buildCurrentStep(),
-            ),
-          ),
-          // Navigation buttons
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cardShadow,
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                if (_currentStep > 0)
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _previousStep,
-                      child: const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('Back', style: TextStyle(fontSize: 13)),
-                      ),
-                    ),
-                  ),
-                if (_currentStep > 0) const SizedBox(width: 16),
-                Expanded(
-                  flex: _currentStep == 0 ? 1 : 1,
-                  child: ElevatedButton(
-                    onPressed: _nextStep,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        _currentStep == 3 ? 'Continue' : 'Next',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Pre-Test Questions'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showExitConfirmation,
+          ),
+        ),
+        body: Column(
+          children: [
+            // Progress indicator
+            LinearProgressIndicator(
+              value: (_currentStep + 1) / 4,
+              backgroundColor: AppColors.border,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
+            ),
+            // Step indicator
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(4, (index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: index <= _currentStep
+                          ? AppColors.primary
+                          : AppColors.border,
+                    ),
+                  );
+                }),
+              ),
+            ),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildCurrentStep(),
+              ),
+            ),
+            // Navigation buttons
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.cardShadow,
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  if (_currentStep > 0)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _previousStep,
+                        child: const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text('Back', style: TextStyle(fontSize: 13)),
+                        ),
+                      ),
+                    ),
+                  if (_currentStep > 0) const SizedBox(width: 16),
+                  Expanded(
+                    flex: _currentStep == 0 ? 1 : 1,
+                    child: ElevatedButton(
+                      onPressed: _nextStep,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          _currentStep == 3 ? 'Continue' : 'Next',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

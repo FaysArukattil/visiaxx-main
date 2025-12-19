@@ -88,159 +88,205 @@ class _ColorVisionInstructionsScreenState
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Color Vision Test Instructions'),
-        backgroundColor: AppColors.surface,
+  void _showExitConfirmation() {
+    _ttsService.stop();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Test?'),
+        content: const Text(
+          'Your progress will be lost. What would you like to do?',
+        ),
         actions: [
-          IconButton(
-            icon: Icon(
-              _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
-            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Continue Test'),
+          ),
+          TextButton(
             onPressed: () {
-              if (_ttsService.isSpeaking) {
-                _ttsService.stop();
-              } else {
-                _speakCurrentStep();
-              }
-              setState(() {});
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
             },
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Progress bar
-          LinearProgressIndicator(
-            value: (_currentStep + 1) / _steps.length,
-            backgroundColor: AppColors.border,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Color Vision Test Instructions'),
+          backgroundColor: AppColors.surface,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showExitConfirmation,
           ),
-
-          // Main content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 12),
-
-                  // Step indicator
-                  Text(
-                    'Step ${_currentStep + 1} of ${_steps.length}',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Icon
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _steps[_currentStep].icon,
-                      size: 30,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Title
-                  Text(
-                    _steps[_currentStep].title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Description
-                  Text(
-                    _steps[_currentStep].description,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-
-                  _currentStep == 0
-                      ? _buildPlateExample()
-                      : _buildResponseExample(),
-                  const SizedBox(height: 12),
-                ],
+          actions: [
+            IconButton(
+              icon: Icon(
+                _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
+              ),
+              onPressed: () {
+                if (_ttsService.isSpeaking) {
+                  _ttsService.stop();
+                } else {
+                  _speakCurrentStep();
+                }
+                setState(() {});
+              },
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Progress bar
+            LinearProgressIndicator(
+              value: (_currentStep + 1) / _steps.length,
+              backgroundColor: AppColors.border,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
               ),
             ),
-          ),
 
-          // Navigation buttons
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cardShadow,
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
+            // Main content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 12),
+
+                    // Step indicator
+                    Text(
+                      'Step ${_currentStep + 1} of ${_steps.length}',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Icon
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _steps[_currentStep].icon,
+                        size: 30,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Title
+                    Text(
+                      _steps[_currentStep].title,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Description
+                    Text(
+                      _steps[_currentStep].description,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+
+                    _currentStep == 0
+                        ? _buildPlateExample()
+                        : _buildResponseExample(),
+                    const SizedBox(height: 12),
+                  ],
                 ),
-              ],
+              ),
             ),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                children: [
-                  if (_currentStep > 0)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _previousStep,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(color: AppColors.primary),
-                        ),
-                        child: const Text('Back'),
-                      ),
-                    ),
-                  if (_currentStep > 0) const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _nextStep,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: Text(
-                        _currentStep == _steps.length - 1
-                            ? 'Start Test'
-                            : 'Next',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
+
+            // Navigation buttons
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.cardShadow,
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    if (_currentStep > 0)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _previousStep,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: AppColors.primary),
+                          ),
+                          child: const Text('Back'),
+                        ),
+                      ),
+                    if (_currentStep > 0) const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _nextStep,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text(
+                          _currentStep == _steps.length - 1
+                              ? 'Start Test'
+                              : 'Next',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

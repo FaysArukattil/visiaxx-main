@@ -20,6 +20,8 @@ class ColorVisionCoverEyeScreen extends StatefulWidget {
 
 class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
   int _countdown = 3;
+  bool _isPaused = false;
+  Timer? _countdownTimer;
   final TtsService _ttsService = TtsService();
 
   @override
@@ -33,6 +35,8 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
     await _ttsService.initialize();
     await Future.delayed(const Duration(milliseconds: 500));
 
+    if (!mounted || _isPaused) return;
+
     final eyeBeingTested = widget.eyeToCover == 'left' ? 'right' : 'left';
     await _ttsService.speak(
       'Cover your ${widget.eyeToCover} eye with your palm or a paper. '
@@ -45,8 +49,14 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
   }
 
   void _startCountdown() {
-    Timer.periodic(const Duration(seconds: 1), (timer) {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (_isPaused) {
         timer.cancel();
         return;
       }
@@ -60,8 +70,47 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
     });
   }
 
+  void _showExitConfirmation() {
+    setState(() => _isPaused = true);
+    _countdownTimer?.cancel();
+    _ttsService.stop();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Test?'),
+        content: const Text(
+          'Your progress will be lost. What would you like to do?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() => _isPaused = false);
+              _startCountdown();
+            },
+            child: const Text('Continue Test'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _ttsService.dispose();
     super.dispose();
   }
@@ -73,169 +122,180 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
         ? AppColors.rightEye
         : AppColors.leftEye;
 
-    return Scaffold(
-      backgroundColor: AppColors.testBackground,
-      appBar: AppBar(
-        title: const Text('Test Instructions'),
-        backgroundColor: eyeColor.withValues(alpha: 0.1),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Eye icon with side covered
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: eyeColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(Icons.visibility, size: 60, color: eyeColor),
-                      // Cover appropriate side
-                      Positioned(
-                        left: widget.eyeToCover == 'left' ? 0 : null,
-                        right: widget.eyeToCover == 'right' ? 0 : null,
-                        child: Container(
-                          width: 60,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.7),
-                            borderRadius: BorderRadius.only(
-                              topLeft: widget.eyeToCover == 'left'
-                                  ? const Radius.circular(40)
-                                  : Radius.zero,
-                              bottomLeft: widget.eyeToCover == 'left'
-                                  ? const Radius.circular(40)
-                                  : Radius.zero,
-                              topRight: widget.eyeToCover == 'right'
-                                  ? const Radius.circular(40)
-                                  : Radius.zero,
-                              bottomRight: widget.eyeToCover == 'right'
-                                  ? const Radius.circular(40)
-                                  : Radius.zero,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.testBackground,
+        appBar: AppBar(
+          title: const Text('Test Instructions'),
+          backgroundColor: eyeColor.withValues(alpha: 0.1),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showExitConfirmation,
+          ),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Eye icon with side covered
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: eyeColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(Icons.visibility, size: 60, color: eyeColor),
+                        // Cover appropriate side
+                        Positioned(
+                          left: widget.eyeToCover == 'left' ? 0 : null,
+                          right: widget.eyeToCover == 'right' ? 0 : null,
+                          child: Container(
+                            width: 60,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.only(
+                                topLeft: widget.eyeToCover == 'left'
+                                    ? const Radius.circular(40)
+                                    : Radius.zero,
+                                bottomLeft: widget.eyeToCover == 'left'
+                                    ? const Radius.circular(40)
+                                    : Radius.zero,
+                                topRight: widget.eyeToCover == 'right'
+                                    ? const Radius.circular(40)
+                                    : Radius.zero,
+                                bottomRight: widget.eyeToCover == 'right'
+                                    ? const Radius.circular(40)
+                                    : Radius.zero,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                Text(
-                  'COVER YOUR ${widget.eyeToCover.toUpperCase()} EYE',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: eyeColor,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 16),
-
-                Text(
-                  'Focus with your ${eyeBeingTested.toUpperCase()} eye only',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: AppColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.visible,
-                ),
-                const SizedBox(height: 48),
-
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.cardShadow,
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildInstructionItem(
-                        Icons.straighten,
-                        'Testing Distance',
-                        'Stand 40 centimeters from screen',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildInstructionItem(
-                        Icons.palette,
-                        'Color Plates',
-                        'Look at colored plates and identify the number',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildInstructionItem(
-                        Icons.mic,
-                        'Voice Commands',
-                        'Say the number you see, or say "X" if you cannot see any number',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Countdown and auto-start
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _countdown == 0 ? widget.onContinue : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      backgroundColor: eyeColor,
+                      ],
                     ),
-                    child: _countdown > 0
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      const AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                  value: 1 - (_countdown / 3),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: Text(
-                                  'Starting in $_countdown...',
-                                  style: const TextStyle(fontSize: 16),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            'Start ${eyeBeingTested.toUpperCase()} Eye Test',
-                            style: const TextStyle(fontSize: 16),
-                            overflow: TextOverflow.ellipsis,
-                          ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+
+                  Text(
+                    'COVER YOUR ${widget.eyeToCover.toUpperCase()} EYE',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: eyeColor,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text(
+                    'Focus with your ${eyeBeingTested.toUpperCase()} eye only',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.visible,
+                  ),
+                  const SizedBox(height: 48),
+
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.cardShadow,
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInstructionItem(
+                          Icons.straighten,
+                          'Testing Distance',
+                          'Stand 40 centimeters from screen',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildInstructionItem(
+                          Icons.palette,
+                          'Color Plates',
+                          'Look at colored plates and identify the number',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildInstructionItem(
+                          Icons.mic,
+                          'Voice Commands',
+                          'Say the number you see, or say "X" if you cannot see any number',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Countdown and auto-start
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _countdown == 0 ? widget.onContinue : null,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                        backgroundColor: eyeColor,
+                      ),
+                      child: _countdown > 0
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                    value: 1 - (_countdown / 3),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Flexible(
+                                  child: Text(
+                                    'Starting in $_countdown...',
+                                    style: const TextStyle(fontSize: 16),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              'Start ${eyeBeingTested.toUpperCase()} Eye Test',
+                              style: const TextStyle(fontSize: 16),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

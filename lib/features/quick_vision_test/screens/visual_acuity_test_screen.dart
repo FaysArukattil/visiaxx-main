@@ -213,29 +213,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _resumeAfterPause() {
-    setState(() {
-      _isTestPausedForDistance = false;
-    });
-
-    // Resume distance monitoring if needed
-    if (!_showDistanceCalibration) {
-      _startContinuousDistanceMonitoring();
-    }
-
-    // Resume speech recognition
-    if (_showE && _waitingForResponse) {
-      _continuousSpeech.start(
-        listenDuration: const Duration(minutes: 10),
-        minConfidence: 0.05,
-        bufferMs: 300,
-      );
-
-      // Restart the display timer with remaining time
-      _restartEDisplayTimer();
-    } else if (_showRelaxation) {
-      // Resume relaxation timer
-      _startRelaxation();
-    }
+    _resumeTestAfterDistance();
   }
 
   @override
@@ -457,7 +435,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     HapticFeedback.mediumImpact();
   }
 
-  /// Resume the test after distance is corrected
+  /// Resume the test after distance is corrected or dialog is closed
   void _resumeTestAfterDistance() {
     if (!_isTestPausedForDistance) return;
 
@@ -466,12 +444,44 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _lastShouldPauseTime = null;
     });
 
-    // 🔥 No verbal "Resuming" here either
+    // Resume distance monitoring if needed
+    if (!_showDistanceCalibration) {
+      _startContinuousDistanceMonitoring();
+    }
 
     // Restart the countdown timer with remaining time
     if (_showE && _waitingForResponse) {
+      // Resume speech recognition if needed
+      if (!_continuousSpeech.isActive) {
+        _continuousSpeech.start(
+          listenDuration: const Duration(minutes: 10),
+          minConfidence: 0.05,
+          bufferMs: 300,
+        );
+      }
       _restartEDisplayTimer();
+    } else if (_showRelaxation) {
+      _restartRelaxationTimer();
     }
+  }
+
+  void _restartRelaxationTimer() {
+    _relaxationTimer?.cancel();
+    _relaxationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _relaxationCountdown--;
+      });
+
+      if (_relaxationCountdown <= 0) {
+        timer.cancel();
+        _showTumblingE();
+      }
+    });
   }
 
   /// Restart the E display timer with remaining time
@@ -530,25 +540,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     _ttsService.speak(TtsService.relaxationInstruction);
 
-    _relaxationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
-      setState(() {
-        _relaxationCountdown--;
-      });
-
-      if (_relaxationCountdown <= 3 && _relaxationCountdown > 0) {
-        _ttsService.speakCountdown(_relaxationCountdown);
-      }
-
-      if (_relaxationCountdown <= 0) {
-        timer.cancel();
-        _showTumblingE();
-      }
-    });
+    _restartRelaxationTimer();
   }
 
   void _showTumblingE() {
@@ -845,13 +837,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true, // Allow back navigation
+      canPop: false, // Prevent accidental exit
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          // Clean up when going back
-          _continuousSpeech.stop();
-          _distanceService.stopMonitoring();
-        }
+        if (didPop) return;
+        _showExitConfirmation();
       },
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
@@ -1093,28 +1082,79 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _showExitConfirmation() {
+    // Pause timers and services while dialog is shown
+    _eDisplayTimer?.cancel();
+    _eCountdownTimer?.cancel();
+    _relaxationTimer?.cancel();
+    _continuousSpeech.stop();
+    _distanceService.stopMonitoring();
+
+    setState(() {
+      _isTestPausedForDistance = true;
+    });
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Exit Test?'),
         content: const Text(
-          'Your progress will be lost. Are you sure you want to exit?',
+          'Your progress will be lost. What would you like to do?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              // Resume test
+              if (!_testComplete) {
+                _resumeTestAfterDistance();
+              }
+            },
             child: const Text('Continue Test'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context);
+              _resetTest();
+            },
+            child: const Text('Retest', style: TextStyle(color: Colors.orange)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
             },
             child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  void _resetTest() {
+    setState(() {
+      _currentLevel = 0;
+      _correctAtLevel = 0;
+      _totalAtLevel = 0;
+      _totalCorrect = 0;
+      _totalResponses = 0;
+      _responses.clear();
+      _currentEye = widget.startWithLeftEye ? 'left' : 'right';
+      _eyeSwitchPending = false;
+      _showRelaxation = false;
+      _showE = false;
+      _showResult = false;
+      _testComplete = false;
+      _waitingForResponse = false;
+      _isTestPausedForDistance = false;
+      _showDistanceCalibration = true;
+    });
+
+    _initServices();
   }
 
   Widget _buildInfoBar() {
@@ -1371,9 +1411,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       ],
     );
   }
-
-  // ✅ FIX #1: In visual_acuity_test_screen.dart
-  // FIND the _buildEView() method and REPLACE with this:
 
   Widget _buildEView() {
     final level = TestConstants.visualAcuityLevels[_currentLevel];
@@ -1803,79 +1840,3 @@ class _DirectionButton extends StatelessWidget {
     );
   }
 }
-
-// ✅ NEW Waveform animation for microphone
-// class _SpeechWaveform extends StatefulWidget {
-//   final bool isListening;
-//   final bool isTalking; // NEW
-//   final Color color;
-
-//   const _SpeechWaveform({
-//     required this.isListening,
-//     this.isTalking = false, // NEW
-//     required this.color,
-//   });
-
-//   @override
-//   State<_SpeechWaveform> createState() => _SpeechWaveformState();
-// }
-
-// class _SpeechWaveformState extends State<_SpeechWaveform>
-//     with SingleTickerProviderStateMixin {
-//   late AnimationController _controller;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _controller = AnimationController(
-//       vsync: this,
-//       duration: const Duration(milliseconds: 1000),
-//     )..repeat();
-//   }
-
-//   @override
-//   void dispose() {
-//     _controller.dispose();
-//     super.dispose();
-//   }
-
-//   @override
-//   @override
-//   Widget build(BuildContext context) {
-//     return AnimatedBuilder(
-//       animation: _controller,
-//       builder: (context, child) {
-//         return Row(
-//           mainAxisSize: MainAxisSize.min,
-//           children: List.generate(5, (index) {
-//             final double baseHeight = 5.0;
-//             final double activeHeight = widget.isTalking ? 18.0 : 12.0;
-
-//             // ✅ FIX: Animate IF listening OR talking (more robust)
-//             final bool shouldAnimate = widget.isListening || widget.isTalking;
-
-//             final double height = shouldAnimate
-//                 ? baseHeight +
-//                       activeHeight *
-//                           sin(
-//                             (_controller.value * 2 * pi) + (index * 0.8),
-//                           ).abs()
-//                 : baseHeight;
-
-//             return Container(
-//               margin: const EdgeInsets.symmetric(horizontal: 1.5),
-//               width: 2.5,
-//               height: height,
-//               decoration: BoxDecoration(
-//                 color: widget.color.withValues(
-//                   alpha: shouldAnimate ? 0.8 : 0.3,
-//                 ),
-//                 borderRadius: BorderRadius.circular(2),
-//               ),
-//             );
-//           }),
-//         );
-//       },
-//     );
-//   }
-// }

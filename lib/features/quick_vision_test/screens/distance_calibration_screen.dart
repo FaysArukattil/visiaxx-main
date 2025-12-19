@@ -276,16 +276,61 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     super.dispose();
   }
 
+  void _showExitConfirmation() {
+    _ttsService.stop();
+    _distanceService.stopMonitoring();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Test?'),
+        content: const Text(
+          'Your progress will be lost. What would you like to do?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (mounted) {
+                _distanceService.startMonitoring();
+              }
+            },
+            child: const Text('Continue Test'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: _isInitializing
-            ? _buildLoadingView()
-            : _hasError
-            ? _buildErrorView()
-            : _buildCameraView(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: _isInitializing
+              ? _buildLoadingView()
+              : _hasError
+              ? _buildErrorView()
+              : _buildCameraView(),
+        ),
       ),
     );
   }

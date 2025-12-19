@@ -94,98 +94,144 @@ class _AmslerGridInstructionsScreenState
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Amsler Grid Instructions'),
-        backgroundColor: AppColors.surface,
+  void _showExitConfirmation() {
+    _ttsService.stop();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit Test?'),
+        content: const Text(
+          'Your progress will be lost. What would you like to do?',
+        ),
         actions: [
-          IconButton(
-            icon: Icon(
-              _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
-            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Continue Test'),
+          ),
+          TextButton(
             onPressed: () {
-              if (_ttsService.isSpeaking) {
-                _ttsService.stop();
-              } else {
-                _speakCurrentStep();
-              }
-              setState(() {});
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
             },
+            child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          LinearProgressIndicator(
-            value: (_currentStep + 1) / _steps.length,
-            backgroundColor: AppColors.border,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Amsler Grid Instructions'),
+          backgroundColor: AppColors.surface,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showExitConfirmation,
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  Text(
-                    'Step ${_currentStep + 1} of ${_steps.length}',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _steps[_currentStep].icon,
-                      size: 30,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _steps[_currentStep].title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _steps[_currentStep].description,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 15,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Animation or Static Preview
-                  _currentStep == 3
-                      ? const AmslerGridDrawingAnimation()
-                      : _buildGridPreview(),
-
-                  const SizedBox(height: 20),
-                ],
+          actions: [
+            IconButton(
+              icon: Icon(
+                _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
+              ),
+              onPressed: () {
+                if (_ttsService.isSpeaking) {
+                  _ttsService.stop();
+                } else {
+                  _speakCurrentStep();
+                }
+                setState(() {});
+              },
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            LinearProgressIndicator(
+              value: (_currentStep + 1) / _steps.length,
+              backgroundColor: AppColors.border,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
               ),
             ),
-          ),
-          _buildNavigationButtons(),
-        ],
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+                    Text(
+                      'Step ${_currentStep + 1} of ${_steps.length}',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _steps[_currentStep].icon,
+                        size: 30,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _steps[_currentStep].title,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _steps[_currentStep].description,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Animation or Static Preview
+                    _currentStep == 3
+                        ? const AmslerGridDrawingAnimation()
+                        : _buildGridPreview(),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+            _buildNavigationButtons(),
+          ],
+        ),
       ),
     );
   }
