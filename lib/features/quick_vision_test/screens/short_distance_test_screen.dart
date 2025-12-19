@@ -112,6 +112,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     };
 
     // ✅ Sync voice recognition to start AFTER TTS finishes
+    // ✅ Sync voice recognition to start AFTER TTS finishes
     _ttsService.onSpeakingStateChanged = (isSpeaking) {
       if (!isSpeaking &&
           mounted &&
@@ -125,8 +126,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       }
     };
 
-    // Start first sentence
-    _showNextSentence();
+    // ✅ FIX: Wait for TTS service to be ready before starting
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _showNextSentence();
+      }
+    });
   }
 
   Future<void> _startDistanceMonitoring() async {
@@ -220,6 +225,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   /// ✅ ULTRA-RELIABLE: Start listening with optimal settings
   Future<void> _startListening() async {
+    if (mounted) {
+      setState(() => _isListening = true);
+    }
+
     _accumulatedSpeech = '';
     _speechChunks.clear();
 
@@ -819,7 +828,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                             _showKeyboard = false;
                             _inputController.clear();
                           });
-                          if (!_isListening) {
+                          // ✅ FIX: Toggle listening on/off
+                          if (_isListening) {
+                            _speechService.cancel();
+                            setState(() => _isListening = false);
+                          } else {
                             _startListening();
                           }
                         },
@@ -1206,7 +1219,10 @@ class _SpeechWaveformState extends State<_SpeechWaveform>
             final double baseHeight = 5.0;
             final double activeHeight = widget.isTalking ? 18.0 : 12.0;
 
-            final double height = widget.isListening
+            // ✅ Animate IF listening OR talking (more robust)
+            final bool shouldAnimate = widget.isListening || widget.isTalking;
+
+            final double height = shouldAnimate
                 ? baseHeight +
                       activeHeight *
                           sin(
@@ -1220,7 +1236,7 @@ class _SpeechWaveformState extends State<_SpeechWaveform>
               height: height,
               decoration: BoxDecoration(
                 color: widget.color.withValues(
-                  alpha: widget.isListening ? 0.8 : 0.3,
+                  alpha: shouldAnimate ? 0.8 : 0.3,
                 ),
                 borderRadius: BorderRadius.circular(2),
               ),

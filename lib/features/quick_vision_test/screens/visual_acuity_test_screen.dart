@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
+import 'package:visiaxx/features/comprehensive_test/widgets/speech_waveform.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
@@ -1194,7 +1195,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _SpeechWaveform(
+                SpeechWaveform(
                   isListening: _isListening,
                   isTalking: _isSpeechActive,
                   color: AppColors.success,
@@ -1790,73 +1791,77 @@ class _DirectionButton extends StatelessWidget {
 }
 
 // ✅ NEW Waveform animation for microphone
-class _SpeechWaveform extends StatefulWidget {
-  final bool isListening;
-  final bool isTalking; // NEW
-  final Color color;
+// class _SpeechWaveform extends StatefulWidget {
+//   final bool isListening;
+//   final bool isTalking; // NEW
+//   final Color color;
 
-  const _SpeechWaveform({
-    required this.isListening,
-    this.isTalking = false, // NEW
-    required this.color,
-  });
+//   const _SpeechWaveform({
+//     required this.isListening,
+//     this.isTalking = false, // NEW
+//     required this.color,
+//   });
 
-  @override
-  State<_SpeechWaveform> createState() => _SpeechWaveformState();
-}
+//   @override
+//   State<_SpeechWaveform> createState() => _SpeechWaveformState();
+// }
 
-class _SpeechWaveformState extends State<_SpeechWaveform>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+// class _SpeechWaveformState extends State<_SpeechWaveform>
+//     with SingleTickerProviderStateMixin {
+//   late AnimationController _controller;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat();
-  }
+//   @override
+//   void initState() {
+//     super.initState();
+//     _controller = AnimationController(
+//       vsync: this,
+//       duration: const Duration(milliseconds: 1000),
+//     )..repeat();
+//   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+//   @override
+//   void dispose() {
+//     _controller.dispose();
+//     super.dispose();
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(5, (index) {
-            final double baseHeight = 5.0;
-            final double activeHeight = widget.isTalking ? 18.0 : 12.0;
+//   @override
+//   @override
+//   Widget build(BuildContext context) {
+//     return AnimatedBuilder(
+//       animation: _controller,
+//       builder: (context, child) {
+//         return Row(
+//           mainAxisSize: MainAxisSize.min,
+//           children: List.generate(5, (index) {
+//             final double baseHeight = 5.0;
+//             final double activeHeight = widget.isTalking ? 18.0 : 12.0;
 
-            final double height = widget.isListening
-                ? baseHeight +
-                      activeHeight *
-                          sin(
-                            (_controller.value * 2 * pi) + (index * 0.8),
-                          ).abs()
-                : baseHeight;
+//             // ✅ FIX: Animate IF listening OR talking (more robust)
+//             final bool shouldAnimate = widget.isListening || widget.isTalking;
 
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 1.5),
-              width: 2.5,
-              height: height,
-              decoration: BoxDecoration(
-                color: widget.color.withValues(
-                  alpha: widget.isListening ? 0.8 : 0.3,
-                ),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            );
-          }),
-        );
-      },
-    );
-  }
-}
+//             final double height = shouldAnimate
+//                 ? baseHeight +
+//                       activeHeight *
+//                           sin(
+//                             (_controller.value * 2 * pi) + (index * 0.8),
+//                           ).abs()
+//                 : baseHeight;
+
+//             return Container(
+//               margin: const EdgeInsets.symmetric(horizontal: 1.5),
+//               width: 2.5,
+//               height: height,
+//               decoration: BoxDecoration(
+//                 color: widget.color.withValues(
+//                   alpha: shouldAnimate ? 0.8 : 0.3,
+//                 ),
+//                 borderRadius: BorderRadius.circular(2),
+//               ),
+//             );
+//           }),
+//         );
+//       },
+//     );
+//   }
+// }
