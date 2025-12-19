@@ -734,20 +734,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                     imagePath: _testPlates[_currentPlateIndex].svgPath,
                     size: MediaQuery.of(context).size.width - 48,
                   ),
-                const SizedBox(height: 12),
-                Text(
-                  'What number do you see?',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Select the number you see',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 _buildOptionButtons(),
               ],
             ),

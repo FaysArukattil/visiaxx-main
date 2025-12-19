@@ -58,6 +58,8 @@ class _AmslerGridInstructionsScreenState
 
   Future<void> _initTts() async {
     await _ttsService.initialize();
+    // Add a small delay to ensure TTS engine is ready
+    await Future.delayed(const Duration(milliseconds: 500));
     _speakCurrentStep();
   }
 
