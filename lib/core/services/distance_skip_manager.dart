@@ -131,4 +131,5 @@ class DistanceTestType {
   static const String shortDistance = 'short_distance';
   static const String colorVision = 'color_vision';
   static const String amslerGrid = 'amsler_grid';
+  static const String pelliRobson = 'pelli_robson';
 }

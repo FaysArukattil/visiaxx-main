@@ -6,8 +6,30 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 
 class BothEyesOpenInstructionScreen extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final String ttsMessage;
+  final double targetDistance;
+  final String startButtonText;
+  final String instructionTitle;
+  final String instructionDescription;
+  final IconData instructionIcon;
   final VoidCallback? onContinue;
-  const BothEyesOpenInstructionScreen({super.key, this.onContinue});
+
+  const BothEyesOpenInstructionScreen({
+    super.key,
+    this.title = 'Reading Test Instructions',
+    this.subtitle = 'Reading Test - Near Vision',
+    this.ttsMessage =
+        'Now we will test your near vision for reading. Keep both eyes open. Hold your device at 40 centimeters from your eyes. That is about the length from your elbow to your fingertips. Read each sentence aloud clearly and completely.',
+    this.targetDistance = 40.0,
+    this.startButtonText = 'Start Reading Test',
+    this.instructionTitle = 'Tap to Respond',
+    this.instructionDescription =
+        'Identify the item on screen and tap the correct option',
+    this.instructionIcon = Icons.touch_app,
+    this.onContinue,
+  });
 
   @override
   State<BothEyesOpenInstructionScreen> createState() =>
@@ -16,7 +38,7 @@ class BothEyesOpenInstructionScreen extends StatefulWidget {
 
 class _BothEyesOpenInstructionScreenState
     extends State<BothEyesOpenInstructionScreen> {
-  int _countdown = 3; // Changed from _buttonEnabled to _countdown
+  int _countdown = 3;
   final TtsService _ttsService = TtsService();
   Timer? _countdownTimer;
   bool _isPaused = false;
@@ -25,24 +47,15 @@ class _BothEyesOpenInstructionScreenState
   void initState() {
     super.initState();
     _initializeTts();
-    _startCountdown(); // Start countdown instead of single timer
+    _startCountdown();
   }
 
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
     await Future.delayed(const Duration(milliseconds: 500));
-    await _ttsService.speak(
-      'Now we will test your near vision for reading. '
-      'Keep both eyes open. '
-      'Hold your device at 40 centimeters from your eyes. '
-      'That is about the length from your elbow to your fingertips. '
-      'You will see sentences on the screen. '
-      'Read each sentence aloud clearly and completely.',
-      speechRate: 0.5,
-    );
+    await _ttsService.speak(widget.ttsMessage, speechRate: 0.5);
   }
 
-  // NEW: Countdown timer that auto-navigates
   void _startCountdown() {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -66,14 +79,13 @@ class _BothEyesOpenInstructionScreenState
     });
   }
 
-  // Navigate directly to calibration for the reading test
   void _navigateToTest() {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => DistanceCalibrationScreen(
-          targetDistanceCm: 40.0,
-          toleranceCm: 5.0,
+          targetDistanceCm: widget.targetDistance,
+          toleranceCm: widget.targetDistance >= 100 ? 8.0 : 5.0,
           onCalibrationComplete: () {
             Navigator.pushReplacement(
               context,
@@ -124,7 +136,7 @@ class _BothEyesOpenInstructionScreenState
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(context);
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/home',
@@ -149,7 +161,7 @@ class _BothEyesOpenInstructionScreenState
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
         appBar: AppBar(
-          title: const Text('Reading Test Instructions'),
+          title: Text(widget.title),
           backgroundColor: AppColors.primary.withValues(alpha: 0.1),
           leading: IconButton(
             icon: const Icon(Icons.close),
@@ -162,7 +174,6 @@ class _BothEyesOpenInstructionScreenState
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Both eyes open icon
                 Container(
                   width: 120,
                   height: 120,
@@ -178,7 +189,6 @@ class _BothEyesOpenInstructionScreenState
                 ),
                 const SizedBox(height: 32),
 
-                // Title
                 const Text(
                   'KEEP BOTH EYES OPEN',
                   style: TextStyle(
@@ -190,9 +200,8 @@ class _BothEyesOpenInstructionScreenState
                 ),
                 const SizedBox(height: 16),
 
-                // Subtitle
                 Text(
-                  'Reading Test - Near Vision',
+                  widget.subtitle,
                   style: TextStyle(
                     fontSize: 18,
                     color: AppColors.textSecondary,
@@ -201,7 +210,6 @@ class _BothEyesOpenInstructionScreenState
                 ),
                 const SizedBox(height: 48),
 
-                // Instructions
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -221,26 +229,25 @@ class _BothEyesOpenInstructionScreenState
                       _buildInstructionItem(
                         Icons.straighten,
                         'Testing Distance',
-                        'Hold device 40cm from your eyes',
+                        'Hold device ${widget.targetDistance.toInt()}cm from your eyes',
                       ),
                       const SizedBox(height: 16),
                       _buildInstructionItem(
-                        Icons.record_voice_over,
-                        'Read Aloud',
-                        'Read each sentence clearly and completely',
+                        Icons.touch_app,
+                        'Tap to Respond',
+                        'Identify the item on screen and tap the correct option',
                       ),
                       const SizedBox(height: 16),
                       _buildInstructionItem(
-                        Icons.hearing,
-                        'Voice Recognition',
-                        'The app will listen and verify your reading',
+                        Icons.center_focus_strong,
+                        'Stay Focused',
+                        'Keep your head steady and maintain the correct distance',
                       ),
                     ],
                   ),
                 ),
                 const Spacer(),
 
-                // UPDATED: Button with countdown
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -274,9 +281,9 @@ class _BothEyesOpenInstructionScreenState
                               ),
                             ],
                           )
-                        : const Text(
-                            'Start Reading Test',
-                            style: TextStyle(fontSize: 16),
+                        : Text(
+                            widget.startButtonText,
+                            style: const TextStyle(fontSize: 16),
                           ),
                   ),
                 ),

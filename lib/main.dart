@@ -25,6 +25,7 @@ import 'features/quick_vision_test/screens/both_eyes_open_instruction_screen.dar
 import 'features/quick_vision_test/screens/short_distance_test_screen.dart';
 import 'features/comprehensive_test/screens/pelli_robson_test_screen.dart';
 import 'features/comprehensive_test/screens/comprehensive_intro_screen.dart';
+import 'features/quick_vision_test/screens/quick_test_intro_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -73,7 +74,8 @@ class VisiaxApp extends StatelessWidget {
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegistrationScreen(),
           '/home': (context) => const HomeScreen(),
-          '/quick-test': (context) => const ProfileSelectionScreen(),
+          '/quick-test': (context) => const QuickTestIntroScreen(),
+          '/profile-selection': (context) => const ProfileSelectionScreen(),
           '/questionnaire': (context) => const QuestionnaireScreen(),
           '/test-instructions': (context) => const TestInstructionsScreen(),
           '/visual-acuity-test': (context) => const VisualAcuityTestScreen(),

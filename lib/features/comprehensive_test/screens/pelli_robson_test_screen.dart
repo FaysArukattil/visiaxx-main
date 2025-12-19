@@ -48,9 +48,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   bool _showingInstructions = true;
   bool _showDistanceCalibration = true;
 
-  // Distance monitoring - Not used, but status might be needed for UI if added later
-  // Removed unused fields to fix lint warnings
   bool _isTestPausedForDistance = false;
+  double _currentDistance = 0;
+  DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   DateTime? _lastShouldPauseTime;
   static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
 
@@ -88,6 +88,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       if (mounted) setState(() => _isListening = isListening);
     };
 
+    // Start distance monitoring
+    _startContinuousDistanceMonitoring();
+
     // First time - show calibration if needed
     if (_showDistanceCalibration) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -95,6 +98,76 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       });
     } else {
       _startTest();
+    }
+  }
+
+  void _startContinuousDistanceMonitoring() async {
+    _distanceService.onDistanceUpdate = _handleDistanceUpdate;
+    _distanceService.onError = (msg) => debugPrint('[DistanceMonitor] $msg');
+
+    if (!_distanceService.isReady) {
+      await _distanceService.initializeCamera();
+    }
+    await _distanceService.startMonitoring();
+  }
+
+  void _handleDistanceUpdate(double distance, DistanceStatus status) {
+    if (!mounted) return;
+
+    final shouldPause = DistanceHelper.shouldPauseTestForDistance(
+      distance,
+      status,
+      _currentMode == 'short' ? 'near_vision' : 'visual_acuity',
+    );
+
+    setState(() {
+      _currentDistance = distance;
+      _distanceStatus = status;
+    });
+
+    if (_isTestActive && !_showingInstructions) {
+      if (shouldPause) {
+        _lastShouldPauseTime ??= DateTime.now();
+        final durationSinceFirstIssue = DateTime.now().difference(
+          _lastShouldPauseTime!,
+        );
+
+        if (durationSinceFirstIssue >= _distancePauseDebounce &&
+            !_isTestPausedForDistance) {
+          _skipManager
+              .canShowDistanceWarning(DistanceTestType.pelliRobson)
+              .then((canShow) {
+                if (mounted && canShow) {
+                  _pauseTestForDistance();
+                }
+              });
+        }
+      } else {
+        _lastShouldPauseTime = null;
+        if (_isTestPausedForDistance) {
+          _resumeTestAfterDistance();
+        }
+      }
+    }
+  }
+
+  void _pauseTestForDistance() {
+    setState(() {
+      _isTestPausedForDistance = true;
+    });
+    _autoAdvanceTimer?.cancel();
+    _silenceTimer?.cancel();
+    HapticFeedback.mediumImpact();
+  }
+
+  void _resumeTestAfterDistance() {
+    if (!_isTestPausedForDistance) return;
+    setState(() {
+      _isTestPausedForDistance = false;
+      _lastShouldPauseTime = null;
+    });
+    if (_isTestActive) {
+      _startListeningForTriplet();
     }
   }
 
@@ -124,82 +197,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     });
     _startContinuousDistanceMonitoring();
     _startTest();
-  }
-
-  Future<void> _startContinuousDistanceMonitoring() async {
-    _distanceService.onDistanceUpdate = _handleDistanceUpdate;
-    _distanceService.onError = (msg) => debugPrint('[PelliRobson] $msg');
-
-    if (!_distanceService.isReady) {
-      debugPrint(
-        '[PelliRobson] Initializing camera for distance monitoring...',
-      );
-      await _distanceService.initializeCamera();
-    }
-    if (!_distanceService.isMonitoring) {
-      debugPrint('[PelliRobson] Starting distance monitoring...');
-      await _distanceService.startMonitoring();
-    }
-  }
-
-  void _handleDistanceUpdate(double distance, DistanceStatus status) {
-    if (!mounted) return;
-
-    final shouldPause = DistanceHelper.shouldPauseTestForDistance(
-      distance,
-      status,
-      _currentMode == 'short' ? 'short_distance' : 'visual_acuity',
-    );
-
-    setState(() {
-      // Unused fields removed to fix lint warnings
-    });
-
-    if (_isTestActive && !_showingInstructions && !_showDistanceCalibration) {
-      if (shouldPause) {
-        _lastShouldPauseTime ??= DateTime.now();
-        final durationSinceFirstIssue = DateTime.now().difference(
-          _lastShouldPauseTime!,
-        );
-
-        if (durationSinceFirstIssue >= _distancePauseDebounce &&
-            !_isTestPausedForDistance) {
-          _skipManager
-              .canShowDistanceWarning(
-                _currentMode == 'short'
-                    ? DistanceTestType.shortDistance
-                    : DistanceTestType.visualAcuity,
-              )
-              .then((canShow) {
-                if (mounted && canShow) {
-                  _pauseTestForDistance();
-                }
-              });
-        }
-      } else {
-        _lastShouldPauseTime = null;
-        if (_isTestPausedForDistance) {
-          _resumeTestAfterDistance();
-        }
-      }
-    }
-  }
-
-  void _pauseTestForDistance() {
-    setState(() => _isTestPausedForDistance = true);
-    _silenceTimer?.cancel();
-    _autoAdvanceTimer?.cancel();
-    _continuousSpeech.stop();
-    HapticFeedback.mediumImpact();
-  }
-
-  void _resumeTestAfterDistance() {
-    if (!_isTestPausedForDistance) return;
-    setState(() => _isTestPausedForDistance = false);
-
-    if (_isTestActive) {
-      _startListeningForTriplet();
-    }
   }
 
   Timer? _speechActiveTimer;
@@ -322,10 +319,24 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _startTest() {
     _fuzzyMatcher.reset();
 
-    // Show both eyes open instruction first
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => BothEyesOpenInstructionScreen(
+          title: _currentMode == 'short'
+              ? 'Near Contrast Test'
+              : 'Long Distance Contrast Test',
+          subtitle: _currentMode == 'short'
+              ? 'Contrast Sensitivity - 40cm'
+              : 'Contrast Sensitivity - 1 Meter',
+          ttsMessage: _currentMode == 'short'
+              ? 'Now we will test your contrast sensitivity at near distance. Keep both eyes open. Hold the device at 40 centimeters and read the triplets of letters aloud.'
+              : 'Now we will test your contrast sensitivity at distance. Keep both eyes open. Sit at 1 meter from the screen and read the triplets of letters aloud.',
+          targetDistance: _currentMode == 'short' ? 40.0 : 100.0,
+          startButtonText: 'Start Contrast Test',
+          instructionTitle: 'Read Aloud',
+          instructionDescription:
+              'Read the three letters in each group clearly',
+          instructionIcon: Icons.record_voice_over,
           onContinue: () {
             Navigator.of(context).pop();
             _actuallyStartTest();
@@ -643,25 +654,36 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           ],
         ),
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              // Progress bar
-              LinearProgressIndicator(
-                value:
-                    (_currentScreenIndex + 1) / PelliRobsonScoring.totalScreens,
-                backgroundColor: Colors.grey[200],
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppColors.primary,
-                ),
+              Column(
+                children: [
+                  // Progress bar
+                  LinearProgressIndicator(
+                    value:
+                        (_currentScreenIndex + 1) /
+                        PelliRobsonScoring.totalScreens,
+                    backgroundColor: Colors.grey[200],
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
+                  ),
+
+                  // Triplets display
+                  Expanded(child: _buildTripletsDisplay()),
+
+                  // Speech indicator
+                  _buildSpeechIndicator(),
+
+                  const SizedBox(height: 20),
+                ],
               ),
 
-              // Triplets display
-              Expanded(child: _buildTripletsDisplay()),
+              // Distance indicator
+              Positioned(right: 16, top: 16, child: _buildDistanceIndicator()),
 
-              // Speech indicator
-              _buildSpeechIndicator(),
-
-              const SizedBox(height: 20),
+              // Distance warning overlay
+              if (_isTestPausedForDistance) _buildDistanceWarningOverlay(),
             ],
           ),
         ),
@@ -772,6 +794,103 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDistanceIndicator() {
+    final target = _currentMode == 'short' ? 40.0 : 100.0;
+    final indicatorColor = DistanceHelper.getDistanceColor(
+      _currentDistance,
+      target,
+    );
+    final distanceText = _currentDistance > 0
+        ? '${_currentDistance.toStringAsFixed(0)}cm'
+        : 'No face';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: indicatorColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: indicatorColor, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.straighten, size: 14, color: indicatorColor),
+          const SizedBox(width: 4),
+          Text(
+            distanceText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: indicatorColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDistanceWarningOverlay() {
+    final target = _currentMode == 'short' ? 40.0 : 100.0;
+    final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, target);
+    final instruction = DistanceHelper.getDetailedInstruction(target);
+
+    return Container(
+      color: Colors.black.withValues(alpha: 0.85),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.warning_rounded,
+                size: 60,
+                color: AppColors.warning,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Adjust Distance',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.error,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                pauseReason,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                instruction,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  _skipManager.recordSkip(DistanceTestType.pelliRobson);
+                  _resumeTestAfterDistance();
+                },
+                child: const Text('Continue Anyway'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -43,7 +43,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
       'Keep your $eyeBeingTested eye open. '
       'Stand at 40 centimeters distance from the screen. '
       'You will see colored plates with numbers. '
-      'Say the number you see out loud.',
+      'Tap the correct option that matches what you see on the screen.',
       speechRate: 0.5,
     );
   }
@@ -242,9 +242,9 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildInstructionItem(
-                          Icons.mic,
-                          'Voice Commands',
-                          'Say the number you see, or say "X" if you cannot see any number',
+                          Icons.touch_app,
+                          'Tap to Respond',
+                          'Identify the number on the plate and tap the corresponding option button',
                         ),
                       ],
                     ),
