@@ -731,13 +731,27 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _completeEyeTest() {
-    // Calculate final score
-    final level = _currentLevel > 0 ? _currentLevel - 1 : 0;
-    final vaLevel = TestConstants.visualAcuityLevels[level];
+    // ✅ NEW SCORING LOGIC: Find the BEST (smallest) font size correctly identified
+    int bestLevelIndex = -1;
+    for (var response in _responses) {
+      if (response.isCorrect) {
+        // Higher level index means smaller size (6/6 is index 6)
+        if (bestLevelIndex == -1 || response.level > bestLevelIndex) {
+          bestLevelIndex = response.level;
+        }
+      }
+    }
+
+    // Default to level 0 (6/60) if none were correct
+    final vaLevel = bestLevelIndex != -1
+        ? TestConstants.visualAcuityLevels[bestLevelIndex]
+        : TestConstants.visualAcuityLevels[0];
 
     String status;
-    if (vaLevel.logMAR <= 0.0) {
-      status = 'Normal';
+    if (bestLevelIndex == -1) {
+      status = 'Significant reduction (Below 6/60)';
+    } else if (vaLevel.logMAR <= 0.0) {
+      status = 'Normal Vision';
     } else if (vaLevel.logMAR <= 0.3) {
       status = 'Mild reduction';
     } else {
@@ -746,7 +760,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     final result = VisualAcuityResult(
       eye: _currentEye,
-      snellenScore: vaLevel.snellen,
+      snellenScore: bestLevelIndex == -1 ? 'Worse than 6/60' : vaLevel.snellen,
       logMAR: vaLevel.logMAR,
       correctResponses: _totalCorrect,
       totalResponses: _totalResponses,

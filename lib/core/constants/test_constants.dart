@@ -99,7 +99,7 @@ class TestConstants {
 
   // Color Vision Test Settings
   static const int colorVisionTimePerPlateSeconds = 10;
-  static const int totalIshiharaPlates = 4;
+  static const int totalIshiharaPlates = 14;
 
   // Amsler Grid Test Settings
   static const double amslerGridSize = 300.0;

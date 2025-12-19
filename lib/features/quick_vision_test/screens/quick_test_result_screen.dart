@@ -8,6 +8,7 @@ import '../../../core/services/test_result_service.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../data/providers/test_session_provider.dart';
+import '../../../data/models/color_vision_result.dart';
 
 /// Comprehensive results screen displaying all test data
 class QuickTestResultScreen extends StatefulWidget {
@@ -411,6 +412,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             ],
           ),
           const Divider(height: 32),
+          // Clinical Interpretation
+          _buildClinicalInfoSection(
+            'Clinical Interpretation',
+            _getAcuityClinicalExplanation(
+              rightResult?.snellenScore,
+              leftResult?.snellenScore,
+            ),
+          ),
+          const SizedBox(height: 16),
           // Accuracy stats
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -432,6 +442,52 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildClinicalInfoSection(String title, String description) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.info_outline, size: 14, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 22),
+          child: Text(
+            description,
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getAcuityClinicalExplanation(String? right, String? left) {
+    if (right == null && left == null) return 'N/A';
+
+    final best = (right != null && right != 'Worse than 6/60') ? right : left;
+    if (best == '6/6')
+      return 'Excellent. You see at 6 meters what a normal eye sees at 6 meters (20/20 equivalent).';
+    if (best == '6/9')
+      return 'Good. You see at 6 meters what a normal eye sees at 9 meters.';
+    if (best == '6/12')
+      return 'Mild reduction. You see at 6 meters what a normal eye sees at 12 meters.';
+    if (best == 'Worse than 6/60')
+      return 'Significant reduction. Vision is below the standard screening range.';
+
+    return 'Your visual acuity represents the clarity of your vision at a distance compared to a standard eye.';
   }
 
   Widget _buildEyeResult(String eye, String score, String status, Color color) {
@@ -577,9 +633,40 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             '${result?.correctAnswers ?? 0}/${result?.totalPlates ?? 0} plates correct',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
+          if (!isNormal) ...[
+            const Divider(height: 24),
+            _buildClinicalInfoSection(
+              'Detailed Finding',
+              _getColorVisionExplanation(
+                result?.deficiencyType,
+                result?.severity,
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  String _getColorVisionExplanation(
+    DeficiencyType? type,
+    DeficiencySeverity? severity,
+  ) {
+    if (type == null || type == DeficiencyType.none)
+      return 'Normal color vision.';
+
+    String typeStr = type.toString().split('.').last.toUpperCase();
+    String sevStr =
+        severity?.toString().split('.').last.toLowerCase() ?? 'unknown';
+
+    if (type == DeficiencyType.protan) {
+      return 'Protanopia/Protanomaly ($sevStr) detected. This is a red-color deficiency where the long-wavelength sensitive cones are missing or abnormal.';
+    }
+    if (type == DeficiencyType.deutan) {
+      return 'Deuteranopia/Deuteranomaly ($sevStr) detected. This is a green-color deficiency, the most common type of red-green color blindness.';
+    }
+
+    return '$typeStr deficiency ($sevStr) detected. Ishihara plates screening indicates reduced sensitivity to specific color spectrums.';
   }
 
   Widget _buildAmslerGridCard(TestSessionProvider provider) {
@@ -631,18 +718,33 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 color: AppColors.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.info_outline,
-                    color: AppColors.warning,
-                    size: 20,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.warning,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Clinical Findings',
+                        style: TextStyle(
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Distortions detected. Please consult an eye care professional.',
-                      style: TextStyle(color: AppColors.warning, fontSize: 12),
+                  const SizedBox(height: 8),
+                  Text(
+                    'The markings indicate potential metamorphosis (wavy lines) or scotoma (missing spots). This often signals physical changes in the macula. Please consult an eye care professional.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
                     ),
                   ),
                 ],

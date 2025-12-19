@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import '../../data/models/test_result_model.dart';
 import '../../data/models/questionnaire_model.dart';
+import '../../data/models/color_vision_result.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -376,11 +377,41 @@ class PdfExportService {
 
         pw.SizedBox(height: 8),
         pw.Text(
-          'Clinical Note: Visual acuity measured using Tumbling E chart at 1 meter. Normal vision = 6/6 or better.',
+          'Clinical Interpretation:',
+          style: pw.TextStyle(
+            fontSize: 9,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.blue900,
+          ),
+        ),
+        pw.Text(
+          _getAcuityClinicalExplanation(
+            result.visualAcuityRight?.snellenScore,
+            result.visualAcuityLeft?.snellenScore,
+          ),
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Note: Visual acuity measured using Tumbling E chart at 1 meter. Normal vision = 6/6 or better.',
           style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
         ),
       ],
     );
+  }
+
+  String _getAcuityClinicalExplanation(String? right, String? left) {
+    if (right == null && left == null) return 'N/A';
+    final best = (right != null && right != 'Worse than 6/60') ? right : left;
+    if (best == '6/6')
+      return 'Excellent. User identifies optotypes at 6 meters that a standard eye identifies at 6 meters (20/20 equivalent).';
+    if (best == '6/9')
+      return 'Good. User identifies optotypes at 6 meters that a standard eye identifies at 9 meters.';
+    if (best == '6/12')
+      return 'Mild reduction. User identifies optotypes at 6 meters that a standard eye identifies at 12 meters.';
+    if (best == 'Worse than 6/60')
+      return 'Significant reduction. Performance is below the standard screening threshold.';
+    return 'The results represent the clarity of distance vision compared to normative standards.';
   }
 
   String _getVAInterpretation(double? logMAR) {
@@ -587,12 +618,28 @@ class PdfExportService {
                       color: PdfColors.orange50,
                       borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
                     ),
-                    child: pw.Text(
-                      'Finding: ${cv.deficiencyType.toString()}', // Convert to string
-                      style: const pw.TextStyle(
-                        fontSize: 8,
-                        color: PdfColors.orange900,
-                      ),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'Detailed Finding:',
+                          style: pw.TextStyle(
+                            fontSize: 8,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.orange900,
+                          ),
+                        ),
+                        pw.Text(
+                          _getColorVisionExplanation(
+                            cv.deficiencyType,
+                            cv.severity,
+                          ),
+                          style: const pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.orange900,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -601,7 +648,7 @@ class PdfExportService {
           ),
           pw.SizedBox(height: 6),
           pw.Text(
-            'Clinical Note: Ishihara test screens for red-green color deficiencies. Professional confirmation recommended if abnormal.',
+            'Note: Ishihara test screens for red-green color deficiencies. Professional diagnosis requires full 38-plate examination.',
             style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
           ),
         ] else
@@ -611,6 +658,24 @@ class PdfExportService {
           ),
       ],
     );
+  }
+
+  String _getColorVisionExplanation(
+    DeficiencyType? type,
+    DeficiencySeverity? severity,
+  ) {
+    if (type == null || type == DeficiencyType.none)
+      return 'Normal color vision.';
+    String typeStr = type.toString().split('.').last.toUpperCase();
+    String sevStr =
+        severity?.toString().split('.').last.toLowerCase() ?? 'unknown';
+    if (type == DeficiencyType.protan) {
+      return 'Protanopia/Protanomaly ($sevStr) indicated. Red-sensitive cones are abnormal/missing, causing difficulty distinguishing red spectrums.';
+    }
+    if (type == DeficiencyType.deutan) {
+      return 'Deuteranopia/Deuteranomaly ($sevStr) indicated. Green-sensitive cones are abnormal/missing (most common type of red-green deficiency).';
+    }
+    return '$typeStr deficiency ($sevStr) indicated by Ishihara screening results.';
   }
 
   /// ✅ AMSLER GRID - DETAILED
@@ -738,9 +803,9 @@ class PdfExportService {
             _buildPdfLegendItem('Blurry Area', PdfColors.blue),
           ],
         ),
-        pw.SizedBox(height: 8),
+        pw.SizedBox(height: 12),
         pw.Text(
-          'Clinical Note: Amsler grid tests central vision and macular health. Distortions may indicate macular conditions.',
+          'Note: Amsler grid screenings monitor the central visual field. Metamorphopsia (wavy lines) or Scotoma (missing areas) are clinical indicators of potential macular dysfunction and warrant prompt professional evaluation.',
           style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
         ),
       ],

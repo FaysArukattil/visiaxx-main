@@ -39,7 +39,7 @@ class IshiharaPlateData {
   static const List<int> testPlateNumbers = [
     1, // Demo
     2, 3, 4, 5, // Transformation (4)
-    10, 11, 12, 13, // Vanishing (4)
+    10, 14, 12, 13, // Vanishing (4) - SWAPPED 11 for 14
     18, 19, // Hidden (2)
     22, 23, 24, // Classification (3)
   ];
@@ -138,7 +138,7 @@ class IshiharaPlateData {
       category: PlateCategory.vanishing,
       normalAnswer: '6',
       deficientAnswer: 'Nothing', // Cannot see
-      isUsedInTest: true,
+      isUsedInTest: false,
     ),
     IshiharaPlateConfig(
       plateNumber: 12,
@@ -161,8 +161,8 @@ class IshiharaPlateData {
       svgPath: 'assets/ishihara_plates/Diagnostic/Vanishing plates/0014.svg',
       category: PlateCategory.vanishing,
       normalAnswer: '5',
-      deficientAnswer: null,
-      isUsedInTest: false,
+      deficientAnswer: 'Nothing',
+      isUsedInTest: true,
     ),
     IshiharaPlateConfig(
       plateNumber: 15,

@@ -673,7 +673,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     return Column(
       children: [
         LinearProgressIndicator(
-          value: (_currentPlateIndex + 1) / _testPlates.length,
+          value:
+              ((_currentPlateIndex >= _testPlates.length
+                      ? _testPlates.length - 1
+                      : _currentPlateIndex) +
+                  1) /
+              _testPlates.length,
           backgroundColor: AppColors.border,
           valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
         ),
@@ -684,7 +689,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Plate ${_currentPlateIndex + 1} of ${_testPlates.length}',
+                'Plate ${(_currentPlateIndex >= _testPlates.length ? _testPlates.length - 1 : _currentPlateIndex) + 1} of ${_testPlates.length}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               Container(
