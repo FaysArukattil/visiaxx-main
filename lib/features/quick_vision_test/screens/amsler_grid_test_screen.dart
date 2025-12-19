@@ -15,6 +15,7 @@ import '../../../data/providers/test_session_provider.dart';
 import '../../../core/services/distance_skip_manager.dart';
 import 'amsler_grid_instructions_screen.dart';
 import 'distance_calibration_screen.dart';
+import 'amsler_grid_cover_eye_screen.dart';
 
 /// Amsler Grid Test for detecting macular degeneration
 class AmslerGridTestScreen extends StatefulWidget {
@@ -137,7 +138,25 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   void _onDistanceCalibrationComplete() {
     setState(() => _showDistanceCalibration = false);
     _startContinuousDistanceMonitoring();
-    _startTest();
+    _showCoverEyeInstruction('left'); // Cover LEFT to test RIGHT
+  }
+
+  void _showCoverEyeInstruction(String eyeToCover) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => AmslerGridCoverEyeScreen(
+          eyeToCover: eyeToCover,
+          onContinue: () {
+            Navigator.of(context).pop();
+            if (eyeToCover == 'left') {
+              _startTest();
+            } else {
+              _switchToLeftEye();
+            }
+          },
+        ),
+      ),
+    );
   }
 
   /// Start continuous distance monitoring
@@ -616,9 +635,19 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               Expanded(
                 child: OutlinedButton(
                   onPressed: _clearPoints,
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text('Clear Marks'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Clear Marks',
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
               ),

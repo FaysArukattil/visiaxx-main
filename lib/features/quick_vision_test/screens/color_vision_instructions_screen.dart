@@ -45,12 +45,20 @@ class _ColorVisionInstructionsScreenState
   }
 
   Future<void> _initTts() async {
-    await _ttsService.initialize();
-    _speakCurrentStep();
+    try {
+      await _ttsService.initialize();
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        _speakCurrentStep();
+      }
+    } catch (e) {
+      debugPrint('Error initializing TTS: $e');
+    }
   }
 
   void _speakCurrentStep() {
     if (_currentStep < _steps.length) {
+      _ttsService.stop();
       _ttsService.speak(
         '${_steps[_currentStep].title}. ${_steps[_currentStep].description}',
       );
