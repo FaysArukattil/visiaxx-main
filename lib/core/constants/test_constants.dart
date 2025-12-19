@@ -157,12 +157,12 @@ class TestConstants {
       snellen: '6/12',
     ),
     ShortDistanceSentence(
-      sentence: 'Eye tests matter',
+      sentence: 'Eye test matter',
       fontSize: 18.0,
       snellen: '6/9',
     ),
     ShortDistanceSentence(
-      sentence: 'Healthy vision',
+      sentence: 'Health is wealth',
       fontSize: 12.0,
       snellen: '6/6',
     ),
