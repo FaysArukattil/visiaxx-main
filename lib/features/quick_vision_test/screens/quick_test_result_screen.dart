@@ -122,25 +122,30 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        provider.reset();
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        if (isHistorical) {
+          Navigator.pop(context);
+        } else {
+          provider.reset();
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        }
       },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Test Results'),
-          automaticallyImplyLeading: false,
+          automaticallyImplyLeading: isHistorical,
           actions: [
-            IconButton(
-              icon: const Icon(Icons.home),
-              onPressed: () {
-                provider.reset();
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/home',
-                  (route) => false,
-                );
-              },
-            ),
+            if (!isHistorical)
+              IconButton(
+                icon: const Icon(Icons.home),
+                onPressed: () {
+                  provider.reset();
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                    (route) => false,
+                  );
+                },
+              ),
           ],
         ),
         body: SingleChildScrollView(

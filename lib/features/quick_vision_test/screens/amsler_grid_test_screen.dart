@@ -902,37 +902,88 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     final rightResult = provider.amslerGridRight;
     final leftResult = provider.amslerGridLeft;
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.check_circle, size: 80, color: AppColors.success),
-          const SizedBox(height: 24),
-          Text(
-            'All Tests Complete!',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          // Summary cards
-          _buildEyeSummaryCard('Right Eye', rightResult, AppColors.rightEye),
-          const SizedBox(height: 12),
-          _buildEyeSummaryCard('Left Eye', leftResult, AppColors.leftEye),
-          const SizedBox(height: 40),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _completeAllTests,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('View Results'),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Test Summary'),
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  size: 80,
+                  color: AppColors.success,
+                ),
               ),
-            ),
+              const SizedBox(height: 32),
+              Text(
+                'Assessment Complete!',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Your Amsler Grid test results are ready to be reviewed.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 48),
+
+              // Summary cards
+              _buildEyeSummaryCard(
+                'Right Eye Result',
+                rightResult,
+                AppColors.rightEye,
+              ),
+              const SizedBox(height: 16),
+              _buildEyeSummaryCard(
+                'Left Eye Result',
+                leftResult,
+                AppColors.leftEye,
+              ),
+
+              const SizedBox(height: 60),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _completeAllTests,
+                  icon: const Icon(Icons.analytics_outlined),
+                  label: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      'View Detailed Analysis',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

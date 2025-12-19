@@ -1,5 +1,5 @@
 enum ColorVisionStatus {
-  normal, // 12-13 correct out of 13
+  normal, // 12-14 correct out of 14
   mild, // 9-11 correct
   moderate, // 6-8 correct
   severe, // 0-5 correct
@@ -91,7 +91,7 @@ class ColorVisionResult {
   // BACKWARD COMPATIBILITY: Old model accessors
   int get correctAnswers =>
       ((rightEye.correctAnswers + leftEye.correctAnswers) / 2).round();
-  int get totalPlates => 13; // Diagnostic plates per eye
+  int get totalPlates => 14; // Total plates per eye (including demo)
   String? get deficiency => hasDeficiency ? deficiencyType.displayName : null;
   String get status => overallStatus.displayName;
   List<PlateResponse> get plateResponses => [
@@ -113,8 +113,8 @@ class ColorVisionResult {
 /// Result for a single eye
 class ColorVisionEyeResult {
   final String eye; // 'right' or 'left'
-  final int correctAnswers; // Out of 13 (excluding demo)
-  final int totalDiagnosticPlates; // Always 13
+  final int correctAnswers; // Out of 14 (including demo)
+  final int totalDiagnosticPlates; // Always 14
   final List<PlateResponse> responses; // All 14 responses
   final ColorVisionStatus status;
   final DeficiencyType? detectedType;
@@ -145,7 +145,7 @@ class ColorVisionEyeResult {
     return ColorVisionEyeResult(
       eye: map['eye'] ?? 'right',
       correctAnswers: map['correctAnswers'] ?? 0,
-      totalDiagnosticPlates: map['totalDiagnosticPlates'] ?? 13,
+      totalDiagnosticPlates: map['totalDiagnosticPlates'] ?? 14,
       responses:
           (map['responses'] as List<dynamic>?)
               ?.map((e) => PlateResponse.fromMap(e))

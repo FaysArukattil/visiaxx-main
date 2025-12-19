@@ -561,26 +561,26 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     List<PlateResponse> responses,
     String eye,
   ) {
-    final diagnosticResponses = responses.where((r) => !r.wasDemo).toList();
-    final correctAnswers = diagnosticResponses.where((r) => r.isCorrect).length;
-    final totalDiagnostic = diagnosticResponses.length;
+    final correctAnswers = responses.where((r) => r.isCorrect).length;
+    final totalPlates = responses.length;
 
-    final classificationPlates = diagnosticResponses.where(
+    final classificationPlates = responses.where(
       (r) => r.category == PlateCategory.classification.name,
     );
 
     ColorVisionStatus status;
     DeficiencyType? detectedType;
 
-    // Standard 14-plate criteria adapted for 13 diagnostic plates:
-    // Normal: 0-2 error (11-13 correct)
-    // Borderline: 3-5 errors (8-10 correct)
-    // Deficient: 6+ errors (<=7 correct)
-    if (correctAnswers >= 11) {
+    // Standard criteria including 1 demo + 13 diagnostic plates (14 total):
+    // Normal: 0-2 errors (12-14 correct)
+    // Borderline/Mild: 3-5 errors (9-11 correct)
+    // Moderate: 6-8 errors (6-8 correct)
+    // Severe: 9+ errors (0-5 correct)
+    if (correctAnswers >= 12) {
       status = ColorVisionStatus.normal;
-    } else if (correctAnswers >= 8) {
+    } else if (correctAnswers >= 9) {
       status = ColorVisionStatus.mild;
-    } else if (correctAnswers >= 5) {
+    } else if (correctAnswers >= 6) {
       status = ColorVisionStatus.moderate;
     } else {
       status = ColorVisionStatus.severe;
@@ -611,7 +611,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     return ColorVisionEyeResult(
       eye: eye,
       correctAnswers: correctAnswers,
-      totalDiagnosticPlates: totalDiagnostic,
+      totalDiagnosticPlates: totalPlates,
       responses: responses,
       status: status,
       detectedType: detectedType,

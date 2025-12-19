@@ -56,9 +56,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       final results = await _testResultService.getTestResults(user.uid);
       debugPrint('[MyResults] ✅ Loaded ${results.length} results');
 
-      if (results.isNotEmpty) {
-        debugPrint('[MyResults] First result: ${results.first.toJson()}');
-      }
+      // Explicitly sort by date descending to ensure latest is first
+      results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       if (mounted) {
         setState(() {
