@@ -163,7 +163,7 @@ class ComprehensiveIntroScreen extends StatelessWidget {
                         .read<TestSessionProvider>()
                         .startComprehensiveTest();
                     // Navigate to profile selection instead of direct questionnaire
-                    Navigator.pushNamed(context, '/quick-test');
+                    Navigator.pushNamed(context, '/profile-selection');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,

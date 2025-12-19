@@ -103,6 +103,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     if (_formKey.currentState!.validate()) {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please log in to add family members'),
@@ -112,9 +113,16 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         return;
       }
 
+      // ✅ Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
       final newMember = FamilyMemberModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        firstName: _nameController.text,
+        id: DateTime.now().millisecondsSinceEpoch.toString(), // Temporary ID
+        firstName: _nameController.text.trim(),
         age: int.parse(_ageController.text),
         sex: _selectedSex,
         relationship: _selectedRelationship,
@@ -122,35 +130,52 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       );
 
       try {
+        debugPrint('[ProfileSelection] Saving member: ${newMember.firstName}');
+
         // Save to Firebase
         final savedId = await _familyMemberService.saveFamilyMember(
           userId: user.uid,
           member: newMember,
         );
 
+        debugPrint('[ProfileSelection] ✅ Member saved with ID: $savedId');
+
         // Update local list with Firebase ID
         final savedMember = newMember.copyWith(id: savedId);
+
+        // ✅ Close loading dialog
+        if (mounted) Navigator.pop(context);
+
+        if (!mounted) return;
 
         setState(() {
           _familyMembers.insert(0, savedMember);
           _showAddForm = false;
           _nameController.clear();
           _ageController.clear();
+          _selectedSex = 'Male';
+          _selectedRelationship = 'Spouse';
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${savedMember.firstName} added successfully'),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } catch (e) {
+        debugPrint('[ProfileSelection] ❌ Error saving member: $e');
+
+        // ✅ Close loading dialog
+        if (mounted) Navigator.pop(context);
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${newMember.firstName} added successfully'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save: $e'),
+            content: Text('Failed to save: ${e.toString()}'),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

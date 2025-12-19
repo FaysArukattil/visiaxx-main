@@ -814,12 +814,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       context,
       MaterialPageRoute(
         builder: (context) => const BothEyesOpenInstructionScreen(
-          title: 'Long Distance Test',
-          subtitle: 'Visual Acuity - 1 Meter',
+          title: 'Reading Test', // ✅ Changed from "Long Distance Test"
+          subtitle: 'Short Distance - 40cm', // ✅ Changed from "1 Meter"
           ttsMessage:
-              'Now we will test your vision for long distance. Keep both eyes open. Sit comfortably at 1 meter distance from the screen. Identify the orientation of letter E and tap the corresponding arrow button.',
-          targetDistance: 100.0,
-          startButtonText: 'Start Distance Test',
+              'Now we will test your reading vision at close distance. Keep both eyes open. Hold your device at 40 centimeters from your eyes. That is about the length from your elbow to your fingertips. Read each sentence aloud clearly and completely.', // ✅ New message for reading
+          targetDistance: 40.0, // ✅ Changed from 100.0 to 40.0
+          startButtonText: 'Start Reading Test', // ✅ Changed button text
         ),
       ),
     );
