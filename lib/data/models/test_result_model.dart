@@ -24,6 +24,7 @@ class TestResultModel {
   final String userId;
   final String profileId;
   final String profileName;
+  final int? profileAge; // Age for PDF naming
   final String profileType; // 'self' or 'family'
   final DateTime timestamp;
   final String testType; // 'quick' or 'comprehensive'
@@ -46,6 +47,7 @@ class TestResultModel {
     required this.userId,
     required this.profileId,
     required this.profileName,
+    this.profileAge,
     required this.profileType,
     required this.timestamp,
     required this.testType,
@@ -75,6 +77,7 @@ class TestResultModel {
       userId: data['userId'] ?? '',
       profileId: data['profileId'] ?? '',
       profileName: data['profileName'] ?? '',
+      profileAge: data['profileAge'],
       profileType: data['profileType'] ?? 'self',
       timestamp: data['timestamp'] is Timestamp
           ? (data['timestamp'] as Timestamp).toDate()
@@ -127,6 +130,7 @@ class TestResultModel {
       'userId': userId,
       'profileId': profileId,
       'profileName': profileName,
+      'profileAge': profileAge,
       'profileType': profileType,
       'timestamp': timestamp.toIso8601String(),
       'testType': testType,
@@ -151,6 +155,7 @@ class TestResultModel {
       'userId': userId,
       'profileId': profileId,
       'profileName': profileName,
+      'profileAge': profileAge,
       'profileType': profileType,
       'timestamp': Timestamp.fromDate(timestamp),
       'testType': testType,
@@ -252,6 +257,7 @@ class TestResultModel {
     String? userId,
     String? profileId,
     String? profileName,
+    int? profileAge,
     String? profileType,
     DateTime? timestamp,
     String? testType,
@@ -274,6 +280,7 @@ class TestResultModel {
       userId: userId ?? this.userId,
       profileId: profileId ?? this.profileId,
       profileName: profileName ?? this.profileName,
+      profileAge: profileAge ?? this.profileAge,
       profileType: profileType ?? this.profileType,
       timestamp: timestamp ?? this.timestamp,
       testType: testType ?? this.testType,

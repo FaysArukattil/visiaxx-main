@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:intl/intl.dart';
 import '../../data/models/test_result_model.dart';
@@ -15,62 +18,91 @@ import '../../data/models/short_distance_result.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
-  /// Generate and save a PDF report
-  Future<File> generatePdfReport(
-    TestResultModel result, {
-    String? userName,
-    int? userAge,
-  }) async {
-    final pdf = await _buildPdfDocument(
-      result,
-      userName: userName,
-      userAge: userAge,
-    );
+  /// Generate and download PDF report to device's Downloads folder
+  Future<String> generateAndDownloadPdf(
+    TestResultModel result,
+  ) async {
+    final String filePath = await getExpectedFilePath(result);
+    final File file = File(filePath);
 
-    final output = await getTemporaryDirectory();
-    final file = File('${output.path}/visiaxx_report_${result.id}.pdf');
+    // If file already exists, return its path without regenerating
+    if (await file.exists()) {
+      debugPrint('[PdfExportService] File already exists at: $filePath. Skipping generation.');
+      return filePath;
+    }
+
+    final pdf = await _buildPdfDocument(result);
     await file.writeAsBytes(await pdf.save());
 
-    return file;
+    return file.path;
   }
 
-  /// Share PDF file
-  Future<void> sharePdf(
-    TestResultModel result, {
-    String? userName,
-    int? userAge,
-  }) async {
-    final file = await generatePdfReport(
-      result,
-      userName: userName,
-      userAge: userAge,
-    );
+  /// Get the expected file path for a test result PDF
+  Future<String> getExpectedFilePath(TestResultModel result) async {
+    final name = result.profileName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+    final age = result.profileAge != null ? '_${result.profileAge}y' : '';
+    final dateTime = DateFormat('yyyyMMdd_HHmmss').format(result.timestamp);
+    final filename = 'VisionTest_${name}${age}_$dateTime.pdf';
 
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      text: 'My Vision Test Report',
-      subject:
-          'Visiaxx Vision Test Results - ${DateFormat('MMM dd, yyyy').format(result.timestamp)}',
-    );
+    final downloadsDir = await getDownloadsDirectoryPath();
+    return '${downloadsDir}/$filename';
+  }
+
+  /// Get platform-specific downloads directory path
+  Future<String> getDownloadsDirectoryPath() async {
+    Directory? downloadsDir;
+    if (Platform.isAndroid) {
+      await Permission.storage.request();
+      downloadsDir = Directory('/storage/emulated/0/Download');
+      if (!await downloadsDir.exists()) {
+        downloadsDir = await getExternalStorageDirectory();
+      }
+    } else if (Platform.isIOS) {
+      downloadsDir = await getApplicationDocumentsDirectory();
+    } else {
+      downloadsDir = await getApplicationDocumentsDirectory();
+    }
+    return downloadsDir?.path ?? '';
+  }
+
+  /// Compatibility method for existing UI calls.
+  Future<String> sharePdf(TestResultModel result, {String? userName}) async {
+    return generateAndDownloadPdf(result);
   }
 
   /// BUILD PROFESSIONAL PDF
   Future<pw.Document> _buildPdfDocument(
-    TestResultModel result, {
-    String? userName,
-    int? userAge,
-  }) async {
+    TestResultModel result,
+  ) async {
     final pdf = pw.Document();
+    
+    // Pre-fetch Amsler grid images if they exist (local or remote)
+    Uint8List? amslerRightBytes;
+    Uint8List? amslerLeftBytes;
+    
+    if (result.amslerGridRight != null) {
+      amslerRightBytes = await _getImageBytes(
+        result.amslerGridRight!.annotatedImagePath,
+        result.amslerGridRight!.firebaseImageUrl,
+      );
+    }
+    
+    if (result.amslerGridLeft != null) {
+      amslerLeftBytes = await _getImageBytes(
+        result.amslerGridLeft!.annotatedImagePath,
+        result.amslerGridLeft!.firebaseImageUrl,
+      );
+    }
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
-        header: (context) => _buildHeader(context, userName),
+        header: (context) => _buildHeader(context, result.profileName),
         footer: (context) => _buildFooter(context),
         build: (context) => [
           // Title Section
-          _buildTitleSection(result, userName, userAge),
+          _buildTitleSection(result, result.profileName, result.profileAge),
           pw.SizedBox(height: 24),
 
           // Executive Summary
@@ -92,7 +124,11 @@ class PdfExportService {
           pw.SizedBox(height: 24),
 
           // Amsler Grid Section - DETAILED
-          _buildAmslerGridDetailedSection(result),
+          _buildAmslerGridDetailedSection(
+            result,
+            rightImageBytes: amslerRightBytes,
+            leftImageBytes: amslerLeftBytes,
+          ),
           pw.SizedBox(height: 24),
 
           // Pelli-Robson Contrast Sensitivity Section - DETAILED
@@ -168,16 +204,29 @@ class PdfExportService {
           top: pw.BorderSide(width: 0.5, color: PdfColors.grey300),
         ),
       ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
-            'Generated by Visiaxx App - Confidential Medical Document',
-            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Generated by Visiaxx App - Confidential Medical Document',
+                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
+              ),
+              pw.Text(
+                'Page ${context.pageNumber}/${context.pagesCount}',
+                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
+              ),
+            ],
           ),
+          pw.SizedBox(height: 4),
           pw.Text(
-            'Page ${context.pageNumber}/${context.pagesCount}',
-            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
+            'DISCLAIMER: This vision test is a screening tool and is not a substitute for a professional eye examination. '
+            'The results should be interpreted by a qualified eye care professional. If you have concerns about your vision, '
+            'please seek professional medical advice.',
+            style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey400),
+            textAlign: pw.TextAlign.justify,
           ),
         ],
       ),
@@ -689,7 +738,11 @@ class PdfExportService {
   }
 
   /// AMSLER GRID - DETAILED
-  pw.Widget _buildAmslerGridDetailedSection(TestResultModel result) {
+  pw.Widget _buildAmslerGridDetailedSection(
+    TestResultModel result, {
+    Uint8List? rightImageBytes,
+    Uint8List? leftImageBytes,
+  }) {
     final right = result.amslerGridRight;
     final left = result.amslerGridLeft;
 
@@ -732,13 +785,13 @@ class PdfExportService {
           ],
         ),
 
-        if ((right?.annotatedImagePath != null) ||
-            (left?.annotatedImagePath != null)) ...[
+        if ((rightImageBytes != null) ||
+            (leftImageBytes != null)) ...[
           pw.SizedBox(height: 12),
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
             children: [
-              if (right?.annotatedImagePath != null)
+              if (rightImageBytes != null)
                 pw.Column(
                   children: [
                     pw.Text(
@@ -756,15 +809,13 @@ class PdfExportService {
                         border: pw.Border.all(color: PdfColors.grey300),
                       ),
                       child: pw.Image(
-                        pw.MemoryImage(
-                          File(right!.annotatedImagePath!).readAsBytesSync(),
-                        ),
+                        pw.MemoryImage(rightImageBytes!),
                         fit: pw.BoxFit.contain,
                       ),
                     ),
                   ],
                 ),
-              if (left?.annotatedImagePath != null)
+              if (leftImageBytes != null)
                 pw.Column(
                   children: [
                     pw.Text(
@@ -782,9 +833,7 @@ class PdfExportService {
                         border: pw.Border.all(color: PdfColors.grey300),
                       ),
                       child: pw.Image(
-                        pw.MemoryImage(
-                          File(left!.annotatedImagePath!).readAsBytesSync(),
-                        ),
+                        pw.MemoryImage(leftImageBytes!),
                         fit: pw.BoxFit.contain,
                       ),
                     ),
@@ -992,45 +1041,59 @@ class PdfExportService {
             result.recommendation,
             style: const pw.TextStyle(fontSize: 10),
           ),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(8),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.green50,
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-              border: pw.Border.all(color: PdfColors.green200),
-            ),
-            child: pw.Row(
-              children: [
-                pw.Text(
-                  '(!)',
-                  style: pw.TextStyle(
-                    color: PdfColors.green800,
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-                pw.SizedBox(width: 8),
-                pw.Expanded(
-                  child: pw.Text(
-                    'Disclaimer: This vision test is a screening tool and is not a substitute for a professional eye examination. If you have concerns about your vision, please seek professional medical advice.',
-                    style: pw.TextStyle(fontSize: 8, color: PdfColors.green800),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 
   pw.Widget _buildQuestionnaireSection(QuestionnaireModel q) {
-    final complaints = <String>[];
-    if (q.chiefComplaints.hasRedness) complaints.add('Redness');
-    if (q.chiefComplaints.hasWatering) complaints.add('Watering');
-    if (q.chiefComplaints.hasItching) complaints.add('Itching');
-    if (q.chiefComplaints.hasHeadache) complaints.add('Headache');
-    if (q.chiefComplaints.hasDryness) complaints.add('Dryness');
+    // Collect symptoms with details
+    List<String> detailedComplaints = [];
+    final cc = q.chiefComplaints;
+    
+    if (cc.hasRedness) {
+      String detail = 'Redness';
+      if (cc.rednessFollowUp?.duration != null) detail += ' (${cc.rednessFollowUp!.duration})';
+      detailedComplaints.add(detail);
+    }
+    if (cc.hasWatering) {
+      String detail = 'Watering';
+      if (cc.wateringFollowUp != null) {
+        detail += ' (${cc.wateringFollowUp!.days} days, ${cc.wateringFollowUp!.pattern})';
+      }
+      detailedComplaints.add(detail);
+    }
+    if (cc.hasItching) {
+      String detail = 'Itching';
+      if (cc.itchingFollowUp != null) {
+        detail += ' (${cc.itchingFollowUp!.bothEyes ? 'Both eyes' : 'Single eye'}, ${cc.itchingFollowUp!.location})';
+      }
+      detailedComplaints.add(detail);
+    }
+    if (cc.hasHeadache) {
+      String detail = 'Headache';
+      if (cc.headacheFollowUp != null) {
+        detail += ' (${cc.headacheFollowUp!.location}, ${cc.headacheFollowUp!.duration}, ${cc.headacheFollowUp!.painType})';
+      }
+      detailedComplaints.add(detail);
+    }
+    if (cc.hasDryness) {
+      String detail = 'Dryness';
+      if (cc.drynessFollowUp != null) {
+        detail += ' (${cc.drynessFollowUp!.screenTimeHours}h screen time, AC: ${cc.drynessFollowUp!.acBlowingOnFace ? 'Yes' : 'No'})';
+      }
+      detailedComplaints.add(detail);
+    }
+    if (cc.hasStickyDischarge) {
+      String detail = 'Sticky Discharge';
+      if (cc.dischargeFollowUp != null) {
+        detail += ' (${cc.dischargeFollowUp!.color}, ${cc.dischargeFollowUp!.isRegular ? 'Regular' : 'Irregular'}, since ${cc.dischargeFollowUp!.startDate})';
+      }
+      detailedComplaints.add(detail);
+    }
+
+    // Collect systemic illnesses
+    final systemicConditions = q.systemicIllness.activeConditions;
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -1046,17 +1109,89 @@ class PdfExportService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
+              // Symptoms
               pw.Text(
-                'Symptoms:',
+                'Current Symptoms:',
                 style: pw.TextStyle(
                   fontSize: 9,
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
+              pw.SizedBox(height: 4),
               pw.Text(
-                complaints.isEmpty ? 'None reported' : complaints.join(', '),
+                detailedComplaints.isEmpty ? 'None reported' : detailedComplaints.join('; '),
                 style: const pw.TextStyle(fontSize: 8),
               ),
+              pw.SizedBox(height: 10),
+
+              // Medical History
+              pw.Text(
+                'Medical History:',
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                systemicConditions.isEmpty ? 'No significant medical history' : systemicConditions.join(', '),
+                style: const pw.TextStyle(fontSize: 8),
+              ),
+              pw.SizedBox(height: 10),
+
+              // Current Medications
+              if (q.currentMedications != null && q.currentMedications!.isNotEmpty) ...[ 
+                pw.Text(
+                  'Current Medications:',
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  q.currentMedications!,
+                  style: const pw.TextStyle(fontSize: 8),
+                ),
+                pw.SizedBox(height: 10),
+              ],
+
+              // Surgery History
+              if (q.hasRecentSurgery) ...[
+                pw.Text(
+                  'Recent Surgery:',
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  q.surgeryDetails ?? 'Details not provided',
+                  style: const pw.TextStyle(fontSize: 8),
+                ),
+                pw.SizedBox(height: 10),
+              ],
+
+              // Family History
+              if (q.chiefComplaints.hasPreviousCataractOperation ||
+                  q.chiefComplaints.hasFamilyGlaucomaHistory) ...[
+                pw.Text(
+                  'Family/Previous History:',
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  [
+                    if (q.chiefComplaints.hasPreviousCataractOperation) 'Previous cataract operation',
+                    if (q.chiefComplaints.hasFamilyGlaucomaHistory) 'Family history of glaucoma',
+                  ].join(', '),
+                  style: const pw.TextStyle(fontSize: 8),
+                ),
+              ],
             ],
           ),
         ),
@@ -1109,5 +1244,45 @@ class PdfExportService {
         pw.Text(label, style: const pw.TextStyle(fontSize: 7)),
       ],
     );
+  }
+
+  Future<Uint8List?> _getImageBytes(String? localPath, String? remoteUrl) async {
+    // 1. Try local path first
+    if (localPath != null && localPath.isNotEmpty && !localPath.startsWith('http')) {
+      try {
+        final file = File(localPath);
+        if (await file.exists()) {
+          return await file.readAsBytes();
+        }
+      } catch (e) {
+        print('[PdfExportService] Error reading local image: $e');
+      }
+    }
+
+    // 2. Fallback to remote URL
+    if (remoteUrl != null && remoteUrl.isNotEmpty && remoteUrl.startsWith('http')) {
+      try {
+        final response = await http.get(Uri.parse(remoteUrl));
+        if (response.statusCode == 200) {
+          return response.bodyBytes;
+        }
+      } catch (e) {
+        print('[PdfExportService] Error fetching remote image: $e');
+      }
+    }
+
+    // 3. Fallback: if localPath is actually a URL (backward compatibility)
+    if (localPath != null && localPath.startsWith('http')) {
+      try {
+        final response = await http.get(Uri.parse(localPath));
+        if (response.statusCode == 200) {
+          return response.bodyBytes;
+        }
+      } catch (e) {
+        print('[PdfExportService] Error fetching localPath as URL: $e');
+      }
+    }
+
+    return null;
   }
 }

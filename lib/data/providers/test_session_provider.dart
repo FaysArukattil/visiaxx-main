@@ -16,6 +16,7 @@ class TestSessionProvider extends ChangeNotifier {
   String _profileType = 'self'; // 'self' or 'family'
   String _profileId = '';
   String _profileName = '';
+  int? _profileAge;
   FamilyMemberModel? _selectedFamilyMember;
 
   // Questionnaire
@@ -56,10 +57,11 @@ class TestSessionProvider extends ChangeNotifier {
   bool get isComprehensiveTest => _isComprehensiveTest;
 
   /// Set profile for self-testing
-  void selectSelfProfile(String userId, String userName) {
+  void selectSelfProfile(String userId, String userName, [int? age]) {
     _profileType = 'self';
     _profileId = userId;
     _profileName = userName;
+    _profileAge = age;
     _selectedFamilyMember = null;
     notifyListeners();
   }
@@ -69,6 +71,7 @@ class TestSessionProvider extends ChangeNotifier {
     _profileType = 'family';
     _profileId = member.id;
     _profileName = member.firstName;
+    _profileAge = member.age;
     _selectedFamilyMember = member;
     notifyListeners();
   }
@@ -196,6 +199,7 @@ class TestSessionProvider extends ChangeNotifier {
       userId: userId,
       profileId: _profileId,
       profileName: _profileName,
+      profileAge: _profileAge,
       profileType: _profileType,
       timestamp: DateTime.now(),
       testType: _isComprehensiveTest ? 'comprehensive' : 'quick',

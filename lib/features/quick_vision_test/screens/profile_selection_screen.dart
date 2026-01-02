@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/family_member_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../data/models/family_member_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 
@@ -75,21 +76,35 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     super.dispose();
   }
 
-  void _selectSelf() {
+  Future<void> _selectSelf() async {
     final provider = context.read<TestSessionProvider>();
     final user = FirebaseAuth.instance.currentUser;
 
-    // Use actual user data if available, otherwise fallback to Guest
-    final String userId = user?.uid ?? 'guest_id';
-    // displayName might be null, try to use part of email or fallback
-    String userName = user?.displayName ?? 'User';
-    if (userName == 'User' && user?.email != null) {
-      userName = user!.email!.split('@')[0];
+    if (user == null) {
+      provider.selectSelfProfile('guest_id', 'User');
+      provider.startTest();
+      Navigator.pushNamed(context, '/questionnaire');
+      return;
     }
 
-    provider.selectSelfProfile(userId, userName);
+    // Use actual user data if available
+    final String userId = user.uid;
+    
+    // Fetch profile data for age
+    final authService = AuthService();
+    final userData = await authService.getUserData(userId);
+    
+    String userName = userData?.fullName ?? user.displayName ?? 'User';
+    if (userName == 'User' && user.email != null) {
+      userName = user.email!.split('@')[0];
+    }
+    int? age = userData?.age;
+
+    provider.selectSelfProfile(userId, userName, age);
     provider.startTest();
-    Navigator.pushNamed(context, '/questionnaire');
+    if (mounted) {
+      Navigator.pushNamed(context, '/questionnaire');
+    }
   }
 
   void _selectFamilyMember(FamilyMemberModel member) {

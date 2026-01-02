@@ -8,7 +8,8 @@ class AmslerGridResult {
   final bool hasBlurryAreas;
   final List<DistortionPoint> distortionPoints;
   final String status;
-  final String? annotatedImagePath;
+  final String? annotatedImagePath; // Local path (for backward compatibility)
+  final String? firebaseImageUrl; // Firebase Storage URL for cross-device access
   final String? description;
 
   AmslerGridResult({
@@ -18,7 +19,8 @@ class AmslerGridResult {
     required this.hasBlurryAreas,
     required this.distortionPoints,
     required this.status,
-    this.annotatedImagePath, // This will store the captured image path
+    this.annotatedImagePath,
+    this.firebaseImageUrl,
     this.description,
   });
 
@@ -30,6 +32,7 @@ class AmslerGridResult {
     List<DistortionPoint>? distortionPoints,
     String? status,
     String? annotatedImagePath,
+    String? firebaseImageUrl,
     String? description,
   }) {
     return AmslerGridResult(
@@ -40,6 +43,7 @@ class AmslerGridResult {
       distortionPoints: distortionPoints ?? this.distortionPoints,
       status: status ?? this.status,
       annotatedImagePath: annotatedImagePath ?? this.annotatedImagePath,
+      firebaseImageUrl: firebaseImageUrl ?? this.firebaseImageUrl,
       description: description ?? this.description,
     );
   }
@@ -57,6 +61,7 @@ class AmslerGridResult {
           [],
       status: data['status'] ?? '',
       annotatedImagePath: data['annotatedImagePath'],
+      firebaseImageUrl: data['firebaseImageUrl'],
       description: data['description'],
     );
   }
@@ -70,6 +75,7 @@ class AmslerGridResult {
       'distortionPoints': distortionPoints.map((e) => e.toMap()).toList(),
       'status': status,
       'annotatedImagePath': annotatedImagePath,
+      'firebaseImageUrl': firebaseImageUrl,
       'description': description,
     };
   }

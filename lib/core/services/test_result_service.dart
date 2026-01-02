@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import './firebase_storage_service.dart';
 import '../../data/models/test_result_model.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorageService _storageService = FirebaseStorageService();
 
   /// Collection paths
   static const String _testResultsCollection = 'test_results';
@@ -69,10 +70,16 @@ class TestResultService {
 
     return result.copyWith(
       amslerGridRight: rightUrl != null
-          ? amslerRight?.copyWith(annotatedImagePath: rightUrl)
+          ? amslerRight?.copyWith(
+              annotatedImagePath: rightUrl,
+              firebaseImageUrl: rightUrl,
+            )
           : amslerRight,
       amslerGridLeft: leftUrl != null
-          ? amslerLeft?.copyWith(annotatedImagePath: leftUrl)
+          ? amslerLeft?.copyWith(
+              annotatedImagePath: leftUrl,
+              firebaseImageUrl: leftUrl,
+            )
           : amslerLeft,
     );
   }
@@ -87,14 +94,13 @@ class TestResultService {
       if (!await file.exists()) return null;
 
       final fileName = '${type}_${DateTime.now().millisecondsSinceEpoch}.png';
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('test_results')
-          .child(userId)
-          .child(fileName);
-
-      await ref.putFile(file);
-      return await ref.getDownloadURL();
+      
+      // Use consolidated storage service
+      return await _storageService.uploadImage(
+        userId: userId,
+        fileName: fileName,
+        imageFile: file,
+      );
     } catch (e) {
       debugPrint('[TestResultService] Error uploading file: $e');
       return null;

@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/services/pdf_export_service.dart';
+import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 
@@ -95,25 +99,72 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
   Future<void> _downloadPdf(TestResultModel result) async {
     try {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Generating PDF...')));
+      // Check if file already exists
+      final String filePath = await _pdfExportService.getExpectedFilePath(result);
+      final File file = File(filePath);
 
-      await _pdfExportService.sharePdf(result);
+      if (await file.exists()) {
+        await Share.shareXFiles([XFile(filePath)], text: 'View Test Report');
+        return;
+      }
+
+      UIUtils.showProgressDialog(
+        context: context,
+        message: 'Generating PDF...',
+      );
+
+      final String generatedPath = await _pdfExportService.generateAndDownloadPdf(result);
 
       if (mounted) {
+        UIUtils.hideProgressDialog(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF ready for sharing'),
+          SnackBar(
+            content: const Text('PDF saved to Downloads'),
             backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OPEN',
+              textColor: Colors.white,
+              onPressed: () {
+                Share.shareXFiles([XFile(generatedPath)], text: 'View Test Report');
+              },
+            ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        UIUtils.hideProgressDialog(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to generate PDF: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _sharePdf(TestResultModel result) async {
+    try {
+      UIUtils.showProgressDialog(
+        context: context,
+        message: 'Preparing PDF...',
+      );
+
+      final String filePath = await _pdfExportService.generateAndDownloadPdf(result);
+      
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+      }
+      
+      await Share.shareXFiles([XFile(filePath)], text: 'Vision Test Report');
+    } catch (e) {
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share PDF: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -181,6 +232,30 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _shareGridTracing(String? localPath, String? remoteUrl) async {
+    try {
+      if (localPath != null && await File(localPath).exists()) {
+        await Share.shareXFiles([XFile(localPath)], text: 'Amsler Grid Tracing');
+      } else if (remoteUrl != null) {
+        // Download to share
+        final response = await http.get(Uri.parse(remoteUrl));
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/amsler_share.png');
+        await file.writeAsBytes(response.bodyBytes);
+        await Share.shareXFiles([XFile(file.path)], text: 'Amsler Grid Tracing');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image not available for sharing')),
+        );
+      }
+    } catch (e) {
+      debugPrint('[MyResults] Share error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share image: $e')),
+      );
     }
   }
 
@@ -575,6 +650,17 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
+              // Share button
+              IconButton(
+                onPressed: () => _sharePdf(result),
+                icon: const Icon(Icons.share, size: 20),
+                color: AppColors.primary,
+                tooltip: 'Share report',
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                ),
+              ),
+              const SizedBox(width: 8),
               // Delete button
               IconButton(
                 onPressed: () => _confirmDeleteResult(result),
@@ -623,18 +709,25 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-      builder: (context) => _ResultDetailSheet(result: result),
+      builder: (context) => _ResultDetailSheet(
+        result: result,
+        onShareImage: _shareGridTracing,
+      ),
     );
   }
 }
 
 class _ResultDetailSheet extends StatelessWidget {
   final TestResultModel result;
+  final Function(String?, String?) onShareImage;
 
-  const _ResultDetailSheet({required this.result});
+  const _ResultDetailSheet({
+    required this.result,
+    required this.onShareImage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -721,9 +814,10 @@ class _ResultDetailSheet extends StatelessWidget {
                         ? 'Distortions detected'
                         : 'Normal',
                   ),
-                  if (result.amslerGridRight?.annotatedImagePath != null)
+                  if (result.amslerGridRight != null)
                     _buildGridImage(
-                      result.amslerGridRight!.annotatedImagePath!,
+                      result.amslerGridRight!.annotatedImagePath,
+                      result.amslerGridRight!.firebaseImageUrl,
                     ),
                 ],
                 if (result.amslerGridLeft != null) ...[
@@ -734,8 +828,11 @@ class _ResultDetailSheet extends StatelessWidget {
                         ? 'Distortions detected'
                         : 'Normal',
                   ),
-                  if (result.amslerGridLeft?.annotatedImagePath != null)
-                    _buildGridImage(result.amslerGridLeft!.annotatedImagePath!),
+                  if (result.amslerGridLeft != null)
+                    _buildGridImage(
+                      result.amslerGridLeft!.annotatedImagePath,
+                      result.amslerGridLeft!.firebaseImageUrl,
+                    ),
                 ],
               ]),
 
@@ -844,8 +941,11 @@ class _ResultDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildGridImage(String path) {
-    final isNetwork = path.startsWith('http');
+  Widget _buildGridImage(String? path, String? url) {
+    if (path == null && url == null) return const SizedBox.shrink();
+
+    final bool isNetwork = path != null && path.startsWith('http');
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: ClipRRect(
@@ -862,16 +962,36 @@ class _ResultDetailSheet extends StatelessWidget {
                   width: double.infinity,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 40),
+                      const SizedBox.shrink(),
                 )
-              : Image.file(
-                  File(path),
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 40),
-                ),
+              : (path != null)
+                  ? Image.file(
+                      File(path),
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        if (url != null) {
+                          return Image.network(
+                            url,
+                            height: 120,
+                            width: double.infinity,
+                            fit: BoxFit.contain,
+                            errorBuilder: (c, e, s) =>
+                                const SizedBox.shrink(),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    )
+                  : Image.network(
+                      url!,
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
+                    ),
         ),
       ),
     );

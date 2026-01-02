@@ -3,9 +3,13 @@ import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/services/pdf_export_service.dart';
+import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/color_vision_result.dart';
@@ -1247,29 +1251,55 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
-        if (result != null && result.annotatedImagePath != null) ...[
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: color.withValues(alpha: 0.3)),
+        if (result != null) () {
+          final String? path = result.annotatedImagePath;
+          final String? url = result.firebaseImageUrl;
+          
+          if (path == null && url == null) return const SizedBox.shrink();
+
+          return Column(
+            children: [
+              const SizedBox(height: 12),
+              ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: Image.file(
-                File(result.annotatedImagePath!),
-                height: 120,
-                width: 120,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Icon(
-                  Icons.broken_image,
-                  color: color.withValues(alpha: 0.5),
-                  size: 40,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: color.withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: path != null && !path.startsWith('http')
+                      ? Image.file(
+                          File(path),
+                          height: 120,
+                          width: 120,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            if (url != null) {
+                              return Image.network(
+                                url,
+                                height: 120,
+                                width: 120,
+                                fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) =>
+                                    const SizedBox.shrink(),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        )
+                      : Image.network(
+                          path ?? url!,
+                          height: 120,
+                          width: 120,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox.shrink(),
+                        ),
                 ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        }(),
       ],
     );
   }
@@ -1372,7 +1402,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 child: OutlinedButton(
                   onPressed: _isGeneratingPdf
                       ? null
-                      : _generatePdf, // Use _generatePdf as it handles sharing too
+                      : () {
+                          final user = FirebaseAuth.instance.currentUser;
+                          final result =
+                              widget.historicalResult ??
+                              _savedResult ??
+                              provider.buildTestResult(user?.uid ?? '');
+                          _sharePdfReport(result);
+                        },
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Column(
@@ -1460,6 +1497,30 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     );
   }
 
+  Future<void> _shareGridTracing(String? localPath, String? remoteUrl) async {
+    try {
+      if (localPath != null && await File(localPath).exists()) {
+        await Share.shareXFiles([XFile(localPath)], text: 'Amsler Grid Tracing');
+      } else if (remoteUrl != null) {
+        // Download to share
+        final response = await http.get(Uri.parse(remoteUrl));
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/amsler_share.png');
+        await file.writeAsBytes(response.bodyBytes);
+        await Share.shareXFiles([XFile(file.path)], text: 'Amsler Grid Tracing');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image not available for sharing')),
+        );
+      }
+    } catch (e) {
+      debugPrint('[QuickTestResult] Share error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share image: $e')),
+      );
+    }
+  }
+
   Future<void> _generatePdf() async {
     final provider = context.read<TestSessionProvider>();
     final user = FirebaseAuth.instance.currentUser;
@@ -1471,21 +1532,44 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           widget.historicalResult ??
           _savedResult ??
           provider.buildTestResult(user?.uid ?? '');
-      await _pdfExportService.sharePdf(
-        result,
-        userName: widget.historicalResult?.profileName ?? provider.profileName,
+
+      // Check if file already exists
+      final String filePath = await _pdfExportService.getExpectedFilePath(result);
+      final File file = File(filePath);
+
+      if (await file.exists()) {
+        if (mounted) setState(() => _isGeneratingPdf = false);
+        await Share.shareXFiles([XFile(filePath)], text: 'View Test Report');
+        return;
+      }
+
+      UIUtils.showProgressDialog(
+        context: context,
+        message: 'Generating PDF...',
       );
 
+      final String generatedPath = await _pdfExportService.generateAndDownloadPdf(result);
+
       if (mounted) {
+        UIUtils.hideProgressDialog(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF Report ready for sharing'),
+          SnackBar(
+            content: const Text('PDF Report saved to Downloads'),
             backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OPEN',
+              textColor: Colors.white,
+              onPressed: () {
+                Share.shareXFiles([XFile(generatedPath)], text: 'View Test Report');
+              },
+            ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        UIUtils.hideProgressDialog(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to generate PDF: $e'),
@@ -1496,6 +1580,33 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     } finally {
       if (mounted) {
         setState(() => _isGeneratingPdf = false);
+      }
+    }
+  }
+
+  Future<void> _sharePdfReport(TestResultModel result) async {
+    try {
+      UIUtils.showProgressDialog(
+        context: context,
+        message: 'Preparing PDF...',
+      );
+
+      final String filePath = await _pdfExportService.generateAndDownloadPdf(result);
+      
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+      }
+
+      await Share.shareXFiles([XFile(filePath)], text: 'Vision Test Report');
+    } catch (e) {
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share report: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     }
   }
