@@ -169,13 +169,8 @@ class DistanceHelper {
     // Check test-specific minimum distance
     final minDistance = getMinimumDistanceForTest(testType);
 
-    // Pause if below minimum
+    // Pause if below minimum (e.g., < 35cm for short distance tests)
     if (currentDistance > 0 && currentDistance < minDistance) {
-      return true;
-    }
-
-    // Pause if too close (safety threshold)
-    if (status == DistanceStatus.tooClose) {
       return true;
     }
 

@@ -55,7 +55,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   DateTime? _lastShouldPauseTime;
-  final Duration _distancePauseDebounce = const Duration(milliseconds: 100);
+  final Duration _distancePauseDebounce = const Duration(milliseconds: 1000);
 
   // Auto-scrolling
   final ScrollController _scrollController = ScrollController();
@@ -132,10 +132,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
+    // Use appropriate test type for distance checking
+    // short_distance: minimum 35cm, no upper limit
+    // visual_acuity: minimum 80cm for 1m test
+    final testType = _currentMode == 'short' ? 'short_distance' : 'visual_acuity';
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
       status,
-      _currentMode == 'short' ? 'short_distance' : 'visual_acuity',
+      testType,
     );
 
     setState(() {
@@ -540,10 +544,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
     if (_currentMode == 'short') {
       if (_currentEye == 'right') {
-        // Mode short: Right -> Left
         _transitionToEye('left', 'short');
       } else {
-        // Both eyes done at short distance. Now transition to long distance for Right eye.
+        // Left eye complete at short distance. Now transition to long distance for Right eye.
         _ttsService.speak(
           'Short distance testing complete. Now we will do the 1 meter distance test. Please move back.',
         );
@@ -556,21 +559,24 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     } else {
       // Mode long
       if (_currentEye == 'right') {
-        // Mode long: Right -> Left
         _transitionToEye('left', 'long');
       } else {
-        // All tests complete (Right-Long and Left-Long)
+        // All tests complete (Right and Left for both distances)
         _completeAllTests();
       }
     }
   }
 
   void _transitionToEye(String eye, String mode) {
+    // Only calibrate if the distance mode changes (short->long or initial)
+    final bool modeChanged = mode != _currentMode;
+    
     setState(() {
       _currentEye = eye;
       _currentMode = mode;
       _showingInstructions = true;
-      _showDistanceCalibration = true;
+      // Only show calibration if mode actually changed
+      _showDistanceCalibration = modeChanged;
     });
 
     // Custom transition message
@@ -582,17 +588,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       msg =
           'Next, we will test the ${eye == 'right' ? 'right' : 'left'} eye at 1 meter.';
     }
-
-    _ttsService.speak(msg);
-
-    setState(() {
-      _currentEye = eye;
-      _currentMode = mode;
-      _showingInstructions = true;
-      if (mode == 'long') {
-        _showDistanceCalibration = true;
-      }
-    });
 
     _ttsService.speak(msg);
 
@@ -622,12 +617,11 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
     final rightEyeResult = calculateEyeResult('right');
     final leftEyeResult = calculateEyeResult('left');
-    final bothEyesResult = calculateEyeResult('both');
 
     final result = PelliRobsonResult(
       rightEye: rightEyeResult,
       leftEye: leftEyeResult,
-      bothEyes: bothEyesResult,
+      bothEyes: null, // Not tested in comprehensive mode
       timestamp: DateTime.now(),
     );
 
