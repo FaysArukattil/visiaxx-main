@@ -1049,10 +1049,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     final indicatorColor = DistanceHelper.getDistanceColor(
       _currentDistance,
       40.0,
+      testType: 'short_distance',
     );
-    final distanceText = _currentDistance > 0
+    final distanceText = DistanceHelper.isFaceDetected(_distanceStatus)
         ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'No face';
+        : 'Align Face';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

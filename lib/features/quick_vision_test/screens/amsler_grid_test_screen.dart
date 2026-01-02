@@ -1082,10 +1082,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     final indicatorColor = DistanceHelper.getDistanceColor(
       _currentDistance,
       40.0,
+      testType: 'amsler_grid',
     );
-    final distanceText = _currentDistance > 0
+    final distanceText = DistanceHelper.isFaceDetected(_distanceStatus)
         ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'No face';
+        : 'Align Face';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

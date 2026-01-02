@@ -53,9 +53,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   List<String> _currentOptions = []; // Current plate options
-  bool _isDistanceOk = true;
   bool _isTestPausedForDistance = false;
   bool _userDismissedDistanceWarning = false;
+  DateTime? _lastShouldPauseTime;
+  static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
   Timer? _distanceAutoSkipTimer;
   Timer? _distanceWarningReenableTimer;
 
@@ -275,27 +276,42 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    final newIsOk = !DistanceHelper.shouldPauseTest(status);
+    final shouldPause = DistanceHelper.shouldPauseTestForDistance(
+      distance,
+      status,
+      'color_vision',
+    );
 
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
-      _isDistanceOk = newIsOk;
     });
 
-    _skipManager.canShowDistanceWarning(DistanceTestType.colorVision).then((
-      canShow,
-    ) {
-      if (!mounted) return;
-      if (!_isDistanceOk &&
-          !_isTestPausedForDistance &&
-          !_userDismissedDistanceWarning &&
-          canShow) {
-        _pauseTestForDistance();
-      } else if (_isDistanceOk && _isTestPausedForDistance) {
-        _resumeTestAfterDistance();
+    if (_showingPlate && !_phase.name.contains('Instruction')) {
+      if (shouldPause) {
+        _lastShouldPauseTime ??= DateTime.now();
+        final durationSinceFirstIssue = DateTime.now().difference(
+          _lastShouldPauseTime!,
+        );
+
+        if (durationSinceFirstIssue >= _distancePauseDebounce &&
+            !_isTestPausedForDistance &&
+            !_userDismissedDistanceWarning) {
+          _skipManager
+              .canShowDistanceWarning(DistanceTestType.colorVision)
+              .then((canShow) {
+                if (mounted && canShow) {
+                  _pauseTestForDistance();
+                }
+              });
+        }
+      } else {
+        _lastShouldPauseTime = null;
+        if (_isTestPausedForDistance) {
+          _resumeTestAfterDistance();
+        }
       }
-    });
+    }
   }
 
   void _pauseTestForDistance() {
@@ -1091,10 +1107,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     final indicatorColor = DistanceHelper.getDistanceColor(
       _currentDistance,
       40.0,
+      testType: 'color_vision',
     );
-    final distanceText = _currentDistance > 0
+    final distanceText = DistanceHelper.isFaceDetected(_distanceStatus)
         ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'No face';
+        : 'Align Face';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1124,6 +1141,16 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   Widget _buildDistanceWarningOverlay() {
     final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, 40.0);
     final instruction = DistanceHelper.getDetailedInstruction(40.0);
+    final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
+
+    // ✅ Icon changes based on issue
+    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
+        ? Icons.face_retouching_off
+        : Icons.warning_rounded;
+
+    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
+        ? AppColors.error
+        : AppColors.warning;
 
     return Container(
       color: Colors.black.withValues(alpha: 0.85),
@@ -1138,7 +1165,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
+              Icon(icon, size: 60, color: iconColor),
               const SizedBox(height: 16),
               Text(
                 pauseReason,
@@ -1155,7 +1182,60 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
+              // ✅ Only show distance if face is detected
+              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
+                Text(
+                  _currentDistance > 0
+                      ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
+                      : 'Measuring...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  rangeText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ] else ...[
+                // ✅ Special message when no face
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Position your face in the camera',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+
               ElevatedButton(
                 onPressed: () {
                   _distanceAutoSkipTimer?.cancel();
@@ -1163,6 +1243,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   setState(() {
                     _isTestPausedForDistance = false;
                     _userDismissedDistanceWarning = true;
+                    _lastShouldPauseTime = null;
                   });
 
                   _distanceWarningReenableTimer?.cancel();

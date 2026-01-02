@@ -908,10 +908,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     final indicatorColor = DistanceHelper.getDistanceColor(
       _currentDistance,
       100.0,
+      testType: 'visual_acuity',
     );
-    final distanceText = _currentDistance > 0
+    final distanceText = DistanceHelper.isFaceDetected(_distanceStatus)
         ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'No face';
+        : 'Align Face';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
