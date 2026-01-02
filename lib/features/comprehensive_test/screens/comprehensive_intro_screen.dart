@@ -118,8 +118,8 @@ class ComprehensiveIntroScreen extends StatelessWidget {
                       context,
                       icon: Icons.contrast,
                       title: 'Contrast Sensitivity',
-                      description: 'Pelli-Robson test at 40cm & 1m',
-                      duration: '6 min',
+                      description: 'Pelli-Robson test (Right & Left eyes)',
+                      duration: '10 min',
                     ),
                   ],
                 ),
@@ -141,7 +141,7 @@ class ComprehensiveIntroScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Total duration: approximately 25-30 minutes',
+                        'Total duration: approximately 30-35 minutes',
                         style: TextStyle(
                           fontWeight: FontWeight.w500,
                           color: AppColors.info,

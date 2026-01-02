@@ -5,7 +5,30 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 
 class CoverRightEyeInstructionScreen extends StatefulWidget {
-  const CoverRightEyeInstructionScreen({super.key});
+  final String title;
+  final String subtitle;
+  final String ttsMessage;
+  final double targetDistance;
+  final String startButtonText;
+  final String instructionTitle;
+  final String instructionDescription;
+  final IconData instructionIcon;
+  final VoidCallback? onContinue;
+
+  const CoverRightEyeInstructionScreen({
+    super.key,
+    this.title = 'Test Instructions',
+    this.subtitle = 'Focus with your LEFT eye only',
+    this.ttsMessage =
+        'Cover your right eye with your palm or a paper. Keep your left eye open. Stand at one meter distance from the screen. You will see the letter E pointing in different directions. Say upward, down, left, or right to indicate the direction.',
+    this.targetDistance = 100.0,
+    this.startButtonText = 'Start Left Eye Test',
+    this.instructionTitle = 'Voice Commands',
+    this.instructionDescription =
+        'Say the direction the E is pointing:\nUPPER or UPWARD, DOWN or DOWNWARD, LEFT, RIGHT',
+    this.instructionIcon = Icons.mic,
+    this.onContinue,
+  });
 
   @override
   State<CoverRightEyeInstructionScreen> createState() =>
@@ -30,11 +53,7 @@ class _CoverRightEyeInstructionScreenState
     await _ttsService.initialize();
     await Future.delayed(const Duration(milliseconds: 500));
     await _ttsService.speak(
-      'Cover your right eye with your palm or a paper. '
-      'Keep your left eye open. '
-      'Stand at one meter distance from the screen. '
-      'You will see the letter E pointing in different directions. '
-      'Say upward, down, left, or right to indicate the direction.',
+      widget.ttsMessage,
       speechRate: 0.5,
     );
   }
@@ -54,7 +73,11 @@ class _CoverRightEyeInstructionScreenState
         setState(() => _countdown--);
       } else {
         timer.cancel();
+      if (widget.onContinue != null) {
+        widget.onContinue!();
+      } else {
         _navigateToTest();
+      }
       }
     });
   }
@@ -124,7 +147,7 @@ class _CoverRightEyeInstructionScreenState
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
         appBar: AppBar(
-          title: const Text('Test Instructions'),
+          title: Text(widget.title),
           backgroundColor: AppColors.leftEye.withValues(alpha: 0.1),
           leading: IconButton(
             icon: const Icon(Icons.close),
@@ -132,142 +155,144 @@ class _CoverRightEyeInstructionScreenState
           ),
         ),
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Eye icon with right side covered
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppColors.leftEye.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      const Icon(
-                        Icons.visibility,
-                        size: 60,
-                        color: AppColors.leftEye,
-                      ),
-                      // Cover right side
-                      Positioned(
-                        right: 0,
-                        child: Container(
-                          width: 60,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.7),
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(40),
-                              bottomRight: Radius.circular(40),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Eye icon with right side covered
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: AppColors.leftEye.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Icon(
+                          Icons.visibility,
+                          size: 60,
+                          color: AppColors.leftEye,
+                        ),
+                        // Cover right side
+                        Positioned(
+                          right: 0,
+                          child: Container(
+                            width: 60,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(40),
+                                bottomRight: Radius.circular(40),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Title
-                const Text(
-                  'COVER YOUR RIGHT EYE',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.leftEye,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-
-                // Subtitle
-                Text(
-                  'Focus with your LEFT eye only',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: AppColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
-
-                // Instructions
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.cardShadow,
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildInstructionItem(
-                        Icons.straighten,
-                        'Testing Distance',
-                        'Stand 1 meter (100cm) from screen',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildInstructionItem(
-                        Icons.mic,
-                        'Voice Commands',
-                        'Say the direction the E is pointing:\nUPPER or UPWARD, DOWN or DOWNWARD, LEFT, RIGHT',
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-
-                // UPDATED: Button with countdown
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _countdown == 0 ? _navigateToTest : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      backgroundColor: AppColors.leftEye,
+                      ],
                     ),
-                    child: _countdown > 0
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      const AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                  value: 1 - (_countdown / 3),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Starting in $_countdown...',
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ],
-                          )
-                        : const Text(
-                            'Start Left Eye Test',
-                            style: TextStyle(fontSize: 16),
-                          ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 32),
+
+                  // Title
+                  const Text(
+                    'COVER YOUR RIGHT EYE',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.leftEye,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Subtitle
+                  Text(
+                    widget.subtitle,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 48),
+
+                  // Instructions
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.cardShadow,
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInstructionItem(
+                          Icons.straighten,
+                          'Testing Distance',
+                          'Stand ${widget.targetDistance >= 100 ? 1 : 0.4} meter (${widget.targetDistance.toInt()}cm) from screen',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildInstructionItem(
+                          widget.instructionIcon,
+                          widget.instructionTitle,
+                          widget.instructionDescription,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+
+                  // UPDATED: Button with countdown
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _countdown == 0 ? _navigateToTest : null,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                        backgroundColor: AppColors.leftEye,
+                      ),
+                      child: _countdown > 0
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                    value: 1 - (_countdown / 3),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Starting in $_countdown...',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              widget.startButtonText,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

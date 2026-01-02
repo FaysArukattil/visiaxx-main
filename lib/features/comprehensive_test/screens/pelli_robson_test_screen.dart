@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/features/comprehensive_test/widgets/speech_waveform.dart';
-import 'package:visiaxx/features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
+import 'package:visiaxx/features/quick_vision_test/screens/cover_right_eye_instruction_screen.dart';
+import 'package:visiaxx/features/quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
@@ -39,14 +40,16 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   final DistanceSkipManager _skipManager = DistanceSkipManager();
 
   // Test state
+  String _currentEye = 'right'; // 'right', 'left', 'both'
   String _currentMode = 'short'; // 'short' (40cm) or 'long' (1m)
   int _currentScreenIndex = 0;
   int _currentTripletIndex = 0;
   bool _isTestActive = false;
   bool _isListening = false;
   bool _isSpeechActive = false;
-  bool _showingInstructions = true;
+  bool _showingInstructions = false; // Changed initial to false
   bool _showDistanceCalibration = true;
+  bool _mainInstructionsShown = false; // Track if general PR instructions shown
 
   bool _isTestPausedForDistance = false;
   double _currentDistance = 0;
@@ -55,8 +58,16 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
 
   // Results tracking
-  final List<TripletResponse> _shortDistanceResponses = [];
-  final List<TripletResponse> _longDistanceResponses = [];
+  final Map<String, List<TripletResponse>> _shortResponses = {
+    'right': [],
+    'left': [],
+    'both': [],
+  };
+  final Map<String, List<TripletResponse>> _longResponses = {
+    'right': [],
+    'left': [],
+    'both': [],
+  };
   DateTime? _tripletStartTime;
   String _recognizedText = '';
   bool _speechDetected = false;
@@ -91,8 +102,12 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     // Start distance monitoring
     _startContinuousDistanceMonitoring();
 
-    // First time - show calibration if needed
-    if (_showDistanceCalibration) {
+    // First time - show general instructions then calibration
+    if (!_mainInstructionsShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showTestInstructions();
+      });
+    } else if (_showDistanceCalibration) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showCalibrationScreen();
       });
@@ -114,18 +129,17 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    final shouldPause = DistanceHelper.shouldPauseTestForDistance(
-      distance,
-      status,
-      _currentMode == 'short' ? 'near_vision' : 'visual_acuity',
-    );
+    // ✅ OPTIMIZED: Leniency for Pelli-Robson.
+    // Being further back (tooFar) doesn't invalidate the test as much as being too close.
+    // So we only pause if tooClose or noFaceDetected.
+    final shouldPause = status == DistanceStatus.noFaceDetected || status == DistanceStatus.tooClose;
 
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
     });
 
-    if (_isTestActive && !_showingInstructions) {
+    if (_isTestActive && !_showingInstructions && !_showDistanceCalibration) {
       if (shouldPause) {
         _lastShouldPauseTime ??= DateTime.now();
         final durationSinceFirstIssue = DateTime.now().difference(
@@ -181,6 +195,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   }
 
   void _showCalibrationScreen() {
+    // ✅ FIX: Stop background monitoring before starting calibration to avoid black screen
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
     final targetDistance = _currentMode == 'short' ? 40.0 : 100.0;
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -312,13 +330,22 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   }
 
   void _showTestInstructions() {
+    setState(() => _mainInstructionsShown = true);
+    
+    // Stop background distance monitoring during instructions
+    _distanceService.stopMonitoring();
+    
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => PelliRobsonInstructionsScreen(
           testMode: _currentMode,
           onContinue: () {
             Navigator.of(context).pop();
-            _startTest();
+            if (_showDistanceCalibration) {
+              _showCalibrationScreen();
+            } else {
+              _startTest();
+            }
           },
         ),
       ),
@@ -328,34 +355,53 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _startTest() {
     _fuzzyMatcher.reset();
 
+    // Stop background monitoring during "Cover Eye" instructions
+    _distanceService.stopMonitoring();
+
+    Widget instructionScreen;
+    final String commonTitle = _currentMode == 'short' ? 'Near Contrast Test' : 'Long Distance Contrast Test';
+    final String commonSubtitle = _currentMode == 'short' ? 'Contrast Sensitivity - 40cm' : 'Contrast Sensitivity - 1 Meter';
+    final double targetDistance = _currentMode == 'short' ? 40.0 : 100.0;
+
+    if (_currentEye == 'right') {
+      instructionScreen = CoverLeftEyeInstructionScreen(
+        title: commonTitle,
+        subtitle: 'Right Eye: $commonSubtitle',
+        ttsMessage: _currentMode == 'short'
+            ? 'Cover your left eye. Focus with your right eye only. Hold the device at 40 centimeters and read the triplets of letters aloud.'
+            : 'Cover your left eye. Focus with your right eye only. Sit at 1 meter from the screen and read the triplets of letters aloud.',
+        targetDistance: targetDistance,
+        startButtonText: 'Start Right Eye Test',
+        onContinue: () {
+          Navigator.of(context).pop();
+          _actuallyStartTest();
+        },
+      );
+    } else {
+      instructionScreen = CoverRightEyeInstructionScreen(
+        title: commonTitle,
+        subtitle: 'Left Eye: $commonSubtitle',
+        ttsMessage: _currentMode == 'short'
+            ? 'Cover your right eye. Focus with your left eye only. Hold the device at 40 centimeters and read the triplets of letters aloud.'
+            : 'Cover your right eye. Focus with your left eye only. Sit at 1 meter from the screen and read the triplets of letters aloud.',
+        targetDistance: targetDistance,
+        startButtonText: 'Start Left Eye Test',
+        onContinue: () {
+          Navigator.of(context).pop();
+          _actuallyStartTest();
+        },
+      );
+    }
+
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => BothEyesOpenInstructionScreen(
-          title: _currentMode == 'short'
-              ? 'Near Contrast Test'
-              : 'Long Distance Contrast Test',
-          subtitle: _currentMode == 'short'
-              ? 'Contrast Sensitivity - 40cm'
-              : 'Contrast Sensitivity - 1 Meter',
-          ttsMessage: _currentMode == 'short'
-              ? 'Now we will test your contrast sensitivity at near distance. Keep both eyes open. Hold the device at 40 centimeters and read the triplets of letters aloud.'
-              : 'Now we will test your contrast sensitivity at distance. Keep both eyes open. Sit at 1 meter from the screen and read the triplets of letters aloud.',
-          targetDistance: _currentMode == 'short' ? 40.0 : 100.0,
-          startButtonText: 'Start Contrast Test',
-          instructionTitle: 'Read Aloud',
-          instructionDescription:
-              'Read the three letters in each group clearly',
-          instructionIcon: Icons.record_voice_over,
-          onContinue: () {
-            Navigator.of(context).pop();
-            _actuallyStartTest();
-          },
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => instructionScreen),
     );
   }
 
   void _actuallyStartTest() {
+    // Resume distance monitoring as the test is now active
+    _startContinuousDistanceMonitoring();
+    
     setState(() {
       _showingInstructions = false;
       _isTestActive = true;
@@ -452,11 +498,11 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       wasAutoAdvanced: heardLetters.isEmpty,
     );
 
-    // Add to appropriate list
+    // Add to appropriate map
     if (_currentMode == 'short') {
-      _shortDistanceResponses.add(response);
+      _shortResponses[_currentEye]?.add(response);
     } else {
-      _longDistanceResponses.add(response);
+      _longResponses[_currentEye]?.add(response);
     }
 
     // Visual feedback
@@ -477,39 +523,80 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     setState(() => _isTestActive = false);
 
     if (_currentMode == 'short') {
-      // Switch to long distance mode
-      // ✅ Simplified long distance instruction
-      _ttsService.speak(
-        'Short distance complete. Now we will do the same test from 1 meter distance. Please move back.',
-      );
-
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          setState(() {
-            _currentMode = 'long';
-            _showingInstructions = false; // ✅ Skip wordy intro for 1m test
-            _showDistanceCalibration = true;
-          });
-          _showCalibrationScreen();
-        }
-      });
+      if (_currentEye == 'right') {
+        // Mode short: Right -> Left
+        _transitionToEye('left', 'short');
+      } else {
+        // Both eyes done at short distance. Now transition to long distance for Right eye.
+        _ttsService.speak(
+          'Short distance testing complete. Now we will do the 1 meter distance test. Please move back.',
+        );
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted) {
+            _transitionToEye('right', 'long');
+          }
+        });
+      }
     } else {
-      // Both tests complete
-      _completeAllTests();
+      // Mode long
+      if (_currentEye == 'right') {
+        // Mode long: Right -> Left
+        _transitionToEye('left', 'long');
+      } else {
+        // All tests complete (Right-Long and Left-Long)
+        _completeAllTests();
+      }
     }
   }
 
+  void _transitionToEye(String eye, String mode) {
+    setState(() {
+      _currentEye = eye;
+      _currentMode = mode;
+      _showingInstructions = true;
+      _showDistanceCalibration = true;
+    });
+
+    // Custom transition message
+    String msg = '';
+    if (mode == 'short') {
+      msg =
+          'Next, we will test the ${eye == 'right' ? 'right' : 'left'} eye at 40 centimeters.';
+    } else {
+      msg =
+          'Next, we will test the ${eye == 'right' ? 'right' : 'left'} eye at 1 meter.';
+    }
+
+    _ttsService.speak(msg);
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        _startTest();
+      }
+    });
+  }
+
   void _completeAllTests() {
-    // Calculate results
-    final shortResult = _calculateSingleResult(
-      _shortDistanceResponses,
-      'short',
-    );
-    final longResult = _calculateSingleResult(_longDistanceResponses, 'long');
+    // Calculate results for each eye
+    PelliRobsonEyeResult calculateEyeResult(String eye) {
+      final shortRes =
+          _calculateSingleResult(_shortResponses[eye] ?? [], 'short');
+      final longRes =
+          _calculateSingleResult(_longResponses[eye] ?? [], 'long');
+      return PelliRobsonEyeResult(
+        shortDistance: shortRes,
+        longDistance: longRes,
+      );
+    }
+
+    final rightEyeResult = calculateEyeResult('right');
+    final leftEyeResult = calculateEyeResult('left');
+    final bothEyesResult = calculateEyeResult('both');
 
     final result = PelliRobsonResult(
-      shortDistance: shortResult,
-      longDistance: longResult,
+      rightEye: rightEyeResult,
+      leftEye: leftEyeResult,
+      bothEyes: bothEyesResult,
       timestamp: DateTime.now(),
     );
 
@@ -615,15 +702,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   @override
   Widget build(BuildContext context) {
     if (_showingInstructions) {
-      // Show loading while instructions screen is being pushed
-      // CRITICAL: Set to false IMMEDIATELY to prevent infinite push loops
-      _showingInstructions = false;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _showTestInstructions();
-        }
-      });
       return const Scaffold(
         backgroundColor: Colors.white,
         body: Center(child: CircularProgressIndicator()),
@@ -642,9 +720,23 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          title: Text(
-            'Contrast Test - ${_currentMode == 'short' ? '40cm' : '1m'}',
-            style: const TextStyle(color: Colors.black87),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Contrast Test - ${_currentMode == 'short' ? '40cm' : '1m'}',
+                style: const TextStyle(color: Colors.black87, fontSize: 16),
+              ),
+              Text(
+                '${_currentEye.toUpperCase()} EYE',
+                style: TextStyle(
+                  color: _currentEye == 'right' ? AppColors.rightEye : AppColors.leftEye,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
           leading: IconButton(
             icon: const Icon(Icons.close, color: Colors.black87),
@@ -705,8 +797,20 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     final triplets = PelliRobsonScoring.getTripletsForScreen(
       _currentScreenIndex,
     );
-    final fontSize = _currentMode == 'short' ? 50.0 : 125.0;
+    final isLongDistance = _currentMode == 'long';
+    final fontSize = isLongDistance ? 110.0 : 50.0; // Slightly reduced to be safe
 
+    // For 1m test, show ONLY the active triplet to prevent overflow and scrolling
+    if (isLongDistance) {
+      if (_currentTripletIndex >= triplets.length) return const SizedBox.shrink();
+      final triplet = triplets[_currentTripletIndex];
+      
+      return Center(
+        child: _buildTripletRow(triplet, fontSize, true),
+      );
+    }
+
+    // For 40cm test, we show the list as before
     return Center(
       child: SingleChildScrollView(
         child: Column(
@@ -715,50 +819,51 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             final index = entry.key;
             final triplet = entry.value;
             final isCurrent = index == _currentTripletIndex;
-            final isCompleted = index < _currentTripletIndex;
 
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isCurrent
-                      ? AppColors.primary.withValues(alpha: 0.05)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: isCurrent
-                      ? Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          width: 2,
-                        )
-                      : null,
-                ),
-                child: Opacity(
-                  opacity: triplet.opacity,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: triplet.letters.split('').map((letter) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
-                          letter,
-                          style: TextStyle(
-                            fontSize: fontSize,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Roboto',
-                            color: isCompleted
-                                ? Colors.grey[400]
-                                : const Color(0xFF000000), // Pure black
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: _buildTripletRow(triplet, fontSize, isCurrent),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTripletRow(PelliRobsonTriplet triplet, double fontSize, bool isCurrent) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
+      decoration: BoxDecoration(
+        color: isCurrent
+            ? AppColors.primary.withValues(alpha: 0.05)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: isCurrent
+            ? Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+                width: 2,
+              )
+            : null,
+      ),
+      child: Opacity(
+        opacity: isCurrent ? 1.0 : 0.1,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: triplet.letters.split('').map((letter) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                letter,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Sloan',
+                  color: Colors.black,
                 ),
               ),
             );

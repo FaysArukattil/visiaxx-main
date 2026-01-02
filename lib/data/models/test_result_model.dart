@@ -137,6 +137,7 @@ class TestResultModel {
       'colorVision': colorVision?.toMap(),
       'amslerGridRight': amslerGridRight?.toMap(),
       'amslerGridLeft': amslerGridLeft?.toMap(),
+      'pelliRobson': pelliRobson?.toMap(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,

@@ -155,7 +155,9 @@ class _BothEyesOpenInstructionScreenState
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
+        if (didPop) {
+          return;
+        }
         _showExitConfirmation();
       },
       child: Scaffold(

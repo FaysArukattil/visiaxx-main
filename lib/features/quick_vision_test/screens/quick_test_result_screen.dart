@@ -893,60 +893,113 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const Divider(),
           const SizedBox(height: 16),
 
-          // Short distance result
-          _buildPelliRobsonDistanceResult(
-            'Near Vision (40cm)',
-            result.shortDistance,
-            Icons.smartphone,
-          ),
-          const SizedBox(height: 16),
-
-          // Long distance result
-          _buildPelliRobsonDistanceResult(
-            'Distance Vision (1m)',
-            result.longDistance,
-            Icons.visibility,
-          ),
-          const SizedBox(height: 16),
-
-          // Explanation
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.info.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
+          // Per-eye results
+          if (result.rightEye != null) () {
+            final re = result.rightEye!;
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.info_outline, color: AppColors.info, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'What This Means',
-                      style: TextStyle(
-                        color: AppColors.info,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  result.userSummary,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
+                _buildEyeSectionTitle('Right Eye'),
+                _buildPelliRobsonEyeResults(re),
+                const SizedBox(height: 16),
               ],
+            );
+          }(),
+          if (result.leftEye != null) () {
+            final le = result.leftEye!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildEyeSectionTitle('Left Eye'),
+                _buildPelliRobsonEyeResults(le),
+                const SizedBox(height: 16),
+              ],
+            );
+          }(),
+          if (result.bothEyes != null || result.shortDistance != null) ...[
+            // LEGACY: If we have old "Both Eyes" results, we can show them, 
+            // but the user said they are replaced by R/L.
+            // For now, I'll remove this to hide "Both Eyes" as requested.
+          ],
+
+          // Explanation
+          _buildPelliRobsonExplanation(result.userSummary),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPelliRobsonExplanation(String summary) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.info.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: AppColors.info, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'What This Means',
+                style: TextStyle(
+                  color: AppColors.info,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            summary,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              height: 1.4,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEyeSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPelliRobsonEyeResults(PelliRobsonEyeResult eyeResult) {
+    final near = eyeResult.shortDistance;
+    final dist = eyeResult.longDistance;
+    return Column(
+      children: [
+        if (near != null)
+          _buildPelliRobsonDistanceResult(
+            'Near Vision (40cm)',
+            near,
+            Icons.smartphone,
+          ),
+        if (near != null && dist != null) const SizedBox(height: 12),
+        if (dist != null)
+          _buildPelliRobsonDistanceResult(
+            'Distance Vision (1m)',
+            dist,
+            Icons.visibility,
+          ),
+      ],
     );
   }
 

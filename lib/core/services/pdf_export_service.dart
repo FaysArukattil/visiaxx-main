@@ -8,6 +8,10 @@ import 'package:intl/intl.dart';
 import '../../data/models/test_result_model.dart';
 import '../../data/models/questionnaire_model.dart';
 import '../../data/models/color_vision_result.dart';
+import '../../data/models/amsler_grid_result.dart';
+import '../../data/models/pelli_robson_result.dart';
+import '../../data/models/visiual_acuity_result.dart';
+import '../../data/models/short_distance_result.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -702,7 +706,7 @@ class PdfExportService {
               decoration: const pw.BoxDecoration(color: PdfColors.grey100),
               children: [
                 _buildTableCell('Eye', isHeader: true),
-                _buildTableCell('Distortions', isHeader: true),
+                _buildTableCell('Findings', isHeader: true),
                 _buildTableCell('Status', isHeader: true),
                 _buildTableCell('Clinical Interpretation', isHeader: true),
               ],
@@ -711,22 +715,18 @@ class PdfExportService {
               pw.TableRow(
                 children: [
                   _buildTableCell('Right'),
-                  _buildTableCell(right.hasDistortions ? 'Yes' : 'None'),
+                  _buildTableCell(right.resultSummary),
                   _buildTableCell(right.isNormal ? 'Normal' : 'Abnormal'),
-                  _buildTableCell(
-                    _getAmslerInterpretation(right.hasDistortions),
-                  ),
+                  _buildTableCell(_getAmslerInterpretation(right)),
                 ],
               ),
             if (left != null)
               pw.TableRow(
                 children: [
                   _buildTableCell('Left'),
-                  _buildTableCell(left.hasDistortions ? 'Yes' : 'None'),
+                  _buildTableCell(left.resultSummary),
                   _buildTableCell(left.isNormal ? 'Normal' : 'Abnormal'),
-                  _buildTableCell(
-                    _getAmslerInterpretation(left.hasDistortions),
-                  ),
+                  _buildTableCell(_getAmslerInterpretation(left)),
                 ],
               ),
           ],
@@ -835,38 +835,86 @@ class PdfExportService {
             pw.TableRow(
               decoration: const pw.BoxDecoration(color: PdfColors.grey100),
               children: [
-                _buildTableCell('Test Distance', isHeader: true),
-                _buildTableCell('Log CS Score', isHeader: true),
-                _buildTableCell('Category', isHeader: true),
-                _buildTableCell('Clinical Interpretation', isHeader: true),
+                _buildTableCell('Eye', isHeader: true),
+                _buildTableCell('Near (40cm)', isHeader: true),
+                _buildTableCell('Distance (1m)', isHeader: true),
+                _buildTableCell('Clinical Finding', isHeader: true),
               ],
             ),
-            // Near Test (40cm)
-            pw.TableRow(
-              children: [
-                _buildTableCell('Near (40cm)'),
-                _buildTableCell(
-                  pr.shortDistance.adjustedScore.toStringAsFixed(2),
-                ),
-                _buildTableCell(pr.shortDistance.category),
-                _buildTableCell(
-                  _getPelliRobsonInterpretation(pr.shortDistance.adjustedScore),
-                ),
-              ],
-            ),
-            // Distance Test (1m)
-            pw.TableRow(
-              children: [
-                _buildTableCell('Distance (1m)'),
-                _buildTableCell(
-                  pr.longDistance.adjustedScore.toStringAsFixed(2),
-                ),
-                _buildTableCell(pr.longDistance.category),
-                _buildTableCell(
-                  _getPelliRobsonInterpretation(pr.longDistance.adjustedScore),
-                ),
-              ],
-            ),
+            // Right Eye
+            if (pr.rightEye != null) (() {
+              final re = pr.rightEye!;
+              final reNear = re.shortDistance;
+              final reDist = re.longDistance;
+              return pw.TableRow(
+                children: [
+                  _buildTableCell('Right'),
+                  _buildTableCell(
+                    reNear != null
+                        ? '${reNear.adjustedScore.toStringAsFixed(2)} (${reNear.category})'
+                        : 'N/A',
+                  ),
+                  _buildTableCell(
+                    reDist != null
+                        ? '${reDist.adjustedScore.toStringAsFixed(2)} (${reDist.category})'
+                        : 'N/A',
+                  ),
+                  _buildTableCell(
+                    reDist != null
+                        ? _getPelliRobsonInterpretation(reDist.adjustedScore)
+                        : (reNear != null ? _getPelliRobsonInterpretation(reNear.adjustedScore) : 'N/A'),
+                  ),
+                ],
+              );
+            })(),
+            // Left Eye
+            if (pr.leftEye != null) (() {
+              final le = pr.leftEye!;
+              final leNear = le.shortDistance;
+              final leDist = le.longDistance;
+              return pw.TableRow(
+                children: [
+                  _buildTableCell('Left'),
+                  _buildTableCell(
+                    leNear != null
+                        ? '${leNear.adjustedScore.toStringAsFixed(2)} (${leNear.category})'
+                        : 'N/A',
+                  ),
+                  _buildTableCell(
+                    leDist != null
+                        ? '${leDist.adjustedScore.toStringAsFixed(2)} (${leDist.category})'
+                        : 'N/A',
+                  ),
+                  _buildTableCell(
+                    leDist != null
+                        ? _getPelliRobsonInterpretation(leDist.adjustedScore)
+                        : (leNear != null ? _getPelliRobsonInterpretation(leNear.adjustedScore) : 'N/A'),
+                  ),
+                ],
+              );
+            })(),
+            // Legacy / Both Eyes (only if present)
+            if (pr.rightEye == null && pr.leftEye == null && (pr.shortDistance != null || pr.longDistance != null))
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Both Eyes (Legacy)'),
+                  _buildTableCell(
+                    pr.shortDistance != null
+                        ? '${pr.shortDistance!.adjustedScore.toStringAsFixed(2)} (${pr.shortDistance!.category})'
+                        : 'N/A',
+                  ),
+                  _buildTableCell(
+                    pr.longDistance != null
+                        ? '${pr.longDistance!.adjustedScore.toStringAsFixed(2)} (${pr.longDistance!.category})'
+                        : 'N/A',
+                  ),
+                  _buildTableCell(
+                    pr.longDistance != null
+                        ? _getPelliRobsonInterpretation(pr.longDistance!.adjustedScore)
+                        : (pr.shortDistance != null ? _getPelliRobsonInterpretation(pr.shortDistance!.adjustedScore) : 'N/A'),
+                  ),
+                ],
+              ),
           ],
         ),
 
@@ -903,10 +951,18 @@ class PdfExportService {
     return 'Significant impairment - Action recommended';
   }
 
-  String _getAmslerInterpretation(bool hasDistortions) {
-    return hasDistortions
-        ? 'Distortions detected - Macular evaluation recommended'
-        : 'Normal central vision';
+  String _getAmslerInterpretation(AmslerGridResult result) {
+    if (result.isNormal) return 'Normal central vision';
+
+    if (result.hasDistortions) {
+      return 'Distortions (Metamorphopsia) detected - Urgent macular evaluation recommended';
+    }
+
+    if (result.hasMissingAreas) {
+      return 'Missing areas (Scotoma) detected - Comprehensive retinal assessment advised';
+    }
+
+    return 'Abnormal findings detected - Professional eye examination recommended';
   }
 
   /// ✅ OVERALL ASSESSMENT

@@ -88,17 +88,44 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
               ),
               const SizedBox(height: 16),
 
-              _buildDistanceResultCard(
-                'Near Vision (40cm)',
-                result.shortDistance,
-                Icons.short_text,
-              ),
-              const SizedBox(height: 16),
-              _buildDistanceResultCard(
-                'Distance Vision (1m)',
-                result.longDistance,
-                Icons.visibility,
-              ),
+              // Right Eye
+              if (result.rightEye != null) ...[
+                _buildEyeTitle('Right Eye'),
+                if (result.rightEye!.shortDistance != null)
+                  _buildDistanceResultCard(
+                    'Near Vision (40cm)',
+                    result.rightEye!.shortDistance!,
+                    Icons.short_text,
+                  ),
+                const SizedBox(height: 8),
+                if (result.rightEye!.longDistance != null)
+                  _buildDistanceResultCard(
+                    'Distance Vision (1m)',
+                    result.rightEye!.longDistance!,
+                    Icons.visibility,
+                  ),
+                const SizedBox(height: 16),
+              ],
+
+              // Left Eye
+              if (result.leftEye != null) ...[
+                _buildEyeTitle('Left Eye'),
+                if (result.leftEye!.shortDistance != null)
+                  _buildDistanceResultCard(
+                    'Near Vision (40cm)',
+                    result.leftEye!.shortDistance!,
+                    Icons.short_text,
+                  ),
+                const SizedBox(height: 8),
+                if (result.leftEye!.longDistance != null)
+                  _buildDistanceResultCard(
+                    'Distance Vision (1m)',
+                    result.leftEye!.longDistance!,
+                    Icons.visibility,
+                  ),
+                const SizedBox(height: 16),
+              ],
+
 
               const SizedBox(height: 32),
 
@@ -165,6 +192,20 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEyeTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: AppColors.primary,
         ),
       ),
     );

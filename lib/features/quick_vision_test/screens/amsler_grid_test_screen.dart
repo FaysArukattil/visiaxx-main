@@ -165,7 +165,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     _distanceService.onDistanceUpdate = (distance, status) {
       if (!mounted) return;
 
-      final shouldPause = DistanceHelper.shouldPauseTest(status);
+      final shouldPause = DistanceHelper.shouldPauseTestForDistance(
+        distance,
+        status,
+        'amsler_grid',
+      );
 
       setState(() {
         _currentDistance = distance;
@@ -478,6 +482,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       Navigator.pushReplacementNamed(context, '/quick-test-result');
       return;
     }
+    // Navigate to Pelli-Robson test for Comprehensive tests only
     Navigator.pushReplacementNamed(context, '/pelli-robson-test');
   }
 

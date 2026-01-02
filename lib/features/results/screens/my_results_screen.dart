@@ -526,7 +526,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   if (isComprehensive && result.pelliRobson != null)
                     _buildMiniResult(
                       'Contrast',
-                      '${result.pelliRobson!.averageScore.toStringAsFixed(1)}',
+                      result.pelliRobson!.averageScore.toStringAsFixed(1),
                     )
                   else
                     _buildMiniResult(
@@ -740,18 +740,47 @@ class _ResultDetailSheet extends StatelessWidget {
               ]),
 
             // Pelli-Robson
-            if (result.pelliRobson != null)
-              _buildSection('Contrast Sensitivity', [
-                _buildDetailRow(
-                  'Near (40cm)',
-                  '${result.pelliRobson!.shortDistance.adjustedScore.toStringAsFixed(2)} log CS',
-                ),
-                _buildDetailRow(
-                  'Distance (1m)',
-                  '${result.pelliRobson!.longDistance.adjustedScore.toStringAsFixed(2)} log CS',
-                ),
-                _buildDetailRow('Status', result.pelliRobson!.overallCategory),
-              ]),
+            if (result.pelliRobson != null) () {
+              final pr = result.pelliRobson!;
+              final List<Widget> prRows = [];
+              
+              if (pr.rightEye != null) {
+                if (pr.rightEye!.shortDistance != null) {
+                  prRows.add(_buildDetailRow('Right Eye (Near)', '${pr.rightEye!.shortDistance!.adjustedScore.toStringAsFixed(2)} log CS'));
+                }
+                if (pr.rightEye!.longDistance != null) {
+                  prRows.add(_buildDetailRow('Right Eye (Dist)', '${pr.rightEye!.longDistance!.adjustedScore.toStringAsFixed(2)} log CS'));
+                }
+              }
+              
+              if (pr.leftEye != null) {
+                if (pr.leftEye!.shortDistance != null) {
+                  prRows.add(_buildDetailRow('Left Eye (Near)', '${pr.leftEye!.shortDistance!.adjustedScore.toStringAsFixed(2)} log CS'));
+                }
+                if (pr.leftEye!.longDistance != null) {
+                  prRows.add(_buildDetailRow('Left Eye (Dist)', '${pr.leftEye!.longDistance!.adjustedScore.toStringAsFixed(2)} log CS'));
+                }
+              }
+              
+              // Fallback for legacy data
+              if (prRows.isEmpty) {
+                if (pr.shortDistance != null) {
+                  prRows.add(_buildDetailRow('Near (Legacy)', '${pr.shortDistance!.adjustedScore.toStringAsFixed(2)} log CS'));
+                }
+                if (pr.longDistance != null) {
+                  prRows.add(_buildDetailRow('Distance (Legacy)', '${pr.longDistance!.adjustedScore.toStringAsFixed(2)} log CS'));
+                }
+              }
+
+              return Column(
+                children: [
+                   _buildSection('Contrast Sensitivity', [
+                    ...prRows,
+                    _buildDetailRow('Status', pr.overallCategory),
+                  ]),
+                ],
+              );
+            }(),
 
             // Questionnaire Summary
             if (result.questionnaire != null)

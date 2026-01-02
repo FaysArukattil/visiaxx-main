@@ -121,30 +121,105 @@ class PelliRobsonSingleResult {
   }
 }
 
-/// Complete Pelli-Robson result with both distance tests
+/// Complete Pelli-Robson result with both distance tests for a single eye
+class PelliRobsonEyeResult {
+  final PelliRobsonSingleResult? shortDistance; // 40cm test
+  final PelliRobsonSingleResult? longDistance; // 1m test
+
+  const PelliRobsonEyeResult({
+    this.shortDistance,
+    this.longDistance,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'shortDistance': shortDistance?.toMap(),
+    'longDistance': longDistance?.toMap(),
+  };
+
+  factory PelliRobsonEyeResult.fromMap(Map<String, dynamic> map) {
+    return PelliRobsonEyeResult(
+      shortDistance: map['shortDistance'] != null
+          ? PelliRobsonSingleResult.fromMap(map['shortDistance'])
+          : null,
+      longDistance: map['longDistance'] != null
+          ? PelliRobsonSingleResult.fromMap(map['longDistance'])
+          : null,
+    );
+  }
+}
+
+/// Complete Pelli-Robson result with per-eye tests
 class PelliRobsonResult {
-  final PelliRobsonSingleResult shortDistance; // 40cm test
-  final PelliRobsonSingleResult longDistance; // 1m test
+  final PelliRobsonEyeResult? rightEye;
+  final PelliRobsonEyeResult? leftEye;
+  final PelliRobsonEyeResult? bothEyes;
+  
+  // Legacy support for older tests (Both eyes only)
+  final PelliRobsonSingleResult? shortDistance; 
+  final PelliRobsonSingleResult? longDistance;
+  
   final DateTime timestamp;
 
   const PelliRobsonResult({
-    required this.shortDistance,
-    required this.longDistance,
+    this.rightEye,
+    this.leftEye,
+    this.bothEyes,
+    this.shortDistance,
+    this.longDistance,
     required this.timestamp,
   });
 
-  /// Combined category based on worse result
+  /// Combined category based on all results (worst case)
   String get overallCategory {
     final categories = ['Excellent', 'Normal', 'Borderline', 'Reduced'];
-    final shortIdx = categories.indexOf(shortDistance.category);
-    final longIdx = categories.indexOf(longDistance.category);
-    // Higher index = worse category
-    return categories[shortIdx > longIdx ? shortIdx : longIdx];
+    int worstIdx = 0;
+
+    void updateWorst(PelliRobsonSingleResult? res) {
+      if (res != null) {
+        final idx = categories.indexOf(res.category);
+        if (idx > worstIdx) worstIdx = idx;
+      }
+    }
+
+    updateWorst(rightEye?.shortDistance);
+    updateWorst(rightEye?.longDistance);
+    updateWorst(leftEye?.shortDistance);
+    updateWorst(leftEye?.longDistance);
+    updateWorst(bothEyes?.shortDistance);
+    updateWorst(bothEyes?.longDistance);
+    
+    // Legacy check
+    updateWorst(shortDistance);
+    updateWorst(longDistance);
+
+    return categories[worstIdx];
   }
 
-  /// Overall score (average of both adjusted scores)
-  double get averageScore =>
-      (shortDistance.adjustedScore + longDistance.adjustedScore) / 2;
+  /// Overall score (average of all available adjusted scores)
+  double get averageScore {
+    int count = 0;
+    double sum = 0;
+
+    void addScore(PelliRobsonSingleResult? res) {
+      if (res != null) {
+        sum += res.adjustedScore;
+        count++;
+      }
+    }
+
+    addScore(rightEye?.shortDistance);
+    addScore(rightEye?.longDistance);
+    addScore(leftEye?.shortDistance);
+    addScore(leftEye?.longDistance);
+    addScore(bothEyes?.shortDistance);
+    addScore(bothEyes?.longDistance);
+    
+    // Legacy check
+    addScore(shortDistance);
+    addScore(longDistance);
+
+    return count > 0 ? sum / count : 0;
+  }
 
   /// User-friendly overall summary
   String get userSummary {
@@ -161,10 +236,21 @@ class PelliRobsonResult {
   }
 
   /// Clinical summary for professionals
-  String get clinicalSummary =>
-      'Pelli-Robson Contrast Sensitivity:\n'
-      '• Near (40cm): ${shortDistance.adjustedScore.toStringAsFixed(2)} log CS - ${shortDistance.category}\n'
-      '• Distance (1m): ${longDistance.adjustedScore.toStringAsFixed(2)} log CS - ${longDistance.category}';
+  String get clinicalSummary {
+    final buffer = StringBuffer('Pelli-Robson Contrast Sensitivity:\n');
+    
+    if (rightEye != null) {
+      buffer.writeln('• Right Eye: Near ${rightEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${rightEye?.longDistance?.adjustedScore.toStringAsFixed(2)}');
+    }
+    if (leftEye != null) {
+      buffer.writeln('• Left Eye: Near ${leftEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${leftEye?.longDistance?.adjustedScore.toStringAsFixed(2)}');
+    }
+    if (bothEyes != null) {
+      buffer.writeln('• Both Eyes: Near ${bothEyes?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${bothEyes?.longDistance?.adjustedScore.toStringAsFixed(2)}');
+    }
+    
+    return buffer.toString().trim();
+  }
 
   /// Check if results are concerning
   bool get needsReferral =>
@@ -182,17 +268,25 @@ class PelliRobsonResult {
   }
 
   Map<String, dynamic> toMap() => {
-    'shortDistance': shortDistance.toMap(),
-    'longDistance': longDistance.toMap(),
+    'rightEye': rightEye?.toMap(),
+    'leftEye': leftEye?.toMap(),
+    'bothEyes': bothEyes?.toMap(),
+    'shortDistance': shortDistance?.toMap(),
+    'longDistance': longDistance?.toMap(),
     'timestamp': timestamp.toIso8601String(),
   };
 
   factory PelliRobsonResult.fromMap(Map<String, dynamic> map) {
     return PelliRobsonResult(
-      shortDistance: PelliRobsonSingleResult.fromMap(
-        map['shortDistance'] ?? {},
-      ),
-      longDistance: PelliRobsonSingleResult.fromMap(map['longDistance'] ?? {}),
+      rightEye: map['rightEye'] != null ? PelliRobsonEyeResult.fromMap(map['rightEye']) : null,
+      leftEye: map['leftEye'] != null ? PelliRobsonEyeResult.fromMap(map['leftEye']) : null,
+      bothEyes: map['bothEyes'] != null ? PelliRobsonEyeResult.fromMap(map['bothEyes']) : null,
+      shortDistance: map['shortDistance'] != null
+          ? PelliRobsonSingleResult.fromMap(map['shortDistance'])
+          : null,
+      longDistance: map['longDistance'] != null
+          ? PelliRobsonSingleResult.fromMap(map['longDistance'])
+          : null,
       timestamp: DateTime.tryParse(map['timestamp'] ?? '') ?? DateTime.now(),
     );
   }
