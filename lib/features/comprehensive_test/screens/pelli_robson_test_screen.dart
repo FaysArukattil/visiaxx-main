@@ -55,7 +55,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   DateTime? _lastShouldPauseTime;
-  static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
+  final Duration _distancePauseDebounce = const Duration(milliseconds: 100);
+
+  // Auto-scrolling
+  final ScrollController _scrollController = ScrollController();
 
   // Results tracking
   final Map<String, List<TripletResponse>> _shortResponses = {
@@ -129,32 +132,27 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    // ✅ OPTIMIZED: Leniency for Pelli-Robson.
-    // Being further back (tooFar) doesn't invalidate the test as much as being too close.
-    // So we only pause if tooClose or noFaceDetected.
-    final shouldPause = status == DistanceStatus.noFaceDetected || status == DistanceStatus.tooClose;
+    final shouldPause = DistanceHelper.shouldPauseTestForDistance(
+      distance,
+      status,
+      _currentMode == 'short' ? 'short_distance' : 'visual_acuity',
+    );
 
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
     });
 
-    if (_isTestActive && !_showingInstructions && !_showDistanceCalibration) {
+    if (_isTestActive) {
       if (shouldPause) {
         _lastShouldPauseTime ??= DateTime.now();
-        final durationSinceFirstIssue = DateTime.now().difference(
-          _lastShouldPauseTime!,
-        );
-
-        if (durationSinceFirstIssue >= _distancePauseDebounce &&
-            !_isTestPausedForDistance) {
-          _skipManager
-              .canShowDistanceWarning(DistanceTestType.pelliRobson)
-              .then((canShow) {
-                if (mounted && canShow) {
-                  _pauseTestForDistance();
-                }
-              });
+        final durationSinceFirstIssue = DateTime.now().difference(_lastShouldPauseTime!);
+        if (durationSinceFirstIssue >= _distancePauseDebounce && !_isTestPausedForDistance) {
+          _skipManager.canShowDistanceWarning(DistanceTestType.pelliRobson).then((canShow) {
+            if (mounted && canShow) {
+              _pauseTestForDistance();
+            }
+          });
         }
       } else {
         _lastShouldPauseTime = null;
@@ -341,11 +339,8 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           testMode: _currentMode,
           onContinue: () {
             Navigator.of(context).pop();
-            if (_showDistanceCalibration) {
-              _showCalibrationScreen();
-            } else {
-              _startTest();
-            }
+            // Start calibration immediately
+            _showCalibrationScreen();
           },
         ),
       ),
@@ -372,6 +367,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             : 'Cover your left eye. Focus with your right eye only. Sit at 1 meter from the screen and read the triplets of letters aloud.',
         targetDistance: targetDistance,
         startButtonText: 'Start Right Eye Test',
+        instructionTitle: 'Contrast Test',
+        instructionDescription: 'Read the three letters in each row aloud. The letters will get fainter as you go.',
+        instructionIcon: Icons.record_voice_over,
         onContinue: () {
           Navigator.of(context).pop();
           _actuallyStartTest();
@@ -386,6 +384,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             : 'Cover your right eye. Focus with your left eye only. Sit at 1 meter from the screen and read the triplets of letters aloud.',
         targetDistance: targetDistance,
         startButtonText: 'Start Left Eye Test',
+        instructionTitle: 'Contrast Test',
+        instructionDescription: 'Read the three letters in each row aloud. The letters will get fainter as you go.',
+        instructionIcon: Icons.record_voice_over,
         onContinue: () {
           Navigator.of(context).pop();
           _actuallyStartTest();
@@ -435,7 +436,22 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _recognizedText = '';
     _speechDetected = false;
     setState(() {});
+    
+    _scrollToCurrentTriplet();
     _startListeningForTriplet();
+  }
+
+  void _scrollToCurrentTriplet() {
+    if (!_scrollController.hasClients) return;
+    
+    // Each triplet row is roughly 100-150 pixels in height (padding + content)
+    // We want to center the active one.
+    final offset = _currentTripletIndex * 120.0;
+    _scrollController.animateTo(
+      offset,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _startListeningForTriplet() {
@@ -569,20 +585,35 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
     _ttsService.speak(msg);
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _startTest();
+    setState(() {
+      _currentEye = eye;
+      _currentMode = mode;
+      _showingInstructions = true;
+      if (mode == 'long') {
+        _showDistanceCalibration = true;
       }
     });
+
+    _ttsService.speak(msg);
+
+    // Navigate immediately to instructions or calibration
+    if (_showDistanceCalibration) {
+      _showCalibrationScreen();
+    } else {
+      _startTest();
+    }
   }
 
   void _completeAllTests() {
     // Calculate results for each eye
     PelliRobsonEyeResult calculateEyeResult(String eye) {
-      final shortRes =
-          _calculateSingleResult(_shortResponses[eye] ?? [], 'short');
-      final longRes =
-          _calculateSingleResult(_longResponses[eye] ?? [], 'long');
+      final shortRes = (_shortResponses[eye]?.isNotEmpty == true)
+          ? _calculateSingleResult(_shortResponses[eye]!, 'short')
+          : null;
+      final longRes = (_longResponses[eye]?.isNotEmpty == true)
+          ? _calculateSingleResult(_longResponses[eye]!, 'long')
+          : null;
+
       return PelliRobsonEyeResult(
         shortDistance: shortRes,
         longDistance: longRes,
@@ -691,6 +722,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _silenceTimer?.cancel();
     _autoAdvanceTimer?.cancel();
     _speechService.dispose();
@@ -704,7 +736,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     if (_showingInstructions) {
       return const Scaffold(
         backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator()),
+        body: SizedBox.shrink(),
       );
     }
 
@@ -798,31 +830,22 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _currentScreenIndex,
     );
     final isLongDistance = _currentMode == 'long';
-    final fontSize = isLongDistance ? 110.0 : 50.0; // Slightly reduced to be safe
+    final fontSize = isLongDistance ? 110.0 : 50.0;
 
-    // For 1m test, show ONLY the active triplet to prevent overflow and scrolling
-    if (isLongDistance) {
-      if (_currentTripletIndex >= triplets.length) return const SizedBox.shrink();
-      final triplet = triplets[_currentTripletIndex];
-      
-      return Center(
-        child: _buildTripletRow(triplet, fontSize, true),
-      );
-    }
-
-    // For 40cm test, we show the list as before
     return Center(
       child: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: triplets.asMap().entries.map((entry) {
             final index = entry.key;
             final triplet = entry.value;
             final isCurrent = index == _currentTripletIndex;
+            final isCompleted = index < _currentTripletIndex;
 
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
-              child: _buildTripletRow(triplet, fontSize, isCurrent),
+              child: _buildTripletRow(triplet, fontSize, isCurrent, isCompleted),
             );
           }).toList(),
         ),
@@ -830,7 +853,12 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 
-  Widget _buildTripletRow(PelliRobsonTriplet triplet, double fontSize, bool isCurrent) {
+  Widget _buildTripletRow(
+    PelliRobsonTriplet triplet,
+    double fontSize,
+    bool isCurrent,
+    bool isCompleted,
+  ) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.symmetric(
@@ -850,7 +878,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             : null,
       ),
       child: Opacity(
-        opacity: isCurrent ? 1.0 : 0.1,
+        opacity: isCurrent ? triplet.opacity : (isCompleted ? 0.05 : 0.2),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1020,6 +1048,31 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                 instruction,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              // ✅ Voice indicator (always show it's listening)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.success, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.mic, color: AppColors.success, size: 18),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Voice recognition active',
+                      style: TextStyle(
+                        color: AppColors.success,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               ElevatedButton(

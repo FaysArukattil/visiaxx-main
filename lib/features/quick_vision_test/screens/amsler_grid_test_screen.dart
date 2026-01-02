@@ -1216,28 +1216,23 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               ],
 
               const SizedBox(height: 20),
-
-              // ✅ Show marking is paused
+              // ✅ Voice indicator (always show it's listening)
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.warning, width: 1),
+                  border: Border.all(color: AppColors.success, width: 1),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.pause_circle,
-                      color: AppColors.warning,
-                      size: 18,
-                    ),
+                    Icon(Icons.mic, color: AppColors.success, size: 18),
                     const SizedBox(width: 8),
-                    Text(
-                      'Marking paused',
+                    const Text(
+                      'Voice recognition active',
                       style: TextStyle(
-                        color: AppColors.warning,
+                        color: AppColors.success,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1245,23 +1240,13 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Continue button
-              TextButton(
+              const SizedBox(height: 24),
+              ElevatedButton(
                 onPressed: () {
                   _skipManager.recordSkip(DistanceTestType.amslerGrid);
-                  setState(() {
-                    _isTestPausedForDistance = false;
-                  });
+                  _resumeTestAfterDistance();
                 },
-                child: Text(
-                  'Continue Anyway',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
+                child: const Text('Continue Anyway'),
               ),
             ],
           ),

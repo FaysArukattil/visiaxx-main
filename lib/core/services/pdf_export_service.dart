@@ -893,11 +893,37 @@ class PdfExportService {
                 ],
               );
             })(),
-            // Legacy / Both Eyes (only if present)
-            if (pr.rightEye == null && pr.leftEye == null && (pr.shortDistance != null || pr.longDistance != null))
+            // Both Eyes
+            if (pr.bothEyes != null && (pr.bothEyes!.shortDistance != null || pr.bothEyes!.longDistance != null)) (() {
+              final be = pr.bothEyes!;
+              final beNear = be.shortDistance;
+              final beDist = be.longDistance;
+              return pw.TableRow(
+                children: [
+                  _buildTableCell('Both Eyes'),
+                  _buildTableCell(
+                    beNear != null
+                        ? '${beNear.adjustedScore.toStringAsFixed(2)} (${beNear.category})'
+                        : 'N/A',
+                  ),
+                  _buildTableCell(
+                    beDist != null
+                        ? '${beDist.adjustedScore.toStringAsFixed(2)} (${beDist.category})'
+                        : 'N/A',
+                  ),
+                  _buildTableCell(
+                    beDist != null
+                        ? _getPelliRobsonInterpretation(beDist.adjustedScore)
+                        : (beNear != null ? _getPelliRobsonInterpretation(beNear.adjustedScore) : 'N/A'),
+                  ),
+                ],
+              );
+            })(),
+            // Legacy / Old Format (only if present and no per-eye results)
+            if (pr.rightEye == null && pr.leftEye == null && pr.bothEyes == null && (pr.shortDistance != null || pr.longDistance != null))
               pw.TableRow(
                 children: [
-                  _buildTableCell('Both Eyes (Legacy)'),
+                  _buildTableCell('Test Result (Legacy)'),
                   _buildTableCell(
                     pr.shortDistance != null
                         ? '${pr.shortDistance!.adjustedScore.toStringAsFixed(2)} (${pr.shortDistance!.category})'

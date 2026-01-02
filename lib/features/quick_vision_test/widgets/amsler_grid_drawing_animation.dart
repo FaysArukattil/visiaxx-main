@@ -209,46 +209,54 @@ class _AnimationPainter extends CustomPainter {
         _drawHand(canvas, Offset(endX, 40 + 5 * math.sin(endX / 5)), handPaint);
       }
     }
-    // Phase 2: Select/Draw Missing (0.35 to 0.65)
+    // Phase 2: Select/Mark Missing (0.35 to 0.65)
     else if (progress < 0.65) {
       if (progress < 0.45) {
         _drawModeSelector(canvas, size, 'missing');
         _drawHand(canvas, const Offset(100, 180), handPaint);
       } else {
         final subProgress = (progress - 0.45) / 0.2;
-        final center = const Offset(150, 150);
-        
-        final missingPaint = Paint()
-          ..color = Colors.grey.withAlpha(128)
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(center, 20, missingPaint);
-
-        if (subProgress > 0) {
-          canvas.drawCircle(center, 22 * subProgress, Paint()..color = Colors.blue.withAlpha(76));
-          canvas.drawCircle(center, 22 * subProgress, drawingPaint..color = Colors.blue);
+        drawingPaint.color = Colors.blue;
+        final path = Path();
+        const startX = 120.0;
+        final endX = 120.0 + (50.0 * subProgress);
+        final centerY = 150.0;
+        path.moveTo(startX, centerY);
+        for (double x = startX; x <= endX; x++) {
+          final y = centerY + 4 * math.sin((x - 120) / 4);
+          path.lineTo(x, y);
         }
-        _drawHand(canvas, center, handPaint);
+        // Draw a cloud-like shape for missing area
+        final missingFillPaint = Paint()..color = Colors.blue.withValues(alpha: 0.2);
+        canvas.drawCircle(const Offset(145, 150), subProgress * 15, missingFillPaint);
+        
+        canvas.drawPath(path, drawingPaint);
+        _drawHand(canvas, Offset(endX, centerY + 4 * math.sin((endX - 120) / 4)), handPaint);
       }
     }
-    // Phase 3: Select/Draw Blurry (0.65 to 0.95)
+    // Phase 3: Select/Mark Blurry (0.65 to 0.95)
     else if (progress < 0.95) {
       if (progress < 0.75) {
         _drawModeSelector(canvas, size, 'blurry');
         _drawHand(canvas, const Offset(160, 180), handPaint);
       } else {
         final subProgress = (progress - 0.75) / 0.2;
-        final center = const Offset(60, 140);
-        
-        final blurryPaint = Paint()
-          ..color = Colors.orange.withAlpha(76)
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(center, 18, blurryPaint);
-
-        if (subProgress > 0) {
-          canvas.drawCircle(center, 20 * subProgress, Paint()..color = Colors.orange.withAlpha(102));
-          canvas.drawCircle(center, 20 * subProgress, drawingPaint..color = Colors.orange);
+        drawingPaint.color = Colors.orange;
+        final path = Path();
+        const startX = 30.0;
+        final endX = 30.0 + (50.0 * subProgress);
+        final centerY = 140.0;
+        path.moveTo(startX, centerY);
+        for (double x = startX; x <= endX; x++) {
+          final y = centerY + 6 * math.cos((x - 30) / 5);
+          path.lineTo(x, y);
         }
-        _drawHand(canvas, center, handPaint);
+        // Draw a blur-like shape 
+        final blurryFillPaint = Paint()..color = Colors.orange.withValues(alpha: 0.2);
+        canvas.drawCircle(const Offset(55, 140), subProgress * 18, blurryFillPaint);
+
+        canvas.drawPath(path, drawingPaint);
+        _drawHand(canvas, Offset(endX, centerY + 6 * math.cos((endX - 30) / 5)), handPaint);
       }
     }
   }
