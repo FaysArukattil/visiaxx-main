@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
-import 'package:visiaxx/features/comprehensive_test/widgets/speech_waveform.dart';
+
 import 'package:visiaxx/features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
@@ -63,7 +63,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Timer? _relaxationTimer;
   int _relaxationCountdown = 10;
   DateTime? _eDisplayStartTime;
-  int _eDisplayCountdown = 5; // 5 seconds per E as per user requirement
+  int _eDisplayCountdown = TestConstants.eDisplayDurationSeconds; // 7 seconds per E as per user requirement
   Timer? _eCountdownTimer;
 
   // Display states
@@ -252,8 +252,17 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _continuousSpeech.onListeningStateChanged = (isListening) {
       if (mounted) setState(() => _isListening = isListening);
     };
+    // 🔥 ULTRA-RELIABLE: Pause speech when TTS is speaking to prevent self-recognition
+    _ttsService.onSpeakingStateChanged = (isSpeaking) {
+      if (isSpeaking) {
+        _continuousSpeech.pauseForTts();
+      } else {
+        _continuousSpeech.resumeAfterTts();
+      }
+    };
 
-    // DON'T pause speech for TTS - let it run continuously
+    // Mic start will be handled by relaxation timer (at 3 seconds remaining)
+    // as per user requirement to avoid interference.
 
     // 🔥 KEY FIX: Check if we should start with left eye
     if (!mounted) return;
@@ -477,6 +486,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         _relaxationCountdown--;
       });
 
+      // ✅ USER REQUIREMENT: Start mic when 3 seconds remain
+      if (_relaxationCountdown == 3) {
+        debugPrint('[VisualAcuity] 🎤 Starting mic (3s remaining in relaxation)');
+        _continuousSpeech.start(
+          listenDuration: const Duration(minutes: 10),
+          minConfidence: 0.05,
+          bufferMs: 300,
+        );
+      }
+
       if (_relaxationCountdown <= 0) {
         timer.cancel();
         _showTumblingE();
@@ -532,6 +551,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _startRelaxation() {
+    // ✅ Stop mic when relaxation starts
+    _continuousSpeech.stop();
+    
     setState(() {
       _showRelaxation = true;
       _showE = false;
@@ -554,13 +576,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _showE = true;
       _waitingForResponse = true;
       _lastDetectedSpeech = null; // ✅ Reset recognized text for new level
+      _continuousSpeech.clearAccumulated(); // ✅ Prevent carry-over from previous trials
       _eDisplayCountdown = TestConstants.eDisplayDurationSeconds;
     });
 
     _eDisplayStartTime = DateTime.now();
 
-    // Start continuous speech recognition if not already running
+    // ✅ FALLBACK: If mic isn't active at the moment E appears, force a start
     if (!_continuousSpeech.isActive) {
+      debugPrint('[VisualAcuity] 🎤 Fallback: Mic not active at E start, starting now');
       _continuousSpeech.start(
         listenDuration: const Duration(minutes: 10),
         minConfidence: 0.05,
@@ -631,7 +655,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void _recordResponse(String? userResponse) {
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
-    _continuousSpeech.stop(); // ✅ Stop listening immediately after response
+    // ✅ Keep listening continuously - just clear buffers when E changes
+    _continuousSpeech.clearAccumulated(); 
+    _lastDetectedSpeech = null;
 
     // ✅ HANDLE NO RESPONSE: Rotate E in SAME size and try again
     if (userResponse == null) {

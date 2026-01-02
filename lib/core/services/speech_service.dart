@@ -314,6 +314,12 @@ class SpeechService {
         s.contains('uhpward') ||
         s.contains('up word') ||
         s.contains('op word') ||
+        s.contains('awkward') ||
+        s.contains('afford') ||
+        s.contains('appaurd') ||
+        s.contains('appuvert') ||
+        s.contains('abort') ||
+        s.contains('about') ||
         s.contains('op ward')) {
       debugPrint('[SpeechService] ✅ Matched: upward/upper variants → UP');
       return 'up';
@@ -370,7 +376,7 @@ class SpeechService {
       debugPrint('[SpeechService] ✅ Matched: right → RIGHT');
       return 'right';
     }
-    if (s.contains('write') || s.contains('wright') || s.contains('rite')) {
+    if (s.contains('write') || s.contains('wright') || s.contains('rite') || s.contains('ride')) {
       debugPrint('[SpeechService] ✅ Matched: homophone → RIGHT');
       return 'right';
     }

@@ -9,7 +9,7 @@ class TestConstants {
 
   // Visual Acuity Test Settings
   static const int relaxationDurationSeconds = 10;
-  static const int eDisplayDurationSeconds = 5;
+  static const int eDisplayDurationSeconds = 6;
   static const int maxTriesPerLevel = 3;
   static const int minCorrectToAdvance = 2;
   static const int totalLevelsVA = 7;
