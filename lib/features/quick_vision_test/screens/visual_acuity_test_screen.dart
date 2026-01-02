@@ -945,11 +945,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     final rangeText = DistanceHelper.getAcceptableRangeText(100.0);
 
     // ✅ Icon changes based on issue
-    final icon = _distanceStatus == DistanceStatus.noFaceDetected
+    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
         ? Icons.face_retouching_off
         : Icons.warning_rounded;
 
-    final iconColor = _distanceStatus == DistanceStatus.noFaceDetected
+    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
         ? AppColors.error
         : AppColors.warning;
 
@@ -986,7 +986,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               const SizedBox(height: 16),
 
               // ✅ Only show distance if face is detected
-              if (_distanceStatus != DistanceStatus.noFaceDetected) ...[
+              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
                 Text(
                   _currentDistance > 0
                       ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
@@ -1256,7 +1256,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SpeechWaveform(
+                _SpeechWaveform(
                   isListening: _isListening,
                   isTalking: _isSpeechActive,
                   color: AppColors.success,
@@ -1844,6 +1844,91 @@ class _DirectionButton extends StatelessWidget {
           child: Icon(_icon, color: Colors.white, size: 32),
         ),
       ),
+    );
+  }
+}
+
+// ✅ NEW Waveform animation for microphone
+class _SpeechWaveform extends StatefulWidget {
+  final bool isListening;
+  final bool isTalking;
+  final Color color;
+
+  const _SpeechWaveform({
+    required this.isListening,
+    required this.isTalking,
+    required this.color,
+  });
+
+  @override
+  State<_SpeechWaveform> createState() => _SpeechWaveformState();
+}
+
+class _SpeechWaveformState extends State<_SpeechWaveform>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // ✅ Animate when either listening OR actively talking
+    final shouldAnimate = widget.isListening || widget.isTalking;
+
+    if (!shouldAnimate) {
+      // Static bars when not active
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(
+          3,
+          (i) => Container(
+            width: 3,
+            height: 8,
+            margin: const EdgeInsets.symmetric(horizontal: 1),
+            decoration: BoxDecoration(
+              color: widget.color.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) {
+            // Create wave effect with different phases
+            final phase = (index * 0.3) + _controller.value;
+            final height = 4.0 + (10.0 * (0.5 + 0.5 * sin(phase * 2 * pi)));
+
+            return Container(
+              width: 3,
+              height: height,
+              margin: const EdgeInsets.symmetric(horizontal: 1),
+              decoration: BoxDecoration(
+                color: widget.color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

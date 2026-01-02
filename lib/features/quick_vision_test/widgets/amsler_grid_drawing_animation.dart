@@ -69,7 +69,7 @@ class _AmslerGridDrawingAnimationState extends State<AmslerGridDrawingAnimation>
             ),
           ),
 
-          // Indicator of what's happening
+          // Indicator of what's happening - NEW: Show mode selection
           Positioned(
             top: 12,
             left: 0,
@@ -79,12 +79,29 @@ class _AmslerGridDrawingAnimationState extends State<AmslerGridDrawingAnimation>
                 animation: _progress,
                 builder: (context, child) {
                   String label = "";
-                  if (_progress.value < 0.45) {
-                    label = "Draw over wavy lines";
-                  } else if (_progress.value < 0.9) {
-                    label = "Mark missing areas";
+                  Color color = AppColors.primary;
+                  
+                  if (_progress.value < 0.15) {
+                    label = "Select 'Wavy'";
+                    color = Colors.red;
+                  } else if (_progress.value < 0.35) {
+                    label = "Draw wavy lines";
+                    color = Colors.red;
+                  } else if (_progress.value < 0.45) {
+                    label = "Select 'Missing'";
+                    color = Colors.blue;
+                  } else if (_progress.value < 0.65) {
+                    label = "Mark missing area";
+                    color = Colors.blue;
+                  } else if (_progress.value < 0.75) {
+                    label = "Select 'Blurry'";
+                    color = Colors.orange;
+                  } else if (_progress.value < 0.95) {
+                    label = "Mark blurry area";
+                    color = Colors.orange;
                   } else {
                     label = "Try again";
+                    color = AppColors.primary;
                   }
 
                   return Container(
@@ -93,13 +110,13 @@ class _AmslerGridDrawingAnimationState extends State<AmslerGridDrawingAnimation>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       label,
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: color,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -166,59 +183,112 @@ class _AnimationPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final drawingPaint = Paint()
-      ..color = Colors.red
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
       ..strokeCap = StrokeCap.round;
 
     final handPaint = Paint()..color = AppColors.secondary;
 
-    // Phase 1: Tracing wavy line (0.0 to 0.4)
-    if (progress < 0.45) {
-      final subProgress = math.min(1.0, progress / 0.4);
-      final path = Path();
-      const startX = 20.0;
-      final endX = 20.0 + (60.0 * subProgress);
-
-      path.moveTo(startX, 40);
-      for (double x = startX; x <= endX; x++) {
-        final y = 40 + 5 * math.sin(x / 5);
-        path.lineTo(x, y);
+    // Phase 1: Select/Draw Wavy (0.0 to 0.35)
+    if (progress < 0.35) {
+      if (progress < 0.15) {
+        _drawModeSelector(canvas, size, 'wavy');
+        _drawHand(canvas, const Offset(40, 180), handPaint);
+      } else {
+        final subProgress = (progress - 0.15) / 0.2;
+        drawingPaint.color = Colors.red;
+        final path = Path();
+        const startX = 20.0;
+        final endX = 20.0 + (60.0 * subProgress);
+        path.moveTo(startX, 40);
+        for (double x = startX; x <= endX; x++) {
+          final y = 40 + 5 * math.sin(x / 5);
+          path.lineTo(x, y);
+        }
+        canvas.drawPath(path, drawingPaint);
+        _drawHand(canvas, Offset(endX, 40 + 5 * math.sin(endX / 5)), handPaint);
       }
-      canvas.drawPath(path, drawingPaint);
-
-      // Draw hand
-      final lastX = endX;
-      final lastY = 40 + 5 * math.sin(lastX / 5);
-      _drawHand(canvas, Offset(lastX, lastY), handPaint);
     }
-    // Phase 2: Marking missing area (0.5 to 0.9)
-    else if (progress < 0.95) {
-      final subProgress = math.min(1.0, (progress - 0.5) / 0.4);
+    // Phase 2: Select/Draw Missing (0.35 to 0.65)
+    else if (progress < 0.65) {
+      if (progress < 0.45) {
+        _drawModeSelector(canvas, size, 'missing');
+        _drawHand(canvas, const Offset(100, 180), handPaint);
+      } else {
+        final subProgress = (progress - 0.45) / 0.2;
+        final center = const Offset(150, 150);
+        
+        final missingPaint = Paint()
+          ..color = Colors.grey.withAlpha(128)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(center, 20, missingPaint);
 
-      // Missing area simulation (blurry/grey circle)
-      final missingPaint = Paint()
-        ..color = Colors.grey.withValues(alpha: 0.5)
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(const Offset(150, 150), 20, missingPaint);
-
-      // Drawing over it
-      final center = const Offset(150, 150);
-      final radius = 22 * subProgress;
-
-      if (subProgress > 0) {
-        canvas.drawCircle(
-          center,
-          radius,
-          Paint()
-            ..color = Colors.blue.withValues(alpha: 0.3)
-            ..style = PaintingStyle.fill,
-        );
-        canvas.drawCircle(center, radius, drawingPaint..color = Colors.blue);
+        if (subProgress > 0) {
+          canvas.drawCircle(center, 22 * subProgress, Paint()..color = Colors.blue.withAlpha(76));
+          canvas.drawCircle(center, 22 * subProgress, drawingPaint..color = Colors.blue);
+        }
+        _drawHand(canvas, center, handPaint);
       }
+    }
+    // Phase 3: Select/Draw Blurry (0.65 to 0.95)
+    else if (progress < 0.95) {
+      if (progress < 0.75) {
+        _drawModeSelector(canvas, size, 'blurry');
+        _drawHand(canvas, const Offset(160, 180), handPaint);
+      } else {
+        final subProgress = (progress - 0.75) / 0.2;
+        final center = const Offset(60, 140);
+        
+        final blurryPaint = Paint()
+          ..color = Colors.orange.withAlpha(76)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(center, 18, blurryPaint);
 
-      // Draw hand moving in a circle or just to center
-      _drawHand(canvas, center, handPaint);
+        if (subProgress > 0) {
+          canvas.drawCircle(center, 20 * subProgress, Paint()..color = Colors.orange.withAlpha(102));
+          canvas.drawCircle(center, 20 * subProgress, drawingPaint..color = Colors.orange);
+        }
+        _drawHand(canvas, center, handPaint);
+      }
+    }
+  }
+
+  void _drawModeSelector(Canvas canvas, Size size, String selectedMode) {
+    const buttonY = 180.0;
+    final modes = [
+      {'name': 'wavy', 'x': 40.0, 'color': Colors.red},
+      {'name': 'missing', 'x': 100.0, 'color': Colors.blue},
+      {'name': 'blurry', 'x': 160.0, 'color': Colors.orange},
+    ];
+
+    for (var mode in modes) {
+      final isSelected = mode['name'] == selectedMode;
+      final color = mode['color'] as Color;
+      final x = mode['x'] as double;
+
+      final buttonPaint = Paint()
+        ..color = isSelected ? color.withAlpha(76) : Colors.grey.withAlpha(51)
+        ..style = PaintingStyle.fill;
+
+      final borderPaint = Paint()
+        ..color = isSelected ? color : Colors.grey
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = isSelected ? 2.0 : 1.0;
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset(x, buttonY), width: 40, height: 24),
+          const Radius.circular(6),
+        ),
+        buttonPaint,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset(x, buttonY), width: 40, height: 24),
+          const Radius.circular(6),
+        ),
+        borderPaint,
+      );
     }
   }
 

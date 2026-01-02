@@ -29,6 +29,14 @@ class _PelliRobsonInstructionsScreenState
   void initState() {
     super.initState();
     _steps = [
+      // ✅ NEW: Brightness instruction as first step
+      _InstructionStep(
+        title: 'Adjust Screen Brightness',
+        description:
+            'Please increase your screen brightness to maximum for accurate results. '
+            'This test measures subtle differences in contrast.',
+        icon: Icons.brightness_high,
+      ),
       _InstructionStep(
         title: 'Contrast Sensitivity Test',
         description:
@@ -55,7 +63,11 @@ class _PelliRobsonInstructionsScreenState
 
   Future<void> _initialize() async {
     await _ttsService.initialize();
-    _speakCurrentStep();
+    // ✅ FIX: Add delay to ensure TTS engine is fully ready
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      _speakCurrentStep();
+    }
   }
 
   void _speakCurrentStep() {

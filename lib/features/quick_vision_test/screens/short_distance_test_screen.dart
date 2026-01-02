@@ -209,6 +209,15 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
     _ttsService.speak('Read the sentence out loud');
 
+    // ✅ FIX: Explicitly start listening after TTS with fallback
+    // Wait for TTS to finish (typical duration ~2 seconds), then start
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted && _waitingForResponse && !_isListening) {
+        debugPrint('[ShortDistance] 🎤 Fallback: Starting voice recognition');
+        _startListening();
+      }
+    });
+
     // ✅ INCREASED timeout to 35 seconds for longer sentences
     _listeningTimer = Timer(const Duration(seconds: 35), () {
       if (_waitingForResponse) {
@@ -565,11 +574,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
 
     // ✅ Icon changes based on issue
-    final icon = _distanceStatus == DistanceStatus.noFaceDetected
+    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
         ? Icons.face_retouching_off
         : Icons.warning_rounded;
 
-    final iconColor = _distanceStatus == DistanceStatus.noFaceDetected
+    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
         ? AppColors.error
         : AppColors.warning;
 
@@ -606,7 +615,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
               const SizedBox(height: 16),
 
               // ✅ Only show distance if face is detected
-              if (_distanceStatus != DistanceStatus.noFaceDetected) ...[
+              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
                 Text(
                   _currentDistance > 0
                       ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'

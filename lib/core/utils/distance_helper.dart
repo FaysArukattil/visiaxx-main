@@ -58,6 +58,8 @@ class DistanceHelper {
         return 'Perfect! Distance is correct';
       case DistanceStatus.noFaceDetected:
         return 'Position your face in the camera';
+      case DistanceStatus.faceDetectedNoDistance:
+        return 'Continue - Using last known distance';
     }
   }
 
@@ -80,16 +82,26 @@ class DistanceHelper {
     }
   }
 
+  /// Check if face is detected (even if distance can't be calculated)
+  /// Returns true for optimal, faceDetectedNoDistance, tooClose, tooFar
+  /// Returns false only for noFaceDetected
+  static bool isFaceDetected(DistanceStatus status) {
+    return status != DistanceStatus.noFaceDetected;
+  }
+
   /// Check if test should pause (no face or wrong distance)
   static bool shouldPauseTest(DistanceStatus status) {
-    return status == DistanceStatus.noFaceDetected ||
-        status == DistanceStatus.tooClose;
+    // Only pause if COMPLETELY no face detected
+    // Don't pause for faceDetectedNoDistance - face IS visible
+    return status == DistanceStatus.noFaceDetected;
   }
 
   /// Get pause reason message
   static String getPauseReason(DistanceStatus status, double targetDistance) {
     if (status == DistanceStatus.noFaceDetected) {
       return 'Face not detected';
+    } else if (status == DistanceStatus.faceDetectedNoDistance) {
+      return 'Using last known distance';
     } else if (status == DistanceStatus.tooClose) {
       return 'Too close to screen';
     } else if (status == DistanceStatus.tooFar) {
@@ -143,8 +155,14 @@ class DistanceHelper {
     DistanceStatus status,
     String testType,
   ) {
-    // Always pause if no face detected
-    if (status == DistanceStatus.noFaceDetected) {
+    // DON'T pause if face is detected but landmarks are missing
+    // This allows tests to continue when user covers one eye
+    if (status == DistanceStatus.faceDetectedNoDistance) {
+      return false;
+    }
+
+    // Pause only if completely no face detected AND no cached distance
+    if (status == DistanceStatus.noFaceDetected && currentDistance <= 0) {
       return true;
     }
 

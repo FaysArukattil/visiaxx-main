@@ -248,6 +248,9 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
       case DistanceStatus.noFaceDetected:
         _ttsService.speak('Position your face in the camera');
         break;
+      case DistanceStatus.faceDetectedNoDistance:
+        // Don't speak - using cached distance, test can continue
+        break;
     }
   }
 
@@ -755,6 +758,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         return AppColors.warning;
       case DistanceStatus.noFaceDetected:
         return Colors.white54;
+      case DistanceStatus.faceDetectedNoDistance:
+        return AppColors.successLight; // Face visible, using cached distance
     }
   }
 
@@ -772,6 +777,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         return 'Move closer';
       case DistanceStatus.noFaceDetected:
         return 'Position your face';
+      case DistanceStatus.faceDetectedNoDistance:
+        return 'Using last distance';
     }
   }
 
@@ -789,6 +796,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         return Icons.arrow_forward;
       case DistanceStatus.noFaceDetected:
         return Icons.face;
+      case DistanceStatus.faceDetectedNoDistance:
+        return Icons.visibility; // Eye icon - face detected but partial
     }
   }
 }

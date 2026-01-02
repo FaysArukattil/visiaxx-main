@@ -155,8 +155,17 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     setState(() {
       _isTestPausedForDistance = true;
     });
+    // ✅ FIX: Actually stop speech and timers to pause test
+    _continuousSpeech.stop();
     _autoAdvanceTimer?.cancel();
     _silenceTimer?.cancel();
+    setState(() => _isListening = false);
+    
+    // TTS guidance
+    final target = _currentMode == 'short' ? 40.0 : 100.0;
+    _ttsService.speak(
+      'Test paused. Please adjust your distance to ${target.toInt()} centimeters.',
+    );
     HapticFeedback.mediumImpact();
   }
 
@@ -469,15 +478,16 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
     if (_currentMode == 'short') {
       // Switch to long distance mode
+      // ✅ Simplified long distance instruction
       _ttsService.speak(
-        'Short distance test complete. Now we will test at 1 meter distance.',
+        'Short distance complete. Now we will do the same test from 1 meter distance. Please move back.',
       );
 
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
           setState(() {
             _currentMode = 'long';
-            _showingInstructions = true;
+            _showingInstructions = false; // ✅ Skip wordy intro for 1m test
             _showDistanceCalibration = true;
           });
           _showCalibrationScreen();
@@ -858,13 +868,39 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               ),
               const SizedBox(height: 16),
               const Text(
-                'Adjust Distance',
+                'Test Paused',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: AppColors.error,
                 ),
               ),
+              const SizedBox(height: 12),
+              // ✅ Real-time distance display
+              Builder(builder: (context) {
+                final target = _currentMode == 'short' ? 40.0 : 100.0;
+                final distanceText = _currentDistance > 0
+                    ? '${_currentDistance.toStringAsFixed(0)}cm'
+                    : 'No face detected';
+                final distanceColor = DistanceHelper.getDistanceColor(_currentDistance, target);
+                
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: distanceColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: distanceColor, width: 2),
+                  ),
+                  child: Text(
+                    'Current: $distanceText',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: distanceColor,
+                    ),
+                  ),
+                );
+              }),
               const SizedBox(height: 8),
               Text(
                 pauseReason,

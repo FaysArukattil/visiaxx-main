@@ -28,7 +28,8 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
   void initState() {
     super.initState();
     _initializeTts();
-    _startCountdown();
+    // ✅ FIX: Don't start countdown until TTS completes
+    // _startCountdown(); // MOVED to after TTS completion
   }
 
   Future<void> _initializeTts() async {
@@ -43,8 +44,13 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
       'Keep your $eyeBeingTested eye open. '
       'Focus purely on the black dot in the center. '
       'If you see any wavy or missing areas, trace them with your finger.',
-      speechRate: 0.5,
+      speechRate: 0.6, // ✅ Slightly faster for better pacing
     );
+    
+    // ✅ FIX: Start countdown only after TTS completes
+    if (mounted && !_isPaused) {
+      _startCountdown();
+    }
   }
 
   void _startCountdown() {

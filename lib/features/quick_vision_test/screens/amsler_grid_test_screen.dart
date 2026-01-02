@@ -220,6 +220,9 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       case DistanceStatus.noFaceDetected:
         _ttsService.speak('Position your face in view');
         break;
+      case DistanceStatus.faceDetectedNoDistance:
+        // Don't speak - using cached distance, test can continue
+        break;
     }
   }
 
@@ -445,7 +448,15 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       setState(() {
         _testComplete = true;
       });
-      _ttsService.speak(TtsService.testComplete);
+      
+      // ✅ FIX: Specific completion message
+      if (provider.isComprehensiveTest) {
+        _ttsService.speak(
+          'Amsler grid test completed. Moving to Contrast Sensitivity Test.',
+        );
+      } else {
+        _ttsService.speak(TtsService.testComplete);
+      }
 
       // Auto-continue to Contrast Test after 5 seconds if in comprehensive mode
       if (provider.isComprehensiveTest) {
@@ -1108,11 +1119,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
 
     // ✅ Icon changes based on issue
-    final icon = _distanceStatus == DistanceStatus.noFaceDetected
+    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
         ? Icons.face_retouching_off
         : Icons.warning_rounded;
 
-    final iconColor = _distanceStatus == DistanceStatus.noFaceDetected
+    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
         ? AppColors.error
         : AppColors.warning;
 
@@ -1149,7 +1160,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               const SizedBox(height: 16),
 
               // ✅ Only show distance if face is detected
-              if (_distanceStatus != DistanceStatus.noFaceDetected) ...[
+              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
                 Text(
                   _currentDistance > 0
                       ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'

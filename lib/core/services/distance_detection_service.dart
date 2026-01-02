@@ -8,7 +8,9 @@ import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 
 /// Distance status for visual feedback
-enum DistanceStatus { tooClose, tooFar, optimal, noFaceDetected }
+/// - noFaceDetected: No face visible in camera at all
+/// - faceDetectedNoDistance: Face is visible but can't calculate distance (e.g., one eye covered)
+enum DistanceStatus { tooClose, tooFar, optimal, noFaceDetected, faceDetectedNoDistance }
 
 /// Distance detection service using Google ML Kit Face Detection
 /// Uses interpupillary distance (IPD) for accurate distance calculation
@@ -37,6 +39,9 @@ class DistanceDetectionService {
   // Smoothing for stable readings
   double _smoothedDistance = 0.0;
   static const double _smoothingFactor = 0.3;
+
+  // Cache last known good distance for when face is partially obscured
+  double _lastKnownGoodDistance = 0.0;
 
   // Processing interval
   static const int _processingIntervalMs = 250;
@@ -170,12 +175,23 @@ class DistanceDetectionService {
                 (1 - _smoothingFactor) * _smoothedDistance;
           }
 
+          // Cache this as last known good distance
+          _lastKnownGoodDistance = _smoothedDistance;
+
           final status = _getDistanceStatus(_smoothedDistance);
           _updateDistance(_smoothedDistance, status);
           _consecutiveErrors = 0;
         } else {
-          _updateDistance(0, DistanceStatus.noFaceDetected);
-          _consecutiveErrors++;
+          // Face detected but can't calculate distance (e.g., one eye covered)
+          // Use last known good distance instead of showing "no face detected"
+          if (_lastKnownGoodDistance > 0) {
+            debugPrint('[DistanceService] Face detected but landmarks missing - using cached distance: $_lastKnownGoodDistance cm');
+            _updateDistance(_lastKnownGoodDistance, DistanceStatus.faceDetectedNoDistance);
+            // Don't increment errors - face IS detected
+          } else {
+            _updateDistance(0, DistanceStatus.noFaceDetected);
+            _consecutiveErrors++;
+          }
         }
       }
 
@@ -298,6 +314,8 @@ class DistanceDetectionService {
         return 'Perfect! Distance is correct';
       case DistanceStatus.noFaceDetected:
         return 'Position your face in the camera view';
+      case DistanceStatus.faceDetectedNoDistance:
+        return 'Continue - Using last known distance';
     }
   }
 
