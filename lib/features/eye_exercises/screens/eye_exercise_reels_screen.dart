@@ -127,6 +127,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
             physics: const ClampingScrollPhysics(),
             itemBuilder: (context, index) {
               return VideoReelItem(
+                key: ValueKey(_videos[index].id),
                 video: _videos[index],
                 isActive: index == _currentIndex,
                 onVideoEnd: _onVideoEnd,

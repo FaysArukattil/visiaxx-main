@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:async';
 import '../models/exercise_video_model.dart';
-import 'video_progress_indicator.dart';
 
 /// Individual video reel item - FULL SCREEN Instagram Reels style
 class VideoReelItem extends StatefulWidget {
@@ -21,7 +20,11 @@ class VideoReelItem extends StatefulWidget {
   State<VideoReelItem> createState() => _VideoReelItemState();
 }
 
-class _VideoReelItemState extends State<VideoReelItem> {
+class _VideoReelItemState extends State<VideoReelItem>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   VideoPlayerController? _controller;
   bool _isInitialized = false;
   bool _hasError = false;
@@ -158,6 +161,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (_hasError) {
       return _buildErrorWidget();
     }
@@ -280,22 +284,6 @@ class _VideoReelItemState extends State<VideoReelItem> {
                 ),
               ],
             ],
-          ),
-        ),
-
-        // Progress bar at bottom - isolated from other gestures
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            child: CustomVideoProgressBar(
-              controller: _controller!,
-              progressColor: Colors.white,
-              backgroundColor: Colors.white24,
-              height: 4,
-            ),
           ),
         ),
       ],
