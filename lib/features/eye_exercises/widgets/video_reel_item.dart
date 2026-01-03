@@ -3,7 +3,7 @@ import 'package:video_player/video_player.dart';
 import '../models/exercise_video_model.dart';
 import 'video_progress_indicator.dart';
 
-/// Individual video reel item
+/// Individual video reel item - FULL SCREEN
 class VideoReelItem extends StatefulWidget {
   final ExerciseVideo video;
   final bool isActive;
@@ -25,6 +25,8 @@ class _VideoReelItemState extends State<VideoReelItem> {
   bool _isInitialized = false;
   bool _hasError = false;
   bool _isPaused = false;
+  bool _isLongPressing = false;
+  bool _videoEnded = false;
 
   @override
   void initState() {
@@ -67,10 +69,15 @@ class _VideoReelItemState extends State<VideoReelItem> {
   }
 
   void _videoListener() {
-    if (_controller != null) {
+    if (_controller != null && mounted) {
       // Check if video ended
-      if (_controller!.value.position >= _controller!.value.duration) {
-        widget.onVideoEnd?.call();
+      if (_controller!.value.position >= _controller!.value.duration &&
+          _controller!.value.duration.inMilliseconds > 0) {
+        if (!_controller!.value.isPlaying && !_videoEnded) {
+          // Video ended - mark as ended and show replay option
+          setState(() => _videoEnded = true);
+          widget.onVideoEnd?.call();
+        }
       }
     }
   }
@@ -81,9 +88,12 @@ class _VideoReelItemState extends State<VideoReelItem> {
 
     // Play/pause based on active state
     if (widget.isActive != oldWidget.isActive) {
-      if (widget.isActive) {
+      if (widget.isActive && !_isLongPressing) {
+        // Reset video ended state when becoming active
+        setState(() => _videoEnded = false);
         _controller?.play();
-      } else {
+        setState(() => _isPaused = false);
+      } else if (!widget.isActive) {
         _controller?.pause();
       }
     }
@@ -93,7 +103,13 @@ class _VideoReelItemState extends State<VideoReelItem> {
     if (_controller == null || !_isInitialized) return;
 
     setState(() {
-      if (_controller!.value.isPlaying) {
+      if (_videoEnded) {
+        // If video ended, replay from beginning
+        _controller!.seekTo(Duration.zero);
+        _controller!.play();
+        _videoEnded = false;
+        _isPaused = false;
+      } else if (_controller!.value.isPlaying) {
         _controller!.pause();
         _isPaused = true;
       } else {
@@ -124,26 +140,40 @@ class _VideoReelItemState extends State<VideoReelItem> {
       onLongPressStart: (_) {
         if (_controller?.value.isPlaying == true) {
           _controller?.pause();
-          setState(() => _isPaused = true);
+          setState(() {
+            _isPaused = true;
+            _isLongPressing = true;
+          });
         }
       },
       onLongPressEnd: (_) {
-        if (_isPaused) {
+        if (_isLongPressing) {
           _controller?.play();
-          setState(() => _isPaused = false);
+          setState(() {
+            _isPaused = false;
+            _isLongPressing = false;
+          });
         }
       },
       onTap: _togglePlayPause,
       child: Container(
         color: Colors.black,
+        width: double.infinity,
+        height: double.infinity,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Video player
+            // Video player - FULL SCREEN with proper fit
             Center(
-              child: AspectRatio(
-                aspectRatio: _controller!.value.aspectRatio,
-                child: VideoPlayer(_controller!),
+              child: SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _controller!.value.size.width,
+                    height: _controller!.value.size.height,
+                    child: VideoPlayer(_controller!),
+                  ),
+                ),
               ),
             ),
 
@@ -160,10 +190,27 @@ class _VideoReelItemState extends State<VideoReelItem> {
                 ),
               ),
 
+            // Replay indicator when video ends
+            if (_videoEnded)
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.replay,
+                    size: 50,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+
             // Video info overlay
             Positioned(
               left: 16,
-              bottom: 80,
+              bottom: 100,
               right: 80,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,7 +222,13 @@ class _VideoReelItemState extends State<VideoReelItem> {
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+                      shadows: [
+                        Shadow(
+                          blurRadius: 10,
+                          color: Colors.black,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
                   ),
                   if (widget.video.description != null) ...[
@@ -185,7 +238,13 @@ class _VideoReelItemState extends State<VideoReelItem> {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
-                        shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+                        shadows: [
+                          Shadow(
+                            blurRadius: 10,
+                            color: Colors.black,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -195,7 +254,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
               ),
             ),
 
-            // Progress bar at bottom
+            // Progress bar at bottom with better touch area
             Positioned(
               left: 0,
               right: 0,
@@ -203,13 +262,13 @@ class _VideoReelItemState extends State<VideoReelItem> {
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 12,
+                  vertical: 20,
                 ),
                 child: CustomVideoProgressBar(
                   controller: _controller!,
                   progressColor: Colors.white,
                   backgroundColor: Colors.white24,
-                  height: 3,
+                  height: 4,
                 ),
               ),
             ),

@@ -21,7 +21,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(initialPage: 0); // Start at first video
     _loadVideos();
   }
 
@@ -31,24 +31,24 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
 
     if (_videos.isEmpty) {
       debugPrint('Warning: No exercise videos found!');
+    } else {
+      debugPrint('Loaded ${_videos.length} exercise videos');
     }
   }
 
   void _onPageChanged(int index) {
-    setState(() {
-      _currentIndex = index;
-      _isScrolling = false;
-    });
+    if (mounted) {
+      setState(() {
+        _currentIndex = index;
+        _isScrolling = false;
+      });
+    }
   }
 
   void _onVideoEnd() {
-    // Auto-advance to next video when current video ends
-    if (_currentIndex < _videos.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
+    // Video ended - DO NOT auto-scroll
+    // Let user control when to swipe to next video (like real reels)
+    // The video will just pause at the end
   }
 
   void _showYouTubePopup() {
@@ -115,18 +115,20 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
+      extendBody: true,
       body: Stack(
         children: [
-          // Video reels
+          // Video reels - FULL SCREEN
           PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
             onPageChanged: _onPageChanged,
             itemCount: _videos.length,
+            physics: const ClampingScrollPhysics(),
             itemBuilder: (context, index) {
               return VideoReelItem(
                 video: _videos[index],
-                isActive: index == _currentIndex && !_isScrolling,
+                isActive: index == _currentIndex,
                 onVideoEnd: _onVideoEnd,
               );
             },

@@ -8,8 +8,8 @@ class ExerciseVideos {
   static const String youtubeChannelUrl =
       'https://youtube.com/@nurturingvision?si=ZWkbxSVXpAunss7w';
 
-  /// List of exercise videos (ASSET VIDEOS)
-  /// Replace these paths with your actual video file names
+  /// List of ALL 10 exercise videos (ASSET VIDEOS)
+  /// Make sure these file names match your actual video files in assets/exercise_videos/
   static List<ExerciseVideo> getAssetVideos() {
     return [
       ExerciseVideo(
@@ -33,7 +33,55 @@ class ExerciseVideos {
         videoPath: 'assets/exercise_videos/exercise_3.mp4',
         isAsset: true,
       ),
-      // Add more videos as needed
+      ExerciseVideo(
+        id: 'ex_4',
+        title: 'Blinking Exercise',
+        description: 'Keep your eyes moisturized',
+        videoPath: 'assets/exercise_videos/exercise_4.mp4',
+        isAsset: true,
+      ),
+      ExerciseVideo(
+        id: 'ex_5',
+        title: 'Near and Far Focus',
+        description: 'Improve accommodation flexibility',
+        videoPath: 'assets/exercise_videos/exercise_5.mp4',
+        isAsset: true,
+      ),
+      ExerciseVideo(
+        id: 'ex_6',
+        title: 'Figure 8 Exercise',
+        description: 'Enhance eye muscle coordination',
+        videoPath: 'assets/exercise_videos/exercise_6.mp4',
+        isAsset: true,
+      ),
+      ExerciseVideo(
+        id: 'ex_7',
+        title: 'Palming Exercise',
+        description: 'Relax and soothe tired eyes',
+        videoPath: 'assets/exercise_videos/exercise_7.mp4',
+        isAsset: true,
+      ),
+      ExerciseVideo(
+        id: 'ex_8',
+        title: 'Eye Rolling Exercise',
+        description: 'Improve blood circulation',
+        videoPath: 'assets/exercise_videos/exercise_8.mp4',
+        isAsset: true,
+      ),
+      ExerciseVideo(
+        id: 'ex_9',
+        title: 'Zooming Exercise',
+        description: 'Strengthen focusing muscles',
+        videoPath: 'assets/exercise_videos/exercise_9.mp4',
+        isAsset: true,
+      ),
+      ExerciseVideo(
+        id: 'ex_10',
+        title: '20-20-20 Rule Exercise',
+        description: 'Prevent digital eye strain',
+        videoPath: 'assets/exercise_videos/exercise_10.mp4',
+        isAsset: true,
+      ),
     ];
   }
 
@@ -41,15 +89,15 @@ class ExerciseVideos {
   /// You can use this in the future
   static List<ExerciseVideo> getNetworkVideos() {
     return [
-      ExerciseVideo(
-        id: 'net_1',
-        title: 'Advanced Eye Exercise',
-        description: 'Advanced techniques for eye health',
-        videoPath: 'https://your-storage-url.com/video1.mp4',
-        isAsset: false,
-        thumbnailPath: 'https://your-storage-url.com/thumbnail1.jpg',
-      ),
-      // Add network videos when ready
+      // Uncomment and add network videos when ready
+      // ExerciseVideo(
+      //   id: 'net_1',
+      //   title: 'Advanced Eye Exercise',
+      //   description: 'Advanced techniques for eye health',
+      //   videoPath: 'https://your-storage-url.com/video1.mp4',
+      //   isAsset: false,
+      //   thumbnailPath: 'https://your-storage-url.com/thumbnail1.jpg',
+      // ),
     ];
   }
 
