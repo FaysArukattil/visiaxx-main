@@ -18,6 +18,10 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
   int _currentIndex = 0;
   bool _isScrolling = false;
 
+  // Store pause states AND positions externally to survive widget rebuilds
+  final Map<String, bool> _pauseStates = {};
+  final Map<String, Duration> _videoPositions = {};
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +37,11 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
       debugPrint('Warning: No exercise videos found!');
     } else {
       debugPrint('Loaded ${_videos.length} exercise videos');
+      // Initialize pause states and positions
+      for (var video in _videos) {
+        _pauseStates[video.id] = false;
+        _videoPositions[video.id] = Duration.zero;
+      }
     }
   }
 
@@ -49,6 +58,14 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
     // Video ended - DO NOT auto-scroll
     // Let user control when to swipe to next video (like real reels)
     // The video will just pause at the end
+  }
+
+  void _onPauseStateChanged(String videoId, bool isPaused) {
+    _pauseStates[videoId] = isPaused;
+  }
+
+  void _onPositionChanged(String videoId, Duration position) {
+    _videoPositions[videoId] = position;
   }
 
   void _showYouTubePopup() {
@@ -125,12 +142,20 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
             onPageChanged: _onPageChanged,
             itemCount: _videos.length,
             physics: const ClampingScrollPhysics(),
+            allowImplicitScrolling: true,
             itemBuilder: (context, index) {
+              final video = _videos[index];
               return VideoReelItem(
-                key: ValueKey(_videos[index].id),
-                video: _videos[index],
+                key: ValueKey(video.id),
+                video: video,
                 isActive: index == _currentIndex,
                 onVideoEnd: _onVideoEnd,
+                initialPauseState: _pauseStates[video.id] ?? false,
+                initialPosition: _videoPositions[video.id] ?? Duration.zero,
+                onPauseStateChanged: (isPaused) =>
+                    _onPauseStateChanged(video.id, isPaused),
+                onPositionChanged: (position) =>
+                    _onPositionChanged(video.id, position),
               );
             },
           ),

@@ -741,9 +741,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _ServiceCard(
                   icon: Icons.lightbulb_outline_rounded,
                   title: 'Eye Care Tips',
-                  onTap: () => ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Coming soon!'))),
+                  onTap: () => Navigator.pushNamed(context, '/eye-care-tips'),
                 ),
               ),
             ],

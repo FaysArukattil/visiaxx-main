@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:visiaxx/features/eye_care_tips/screens/eye_care_tips_screen.dart';
 import 'package:visiaxx/features/eye_exercises/screens/eye_exercise_reels_screen.dart';
 import 'package:visiaxx/features/results/screens/speech_log_viewer_screen.dart';
 import 'firebase_options.dart';
@@ -97,6 +98,7 @@ class VisiaxApp extends StatelessWidget {
           '/comprehensive-test': (context) => const ComprehensiveIntroScreen(),
           '/pelli-robson-test': (context) => const PelliRobsonTestScreen(),
           '/eye-exercises': (context) => const EyeExerciseReelsScreen(),
+          '/eye-care-tips': (context) => const EyeCareTipsScreen(),
         },
       ),
     );

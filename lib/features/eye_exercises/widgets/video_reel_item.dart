@@ -8,12 +8,20 @@ class VideoReelItem extends StatefulWidget {
   final ExerciseVideo video;
   final bool isActive;
   final VoidCallback? onVideoEnd;
+  final bool initialPauseState;
+  final Duration initialPosition;
+  final ValueChanged<bool>? onPauseStateChanged;
+  final ValueChanged<Duration>? onPositionChanged;
 
   const VideoReelItem({
     super.key,
     required this.video,
     required this.isActive,
     this.onVideoEnd,
+    this.initialPauseState = false,
+    this.initialPosition = Duration.zero,
+    this.onPauseStateChanged,
+    this.onPositionChanged,
   });
 
   @override
@@ -32,10 +40,13 @@ class _VideoReelItemState extends State<VideoReelItem>
   bool _isLongPressing = false;
   bool _showPauseIcon = false;
   Timer? _pauseIconTimer;
+  Timer? _positionUpdateTimer;
+  bool _hasRestoredPosition = false;
 
   @override
   void initState() {
     super.initState();
+    _isPaused = widget.initialPauseState;
     _initializeVideo();
   }
 
@@ -54,8 +65,25 @@ class _VideoReelItemState extends State<VideoReelItem>
       _controller!.addListener(_checkVideoStatus);
 
       if (mounted) {
-        setState(() => _isInitialized = true);
-        if (widget.isActive) {
+        // Restore saved position if it exists
+        if (widget.initialPosition > Duration.zero) {
+          debugPrint(
+            'VideoReelItem(${widget.video.id}): Restoring saved position ${widget.initialPosition.inMilliseconds}ms',
+          );
+          await _controller!.seekTo(widget.initialPosition);
+          _hasRestoredPosition = true;
+        }
+
+        setState(() {
+          _isInitialized = true;
+        });
+
+        _startPositionTracking();
+
+        if (widget.isActive && !_isPaused) {
+          debugPrint(
+            'VideoReelItem(${widget.video.id}): Auto-playing after init',
+          );
           _controller!.play();
         }
       }
@@ -68,6 +96,17 @@ class _VideoReelItemState extends State<VideoReelItem>
         });
       }
     }
+  }
+
+  void _startPositionTracking() {
+    _positionUpdateTimer?.cancel();
+    _positionUpdateTimer = Timer.periodic(const Duration(milliseconds: 500), (
+      timer,
+    ) {
+      if (_controller != null && _controller!.value.isInitialized && mounted) {
+        widget.onPositionChanged?.call(_controller!.value.position);
+      }
+    });
   }
 
   void _checkVideoStatus() {
@@ -88,10 +127,23 @@ class _VideoReelItemState extends State<VideoReelItem>
   void didUpdateWidget(VideoReelItem oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    // Sync external pause state if it changed from parent
+    if (widget.initialPauseState != oldWidget.initialPauseState) {
+      _isPaused = widget.initialPauseState;
+    }
+
     if (widget.isActive != oldWidget.isActive) {
-      if (widget.isActive && !_isLongPressing && !_isPaused) {
-        _controller?.play();
-      } else if (!widget.isActive) {
+      if (widget.isActive) {
+        if (_isInitialized && !_isLongPressing && !_isPaused) {
+          debugPrint(
+            'VideoReelItem(${widget.video.id}): Auto-resuming on activation',
+          );
+          _controller?.play();
+        }
+      } else {
+        debugPrint(
+          'VideoReelItem(${widget.video.id}): Pausing on deactivation',
+        );
         _controller?.pause();
       }
     }
@@ -102,15 +154,25 @@ class _VideoReelItemState extends State<VideoReelItem>
 
     setState(() {
       if (_controller!.value.isPlaying) {
+        // Video is playing - pause it
         _controller!.pause();
         _isPaused = true;
+        widget.onPauseStateChanged?.call(true);
+        widget.onPositionChanged?.call(_controller!.value.position);
       } else {
-        // If at the end, seek to start
-        if (_controller!.value.position >= _controller!.value.duration) {
+        // Video is paused - check if at end, otherwise just resume
+        final isAtEnd =
+            _controller!.value.position >=
+            _controller!.value.duration - const Duration(milliseconds: 200);
+
+        if (isAtEnd) {
+          // Only restart if video has ended
           _controller!.seekTo(Duration.zero);
         }
+        // Resume from current position (or from start if we just seeked)
         _controller!.play();
         _isPaused = false;
+        widget.onPauseStateChanged?.call(false);
       }
       _showPauseIcon = true;
     });
@@ -130,7 +192,12 @@ class _VideoReelItemState extends State<VideoReelItem>
   @override
   void dispose() {
     _pauseIconTimer?.cancel();
+    _positionUpdateTimer?.cancel();
     _controller?.removeListener(_checkVideoStatus);
+    // Save final position before disposing
+    if (_controller != null && _controller!.value.isInitialized) {
+      widget.onPositionChanged?.call(_controller!.value.position);
+    }
     _controller?.dispose();
     super.dispose();
   }
@@ -194,21 +261,25 @@ class _VideoReelItemState extends State<VideoReelItem>
               if (_controller?.value.isPlaying == true) {
                 _controller?.pause();
                 setState(() {
-                  _isPaused = true;
                   _isLongPressing = true;
                   _showPauseIcon = true;
                 });
               }
             },
             onLongPressEnd: (_) {
-              if (_isLongPressing) {
+              if (_isLongPressing && !_isPaused) {
+                // User was long pressing but hadn't manually paused - resume
                 _controller?.play();
                 setState(() {
-                  _isPaused = false;
                   _isLongPressing = false;
                   _showPauseIcon = true;
                 });
                 _startPauseIconTimer();
+              } else if (_isLongPressing && _isPaused) {
+                // User had paused, then long pressed - just clear long press state
+                setState(() {
+                  _isLongPressing = false;
+                });
               }
             },
             onTap: _togglePlayPause,
@@ -229,7 +300,7 @@ class _VideoReelItemState extends State<VideoReelItem>
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  _isPaused ? Icons.pause : Icons.play_arrow,
+                  _isPaused || _isLongPressing ? Icons.pause : Icons.play_arrow,
                   size: 50,
                   color: Colors.white,
                 ),
