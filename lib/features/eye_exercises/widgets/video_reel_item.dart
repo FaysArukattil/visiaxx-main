@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'dart:async';
 import '../models/exercise_video_model.dart';
 import 'video_progress_indicator.dart';
 
-/// Individual video reel item - FULL SCREEN
+/// Individual video reel item - FULL SCREEN Instagram Reels style
 class VideoReelItem extends StatefulWidget {
   final ExerciseVideo video;
   final bool isActive;
@@ -26,7 +27,8 @@ class _VideoReelItemState extends State<VideoReelItem> {
   bool _hasError = false;
   bool _isPaused = false;
   bool _isLongPressing = false;
-  bool _videoEnded = false;
+  bool _showPauseIcon = false;
+  Timer? _pauseIconTimer;
 
   @override
   void initState() {
@@ -36,7 +38,6 @@ class _VideoReelItemState extends State<VideoReelItem> {
 
   Future<void> _initializeVideo() async {
     try {
-      // Initialize based on video type
       if (widget.video.isAssetVideo) {
         _controller = VideoPlayerController.asset(widget.video.videoPath);
       } else {
@@ -47,9 +48,7 @@ class _VideoReelItemState extends State<VideoReelItem> {
 
       await _controller!.initialize();
       _controller!.setLooping(false);
-
-      // Listen for video completion
-      _controller!.addListener(_videoListener);
+      _controller!.addListener(_checkVideoStatus);
 
       if (mounted) {
         setState(() => _isInitialized = true);
@@ -68,16 +67,16 @@ class _VideoReelItemState extends State<VideoReelItem> {
     }
   }
 
-  void _videoListener() {
-    if (_controller != null && mounted) {
-      // Check if video ended
-      if (_controller!.value.position >= _controller!.value.duration &&
-          _controller!.value.duration.inMilliseconds > 0) {
-        if (!_controller!.value.isPlaying && !_videoEnded) {
-          // Video ended - mark as ended and show replay option
-          setState(() => _videoEnded = true);
-          widget.onVideoEnd?.call();
-        }
+  void _checkVideoStatus() {
+    if (_controller == null || !mounted) return;
+
+    final value = _controller!.value;
+    if (value.isInitialized) {
+      // Check for completion
+      if (value.position >= value.duration &&
+          !value.isPlaying &&
+          !value.isLooping) {
+        widget.onVideoEnd?.call();
       }
     }
   }
@@ -86,11 +85,15 @@ class _VideoReelItemState extends State<VideoReelItem> {
   void didUpdateWidget(VideoReelItem oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Play/pause based on active state
+    // CRITICAL: Re-initialize if video ID or path changed (due to PageView widget reuse)
+    if (widget.video.id != oldWidget.video.id ||
+        widget.video.videoPath != oldWidget.video.videoPath) {
+      _reinitializeVideo();
+      return;
+    }
+
     if (widget.isActive != oldWidget.isActive) {
       if (widget.isActive && !_isLongPressing) {
-        // Reset video ended state when becoming active
-        setState(() => _videoEnded = false);
         _controller?.play();
         setState(() => _isPaused = false);
       } else if (!widget.isActive) {
@@ -99,29 +102,56 @@ class _VideoReelItemState extends State<VideoReelItem> {
     }
   }
 
+  Future<void> _reinitializeVideo() async {
+    // Stop and dispose current
+    _controller?.pause();
+    _controller?.removeListener(_checkVideoStatus);
+    _controller?.dispose();
+
+    // Reset state
+    if (mounted) {
+      setState(() {
+        _isInitialized = false;
+        _hasError = false;
+        _isPaused = false;
+      });
+    }
+
+    // Start over
+    await _initializeVideo();
+  }
+
   void _togglePlayPause() {
     if (_controller == null || !_isInitialized) return;
 
     setState(() {
-      if (_videoEnded) {
-        // If video ended, replay from beginning
-        _controller!.seekTo(Duration.zero);
-        _controller!.play();
-        _videoEnded = false;
-        _isPaused = false;
-      } else if (_controller!.value.isPlaying) {
+      if (_controller!.value.isPlaying) {
         _controller!.pause();
         _isPaused = true;
+        _showPauseIcon = true;
       } else {
         _controller!.play();
         _isPaused = false;
+        _showPauseIcon = true;
+      }
+    });
+
+    _startPauseIconTimer();
+  }
+
+  void _startPauseIconTimer() {
+    _pauseIconTimer?.cancel();
+    _pauseIconTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() => _showPauseIcon = false);
       }
     });
   }
 
   @override
   void dispose() {
-    _controller?.removeListener(_videoListener);
+    _pauseIconTimer?.cancel();
+    _controller?.removeListener(_checkVideoStatus);
     _controller?.dispose();
     super.dispose();
   }
@@ -136,145 +166,139 @@ class _VideoReelItemState extends State<VideoReelItem> {
       return _buildLoadingWidget();
     }
 
-    return GestureDetector(
-      onLongPressStart: (_) {
-        if (_controller?.value.isPlaying == true) {
-          _controller?.pause();
-          setState(() {
-            _isPaused = true;
-            _isLongPressing = true;
-          });
-        }
-      },
-      onLongPressEnd: (_) {
-        if (_isLongPressing) {
-          _controller?.play();
-          setState(() {
-            _isPaused = false;
-            _isLongPressing = false;
-          });
-        }
-      },
-      onTap: _togglePlayPause,
-      child: Container(
-        color: Colors.black,
-        width: double.infinity,
-        height: double.infinity,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Video player - FULL SCREEN with proper fit
-            Center(
-              child: SizedBox.expand(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: _controller!.value.size.width,
-                    height: _controller!.value.size.height,
-                    child: VideoPlayer(_controller!),
-                  ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Video player - FULL SCREEN with proper cover fit
+        Positioned.fill(
+          child: Container(
+            color: Colors.black,
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _controller!.value.size.width,
+                height: _controller!.value.size.height,
+                child: VideoPlayer(_controller!),
+              ),
+            ),
+          ),
+        ),
+
+        // Tap area for play/pause (excluding progress bar area at bottom)
+        Positioned.fill(
+          bottom: 60, // Leave space for progress bar
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onLongPressStart: (_) {
+              if (_controller?.value.isPlaying == true) {
+                _controller?.pause();
+                setState(() {
+                  _isPaused = true;
+                  _isLongPressing = true;
+                  _showPauseIcon = true;
+                });
+              }
+            },
+            onLongPressEnd: (_) {
+              if (_isLongPressing) {
+                _controller?.play();
+                setState(() {
+                  _isPaused = false;
+                  _isLongPressing = false;
+                  _showPauseIcon = true;
+                });
+                _startPauseIconTimer();
+              }
+            },
+            onTap: _togglePlayPause,
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+
+        // Pause icon with fade animation
+        if (_showPauseIcon)
+          AnimatedOpacity(
+            opacity: _showPauseIcon ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _isPaused ? Icons.pause : Icons.play_arrow,
+                  size: 50,
+                  color: Colors.white,
                 ),
               ),
             ),
+          ),
 
-            // Pause indicator
-            if (_isPaused)
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.pause, size: 50, color: Colors.white),
-                ),
-              ),
-
-            // Replay indicator when video ends
-            if (_videoEnded)
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.replay,
-                    size: 50,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-
-            // Video info overlay
-            Positioned(
-              left: 16,
-              bottom: 100,
-              right: 80,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.video.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 10,
-                          color: Colors.black,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (widget.video.description != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.video.description!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 10,
-                            color: Colors.black,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+        // Video info overlay
+        Positioned(
+          left: 16,
+          bottom: 100,
+          right: 80,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.video.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 10,
+                      color: Colors.black,
+                      offset: Offset(0, 2),
                     ),
                   ],
-                ],
-              ),
-            ),
-
-            // Progress bar at bottom with better touch area
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 20,
-                ),
-                child: CustomVideoProgressBar(
-                  controller: _controller!,
-                  progressColor: Colors.white,
-                  backgroundColor: Colors.white24,
-                  height: 4,
                 ),
               ),
-            ),
-          ],
+              if (widget.video.description != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  widget.video.description!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10,
+                        color: Colors.black,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
         ),
-      ),
+
+        // Progress bar at bottom - isolated from other gestures
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: CustomVideoProgressBar(
+              controller: _controller!,
+              progressColor: Colors.white,
+              backgroundColor: Colors.white24,
+              height: 4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
