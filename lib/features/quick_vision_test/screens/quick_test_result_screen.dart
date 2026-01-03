@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/services/pdf_export_service.dart';
@@ -1539,7 +1540,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
       if (await file.exists()) {
         if (mounted) setState(() => _isGeneratingPdf = false);
-        await Share.shareXFiles([XFile(filePath)], text: 'View Test Report');
+        await OpenFilex.open(filePath);
         return;
       }
 
@@ -1561,7 +1562,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               label: 'OPEN',
               textColor: Colors.white,
               onPressed: () {
-                Share.shareXFiles([XFile(generatedPath)], text: 'View Test Report');
+                OpenFilex.open(generatedPath);
               },
             ),
           ),

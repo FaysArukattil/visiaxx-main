@@ -733,9 +733,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _ServiceCard(
                   icon: Icons.self_improvement_rounded,
                   title: 'Eye Exercises',
-                  onTap: () => ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Coming soon!'))),
+                  onTap: () => Navigator.pushNamed(context, '/eye-exercises'),
                 ),
               ),
               const SizedBox(width: 16),
