@@ -31,6 +31,7 @@ import 'features/quick_vision_test/screens/quick_test_intro_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
+import 'data/providers/eye_exercise_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,7 +64,10 @@ class VisiaxApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => TestSessionProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => TestSessionProvider()),
+        ChangeNotifierProvider(create: (_) => EyeExerciseProvider()),
+      ],
       child: MaterialApp(
         title: 'Visiaxx - Digital Eye Clinic',
         debugShowCheckedModeBanner: false,

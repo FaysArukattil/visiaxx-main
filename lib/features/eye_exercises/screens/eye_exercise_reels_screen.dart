@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/exercise_videos.dart';
-import '../models/exercise_video_model.dart';
+import 'package:provider/provider.dart';
+import '../../../data/providers/eye_exercise_provider.dart';
 import '../widgets/video_reel_item.dart';
 import '../widgets/youtube_popup_dialog.dart';
 
-/// Instagram/TikTok-like reels screen for eye exercises
 class EyeExerciseReelsScreen extends StatefulWidget {
   const EyeExerciseReelsScreen({super.key});
 
@@ -14,65 +13,15 @@ class EyeExerciseReelsScreen extends StatefulWidget {
 
 class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
   late PageController _pageController;
-  late List<ExerciseVideo> _videos;
-  int _currentIndex = 0;
-  bool _isScrolling = false;
-
-  // Store pause states AND positions externally to survive widget rebuilds
-  final Map<String, bool> _pauseStates = {};
-  final Map<String, Duration> _videoPositions = {};
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 0); // Start at first video
-    _loadVideos();
-  }
-
-  void _loadVideos() {
-    // Get shuffled videos for random order each time
-    _videos = ExerciseVideos.getShuffledVideos();
-
-    if (_videos.isEmpty) {
-      debugPrint('Warning: No exercise videos found!');
-    } else {
-      debugPrint('Loaded ${_videos.length} exercise videos');
-      // Initialize pause states and positions
-      for (var video in _videos) {
-        _pauseStates[video.id] = false;
-        _videoPositions[video.id] = Duration.zero;
-      }
-    }
-  }
-
-  void _onPageChanged(int index) {
-    if (mounted) {
-      setState(() {
-        _currentIndex = index;
-        _isScrolling = false;
-      });
-    }
-  }
-
-  void _onVideoEnd() {
-    // Video ended - DO NOT auto-scroll
-    // Let user control when to swipe to next video (like real reels)
-    // The video will just pause at the end
-  }
-
-  void _onPauseStateChanged(String videoId, bool isPaused) {
-    _pauseStates[videoId] = isPaused;
-  }
-
-  void _onPositionChanged(String videoId, Duration position) {
-    _videoPositions[videoId] = position;
-  }
-
-  void _showYouTubePopup() {
-    showDialog(
-      context: context,
-      builder: (context) => const YouTubePopupDialog(),
-    );
+    _pageController = PageController();
+    // Initialize provider data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<EyeExerciseProvider>().initialize();
+    });
   }
 
   @override
@@ -83,195 +32,163 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_videos.isEmpty) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.video_library_outlined,
-                  size: 80,
-                  color: Colors.white54,
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'No exercise videos available',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Check back soon for eye exercises!',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Go Back'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
-      extendBody: true,
-      body: Stack(
-        children: [
-          // Video reels - FULL SCREEN
-          PageView.builder(
-            controller: _pageController,
-            scrollDirection: Axis.vertical,
-            onPageChanged: _onPageChanged,
-            itemCount: _videos.length,
-            physics: const ClampingScrollPhysics(),
-            allowImplicitScrolling: true,
-            itemBuilder: (context, index) {
-              final video = _videos[index];
-              return VideoReelItem(
-                key: ValueKey(video.id),
-                video: video,
-                isActive: index == _currentIndex,
-                onVideoEnd: _onVideoEnd,
-                initialPauseState: _pauseStates[video.id] ?? false,
-                initialPosition: _videoPositions[video.id] ?? Duration.zero,
-                onPauseStateChanged: (isPaused) =>
-                    _onPauseStateChanged(video.id, isPaused),
-                onPositionChanged: (position) =>
-                    _onPositionChanged(video.id, position),
-              );
-            },
-          ),
+      body: Consumer<EyeExerciseProvider>(
+        builder: (context, provider, child) {
+          if (!provider.isInitialized) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
+          }
 
-          // Top gradient overlay
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black.withOpacity(0.6), Colors.transparent],
-                ),
+          if (provider.videos.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return Stack(
+            children: [
+              // PageView with videos
+              PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                onPageChanged: (index) {
+                  provider.setCurrentIndex(index);
+                },
+                itemCount: provider.videos.length,
+                itemBuilder: (context, index) {
+                  final video = provider.videos[index];
+                  return VideoReelItem(
+                    key: ValueKey(video.id),
+                    video: video,
+                    isActive: index == provider.currentIndex,
+                  );
+                },
               ),
-            ),
-          ),
 
-          // Top bar with back button and YouTube button
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Back button
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black38,
-                      padding: const EdgeInsets.all(8),
-                    ),
+              // Top Controls Overlay
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-
-                  // YouTube button
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _showYouTubePopup,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new,
+                          color: Colors.white,
+                          size: 24,
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.black38,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white24, width: 1),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFF0000),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.play_arrow,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'YouTube',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black26,
                         ),
                       ),
+                      _buildYouTubeButton(),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Progress Indicator (Reels style vertical indicator or page count)
+              Positioned(
+                right: 8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    width: 2,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white12,
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                    child: Stack(
+                      children: [
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 300),
+                          top:
+                              (provider.currentIndex / provider.videos.length) *
+                              100,
+                          child: Container(
+                            width: 2,
+                            height: 100 / provider.videos.length,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
-          // Video counter indicator
-          Positioned(
-            top: 80,
-            right: 16,
-            child: SafeArea(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${_currentIndex + 1}/${_videos.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+  Widget _buildYouTubeButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => showDialog(
+          context: context,
+          builder: (_) => const YouTubePopupDialog(),
+        ),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black26,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.network(
+                'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/1024px-YouTube_full-color_icon_%282017%29.svg.png',
+                height: 16,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Visiaxx TV',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
               ),
-            ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.video_library_outlined,
+            size: 64,
+            color: Colors.white24,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No exercises available',
+            style: TextStyle(color: Colors.white70, fontSize: 16),
+          ),
+          const SizedBox(height: 24),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Go Back', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
