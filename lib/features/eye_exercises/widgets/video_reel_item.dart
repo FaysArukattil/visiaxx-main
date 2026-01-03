@@ -88,40 +88,13 @@ class _VideoReelItemState extends State<VideoReelItem>
   void didUpdateWidget(VideoReelItem oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // CRITICAL: Re-initialize if video ID or path changed (due to PageView widget reuse)
-    if (widget.video.id != oldWidget.video.id ||
-        widget.video.videoPath != oldWidget.video.videoPath) {
-      _reinitializeVideo();
-      return;
-    }
-
     if (widget.isActive != oldWidget.isActive) {
-      if (widget.isActive && !_isLongPressing) {
+      if (widget.isActive && !_isLongPressing && !_isPaused) {
         _controller?.play();
-        setState(() => _isPaused = false);
       } else if (!widget.isActive) {
         _controller?.pause();
       }
     }
-  }
-
-  Future<void> _reinitializeVideo() async {
-    // Stop and dispose current
-    _controller?.pause();
-    _controller?.removeListener(_checkVideoStatus);
-    _controller?.dispose();
-
-    // Reset state
-    if (mounted) {
-      setState(() {
-        _isInitialized = false;
-        _hasError = false;
-        _isPaused = false;
-      });
-    }
-
-    // Start over
-    await _initializeVideo();
   }
 
   void _togglePlayPause() {
@@ -131,12 +104,15 @@ class _VideoReelItemState extends State<VideoReelItem>
       if (_controller!.value.isPlaying) {
         _controller!.pause();
         _isPaused = true;
-        _showPauseIcon = true;
       } else {
+        // If at the end, seek to start
+        if (_controller!.value.position >= _controller!.value.duration) {
+          _controller!.seekTo(Duration.zero);
+        }
         _controller!.play();
         _isPaused = false;
-        _showPauseIcon = true;
       }
+      _showPauseIcon = true;
     });
 
     _startPauseIconTimer();
@@ -183,6 +159,27 @@ class _VideoReelItemState extends State<VideoReelItem>
                 width: _controller!.value.size.width,
                 height: _controller!.value.size.height,
                 child: VideoPlayer(_controller!),
+              ),
+            ),
+          ),
+        ),
+
+        // Bottom gradient overlay for text legibility
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 200,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withOpacity(0.8),
+                  Colors.black.withOpacity(0.4),
+                  Colors.transparent,
+                ],
               ),
             ),
           ),
@@ -240,11 +237,11 @@ class _VideoReelItemState extends State<VideoReelItem>
             ),
           ),
 
-        // Video info overlay
+        // Video info overlay - Far bottom like YouTube Shorts
         Positioned(
           left: 16,
-          bottom: 100,
-          right: 80,
+          bottom: 40, // Slightly adjusted for gradient
+          right: 16,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -254,7 +251,8 @@ class _VideoReelItemState extends State<VideoReelItem>
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
                   shadows: [
                     Shadow(
                       blurRadius: 10,
@@ -271,13 +269,8 @@ class _VideoReelItemState extends State<VideoReelItem>
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 10,
-                        color: Colors.black,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+                    fontWeight: FontWeight.w400,
+                    height: 1.3,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

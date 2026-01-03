@@ -14,71 +14,81 @@ class ExerciseVideos {
     return [
       ExerciseVideo(
         id: 'ex_1',
-        title: 'Eye Relaxation Exercise',
-        description: 'Reduce eye strain with simple relaxation techniques',
+        title: '7 Eye Disease Signs You Might Be Missing',
+        description:
+            "Don't ignore these! Learn the subtle signs that could save your vision.",
         videoPath: 'assets/exercise_videos/exercise_1.mp4',
         isAsset: true,
       ),
       ExerciseVideo(
         id: 'ex_2',
-        title: 'Focus Shifting Exercise',
-        description: 'Improve focus flexibility',
+        title: '5 Eye Disease Symptoms to Watch For',
+        description:
+            'Are you noticing these changes? 5 symptoms you should never ignore.',
         videoPath: 'assets/exercise_videos/exercise_2.mp4',
         isAsset: true,
       ),
       ExerciseVideo(
         id: 'ex_3',
-        title: 'Eye Rotation Exercise',
-        description: 'Strengthen eye muscles',
+        title: 'Improve Your Eyesight Naturally',
+        description:
+            'Want better vision? 5 simple, effective tips to boost eye health from home.',
         videoPath: 'assets/exercise_videos/exercise_3.mp4',
         isAsset: true,
       ),
       ExerciseVideo(
         id: 'ex_4',
-        title: 'Blinking Exercise',
-        description: 'Keep your eyes moisturized',
+        title: 'Near-Sighted or Far-Sighted?',
+        description:
+            "Can't see far or near? Learn the quick difference between the two.",
         videoPath: 'assets/exercise_videos/exercise_4.mp4',
         isAsset: true,
       ),
       ExerciseVideo(
         id: 'ex_5',
-        title: 'Near and Far Focus',
-        description: 'Improve accommodation flexibility',
+        title: 'The Ultimate Eye Health Diet',
+        description:
+            'Fuel your sight! Eat these nutrient-rich superfoods for peak vision.',
         videoPath: 'assets/exercise_videos/exercise_5.mp4',
         isAsset: true,
       ),
       ExerciseVideo(
         id: 'ex_6',
-        title: 'Figure 8 Exercise',
-        description: 'Enhance eye muscle coordination',
+        title: 'Avoid These 3 Contact Lens Mistakes',
+        description:
+            'Protect your eyes from damage by avoiding these common lens errors.',
         videoPath: 'assets/exercise_videos/exercise_6.mp4',
         isAsset: true,
       ),
       ExerciseVideo(
         id: 'ex_7',
-        title: 'Palming Exercise',
-        description: 'Relax and soothe tired eyes',
+        title: 'Quick Eye Relief Exercises',
+        description:
+            'Feeling digital eye strain? Try these instant relief hacks for tired eyes.',
         videoPath: 'assets/exercise_videos/exercise_7.mp4',
         isAsset: true,
       ),
       ExerciseVideo(
         id: 'ex_8',
-        title: 'Eye Rolling Exercise',
-        description: 'Improve blood circulation',
+        title: 'Snack Your Way to Better Vision',
+        description:
+            'Boost your eye health with these simple and vision-friendly snack ideas.',
         videoPath: 'assets/exercise_videos/exercise_8.mp4',
         isAsset: true,
       ),
       ExerciseVideo(
         id: 'ex_9',
-        title: 'Zooming Exercise',
-        description: 'Strengthen focusing muscles',
+        title: 'The Digital Warrior\'s Blue Light Guide',
+        description:
+            'Scrolling all day? Here is how to protect your eyes from harmful blue light.',
         videoPath: 'assets/exercise_videos/exercise_9.mp4',
         isAsset: true,
       ),
       ExerciseVideo(
         id: 'ex_10',
-        title: '20-20-20 Rule Exercise',
-        description: 'Prevent digital eye strain',
+        title: 'Simple Habits for Healthy Eyes',
+        description:
+            'It\'s easy to stay proactive! Follow these tips for lifelong healthy vision.',
         videoPath: 'assets/exercise_videos/exercise_10.mp4',
         isAsset: true,
       ),
