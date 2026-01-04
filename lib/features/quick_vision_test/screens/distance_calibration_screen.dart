@@ -5,6 +5,7 @@ import 'package:camera/camera.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/utils/distance_helper.dart';
 
 /// Distance Calibration Screen with real camera preview and face detection
 /// Shows real-time distance and guidance to position correctly
@@ -246,7 +247,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         }
         break;
       case DistanceStatus.noFaceDetected:
-        _ttsService.speak('Position your face in the camera');
+        _ttsService.speak('Searching for face');
         break;
       case DistanceStatus.faceDetectedNoDistance:
         // Don't speak - using cached distance, test can continue
@@ -604,7 +605,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
       child: Column(
         children: [
           Text(
-            _currentDistance > 0
+            DistanceHelper.isFaceDetected(_distanceStatus)
                 ? '${_currentDistance.toStringAsFixed(0)} cm'
                 : '--',
             style: TextStyle(
@@ -776,7 +777,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
       case DistanceStatus.tooFar:
         return 'Move closer';
       case DistanceStatus.noFaceDetected:
-        return 'Position your face';
+        return 'Distance search active';
       case DistanceStatus.faceDetectedNoDistance:
         return 'Using last distance';
     }

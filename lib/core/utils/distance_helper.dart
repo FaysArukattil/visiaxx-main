@@ -59,9 +59,9 @@ class DistanceHelper {
       case DistanceStatus.optimal:
         return 'Perfect! Distance is correct';
       case DistanceStatus.noFaceDetected:
-        return 'Position your face in the camera';
+        return 'Searching for face...';
       case DistanceStatus.faceDetectedNoDistance:
-        return 'Continue - Using last known distance';
+        return 'Distance search active';
     }
   }
 
@@ -111,7 +111,7 @@ class DistanceHelper {
     } else if (status == DistanceStatus.tooFar) {
       return 'Too far from screen';
     } else {
-      return 'Adjust your distance';
+      return 'Maintain distance';
     }
   }
 
@@ -163,19 +163,11 @@ class DistanceHelper {
     DistanceStatus status,
     String testType,
   ) {
-    // ✅ SIMPLIFIED: Never pause for face detection issues
-    // Only pause if distance is measurable AND too close
-
-    if (currentDistance <= 0) {
-      // No valid distance reading - don't pause, let it continue
-      return false;
-    }
-
-    // ✅ Check test-specific MINIMUM distance only
+    // ✅ Pause if no face detected (currentDistance <= 0)
+    // OR if too close (below minimum)
     final minDistance = getMinimumDistanceForTest(testType);
 
-    // ✅ Pause ONLY if too close (below minimum)
-    if (currentDistance < minDistance) {
+    if (currentDistance <= 0 || currentDistance < minDistance) {
       return true;
     }
 

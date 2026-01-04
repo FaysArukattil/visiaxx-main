@@ -113,7 +113,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     };
 
     // ✅ Sync voice recognition to start AFTER TTS finishes
-    // ✅ Sync voice recognition to start AFTER TTS finishes
     _ttsService.onSpeakingStateChanged = (isSpeaking) {
       if (!isSpeaking &&
           mounted &&
@@ -210,10 +209,13 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
     _ttsService.speak('Read the sentence out loud');
 
-    // ✅ FIX: Explicitly start listening after TTS with fallback
-    // Wait for TTS to finish (typical duration ~2 seconds), then start
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted && _waitingForResponse && !_isListening) {
+    // ✅ FIX: Shortened fallback delay (now primarily relying on callback)
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted &&
+          _waitingForResponse &&
+          !_isListening &&
+          !_showKeyboard &&
+          !_ttsService.isSpeaking) {
         debugPrint('[ShortDistance] 🎤 Fallback: Starting voice recognition');
         _startListening();
       }
@@ -607,7 +609,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   /// ✅ FIXED: Distance warning that doesn't stop voice recognition
   Widget _buildDistanceWarningOverlay() {
     // ✅ Dynamic messages based on status
-    final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, 40.0);
     final instruction = DistanceHelper.getDetailedInstruction(40.0);
     final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
 
@@ -636,7 +637,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
               Icon(icon, size: 60, color: iconColor),
               const SizedBox(height: 16),
               Text(
-                pauseReason, // ✅ Dynamic
+                'Searching for face...',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -655,9 +656,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
               // ✅ Only show distance if face is detected
               if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
                 Text(
-                  _currentDistance > 0
+                  DistanceHelper.isFaceDetected(_distanceStatus)
                       ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                      : 'Measuring...',
+                      : 'Searching...',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -690,7 +691,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Position your face in the camera',
+                        'Distance search active',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.error,
@@ -784,10 +785,15 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _SpeechWaveform(
-                  isListening: _isListening,
-                  isTalking: _isSpeechActive,
-                  color: AppColors.success,
+                SizedBox(
+                  height: 32, // ✅ Fixed height to prevent jitter
+                  child: Center(
+                    child: _SpeechWaveform(
+                      isListening: _isListening,
+                      isTalking: _isSpeechActive,
+                      color: AppColors.success,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Icon(Icons.mic, size: 14, color: AppColors.success),
@@ -1091,9 +1097,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       40.0,
       testType: 'short_distance',
     );
-    final distanceText = DistanceHelper.isFaceDetected(_distanceStatus)
+    // ✅ Show distance always (even if face lost temporarily)
+    final distanceText = _currentDistance > 0
         ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'Align Face';
+        : 'Searching...';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

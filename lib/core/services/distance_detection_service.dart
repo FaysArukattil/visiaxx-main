@@ -168,7 +168,15 @@ class DistanceDetectionService {
       final faces = await _faceDetector.processImage(inputImage);
 
       if (faces.isEmpty) {
-        _updateDistance(0, DistanceStatus.noFaceDetected);
+        // ✅ User requested: show distance even if face temporarily lost
+        if (_lastKnownGoodDistance > 0) {
+          _updateDistance(
+            _lastKnownGoodDistance,
+            DistanceStatus.noFaceDetected,
+          );
+        } else {
+          _updateDistance(0, DistanceStatus.noFaceDetected);
+        }
         _consecutiveErrors++;
       } else {
         final face = faces.reduce(
@@ -178,7 +186,7 @@ class DistanceDetectionService {
         final distance = _calculateDistanceFromFace(face);
 
         if (distance > 0) {
-          if (_smoothedDistance == 0.0) {
+          if (_smoothedDistance <= 0.0) {
             _smoothedDistance = distance;
           } else {
             // Apply smoothing: smooth = alpha * new + (1-alpha) * old
@@ -200,6 +208,10 @@ class DistanceDetectionService {
             debugPrint(
               '[DistanceService] Face detected but landmarks missing - using cached distance: $_lastKnownGoodDistance cm',
             );
+
+            // ✅ IMPROVED: Sync smoothed distance to cached value to prevent JUMPING
+            _smoothedDistance = _lastKnownGoodDistance;
+
             _updateDistance(
               _lastKnownGoodDistance,
               DistanceStatus.faceDetectedNoDistance,
@@ -351,7 +363,7 @@ class DistanceDetectionService {
 
   /// Format distance string
   static String formatDistance(double distanceCm) {
-    if (distanceCm <= 0) return 'No face detected';
+    if (distanceCm <= 0) return 'Searching...';
     return '${distanceCm.toStringAsFixed(0)} cm';
   }
 
@@ -364,7 +376,7 @@ class DistanceDetectionService {
       case DistanceStatus.optimal:
         return 'Perfect! Distance is correct';
       case DistanceStatus.noFaceDetected:
-        return 'Position your face in the camera view';
+        return 'Distance search active';
       case DistanceStatus.faceDetectedNoDistance:
         return 'Continue - Using last known distance';
     }

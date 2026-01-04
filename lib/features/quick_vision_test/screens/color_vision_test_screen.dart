@@ -1124,13 +1124,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       testType: 'color_vision',
     );
 
-    // ✅ SIMPLIFIED: Just show distance or "Measuring..."
-    String distanceText;
-    if (_currentDistance > 0) {
-      distanceText = '${_currentDistance.toStringAsFixed(0)}cm';
-    } else {
-      distanceText = 'Measuring...';
-    }
+    // ✅ Show distance always (even if face lost temporarily)
+    final distanceText = _currentDistance > 0
+        ? '${_currentDistance.toStringAsFixed(0)}cm'
+        : 'Searching...';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1158,6 +1155,19 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   Widget _buildDistanceWarningOverlay() {
+    // ✅ Dynamic messages based on status
+    final instruction = DistanceHelper.getDetailedInstruction(40.0);
+    final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
+
+    // ✅ Icon changes based on issue
+    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
+        ? Icons.face_retouching_off
+        : Icons.warning_rounded;
+
+    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
+        ? AppColors.error
+        : AppColors.warning;
+
     return Container(
       color: Colors.black.withValues(alpha: 0.85),
       child: Center(
@@ -1171,10 +1181,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
+              Icon(icon, size: 60, color: iconColor),
               const SizedBox(height: 16),
               Text(
-                'Too Close to Screen',
+                'Searching for face...',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -1184,13 +1194,13 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Move back to 40 centimeters for accurate results',
+                instruction,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
 
-              if (_currentDistance > 0) ...[
+              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
                 Text(
                   'Current: ${_currentDistance.toStringAsFixed(0)}cm',
                   style: TextStyle(
@@ -1201,10 +1211,38 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Minimum: 35cm',
+                  'Target: $rangeText',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
+                  ),
+                ),
+              ] else ...[
+                // ✅ Special message when no face
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Distance search active',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

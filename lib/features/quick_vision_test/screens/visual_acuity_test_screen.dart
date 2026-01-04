@@ -958,9 +958,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       100.0,
       testType: 'visual_acuity',
     );
-    final distanceText = DistanceHelper.isFaceDetected(_distanceStatus)
+    // ✅ Show distance always (even if face lost temporarily)
+    final distanceText = _currentDistance > 0
         ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'Align Face';
+        : 'Searching...';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1039,7 +1040,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 Text(
                   _currentDistance > 0
                       ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                      : 'Measuring...',
+                      : 'Searching...',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1072,7 +1073,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Position your face in the camera',
+                        'Distance search active',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.error,

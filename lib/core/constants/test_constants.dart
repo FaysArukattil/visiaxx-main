@@ -132,7 +132,7 @@ class TestConstants {
   // ✅ FIXED: Updated short distance font sizes to match visual acuity
   static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(
-      sentence: 'See well',
+      sentence: 'Clear View',
       fontSize: 120.0,
       snellen: '6/60',
     ),
@@ -157,7 +157,7 @@ class TestConstants {
       snellen: '6/12',
     ),
     ShortDistanceSentence(
-      sentence: 'I test matter',
+      sentence: 'Read this',
       fontSize: 18.0,
       snellen: '6/9',
     ),
