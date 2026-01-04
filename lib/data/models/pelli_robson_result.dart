@@ -1,5 +1,6 @@
 /// Pelli-Robson Contrast Sensitivity Test Result Model
 /// Clinical-grade contrast sensitivity measurement
+library;
 
 /// Individual triplet response during the test
 class TripletResponse {
@@ -90,7 +91,7 @@ class PelliRobsonSingleResult {
   String get clinicalSummary =>
       'Pelli-Robson CS (${testMode == 'short' ? '40cm' : '1m'}): '
       '${adjustedScore.toStringAsFixed(2)} log CS ($category). '
-      'Last full triplet: $lastFullTriplet, +${correctInNextTriplet}/3 in next.';
+      'Last full triplet: $lastFullTriplet, +$correctInNextTriplet/3 in next.';
 
   Map<String, dynamic> toMap() => {
     'testMode': testMode,
@@ -126,10 +127,7 @@ class PelliRobsonEyeResult {
   final PelliRobsonSingleResult? shortDistance; // 40cm test
   final PelliRobsonSingleResult? longDistance; // 1m test
 
-  const PelliRobsonEyeResult({
-    this.shortDistance,
-    this.longDistance,
-  });
+  const PelliRobsonEyeResult({this.shortDistance, this.longDistance});
 
   Map<String, dynamic> toMap() => {
     'shortDistance': shortDistance?.toMap(),
@@ -153,11 +151,11 @@ class PelliRobsonResult {
   final PelliRobsonEyeResult? rightEye;
   final PelliRobsonEyeResult? leftEye;
   final PelliRobsonEyeResult? bothEyes;
-  
+
   // Legacy support for older tests (Both eyes only)
-  final PelliRobsonSingleResult? shortDistance; 
+  final PelliRobsonSingleResult? shortDistance;
   final PelliRobsonSingleResult? longDistance;
-  
+
   final DateTime timestamp;
 
   const PelliRobsonResult({
@@ -187,7 +185,7 @@ class PelliRobsonResult {
     updateWorst(leftEye?.longDistance);
     updateWorst(bothEyes?.shortDistance);
     updateWorst(bothEyes?.longDistance);
-    
+
     // Legacy check
     updateWorst(shortDistance);
     updateWorst(longDistance);
@@ -213,7 +211,7 @@ class PelliRobsonResult {
     addScore(leftEye?.longDistance);
     addScore(bothEyes?.shortDistance);
     addScore(bothEyes?.longDistance);
-    
+
     // Legacy check
     addScore(shortDistance);
     addScore(longDistance);
@@ -238,17 +236,23 @@ class PelliRobsonResult {
   /// Clinical summary for professionals
   String get clinicalSummary {
     final buffer = StringBuffer('Pelli-Robson Contrast Sensitivity:\n');
-    
+
     if (rightEye != null) {
-      buffer.writeln('• Right Eye: Near ${rightEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${rightEye?.longDistance?.adjustedScore.toStringAsFixed(2)}');
+      buffer.writeln(
+        '• Right Eye: Near ${rightEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${rightEye?.longDistance?.adjustedScore.toStringAsFixed(2)}',
+      );
     }
     if (leftEye != null) {
-      buffer.writeln('• Left Eye: Near ${leftEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${leftEye?.longDistance?.adjustedScore.toStringAsFixed(2)}');
+      buffer.writeln(
+        '• Left Eye: Near ${leftEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${leftEye?.longDistance?.adjustedScore.toStringAsFixed(2)}',
+      );
     }
     if (bothEyes != null) {
-      buffer.writeln('• Both Eyes: Near ${bothEyes?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${bothEyes?.longDistance?.adjustedScore.toStringAsFixed(2)}');
+      buffer.writeln(
+        '• Both Eyes: Near ${bothEyes?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${bothEyes?.longDistance?.adjustedScore.toStringAsFixed(2)}',
+      );
     }
-    
+
     return buffer.toString().trim();
   }
 
@@ -278,9 +282,15 @@ class PelliRobsonResult {
 
   factory PelliRobsonResult.fromMap(Map<String, dynamic> map) {
     return PelliRobsonResult(
-      rightEye: map['rightEye'] != null ? PelliRobsonEyeResult.fromMap(map['rightEye']) : null,
-      leftEye: map['leftEye'] != null ? PelliRobsonEyeResult.fromMap(map['leftEye']) : null,
-      bothEyes: map['bothEyes'] != null ? PelliRobsonEyeResult.fromMap(map['bothEyes']) : null,
+      rightEye: map['rightEye'] != null
+          ? PelliRobsonEyeResult.fromMap(map['rightEye'])
+          : null,
+      leftEye: map['leftEye'] != null
+          ? PelliRobsonEyeResult.fromMap(map['leftEye'])
+          : null,
+      bothEyes: map['bothEyes'] != null
+          ? PelliRobsonEyeResult.fromMap(map['bothEyes'])
+          : null,
       shortDistance: map['shortDistance'] != null
           ? PelliRobsonSingleResult.fromMap(map['shortDistance'])
           : null,

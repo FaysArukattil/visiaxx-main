@@ -537,14 +537,18 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     if (right == null && left == null) return 'N/A';
 
     final best = (right != null && right != 'Worse than 6/60') ? right : left;
-    if (best == '6/6')
+    if (best == '6/6') {
       return 'Excellent. You see at 6 meters what a normal eye sees at 6 meters (20/20 equivalent).';
-    if (best == '6/9')
+    }
+    if (best == '6/9') {
       return 'Good. You see at 6 meters what a normal eye sees at 9 meters.';
-    if (best == '6/12')
+    }
+    if (best == '6/12') {
       return 'Mild reduction. You see at 6 meters what a normal eye sees at 12 meters.';
-    if (best == 'Worse than 6/60')
+    }
+    if (best == 'Worse than 6/60') {
       return 'Significant reduction. Vision is below the standard screening range.';
+    }
 
     return 'Your visual acuity represents the clarity of your vision at a distance compared to a standard eye.';
   }
@@ -714,8 +718,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     DeficiencyType? type,
     DeficiencySeverity? severity,
   ) {
-    if (type == null || type == DeficiencyType.none)
+    if (type == null || type == DeficiencyType.none) {
       return 'Normal color vision.';
+    }
 
     String typeStr = type.toString().split('.').last.toUpperCase();
     String sevStr =
@@ -899,30 +904,32 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const SizedBox(height: 16),
 
           // Per-eye results
-          if (result.rightEye != null) () {
-            final re = result.rightEye!;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildEyeSectionTitle('Right Eye'),
-                _buildPelliRobsonEyeResults(re),
-                const SizedBox(height: 16),
-              ],
-            );
-          }(),
-          if (result.leftEye != null) () {
-            final le = result.leftEye!;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildEyeSectionTitle('Left Eye'),
-                _buildPelliRobsonEyeResults(le),
-                const SizedBox(height: 16),
-              ],
-            );
-          }(),
+          if (result.rightEye != null)
+            () {
+              final re = result.rightEye!;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildEyeSectionTitle('Right Eye'),
+                  _buildPelliRobsonEyeResults(re),
+                  const SizedBox(height: 16),
+                ],
+              );
+            }(),
+          if (result.leftEye != null)
+            () {
+              final le = result.leftEye!;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildEyeSectionTitle('Left Eye'),
+                  _buildPelliRobsonEyeResults(le),
+                  const SizedBox(height: 16),
+                ],
+              );
+            }(),
           if (result.bothEyes != null || result.shortDistance != null) ...[
-            // LEGACY: If we have old "Both Eyes" results, we can show them, 
+            // LEGACY: If we have old "Both Eyes" results, we can show them,
             // but the user said they are replaced by R/L.
             // For now, I'll remove this to hide "Both Eyes" as requested.
           ],
@@ -1252,55 +1259,56 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
-        if (result != null) () {
-          final String? path = result.annotatedImagePath;
-          final String? url = result.firebaseImageUrl;
-          
-          if (path == null && url == null) return const SizedBox.shrink();
+        if (result != null)
+          () {
+            final String? path = result.annotatedImagePath;
+            final String? url = result.firebaseImageUrl;
 
-          return Column(
-            children: [
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: color.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(12),
+            if (path == null && url == null) return const SizedBox.shrink();
+
+            return Column(
+              children: [
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: color.withValues(alpha: 0.3)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: path != null && !path.startsWith('http')
+                        ? Image.file(
+                            File(path),
+                            height: 120,
+                            width: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              if (url != null) {
+                                return Image.network(
+                                  url,
+                                  height: 120,
+                                  width: 120,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) =>
+                                      const SizedBox.shrink(),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          )
+                        : Image.network(
+                            path ?? url!,
+                            height: 120,
+                            width: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const SizedBox.shrink(),
+                          ),
                   ),
-                  child: path != null && !path.startsWith('http')
-                      ? Image.file(
-                          File(path),
-                          height: 120,
-                          width: 120,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            if (url != null) {
-                              return Image.network(
-                                url,
-                                height: 120,
-                                width: 120,
-                                fit: BoxFit.cover,
-                                errorBuilder: (c, e, s) =>
-                                    const SizedBox.shrink(),
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          },
-                        )
-                      : Image.network(
-                          path ?? url!,
-                          height: 120,
-                          width: 120,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const SizedBox.shrink(),
-                        ),
                 ),
-              ),
-            ],
-          );
-        }(),
+              ],
+            );
+          }(),
       ],
     );
   }
@@ -1501,14 +1509,18 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Future<void> _shareGridTracing(String? localPath, String? remoteUrl) async {
     try {
       if (localPath != null && await File(localPath).exists()) {
-        await Share.shareXFiles([XFile(localPath)], text: 'Amsler Grid Tracing');
+        await Share.shareXFiles([
+          XFile(localPath),
+        ], text: 'Amsler Grid Tracing');
       } else if (remoteUrl != null) {
         // Download to share
         final response = await http.get(Uri.parse(remoteUrl));
         final tempDir = await getTemporaryDirectory();
         final file = File('${tempDir.path}/amsler_share.png');
         await file.writeAsBytes(response.bodyBytes);
-        await Share.shareXFiles([XFile(file.path)], text: 'Amsler Grid Tracing');
+        await Share.shareXFiles([
+          XFile(file.path),
+        ], text: 'Amsler Grid Tracing');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Image not available for sharing')),
@@ -1516,9 +1528,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       }
     } catch (e) {
       debugPrint('[QuickTestResult] Share error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to share image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to share image: $e')));
     }
   }
 
@@ -1535,7 +1547,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           provider.buildTestResult(user?.uid ?? '');
 
       // Check if file already exists
-      final String filePath = await _pdfExportService.getExpectedFilePath(result);
+      final String filePath = await _pdfExportService.getExpectedFilePath(
+        result,
+      );
       final File file = File(filePath);
 
       if (await file.exists()) {
@@ -1549,7 +1563,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         message: 'Generating PDF...',
       );
 
-      final String generatedPath = await _pdfExportService.generateAndDownloadPdf(result);
+      final String generatedPath = await _pdfExportService
+          .generateAndDownloadPdf(result);
 
       if (mounted) {
         UIUtils.hideProgressDialog(context);
@@ -1587,13 +1602,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   Future<void> _sharePdfReport(TestResultModel result) async {
     try {
-      UIUtils.showProgressDialog(
-        context: context,
-        message: 'Preparing PDF...',
+      UIUtils.showProgressDialog(context: context, message: 'Preparing PDF...');
+
+      final String filePath = await _pdfExportService.generateAndDownloadPdf(
+        result,
       );
 
-      final String filePath = await _pdfExportService.generateAndDownloadPdf(result);
-      
       if (mounted) {
         UIUtils.hideProgressDialog(context);
       }

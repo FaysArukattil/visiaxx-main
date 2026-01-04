@@ -1,5 +1,6 @@
 /// Pelli-Robson Contrast Sensitivity Scoring Utility
 /// Clinical-grade scoring calculation per Pelli-Robson chart specifications
+library;
 
 /// Triplet configuration with exact opacity and log CS values
 class PelliRobsonTriplet {

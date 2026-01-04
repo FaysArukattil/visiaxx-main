@@ -1,5 +1,6 @@
 /// Pelli-Robson Speech Recognition Fuzzy Matcher
 /// Handles phonetic alternatives and adaptive learning for reliable letter recognition
+library;
 
 import 'dart:math';
 
@@ -138,8 +139,12 @@ class PelliRobsonFuzzyMatcher {
       (i) => List.generate(s2.length + 1, (j) => 0),
     );
 
-    for (int i = 0; i <= s1.length; i++) matrix[i][0] = i;
-    for (int j = 0; j <= s2.length; j++) matrix[0][j] = j;
+    for (int i = 0; i <= s1.length; i++) {
+      matrix[i][0] = i;
+    }
+    for (int j = 0; j <= s2.length; j++) {
+      matrix[0][j] = j;
+    }
 
     for (int i = 1; i <= s1.length; i++) {
       for (int j = 1; j <= s2.length; j++) {

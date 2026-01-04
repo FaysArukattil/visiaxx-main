@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/eye_care_tips_data.dart';
 import '../widgets/category_card.dart';
 import 'category_detail_screen.dart';

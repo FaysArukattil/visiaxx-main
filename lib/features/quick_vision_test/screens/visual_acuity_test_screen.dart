@@ -39,12 +39,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     with WidgetsBindingObserver {
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
-  late final ContinuousSpeechManager _continuousSpeech;
-  final AudioPlayer _audioPlayer = AudioPlayer();
-
-  // Distance monitoring service
   final DistanceDetectionService _distanceService = DistanceDetectionService();
   final DistanceSkipManager _skipManager = DistanceSkipManager();
+  late ContinuousSpeechManager _continuousSpeech;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Test state
   int _currentLevel = 0;
@@ -103,6 +101,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // ✅ FIX: Initialize synchronously to prevent LateInitializationError
+    _continuousSpeech = ContinuousSpeechManager(_speechService);
+
     _initServices();
   }
 
@@ -247,8 +249,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     await _ttsService.initialize();
     await _speechService.initialize();
 
-    // Initialize continuous speech manager
-    _continuousSpeech = ContinuousSpeechManager(_speechService);
+    // Initialize continuous speech manager configuration
     _continuousSpeech.onFinalResult = _handleVoiceResponse;
     _continuousSpeech.onSpeechDetected = _handleSpeechDetected;
     _continuousSpeech.onListeningStateChanged = (isListening) {
@@ -420,15 +421,17 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     });
 
     // ✅ AUTO PAUSE/RESUME logic with DEBOUNCING
-    if (_showE && _waitingForResponse) {
-      if (shouldPause) {
-        _lastShouldPauseTime ??= DateTime.now();
-        final durationSinceFirstIssue = DateTime.now().difference(
-          _lastShouldPauseTime!,
-        );
+    // ALWAYS check if we should pause, regardless of _showE, but only apply pause if we are in a state where it matters
+    if (shouldPause) {
+      _lastShouldPauseTime ??= DateTime.now();
+      final durationSinceFirstIssue = DateTime.now().difference(
+        _lastShouldPauseTime!,
+      );
 
-        if (durationSinceFirstIssue >= _distancePauseDebounce &&
-            !_isTestPausedForDistance) {
+      if (durationSinceFirstIssue >= _distancePauseDebounce &&
+          !_isTestPausedForDistance) {
+        // Only pause if actually in a test phase (E or Relaxation)
+        if (_showE || _showRelaxation) {
           _skipManager
               .canShowDistanceWarning(DistanceTestType.visualAcuity)
               .then((canShow) {
@@ -437,11 +440,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 }
               });
         }
-      } else {
-        _lastShouldPauseTime = null;
-        if (_isTestPausedForDistance) {
-          _resumeTestAfterDistance();
-        }
+      }
+    } else {
+      _lastShouldPauseTime = null;
+      if (_isTestPausedForDistance) {
+        _resumeTestAfterDistance();
       }
     }
   }
@@ -481,12 +484,23 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       if (!_continuousSpeech.isActive) {
         _continuousSpeech.start(
           listenDuration: const Duration(minutes: 10),
-          minConfidence: 0.05,
-          bufferMs: 300,
+          minConfidence: 0.15,
+          bufferMs: 1000,
         );
       }
       _restartEDisplayTimer();
     } else if (_showRelaxation) {
+      // ✅ RESUME MIC: If we were already below 3s when distance was corrected
+      if (_relaxationCountdown <= 3 && !_continuousSpeech.isActive) {
+        debugPrint(
+          '[VisualAcuity] 🎤 Resuming mic (already below 3s in relaxation)',
+        );
+        _continuousSpeech.start(
+          listenDuration: const Duration(minutes: 10),
+          minConfidence: 0.15,
+          bufferMs: 1000,
+        );
+      }
       _restartRelaxationTimer();
     }
   }
@@ -499,6 +513,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         return;
       }
 
+      // ✅ CRITICAL FIX: If paused for distance, do not decrement countdown
+      if (_isTestPausedForDistance) return;
+
       setState(() {
         _relaxationCountdown--;
       });
@@ -510,8 +527,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         );
         _continuousSpeech.start(
           listenDuration: const Duration(minutes: 10),
-          minConfidence: 0.05,
-          bufferMs: 300,
+          minConfidence: 0.15, // ✅ Increased for stability
+          bufferMs: 1000, // ✅ Reduced for faster response
         );
       }
 
@@ -528,6 +545,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       // If no time left, record no response
       _recordResponse(null);
       return;
+    }
+
+    // ✅ Ensure mic is active when resuming E phase
+    if (!_continuousSpeech.isActive) {
+      _continuousSpeech.start(
+        listenDuration: const Duration(minutes: 10),
+        minConfidence: 0.15,
+        bufferMs: 1000,
+      );
     }
 
     // Restart countdown timer
@@ -559,6 +585,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _startEyeTest() {
+    setState(() {
+      _isTestPausedForDistance = false;
+    });
     _ttsService.speakEyeInstruction(_currentEye);
 
     // Wait a moment then start
@@ -576,6 +605,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     setState(() {
       _showRelaxation = true;
       _showE = false;
+      _isTestPausedForDistance =
+          false; // Reset to ensure no accidental carry-over
       _relaxationCountdown = TestConstants.relaxationDurationSeconds;
     });
 
@@ -594,13 +625,24 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _showRelaxation = false;
       _showE = true;
       _waitingForResponse = true;
-      _lastDetectedSpeech = null; // ✅ Reset recognized text for new level
-      _continuousSpeech
-          .clearAccumulated(); // ✅ Prevent carry-over from previous trials
+      // ✅ DO NOT aggressively clear _lastDetectedSpeech yet - we want pre-captured results
       _eDisplayCountdown = TestConstants.eDisplayDurationSeconds;
     });
 
     _eDisplayStartTime = DateTime.now();
+
+    // ✅ CHECK FOR INSTANT RESPONSE: See if the user already said the direction during pre-capture
+    final preCaptured = _continuousSpeech.getLastRecognized();
+    if (preCaptured != null) {
+      final direction = SpeechService.parseDirection(preCaptured);
+      if (direction != null) {
+        debugPrint(
+          '[VisualAcuity] ⚡ Instant recognition from pre-capture: $direction',
+        );
+        _recordResponse(direction);
+        return; // Early exit - E answered instantly
+      }
+    }
 
     // ✅ FALLBACK: If mic isn't active at the moment E appears, force a start
     if (!_continuousSpeech.isActive) {
@@ -609,15 +651,25 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       );
       _continuousSpeech.start(
         listenDuration: const Duration(minutes: 10),
-        minConfidence: 0.05,
-        bufferMs: 300,
+        minConfidence: 0.15,
+        bufferMs: 1000,
       );
+    }
+
+    // ✅ CRITICAL FIX: If already paused due to distance, do not start interaction timers yet
+    if (_isTestPausedForDistance) {
+      debugPrint(
+        '[VisualAcuity] 🛑 Postponing timers: test is currently paused for distance',
+      );
+      return;
     }
 
     // Start countdown timer for display
     _eCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
+      if (!mounted || _isTestPausedForDistance) {
+        // If paused or unmounted, we don't clear the timer here as we want it to survive for resume,
+        // but we stop the countdown from progressing.
+        if (!mounted) timer.cancel();
         return;
       }
       setState(() {
@@ -630,9 +682,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     // Auto-advance if no response within time limit
     _eDisplayTimer = Timer(
-      Duration(seconds: TestConstants.eDisplayDurationSeconds),
+      Duration(seconds: _eDisplayCountdown), // Use remaining countdown
       () {
-        if (_waitingForResponse) {
+        if (_waitingForResponse && !_isTestPausedForDistance) {
           // Use last recognized value if available
           final lastValue = _continuousSpeech.getLastRecognized();
           if (lastValue != null) {
@@ -942,8 +994,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   right: 0,
                   child: Center(child: _buildRecognizedTextIndicator()),
                 ),
-              // Distance warning overlay when explicitly paused
-              if (_useDistanceMonitoring && _isTestPausedForDistance && _showE)
+              // Distance warning overlay when explicitly paused (during E or Relaxation)
+              if (_useDistanceMonitoring &&
+                  _isTestPausedForDistance &&
+                  (_showE || _showRelaxation))
                 _buildDistanceWarningOverlay(),
             ],
           ),
@@ -1098,7 +1152,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.mic, color: AppColors.success, size: 18),
+                    _SpeechWaveform(
+                      isListening:
+                          _continuousSpeech.shouldBeListening &&
+                          !_continuousSpeech.isPausedForTts,
+                      isTalking: _isSpeechActive,
+                      color: AppColors.success,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Voice recognition active',
@@ -1307,7 +1367,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 _SpeechWaveform(
-                  isListening: _isListening,
+                  // ✅ Indicator should be active whenever mic is INTENDED to be on
+                  isListening:
+                      _continuousSpeech.shouldBeListening &&
+                      !_continuousSpeech.isPausedForTts,
                   isTalking: _isSpeechActive,
                   color: AppColors.success,
                 ),

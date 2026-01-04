@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:path/path.dart' as path;
 
 /// Service for uploading and managing images in Firebase Storage
 class FirebaseStorageService {
@@ -23,11 +22,13 @@ class FirebaseStorageService {
 
       // Get download URL
       final downloadUrl = await uploadTask.ref.getDownloadURL();
-      
+
       return downloadUrl;
     } catch (e) {
       if (e.toString().contains('billing') || e.toString().contains('quota')) {
-        print('[FirebaseStorageService] ⚠️ Firebase Storage quota exceeded or billing required. Working in offline mode.');
+        print(
+          '[FirebaseStorageService] ⚠️ Firebase Storage quota exceeded or billing required. Working in offline mode.',
+        );
       } else {
         print('[FirebaseStorageService] Error uploading image: $e');
       }
@@ -61,10 +62,10 @@ class FirebaseStorageService {
 
       // Get reference from URL
       final ref = _storage.refFromURL(firebaseUrl);
-      
+
       // Download to temp file
       await ref.writeToFile(tempFile);
-      
+
       return tempFile;
     } catch (e) {
       print('[FirebaseStorageService] Error downloading image: $e');
@@ -79,15 +80,15 @@ class FirebaseStorageService {
   }) async {
     try {
       final folderRef = _storage.ref().child('amsler_grids/$userId/$testId');
-      
+
       // List all files in the folder
       final listResult = await folderRef.listAll();
-      
+
       // Delete each file
       for (final item in listResult.items) {
         await item.delete();
       }
-      
+
       return true;
     } catch (e) {
       print('[FirebaseStorageService] Error deleting images: $e');
