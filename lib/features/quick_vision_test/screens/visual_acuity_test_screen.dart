@@ -63,7 +63,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Timer? _relaxationTimer;
   int _relaxationCountdown = 10;
   DateTime? _eDisplayStartTime;
-  int _eDisplayCountdown = TestConstants.eDisplayDurationSeconds; // 7 seconds per E as per user requirement
+  int _eDisplayCountdown = TestConstants
+      .eDisplayDurationSeconds; // 7 seconds per E as per user requirement
   Timer? _eCountdownTimer;
 
   // Display states
@@ -488,7 +489,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
       // ✅ USER REQUIREMENT: Start mic when 3 seconds remain
       if (_relaxationCountdown == 3) {
-        debugPrint('[VisualAcuity] 🎤 Starting mic (3s remaining in relaxation)');
+        debugPrint(
+          '[VisualAcuity] 🎤 Starting mic (3s remaining in relaxation)',
+        );
         _continuousSpeech.start(
           listenDuration: const Duration(minutes: 10),
           minConfidence: 0.05,
@@ -553,7 +556,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void _startRelaxation() {
     // ✅ Stop mic when relaxation starts
     _continuousSpeech.stop();
-    
+
     setState(() {
       _showRelaxation = true;
       _showE = false;
@@ -576,7 +579,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _showE = true;
       _waitingForResponse = true;
       _lastDetectedSpeech = null; // ✅ Reset recognized text for new level
-      _continuousSpeech.clearAccumulated(); // ✅ Prevent carry-over from previous trials
+      _continuousSpeech
+          .clearAccumulated(); // ✅ Prevent carry-over from previous trials
       _eDisplayCountdown = TestConstants.eDisplayDurationSeconds;
     });
 
@@ -584,7 +588,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     // ✅ FALLBACK: If mic isn't active at the moment E appears, force a start
     if (!_continuousSpeech.isActive) {
-      debugPrint('[VisualAcuity] 🎤 Fallback: Mic not active at E start, starting now');
+      debugPrint(
+        '[VisualAcuity] 🎤 Fallback: Mic not active at E start, starting now',
+      );
       _continuousSpeech.start(
         listenDuration: const Duration(minutes: 10),
         minConfidence: 0.05,
@@ -656,7 +662,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
     // ✅ Keep listening continuously - just clear buffers when E changes
-    _continuousSpeech.clearAccumulated(); 
+    _continuousSpeech.clearAccumulated();
     _lastDetectedSpeech = null;
 
     // ✅ HANDLE NO RESPONSE: Rotate E in SAME size and try again
@@ -1667,6 +1673,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Navigate to instruction screen - only once
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_eyeSwitchPending && mounted) {
+        // ✅ FIX: Stop monitoring before showing cover eye instruction
+        _distanceService.stopMonitoring();
+
         // Mark as handled immediately
         setState(() {
           _eyeSwitchPending = false;

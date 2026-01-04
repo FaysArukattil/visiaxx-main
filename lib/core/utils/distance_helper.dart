@@ -22,12 +22,15 @@ class DistanceHelper {
   }
 
   /// Get color based on distance status
+  /// Get color based on distance status
+  /// Get color based on distance status
   static Color getDistanceColor(
     double currentDistance,
     double targetDistance, {
     double tolerance = 5.0,
     String? testType,
   }) {
+    // ✅ FIX: No face detected
     if (currentDistance <= 0) return AppColors.error;
 
     // Use test-specific floor if type is provided
@@ -35,13 +38,12 @@ class DistanceHelper {
         ? getMinimumDistanceForTest(testType)
         : (targetDistance - tolerance);
 
-    // Within optimal range or further back (which is safe)
-    if (currentDistance >= minDistance) {
-      return AppColors.success;
-    }
-    // Too close
-    else {
-      return AppColors.error;
+    // ✅ FIX: Only show error if TOO CLOSE (below minimum)
+    // Being further away is SAFE - show green
+    if (currentDistance < minDistance) {
+      return AppColors.error; // Too close
+    } else {
+      return AppColors.success; // At minimum or further - both safe
     }
   }
 
@@ -85,7 +87,11 @@ class DistanceHelper {
   /// Check if face is detected (even if distance can't be calculated)
   /// Returns true for optimal, faceDetectedNoDistance, tooClose, tooFar
   /// Returns false only for noFaceDetected
+  /// Check if face is detected (even if distance can't be calculated)
+  /// Returns true for optimal, faceDetectedNoDistance, tooClose, tooFar
+  /// Returns false only for noFaceDetected
   static bool isFaceDetected(DistanceStatus status) {
+    // ✅ FIX: Face is detected in all states except noFaceDetected
     return status != DistanceStatus.noFaceDetected;
   }
 
@@ -97,17 +103,15 @@ class DistanceHelper {
   }
 
   /// Get pause reason message
+  /// Get pause reason message
+  /// Get pause reason message
   static String getPauseReason(DistanceStatus status, double targetDistance) {
-    if (status == DistanceStatus.noFaceDetected) {
-      return 'Face not detected';
-    } else if (status == DistanceStatus.faceDetectedNoDistance) {
-      return 'Using last known distance';
-    } else if (status == DistanceStatus.tooClose) {
+    if (status == DistanceStatus.tooClose) {
       return 'Too close to screen';
     } else if (status == DistanceStatus.tooFar) {
       return 'Too far from screen';
     } else {
-      return 'Adjust your position';
+      return 'Adjust your distance';
     }
   }
 
@@ -150,27 +154,28 @@ class DistanceHelper {
 
   /// Check if distance should trigger pause based on test type
   /// More lenient than calibration requirements
+  /// Check if distance should trigger pause based on test type
+  /// More lenient than calibration requirements
+  /// Check if distance should trigger pause based on test type
+  /// More lenient than calibration requirements
   static bool shouldPauseTestForDistance(
     double currentDistance,
     DistanceStatus status,
     String testType,
   ) {
-    // DON'T pause if face is detected but landmarks are missing
-    // This allows tests to continue when user covers one eye
-    if (status == DistanceStatus.faceDetectedNoDistance) {
+    // ✅ SIMPLIFIED: Never pause for face detection issues
+    // Only pause if distance is measurable AND too close
+
+    if (currentDistance <= 0) {
+      // No valid distance reading - don't pause, let it continue
       return false;
     }
 
-    // Pause only if completely no face detected AND no cached distance
-    if (status == DistanceStatus.noFaceDetected && currentDistance <= 0) {
-      return true;
-    }
-
-    // Check test-specific minimum distance
+    // ✅ Check test-specific MINIMUM distance only
     final minDistance = getMinimumDistanceForTest(testType);
 
-    // Pause if below minimum (e.g., < 35cm for short distance tests)
-    if (currentDistance > 0 && currentDistance < minDistance) {
+    // ✅ Pause ONLY if too close (below minimum)
+    if (currentDistance < minDistance) {
       return true;
     }
 

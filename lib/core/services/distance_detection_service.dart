@@ -10,7 +10,13 @@ import 'dart:math' as math;
 /// Distance status for visual feedback
 /// - noFaceDetected: No face visible in camera at all
 /// - faceDetectedNoDistance: Face is visible but can't calculate distance (e.g., one eye covered)
-enum DistanceStatus { tooClose, tooFar, optimal, noFaceDetected, faceDetectedNoDistance }
+enum DistanceStatus {
+  tooClose,
+  tooFar,
+  optimal,
+  noFaceDetected,
+  faceDetectedNoDistance,
+}
 
 /// Distance detection service using Google ML Kit Face Detection
 /// Uses interpupillary distance (IPD) for accurate distance calculation
@@ -185,8 +191,13 @@ class DistanceDetectionService {
           // Face detected but can't calculate distance (e.g., one eye covered)
           // Use last known good distance instead of showing "no face detected"
           if (_lastKnownGoodDistance > 0) {
-            debugPrint('[DistanceService] Face detected but landmarks missing - using cached distance: $_lastKnownGoodDistance cm');
-            _updateDistance(_lastKnownGoodDistance, DistanceStatus.faceDetectedNoDistance);
+            debugPrint(
+              '[DistanceService] Face detected but landmarks missing - using cached distance: $_lastKnownGoodDistance cm',
+            );
+            _updateDistance(
+              _lastKnownGoodDistance,
+              DistanceStatus.faceDetectedNoDistance,
+            );
             // Don't increment errors - face IS detected
           } else {
             _updateDistance(0, DistanceStatus.noFaceDetected);
@@ -219,14 +230,15 @@ class DistanceDetectionService {
     }
   }
 
-  /// Calculate distance using interpupillary distance (IPD)
+  // Calculate distance using interpupillary distance (IPD)
   double _calculateDistanceFromFace(Face face) {
     try {
       final leftEye = face.landmarks[FaceLandmarkType.leftEye];
       final rightEye = face.landmarks[FaceLandmarkType.rightEye];
 
+      // ✅ FIX: If landmarks are missing, return -1 (don't use face width fallback)
       if (leftEye == null || rightEye == null) {
-        return _calculateDistanceFromFaceWidth(face.boundingBox.width);
+        return -1.0;
       }
 
       final dx = leftEye.position.x - rightEye.position.x;
@@ -245,21 +257,6 @@ class DistanceDetectionService {
       debugPrint('[DistanceService] IPD calculation error: $e');
       return -1.0;
     }
-  }
-
-  /// Fallback: Calculate distance using face width
-  double _calculateDistanceFromFaceWidth(double faceWidthPixels) {
-    if (faceWidthPixels <= 0) return -1.0;
-
-    const double averageFaceWidthCm = 14.0;
-    const double focalLengthPixels = 600.0;
-
-    final distanceCm =
-        (averageFaceWidthCm * focalLengthPixels) / faceWidthPixels;
-
-    if (distanceCm < 10 || distanceCm > 300) return -1.0;
-
-    return distanceCm;
   }
 
   /// Update distance and notify listeners

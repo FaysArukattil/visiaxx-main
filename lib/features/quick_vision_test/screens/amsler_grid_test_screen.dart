@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
@@ -53,6 +55,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   final List<DistortionPoint> _rightEyePoints = [];
   final List<DistortionPoint> _leftEyePoints = [];
 
+  // Auto-navigation
+  Timer? _autoNavigationTimer;
+  int _autoNavigationCountdown = 3;
+  DateTime? _lastShouldPauseTime;
   // Questions
   bool? _allLinesStraight;
   bool? _hasMissingAreas;
@@ -143,12 +149,18 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   void _showCoverEyeInstruction(String eyeToCover) {
+    // ✅ FIX: Stop distance monitoring before showing cover eye instruction
+    _distanceService.stopMonitoring();
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => AmslerGridCoverEyeScreen(
           eyeToCover: eyeToCover,
           onContinue: () {
             Navigator.of(context).pop();
+            // ✅ FIX: Resume monitoring AFTER user confirms they've covered their eye
+            _startContinuousDistanceMonitoring();
+
             if (eyeToCover == 'left') {
               _startTest();
             } else {
@@ -161,44 +173,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   /// Start continuous distance monitoring
+  /// Start continuous distance monitoring
+  /// Start continuous distance monitoring
   Future<void> _startContinuousDistanceMonitoring() async {
-    _distanceService.onDistanceUpdate = (distance, status) {
-      if (!mounted) return;
-
-      final shouldPause = DistanceHelper.shouldPauseTestForDistance(
-        distance,
-        status,
-        'amsler_grid',
-      );
-
-      setState(() {
-        _currentDistance = distance;
-        _distanceStatus = status;
-      });
-
-      // ✅ Check if skip is active before pausing
-      _skipManager.canShowDistanceWarning(DistanceTestType.amslerGrid).then((
-        canShow,
-      ) {
-        if (!mounted) return;
-
-        // ✅ AUTO PAUSE/RESUME during active test
-        if (_testingStarted && !_testComplete && !_eyeSwitchPending) {
-          if (shouldPause && !_isTestPausedForDistance && canShow) {
-            _pauseTestForDistance();
-          } else if (!shouldPause && _isTestPausedForDistance) {
-            _resumeTestAfterDistance();
-          }
-        }
-      });
-
-      // Speak guidance when paused and status changes
-      if (_isTestPausedForDistance && status != _lastSpokenDistanceStatus) {
-        _lastSpokenDistanceStatus = status;
-        _speakDistanceGuidance(status);
-      }
-    };
-
+    _distanceService.onDistanceUpdate = _handleDistanceUpdate;
     _distanceService.onError = (msg) => debugPrint('[DistanceMonitor] $msg');
 
     if (!_distanceService.isReady) {
@@ -207,6 +185,49 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
     if (!_distanceService.isMonitoring) {
       await _distanceService.startMonitoring();
+    }
+  }
+
+  /// Handle real-time distance updates with debouncing
+  /// Handle real-time distance updates with debouncing
+  void _handleDistanceUpdate(double distance, DistanceStatus status) {
+    if (!mounted) return;
+
+    // ✅ SIMPLIFIED: Only check if distance is too close
+    final shouldPause = DistanceHelper.shouldPauseTestForDistance(
+      distance,
+      status,
+      'amsler_grid',
+    );
+
+    setState(() {
+      _currentDistance = distance;
+      _distanceStatus = status;
+    });
+
+    // ✅ Only trigger pause/resume during active testing
+    if (_testingStarted && !_testComplete && !_eyeSwitchPending) {
+      if (shouldPause && !_isTestPausedForDistance) {
+        _lastShouldPauseTime ??= DateTime.now();
+        final timeSinceFirst = DateTime.now().difference(_lastShouldPauseTime!);
+
+        // ✅ Only show overlay after 1.5 seconds of continuous issue
+        if (timeSinceFirst >= const Duration(milliseconds: 1500)) {
+          _skipManager.canShowDistanceWarning(DistanceTestType.amslerGrid).then(
+            (canShow) {
+              if (!mounted) return;
+              if (canShow) {
+                _pauseTestForDistance();
+              }
+            },
+          );
+        }
+      } else if (!shouldPause) {
+        _lastShouldPauseTime = null;
+        if (_isTestPausedForDistance) {
+          _resumeTestAfterDistance();
+        }
+      }
     }
   }
 
@@ -222,10 +243,9 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         _ttsService.speak('Good, distance is correct');
         break;
       case DistanceStatus.noFaceDetected:
-        _ttsService.speak('Position your face in view');
-        break;
       case DistanceStatus.faceDetectedNoDistance:
-        // Don't speak - using cached distance, test can continue
+        // ✅ Don't speak for face detection issues during test
+        // Calibration screen handles its own guidance
         break;
     }
   }
@@ -448,28 +468,26 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     if (_currentEye == 'right') {
       _showCoverEyeInstruction('right');
     } else {
+      // ✅ Both eyes complete
       _distanceService.stopMonitoring();
       setState(() {
         _testComplete = true;
       });
-      
-      // ✅ FIX: Specific completion message
+
+      // ✅ FIX: Auto-continue for BOTH Quick and Comprehensive tests
       if (provider.isComprehensiveTest) {
         _ttsService.speak(
           'Amsler grid test completed. Moving to Contrast Sensitivity Test.',
         );
       } else {
-        _ttsService.speak(TtsService.testComplete);
+        // ✅ Quick Test: Auto-continue to results
+        _ttsService.speak(
+          'Amsler grid test completed. Preparing your results.',
+        );
       }
 
-      // Auto-continue to Contrast Test after 5 seconds if in comprehensive mode
-      if (provider.isComprehensiveTest) {
-        Future.delayed(const Duration(seconds: 5), () {
-          if (mounted && _testComplete) {
-            _showContrastTransition();
-          }
-        });
-      }
+      // ✅ Start 3-second countdown for auto-navigation
+      _startAutoNavigationTimer();
     }
   }
 
@@ -505,9 +523,36 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     _showContrastTransition();
   }
 
+  void _startAutoNavigationTimer() {
+    _autoNavigationTimer?.cancel();
+
+    setState(() {
+      _autoNavigationCountdown = 3;
+    });
+
+    _autoNavigationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _autoNavigationCountdown--;
+      });
+
+      if (_autoNavigationCountdown <= 0) {
+        timer.cancel();
+        if (!_isNavigatingToNextTest) {
+          _showContrastTransition();
+        }
+      }
+    });
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _autoNavigationTimer?.cancel();
     _distanceService.dispose();
     _ttsService.dispose();
     super.dispose();
@@ -994,14 +1039,69 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 leftResult,
                 AppColors.leftEye,
               ),
+              const SizedBox(height: 48),
 
-              const SizedBox(height: 60),
+              // ✅ ADD: Auto-continue countdown indicator
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.primary,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$_autoNavigationCountdown',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        provider.isComprehensiveTest
+                            ? 'Continuing in $_autoNavigationCountdown...'
+                            : 'Showing results in $_autoNavigationCountdown...',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: provider.isComprehensiveTest
-                      ? _showContrastTransition
-                      : _completeAllTests,
+                  onPressed: () {
+                    _autoNavigationTimer?.cancel();
+                    _showContrastTransition();
+                  },
                   icon: Icon(
                     provider.isComprehensiveTest
                         ? Icons.arrow_forward
@@ -1011,8 +1111,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       provider.isComprehensiveTest
-                          ? 'Continue to Contrast Test'
-                          : 'View Detailed Analysis',
+                          ? 'Continue Now'
+                          : 'View Results Now',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -1089,9 +1189,14 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       40.0,
       testType: 'amsler_grid',
     );
-    final distanceText = DistanceHelper.isFaceDetected(_distanceStatus)
-        ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'Align Face';
+
+    // ✅ SIMPLIFIED: Just show distance or "Measuring..."
+    String distanceText;
+    if (_currentDistance > 0) {
+      distanceText = '${_currentDistance.toStringAsFixed(0)}cm';
+    } else {
+      distanceText = 'Measuring...';
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1119,20 +1224,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   Widget _buildDistanceWarningOverlay() {
-    // ✅ Dynamic messages based on status
-    final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, 40.0);
-    final instruction = DistanceHelper.getDetailedInstruction(40.0);
-    final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
-
-    // ✅ Icon changes based on issue
-    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? Icons.face_retouching_off
-        : Icons.warning_rounded;
-
-    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? AppColors.error
-        : AppColors.warning;
-
     return Container(
       color: Colors.black.withValues(alpha: 0.85),
       child: Center(
@@ -1146,10 +1237,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 60, color: iconColor),
+              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
               const SizedBox(height: 16),
               Text(
-                pauseReason, // ✅ Dynamic
+                'Too Close to Screen',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -1159,18 +1250,16 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                instruction, // ✅ Dynamic
+                'Move back to 40 centimeters for accurate results',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
 
-              // ✅ Only show distance if face is detected
-              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
+              // Current distance display
+              if (_currentDistance > 0) ...[
                 Text(
-                  _currentDistance > 0
-                      ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                      : 'Measuring...',
+                  'Current: ${_currentDistance.toStringAsFixed(0)}cm',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1179,44 +1268,17 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  rangeText, // ✅ Dynamic: "Minimum 40 cm"
+                  'Minimum: 35cm',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
                 ),
-              ] else ...[
-                // ✅ Special message when no face
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Position your face in the camera',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
 
               const SizedBox(height: 20),
-              // ✅ Voice indicator (always show it's listening)
+
+              // Voice indicator (always show it's listening)
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -1229,7 +1291,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   children: [
                     Icon(Icons.mic, color: AppColors.success, size: 18),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Voice recognition active',
                       style: TextStyle(
                         color: AppColors.success,

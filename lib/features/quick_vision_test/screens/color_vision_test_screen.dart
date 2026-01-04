@@ -226,17 +226,24 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _showRightEyeInstruction() {
+    // ✅ FIX: Stop monitoring before cover eye instruction
+    _distanceService.stopMonitoring();
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ColorVisionCoverEyeScreen(
           eyeToCover: 'left',
           onContinue: () {
             Navigator.of(context).pop();
+
             setState(() {
               _phase = TestPhase.rightEyeTest;
               _currentEye = 'right';
               _currentPlateIndex = 0;
             });
+
+            // ✅ FIX: Resume monitoring AFTER user confirms they've covered eye
+            _startContinuousDistanceMonitoring();
             _startEyeTest();
           },
         ),
@@ -245,17 +252,24 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _showLeftEyeInstruction() {
+    // ✅ FIX: Stop monitoring before cover eye instruction
+    _distanceService.stopMonitoring();
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ColorVisionCoverEyeScreen(
           eyeToCover: 'right',
           onContinue: () {
             Navigator.of(context).pop();
+
             setState(() {
               _phase = TestPhase.leftEyeTest;
               _currentEye = 'left';
               _currentPlateIndex = 0;
             });
+
+            // ✅ FIX: Resume monitoring AFTER user confirms they've covered eye
+            _startContinuousDistanceMonitoring();
             _startEyeTest();
           },
         ),
@@ -1109,9 +1123,14 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       40.0,
       testType: 'color_vision',
     );
-    final distanceText = DistanceHelper.isFaceDetected(_distanceStatus)
-        ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'Align Face';
+
+    // ✅ SIMPLIFIED: Just show distance or "Measuring..."
+    String distanceText;
+    if (_currentDistance > 0) {
+      distanceText = '${_currentDistance.toStringAsFixed(0)}cm';
+    } else {
+      distanceText = 'Measuring...';
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1139,19 +1158,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   Widget _buildDistanceWarningOverlay() {
-    final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, 40.0);
-    final instruction = DistanceHelper.getDetailedInstruction(40.0);
-    final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
-
-    // ✅ Icon changes based on issue
-    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? Icons.face_retouching_off
-        : Icons.warning_rounded;
-
-    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? AppColors.error
-        : AppColors.warning;
-
     return Container(
       color: Colors.black.withValues(alpha: 0.85),
       child: Center(
@@ -1165,10 +1171,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 60, color: iconColor),
+              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
               const SizedBox(height: 16),
               Text(
-                pauseReason,
+                'Too Close to Screen',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -1178,18 +1184,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                instruction,
+                'Move back to 40 centimeters for accurate results',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
 
-              // ✅ Only show distance if face is detected
-              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
+              if (_currentDistance > 0) ...[
                 Text(
-                  _currentDistance > 0
-                      ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                      : 'Measuring...',
+                  'Current: ${_currentDistance.toStringAsFixed(0)}cm',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1198,38 +1201,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  rangeText,
+                  'Minimum: 35cm',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
-                  ),
-                ),
-              ] else ...[
-                // ✅ Special message when no face
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Position your face in the camera',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],

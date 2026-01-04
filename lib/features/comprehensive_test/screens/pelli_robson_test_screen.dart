@@ -135,7 +135,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     // Use appropriate test type for distance checking
     // short_distance: minimum 35cm, no upper limit
     // visual_acuity: minimum 80cm for 1m test
-    final testType = _currentMode == 'short' ? 'short_distance' : 'visual_acuity';
+    final testType = _currentMode == 'short'
+        ? 'short_distance'
+        : 'visual_acuity';
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
       status,
@@ -150,13 +152,18 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     if (_isTestActive) {
       if (shouldPause) {
         _lastShouldPauseTime ??= DateTime.now();
-        final durationSinceFirstIssue = DateTime.now().difference(_lastShouldPauseTime!);
-        if (durationSinceFirstIssue >= _distancePauseDebounce && !_isTestPausedForDistance) {
-          _skipManager.canShowDistanceWarning(DistanceTestType.pelliRobson).then((canShow) {
-            if (mounted && canShow) {
-              _pauseTestForDistance();
-            }
-          });
+        final durationSinceFirstIssue = DateTime.now().difference(
+          _lastShouldPauseTime!,
+        );
+        if (durationSinceFirstIssue >= _distancePauseDebounce &&
+            !_isTestPausedForDistance) {
+          _skipManager
+              .canShowDistanceWarning(DistanceTestType.pelliRobson)
+              .then((canShow) {
+                if (mounted && canShow) {
+                  _pauseTestForDistance();
+                }
+              });
         }
       } else {
         _lastShouldPauseTime = null;
@@ -176,7 +183,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _autoAdvanceTimer?.cancel();
     _silenceTimer?.cancel();
     setState(() => _isListening = false);
-    
+
     // TTS guidance
     final target = _currentMode == 'short' ? 40.0 : 100.0;
     _ttsService.speak(
@@ -333,10 +340,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   void _showTestInstructions() {
     setState(() => _mainInstructionsShown = true);
-    
+
     // Stop background distance monitoring during instructions
     _distanceService.stopMonitoring();
-    
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => PelliRobsonInstructionsScreen(
@@ -354,12 +361,16 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _startTest() {
     _fuzzyMatcher.reset();
 
-    // Stop background monitoring during "Cover Eye" instructions
+    // ✅ FIX: Stop background monitoring during "Cover Eye" instructions
     _distanceService.stopMonitoring();
 
     Widget instructionScreen;
-    final String commonTitle = _currentMode == 'short' ? 'Near Contrast Test' : 'Long Distance Contrast Test';
-    final String commonSubtitle = _currentMode == 'short' ? 'Contrast Sensitivity - 40cm' : 'Contrast Sensitivity - 1 Meter';
+    final String commonTitle = _currentMode == 'short'
+        ? 'Near Contrast Test'
+        : 'Long Distance Contrast Test';
+    final String commonSubtitle = _currentMode == 'short'
+        ? 'Contrast Sensitivity - 40cm'
+        : 'Contrast Sensitivity - 1 Meter';
     final double targetDistance = _currentMode == 'short' ? 40.0 : 100.0;
 
     if (_currentEye == 'right') {
@@ -372,10 +383,12 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         targetDistance: targetDistance,
         startButtonText: 'Start Right Eye Test',
         instructionTitle: 'Contrast Test',
-        instructionDescription: 'Read the three letters in each row aloud. The letters will get fainter as you go.',
+        instructionDescription:
+            'Read the three letters in each row aloud. The letters will get fainter as you go.',
         instructionIcon: Icons.record_voice_over,
         onContinue: () {
           Navigator.of(context).pop();
+          // ✅ FIX: Resume monitoring AFTER user confirms they've covered eye
           _actuallyStartTest();
         },
       );
@@ -389,24 +402,26 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         targetDistance: targetDistance,
         startButtonText: 'Start Left Eye Test',
         instructionTitle: 'Contrast Test',
-        instructionDescription: 'Read the three letters in each row aloud. The letters will get fainter as you go.',
+        instructionDescription:
+            'Read the three letters in each row aloud. The letters will get fainter as you go.',
         instructionIcon: Icons.record_voice_over,
         onContinue: () {
           Navigator.of(context).pop();
+          // ✅ FIX: Resume monitoring AFTER user confirms they've covered eye
           _actuallyStartTest();
         },
       );
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => instructionScreen),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => instructionScreen));
   }
 
   void _actuallyStartTest() {
     // Resume distance monitoring as the test is now active
     _startContinuousDistanceMonitoring();
-    
+
     setState(() {
       _showingInstructions = false;
       _isTestActive = true;
@@ -440,14 +455,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _recognizedText = '';
     _speechDetected = false;
     setState(() {});
-    
+
     _scrollToCurrentTriplet();
     _startListeningForTriplet();
   }
 
   void _scrollToCurrentTriplet() {
     if (!_scrollController.hasClients) return;
-    
+
     // Each triplet row is roughly 100-150 pixels in height (padding + content)
     // We want to center the active one.
     final offset = _currentTripletIndex * 120.0;
@@ -570,7 +585,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _transitionToEye(String eye, String mode) {
     // Only calibrate if the distance mode changes (short->long or initial)
     final bool modeChanged = mode != _currentMode;
-    
+
     setState(() {
       _currentEye = eye;
       _currentMode = mode;
@@ -757,7 +772,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               Text(
                 '${_currentEye.toUpperCase()} EYE',
                 style: TextStyle(
-                  color: _currentEye == 'right' ? AppColors.rightEye : AppColors.leftEye,
+                  color: _currentEye == 'right'
+                      ? AppColors.rightEye
+                      : AppColors.leftEye,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -839,7 +856,12 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
-              child: _buildTripletRow(triplet, fontSize, isCurrent, isCompleted),
+              child: _buildTripletRow(
+                triplet,
+                fontSize,
+                isCurrent,
+                isCompleted,
+              ),
             );
           }).toList(),
         ),
@@ -855,10 +877,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   ) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isCurrent
             ? AppColors.primary.withValues(alpha: 0.05)
@@ -941,9 +960,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _currentDistance,
       target,
     );
-    final distanceText = _currentDistance > 0
-        ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'No face';
+
+    // ✅ SIMPLIFIED: Just show distance or "Measuring..."
+    String distanceText;
+    if (_currentDistance > 0) {
+      distanceText = '${_currentDistance.toStringAsFixed(0)}cm';
+    } else {
+      distanceText = 'Measuring...';
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -972,8 +996,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   Widget _buildDistanceWarningOverlay() {
     final target = _currentMode == 'short' ? 40.0 : 100.0;
-    final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, target);
-    final instruction = DistanceHelper.getDetailedInstruction(target);
 
     return Container(
       color: Colors.black.withValues(alpha: 0.85),
@@ -988,63 +1010,46 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.warning_rounded,
-                size: 60,
-                color: AppColors.warning,
-              ),
+              Icon(Icons.warning_rounded, size: 60, color: AppColors.warning),
               const SizedBox(height: 16),
-              const Text(
-                'Test Paused',
+              Text(
+                'Too Close to Screen',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: AppColors.error,
                 ),
-              ),
-              const SizedBox(height: 12),
-              // ✅ Real-time distance display
-              Builder(builder: (context) {
-                final target = _currentMode == 'short' ? 40.0 : 100.0;
-                final distanceText = _currentDistance > 0
-                    ? '${_currentDistance.toStringAsFixed(0)}cm'
-                    : 'No face detected';
-                final distanceColor = DistanceHelper.getDistanceColor(_currentDistance, target);
-                
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: distanceColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: distanceColor, width: 2),
-                  ),
-                  child: Text(
-                    'Current: $distanceText',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: distanceColor,
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 8),
-              Text(
-                pauseReason,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
-                instruction,
+                'Move back to ${target.toInt()} centimeters for accurate results',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
+              const SizedBox(height: 16),
+
+              if (_currentDistance > 0) ...[
+                Text(
+                  'Current: ${_currentDistance.toStringAsFixed(0)}cm',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Minimum: ${_currentMode == 'short' ? '35cm' : '80cm'}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 20),
-              // ✅ Voice indicator (always show it's listening)
+
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -1057,7 +1062,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   children: [
                     Icon(Icons.mic, color: AppColors.success, size: 18),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Voice recognition active',
                       style: TextStyle(
                         color: AppColors.success,
