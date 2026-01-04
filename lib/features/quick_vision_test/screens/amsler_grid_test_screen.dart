@@ -391,36 +391,85 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   Future<String?> _captureGridImage() async {
     try {
+      debugPrint('========================================');
+      debugPrint('🖼️ CAPTURING AMSLER GRID IMAGE');
+      debugPrint('========================================');
+
       final boundary =
           _gridKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) return null;
 
-      final image = await boundary.toImage(pixelRatio: 1.5);
+      if (boundary == null) {
+        debugPrint('❌ Boundary is NULL - cannot capture image');
+        return null;
+      }
+
+      debugPrint('✅ Boundary found, capturing image...');
+
+      final image = await boundary.toImage(
+        pixelRatio: 2.5,
+      ); // Increased quality
+      debugPrint('✅ Image captured: ${image.width}x${image.height}');
+
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) return null;
+      if (byteData == null) {
+        debugPrint('❌ ByteData is NULL - conversion failed');
+        return null;
+      }
+
+      debugPrint('✅ ByteData created: ${byteData.lengthInBytes} bytes');
 
       final bytes = byteData.buffer.asUint8List();
       final directory = await getApplicationDocumentsDirectory();
       final fileName =
           'amsler_${_currentEye}_${DateTime.now().millisecondsSinceEpoch}.png';
-      final file = File('${directory.path}/$fileName');
+      final filePath = '${directory.path}/$fileName';
+
+      debugPrint('📁 Saving to: $filePath');
+
+      final file = File(filePath);
       await file.writeAsBytes(bytes);
 
-      debugPrint('[AmslerGrid] Captured image saved at: ${file.path}');
-      return file.path;
-    } catch (e) {
-      debugPrint('[AmslerGrid] Error capturing image: $e');
+      // Verify the file was actually saved
+      final exists = await file.exists();
+      final fileSize = exists ? await file.length() : 0;
+
+      debugPrint('========================================');
+      debugPrint('✅ IMAGE SAVED SUCCESSFULLY');
+      debugPrint('   Path: $filePath');
+      debugPrint('   Exists: $exists');
+      debugPrint('   Size: $fileSize bytes');
+      debugPrint('   Eye: $_currentEye');
+      debugPrint('========================================');
+
+      return filePath;
+    } catch (e, stackTrace) {
+      debugPrint('========================================');
+      debugPrint('❌ ERROR CAPTURING AMSLER IMAGE');
+      debugPrint('   Error: $e');
+      debugPrint('   StackTrace: $stackTrace');
+      debugPrint('========================================');
       return null;
     }
   }
 
   Future<void> _completeCurrentEye() async {
+    debugPrint('========================================');
+    debugPrint('📊 COMPLETING EYE TEST: $_currentEye');
+    debugPrint('========================================');
+
     // Capture the grid image before saving
     String? imagePath;
     try {
+      debugPrint('🖼️ Starting image capture...');
       imagePath = await _captureGridImage();
+
+      if (imagePath != null) {
+        debugPrint('✅ Image captured successfully: $imagePath');
+      } else {
+        debugPrint('⚠️ Image capture returned NULL');
+      }
     } catch (e) {
-      debugPrint('[AmslerGrid] Error capturing grid image: $e');
+      debugPrint('❌ Error capturing grid image: $e');
     }
 
     // Save result for current eye
@@ -451,6 +500,15 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       description = 'Patient reported: ${issues.join(', ')}';
     }
 
+    debugPrint('📋 Creating AmslerGridResult:');
+    debugPrint('   Eye: $_currentEye');
+    debugPrint('   Image Path: $imagePath');
+    debugPrint('   Has Distortions: $hasDistortions');
+    debugPrint('   Has Missing: $hasMissing');
+    debugPrint('   Has Blurry: $hasBlurry');
+    debugPrint('   Points Count: ${points.length}');
+    debugPrint('   Status: $status');
+
     final result = AmslerGridResult(
       eye: _currentEye,
       hasDistortions: hasDistortions,
@@ -462,31 +520,31 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       annotatedImagePath: imagePath,
     );
 
+    debugPrint('💾 Saving result to TestSessionProvider...');
     final provider = context.read<TestSessionProvider>();
     provider.setAmslerGridResult(result);
+    debugPrint('✅ Result saved to provider');
+    debugPrint('========================================');
 
     if (_currentEye == 'right') {
       _showCoverEyeInstruction('right');
     } else {
-      // ✅ Both eyes complete
+      // Both eyes complete
       _distanceService.stopMonitoring();
       setState(() {
         _testComplete = true;
       });
 
-      // ✅ FIX: Auto-continue for BOTH Quick and Comprehensive tests
       if (provider.isComprehensiveTest) {
         _ttsService.speak(
           'Amsler grid test completed. Moving to Contrast Sensitivity Test.',
         );
       } else {
-        // ✅ Quick Test: Auto-continue to results
         _ttsService.speak(
           'Amsler grid test completed. Preparing your results.',
         );
       }
 
-      // ✅ Start 3-second countdown for auto-navigation
       _startAutoNavigationTimer();
     }
   }

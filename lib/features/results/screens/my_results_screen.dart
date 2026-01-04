@@ -121,9 +121,15 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
       if (mounted) {
         UIUtils.hideProgressDialog(context);
+
+        // Show location info
+        final String location = generatedPath.contains('/Download')
+            ? 'Downloads folder'
+            : 'App folder';
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('PDF saved to Downloads'),
+            content: Text('PDF saved to $location'),
             backgroundColor: AppColors.success,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
@@ -139,10 +145,16 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     } catch (e) {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
+
+        final errorMessage = e.toString().contains('Permission denied')
+            ? 'Storage permission denied. PDF saved to app folder instead.'
+            : 'Failed to generate PDF: $e';
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate PDF: $e'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 5),
           ),
         );
       }

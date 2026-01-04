@@ -14,14 +14,19 @@ class TestResultService {
 
   /// Save a complete test result to Firebase
   /// Returns the document ID of the saved result
+  /// Save a complete test result to Firebase
+  /// Returns the document ID of the saved result
   Future<String> saveTestResult({
     required String userId,
     required TestResultModel result,
   }) async {
     try {
       debugPrint('[TestResultService] Saving result for user: $userId');
+      debugPrint(
+        '[TestResultService] ℹ️ Note: Amsler images will NOT be uploaded (storage disabled)',
+      );
 
-      // 1. Upload images if they exist
+      // 1. Skip image upload (disabled for cost savings)
       final updatedResult = await _uploadImagesIfExist(userId, result);
 
       final docRef = await _firestore
@@ -42,46 +47,14 @@ class TestResultService {
     String userId,
     TestResultModel result,
   ) async {
-    final amslerRight = result.amslerGridRight;
-    final amslerLeft = result.amslerGridLeft;
-
-    String? rightUrl;
-    String? leftUrl;
-
-    if (amslerRight?.annotatedImagePath != null &&
-        !amslerRight!.annotatedImagePath!.startsWith('http')) {
-      rightUrl = await _uploadFile(
-        userId,
-        amslerRight.annotatedImagePath!,
-        'amsler_right',
-      );
-    }
-
-    if (amslerLeft?.annotatedImagePath != null &&
-        !amslerLeft!.annotatedImagePath!.startsWith('http')) {
-      leftUrl = await _uploadFile(
-        userId,
-        amslerLeft.annotatedImagePath!,
-        'amsler_left',
-      );
-    }
-
-    if (rightUrl == null && leftUrl == null) return result;
-
-    return result.copyWith(
-      amslerGridRight: rightUrl != null
-          ? amslerRight?.copyWith(
-              annotatedImagePath: rightUrl,
-              firebaseImageUrl: rightUrl,
-            )
-          : amslerRight,
-      amslerGridLeft: leftUrl != null
-          ? amslerLeft?.copyWith(
-              annotatedImagePath: leftUrl,
-              firebaseImageUrl: leftUrl,
-            )
-          : amslerLeft,
+    // ⚠️ FIREBASE STORAGE DISABLED - Skip image uploads to save costs
+    // Images are kept as local paths only and will NOT be available on other devices
+    debugPrint(
+      '[TestResultService] ℹ️ Image upload disabled - keeping local paths only',
     );
+
+    // Return result unchanged - no Firebase upload
+    return result;
   }
 
   Future<String?> _uploadFile(
@@ -94,7 +67,7 @@ class TestResultService {
       if (!await file.exists()) return null;
 
       final fileName = '${type}_${DateTime.now().millisecondsSinceEpoch}.png';
-      
+
       // Use consolidated storage service
       return await _storageService.uploadImage(
         userId: userId,

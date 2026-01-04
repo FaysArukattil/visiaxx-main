@@ -19,22 +19,59 @@ import '../../data/models/short_distance_result.dart';
 /// Service for generating PDF reports of test results
 class PdfExportService {
   /// Generate and download PDF report to device's Downloads folder
+  /// Generate and download PDF report to device's Downloads folder
   Future<String> generateAndDownloadPdf(TestResultModel result) async {
-    final String filePath = await getExpectedFilePath(result);
-    final File file = File(filePath);
+    try {
+      final String filePath = await getExpectedFilePath(result);
+      final File file = File(filePath);
 
-    // If file already exists, return its path without regenerating
-    if (await file.exists()) {
-      debugPrint(
-        '[PdfExportService] File already exists at: $filePath. Skipping generation.',
-      );
-      return filePath;
+      // If file already exists, return its path without regenerating
+      if (await file.exists()) {
+        debugPrint(
+          '[PdfExportService] File already exists at: $filePath. Skipping generation.',
+        );
+        return filePath;
+      }
+
+      // Ensure directory exists
+      final directory = file.parent;
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+
+      final pdf = await _buildPdfDocument(result);
+      await file.writeAsBytes(await pdf.save());
+
+      debugPrint('[PdfExportService] ✅ PDF saved to: $filePath');
+      return file.path;
+    } catch (e) {
+      debugPrint('[PdfExportService] ❌ Error generating PDF: $e');
+
+      // Fallback: Try app-specific directory
+      try {
+        final appDir = await getApplicationDocumentsDirectory();
+        final name = result.profileName.replaceAll(
+          RegExp(r'[^a-zA-Z0-9]'),
+          '_',
+        );
+        final dateTime = DateFormat('yyyyMMdd_HHmmss').format(result.timestamp);
+        final filename = 'VisionTest_$name\_$dateTime.pdf';
+        final fallbackPath = '${appDir.path}/$filename';
+
+        final file = File(fallbackPath);
+        final pdf = await _buildPdfDocument(result);
+        await file.writeAsBytes(await pdf.save());
+
+        debugPrint(
+          '[PdfExportService] ✅ PDF saved to fallback location: $fallbackPath',
+        );
+        return fallbackPath;
+      } catch (fallbackError) {
+        throw Exception(
+          'Failed to save PDF: $e. Fallback also failed: $fallbackError',
+        );
+      }
     }
-
-    final pdf = await _buildPdfDocument(result);
-    await file.writeAsBytes(await pdf.save());
-
-    return file.path;
   }
 
   /// Get the expected file path for a test result PDF
@@ -49,12 +86,23 @@ class PdfExportService {
   }
 
   /// Get platform-specific downloads directory path
+  /// Get platform-specific downloads directory path
   Future<String> getDownloadsDirectoryPath() async {
     Directory? downloadsDir;
+
     if (Platform.isAndroid) {
-      await Permission.storage.request();
-      downloadsDir = Directory('/storage/emulated/0/Download');
-      if (!await downloadsDir.exists()) {
+      // Request storage permission
+      final status = await Permission.storage.request();
+
+      if (status.isGranted) {
+        // Try to use Downloads folder
+        downloadsDir = Directory('/storage/emulated/0/Download');
+        if (!await downloadsDir.exists()) {
+          // Fallback to external storage
+          downloadsDir = await getExternalStorageDirectory();
+        }
+      } else {
+        // Permission denied - use app-specific directory (no permission needed)
         downloadsDir = await getExternalStorageDirectory();
       }
     } else if (Platform.isIOS) {
@@ -62,6 +110,7 @@ class PdfExportService {
     } else {
       downloadsDir = await getApplicationDocumentsDirectory();
     }
+
     return downloadsDir?.path ?? '';
   }
 
@@ -1290,46 +1339,66 @@ class PdfExportService {
     String? localPath,
     String? remoteUrl,
   ) async {
-    // 1. Try local path first
-    if (localPath != null &&
-        localPath.isNotEmpty &&
-        !localPath.startsWith('http')) {
-      try {
-        final file = File(localPath);
-        if (await file.exists()) {
-          return await file.readAsBytes();
+    // 1. Try local path first (PRIORITY)
+    if (localPath != null && localPath.isNotEmpty) {
+      // Check if it's a URL stored in localPath (backward compatibility)
+      if (localPath.startsWith('http')) {
+        try {
+          debugPrint(
+            '[PdfExportService] Fetching image from URL in localPath: $localPath',
+          );
+          final response = await http.get(Uri.parse(localPath));
+          if (response.statusCode == 200) {
+            debugPrint(
+              '[PdfExportService] ✅ Downloaded ${response.bodyBytes.length} bytes',
+            );
+            return response.bodyBytes;
+          }
+        } catch (e) {
+          debugPrint(
+            '[PdfExportService] ❌ Error fetching URL from localPath: $e',
+          );
         }
-      } catch (e) {
-        print('[PdfExportService] Error reading local image: $e');
+      } else {
+        // It's a local file path
+        try {
+          final file = File(localPath);
+          if (await file.exists()) {
+            final bytes = await file.readAsBytes();
+            debugPrint(
+              '[PdfExportService] ✅ Read ${bytes.length} bytes from local file',
+            );
+            return bytes;
+          } else {
+            debugPrint(
+              '[PdfExportService] ⚠️ Local file does not exist: $localPath',
+            );
+          }
+        } catch (e) {
+          debugPrint('[PdfExportService] ❌ Error reading local file: $e');
+        }
       }
     }
 
-    // 2. Fallback to remote URL
+    // 2. Try remote URL as fallback
     if (remoteUrl != null &&
         remoteUrl.isNotEmpty &&
         remoteUrl.startsWith('http')) {
       try {
+        debugPrint('[PdfExportService] Fetching from remoteUrl: $remoteUrl');
         final response = await http.get(Uri.parse(remoteUrl));
         if (response.statusCode == 200) {
+          debugPrint(
+            '[PdfExportService] ✅ Downloaded ${response.bodyBytes.length} bytes from remote',
+          );
           return response.bodyBytes;
         }
       } catch (e) {
-        print('[PdfExportService] Error fetching remote image: $e');
+        debugPrint('[PdfExportService] ❌ Error fetching remote image: $e');
       }
     }
 
-    // 3. Fallback: if localPath is actually a URL (backward compatibility)
-    if (localPath != null && localPath.startsWith('http')) {
-      try {
-        final response = await http.get(Uri.parse(localPath));
-        if (response.statusCode == 200) {
-          return response.bodyBytes;
-        }
-      } catch (e) {
-        print('[PdfExportService] Error fetching localPath as URL: $e');
-      }
-    }
-
+    debugPrint('[PdfExportService] ⚠️ No image bytes available');
     return null;
   }
 }
