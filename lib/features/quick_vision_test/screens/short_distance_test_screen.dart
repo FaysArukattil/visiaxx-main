@@ -67,6 +67,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   // Text input
   final TextEditingController _inputController = TextEditingController();
+  final FocusNode _inputFocusNode = FocusNode();
   bool _showKeyboard = false;
 
   // Result feedback
@@ -340,6 +341,32 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     });
   }
 
+  /// ✅ NEW: Normalize speech for common recognition errors
+  String _normalizeInput(String input) {
+    String normalized = input.toLowerCase().trim();
+
+    // Replace punctuation
+    normalized = normalized.replaceAll(RegExp(r'[.,!?]'), '');
+
+    // Handle common misrecognitions
+    final replacements = {
+      'eye': 'i',
+      'mission': 'vision',
+      'seen': 'seeing',
+      'light': 'light',
+      'life': 'life',
+    };
+
+    List<String> words = normalized.split(' ');
+    for (int i = 0; i < words.length; i++) {
+      if (replacements.containsKey(words[i])) {
+        words[i] = replacements[words[i]]!;
+      }
+    }
+
+    return words.join(' ');
+  }
+
   /// Process the sentence response
   void _processSentence(String userSaid) {
     _listeningTimer?.cancel();
@@ -352,10 +379,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     setState(() => _waitingForResponse = false);
 
     final sentence = TestConstants.shortDistanceSentences[_currentScreen];
+
+    // ✅ Normalize both for comparison
+    final normalizedExpected = _normalizeInput(sentence.sentence);
+    final normalizedUser = _normalizeInput(userSaid);
+
     final matchResult = FuzzyMatcher.getMatchResult(
-      sentence.sentence,
-      userSaid,
-      threshold: 70.0,
+      normalizedExpected,
+      normalizedUser,
+      threshold:
+          65.0, // Reduced slightly to be more forgiving with normalization
     );
 
     final isCorrect = matchResult.passed;
@@ -492,6 +525,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     _autoNavigationTimer?.cancel();
     _speechChunks.clear();
     _inputController.dispose();
+    _inputFocusNode.dispose();
     _ttsService.dispose();
     _speechService.dispose();
     _distanceService.stopMonitoring().then((_) {
@@ -514,6 +548,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         _showExitConfirmation();
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         backgroundColor: AppColors.testBackground,
         appBar: AppBar(
           title: const Text('Reading Test'),
@@ -530,9 +565,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                 children: [
                   _buildProgressBar(),
                   Expanded(
-                    child: _showSentence
-                        ? _buildSentenceView()
-                        : const Center(child: CircularProgressIndicator()),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: _showSentence
+                          ? _buildSentenceView()
+                          : const Center(child: CircularProgressIndicator()),
+                    ),
                   ),
                   if (_showResult) _buildResultFeedback(),
                 ],
@@ -889,12 +927,13 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                           });
                           if (_showKeyboard) {
                             _speechService.cancel();
-                            final focusScope = FocusScope.of(context);
+                            // ✅ FIXED: Request focus with delay
                             Future.delayed(
-                              const Duration(milliseconds: 100),
+                              const Duration(milliseconds: 150),
                               () {
-                                if (!mounted) return;
-                                focusScope.requestFocus(FocusNode());
+                                if (mounted) {
+                                  _inputFocusNode.requestFocus();
+                                }
                               },
                             );
                           }
@@ -926,6 +965,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                       ),
                       child: TextField(
                         controller: _inputController,
+                        focusNode: _inputFocusNode,
                         autofocus: true,
                         maxLines: 2,
                         textAlign: TextAlign.center,

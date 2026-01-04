@@ -85,7 +85,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
       _speakCurrentStep();
     } else {
       _ttsService.stop();
-      Navigator.pushReplacementNamed(context, '/cover-left-eye-instruction');
+      Navigator.pushReplacementNamed(context, '/visual-acuity-test');
     }
   }
 

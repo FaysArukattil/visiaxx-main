@@ -21,6 +21,7 @@ import '../../../data/models/visiual_acuity_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import 'distance_calibration_screen.dart';
 import 'cover_right_eye_instruction_screen.dart';
+import 'cover_left_eye_instruction_screen.dart';
 import '../../../core/services/distance_skip_manager.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
@@ -355,7 +356,22 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     });
     // Start continuous distance monitoring after calibration
     _startContinuousDistanceMonitoring();
-    _startEyeTest();
+
+    // ✅ FIX: Show cover eye instruction AFTER calibration for right eye
+    if (_currentEye == 'right') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => CoverLeftEyeInstructionScreen(
+            onContinue: () {
+              Navigator.of(context).pop();
+              _startEyeTest();
+            },
+          ),
+        ),
+      );
+    } else {
+      _startEyeTest();
+    }
   }
 
   /// Start continuous distance monitoring during the test

@@ -56,6 +56,12 @@ class DistanceDetectionService {
   int _consecutiveErrors = 0;
   static const int _maxConsecutiveErrors = 10;
 
+  // ✅ New: Face-width fallback for when eyes are covered
+  double _calibratedFaceWidthRatio = 1.0;
+  bool _isFaceWidthCalibrated = false;
+  static const double _averageFaceWidthCm = 14.3; // Average human face width
+  double _lastKnownFaceWidth = 0.0;
+
   DistanceDetectionService({
     this.targetDistanceCm = _defaultTargetDistanceCm,
     this.toleranceCm = _defaultToleranceCm,
@@ -230,32 +236,80 @@ class DistanceDetectionService {
     }
   }
 
-  // Calculate distance using interpupillary distance (IPD)
+  // Calculate distance using interpupillary distance (IPD) or face width fallback
   double _calculateDistanceFromFace(Face face) {
     try {
       final leftEye = face.landmarks[FaceLandmarkType.leftEye];
       final rightEye = face.landmarks[FaceLandmarkType.rightEye];
+      final faceWidth = face.boundingBox.width;
 
-      // ✅ FIX: If landmarks are missing, return -1 (don't use face width fallback)
-      if (leftEye == null || rightEye == null) {
-        return -1.0;
+      // 1. Try IPD method first (most accurate)
+      if (leftEye != null && rightEye != null) {
+        final dx = leftEye.position.x - rightEye.position.x;
+        final dy = leftEye.position.y - rightEye.position.y;
+        final pixelIPD = math.sqrt(dx * dx + dy * dy);
+
+        if (pixelIPD > 0) {
+          const double focalLengthPixels = 600.0;
+          final distanceCm = (_averageIPDCm * focalLengthPixels) / pixelIPD;
+
+          // ✅ Calibrate face-width method against this accurate IPD distance
+          if (faceWidth > 0 && distanceCm > 10 && distanceCm < 300) {
+            _calibrateFaceWidth(distanceCm, faceWidth);
+          }
+
+          if (distanceCm >= 10 && distanceCm <= 300) {
+            return distanceCm;
+          }
+        }
       }
 
-      final dx = leftEye.position.x - rightEye.position.x;
-      final dy = leftEye.position.y - rightEye.position.y;
-      final pixelIPD = math.sqrt(dx * dx + dy * dy);
+      // 2. Fallback to Face Width method if one/both eyes obscured
+      if (faceWidth > 0) {
+        final fallbackDistance = _calculateDistanceFromFaceWidth(faceWidth);
+        if (fallbackDistance >= 10 && fallbackDistance <= 300) {
+          return fallbackDistance;
+        }
+      }
 
-      if (pixelIPD <= 0) return -1.0;
-
-      const double focalLengthPixels = 600.0;
-      final distanceCm = (_averageIPDCm * focalLengthPixels) / pixelIPD;
-
-      if (distanceCm < 10 || distanceCm > 300) return -1.0;
-
-      return distanceCm;
-    } catch (e) {
-      debugPrint('[DistanceService] IPD calculation error: $e');
       return -1.0;
+    } catch (e) {
+      debugPrint('[DistanceService] calculation error: $e');
+      return -1.0;
+    }
+  }
+
+  /// ✅ NEW: Calculate distance based on face width (fallback)
+  double _calculateDistanceFromFaceWidth(double faceWidthPixels) {
+    if (faceWidthPixels <= 0) return -1.0;
+
+    // Use same focal length approach
+    const double focalLengthPixels = 600.0;
+    double rawDistance =
+        (_averageFaceWidthCm * focalLengthPixels) / faceWidthPixels;
+
+    // Apply calibration ratio if we have one from a previous IPD reading
+    if (_isFaceWidthCalibrated) {
+      return rawDistance * _calibratedFaceWidthRatio;
+    }
+
+    return rawDistance;
+  }
+
+  /// ✅ NEW: Calibrate the face-width method relative to the IPD method
+  void _calibrateFaceWidth(double ipdDistance, double faceWidthPixels) {
+    if (ipdDistance <= 0 || faceWidthPixels <= 0) return;
+
+    // Calculate what the raw face width distance would be
+    const double focalLengthPixels = 600.0;
+    double rawFaceWidthDistance =
+        (_averageFaceWidthCm * focalLengthPixels) / faceWidthPixels;
+
+    if (rawFaceWidthDistance > 0) {
+      // Store the ratio to correct future face-width estimates
+      _calibratedFaceWidthRatio = ipdDistance / rawFaceWidthDistance;
+      _isFaceWidthCalibrated = true;
+      _lastKnownFaceWidth = faceWidthPixels;
     }
   }
 
