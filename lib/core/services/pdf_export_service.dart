@@ -94,14 +94,46 @@ class PdfExportService {
       final status = await Permission.storage.request();
 
       if (status.isGranted) {
-        // Try to use Downloads folder
-        downloadsDir = Directory('/storage/emulated/0/Download');
-        if (!await downloadsDir.exists()) {
-          // Fallback to external storage
+        // Try common Android Download paths
+        final List<String> candidatePaths = [
+          '/storage/emulated/0/Download',
+          '/storage/emulated/0/Downloads',
+          '/sdcard/Download',
+          '/sdcard/Downloads',
+          '/storage/emulated/0/MyFiles/Downloads', // Samsung specific sometimes
+        ];
+
+        for (final path in candidatePaths) {
+          final dir = Directory(path);
+          if (await dir.exists()) {
+            // Check if we can actually write to it
+            try {
+              final testFile = File('${dir.path}/.test_write');
+              await testFile.writeAsString('test');
+              await testFile.delete();
+              downloadsDir = dir;
+              debugPrint(
+                '[PdfExportService] ✅ Found writable public Downloads at: $path',
+              );
+              break;
+            } catch (e) {
+              debugPrint(
+                '[PdfExportService] ⚠️ Path exists but not writable: $path',
+              );
+            }
+          }
+        }
+
+        if (downloadsDir == null) {
+          debugPrint(
+            '[PdfExportService] Public Downloads not found or not writable, using external storage',
+          );
           downloadsDir = await getExternalStorageDirectory();
         }
       } else {
-        // Permission denied - use app-specific directory (no permission needed)
+        debugPrint(
+          '[PdfExportService] Permission denied, using app-specific directory',
+        );
         downloadsDir = await getExternalStorageDirectory();
       }
     } else if (Platform.isIOS) {
@@ -1394,10 +1426,32 @@ class PdfExportService {
         debugPrint('[PdfExportService] Fetching from remoteUrl: $remoteUrl');
         final response = await http.get(Uri.parse(remoteUrl));
         if (response.statusCode == 200) {
+          final bytes = response.bodyBytes;
           debugPrint(
-            '[PdfExportService] ✅ Downloaded ${response.bodyBytes.length} bytes from remote',
+            '[PdfExportService] ✅ Downloaded ${bytes.length} bytes from remote',
           );
-          return response.bodyBytes;
+
+          // HEALING: If we fetched from remote but localPath was missing/invalid,
+          // try to save it locally for future use
+          if (localPath != null &&
+              localPath.isNotEmpty &&
+              !localPath.startsWith('http')) {
+            try {
+              final file = File(localPath);
+              final parentDir = file.parent;
+              if (!await parentDir.exists()) {
+                await parentDir.create(recursive: true);
+              }
+              await file.writeAsBytes(bytes);
+              debugPrint(
+                '[PdfExportService] 🩹 Healed local file at: $localPath',
+              );
+            } catch (e) {
+              debugPrint('[PdfExportService] ⚠️ Failed to heal local file: $e');
+            }
+          }
+
+          return bytes;
         }
       } catch (e) {
         debugPrint('[PdfExportService] ❌ Error fetching remote image: $e');
