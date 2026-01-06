@@ -637,7 +637,18 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   Widget _buildColorVisionCard(TestSessionProvider provider) {
     final result = widget.historicalResult?.colorVision ?? provider.colorVision;
-    final isNormal = result?.isNormal ?? true;
+    if (result == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: Text('No color vision data available')),
+      );
+    }
+
+    final isNormal = result.isNormal;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -654,92 +665,114 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       ),
       child: Column(
         children: [
+          // Eyes comparison
           Row(
             children: [
-              // Status icon
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isNormal
-                      ? AppColors.success.withValues(alpha: 0.1)
-                      : AppColors.warning.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isNormal ? Icons.check : Icons.warning,
-                  color: isNormal ? AppColors.success : AppColors.warning,
+              Expanded(
+                child: _buildColorEyeResult(
+                  'Right Eye',
+                  result.rightEye,
+                  AppColors.rightEye,
                 ),
               ),
-              const SizedBox(width: 16),
+              Container(width: 1, height: 80, color: AppColors.border),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      result?.status ?? 'Normal',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: isNormal ? AppColors.success : AppColors.warning,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      result?.status ?? 'Color vision appears normal',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
+                child: _buildColorEyeResult(
+                  'Left Eye',
+                  result.leftEye,
+                  AppColors.leftEye,
                 ),
               ),
             ],
           ),
+          const Divider(height: 32),
+          // Clinical Interpretation
+          _buildClinicalInfoSection(
+            'Clinical Finding',
+            _getColorVisionExplanation(result.deficiencyType, result.severity),
+          ),
           const SizedBox(height: 16),
-          // Score bar
-          Row(
-            children: [
-              Expanded(
-                flex: result?.correctAnswers ?? 0,
-                child: Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
+          // Recommendation if not normal
+          if (!isNormal)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              if ((result?.correctAnswers ?? 0) < (result?.totalPlates ?? 0))
-                Expanded(
-                  flex:
-                      (result?.totalPlates ?? 0) -
-                      (result?.correctAnswers ?? 0),
-                  child: Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(4),
+              child: Row(
+                children: [
+                  const Icon(Icons.info, color: AppColors.warning, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      result.recommendation,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorEyeResult(
+    String eyeLabel,
+    ColorVisionEyeResult eyeResult,
+    Color color,
+  ) {
+    final isNormal = eyeResult.status == ColorVisionStatus.normal;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.palette, color: color, size: 16),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  eyeLabel,
+                  style: TextStyle(color: color, fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            '${result?.correctAnswers ?? 0}/${result?.totalPlates ?? 0} plates correct',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-          ),
-          if (!isNormal) ...[
-            const Divider(height: 24),
-            _buildClinicalInfoSection(
-              'Detailed Finding',
-              _getColorVisionExplanation(
-                result?.deficiencyType,
-                result?.severity,
-              ),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '${eyeResult.correctAnswers}/${eyeResult.totalDiagnosticPlates}',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
-          ],
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              eyeResult.status.displayName,
+              style: TextStyle(
+                fontSize: 12,
+                color: isNormal ? AppColors.success : AppColors.warning,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

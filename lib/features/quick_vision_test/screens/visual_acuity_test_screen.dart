@@ -17,7 +17,6 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/services/speech_service.dart';
 import '../../../core/services/continuous_speech_manager.dart';
 import '../../../core/services/distance_detection_service.dart';
-import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../data/models/visiual_acuity_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import 'distance_calibration_screen.dart';
@@ -482,13 +481,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _distanceService.onDistanceUpdate = _handleDistanceUpdate;
     _distanceService.onError = (msg) => debugPrint('[DistanceMonitor] $msg');
 
-    // Initialize and start camera if not already running
-    if (!_distanceService.isReady) {
-      debugPrint('🔥 [DistanceMonitor] Initializing camera');
-      await _distanceService.initializeCamera();
-    } else {
-      debugPrint('🔥 [DistanceMonitor] Camera already initialized, reusing');
-    }
+    // ✅ FIX: Always ensure camera is initialized/re-initialized
+    // This prevents "stale" camera handles after returning from calibration screen or restarts
+    debugPrint('🔥 [DistanceMonitor] Initializing/Ensuring camera');
+    await _distanceService.initializeCamera();
 
     if (!_distanceService.isMonitoring) {
       debugPrint('🔥 [DistanceMonitor] Starting monitoring');
@@ -1095,8 +1091,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   child: Center(child: _buildRecognizedTextIndicator()),
                 ),
               // Distance warning overlay when explicitly paused (during E or Relaxation)
+              // ✅ FIX: Don't show when exit/pause dialog is active
               if (_useDistanceMonitoring &&
                   _isTestPausedForDistance &&
+                  !_isPausedForExit &&
                   (_showE || _showRelaxation))
                 _buildDistanceWarningOverlay(),
             ],

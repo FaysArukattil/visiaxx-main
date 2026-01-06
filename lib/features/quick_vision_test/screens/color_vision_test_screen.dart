@@ -54,6 +54,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   List<String> _currentOptions = []; // Current plate options
   bool _isTestPausedForDistance = false;
+  bool _isPausedForExit =
+      false; // ✅ Prevent distance warning during pause dialog
   bool _userDismissedDistanceWarning = false;
   DateTime? _lastShouldPauseTime;
   static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
@@ -87,7 +89,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _handleAppPaused() {
     _plateTimer?.cancel();
     _distanceService.stopMonitoring();
+    _ttsService.stop();
     setState(() {
+      _isPausedForExit = true;
       _isTestPausedForDistance = true;
     });
   }
@@ -96,16 +100,27 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     if (!mounted || _phase == TestPhase.complete) return;
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _phase != TestPhase.complete) {
-        _showResumeDialog();
+        _showPauseDialog(reason: 'minimized');
       }
     });
   }
 
-  void _showResumeDialog() {
+  /// Unified pause dialog for both back button and app minimization
+  void _showPauseDialog({String reason = 'back button'}) {
+    // Pause services while dialog is shown
+    _plateTimer?.cancel();
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
+    setState(() {
+      _isPausedForExit = true;
+      _isTestPausedForDistance = true;
+    });
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -121,43 +136,132 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             ),
           ],
         ),
-        content: const Text('The test was paused. Would you like to continue?'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Exit Test'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resumeAfterPause();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              reason == 'minimized'
+                  ? 'The test was paused because the app was minimized.'
+                  : 'What would you like to do?',
+              style: TextStyle(color: AppColors.textSecondary),
             ),
-            child: const Text('Continue Test'),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        actions: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Continue Test - Primary action
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _resumeTestFromDialog();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue Test',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Restart Current Test
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _restartCurrentTest();
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orange),
+                  foregroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Restart Current Test',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Exit Test
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                    (route) => false,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  'Exit and Lose Progress',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  void _resumeAfterPause() {
+  /// Alias for back button
+  void _showExitConfirmation() => _showPauseDialog();
+
+  /// Resume the test from the pause dialog
+  void _resumeTestFromDialog() {
+    if (!mounted || _phase == TestPhase.complete) return;
+
     setState(() {
+      _isPausedForExit = false;
       _isTestPausedForDistance = false;
     });
+
+    // Restart distance monitoring
     _startContinuousDistanceMonitoring();
+
+    // Resume plate timer if showing plate
     if (_showingPlate) {
       _restartPlateTimer();
     }
+  }
+
+  /// Restart only the current test, preserving other test data
+  void _restartCurrentTest() {
+    // Reset only Color Vision test data in provider
+    context.read<TestSessionProvider>().resetColorVision();
+
+    _plateTimer?.cancel();
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
+    setState(() {
+      _phase = TestPhase.initialInstructions;
+      _currentEye = 'right';
+      _currentPlateIndex = 0;
+      _rightEyeResponses.clear();
+      _leftEyeResponses.clear();
+      _showingPlate = false;
+      _timeRemaining = TestConstants.colorVisionTimePerPlateSeconds;
+      _isTestPausedForDistance = false;
+      _isPausedForExit = false;
+    });
+
+    _initServices();
   }
 
   void _restartPlateTimer() {
@@ -290,6 +394,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
+    // ✅ FIX: Don't process distance updates while pause dialog is showing
+    if (_isPausedForExit) return;
+
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
       status,
@@ -349,77 +456,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     setState(() => _isTestPausedForDistance = false);
     _ttsService.speak('Resuming test');
     _restartPlateTimer();
-  }
-
-  void _showExitConfirmation() {
-    // Pause services while dialog is shown
-    _plateTimer?.cancel();
-    _distanceService.stopMonitoring();
-    _ttsService.stop();
-
-    setState(() {
-      _isTestPausedForDistance = true;
-    });
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Resume test
-              if (_phase != TestPhase.complete) {
-                _resumeTestAfterDistance();
-              }
-            },
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resetTest();
-            },
-            child: const Text('Retest', style: TextStyle(color: Colors.orange)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _resetTest() {
-    _plateTimer?.cancel();
-    _distanceService.stopMonitoring();
-    _ttsService.stop();
-
-    setState(() {
-      _phase = TestPhase.initialInstructions;
-      _currentEye = 'right';
-      _currentPlateIndex = 0;
-      _rightEyeResponses.clear();
-      _leftEyeResponses.clear();
-      _showingPlate = false;
-      _timeRemaining = TestConstants.colorVisionTimePerPlateSeconds;
-      _isTestPausedForDistance = false;
-    });
-
-    _initServices();
   }
 
   void _resumeTestAfterDistance() {
@@ -765,7 +801,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 bottom: 12,
                 child: _buildDistanceIndicator(),
               ),
-              if (_isTestPausedForDistance) _buildDistanceWarningOverlay(),
+              // ✅ FIX: Don't show overlay when pause dialog is active
+              if (_isTestPausedForDistance && !_isPausedForExit)
+                _buildDistanceWarningOverlay(),
             ],
           ),
         ),

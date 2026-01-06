@@ -78,6 +78,19 @@ class DistanceDetectionService {
   /// Initialize camera for face detection
   Future<CameraController?> initializeCamera() async {
     try {
+      // ✅ FIX: Properly dispose old controller if it exists
+      if (_cameraController != null) {
+        debugPrint(
+          '[DistanceService] Disposing old camera controller before re-init',
+        );
+        try {
+          await _cameraController!.dispose();
+        } catch (e) {
+          debugPrint('[DistanceService] Error disposing old controller: $e');
+        }
+        _cameraController = null;
+      }
+
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
         onError?.call('No cameras available');

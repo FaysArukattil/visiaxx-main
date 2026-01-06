@@ -56,6 +56,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   bool _waitingForResponse = false;
   bool _showResult = false;
   bool _testComplete = false;
+  bool _isPausedForExit =
+      false; // ✅ Prevent distance warning during pause dialog
 
   // Voice recognition
   bool _isListening = false;
@@ -89,14 +91,28 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      _distanceService.stopMonitoring();
-      _speechService.cancel();
+      _handleAppPaused();
     } else if (state == AppLifecycleState.resumed) {
-      _startDistanceMonitoring();
-      if (_waitingForResponse && !_showKeyboard) {
-        _startListening();
-      }
+      _handleAppResumed();
     }
+  }
+
+  void _handleAppPaused() {
+    _distanceService.stopMonitoring();
+    _speechService.cancel();
+    _listeningTimer?.cancel();
+    setState(() {
+      _isPausedForExit = true;
+    });
+  }
+
+  void _handleAppResumed() {
+    if (!mounted || _testComplete) return;
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted && !_testComplete) {
+        _showPauseDialog(reason: 'minimized');
+      }
+    });
   }
 
   Future<void> _initServices() async {
@@ -159,6 +175,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
+    // ✅ FIX: Don't process distance updates while pause dialog is showing
+    if (_isPausedForExit) return;
+
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
       status,
@@ -184,6 +203,171 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         _isDistanceOk = true;
       });
     }
+  }
+
+  /// Unified pause dialog for both back button and app minimization
+  void _showPauseDialog({String reason = 'back button'}) {
+    // Pause timers and services while dialog is shown
+    _listeningTimer?.cancel();
+    _speechService.cancel();
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
+    setState(() {
+      _isPausedForExit = true;
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(
+              Icons.pause_circle_outline,
+              color: AppColors.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Test Paused',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              reason == 'minimized'
+                  ? 'The test was paused because the app was minimized.'
+                  : 'What would you like to do?',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        actions: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Continue Test - Primary action
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _resumeTestFromDialog();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue Test',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Restart Current Test
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _restartCurrentTest();
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orange),
+                  foregroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Restart Current Test',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Exit Test
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                    (route) => false,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  'Exit and Lose Progress',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Alias for back button
+  void _showExitConfirmation() => _showPauseDialog();
+
+  /// Resume the test from the pause dialog
+  void _resumeTestFromDialog() {
+    if (!mounted || _testComplete) return;
+
+    setState(() {
+      _isPausedForExit = false;
+    });
+
+    // Restart distance monitoring
+    _startDistanceMonitoring();
+
+    // Resume listening if we were waiting for a response
+    if (_waitingForResponse && !_showKeyboard) {
+      _startListening();
+    }
+  }
+
+  /// Restart only the current test, preserving other test data
+  void _restartCurrentTest() {
+    // Reset only Short Distance test data in provider
+    context.read<TestSessionProvider>().resetShortDistance();
+
+    // Reset local state
+    _listeningTimer?.cancel();
+    _speechBufferTimer?.cancel();
+    _speechService.cancel();
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+
+    setState(() {
+      _currentScreen = 0;
+      _correctCount = 0;
+      _results.clear();
+      _showSentence = false;
+      _waitingForResponse = false;
+      _showResult = false;
+      _testComplete = false;
+      _isPausedForExit = false;
+      _accumulatedSpeech = '';
+      _speechChunks.clear();
+      _recognizedText = null;
+    });
+
+    // Reinitialize
+    _startDistanceMonitoring();
+    _showNextSentence();
   }
 
   /// ✅ UPDATED: Enhanced sentence flow with longer timeout
@@ -928,17 +1112,32 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                       // Type button - changes to "Hide" when keyboard is open
                       OutlinedButton.icon(
                         onPressed: () {
+                          final wasShowingKeyboard = _showKeyboard;
                           setState(() {
                             _showKeyboard = !_showKeyboard;
                           });
                           if (_showKeyboard) {
                             _speechService.cancel();
+                            setState(() => _isListening = false);
                             // ✅ FIXED: Request focus with delay
                             Future.delayed(
                               const Duration(milliseconds: 150),
                               () {
                                 if (mounted) {
                                   _inputFocusNode.requestFocus();
+                                }
+                              },
+                            );
+                          } else if (wasShowingKeyboard) {
+                            // ✅ FIX: Restart listening when keyboard is dismissed
+                            _inputFocusNode.unfocus();
+                            Future.delayed(
+                              const Duration(milliseconds: 200),
+                              () {
+                                if (mounted &&
+                                    _waitingForResponse &&
+                                    !_isListening) {
+                                  _startListening();
                                 }
                               },
                             );
@@ -1221,77 +1420,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         ),
       ],
     );
-  }
-
-  void _showExitConfirmation() {
-    // Pause services while dialog is shown
-    _speechService.stopListening();
-    _distanceService.stopMonitoring();
-    _ttsService.stop();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Resume test
-              if (!_testComplete) {
-                _startDistanceMonitoring();
-                if (_waitingForResponse && !_isListening) {
-                  _startListening();
-                }
-              }
-            },
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resetTest();
-            },
-            child: const Text('Retest', style: TextStyle(color: Colors.orange)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _resetTest() {
-    setState(() {
-      _currentScreen = 0;
-      _results.clear();
-      _testComplete = false;
-      _showSentence = true;
-      _showResult = false;
-      _isListening = false;
-      _recognizedText = '';
-      _isDistanceOk = true;
-    });
-
-    _speechService.stopListening();
-    _distanceService.stopMonitoring();
-    _ttsService.stop();
-
-    _showNextSentence();
-    _startDistanceMonitoring();
   }
 }
 

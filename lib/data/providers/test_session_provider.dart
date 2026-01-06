@@ -205,8 +205,13 @@ class TestSessionProvider extends ChangeNotifier {
   TestResultModel buildTestResult(String userId) {
     final overallStatus = getOverallStatus();
     final recommendation = getRecommendation();
+
+    // ✅ CRITICAL FIX: Generate unique ID based on timestamp to ensure
+    // each test's Amsler images are stored separately in AWS S3
+    final uniqueId = DateTime.now().millisecondsSinceEpoch.toString();
+
     final result = TestResultModel(
-      id: '', // Will be set by Firestore
+      id: uniqueId, // Unique ID for AWS S3 image naming
       userId: userId,
       profileId: _profileId,
       profileName: _profileName,
@@ -226,7 +231,7 @@ class TestSessionProvider extends ChangeNotifier {
       recommendation: getRecommendation(),
     );
     debugPrint(
-      '✅ [TestSessionProvider] Built test result with pelli-robson: ${result.pelliRobson != null}',
+      '✅ [TestSessionProvider] Built test result with ID: $uniqueId, pelli-robson: ${result.pelliRobson != null}',
     );
     return result;
   }

@@ -890,96 +890,105 @@ class PdfExportService {
         pw.SizedBox(height: 8),
 
         if (cv != null) ...[
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey300),
-              borderRadius: pw.BorderRadius.circular(4),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'Result:',
-                          style: pw.TextStyle(
-                            fontSize: 10,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                        pw.Text(
-                          cv.isNormal
-                              ? 'Normal Color Vision'
-                              : (cv.deficiencyType
-                                    .toString()), // Convert to string
-                          style: pw.TextStyle(
-                            fontSize: 9,
-                            color: cv.isNormal
-                                ? PdfColors.green700
-                                : PdfColors.orange700,
-                          ),
-                        ),
-                      ],
+          // Summary Table for Both Eyes
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300),
+            columnWidths: {
+              0: const pw.FlexColumnWidth(1),
+              1: const pw.FlexColumnWidth(1),
+              2: const pw.FlexColumnWidth(2),
+            },
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                children: [
+                  _buildTableCell('Eye', isHeader: true),
+                  _buildTableCell('Score', isHeader: true),
+                  _buildTableCell('Status', isHeader: true),
+                ],
+              ),
+              // Right Eye
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Right'),
+                  _buildTableCell(
+                    '${cv.rightEye.correctAnswers}/${cv.rightEye.totalDiagnosticPlates}',
+                  ),
+                  _buildTableCell(cv.rightEye.status.displayName),
+                ],
+              ),
+              // Left Eye
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Left'),
+                  _buildTableCell(
+                    '${cv.leftEye.correctAnswers}/${cv.leftEye.totalDiagnosticPlates}',
+                  ),
+                  _buildTableCell(cv.leftEye.status.displayName),
+                ],
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+          // Overall interpretation
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'Overall Finding:',
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
                     ),
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.end,
-                      children: [
-                        pw.Text(
-                          'Score:',
-                          style: pw.TextStyle(
-                            fontSize: 10,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                        pw.Text(
-                          '${cv.correctAnswers}/${cv.totalPlates}',
-                          style: const pw.TextStyle(fontSize: 9),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                if (!cv.isNormal) ...[
-                  pw.SizedBox(height: 8),
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(6),
-                    decoration: const pw.BoxDecoration(
-                      color: PdfColors.orange50,
-                      borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
-                    ),
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          'Detailed Finding:',
-                          style: pw.TextStyle(
-                            fontSize: 8,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.orange900,
-                          ),
-                        ),
-                        pw.Text(
-                          _getColorVisionExplanation(
-                            cv.deficiencyType,
-                            cv.severity,
-                          ),
-                          style: const pw.TextStyle(
-                            fontSize: 8,
-                            color: PdfColors.orange900,
-                          ),
-                        ),
-                      ],
+                  ),
+                  pw.Text(
+                    cv.isNormal
+                        ? 'Normal Color Vision'
+                        : cv.deficiencyType.displayName,
+                    style: pw.TextStyle(
+                      fontSize: 9,
+                      color: cv.isNormal
+                          ? PdfColors.green700
+                          : PdfColors.orange700,
                     ),
                   ),
                 ],
-              ],
-            ),
+              ),
+            ],
           ),
+          if (!cv.isNormal) ...[
+            pw.SizedBox(height: 8),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(6),
+              decoration: const pw.BoxDecoration(
+                color: PdfColors.orange50,
+                borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'Detailed Finding:',
+                    style: pw.TextStyle(
+                      fontSize: 8,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.orange900,
+                    ),
+                  ),
+                  pw.Text(
+                    _getColorVisionExplanation(cv.deficiencyType, cv.severity),
+                    style: const pw.TextStyle(
+                      fontSize: 8,
+                      color: PdfColors.orange900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           pw.SizedBox(height: 6),
           pw.Text(
             'Note: Ishihara test screens for red-green color deficiencies. Professional diagnosis requires full 38-plate examination.',

@@ -52,6 +52,8 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   bool _mainInstructionsShown = false; // Track if general PR instructions shown
 
   bool _isTestPausedForDistance = false;
+  bool _isPausedForExit =
+      false; // ✅ Prevent distance warning during pause dialog
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   DateTime? _lastShouldPauseTime;
@@ -131,6 +133,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
+
+    // ✅ FIX: Don't process distance updates while pause dialog is showing
+    if (_isPausedForExit) return;
 
     // Use appropriate test type for distance checking
     // short_distance: minimum 35cm, no upper limit
@@ -318,22 +323,42 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      _pauseTest();
-    } else if (state == AppLifecycleState.resumed && _isTestActive) {
-      _resumeTest();
+    // ✅ FIX: Handle both paused and inactive states
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      if (_isTestActive) {
+        _pauseTest();
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      // ✅ FIX: Only show pause dialog if test is active and we were paused
+      if (!mounted) return;
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && _isTestActive && _isPausedForExit) {
+          _showPauseDialog(reason: 'minimized');
+        }
+      });
     }
   }
 
   void _pauseTest() {
     _silenceTimer?.cancel();
     _autoAdvanceTimer?.cancel();
-    _speechService.stopListening();
-    setState(() => _isListening = false);
+    // ✅ FIX: Stop continuous speech manager (not just speechService)
+    _continuousSpeech.stop();
+    _distanceService.stopMonitoring();
+    _ttsService.stop();
+    setState(() {
+      _isPausedForExit = true;
+      _isListening = false;
+    });
   }
 
   void _resumeTest() {
     if (_isTestActive) {
+      setState(() {
+        _isPausedForExit = false;
+      });
+      _startContinuousDistanceMonitoring();
       _startListeningForTriplet();
     }
   }
@@ -696,37 +721,147 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 
-  void _showExitConfirmation() {
+  /// Unified pause dialog for both back button and app minimization
+  void _showPauseDialog({String reason = 'back button'}) {
     _pauseTest();
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text('Your progress will be lost.'),
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(
+              Icons.pause_circle_outline,
+              color: AppColors.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Test Paused',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              reason == 'minimized'
+                  ? 'The test was paused because the app was minimized.'
+                  : 'What would you like to do?',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resumeTest();
-            },
-            child: const Text('Continue'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Continue Test - Primary action
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _resumeTest();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue Test',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Restart Current Test
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _restartCurrentTest();
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orange),
+                  foregroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Restart Current Test',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Exit Test
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                    (route) => false,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  'Exit and Lose Progress',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  /// Alias for back button
+  void _showExitConfirmation() => _showPauseDialog();
+
+  /// Restart only the current test, preserving other test data
+  void _restartCurrentTest() {
+    // Reset only Pelli-Robson test data in provider
+    context.read<TestSessionProvider>().resetPelliRobson();
+
+    _silenceTimer?.cancel();
+    _autoAdvanceTimer?.cancel();
+    _speechService.stopListening();
+    _distanceService.stopMonitoring();
+    _continuousSpeech.stop();
+    _ttsService.stop();
+
+    setState(() {
+      _currentEye = 'right';
+      _currentMode = 'short';
+      _currentScreenIndex = 0;
+      _currentTripletIndex = 0;
+      _isTestActive = false;
+      _isListening = false;
+      _isSpeechActive = false;
+      _showingInstructions = false;
+      _showDistanceCalibration = true;
+      _mainInstructionsShown = false;
+      _isTestPausedForDistance = false;
+      _isPausedForExit = false;
+      _shortResponses.forEach((_, list) => list.clear());
+      _longResponses.forEach((_, list) => list.clear());
+      _recognizedText = '';
+      _speechDetected = false;
+    });
+
+    _initServices();
   }
 
   @override
@@ -817,6 +952,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   // Triplets display
                   Expanded(child: _buildTripletsDisplay()),
 
+                  // Visible / Not Visible buttons
+                  if (_isTestActive && !_isTestPausedForDistance)
+                    _buildVisibleButtons(),
+
                   // Speech indicator
                   _buildSpeechIndicator(),
 
@@ -828,10 +967,66 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               Positioned(right: 16, top: 16, child: _buildDistanceIndicator()),
 
               // Distance warning overlay
-              if (_isTestPausedForDistance) _buildDistanceWarningOverlay(),
+              // ✅ FIX: Don't show when exit/pause dialog is active
+              if (_isTestPausedForDistance && !_isPausedForExit)
+                _buildDistanceWarningOverlay(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// ✅ NEW: Visible / Not Visible buttons for tap-based input
+  Widget _buildVisibleButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Row(
+        children: [
+          // Visible button - submit all letters
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                final triplets = PelliRobsonScoring.getTripletsForScreen(
+                  _currentScreenIndex,
+                );
+                if (_currentTripletIndex < triplets.length) {
+                  final triplet = triplets[_currentTripletIndex];
+                  _submitCurrentTriplet(triplet.letters);
+                }
+              },
+              icon: const Icon(Icons.visibility, size: 20),
+              label: const Text('Visible'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Not Visible button - submit empty
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () {
+                _submitCurrentTriplet('');
+              },
+              icon: const Icon(Icons.visibility_off, size: 20),
+              label: const Text('Not Visible'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+                side: BorderSide(color: AppColors.border),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -853,6 +1048,8 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             final triplet = entry.value;
             final isCurrent = index == _currentTripletIndex;
             final isCompleted = index < _currentTripletIndex;
+            // ✅ FIX: Show next triplet with actual opacity (preview)
+            final isNext = index == _currentTripletIndex + 1;
 
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
@@ -861,6 +1058,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                 fontSize,
                 isCurrent,
                 isCompleted,
+                isNext: isNext,
               ),
             );
           }).toList(),
@@ -873,25 +1071,46 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     PelliRobsonTriplet triplet,
     double fontSize,
     bool isCurrent,
-    bool isCompleted,
-  ) {
+    bool isCompleted, {
+    bool isNext = false,
+  }) {
+    // ✅ FIX: Next triplet shows actual opacity (preview)
+    // Current: full opacity, Completed: dimmed, Next: actual opacity preview, Others: hidden
+    double rowOpacity;
+    if (isCurrent) {
+      rowOpacity = triplet.opacity;
+    } else if (isCompleted) {
+      rowOpacity = 0.05;
+    } else if (isNext) {
+      rowOpacity = triplet.opacity; // Show actual contrast for preview
+    } else {
+      rowOpacity = 0.0; // Hide future triplets (except next)
+    }
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isCurrent
             ? AppColors.primary.withValues(alpha: 0.05)
-            : Colors.transparent,
+            : (isNext
+                  ? AppColors.secondary.withValues(alpha: 0.03)
+                  : Colors.transparent),
         borderRadius: BorderRadius.circular(12),
         border: isCurrent
             ? Border.all(
                 color: AppColors.primary.withValues(alpha: 0.3),
                 width: 2,
               )
-            : null,
+            : (isNext
+                  ? Border.all(
+                      color: AppColors.secondary.withValues(alpha: 0.2),
+                      width: 1,
+                    )
+                  : null),
       ),
       child: Opacity(
-        opacity: isCurrent ? triplet.opacity : (isCompleted ? 0.05 : 0.2),
+        opacity: rowOpacity,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,

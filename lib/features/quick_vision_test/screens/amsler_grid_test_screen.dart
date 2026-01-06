@@ -49,6 +49,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   bool _isTestPausedForDistance = false;
+  bool _isPausedForExit =
+      false; // ✅ Prevent distance warning during pause dialog
 
   // Distortion tracking
   final List<DistortionPoint> _rightEyePoints = [];
@@ -85,14 +87,20 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   void _handleAppPaused() {
     _distanceService.stopMonitoring();
+    _ttsService.stop();
     setState(() {
+      _isPausedForExit = true;
       _isTestPausedForDistance = true;
     });
   }
 
   void _handleAppResumed() {
     if (!mounted || _testComplete) return;
-    _startContinuousDistanceMonitoring();
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted && !_testComplete && _testingStarted) {
+        _showPauseDialog(reason: 'minimized');
+      }
+    });
   }
 
   Future<void> _initServices() async {
@@ -192,6 +200,9 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
+    // ✅ FIX: Don't process distance updates while pause dialog is showing
+    if (_isPausedForExit) return;
+
     // ✅ SIMPLIFIED: Only check if distance is too close
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
@@ -238,58 +249,142 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     HapticFeedback.heavyImpact();
   }
 
-  void _showExitConfirmation() {
+  /// Unified pause dialog for both back button and app minimization
+  void _showPauseDialog({String reason = 'back button'}) {
     // Pause services while dialog is shown
     _distanceService.stopMonitoring();
     _ttsService.stop();
 
     setState(() {
+      _isPausedForExit = true;
       _isTestPausedForDistance = true;
     });
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(
+              Icons.pause_circle_outline,
+              color: AppColors.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Test Paused',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              reason == 'minimized'
+                  ? 'The test was paused because the app was minimized.'
+                  : 'What would you like to do?',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Resume test
-              if (!_testComplete) {
-                _resumeTestAfterDistance();
-              }
-            },
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resetTest();
-            },
-            child: const Text('Retest', style: TextStyle(color: Colors.orange)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Continue Test - Primary action
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _resumeTestFromDialog();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue Test',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Restart Current Test
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _restartCurrentTest();
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orange),
+                  foregroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Restart Current Test',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Exit Test
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                    (route) => false,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  'Exit and Lose Progress',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  void _resetTest() {
+  /// Alias for back button
+  void _showExitConfirmation() => _showPauseDialog();
+
+  /// Resume the test from the pause dialog
+  void _resumeTestFromDialog() {
+    if (!mounted || _testComplete) return;
+
+    setState(() {
+      _isPausedForExit = false;
+      _isTestPausedForDistance = false;
+    });
+
+    // Restart distance monitoring
+    _startContinuousDistanceMonitoring();
+
+    _ttsService.speak('You may continue marking the grid');
+  }
+
+  /// Restart only the current test, preserving other test data
+  void _restartCurrentTest() {
+    // Reset only Amsler Grid test data in provider
+    context.read<TestSessionProvider>().resetAmslerGrid();
+
     _distanceService.stopMonitoring();
     _ttsService.stop();
 
@@ -300,6 +395,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       _testComplete = false;
       _showDistanceCalibration = true;
       _isTestPausedForDistance = false;
+      _isPausedForExit = false;
       _rightEyePoints.clear();
       _leftEyePoints.clear();
       _allLinesStraight = null;
@@ -643,7 +739,9 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   child: _buildDistanceIndicator(),
                 ),
               // Distance warning overlay - only show when explicitly paused
+              // ✅ FIX: Don't show overlay when pause dialog is active
               if (_isTestPausedForDistance &&
+                  !_isPausedForExit &&
                   _testingStarted &&
                   !_testComplete &&
                   !_eyeSwitchPending)
