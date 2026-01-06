@@ -235,9 +235,9 @@ class _BothEyesOpenInstructionScreenState
                       ),
                       const SizedBox(height: 16),
                       _buildInstructionItem(
-                        widget.instructionIcon ?? Icons.touch_app,
-                        widget.instructionTitle ?? 'Tap to Respond',
-                        widget.instructionDescription ?? 'Identify the item on screen and tap the correct option',
+                        widget.instructionIcon,
+                        widget.instructionTitle,
+                        widget.instructionDescription,
                       ),
                       const SizedBox(height: 16),
                       _buildInstructionItem(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/radio_group.dart';
 
 /// Questionnaire builder widget for creating custom questionnaires
 class QuestionnaireBuilder extends StatelessWidget {
@@ -81,7 +82,7 @@ class QuestionnaireBuilder extends StatelessWidget {
   }
 
   Widget _buildMultipleChoiceWidget(String key, List<String> options) {
-    return RadioGroup<String>(
+    return AppRadioGroup<String>(
       onChanged: (value) {
         if (value != null) {
           onAnswerChanged(key, value);
@@ -89,7 +90,7 @@ class QuestionnaireBuilder extends StatelessWidget {
       },
       child: Column(
         children: options.map((option) {
-          return RadioListTile<String>(title: Text(option), value: option);
+          return AppRadioListTile<String>(title: Text(option), value: option);
         }).toList(),
       ),
     );

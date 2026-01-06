@@ -1,33 +1,49 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:visiaxx/core/services/aws_s3_storage_service.dart';
 import 'dart:io';
-import './firebase_storage_service.dart';
 import '../../data/models/test_result_model.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorageService _storageService = FirebaseStorageService();
+  final AWSS3StorageService _awsStorageService = AWSS3StorageService();
 
   /// Collection paths
   static const String _testResultsCollection = 'test_results';
 
   /// Save a complete test result to Firebase
   /// Returns the document ID of the saved result
-  /// Save a complete test result to Firebase
-  /// Returns the document ID of the saved result
   Future<String> saveTestResult({
     required String userId,
     required TestResultModel result,
+    File? pdfFile,
   }) async {
     try {
       debugPrint('[TestResultService] Saving result for user: $userId');
-      debugPrint(
-        '[TestResultService] ℹ️ Note: Amsler images will NOT be uploaded (storage disabled)',
+
+      // Upload images to AWS
+      TestResultModel updatedResult = await _uploadImagesIfExist(
+        userId,
+        result,
       );
 
-      // 1. Skip image upload (disabled for cost savings)
-      final updatedResult = await _uploadImagesIfExist(userId, result);
+      // Upload PDF report to AWS if provided
+      if (pdfFile != null && await pdfFile.exists()) {
+        debugPrint('[TestResultService] 📤 Uploading PDF report to AWS...');
+        final pdfUrl = await _awsStorageService.uploadPdfReport(
+          userId: userId,
+          testId: result.id,
+          pdfFile: pdfFile,
+        );
+
+        if (pdfUrl != null) {
+          debugPrint('[TestResultService] ✅ PDF upload successful');
+          updatedResult = updatedResult.copyWith(pdfUrl: pdfUrl);
+        } else {
+          debugPrint('[TestResultService] ❌ PDF upload failed');
+        }
+      }
 
       final docRef = await _firestore
           .collection(_testResultsCollection)
@@ -43,41 +59,92 @@ class TestResultService {
     }
   }
 
+  /// Check if AWS S3 is configured and reachable
+  Future<bool> checkAWSConnection() async {
+    try {
+      return await _awsStorageService.isAvailable &&
+          await _awsStorageService.testConnection();
+    } catch (e) {
+      debugPrint('[TestResultService] ❌ AWS Connection Check Failed: $e');
+      return false;
+    }
+  }
+
   Future<TestResultModel> _uploadImagesIfExist(
     String userId,
     TestResultModel result,
   ) async {
-    // ⚠️ FIREBASE STORAGE DISABLED - Skip image uploads to save costs
-    // Images are kept as local paths only and will NOT be available on other devices
-    debugPrint(
-      '[TestResultService] ℹ️ Image upload disabled - keeping local paths only',
-    );
+    debugPrint('[TestResultService] 📤 Starting AWS image upload process...');
 
-    // Return result unchanged - no Firebase upload
-    return result;
-  }
-
-  Future<String?> _uploadFile(
-    String userId,
-    String localPath,
-    String type,
-  ) async {
-    try {
-      final file = File(localPath);
-      if (!await file.exists()) return null;
-
-      final fileName = '${type}_${DateTime.now().millisecondsSinceEpoch}.png';
-
-      // Use consolidated storage service
-      return await _storageService.uploadImage(
-        userId: userId,
-        fileName: fileName,
-        imageFile: file,
-      );
-    } catch (e) {
-      debugPrint('[TestResultService] Error uploading file: $e');
-      return null;
+    // Check if AWS is available
+    final bool awsAvailable = _awsStorageService.isAvailable;
+    if (!awsAvailable) {
+      debugPrint('[TestResultService] ⚠️ AWS not available, skipping uploads');
+      return result;
     }
+
+    TestResultModel updatedResult = result;
+
+    // Upload Right Eye Amsler Grid Image
+    if (result.amslerGridRight?.annotatedImagePath != null) {
+      final localPath = result.amslerGridRight!.annotatedImagePath!;
+      final file = File(localPath);
+
+      if (await file.exists()) {
+        debugPrint(
+          '[TestResultService] 📤 Uploading right eye image to AWS...',
+        );
+
+        final awsUrl = await _awsStorageService.uploadAmslerGridImage(
+          userId: userId,
+          testId: result.id,
+          eye: 'right',
+          imageFile: file,
+        );
+
+        if (awsUrl != null) {
+          debugPrint('[TestResultService] ✅ AWS upload successful (right)');
+          updatedResult = updatedResult.copyWith(
+            amslerGridRight: updatedResult.amslerGridRight!.copyWith(
+              awsImageUrl: awsUrl,
+            ),
+          );
+        } else {
+          debugPrint('[TestResultService] ❌ AWS upload failed (right)');
+        }
+      }
+    }
+
+    // Upload Left Eye Amsler Grid Image
+    if (result.amslerGridLeft?.annotatedImagePath != null) {
+      final localPath = result.amslerGridLeft!.annotatedImagePath!;
+      final file = File(localPath);
+
+      if (await file.exists()) {
+        debugPrint('[TestResultService] 📤 Uploading left eye image to AWS...');
+
+        final awsUrl = await _awsStorageService.uploadAmslerGridImage(
+          userId: userId,
+          testId: result.id,
+          eye: 'left',
+          imageFile: file,
+        );
+
+        if (awsUrl != null) {
+          debugPrint('[TestResultService] ✅ AWS upload successful (left)');
+          updatedResult = updatedResult.copyWith(
+            amslerGridLeft: updatedResult.amslerGridLeft!.copyWith(
+              awsImageUrl: awsUrl,
+            ),
+          );
+        } else {
+          debugPrint('[TestResultService] ❌ AWS upload failed (left)');
+        }
+      }
+    }
+
+    debugPrint('[TestResultService] 📤 AWS Upload complete!');
+    return updatedResult;
   }
 
   /// Get all test results for a user

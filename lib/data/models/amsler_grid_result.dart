@@ -9,7 +9,9 @@ class AmslerGridResult {
   final List<DistortionPoint> distortionPoints;
   final String status;
   final String? annotatedImagePath; // Local path (for backward compatibility)
-  final String? firebaseImageUrl; // Firebase Storage URL for cross-device access
+  final String?
+  firebaseImageUrl; // Firebase Storage URL for cross-device access
+  final String? awsImageUrl; // AWS S3 URL
   final String? description;
 
   AmslerGridResult({
@@ -21,6 +23,7 @@ class AmslerGridResult {
     required this.status,
     this.annotatedImagePath,
     this.firebaseImageUrl,
+    this.awsImageUrl,
     this.description,
   });
 
@@ -33,6 +36,7 @@ class AmslerGridResult {
     String? status,
     String? annotatedImagePath,
     String? firebaseImageUrl,
+    String? awsImageUrl,
     String? description,
   }) {
     return AmslerGridResult(
@@ -44,6 +48,7 @@ class AmslerGridResult {
       status: status ?? this.status,
       annotatedImagePath: annotatedImagePath ?? this.annotatedImagePath,
       firebaseImageUrl: firebaseImageUrl ?? this.firebaseImageUrl,
+      awsImageUrl: awsImageUrl ?? this.awsImageUrl,
       description: description ?? this.description,
     );
   }
@@ -62,6 +67,7 @@ class AmslerGridResult {
       status: data['status'] ?? '',
       annotatedImagePath: data['annotatedImagePath'],
       firebaseImageUrl: data['firebaseImageUrl'],
+      awsImageUrl: data['awsImageUrl'],
       description: data['description'],
     );
   }
@@ -76,6 +82,7 @@ class AmslerGridResult {
       'status': status,
       'annotatedImagePath': annotatedImagePath,
       'firebaseImageUrl': firebaseImageUrl,
+      'awsImageUrl': awsImageUrl,
       'description': description,
     };
   }

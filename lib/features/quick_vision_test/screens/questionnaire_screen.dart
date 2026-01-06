@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/radio_group.dart';
 import '../../../data/models/questionnaire_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 
@@ -449,23 +450,21 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           ),
           const SizedBox(height: 12),
           Text('Pattern:', style: TextStyle(color: AppColors.textSecondary)),
-          RadioGroup<String>(
+          AppRadioGroup<String>(
             groupValue: _wateringPattern,
             onChanged: (v) => setState(() => _wateringPattern = v!),
             child: Row(
               children: [
                 Expanded(
-                  child: RadioListTile<String>(
+                  child: AppRadioListTile<String>(
                     title: const Text('Continuous'),
                     value: 'continuous',
-                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
                 Expanded(
-                  child: RadioListTile<String>(
+                  child: AppRadioListTile<String>(
                     title: const Text('Intermittent'),
                     value: 'intermittent',
-                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ],
@@ -509,23 +508,21 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           ),
           const SizedBox(height: 12),
           Text('Pain type:', style: TextStyle(color: AppColors.textSecondary)),
-          RadioGroup<String>(
+          AppRadioGroup<String>(
             groupValue: _headachePainType,
             onChanged: (v) => setState(() => _headachePainType = v!),
             child: Row(
               children: [
                 Expanded(
-                  child: RadioListTile<String>(
+                  child: AppRadioListTile<String>(
                     title: const Text('Throbbing'),
                     value: 'throbbing',
-                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
                 Expanded(
-                  child: RadioListTile<String>(
+                  child: AppRadioListTile<String>(
                     title: const Text('Mild/Dull'),
                     value: 'mild',
-                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ],

@@ -4,17 +4,15 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/services/test_result_service.dart';
-import '../../../core/services/pdf_export_service.dart';
-import '../../../core/utils/ui_utils.dart';
-import '../../../data/models/test_result_model.dart';
-import '../../../data/providers/test_session_provider.dart';
-import '../../../data/models/color_vision_result.dart';
-import '../../../data/models/pelli_robson_result.dart';
+import 'package:visiaxx/core/constants/app_colors.dart';
+import 'package:visiaxx/core/services/test_result_service.dart';
+import 'package:visiaxx/core/services/pdf_export_service.dart';
+import 'package:visiaxx/core/utils/ui_utils.dart';
+import 'package:visiaxx/data/models/test_result_model.dart';
+import 'package:visiaxx/data/providers/test_session_provider.dart';
+import 'package:visiaxx/data/models/color_vision_result.dart';
+import 'package:visiaxx/data/models/pelli_robson_result.dart';
 
 /// Comprehensive results screen displaying all test data
 class QuickTestResultScreen extends StatefulWidget {
@@ -26,12 +24,12 @@ class QuickTestResultScreen extends StatefulWidget {
 }
 
 class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
-  bool _isGeneratingPdf = false;
+  final PdfExportService _pdfExportService = PdfExportService();
+  final TestResultService _testResultService = TestResultService();
+
   bool _hasSaved = false;
   TestResultModel? _savedResult;
-
-  final TestResultService _testResultService = TestResultService();
-  final PdfExportService _pdfExportService = PdfExportService();
+  bool _isGeneratingPdf = false;
 
   @override
   void initState() {
@@ -60,18 +58,36 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       return;
     }
 
-    setState(() {});
-
     try {
       final provider = context.read<TestSessionProvider>();
       final result = provider.buildTestResult(user.uid);
 
-      debugPrint('[QuickTestResult] Saving test result for user: ${user.uid}');
-      debugPrint('[QuickTestResult] Result data: ${result.toJson()}');
+      // Verify AWS Connection first
+      debugPrint('[QuickTestResult] 🔄 Testing AWS S3 connection...');
+      final bool awsReady = await _testResultService.checkAWSConnection();
+      if (!awsReady) {
+        debugPrint(
+          '[QuickTestResult] ⚠️ AWS S3 is NOT available. Will save only to Firestore.',
+        );
+      }
 
+      debugPrint(
+        '[QuickTestResult] Generating PDF for simultaneous storage...',
+      );
+      // 1. Generate PDF locally first
+      final String pdfPath = await _pdfExportService.generateAndDownloadPdf(
+        result,
+      );
+      final File pdfFile = File(pdfPath);
+
+      debugPrint(
+        '[QuickTestResult] Saving test result with PDF to AWS/Firestore...',
+      );
+      // 2. Save result to Firestore and upload PDF/Images to AWS
       final resultId = await _testResultService.saveTestResult(
         userId: user.uid,
         result: result,
+        pdfFile: pdfFile,
       );
 
       debugPrint(
@@ -87,9 +103,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Results saved successfully!'),
+            content: Text('✅ Results & Report saved successfully!'),
             backgroundColor: AppColors.success,
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -97,12 +113,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       debugPrint('[QuickTestResult] ❌ ERROR saving results: $e');
 
       if (mounted) {
-        setState(() {});
-
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save: $e'),
+            content: Text('Failed to save results: $e'),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 4),
           ),
@@ -1317,9 +1331,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     final status =
         widget.historicalResult?.overallStatus ?? provider.getOverallStatus();
 
-    Color bgColor;
-    Color borderColor;
-    IconData icon;
+    Color bgColor = AppColors.success.withValues(alpha: 0.1);
+    Color borderColor = AppColors.success.withValues(alpha: 0.3);
+    IconData icon = Icons.check_circle_outline;
 
     switch (status) {
       case TestStatus.normal:
@@ -1506,33 +1520,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     );
   }
 
-  Future<void> _shareGridTracing(String? localPath, String? remoteUrl) async {
-    try {
-      if (localPath != null && await File(localPath).exists()) {
-        await Share.shareXFiles([
-          XFile(localPath),
-        ], text: 'Amsler Grid Tracing');
-      } else if (remoteUrl != null) {
-        // Download to share
-        final response = await http.get(Uri.parse(remoteUrl));
-        final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/amsler_share.png');
-        await file.writeAsBytes(response.bodyBytes);
-        await Share.shareXFiles([
-          XFile(file.path),
-        ], text: 'Amsler Grid Tracing');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image not available for sharing')),
-        );
-      }
-    } catch (e) {
-      debugPrint('[QuickTestResult] Share error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to share image: $e')));
-    }
-  }
+  // _shareGridTracing was unused and has been removed as PDF sharing is prioritized.
 
   Future<void> _generatePdf() async {
     final provider = context.read<TestSessionProvider>();
@@ -1558,6 +1546,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         return;
       }
 
+      if (!mounted) return;
       UIUtils.showProgressDialog(
         context: context,
         message: 'Generating PDF...',
@@ -1566,23 +1555,22 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       final String generatedPath = await _pdfExportService
           .generateAndDownloadPdf(result);
 
-      if (mounted) {
-        UIUtils.hideProgressDialog(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('PDF Report saved to Downloads'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'OPEN',
-              textColor: Colors.white,
-              onPressed: () {
-                OpenFilex.open(generatedPath);
-              },
-            ),
+      if (!mounted) return;
+      UIUtils.hideProgressDialog(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('PDF Report saved to Downloads'),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'OPEN',
+            textColor: Colors.white,
+            onPressed: () {
+              OpenFilex.open(generatedPath);
+            },
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
@@ -1611,14 +1599,13 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
       }
-
       await Share.shareXFiles([XFile(filePath)], text: 'Vision Test Report');
     } catch (e) {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to share report: $e'),
+          const SnackBar(
+            content: Text('Failed to share PDF report'),
             backgroundColor: AppColors.error,
           ),
         );

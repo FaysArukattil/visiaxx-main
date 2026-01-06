@@ -60,7 +60,6 @@ class DistanceDetectionService {
   double _calibratedFaceWidthRatio = 1.0;
   bool _isFaceWidthCalibrated = false;
   static const double _averageFaceWidthCm = 14.3; // Average human face width
-  double _lastKnownFaceWidth = 0.0;
 
   DistanceDetectionService({
     this.targetDistanceCm = _defaultTargetDistanceCm,
@@ -321,7 +320,6 @@ class DistanceDetectionService {
       // Store the ratio to correct future face-width estimates
       _calibratedFaceWidthRatio = ipdDistance / rawFaceWidthDistance;
       _isFaceWidthCalibrated = true;
-      _lastKnownFaceWidth = faceWidthPixels;
     }
   }
 

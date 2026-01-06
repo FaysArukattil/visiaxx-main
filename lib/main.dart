@@ -33,6 +33,9 @@ import 'features/quick_vision_test/screens/quick_test_intro_screen.dart';
 import 'data/providers/test_session_provider.dart';
 import 'data/providers/eye_exercise_provider.dart';
 
+// AWS Credentials Manager
+import 'core/services/aws_credentials_manager.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -55,6 +58,18 @@ void main() async {
   // Initialize Firebase (keep this)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AppLogger.initialize();
+
+  // Initialize AWS credentials from Firebase Remote Config
+  debugPrint('[VisiAxx] 🔄 Loading AWS credentials...');
+  final awsInitialized = await AWSCredentials.initialize();
+  if (awsInitialized) {
+    debugPrint('[VisiAxx] ✅ AWS credentials loaded successfully');
+  } else {
+    debugPrint(
+      '[VisiAxx] ⚠️ AWS credentials failed to load - will use Firebase only',
+    );
+  }
+
   runApp(const VisiaxApp());
 }
 

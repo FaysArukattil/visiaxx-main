@@ -25,7 +25,7 @@ class YouTubePopupDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -51,7 +51,7 @@ class YouTubePopupDialog extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF0000).withOpacity(0.1),
+                color: const Color(0xFFFF0000).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

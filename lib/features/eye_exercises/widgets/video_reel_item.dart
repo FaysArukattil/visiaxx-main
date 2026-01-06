@@ -152,8 +152,8 @@ class _VideoReelItemState extends State<VideoReelItem>
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.black.withOpacity(0.3),
+                    Colors.black.withValues(alpha: 0.7),
+                    Colors.black.withValues(alpha: 0.3),
                     Colors.transparent,
                   ],
                 ),
@@ -199,7 +199,7 @@ class _VideoReelItemState extends State<VideoReelItem>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.8),
+                    color: Colors.red.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
@@ -234,7 +234,7 @@ class _VideoReelItemState extends State<VideoReelItem>
                   Text(
                     widget.video.description!,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 15,
                       height: 1.4,
                       shadows: [

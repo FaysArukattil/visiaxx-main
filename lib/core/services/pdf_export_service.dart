@@ -1,20 +1,16 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:permission_handler/permission_handler.dart';
-
 import 'package:intl/intl.dart';
+
 import '../../data/models/test_result_model.dart';
 import '../../data/models/questionnaire_model.dart';
-import '../../data/models/color_vision_result.dart';
 import '../../data/models/amsler_grid_result.dart';
-import '../../data/models/pelli_robson_result.dart';
-import '../../data/models/visiual_acuity_result.dart';
-import '../../data/models/short_distance_result.dart';
+import '../../data/models/color_vision_result.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -54,8 +50,10 @@ class PdfExportService {
           RegExp(r'[^a-zA-Z0-9]'),
           '_',
         );
-        final dateTime = DateFormat('yyyyMMdd_HHmmss').format(result.timestamp);
-        final filename = 'VisionTest_$name\_$dateTime.pdf';
+        final age = result.profileAge != null ? '${result.profileAge}' : 'NA';
+        final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
+        final timeStr = DateFormat('HH-mm').format(result.timestamp);
+        final filename = '${name}_${age}_${dateStr}_$timeStr.pdf';
         final fallbackPath = '${appDir.path}/$filename';
 
         final file = File(fallbackPath);
@@ -77,9 +75,10 @@ class PdfExportService {
   /// Get the expected file path for a test result PDF
   Future<String> getExpectedFilePath(TestResultModel result) async {
     final name = result.profileName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
-    final age = result.profileAge != null ? '_${result.profileAge}y' : '';
-    final dateTime = DateFormat('yyyyMMdd_HHmmss').format(result.timestamp);
-    final filename = 'VisionTest_$name${age}_$dateTime.pdf';
+    final age = result.profileAge != null ? '${result.profileAge}' : 'NA';
+    final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
+    final timeStr = DateFormat('HH-mm').format(result.timestamp);
+    final filename = '${name}_${age}_${dateStr}_$timeStr.pdf';
 
     final downloadsDir = await getDownloadsDirectoryPath();
     return '$downloadsDir/$filename';
@@ -130,14 +129,16 @@ class PdfExportService {
     if (result.amslerGridRight != null) {
       amslerRightBytes = await _getImageBytes(
         result.amslerGridRight!.annotatedImagePath,
-        result.amslerGridRight!.firebaseImageUrl,
+        result.amslerGridRight!.awsImageUrl ??
+            result.amslerGridRight!.firebaseImageUrl,
       );
     }
 
     if (result.amslerGridLeft != null) {
       amslerLeftBytes = await _getImageBytes(
         result.amslerGridLeft!.annotatedImagePath,
-        result.amslerGridLeft!.firebaseImageUrl,
+        result.amslerGridLeft!.awsImageUrl ??
+            result.amslerGridLeft!.firebaseImageUrl,
       );
     }
 
@@ -351,7 +352,11 @@ class PdfExportService {
                   ),
                   _buildInfoRow(
                     'Test ID',
-                    result.id.substring(0, 8).toUpperCase(),
+                    result.id.length >= 8
+                        ? result.id.substring(0, 8).toUpperCase()
+                        : (result.id.isNotEmpty
+                              ? result.id.toUpperCase()
+                              : 'NEW'),
                   ),
                 ],
               ),
@@ -1129,8 +1134,9 @@ class PdfExportService {
 
     if (cc.hasRedness) {
       String detail = 'Redness';
-      if (cc.rednessFollowUp?.duration != null)
+      if (cc.rednessFollowUp?.duration != null) {
         detail += ' (${cc.rednessFollowUp!.duration})';
+      }
       detailedComplaints.add(detail);
     }
     if (cc.hasWatering) {

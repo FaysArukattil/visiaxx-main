@@ -49,7 +49,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   bool _isTestPausedForDistance = false;
-  DistanceStatus? _lastSpokenDistanceStatus;
 
   // Distortion tracking
   final List<DistortionPoint> _rightEyePoints = [];
@@ -228,25 +227,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           _resumeTestAfterDistance();
         }
       }
-    }
-  }
-
-  void _speakDistanceGuidance(DistanceStatus status) {
-    switch (status) {
-      case DistanceStatus.tooClose:
-        _ttsService.speak('Move back, you are too close');
-        break;
-      case DistanceStatus.tooFar:
-        _ttsService.speak('Move closer, you are too far');
-        break;
-      case DistanceStatus.optimal:
-        _ttsService.speak('Good, distance is correct');
-        break;
-      case DistanceStatus.noFaceDetected:
-      case DistanceStatus.faceDetectedNoDistance:
-        // ✅ Don't speak for face detection issues during test
-        // Calibration screen handles its own guidance
-        break;
     }
   }
 
@@ -520,6 +500,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       annotatedImagePath: imagePath,
     );
 
+    if (!mounted) return;
     debugPrint('💾 Saving result to TestSessionProvider...');
     final provider = context.read<TestSessionProvider>();
     provider.setAmslerGridResult(result);
@@ -575,10 +556,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     });
 
     _ttsService.speakEyeInstruction('left');
-  }
-
-  void _completeAllTests() {
-    _showContrastTransition();
   }
 
   void _startAutoNavigationTimer() {

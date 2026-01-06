@@ -111,6 +111,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         return;
       }
 
+      if (!mounted) return;
       UIUtils.showProgressDialog(
         context: context,
         message: 'Generating PDF...',
@@ -210,7 +211,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && mounted) {
       await _deleteResult(result);
     }
   }
@@ -266,15 +267,19 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           XFile(file.path),
         ], text: 'Amsler Grid Tracing');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image not available for sharing')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to load results')),
+          );
+        }
       }
     } catch (e) {
       debugPrint('[MyResults] Share error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to share image: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to share image: $e')));
+      }
     }
   }
 

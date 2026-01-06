@@ -89,22 +89,21 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
 
     // Use actual user data if available
     final String userId = user.uid;
-    
+
     // Fetch profile data for age
     final authService = AuthService();
     final userData = await authService.getUserData(userId);
-    
+
     String userName = userData?.fullName ?? user.displayName ?? 'User';
     if (userName == 'User' && user.email != null) {
       userName = user.email!.split('@')[0];
     }
     int? age = userData?.age;
 
+    if (!mounted) return;
     provider.selectSelfProfile(userId, userName, age);
     provider.startTest();
-    if (mounted) {
-      Navigator.pushNamed(context, '/questionnaire');
-    }
+    Navigator.pushNamed(context, '/questionnaire');
   }
 
   void _selectFamilyMember(FamilyMemberModel member) {

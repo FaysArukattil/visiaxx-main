@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 /// Service for uploading and managing images in Firebase Storage
@@ -26,11 +27,11 @@ class FirebaseStorageService {
       return downloadUrl;
     } catch (e) {
       if (e.toString().contains('billing') || e.toString().contains('quota')) {
-        print(
+        debugPrint(
           '[FirebaseStorageService] ⚠️ Firebase Storage quota exceeded or billing required. Working in offline mode.',
         );
       } else {
-        print('[FirebaseStorageService] Error uploading image: $e');
+        debugPrint('[FirebaseStorageService] Error uploading image: $e');
       }
       return null;
     }
@@ -68,7 +69,7 @@ class FirebaseStorageService {
 
       return tempFile;
     } catch (e) {
-      print('[FirebaseStorageService] Error downloading image: $e');
+      debugPrint('[FirebaseStorageService] Error downloading image: $e');
       return null;
     }
   }
@@ -91,7 +92,7 @@ class FirebaseStorageService {
 
       return true;
     } catch (e) {
-      print('[FirebaseStorageService] Error deleting images: $e');
+      debugPrint('[FirebaseStorageService] Error deleting images: $e');
       return false;
     }
   }
@@ -104,11 +105,11 @@ class FirebaseStorageService {
       // Amsler images should be small (typically < 500KB)
       // Warn if larger than 1MB
       if (fileSize > 1024 * 1024) {
-        print('[FirebaseStorageService] Warning: Image larger than 1MB');
+        debugPrint('[FirebaseStorageService] Warning: Image larger than 1MB');
       }
       return true;
     } catch (e) {
-      print('[FirebaseStorageService] Error checking file size: $e');
+      debugPrint('[FirebaseStorageService] Error checking file size: $e');
       return false;
     }
   }
