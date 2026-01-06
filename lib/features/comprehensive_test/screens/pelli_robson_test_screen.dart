@@ -837,10 +837,11 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
     _silenceTimer?.cancel();
     _autoAdvanceTimer?.cancel();
-    _speechService.stopListening();
+    _speechService.cancel();
     _distanceService.stopMonitoring();
     _continuousSpeech.stop();
     _ttsService.stop();
+    _fuzzyMatcher.reset();
 
     setState(() {
       _currentEye = 'right';
@@ -852,7 +853,8 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _isSpeechActive = false;
       _showingInstructions = false;
       _showDistanceCalibration = true;
-      _mainInstructionsShown = false;
+      _mainInstructionsShown =
+          true; // ✅ FIX: Skip general instructions on restart
       _isTestPausedForDistance = false;
       _isPausedForExit = false;
       _shortResponses.forEach((_, list) => list.clear());
@@ -861,7 +863,15 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _speechDetected = false;
     });
 
-    _initServices();
+    // ✅ FIX: Reinitialize speech callbacks without showing instructions again
+    _continuousSpeech.onFinalResult = _handleVoiceResponse;
+    _continuousSpeech.onSpeechDetected = _handleSpeechDetected;
+    _continuousSpeech.onListeningStateChanged = (isListening) {
+      if (mounted) setState(() => _isListening = isListening);
+    };
+
+    // Go directly to calibration screen
+    _showCalibrationScreen();
   }
 
   @override
@@ -921,6 +931,43 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             onPressed: _showExitConfirmation,
           ),
           actions: [
+            // ✅ NEW: Mic waveform indicator (like short distance test)
+            if (_isTestActive)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        height: 24,
+                        child: Center(
+                          child: SpeechWaveform(
+                            isListening: _isListening,
+                            isTalking: _isSpeechActive,
+                            color: AppColors.success,
+                            size: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.mic, size: 14, color: AppColors.success),
+                    ],
+                  ),
+                ),
+              ),
             // Progress indicator
             Padding(
               padding: const EdgeInsets.only(right: 16),

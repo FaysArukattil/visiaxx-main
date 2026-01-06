@@ -316,6 +316,7 @@ class SpeechService {
         s.contains('op word') ||
         s.contains('awkward') ||
         s.contains('afford') ||
+        s.contains('appuard') ||
         s.contains('appaurd') ||
         s.contains('appuvert') ||
         s.contains('appward') ||
