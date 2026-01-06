@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:visiaxx/core/widgets/download_success_dialog.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/services/pdf_export_service.dart';
@@ -107,7 +108,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       final File file = File(filePath);
 
       if (await file.exists()) {
-        await OpenFilex.open(filePath);
+        if (mounted) {
+          await showDownloadSuccessDialog(context: context, filePath: filePath);
+        }
         return;
       }
 
@@ -123,24 +126,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
 
-        // Show location info
-        final String location = generatedPath.contains('/Download')
-            ? 'Downloads folder'
-            : 'App folder';
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('PDF saved to $location'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'OPEN',
-              textColor: Colors.white,
-              onPressed: () {
-                OpenFilex.open(generatedPath);
-              },
-            ),
-          ),
+        // Show beautiful success dialog
+        await showDownloadSuccessDialog(
+          context: context,
+          filePath: generatedPath,
         );
       }
     } catch (e) {

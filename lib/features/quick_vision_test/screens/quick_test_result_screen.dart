@@ -9,6 +9,7 @@ import 'package:visiaxx/core/constants/app_colors.dart';
 import 'package:visiaxx/core/services/test_result_service.dart';
 import 'package:visiaxx/core/services/pdf_export_service.dart';
 import 'package:visiaxx/core/utils/ui_utils.dart';
+import 'package:visiaxx/core/widgets/download_success_dialog.dart';
 import 'package:visiaxx/data/models/test_result_model.dart';
 import 'package:visiaxx/data/providers/test_session_provider.dart';
 import 'package:visiaxx/data/models/color_vision_result.dart';
@@ -1543,8 +1544,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       final File file = File(filePath);
 
       if (await file.exists()) {
-        if (mounted) setState(() => _isGeneratingPdf = false);
-        await OpenFilex.open(filePath);
+        if (mounted) {
+          setState(() => _isGeneratingPdf = false);
+          await showDownloadSuccessDialog(context: context, filePath: filePath);
+        }
         return;
       }
 
@@ -1560,51 +1563,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       if (!mounted) return;
       UIUtils.hideProgressDialog(context);
 
-      // Open the system-native "Save" / "Print" dialog.
-      // On Android, this allows the user to pick precisely the "Downloads" folder or any other accessible directory.
-      // This is the most reliable way to handle "Downloads" on modern Android 11+ (Scoped Storage).
-      final pdfBytes = await File(generatedPath).readAsBytes();
-      await Printing.layoutPdf(
-        onLayout: (format) => pdfBytes,
-        name: generatedPath.split(Platform.pathSeparator).last,
+      // Show beautiful success dialog
+      await showDownloadSuccessDialog(
+        context: context,
+        filePath: generatedPath,
       );
-
-      final bool isInPublicDownloads =
-          generatedPath.contains('/Download') ||
-          generatedPath.contains('/Downloads');
-      final String folderName = isInPublicDownloads
-          ? 'Downloads'
-          : 'App Storage (Hidden)';
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('✅ PDF Prepared successfully!'),
-                const SizedBox(height: 4),
-                Text(
-                  'Saved to: $folderName\nPath: $generatedPath',
-                  style: const TextStyle(fontSize: 10, color: Colors.white70),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 15),
-            action: SnackBarAction(
-              label: 'SHARE / SAVE',
-              textColor: Colors.white,
-              onPressed: () {
-                Share.shareXFiles([
-                  XFile(generatedPath),
-                ], subject: 'Vision Test Report');
-              },
-            ),
-          ),
-        );
-      }
     } catch (e) {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
