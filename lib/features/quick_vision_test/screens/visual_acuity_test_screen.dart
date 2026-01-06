@@ -144,19 +144,32 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void _handleAppResumed() {
     if (!mounted || _testComplete || _showDistanceCalibration) return;
 
-    // Show resume dialog
+    // Show unified pause dialog
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && !_testComplete && !_showDistanceCalibration) {
-        _showResumeDialog();
+        _showPauseDialog(reason: 'minimized');
       }
     });
   }
 
-  void _showResumeDialog() {
+  /// Unified pause dialog for both back button and app minimization
+  void _showPauseDialog({String reason = 'back button'}) {
+    // Pause timers and services while dialog is shown
+    _eDisplayTimer?.cancel();
+    _eCountdownTimer?.cancel();
+    _relaxationTimer?.cancel();
+    _continuousSpeech.stop();
+    _distanceService.stopMonitoring();
+
+    setState(() {
+      _isPausedForExit = true;
+      _isTestPausedForDistance = true;
+    });
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -177,50 +190,131 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'The test was paused because the app was minimized.',
+              reason == 'minimized'
+                  ? 'The test was paused because the app was minimized.'
+                  : 'What would you like to do?',
               style: TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Would you like to continue?',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
             ),
           ],
         ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Exit Test'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resumeAfterPause();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Continue Test - Primary action
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _resumeTestFromDialog();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue Test',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-            child: const Text('Continue Test'),
+              const SizedBox(height: 8),
+              // Restart Current Test
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _restartCurrentTest();
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orange),
+                  foregroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Restart Current Test',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Exit Test
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                    (route) => false,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  'Exit and Lose Progress',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  void _resumeAfterPause() {
-    _resumeTestAfterDistance();
+  /// Resume the test from the pause dialog
+  void _resumeTestFromDialog() {
+    if (!mounted || _testComplete) return;
+
+    debugPrint('[VisualAcuity] 🔄 Resuming test from dialog');
+    debugPrint(
+      '[VisualAcuity] Current state: showE=$_showE, showRelaxation=$_showRelaxation, eCountdown=$_eDisplayCountdown, relaxCountdown=$_relaxationCountdown',
+    );
+
+    // Clear pause flags
+    setState(() {
+      _isPausedForExit = false;
+      _isTestPausedForDistance = false;
+      _lastShouldPauseTime = null;
+    });
+
+    // Restart distance monitoring
+    _startContinuousDistanceMonitoring();
+
+    // Resume based on current test phase
+    if (_showE && _waitingForResponse) {
+      debugPrint('[VisualAcuity] 🔄 Resuming E display phase');
+      // Resume speech recognition
+      if (!_continuousSpeech.isActive) {
+        _continuousSpeech.start(
+          listenDuration: const Duration(minutes: 10),
+          minConfidence: 0.15,
+          bufferMs: 1000,
+        );
+      }
+      _restartEDisplayTimer();
+    } else if (_showRelaxation) {
+      debugPrint('[VisualAcuity] 🔄 Resuming relaxation phase');
+      // Resume mic if already below 3s
+      if (_relaxationCountdown <= 3 && !_continuousSpeech.isActive) {
+        _continuousSpeech.start(
+          listenDuration: const Duration(minutes: 10),
+          minConfidence: 0.15,
+          bufferMs: 1000,
+        );
+      }
+      _restartRelaxationTimer();
+    } else {
+      debugPrint('[VisualAcuity] 🔄 Starting fresh relaxation');
+      // Not in an active phase, start relaxation
+      _startRelaxation();
+    }
   }
 
   @override
@@ -412,6 +506,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
+    // ✅ FIX: Don't process distance updates while pause dialog is showing
+    if (_isPausedForExit) return;
+
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
       status,
@@ -438,7 +535,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           _skipManager
               .canShowDistanceWarning(DistanceTestType.visualAcuity)
               .then((canShow) {
-                if (mounted && canShow) {
+                if (mounted && canShow && !_isPausedForExit) {
                   _pauseTestForDistance();
                 }
               });
@@ -446,7 +543,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
     } else {
       _lastShouldPauseTime = null;
-      if (_isTestPausedForDistance) {
+      if (_isTestPausedForDistance && !_isPausedForExit) {
         _resumeTestAfterDistance();
       }
     }
@@ -1202,35 +1299,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _showExitConfirmation() {
-    // Pause timers and services while dialog is shown
-    _eDisplayTimer?.cancel();
-    _eCountdownTimer?.cancel();
-    _relaxationTimer?.cancel();
-    _continuousSpeech.stop();
-    _distanceService.stopMonitoring();
-
-    setState(() {
-      _isPausedForExit = true;
-    });
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => TestExitConfirmationDialog(
-        onContinue: () {
-          setState(() {
-            _isPausedForExit = false;
-          });
-          if (!_testComplete) {
-            _resumeTestAfterDistance();
-          }
-        },
-        onRestart: _restartCurrentTest,
-        onExit: () {
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-        },
-      ),
-    );
+    _showPauseDialog(reason: 'back button');
   }
 
   void _restartCurrentTest() {
@@ -1278,7 +1347,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _showDistanceCalibration = true;
     });
 
-    _startContinuousDistanceMonitoring();
+    // ✅ FIX: Explicitly show calibration screen after state reset
+    // Wait for setState to complete, then show calibration
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _showDistanceCalibration) {
+        _showCalibrationScreen();
+      }
+    });
   }
 
   Widget _buildInfoBar() {
@@ -1908,24 +1983,28 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(Icons.visibility, color: color),
-              const SizedBox(width: 12),
-              Text(
-                eye,
-                style: TextStyle(fontWeight: FontWeight.bold, color: color),
-              ),
-            ],
-          ),
+          Icon(Icons.visibility, color: color),
+          const SizedBox(width: 12),
           Text(
-            score,
+            eye,
             style: TextStyle(
-              fontSize: 20,
               fontWeight: FontWeight.bold,
+              fontSize: 16,
               color: color,
+            ),
+          ),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              score,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

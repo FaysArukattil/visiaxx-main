@@ -253,7 +253,8 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _countdown == 0 ? _handleContinue : null,
+                      onPressed:
+                          _handleContinue, // ✅ Always enabled for instant skip
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.all(16),
                         backgroundColor: eyeColor,
@@ -276,7 +277,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  'Starting in $_countdown...',
+                                  'Starting in $_countdown... (Tap to skip)',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     color: Colors.white,

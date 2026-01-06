@@ -455,15 +455,21 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             onChanged: (v) => setState(() => _wateringPattern = v!),
             child: Row(
               children: [
-                Expanded(
+                Flexible(
                   child: AppRadioListTile<String>(
-                    title: const Text('Continuous'),
+                    title: const Text(
+                      'Continuous',
+                      style: TextStyle(fontSize: 13),
+                    ),
                     value: 'continuous',
                   ),
                 ),
-                Expanded(
+                Flexible(
                   child: AppRadioListTile<String>(
-                    title: const Text('Intermittent'),
+                    title: const Text(
+                      'Intermittent',
+                      style: TextStyle(fontSize: 13),
+                    ),
                     value: 'intermittent',
                   ),
                 ),

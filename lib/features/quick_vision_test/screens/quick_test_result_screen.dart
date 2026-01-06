@@ -4,17 +4,16 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:visiaxx/core/constants/app_colors.dart';
 import 'package:visiaxx/core/services/test_result_service.dart';
 import 'package:visiaxx/core/services/pdf_export_service.dart';
 import 'package:visiaxx/core/utils/ui_utils.dart';
+import 'package:visiaxx/core/utils/snackbar_utils.dart';
 import 'package:visiaxx/core/widgets/download_success_dialog.dart';
 import 'package:visiaxx/data/models/test_result_model.dart';
 import 'package:visiaxx/data/providers/test_session_provider.dart';
 import 'package:visiaxx/data/models/color_vision_result.dart';
 import 'package:visiaxx/data/models/pelli_robson_result.dart';
-import 'package:printing/printing.dart';
 import 'package:flutter/foundation.dart';
 
 /// Comprehensive results screen displaying all test data
@@ -104,12 +103,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         });
 
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Results & Report saved successfully!'),
-            backgroundColor: AppColors.success,
-            duration: Duration(seconds: 3),
-          ),
+        SnackbarUtils.showSuccess(
+          context,
+          'Results & Report saved successfully!',
         );
       }
     } catch (e) {
@@ -117,13 +113,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
       if (mounted) {
         // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save results: $e'),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        SnackbarUtils.showError(context, 'Failed to save results: $e');
       }
     }
   }

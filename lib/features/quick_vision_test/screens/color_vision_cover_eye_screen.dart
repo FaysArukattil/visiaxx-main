@@ -256,7 +256,8 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _countdown == 0 ? _handleContinue : null,
+                      onPressed:
+                          _handleContinue, // ✅ Always enabled for instant skip
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.all(16),
                         backgroundColor: eyeColor,
@@ -281,7 +282,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                 const SizedBox(width: 12),
                                 Flexible(
                                   child: Text(
-                                    'Starting in $_countdown...',
+                                    'Starting in $_countdown... (Tap to skip)',
                                     style: const TextStyle(fontSize: 16),
                                     overflow: TextOverflow.ellipsis,
                                   ),
