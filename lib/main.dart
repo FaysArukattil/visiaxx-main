@@ -20,6 +20,9 @@ import 'features/quick_vision_test/screens/amsler_grid_test_screen.dart';
 import 'features/quick_vision_test/screens/quick_test_result_screen.dart';
 import 'features/results/screens/my_results_screen.dart';
 import 'features/practitioner/screens/practitioner_dashboard_screen.dart';
+import 'features/practitioner/screens/practitioner_home_screen.dart';
+import 'features/practitioner/screens/practitioner_profile_selection_screen.dart';
+import 'features/practitioner/screens/practitioner_results_screen.dart';
 import '/core/utils/app_logger.dart';
 import 'features/quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
 import 'features/quick_vision_test/screens/cover_right_eye_instruction_screen.dart';
@@ -107,6 +110,11 @@ class VisiaxApp extends StatelessWidget {
           '/speech-logs': (context) => const SpeechLogViewerScreen(),
           '/practitioner-dashboard': (context) =>
               const PractitionerDashboardScreen(),
+          '/practitioner-home': (context) => const PractitionerHomeScreen(),
+          '/practitioner-profile-selection': (context) =>
+              const PractitionerProfileSelectionScreen(),
+          '/practitioner-results': (context) =>
+              const PractitionerResultsScreen(),
           '/cover-left-eye-instruction': (context) =>
               const CoverLeftEyeInstructionScreen(),
           '/cover-right-eye-instruction': (context) =>

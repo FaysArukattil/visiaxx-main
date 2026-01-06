@@ -63,7 +63,9 @@ class _SplashScreenState extends State<SplashScreen>
     _logoController.forward();
 
     // Reduced total time
-    await Future.delayed(const Duration(milliseconds: 1500)); // Reduced from 2800
+    await Future.delayed(
+      const Duration(milliseconds: 1500),
+    ); // Reduced from 2800
     _checkAuthAndNavigate();
   }
 
@@ -75,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (!mounted) return;
 
       if (role == UserRole.examiner) {
-        Navigator.pushReplacementNamed(context, '/practitioner-dashboard');
+        Navigator.pushReplacementNamed(context, '/practitioner-home');
       } else {
         Navigator.pushReplacementNamed(context, '/home');
       }
@@ -101,10 +103,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.grey.shade50,
-            ],
+            colors: [Colors.white, Colors.grey.shade50],
           ),
         ),
         child: SafeArea(
@@ -127,7 +126,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
               ),
-              
+
               // Tagline at bottom
               Positioned(
                 left: 0,

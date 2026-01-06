@@ -3,6 +3,7 @@ import 'package:visiaxx/features/quick_vision_test/screens/visual_acuity_test_sc
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 class CoverRightEyeInstructionScreen extends StatefulWidget {
   final String title;
@@ -52,10 +53,7 @@ class _CoverRightEyeInstructionScreenState
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
     await Future.delayed(const Duration(milliseconds: 500));
-    await _ttsService.speak(
-      widget.ttsMessage,
-      speechRate: 0.5,
-    );
+    await _ttsService.speak(widget.ttsMessage, speechRate: 0.5);
   }
 
   // NEW: Countdown timer that auto-navigates
@@ -73,13 +71,19 @@ class _CoverRightEyeInstructionScreenState
         setState(() => _countdown--);
       } else {
         timer.cancel();
-      if (widget.onContinue != null) {
-        widget.onContinue!();
-      } else {
-        _navigateToTest();
-      }
+        _handleContinue();
       }
     });
+  }
+
+  void _handleContinue() {
+    _countdownTimer?.cancel();
+    _ttsService.stop();
+    if (widget.onContinue != null) {
+      widget.onContinue!();
+    } else {
+      _navigateToTest();
+    }
   }
 
   // NEW: Navigation method
@@ -102,36 +106,28 @@ class _CoverRightEyeInstructionScreenState
 
   void _showExitConfirmation() {
     _ttsService.stop();
+    _countdownTimer?.cancel();
     setState(() => _isPaused = true);
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _isPaused = false);
-            },
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+      builder: (context) => TestExitConfirmationDialog(
+        onContinue: () {
+          setState(() => _isPaused = false);
+          _startCountdown();
+        },
+        onRestart: () {
+          setState(() {
+            _isPaused = false;
+            _countdown = 3;
+          });
+          _startCountdown();
+          _ttsService.speak(widget.ttsMessage, speechRate: 0.5);
+        },
+        onExit: () {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        },
       ),
     );
   }
@@ -253,11 +249,11 @@ class _CoverRightEyeInstructionScreenState
                   ),
                   const SizedBox(height: 48),
 
-                  // UPDATED: Button with countdown
+                  // Button always clickable - tap to skip countdown
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _countdown == 0 ? _navigateToTest : null,
+                      onPressed: _handleContinue,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.all(16),
                         backgroundColor: AppColors.leftEye,
@@ -280,7 +276,7 @@ class _CoverRightEyeInstructionScreenState
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  'Starting in $_countdown...',
+                                  'Starting in $_countdown... (Tap to skip)',
                                   style: const TextStyle(fontSize: 16),
                                 ),
                               ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 class ColorVisionCoverEyeScreen extends StatefulWidget {
   final String eyeToCover; // 'left' or 'right'
@@ -28,7 +29,6 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
   void initState() {
     super.initState();
     _initializeTts();
-    _startCountdown();
   }
 
   Future<void> _initializeTts() async {
@@ -46,6 +46,11 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
       'Tap the correct option that matches what you see on the screen.',
       speechRate: 0.5,
     );
+
+    // ✅ FIX: Start countdown only after TTS completes
+    if (mounted && !_isPaused) {
+      _startCountdown();
+    }
   }
 
   void _startCountdown() {
@@ -65,9 +70,15 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
         setState(() => _countdown--);
       } else {
         timer.cancel();
-        widget.onContinue();
+        _handleContinue();
       }
     });
+  }
+
+  void _handleContinue() {
+    _countdownTimer?.cancel();
+    _ttsService.stop();
+    widget.onContinue();
   }
 
   void _showExitConfirmation() {
@@ -78,32 +89,22 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _isPaused = false);
-              _startCountdown();
-            },
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+      builder: (context) => TestExitConfirmationDialog(
+        onContinue: () {
+          setState(() => _isPaused = false);
+          _startCountdown();
+        },
+        onRestart: () {
+          setState(() {
+            _isPaused = false;
+            _countdown = 3;
+          });
+          _startCountdown();
+          _initializeTts();
+        },
+        onExit: () {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        },
       ),
     );
   }
@@ -255,7 +256,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _countdown == 0 ? widget.onContinue : null,
+                      onPressed: _countdown == 0 ? _handleContinue : null,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.all(16),
                         backgroundColor: eyeColor,

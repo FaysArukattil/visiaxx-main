@@ -17,6 +17,7 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/services/speech_service.dart';
 import '../../../core/services/continuous_speech_manager.dart';
 import '../../../core/services/distance_detection_service.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../data/models/visiual_acuity_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import 'distance_calibration_screen.dart';
@@ -94,6 +95,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   Timer? _autoNavigationTimer;
   int _autoNavigationCountdown = 3;
+
+  bool _isPausedForExit = false;
 
   Timer? _speechEraserTimer; // ✅ Timer to clear recognized text
 
@@ -1207,52 +1210,56 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _distanceService.stopMonitoring();
 
     setState(() {
-      _isTestPausedForDistance = true;
+      _isPausedForExit = true;
     });
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Resume test
-              if (!_testComplete) {
-                _resumeTestAfterDistance();
-              }
-            },
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resetTest();
-            },
-            child: const Text('Retest', style: TextStyle(color: Colors.orange)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+      builder: (context) => TestExitConfirmationDialog(
+        onContinue: () {
+          setState(() {
+            _isPausedForExit = false;
+          });
+          if (!_testComplete) {
+            _resumeTestAfterDistance();
+          }
+        },
+        onRestart: _restartCurrentTest,
+        onExit: () {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        },
       ),
     );
   }
 
+  void _restartCurrentTest() {
+    _eDisplayTimer?.cancel();
+    _eCountdownTimer?.cancel();
+    _relaxationTimer?.cancel();
+    _continuousSpeech.stop();
+    _distanceService.stopMonitoring();
+
+    if (_currentEye == 'right') {
+      _resetTest();
+    } else {
+      // Restarting left eye should take back to left eye instruction
+      final provider = Provider.of<TestSessionProvider>(context, listen: false);
+      provider.resetVisualAcuityLeft();
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CoverRightEyeInstructionScreen(),
+        ),
+      );
+    }
+  }
+
   void _resetTest() {
+    final provider = Provider.of<TestSessionProvider>(context, listen: false);
+    provider.resetVisualAcuity();
+
     setState(() {
       _currentLevel = 0;
       _correctAtLevel = 0;
@@ -1271,7 +1278,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _showDistanceCalibration = true;
     });
 
-    _initServices();
+    _startContinuousDistanceMonitoring();
   }
 
   Widget _buildInfoBar() {

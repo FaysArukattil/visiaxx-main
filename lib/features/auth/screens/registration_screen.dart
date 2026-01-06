@@ -75,7 +75,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
       // Navigate based on role
       if (result.user?.role == UserRole.examiner) {
-        Navigator.pushReplacementNamed(context, '/practitioner-dashboard');
+        Navigator.pushReplacementNamed(context, '/practitioner-home');
       } else {
         Navigator.pushReplacementNamed(context, '/home');
       }
