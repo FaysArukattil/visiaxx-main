@@ -35,6 +35,7 @@ import 'features/quick_vision_test/screens/quick_test_intro_screen.dart';
 // Providers
 import 'data/providers/test_session_provider.dart';
 import 'data/providers/eye_exercise_provider.dart';
+import 'data/providers/locale_provider.dart';
 
 // AWS Credentials Manager
 import 'core/services/aws_credentials_manager.dart';
@@ -112,6 +113,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
       providers: [
         ChangeNotifierProvider(create: (_) => TestSessionProvider()),
         ChangeNotifierProvider(create: (_) => EyeExerciseProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
       child: MaterialApp(
         title: 'Visiaxx - Digital Eye Clinic',
