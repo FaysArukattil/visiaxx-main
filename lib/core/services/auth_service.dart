@@ -92,7 +92,41 @@ class AuthService {
     String? practitionerCode,
   }) async {
     try {
-      // 1. If role is examiner, validate the access code first
+      // 1. Backend Validation
+      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+      if (!emailRegex.hasMatch(email.trim())) {
+        return AuthResult.failure(message: 'Invalid email format');
+      }
+
+      if (password.length < 6) {
+        return AuthResult.failure(
+          message: 'Password must be at least 6 characters',
+        );
+      }
+
+      if (firstName.isEmpty) {
+        return AuthResult.failure(message: 'First name is required');
+      }
+
+      if (age < 1 || age > 120) {
+        return AuthResult.failure(message: 'Please enter a valid age (1-120)');
+      }
+
+      // Phone validation (exactly 10 digits after +91)
+      final phoneDigits = phone.replaceAll(RegExp(r'\D'), '');
+      // If it starts with 91 and has 12 digits, we check the last 10
+      final actualDigits =
+          (phoneDigits.startsWith('91') && phoneDigits.length == 12)
+          ? phoneDigits.substring(2)
+          : phoneDigits;
+
+      if (actualDigits.length != 10) {
+        return AuthResult.failure(
+          message: 'Phone number must be exactly 10 digits',
+        );
+      }
+
+      // 2. If role is examiner, validate the access code first
       if (role == UserRole.examiner) {
         if (practitionerCode == null || practitionerCode.isEmpty) {
           return AuthResult.failure(
