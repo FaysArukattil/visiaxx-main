@@ -1,13 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:visiaxx/core/services/auth_service.dart';
 import '../../data/models/family_member_model.dart';
 
 /// Service for managing family members in Firebase
 class FamilyMemberService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Collection paths
-  static const String _familyMembersCollection = 'family_members';
+  /// Get the organized collection path for family members
+  Future<String> _familyMembersPath(String userId) async {
+    final authService = AuthService();
+    final user = await authService.getUserData(userId);
+    if (user == null) {
+      return 'NormalUsers/$userId/members';
+    }
+    return 'NormalUsers/${user.identityString}/members';
+  }
 
   /// Save a family member to Firebase
   /// ✅ ENHANCED: Returns the document ID and ensures proper error handling
@@ -17,24 +25,15 @@ class FamilyMemberService {
   }) async {
     try {
       debugPrint('[FamilyMemberService] Saving member for user: $userId');
-      debugPrint('[FamilyMemberService] Member data: ${member.toFirestore()}');
+      final path = await _familyMembersPath(userId);
 
-      // ✅ FIX: Add the member with auto-generated ID
-      final docRef = await _firestore
-          .collection(_familyMembersCollection)
-          .doc(userId)
-          .collection('members')
-          .add(member.toFirestore());
+      // Use descriptive IdentityString for document ID
+      final identity = member.identityString;
 
-      debugPrint('[FamilyMemberService] ✅ Saved with ID: ${docRef.id}');
+      await _firestore.collection(path).doc(identity).set(member.toFirestore());
 
-      // ✅ VERIFY: Read back to ensure it was saved
-      final verification = await docRef.get();
-      if (!verification.exists) {
-        throw Exception('Verification failed: Document not found after save');
-      }
-
-      return docRef.id;
+      debugPrint('[FamilyMemberService] ✅ Saved with ID: $identity');
+      return identity;
     } catch (e, stackTrace) {
       debugPrint('[FamilyMemberService] ❌ Save ERROR: $e');
       debugPrint('[FamilyMemberService] Stack trace: $stackTrace');
@@ -47,11 +46,10 @@ class FamilyMemberService {
   Future<List<FamilyMemberModel>> getFamilyMembers(String userId) async {
     try {
       debugPrint('[FamilyMemberService] Getting members for user: $userId');
+      final path = await _familyMembersPath(userId);
 
       final snapshot = await _firestore
-          .collection(_familyMembersCollection)
-          .doc(userId)
-          .collection('members')
+          .collection(path)
           .orderBy('createdAt', descending: true)
           .get();
 
@@ -81,40 +79,34 @@ class FamilyMemberService {
 
   /// ✅ NEW: Stream for real-time updates of family members
   Stream<List<FamilyMemberModel>> getFamilyMembersStream(String userId) {
-    return _firestore
-        .collection(_familyMembersCollection)
-        .doc(userId)
-        .collection('members')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          debugPrint(
-            '[FamilyMemberService] Stream update: ${snapshot.docs.length} members',
-          );
-
-          final List<FamilyMemberModel> members = [];
-          for (final doc in snapshot.docs) {
-            try {
-              members.add(FamilyMemberModel.fromFirestore(doc));
-            } catch (e) {
-              debugPrint('[FamilyMemberService] ❌ Error parsing ${doc.id}: $e');
+    return Stream.fromFuture(_familyMembersPath(userId)).asyncExpand((path) {
+      return _firestore
+          .collection(path)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            final List<FamilyMemberModel> members = [];
+            for (final doc in snapshot.docs) {
+              try {
+                members.add(FamilyMemberModel.fromFirestore(doc));
+              } catch (e) {
+                debugPrint(
+                  '[FamilyMemberService] ❌ Error parsing ${doc.id}: $e',
+                );
+              }
             }
-          }
-          return members;
-        });
+            return members;
+          });
+    });
   }
 
   /// Delete a family member
   Future<void> deleteFamilyMember(String userId, String memberId) async {
     try {
       debugPrint('[FamilyMemberService] Deleting member: $memberId');
+      final path = await _familyMembersPath(userId);
 
-      await _firestore
-          .collection(_familyMembersCollection)
-          .doc(userId)
-          .collection('members')
-          .doc(memberId)
-          .delete();
+      await _firestore.collection(path).doc(memberId).delete();
 
       debugPrint('[FamilyMemberService] ✅ Deleted member: $memberId');
     } catch (e, stackTrace) {
@@ -132,11 +124,10 @@ class FamilyMemberService {
   }) async {
     try {
       debugPrint('[FamilyMemberService] Updating member: $memberId');
+      final path = await _familyMembersPath(userId);
 
       await _firestore
-          .collection(_familyMembersCollection)
-          .doc(userId)
-          .collection('members')
+          .collection(path)
           .doc(memberId)
           .update(member.toFirestore());
 
@@ -151,12 +142,8 @@ class FamilyMemberService {
   /// ✅ NEW: Check if a user has any family members
   Future<bool> hasFamilyMembers(String userId) async {
     try {
-      final snapshot = await _firestore
-          .collection(_familyMembersCollection)
-          .doc(userId)
-          .collection('members')
-          .limit(1)
-          .get();
+      final path = await _familyMembersPath(userId);
+      final snapshot = await _firestore.collection(path).limit(1).get();
 
       return snapshot.docs.isNotEmpty;
     } catch (e) {
@@ -171,12 +158,8 @@ class FamilyMemberService {
     String memberId,
   ) async {
     try {
-      final doc = await _firestore
-          .collection(_familyMembersCollection)
-          .doc(userId)
-          .collection('members')
-          .doc(memberId)
-          .get();
+      final path = await _familyMembersPath(userId);
+      final doc = await _firestore.collection(path).doc(memberId).get();
 
       if (!doc.exists) {
         return null;

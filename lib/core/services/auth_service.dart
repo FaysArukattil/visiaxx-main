@@ -33,13 +33,38 @@ class AuthService {
       );
 
       if (credential.user != null) {
-        // Get user data from Firestore
-        final userModel = await getUserData(credential.user!.uid);
+        // 1. Find user metadata (collection path) from lookup
+        final lookupDoc = await _firestore
+            .collection('all_users_lookup')
+            .doc(credential.user!.uid)
+            .get();
 
-        // Update last login
-        await _firestore.collection('users').doc(credential.user!.uid).update({
-          'lastLoginAt': FieldValue.serverTimestamp(),
-        });
+        UserModel? userModel;
+        if (lookupDoc.exists && lookupDoc.data() != null) {
+          final collection = lookupDoc.data()!['collection'] as String;
+          final identityString = lookupDoc.data()!['identityString'] as String;
+
+          // 2. Get full data from the role-specific collection
+          final userDoc = await _firestore
+              .collection(collection)
+              .doc(identityString)
+              .get();
+          if (userDoc.exists) {
+            userModel = UserModel.fromMap(userDoc.data()!, userDoc.id);
+
+            // 3. Update last login in both places
+            await _firestore.collection(collection).doc(identityString).update({
+              'lastLoginAt': FieldValue.serverTimestamp(),
+            });
+            await _firestore
+                .collection('all_users_lookup')
+                .doc(credential.user!.uid)
+                .update({'lastLoginAt': FieldValue.serverTimestamp()});
+          }
+        } else {
+          // Fallback: This might happen if someone logs in but wasn't migrated/registered with new system
+          userModel = await getUserData(credential.user!.uid);
+        }
 
         return AuthResult.success(user: userModel);
       }
@@ -87,11 +112,31 @@ class AuthService {
           familyMemberIds: [],
         );
 
-        // Save to Firestore
+        final identity = userModel.identityString;
+        final collection = userModel.roleCollection;
+
+        // 1. Save to role-specific collection with DESCRIPTIVE document ID
         await _firestore
-            .collection('users')
-            .doc(credential.user!.uid)
+            .collection(collection)
+            .doc(identity)
             .set(userModel.toMap());
+
+        // 2. Save to lookup collection for UID -> Path mapping
+        await _firestore
+            .collection('all_users_lookup')
+            .doc(credential.user!.uid)
+            .set({
+              'uid': credential.user!.uid,
+              'identityString': identity,
+              'collection': collection,
+              'role': role.name,
+              'email': email.trim(),
+              'fullName': userModel.fullName,
+              'age': age,
+              'sex': sex,
+              'createdAt': FieldValue.serverTimestamp(),
+              'lastLoginAt': FieldValue.serverTimestamp(),
+            });
 
         // Update display name
         await credential.user!.updateDisplayName('$firstName $lastName');
@@ -109,15 +154,37 @@ class AuthService {
     }
   }
 
-  /// Get user data from Firestore
+  /// Get user data from Firestore using the lookup system
   Future<UserModel?> getUserData(String uid) async {
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
+      // 1. Check lookup first
+      final lookupDoc = await _firestore
+          .collection('all_users_lookup')
+          .doc(uid)
+          .get();
+      if (!lookupDoc.exists || lookupDoc.data() == null) {
+        // Check legacy 'users' collection as fallback
+        final legacyDoc = await _firestore.collection('users').doc(uid).get();
+        if (legacyDoc.exists && legacyDoc.data() != null) {
+          return UserModel.fromMap(legacyDoc.data()!, legacyDoc.id);
+        }
+        return null;
+      }
+
+      final collection = lookupDoc.data()!['collection'] as String;
+      final identityString = lookupDoc.data()!['identityString'] as String;
+
+      // 2. Get full data
+      final doc = await _firestore
+          .collection(collection)
+          .doc(identityString)
+          .get();
       if (doc.exists && doc.data() != null) {
         return UserModel.fromMap(doc.data()!, doc.id);
       }
       return null;
     } catch (e) {
+      debugPrint('[AuthService] getUserData error: $e');
       return null;
     }
   }
@@ -160,19 +227,61 @@ class AuthService {
     }
   }
 
-  /// Delete user account
+  /// Delete user account and associated data
   Future<AuthResult> deleteAccount() async {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        // Delete Firestore data
-        await _firestore.collection('users').doc(user.uid).delete();
-        // Delete auth account
+        final uid = user.uid;
+
+        // 1. Get info from lookup
+        final lookupDoc = await _firestore
+            .collection('all_users_lookup')
+            .doc(uid)
+            .get();
+        if (lookupDoc.exists && lookupDoc.data() != null) {
+          final data = lookupDoc.data()!;
+          final collection = data['collection'] as String;
+          final identityString = data['identityString'] as String;
+
+          // 2. Delete role-specific user data
+          await _firestore.collection(collection).doc(identityString).delete();
+
+          // 3. Delete indexed test results
+          final testResults = await _firestore
+              .collection('IdentifiedResults')
+              .doc(identityString)
+              .collection('tests')
+              .get();
+
+          final batch = _firestore.batch();
+          for (final doc in testResults.docs) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+
+          // Delete the root document in "IdentifiedResults"
+          await _firestore
+              .collection('IdentifiedResults')
+              .doc(identityString)
+              .delete();
+
+          // 4. Delete lookup entry
+          await _firestore.collection('all_users_lookup').doc(uid).delete();
+        }
+
+        // 5. Delete legacy data for safety
+        await _firestore.collection('users').doc(uid).delete();
+
+        // 6. Delete auth account
         await user.delete();
+
+        debugPrint('[AuthService] ✅ Account and data deleted successfully');
         return AuthResult.success(message: 'Account deleted');
       }
       return AuthResult.failure(message: 'No user logged in');
     } catch (e) {
+      debugPrint('[AuthService] ❌ Delete account ERROR: $e');
       return AuthResult.failure(message: 'Failed to delete account');
     }
   }

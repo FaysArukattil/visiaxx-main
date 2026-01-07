@@ -75,12 +75,17 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (_authService.isLoggedIn) {
       final userId = _authService.currentUserId;
+      UserModel? user;
       if (userId != null) {
-        // Start monitoring session for existing login
-        SessionMonitorService().startMonitoring(userId, context);
+        // Fetch user data to get identityString
+        user = await _authService.getUserData(userId);
+        if (user != null && mounted) {
+          // Start monitoring session using identityString
+          SessionMonitorService().startMonitoring(user.identityString, context);
+        }
       }
 
-      final role = await _authService.getCurrentUserRole();
+      final role = user?.role ?? await _authService.getCurrentUserRole();
       if (!mounted) return;
 
       if (role == UserRole.examiner) {

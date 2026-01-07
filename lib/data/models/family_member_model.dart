@@ -18,6 +18,12 @@ class FamilyMemberModel {
     required this.createdAt,
   });
 
+  /// Returns a descriptive string for document naming: Name_Age_Sex_ID
+  String get identityString {
+    final sanitizedFirst = firstName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    return '${sanitizedFirst}_${age}_${sex}_$id';
+  }
+
   /// Create FamilyMemberModel from Firestore document
   factory FamilyMemberModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;

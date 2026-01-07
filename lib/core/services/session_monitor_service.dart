@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 import 'data_cleanup_service.dart';
@@ -10,8 +11,8 @@ import 'data_cleanup_service.dart';
 class SessionData {
   final String sessionId;
   final String deviceInfo;
-  final int loginTime;
-  final int lastActive;
+  final String loginTime;
+  final String lastActive;
 
   SessionData({
     required this.sessionId,
@@ -31,8 +32,8 @@ class SessionData {
     return SessionData(
       sessionId: map['sessionId'] as String? ?? '',
       deviceInfo: map['deviceInfo'] as String? ?? '',
-      loginTime: map['loginTime'] as int? ?? 0,
-      lastActive: map['lastActive'] as int? ?? 0,
+      loginTime: map['loginTime']?.toString() ?? '',
+      lastActive: map['lastActive']?.toString() ?? '',
     );
   }
 }
@@ -49,12 +50,14 @@ class SessionMonitorService {
   String? _currentSessionId;
   String? _currentUserId;
   bool _isMonitoring = false;
+  bool _wasKickedOut = false;
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final FirebaseDatabase _database = FirebaseDatabase.instance;
 
   static const String _sessionIdKey = 'visiaxx_session_id';
   static const String _userIdKey = 'visiaxx_user_id';
+  static const String _identityStringKey = 'visiaxx_identity_string';
 
   /// Get device info for session tracking
   String _getDeviceInfo() {
@@ -76,32 +79,44 @@ class SessionMonitorService {
     return const Uuid().v4();
   }
 
-  /// Create a new session for the user
+  /// Create a new session for the user using their descriptive identity string
   /// Returns the session ID if successful, null otherwise
-  Future<String?> createSession(String userId) async {
+  Future<String?> createSession(String userId, String identityString) async {
     try {
-      debugPrint('[SessionMonitor] Creating session for user: $userId');
+      debugPrint('[SessionMonitor] Creating session for: $identityString');
 
       final sessionId = _generateSessionId();
+      final now = DateTime.now();
+      final formattedTime =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+
       final sessionData = SessionData(
         sessionId: sessionId,
         deviceInfo: _getDeviceInfo(),
-        loginTime: DateTime.now().millisecondsSinceEpoch,
-        lastActive: DateTime.now().millisecondsSinceEpoch,
+        loginTime: formattedTime,
+        lastActive: formattedTime,
       );
 
-      // Store session in Firebase Realtime Database
-      final sessionRef = _database.ref('active_sessions/$userId');
+      // Store session in Firebase Realtime Database using identityString as key
+      // This allows at-a-glance identification in the console
+      final sessionRef = _database.ref('active_sessions/$identityString');
       await sessionRef.set(sessionData.toMap());
 
-      // Store session ID locally
+      // Store session info locally
       await _secureStorage.write(key: _sessionIdKey, value: sessionId);
       await _secureStorage.write(key: _userIdKey, value: userId);
+      await _secureStorage.write(
+        key: _identityStringKey,
+        value: identityString,
+      );
 
       _currentSessionId = sessionId;
       _currentUserId = userId;
 
-      debugPrint('[SessionMonitor] ✅ Session created: $sessionId');
+      debugPrint(
+        '[SessionMonitor] ✅ Session created: $sessionId under $identityString',
+      );
       return sessionId;
     } catch (e) {
       debugPrint('[SessionMonitor] ❌ Failed to create session: $e');
@@ -109,10 +124,10 @@ class SessionMonitorService {
     }
   }
 
-  /// Check if a session exists for the user and if it matches our session
-  Future<SessionCheckResult> checkExistingSession(String userId) async {
+  /// Check if a session exists using the identity string
+  Future<SessionCheckResult> checkExistingSession(String identityString) async {
     try {
-      final sessionRef = _database.ref('active_sessions/$userId');
+      final sessionRef = _database.ref('active_sessions/$identityString');
       final snapshot = await sessionRef.get();
 
       if (!snapshot.exists || snapshot.value == null) {
@@ -147,19 +162,18 @@ class SessionMonitorService {
     }
   }
 
-  /// Start monitoring the user's session for conflicts
-  void startMonitoring(String userId, BuildContext context) {
+  /// Start monitoring the user's session using identity string
+  void startMonitoring(String identityString, BuildContext context) {
     if (_isMonitoring) {
       debugPrint('[SessionMonitor] Already monitoring, skipping');
       return;
     }
 
-    debugPrint('[SessionMonitor] 🔄 Starting session monitoring for: $userId');
+    debugPrint('[SessionMonitor] 🔄 Monitoring session for: $identityString');
 
-    _currentUserId = userId;
     _isMonitoring = true;
 
-    final sessionRef = _database.ref('active_sessions/$userId');
+    final sessionRef = _database.ref('active_sessions/$identityString');
 
     _sessionSubscription = sessionRef.onValue.listen(
       (event) {
@@ -214,9 +228,12 @@ class SessionMonitorService {
 
     // Stop monitoring first to prevent loops
     stopMonitoring();
+    _wasKickedOut = true;
 
-    // Clear local session
-    await _clearLocalSession();
+    // Clear local session info from memory immediately
+    final oldSessionId = _currentSessionId;
+    _currentSessionId = null;
+    _currentUserId = null;
 
     if (!context.mounted) return;
 
@@ -280,19 +297,63 @@ class SessionMonitorService {
   /// Remove the session from Firebase when logging out
   Future<void> removeSession() async {
     try {
-      final userId =
-          _currentUserId ?? await _secureStorage.read(key: _userIdKey);
+      // 1. If we were kicked out, don't delete the remote session
+      // because it now belongs to the NEW device.
+      if (_wasKickedOut) {
+        debugPrint(
+          '[SessionMonitor] Skipping remote remove: already kicked out',
+        );
+        _wasKickedOut = false; // Reset flag
+        await _clearLocalSession();
+        return;
+      }
 
-      if (userId != null) {
-        debugPrint('[SessionMonitor] Removing session for user: $userId');
-        final sessionRef = _database.ref('active_sessions/$userId');
-        await sessionRef.remove();
+      // 2. Try to get identityString from multiple sources
+      String? identity = await _secureStorage.read(key: _identityStringKey);
+
+      // If we don't have identityString, we might have userId (UID)
+      String? userId =
+          _currentUserId ?? await _secureStorage.read(key: _userIdKey);
+      if (userId == null) {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        userId = currentUser?.uid;
+      }
+
+      if (identity != null) {
+        debugPrint('[SessionMonitor] Checking session validity for: $identity');
+        final sessionRef = _database.ref('active_sessions/$identity');
+
+        // ONLY remove if the session ID in DB matches OUR session ID
+        // This prevents overwriting/deleting a session from another device
+        final snapshot = await sessionRef.get();
+        if (snapshot.exists) {
+          final data = snapshot.value as Map<dynamic, dynamic>;
+          final dbSessionId = data['sessionId'] as String?;
+
+          if (dbSessionId == _currentSessionId || _currentSessionId == null) {
+            debugPrint(
+              '[SessionMonitor] Removing session from Firebase: $identity',
+            );
+            await sessionRef.remove().timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => debugPrint('[SessionMonitor] Remove timed out'),
+            );
+          } else {
+            debugPrint(
+              '[SessionMonitor] skipping remove: Session ID mismatch (remote: $dbSessionId, local: $_currentSessionId)',
+            );
+          }
+        }
+      } else if (userId != null) {
+        debugPrint(
+          '[SessionMonitor] No identityString, skipping legacy remove to be safe',
+        );
+        // We don't want to accidentally delete a descriptive session by UID path
       }
 
       await _clearLocalSession();
     } catch (e) {
       debugPrint('[SessionMonitor] ❌ Failed to remove session: $e');
-      // Still clear local session even if Firebase fails
       await _clearLocalSession();
     }
   }
@@ -319,15 +380,19 @@ class SessionMonitorService {
 
   /// Update last active timestamp (optional, for session timeout)
   Future<void> updateLastActive() async {
-    if (_currentUserId == null) return;
+    String? identity = await _secureStorage.read(key: _identityStringKey);
+    if (identity == null) return;
 
     try {
-      final sessionRef = _database.ref(
-        'active_sessions/$_currentUserId/lastActive',
-      );
-      await sessionRef.set(DateTime.now().millisecondsSinceEpoch);
+      final now = DateTime.now();
+      final formattedTime =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+
+      final sessionRef = _database.ref('active_sessions/$identity/lastActive');
+      await sessionRef.set(formattedTime);
     } catch (e) {
-      debugPrint('[SessionMonitor] ❌ Failed to update last active: $e');
+      debugPrint('[SessionMonitor] ❌ Failed to update activity: $e');
     }
   }
 

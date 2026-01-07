@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'session_monitor_service.dart';
 import '../../data/providers/test_session_provider.dart';
 import '../../data/providers/eye_exercise_provider.dart';
 
@@ -26,6 +27,16 @@ class DataCleanupService {
     debugPrint('[DataCleanup] 🧹 Starting comprehensive data cleanup...');
 
     try {
+      // 0. Remove session from Firebase RTDB (DO THIS FIRST while IDs still exist)
+      try {
+        final sessionMonitor = SessionMonitorService();
+        await sessionMonitor.removeSession();
+        sessionMonitor.stopMonitoring();
+        debugPrint('[DataCleanup] ✅ Session removed from Firebase');
+      } catch (e) {
+        debugPrint('[DataCleanup] ⚠️ Failed to remove session: $e');
+      }
+
       // 1. Reset all providers
       await _resetProviders(context);
 

@@ -1,11 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// User roles in the application
-enum UserRole {
-  user,
-  examiner,
-  admin,
-}
+enum UserRole { user, examiner, admin }
 
 /// User model representing a registered user
 class UserModel {
@@ -37,11 +33,37 @@ class UserModel {
 
   String get fullName => '$firstName $lastName';
 
+  /// Returns a descriptive string for folder/document naming: First_Last_Age_Sex_UID
+  String get identityString {
+    final sanitizedFirst = firstName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final sanitizedLast = lastName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    return '${sanitizedFirst}_${sanitizedLast}_${age}_${sex}_$id';
+  }
+
+  /// Returns the Firestore collection name based on the user's role
+  String get roleCollection {
+    switch (role) {
+      case UserRole.user:
+        return 'NormalUsers';
+      case UserRole.examiner:
+        return 'Practitioners';
+      case UserRole.admin:
+        return 'Admins';
+    }
+  }
+
   /// Create UserModel from Firestore document
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    // Use the stored 'id' (UID) if available, fallback to doc.id (which might be identityString)
+    // If it is identityString, we extract the UID from the end
+    String uid = data['id'] ?? doc.id;
+    if (uid.contains('_')) {
+      uid = uid.split('_').last;
+    }
+
     return UserModel(
-      id: doc.id,
+      id: uid,
       firstName: data['firstName'] ?? '',
       lastName: data['lastName'] ?? '',
       email: data['email'] ?? '',
@@ -61,6 +83,7 @@ class UserModel {
   /// Convert UserModel to Firestore document
   Map<String, dynamic> toFirestore() {
     return {
+      'id': id, // Store UID explicitly
       'firstName': firstName,
       'lastName': lastName,
       'email': email,
@@ -69,7 +92,9 @@ class UserModel {
       'phone': phone,
       'role': role.name,
       'createdAt': Timestamp.fromDate(createdAt),
-      'lastLoginAt': lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
+      'lastLoginAt': lastLoginAt != null
+          ? Timestamp.fromDate(lastLoginAt!)
+          : null,
       'familyMemberIds': familyMemberIds,
     };
   }
@@ -79,8 +104,13 @@ class UserModel {
 
   /// Create UserModel from Map (for Firestore data)
   factory UserModel.fromMap(Map<String, dynamic> data, String id) {
+    String uid = data['id'] ?? id;
+    if (uid.contains('_')) {
+      uid = uid.split('_').last;
+    }
+
     return UserModel(
-      id: id,
+      id: uid,
       firstName: data['firstName'] ?? '',
       lastName: data['lastName'] ?? '',
       email: data['email'] ?? '',
@@ -91,7 +121,7 @@ class UserModel {
         (r) => r.name == data['role'],
         orElse: () => UserRole.user,
       ),
-      createdAt: data['createdAt'] is Timestamp 
+      createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
       lastLoginAt: data['lastLoginAt'] is Timestamp

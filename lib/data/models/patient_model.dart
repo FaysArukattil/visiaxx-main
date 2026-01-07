@@ -28,6 +28,16 @@ class PatientModel {
       ? '$firstName $lastName'
       : firstName;
 
+  /// Returns a descriptive string for document naming: First_Last_Age_Sex_ID
+  String get identityString {
+    final sanitizedFirst = firstName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final sanitizedLast = (lastName ?? '').replaceAll(
+      RegExp(r'[^a-zA-Z0-9]'),
+      '',
+    );
+    return '${sanitizedFirst}_${sanitizedLast}_${age}_${sex}_$id';
+  }
+
   /// Create PatientModel from Firestore document
   factory PatientModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;

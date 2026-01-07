@@ -49,9 +49,12 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (result.isSuccess && result.user != null) {
-      // 1. Create session in Firebase RTDB
+      // 1. Create session in Firebase RTDB using identityString for clarity
       final sessionService = SessionMonitorService();
-      final sessionId = await sessionService.createSession(result.user!.id);
+      final sessionId = await sessionService.createSession(
+        result.user!.id,
+        result.user!.identityString,
+      );
 
       if (sessionId == null) {
         // Session creation failed
@@ -63,9 +66,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // 2. Start monitoring this session
+      // 2. Start monitoring this session using identityString
       if (mounted) {
-        sessionService.startMonitoring(result.user!.id, context);
+        sessionService.startMonitoring(result.user!.identityString, context);
       }
 
       // 3. Navigate based on role

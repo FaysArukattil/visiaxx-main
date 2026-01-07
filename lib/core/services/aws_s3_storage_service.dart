@@ -46,6 +46,9 @@ class AWSS3StorageService {
   /// Returns the public URL or null if failed
   Future<String?> uploadPdfReport({
     required String userId,
+    required String identityString,
+    required String roleCollection,
+    required String testCategory,
     required String testId,
     required File pdfFile,
   }) async {
@@ -55,8 +58,12 @@ class AWSS3StorageService {
     }
 
     try {
+      final dateStr = DateTime.now().toIso8601String().split('T')[0];
       final fileName = pdfFile.path.split(Platform.pathSeparator).last;
-      final objectName = '${AWSCredentials.reportsFolder}/$userId/$fileName';
+
+      // New organized path: Role/Identity/Date/Category/Reports/FileName
+      final objectName =
+          '$roleCollection/$identityString/$dateStr/$testCategory/reports/$fileName';
 
       debugPrint(
         '[AWS S3] Uploading PDF to: $objectName (Bucket: ${AWSCredentials.bucketName})',
@@ -95,6 +102,9 @@ class AWSS3StorageService {
   /// Returns the public URL or null if failed
   Future<String?> uploadAmslerGridImage({
     required String userId,
+    required String identityString,
+    required String roleCollection,
+    required String testCategory,
     required String testId,
     required String eye, // 'right' or 'left'
     required File imageFile,
@@ -105,9 +115,12 @@ class AWSS3StorageService {
     }
 
     try {
+      final dateStr = DateTime.now().toIso8601String().split('T')[0];
       final fileName = 'amsler_${testId}_$eye.png';
+
+      // New organized path: Role/Identity/Date/Category/Images/FileName
       final objectName =
-          '${AWSCredentials.amslerGridsFolder}/$userId/$fileName';
+          '$roleCollection/$identityString/$dateStr/$testCategory/images/$fileName';
 
       debugPrint('[AWS S3] Uploading to: $objectName');
 
@@ -144,6 +157,8 @@ class AWSS3StorageService {
   /// Upload general test result image
   Future<String?> uploadTestImage({
     required String userId,
+    required String identityString,
+    required String roleCollection,
     required String fileName,
     required File imageFile,
     Map<String, String>? metadata,
@@ -154,8 +169,9 @@ class AWSS3StorageService {
     }
 
     try {
+      final dateStr = DateTime.now().toIso8601String().split('T')[0];
       final objectName =
-          '${AWSCredentials.testResultsFolder}/$userId/$fileName';
+          '$roleCollection/$identityString/$dateStr/images/$fileName';
 
       debugPrint('[AWS S3] Uploading to: $objectName');
 
@@ -259,31 +275,36 @@ class AWSS3StorageService {
     }
   }
 
-  /// Delete all Amsler grid images for a test
+  /// Delete all a Amsler grid images for a specific test
   Future<bool> deleteAmslerGridImages({
-    required String userId,
+    required String identityString,
+    required String roleCollection,
     required String testId,
   }) async {
     if (!isAvailable) return false;
 
     try {
-      final prefix =
-          '${AWSCredentials.amslerGridsFolder}/$userId/amsler_$testId';
+      // Objects are stored under roleCollection/identityString/
+      // We search recursively for any files matching the testId
+      final prefix = '$roleCollection/$identityString/';
 
-      // List and delete objects
       final results = await _client!
-          .listObjects(AWSCredentials.bucketName, prefix: prefix)
+          .listObjects(
+            AWSCredentials.bucketName,
+            prefix: prefix,
+            recursive: true,
+          )
           .toList();
 
       for (final result in results) {
         for (final obj in result.objects) {
-          if (obj.key != null) {
+          if (obj.key != null && obj.key!.contains(testId)) {
             await deleteImage(obj.key!);
           }
         }
       }
 
-      debugPrint('[AWS S3] ✅ Deleted images with prefix: $prefix');
+      debugPrint('[AWS S3] ✅ Deleted all images for test: $testId');
       return true;
     } catch (e) {
       debugPrint('[AWS S3] ❌ Batch delete failed: $e');

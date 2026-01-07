@@ -1,38 +1,63 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:visiaxx/core/services/aws_s3_storage_service.dart';
+import 'package:visiaxx/core/services/auth_service.dart';
 import 'dart:io';
 import '../../data/models/test_result_model.dart';
+import 'package:intl/intl.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AWSS3StorageService _awsStorageService = AWSS3StorageService();
 
-  /// Collection paths
-  static const String _testResultsCollection = 'test_results';
+  /// New organized collection path
+  static const String _identifiedResultsCollection = 'IdentifiedResults';
 
-  /// Save a complete test result to Firebase
-  /// Returns the document ID of the saved result
+  /// Save a complete test result to Firestore and AWS
   Future<String> saveTestResult({
     required String userId,
     required TestResultModel result,
     File? pdfFile,
   }) async {
     try {
-      debugPrint('[TestResultService] Saving result for user: $userId');
+      debugPrint('[TestResultService] Processing result for user: $userId');
 
-      // Upload images to AWS
+      // 1. Get user identity for path organization
+      final authService = AuthService();
+      final userModel = await authService.getUserData(userId);
+
+      if (userModel == null) {
+        throw Exception(
+          'User details not found. Cannot save organized result.',
+        );
+      }
+
+      final identity = userModel.identityString;
+      final roleCol = userModel.roleCollection;
+
+      // Map technical testType to descriptive category for storage
+      final testCategory = result.testType == 'comprehensive'
+          ? 'FullExam'
+          : 'QuickTest';
+
+      // 2. Upload images to AWS with descriptive path
       TestResultModel updatedResult = await _uploadImagesIfExist(
-        userId,
-        result,
+        userId: userId,
+        identityString: identity,
+        roleCollection: roleCol,
+        testCategory: testCategory,
+        result: result,
       );
 
-      // Upload PDF report to AWS if provided
+      // 3. Upload PDF report to AWS if provided
       if (pdfFile != null && await pdfFile.exists()) {
         debugPrint('[TestResultService] 📤 Uploading PDF report to AWS...');
         final pdfUrl = await _awsStorageService.uploadPdfReport(
           userId: userId,
+          identityString: identity,
+          roleCollection: roleCol,
+          testCategory: testCategory,
           testId: result.id,
           pdfFile: pdfFile,
         );
@@ -40,19 +65,26 @@ class TestResultService {
         if (pdfUrl != null) {
           debugPrint('[TestResultService] ✅ PDF upload successful');
           updatedResult = updatedResult.copyWith(pdfUrl: pdfUrl);
-        } else {
-          debugPrint('[TestResultService] ❌ PDF upload failed');
         }
       }
 
-      final docRef = await _firestore
-          .collection(_testResultsCollection)
-          .doc(userId)
-          .collection('results')
-          .add(updatedResult.toFirestore());
+      // 4. Save to Firestore in the organized "IdentifiedResults" collection
+      // Document ID: [TIMESTAMP]_[STATUS]_[TYPE]
+      final timestampStr = DateFormat(
+        'yyyy-MM-dd_HH-mm',
+      ).format(result.timestamp);
+      final customDocId =
+          '${timestampStr}_${result.overallStatus.name}_$testCategory';
 
-      debugPrint('[TestResultService] ✅ Saved with ID: ${docRef.id}');
-      return docRef.id;
+      await _firestore
+          .collection(_identifiedResultsCollection)
+          .doc(identity)
+          .collection('tests')
+          .doc(customDocId)
+          .set(updatedResult.toFirestore());
+
+      debugPrint('[TestResultService] ✅ Saved to Firestore: $customDocId');
+      return customDocId;
     } catch (e) {
       debugPrint('[TestResultService] ❌ Save ERROR: $e');
       throw Exception('Failed to save test result: $e');
@@ -70,10 +102,13 @@ class TestResultService {
     }
   }
 
-  Future<TestResultModel> _uploadImagesIfExist(
-    String userId,
-    TestResultModel result,
-  ) async {
+  Future<TestResultModel> _uploadImagesIfExist({
+    required String userId,
+    required String identityString,
+    required String roleCollection,
+    required String testCategory,
+    required TestResultModel result,
+  }) async {
     debugPrint('[TestResultService] 📤 Starting AWS image upload process...');
 
     // Check if AWS is available
@@ -97,20 +132,20 @@ class TestResultService {
 
         final awsUrl = await _awsStorageService.uploadAmslerGridImage(
           userId: userId,
+          identityString: identityString,
+          roleCollection: roleCollection,
+          testCategory: testCategory,
           testId: result.id,
           eye: 'right',
           imageFile: file,
         );
 
         if (awsUrl != null) {
-          debugPrint('[TestResultService] ✅ AWS upload successful (right)');
           updatedResult = updatedResult.copyWith(
             amslerGridRight: updatedResult.amslerGridRight!.copyWith(
               awsImageUrl: awsUrl,
             ),
           );
-        } else {
-          debugPrint('[TestResultService] ❌ AWS upload failed (right)');
         }
       }
     }
@@ -125,40 +160,42 @@ class TestResultService {
 
         final awsUrl = await _awsStorageService.uploadAmslerGridImage(
           userId: userId,
+          identityString: identityString,
+          roleCollection: roleCollection,
+          testCategory: testCategory,
           testId: result.id,
           eye: 'left',
           imageFile: file,
         );
 
         if (awsUrl != null) {
-          debugPrint('[TestResultService] ✅ AWS upload successful (left)');
           updatedResult = updatedResult.copyWith(
             amslerGridLeft: updatedResult.amslerGridLeft!.copyWith(
               awsImageUrl: awsUrl,
             ),
           );
-        } else {
-          debugPrint('[TestResultService] ❌ AWS upload failed (left)');
         }
       }
     }
 
-    debugPrint('[TestResultService] 📤 AWS Upload complete!');
     return updatedResult;
   }
 
   /// Get all test results for a user
   Future<List<TestResultModel>> getTestResults(String userId) async {
     try {
-      debugPrint('[TestResultService] Getting results for user: $userId');
-      debugPrint(
-        '[TestResultService] Query path: $_testResultsCollection/$userId/results',
-      );
+      final authService = AuthService();
+      final userModel = await authService.getUserData(userId);
+      if (userModel == null) return [];
+
+      final identity = userModel.identityString;
+
+      debugPrint('[TestResultService] Getting results for: $identity');
 
       final snapshot = await _firestore
-          .collection(_testResultsCollection)
-          .doc(userId)
-          .collection('results')
+          .collection(_identifiedResultsCollection)
+          .doc(identity)
+          .collection('tests')
           .orderBy('timestamp', descending: true)
           .get();
 
@@ -194,10 +231,16 @@ class TestResultService {
     String resultId,
   ) async {
     try {
+      final authService = AuthService();
+      final userModel = await authService.getUserData(userId);
+      if (userModel == null) return null;
+
+      final identity = userModel.identityString;
+
       final doc = await _firestore
-          .collection(_testResultsCollection)
-          .doc(userId)
-          .collection('results')
+          .collection(_identifiedResultsCollection)
+          .doc(identity)
+          .collection('tests')
           .doc(resultId)
           .get();
 
@@ -217,10 +260,16 @@ class TestResultService {
     String profileId,
   ) async {
     try {
+      final authService = AuthService();
+      final userModel = await authService.getUserData(userId);
+      if (userModel == null) return [];
+
+      final identity = userModel.identityString;
+
       final snapshot = await _firestore
-          .collection(_testResultsCollection)
-          .doc(userId)
-          .collection('results')
+          .collection(_identifiedResultsCollection)
+          .doc(identity)
+          .collection('tests')
           .where('profileId', isEqualTo: profileId)
           .orderBy('timestamp', descending: true)
           .get();
@@ -236,10 +285,16 @@ class TestResultService {
   /// Delete a test result
   Future<void> deleteTestResult(String userId, String resultId) async {
     try {
+      final authService = AuthService();
+      final userModel = await authService.getUserData(userId);
+      if (userModel == null) return;
+
+      final identity = userModel.identityString;
+
       await _firestore
-          .collection(_testResultsCollection)
-          .doc(userId)
-          .collection('results')
+          .collection(_identifiedResultsCollection)
+          .doc(identity)
+          .collection('tests')
           .doc(resultId)
           .delete();
     } catch (e) {
@@ -250,10 +305,16 @@ class TestResultService {
   /// Get the most recent test result for a user
   Future<TestResultModel?> getLatestTestResult(String userId) async {
     try {
+      final authService = AuthService();
+      final userModel = await authService.getUserData(userId);
+      if (userModel == null) return null;
+
+      final identity = userModel.identityString;
+
       final snapshot = await _firestore
-          .collection(_testResultsCollection)
-          .doc(userId)
-          .collection('results')
+          .collection(_identifiedResultsCollection)
+          .doc(identity)
+          .collection('tests')
           .orderBy('timestamp', descending: true)
           .limit(1)
           .get();
@@ -272,10 +333,16 @@ class TestResultService {
     String practitionerId,
   ) async {
     try {
+      final authService = AuthService();
+      final practitioner = await authService.getUserData(practitionerId);
+      if (practitioner == null) return [];
+
+      final identity = practitioner.identityString;
+
       // Get all patient IDs linked to this practitioner
       final patientsSnapshot = await _firestore
-          .collection('practitioners')
-          .doc(practitionerId)
+          .collection('Practitioners')
+          .doc(identity)
           .collection('patients')
           .get();
 

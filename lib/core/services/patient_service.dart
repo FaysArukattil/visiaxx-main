@@ -1,22 +1,31 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:visiaxx/core/services/auth_service.dart';
 import '../../data/models/patient_model.dart';
 
 /// Service for managing patient data for practitioners
 class PatientService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Collection path for patients under a practitioner
-  String _patientsPath(String practitionerId) =>
-      'users/$practitionerId/patients';
+  /// Get the organized collection path for patients under a practitioner
+  Future<String> _patientsPath(String practitionerId) async {
+    final authService = AuthService();
+    final practitioner = await authService.getUserData(practitionerId);
+    if (practitioner == null) {
+      // Fallback for safety, though it shouldn't be hit with correct usage
+      return 'Practitioners/$practitionerId/patients';
+    }
+    return 'Practitioners/${practitioner.identityString}/patients';
+  }
 
   /// Get all patients for a practitioner
   Future<List<PatientModel>> getPatients(String practitionerId) async {
     try {
       debugPrint('[PatientService] Loading patients for: $practitionerId');
+      final path = await _patientsPath(practitionerId);
 
       final snapshot = await _firestore
-          .collection(_patientsPath(practitionerId))
+          .collection(path)
           .orderBy('createdAt', descending: true)
           .get();
 
@@ -38,10 +47,8 @@ class PatientService {
     String patientId,
   ) async {
     try {
-      final doc = await _firestore
-          .collection(_patientsPath(practitionerId))
-          .doc(patientId)
-          .get();
+      final path = await _patientsPath(practitionerId);
+      final doc = await _firestore.collection(path).doc(patientId).get();
 
       if (!doc.exists) return null;
       return PatientModel.fromFirestore(doc);
@@ -58,23 +65,16 @@ class PatientService {
   }) async {
     try {
       debugPrint('[PatientService] Saving patient: ${patient.firstName}');
+      final path = await _patientsPath(practitionerId);
 
-      final collectionRef = _firestore.collection(
-        _patientsPath(practitionerId),
-      );
+      final collectionRef = _firestore.collection(path);
 
-      if (patient.id.isEmpty ||
-          patient.id == DateTime.now().millisecondsSinceEpoch.toString()) {
-        // New patient - create with auto-generated ID
-        final docRef = await collectionRef.add(patient.toFirestore());
-        debugPrint('[PatientService] ✅ Created patient with ID: ${docRef.id}');
-        return docRef.id;
-      } else {
-        // Update existing patient
-        await collectionRef.doc(patient.id).set(patient.toFirestore());
-        debugPrint('[PatientService] ✅ Updated patient: ${patient.id}');
-        return patient.id;
-      }
+      // Use descriptive IdentityString for the document ID
+      final identity = patient.identityString;
+
+      await collectionRef.doc(identity).set(patient.toFirestore());
+      debugPrint('[PatientService] ✅ Saved patient with ID: $identity');
+      return identity;
     } catch (e) {
       debugPrint('[PatientService] ❌ Error saving patient: $e');
       rethrow;
@@ -85,11 +85,9 @@ class PatientService {
   Future<void> deletePatient(String practitionerId, String patientId) async {
     try {
       debugPrint('[PatientService] Deleting patient: $patientId');
+      final path = await _patientsPath(practitionerId);
 
-      await _firestore
-          .collection(_patientsPath(practitionerId))
-          .doc(patientId)
-          .delete();
+      await _firestore.collection(path).doc(patientId).delete();
 
       debugPrint('[PatientService] ✅ Deleted patient: $patientId');
     } catch (e) {
