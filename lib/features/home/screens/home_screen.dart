@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/services/data_cleanup_service.dart';
-import '../../../core/services/session_monitor_service.dart';
+import '../../../data/models/user_model.dart';
+import 'profile_screen.dart';
 
 /// User home screen with navigation grid and carousel
 class HomeScreen extends StatefulWidget {
@@ -16,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentCarouselIndex = 0;
   final _authService = AuthService();
-  String _userName = 'User';
+  UserModel? _user;
   bool _isLoading = true;
   String _selectedLanguage = 'English';
 
@@ -76,52 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
       final user = await _authService.getUserData(_authService.currentUserId!);
       if (mounted && user != null) {
         setState(() {
-          _userName = user.firstName;
+          _user = user;
           _isLoading = false;
         });
       }
     } else {
       setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _handleLogout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      // 1. Stop session monitoring
-      SessionMonitorService().stopMonitoring();
-
-      // 2. Comprehensive cleanup and logout
-      if (mounted) {
-        await DataCleanupService.cleanupAllData(context);
-
-        // 3. Navigate to login
-        if (mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/login',
-            (route) => false,
-          );
-        }
-      }
     }
   }
 
@@ -322,50 +282,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              PopupMenuButton<String>(
-                offset: const Offset(0, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                onSelected: (value) {
-                  if (value == 'logout') _handleLogout();
+              GestureDetector(
+                onTap: () {
+                  if (_user != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfileScreen(user: _user!),
+                      ),
+                    );
+                  }
                 },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'profile',
-                    child: Row(
-                      children: [
-                        Icon(Icons.person_outline, size: 20),
-                        SizedBox(width: 12),
-                        Text('My Profile'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'settings',
-                    child: Row(
-                      children: [
-                        Icon(Icons.settings_outlined, size: 20),
-                        SizedBox(width: 12),
-                        Text('Settings'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout, size: 20, color: AppColors.error),
-                        SizedBox(width: 12),
-                        Text(
-                          'Logout',
-                          style: TextStyle(color: AppColors.error),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
                 child: Container(
                   width: 44,
                   height: 44,
@@ -375,7 +302,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Center(
                     child: Text(
-                      _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+                      _user?.firstName.isNotEmpty == true
+                          ? _user!.firstName[0].toUpperCase()
+                          : 'U',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -389,7 +318,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Hello, $_userName 👋',
+            'Hello, ${_user?.firstName ?? 'User'} 👋',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.grey[900],

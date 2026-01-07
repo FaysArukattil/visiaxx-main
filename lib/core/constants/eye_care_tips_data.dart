@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../features/eye_care_tips/models/eye_care_tip_model.dart';
 
@@ -650,8 +651,9 @@ class EyeCareTipsData {
   /// Get tip of the day based on current date
   static EyeCareTip getTipOfTheDay() {
     final now = DateTime.now();
-    // Create a deterministic index based on day of year
-    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
+    // Create a stable seed for the day to keep the tip consistent throughout the day
+    final daySeed = now.year * 10000 + now.month * 100 + now.day;
+    final random = Random(daySeed);
 
     // Combine all tips from all categories
     final allTips = <EyeCareTip>[];
@@ -659,8 +661,10 @@ class EyeCareTipsData {
       allTips.addAll(category.tips);
     }
 
-    // Use modulo to cycle through all tips
-    final tipIndex = dayOfYear % allTips.length;
+    if (allTips.isEmpty) return screenTips.first;
+
+    // Use random index based on the day's seed
+    final tipIndex = random.nextInt(allTips.length);
     return allTips[tipIndex];
   }
 }

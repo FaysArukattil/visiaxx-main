@@ -236,25 +236,47 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
 
     if (_groupedResults.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.folder_open, size: 48, color: AppColors.textTertiary),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isEmpty
-                  ? 'No results yet'
-                  : 'No results matching "$_searchQuery"',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-            if (_searchQuery.isEmpty) ...[
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.visibility_outlined,
+                  size: 40,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'No Results Yet',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[900],
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
-                'Complete a test to see results here',
-                style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                _searchQuery.isEmpty
+                    ? 'Conduct a vision test for a patient\nto see results here'
+                    : 'No results matching "$_searchQuery"',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.4,
+                ),
               ),
             ],
-          ],
+          ),
         ),
       );
     }
