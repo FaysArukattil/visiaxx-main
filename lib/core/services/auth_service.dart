@@ -89,8 +89,25 @@ class AuthService {
     required String sex,
     required String phone,
     required UserRole role,
+    String? practitionerCode,
   }) async {
     try {
+      // 1. If role is examiner, validate the access code first
+      if (role == UserRole.examiner) {
+        if (practitionerCode == null || practitionerCode.isEmpty) {
+          return AuthResult.failure(
+            message: 'Practitioner access code is required',
+          );
+        }
+
+        final isValidCode = await validatePractitionerCode(practitionerCode);
+        if (!isValidCode) {
+          return AuthResult.failure(
+            message: "You don't have access to this feature",
+          );
+        }
+      }
+
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
@@ -151,6 +168,40 @@ class AuthService {
       return AuthResult.failure(message: _getAuthErrorMessage(e.code));
     } catch (e) {
       return AuthResult.failure(message: 'An unexpected error occurred: $e');
+    }
+  }
+
+  /// Validate the practitioner access code against Firestore
+  Future<bool> validatePractitionerCode(String code) async {
+    try {
+      debugPrint('[AuthService] 🔍 Validating practitioner code: "$code"');
+      final doc = await _firestore
+          .collection('AppSettings')
+          .doc('PractitionerAccess')
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        final storedCode = doc.data()!['accessCode'] as String?;
+        debugPrint('[AuthService] 📄 Found stored code: "$storedCode"');
+
+        if (storedCode == null) {
+          debugPrint('[AuthService] ⚠️ storedCode is null in Firestore');
+          return false;
+        }
+
+        // Use trim() on both sides to avoid accidental space issues
+        final bool isValid = storedCode.trim() == code.trim();
+        debugPrint('[AuthService] ⚖️ Validation result: $isValid');
+        return isValid;
+      } else {
+        debugPrint(
+          '[AuthService] ❌ PractitionerAccess document does not exist in AppSettings collection',
+        );
+        return false;
+      }
+    } catch (e) {
+      debugPrint('[AuthService] ❌ validatePractitionerCode error: $e');
+      return false;
     }
   }
 

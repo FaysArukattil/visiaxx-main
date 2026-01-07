@@ -21,6 +21,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _ageController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _practitionerCodeController = TextEditingController();
   final _authService = AuthService();
 
   String _selectedSex = 'Male';
@@ -38,6 +39,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _ageController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _practitionerCodeController.dispose();
     super.dispose();
   }
 
@@ -49,6 +51,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       _errorMessage = null;
     });
 
+    debugPrint(
+      '[RegistrationScreen] 🚀 Attempting registration for role: $_selectedRole',
+    );
+    if (_selectedRole == UserRole.examiner) {
+      debugPrint(
+        '[RegistrationScreen] 🔑 Access code entered: "${_practitionerCodeController.text}"',
+      );
+    }
+
     final result = await _authService.registerWithEmail(
       email: _emailController.text,
       password: _passwordController.text,
@@ -58,7 +69,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       sex: _selectedSex,
       phone: _phoneController.text.trim(),
       role: _selectedRole,
+      practitionerCode: _selectedRole == UserRole.examiner
+          ? _practitionerCodeController.text.trim()
+          : null,
     );
+
+    debugPrint(
+      '[RegistrationScreen] 🏁 Registration result success: ${result.isSuccess}',
+    );
+    if (!result.isSuccess) {
+      debugPrint('[RegistrationScreen] ❌ Error message: ${result.message}');
+    }
 
     if (!mounted) return;
 
@@ -292,6 +313,26 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
+                // Practitioner Access Code (Conditional)
+                if (_selectedRole == UserRole.examiner) ...[
+                  TextFormField(
+                    controller: _practitionerCodeController,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Practitioner Access Code *',
+                      hintText: 'Enter secret code provided by admin',
+                      prefixIcon: Icon(Icons.vpn_key_outlined),
+                    ),
+                    validator: (value) {
+                      if (_selectedRole == UserRole.examiner &&
+                          (value == null || value.isEmpty)) {
+                        return 'Access code is required for practitioners';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 // Password
                 TextFormField(
                   controller: _passwordController,
