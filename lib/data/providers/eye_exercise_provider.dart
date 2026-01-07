@@ -30,4 +30,12 @@ class EyeExerciseProvider with ChangeNotifier {
     _videos = ExerciseVideos.getShuffledVideos();
     notifyListeners();
   }
+
+  /// Full state reset for logout - clears all data including initialization
+  void resetState() {
+    _currentIndex = 0;
+    _videos = [];
+    _isInitialized = false;
+    notifyListeners();
+  }
 }

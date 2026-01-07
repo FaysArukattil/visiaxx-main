@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/session_monitor_service.dart';
 import '../../../data/models/user_model.dart';
 
 /// Professional eye care splash screen with elegant animations
@@ -73,6 +74,12 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     if (_authService.isLoggedIn) {
+      final userId = _authService.currentUserId;
+      if (userId != null) {
+        // Start monitoring session for existing login
+        SessionMonitorService().startMonitoring(userId, context);
+      }
+
       final role = await _authService.getCurrentUserRole();
       if (!mounted) return;
 

@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/user_model.dart';
+import 'session_monitor_service.dart';
 
 /// Firebase Authentication Service
 class AuthService {
@@ -33,7 +35,7 @@ class AuthService {
       if (credential.user != null) {
         // Get user data from Firestore
         final userModel = await getUserData(credential.user!.uid);
-        
+
         // Update last login
         await _firestore.collection('users').doc(credential.user!.uid).update({
           'lastLoginAt': FieldValue.serverTimestamp(),
@@ -127,8 +129,20 @@ class AuthService {
     return user?.role;
   }
 
-  /// Sign out
+  /// Sign out with full session cleanup
   Future<void> signOut() async {
+    try {
+      // Remove session from Firebase Realtime Database
+      final sessionMonitor = SessionMonitorService();
+      await sessionMonitor.removeSession();
+      sessionMonitor.stopMonitoring();
+
+      debugPrint('[AuthService] ✅ Session removed, signing out...');
+    } catch (e) {
+      debugPrint('[AuthService] ⚠️ Error removing session: $e');
+    }
+
+    // Sign out from Firebase Auth
     await _auth.signOut();
   }
 
@@ -196,11 +210,7 @@ class AuthResult {
   final String? message;
   final UserModel? user;
 
-  AuthResult._({
-    required this.isSuccess,
-    this.message,
-    this.user,
-  });
+  AuthResult._({required this.isSuccess, this.message, this.user});
 
   factory AuthResult.success({UserModel? user, String? message}) {
     return AuthResult._(isSuccess: true, user: user, message: message);

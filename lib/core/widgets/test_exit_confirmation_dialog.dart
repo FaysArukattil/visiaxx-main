@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../services/data_cleanup_service.dart';
 
 class TestExitConfirmationDialog extends StatelessWidget {
   final VoidCallback onContinue;
@@ -69,9 +70,13 @@ class TestExitConfirmationDialog extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                onExit();
+              onPressed: () async {
+                // Clear test-specific data before exiting
+                await DataCleanupService.cleanupTestData(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  onExit();
+                }
               },
               style: TextButton.styleFrom(foregroundColor: AppColors.error),
               child: const Text('Exit and Lose Progress'),

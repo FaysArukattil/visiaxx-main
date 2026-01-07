@@ -843,9 +843,12 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _ttsService.stop();
     _fuzzyMatcher.reset();
 
+    // ✅ FIX: Preserve the current mode (short or long) - only restart in that mode
+    final preservedMode = _currentMode;
+
     setState(() {
       _currentEye = 'right';
-      _currentMode = 'short';
+      _currentMode = preservedMode; // ✅ Keep the current distance mode
       _currentScreenIndex = 0;
       _currentTripletIndex = 0;
       _isTestActive = false;
@@ -853,24 +856,20 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _isSpeechActive = false;
       _showingInstructions = false;
       _showDistanceCalibration = true;
-      _mainInstructionsShown =
-          true; // ✅ FIX: Skip general instructions on restart
+      _mainInstructionsShown = true; // ✅ Skip general instructions on restart
       _isTestPausedForDistance = false;
       _isPausedForExit = false;
-      _shortResponses.forEach((_, list) => list.clear());
-      _longResponses.forEach((_, list) => list.clear());
+      // ✅ Only clear responses for the current mode
+      if (preservedMode == 'short') {
+        _shortResponses.forEach((_, list) => list.clear());
+      } else {
+        _longResponses.forEach((_, list) => list.clear());
+      }
       _recognizedText = '';
       _speechDetected = false;
     });
 
-    // ✅ FIX: Reinitialize speech callbacks without showing instructions again
-    _continuousSpeech.onFinalResult = _handleVoiceResponse;
-    _continuousSpeech.onSpeechDetected = _handleSpeechDetected;
-    _continuousSpeech.onListeningStateChanged = (isListening) {
-      if (mounted) setState(() => _isListening = isListening);
-    };
-
-    // Go directly to calibration screen
+    // Go directly to calibration screen (callbacks already set in _initServices)
     _showCalibrationScreen();
   }
 

@@ -38,6 +38,7 @@ import 'data/providers/eye_exercise_provider.dart';
 
 // AWS Credentials Manager
 import 'core/services/aws_credentials_manager.dart';
+import 'core/services/session_monitor_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,8 +77,34 @@ void main() async {
   runApp(const VisiaxApp());
 }
 
-class VisiaxApp extends StatelessWidget {
+class VisiaxApp extends StatefulWidget {
   const VisiaxApp({super.key});
+
+  @override
+  State<VisiaxApp> createState() => _VisiaxAppState();
+}
+
+class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    SessionMonitorService().stopMonitoring();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Update last active when user returns to app
+      SessionMonitorService().updateLastActive();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

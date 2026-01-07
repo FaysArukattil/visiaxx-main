@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/session_monitor_service.dart';
 import '../../../data/models/user_model.dart';
 
 /// Login screen with Firebase authentication
@@ -47,8 +48,28 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = false;
     });
 
-    if (result.isSuccess) {
-      // Navigate based on role
+    if (result.isSuccess && result.user != null) {
+      // 1. Create session in Firebase RTDB
+      final sessionService = SessionMonitorService();
+      final sessionId = await sessionService.createSession(result.user!.id);
+
+      if (sessionId == null) {
+        // Session creation failed
+        await _authService.signOut();
+        setState(() {
+          _errorMessage = 'Could not create session. Please try again.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 2. Start monitoring this session
+      if (mounted) {
+        sessionService.startMonitoring(result.user!.id, context);
+      }
+
+      // 3. Navigate based on role
+      if (!mounted) return;
       if (result.user?.role == UserRole.examiner) {
         Navigator.pushReplacementNamed(context, '/practitioner-home');
       } else {

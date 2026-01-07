@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/data_cleanup_service.dart';
+import '../../../core/services/session_monitor_service.dart';
 
 /// Practitioner home screen with customized layout
 /// - "Add Patient" instead of "Test for Yourself"
@@ -85,9 +87,21 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
     );
 
     if (confirm == true) {
-      await _authService.signOut();
+      // 1. Stop session monitoring
+      SessionMonitorService().stopMonitoring();
+
+      // 2. Comprehensive cleanup and logout
       if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        await DataCleanupService.cleanupAllData(context);
+
+        // 3. Navigate to login
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (route) => false,
+          );
+        }
       }
     }
   }
