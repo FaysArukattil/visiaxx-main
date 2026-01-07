@@ -48,6 +48,7 @@ class DefaultFirebaseOptions {
     authDomain: 'visiaxx-fd860.firebaseapp.com',
     storageBucket: 'visiaxx-fd860.firebasestorage.app',
     measurementId: 'G-5BWJN272TE',
+    databaseURL: 'https://visiaxx-fd860-default-rtdb.firebaseio.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -56,6 +57,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '172938802712',
     projectId: 'visiaxx-fd860',
     storageBucket: 'visiaxx-fd860.firebasestorage.app',
+    databaseURL: 'https://visiaxx-fd860-default-rtdb.firebaseio.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -65,6 +67,7 @@ class DefaultFirebaseOptions {
     projectId: 'visiaxx-fd860',
     storageBucket: 'visiaxx-fd860.firebasestorage.app',
     iosBundleId: 'com.example.visiaxx',
+    databaseURL: 'https://visiaxx-fd860-default-rtdb.firebaseio.com',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -74,6 +77,7 @@ class DefaultFirebaseOptions {
     projectId: 'visiaxx-fd860',
     storageBucket: 'visiaxx-fd860.firebasestorage.app',
     iosBundleId: 'com.example.visiaxx',
+    databaseURL: 'https://visiaxx-fd860-default-rtdb.firebaseio.com',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
@@ -84,5 +88,6 @@ class DefaultFirebaseOptions {
     authDomain: 'visiaxx-fd860.firebaseapp.com',
     storageBucket: 'visiaxx-fd860.firebasestorage.app',
     measurementId: 'G-WMLKEKVXK0',
+    databaseURL: 'https://visiaxx-fd860-default-rtdb.firebaseio.com',
   );
 }

@@ -77,11 +77,72 @@ class _SplashScreenState extends State<SplashScreen>
       final userId = _authService.currentUserId;
       UserModel? user;
       if (userId != null) {
-        // Fetch user data to get identityString
+        // 1. Fetch user data to get identityString
         user = await _authService.getUserData(userId);
+
         if (user != null && mounted) {
-          // Start monitoring session using identityString
-          SessionMonitorService().startMonitoring(user.identityString, context);
+          // 2. STRICTOR CHECK: Verify if we still own the active session
+          final sessionService = SessionMonitorService();
+          final checkResult = await sessionService.checkExistingSession(
+            user.identityString,
+          );
+
+          if (checkResult.exists && !checkResult.isOurSession) {
+            debugPrint(
+              '[SplashScreen] 🚨 Session stolen by another device. Forcing logout.',
+            );
+
+            // FLAG as kicked out so removeSession doesn't delete the new remote session!
+            sessionService.markKickedOut();
+
+            // Show alert before navigating
+            if (mounted) {
+              await showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (ctx) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Logged Out',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Text(
+                    'Your account is currently active on: ${checkResult.sessionData?.deviceInfo ?? 'Another Device'}.\n\nYou have been logged out on this device.',
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                  actions: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Perform cleanup
+            await _authService.signOut();
+            if (!mounted) return;
+            Navigator.pushReplacementNamed(context, '/login');
+            return;
+          }
+
+          // 3. Start monitoring if session is valid
+          sessionService.startMonitoring(user.identityString, context);
         }
       }
 

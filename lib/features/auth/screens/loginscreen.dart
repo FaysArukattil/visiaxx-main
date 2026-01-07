@@ -49,29 +49,49 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (result.isSuccess && result.user != null) {
-      // 1. Create session in Firebase RTDB using identityString for clarity
+      // 1. Check for existing active session on another device
       final sessionService = SessionMonitorService();
-      final sessionId = await sessionService.createSession(
-        result.user!.id,
+      final checkResult = await sessionService.checkExistingSession(
         result.user!.identityString,
       );
 
-      if (sessionId == null) {
-        // Session creation failed
+      if (checkResult.exists &&
+          checkResult.isOnline &&
+          !checkResult.isOurSession) {
+        // Active session elsewhere - Block Login
         await _authService.signOut();
         setState(() {
-          _errorMessage = 'Could not create session. Please try again.';
+          _errorMessage =
+              'Account is currently active on another device. Please logout there first.';
           _isLoading = false;
         });
         return;
       }
 
-      // 2. Start monitoring this session using identityString
+      // 2. Create/Overwrite session
+      final creationResult = await sessionService.createSession(
+        result.user!.id,
+        result.user!.identityString,
+      );
+
+      if (!creationResult.isSuccess) {
+        // Session creation failed (e.g. Rule issue)
+        await _authService.signOut();
+        setState(() {
+          _errorMessage =
+              creationResult.error ??
+              'Could not create session. Please try again.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 3. Start monitoring this session using identityString
       if (mounted) {
         sessionService.startMonitoring(result.user!.identityString, context);
       }
 
-      // 3. Navigate based on role
+      // 4. Navigate based on role
       if (!mounted) return;
       if (result.user?.role == UserRole.examiner) {
         Navigator.pushReplacementNamed(context, '/practitioner-home');
