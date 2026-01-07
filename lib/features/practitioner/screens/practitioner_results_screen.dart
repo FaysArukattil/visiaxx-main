@@ -960,6 +960,8 @@ class _ResultDetailSheet extends StatelessWidget {
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const SizedBox.shrink(),
                 )
               : (path != null)
               ? Image.file(
@@ -967,12 +969,26 @@ class _ResultDetailSheet extends StatelessWidget {
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    if (url != null) {
+                      return Image.network(
+                        url,
+                        height: 120,
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                        errorBuilder: (c, e, s) => const SizedBox.shrink(),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
                 )
               : Image.network(
                   url!,
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const SizedBox.shrink(),
                 ),
         ),
       ),

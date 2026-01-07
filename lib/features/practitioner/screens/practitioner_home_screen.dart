@@ -601,7 +601,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                 child: _ServiceCard(
                   icon: Icons.speed_rounded,
                   title: 'Quick Test',
-                  subtitle: 'Immediate vision check',
+                  subtitle: null,
                   onTap: () => Navigator.pushNamed(
                     context,
                     '/practitioner-profile-selection',
@@ -613,7 +613,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                 child: _ServiceCard(
                   icon: Icons.assessment_rounded,
                   title: 'Full Eye Exam',
-                  subtitle: 'Comprehensive analysis',
+                  subtitle: null,
                   onTap: () => Navigator.pushNamed(
                     context,
                     '/practitioner-profile-selection',
