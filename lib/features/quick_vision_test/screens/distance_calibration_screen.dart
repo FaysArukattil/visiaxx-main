@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/distance_helper.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 /// Distance Calibration Screen with real camera preview and face detection
 /// Shows real-time distance and guidance to position correctly
@@ -312,13 +313,9 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
             child: const Text('Continue Test'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
+              await NavigationUtils.navigateHome(context);
             },
             child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),

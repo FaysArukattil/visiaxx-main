@@ -16,6 +16,7 @@ import '../widgets/ishihara_plate_viewer.dart';
 import 'distance_calibration_screen.dart';
 import 'amsler_grid_test_screen.dart';
 import 'color_vision_instructions_screen.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 /// Clinical-grade Color Vision Test
 /// Tests BOTH eyes separately using Ishihara plates
@@ -195,13 +196,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               const SizedBox(height: 8),
               // Exit Test
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(dialogContext);
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/home',
-                    (route) => false,
-                  );
+                  await NavigationUtils.navigateHome(context);
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.error,

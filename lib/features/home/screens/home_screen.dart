@@ -445,9 +445,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCarousel() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final carouselHeight =
+        screenHeight * 0.22; // Approximately 22% of screen height
+
     return CarouselSlider(
       options: CarouselOptions(
-        height: 200,
+        height: carouselHeight > 220
+            ? 220
+            : (carouselHeight < 180 ? 180 : carouselHeight),
         autoPlay: true,
         autoPlayInterval: const Duration(seconds: 5),
         enlargeCenterPage: true,
@@ -542,9 +548,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 slide['content'] as String,
                 style: TextStyle(
                   color: Colors.grey[800],
-                  fontSize: 11.5,
-                  height: 1.4,
+                  fontSize: 10.5,
+                  height: 1.2,
                 ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
               Text(
@@ -563,7 +571,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // Founder images (right side) - staggered diagonally
         SizedBox(
           width: 70,
-          height: 190,
+          height: 150, // Reduced from 190
           child: Stack(
             children: [
               Positioned(
@@ -585,8 +593,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFounderImage(String imagePath) {
     return Container(
-      width: 50,
-      height: 100,
+      width: 45, // Reduced from 50
+      height: 85, // Reduced from 100
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -627,19 +635,23 @@ class _HomeScreenState extends State<HomeScreen> {
           slide['heading'] as String,
           style: TextStyle(
             color: AppColors.primary,
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.3,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Text(
           slide['content'] as String,
-          style: TextStyle(color: Colors.grey[800], fontSize: 13, height: 1.5),
-          maxLines: 4,
+          style: TextStyle(
+            color: Colors.grey[800],
+            fontSize: 11.5,
+            height: 1.4,
+          ),
+          maxLines: 3,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(

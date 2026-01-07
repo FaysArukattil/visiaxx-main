@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/radio_group.dart';
 import '../../../data/models/questionnaire_model.dart';
 import '../../../data/providers/test_session_provider.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 /// Pre-test questionnaire with dynamic follow-up questions
 class QuestionnaireScreen extends StatefulWidget {
@@ -163,13 +164,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             child: const Text('Continue Test'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
+              await NavigationUtils.navigateHome(context);
             },
             child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),

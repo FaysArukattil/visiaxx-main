@@ -3,6 +3,7 @@ import 'package:visiaxx/features/quick_vision_test/screens/visual_acuity_test_sc
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 class CoverRightEyeInstructionScreen extends StatefulWidget {
@@ -125,8 +126,8 @@ class _CoverRightEyeInstructionScreenState
           _startCountdown();
           _ttsService.speak(widget.ttsMessage, speechRate: 0.5);
         },
-        onExit: () {
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
         },
       ),
     );

@@ -4,6 +4,7 @@ import 'package:visiaxx/features/results/widgets/wear_specs_animation.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 /// Test instructions screen with TTS and relaxation image
 class TestInstructionsScreen extends StatefulWidget {
@@ -119,13 +120,9 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
             child: const Text('Continue Test'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
+              await NavigationUtils.navigateHome(context);
             },
             child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),

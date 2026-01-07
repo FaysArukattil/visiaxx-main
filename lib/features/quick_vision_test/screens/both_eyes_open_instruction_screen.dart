@@ -4,6 +4,7 @@ import 'package:visiaxx/features/quick_vision_test/screens/short_distance_test_s
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 class BothEyesOpenInstructionScreen extends StatefulWidget {
   final String title;
@@ -135,13 +136,9 @@ class _BothEyesOpenInstructionScreenState
             child: const Text('Continue Test'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
+              await NavigationUtils.navigateHome(context);
             },
             child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),

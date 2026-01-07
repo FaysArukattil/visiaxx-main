@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
+import 'package:visiaxx/core/utils/navigation_utils.dart';
 
 import 'package:visiaxx/features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
 import '../../../core/constants/app_colors.dart';
@@ -243,13 +244,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               const SizedBox(height: 8),
               // Exit Test
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(dialogContext);
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/home',
-                    (route) => false,
-                  );
+                  await NavigationUtils.navigateHome(context);
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.error,

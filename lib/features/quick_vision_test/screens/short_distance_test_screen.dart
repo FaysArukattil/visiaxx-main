@@ -13,6 +13,7 @@ import '../../../core/services/distance_detection_service.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/short_distance_result.dart';
 import '../../../core/services/distance_skip_manager.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 /// Short distance reading test - both eyes open, 40cm distance
 /// ✅ ULTRA-RELIABLE voice recognition with continuous listening
@@ -295,13 +296,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
               const SizedBox(height: 8),
               // Exit Test
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(dialogContext);
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/home',
-                    (route) => false,
-                  );
+                  await NavigationUtils.navigateHome(context);
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.error,

@@ -9,6 +9,7 @@ import 'package:visiaxx/core/services/test_result_service.dart';
 import 'package:visiaxx/core/services/pdf_export_service.dart';
 import 'package:visiaxx/core/utils/ui_utils.dart';
 import 'package:visiaxx/core/utils/snackbar_utils.dart';
+import 'package:visiaxx/core/utils/navigation_utils.dart';
 import 'package:visiaxx/core/widgets/download_success_dialog.dart';
 import 'package:visiaxx/data/models/test_result_model.dart';
 import 'package:visiaxx/data/providers/test_session_provider.dart';
@@ -118,6 +119,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     }
   }
 
+  Future<void> _navigateHome() async {
+    await NavigationUtils.navigateHome(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TestSessionProvider>();
@@ -139,7 +144,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Navigator.pop(context);
         } else {
           provider.reset();
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          _navigateHome();
         }
       },
       child: Scaffold(
@@ -152,11 +157,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 icon: const Icon(Icons.home),
                 onPressed: () {
                   provider.reset();
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/home',
-                    (route) => false,
-                  );
+                  _navigateHome();
                 },
               ),
           ],

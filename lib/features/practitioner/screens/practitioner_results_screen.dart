@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
+import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/test_result_service.dart';
+import '../../../core/services/pdf_export_service.dart';
+import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
+import '../../../core/widgets/download_success_dialog.dart';
 
 /// Enhanced results screen for practitioners
 /// Features:
@@ -27,6 +34,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
   String? _errorMessage;
 
   final TestResultService _resultService = TestResultService();
+  final PdfExportService _pdfExportService = PdfExportService();
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -331,156 +339,667 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
   }
 
   Widget _buildResultCard(TestResultModel result) {
-    final timeFormat = DateFormat('h:mm a');
-    final statusColor = _getStatusColor(result.overallStatus);
-    final statusText = _getStatusText(result.overallStatus);
+    Color statusColor;
+    switch (result.overallStatus) {
+      case TestStatus.normal:
+        statusColor = AppColors.success;
+        break;
+      case TestStatus.review:
+        statusColor = AppColors.warning;
+        break;
+      case TestStatus.urgent:
+        statusColor = AppColors.error;
+        break;
+    }
 
-    return GestureDetector(
-      onTap: () => _viewResult(result),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Profile avatar
-            CircleAvatar(
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              radius: 24,
-              child: Text(
-                result.profileName.isNotEmpty
-                    ? result.profileName[0].toUpperCase()
-                    : '?',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+    final bool isComprehensive = result.testType == 'comprehensive';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isComprehensive ? const Color(0xFFF0F7FF) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: isComprehensive
+            ? Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                width: 1.5,
+              )
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: isComprehensive
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                child: Text(
+                  result.profileName.isNotEmpty ? result.profileName[0] : '?',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 14),
-
-            // Patient info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    result.profileName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        timeFormat.format(result.timestamp),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result.profileName.isNotEmpty
+                          ? result.profileName
+                          : 'Self',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
-                      const SizedBox(width: 8),
+                    ),
+                    Text(
+                      DateFormat(
+                        'MMM dd, yyyy • h:mm a',
+                      ).format(result.timestamp),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    if (isComprehensive) ...[
+                      const SizedBox(height: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: result.testType == 'comprehensive'
-                              ? AppColors.secondary.withValues(alpha: 0.1)
-                              : AppColors.primary.withValues(alpha: 0.1),
+                          color: AppColors.primary,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(
-                          result.testType == 'comprehensive' ? 'Full' : 'Quick',
+                        child: const Text(
+                          'FULL EXAMINATION',
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: result.testType == 'comprehensive'
-                                ? AppColors.secondary
-                                : AppColors.primary,
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
                     ],
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  result.overallStatus.label,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Results grid
+          GestureDetector(
+            onTap: () => _showResultDetails(result),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  _buildMiniResult(
+                    'VA (R)',
+                    result.visualAcuityRight?.snellenScore ?? 'N/A',
+                  ),
+                  _buildMiniResult(
+                    'VA (L)',
+                    result.visualAcuityLeft?.snellenScore ?? 'N/A',
+                  ),
+                  _buildMiniResult(
+                    'Color',
+                    result.colorVision?.isNormal == true ? 'Normal' : 'Check',
+                  ),
+                  if (isComprehensive && result.pelliRobson != null)
+                    _buildMiniResult(
+                      'Contrast',
+                      result.pelliRobson!.averageScore.toStringAsFixed(1),
+                    )
+                  else
+                    _buildMiniResult(
+                      'Amsler',
+                      (result.amslerGridRight?.hasDistortions != true &&
+                              result.amslerGridLeft?.hasDistortions != true)
+                          ? 'Normal'
+                          : 'Check',
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Action buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // Navigate to full-page result view
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            QuickTestResultScreen(historicalResult: result),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _downloadPdf(result),
+                  icon: const Icon(Icons.download, size: 16),
+                  label: const Text('PDF'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Share button
+              IconButton(
+                onPressed: () => _sharePdf(result),
+                icon: const Icon(Icons.share, size: 20),
+                color: AppColors.primary,
+                tooltip: 'Share report',
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Delete button
+              IconButton(
+                onPressed: () => _confirmDeleteResult(result),
+                icon: const Icon(Icons.delete_outline, size: 20),
+                color: AppColors.error,
+                tooltip: 'Delete result',
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.error.withValues(alpha: 0.1),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniResult(String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: AppColors.primary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _downloadPdf(TestResultModel result) async {
+    try {
+      final String filePath = await _pdfExportService.getExpectedFilePath(
+        result,
+      );
+      final File file = File(filePath);
+
+      if (await file.exists()) {
+        if (mounted) {
+          await showDownloadSuccessDialog(context: context, filePath: filePath);
+        }
+        return;
+      }
+
+      if (!mounted) return;
+      UIUtils.showProgressDialog(
+        context: context,
+        message: 'Generating PDF...',
+      );
+
+      final String generatedPath = await _pdfExportService
+          .generateAndDownloadPdf(result);
+
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+        await showDownloadSuccessDialog(
+          context: context,
+          filePath: generatedPath,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate PDF: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _sharePdf(TestResultModel result) async {
+    try {
+      UIUtils.showProgressDialog(context: context, message: 'Preparing PDF...');
+      final String filePath = await _pdfExportService.generateAndDownloadPdf(
+        result,
+      );
+      if (mounted) UIUtils.hideProgressDialog(context);
+      await Share.shareXFiles([XFile(filePath)], text: 'Vision Test Report');
+    } catch (e) {
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share PDF: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteResult(TestResultModel result) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Result?'),
+        content: Text(
+          'Are you sure you want to remove the test result for ${result.profileName}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _deleteResult(result);
+    }
+  }
+
+  Future<void> _deleteResult(TestResultModel result) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await _resultService.deleteTestResult(user.uid, result.id);
+      _loadResults(); // Refresh list
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showResultDetails(TestResultModel result) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      builder: (context) =>
+          _ResultDetailSheet(result: result, onShareImage: _shareGridTracing),
+    );
+  }
+
+  Future<void> _shareGridTracing(String? localPath, String? remoteUrl) async {
+    try {
+      if (localPath != null && await File(localPath).exists()) {
+        await Share.shareXFiles([
+          XFile(localPath),
+        ], text: 'Amsler Grid Tracing');
+      } else if (remoteUrl != null) {
+        final response = await http.get(Uri.parse(remoteUrl));
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/amsler_share.png');
+        await file.writeAsBytes(response.bodyBytes);
+        await Share.shareXFiles([
+          XFile(file.path),
+        ], text: 'Amsler Grid Tracing');
+      }
+    } catch (e) {
+      debugPrint('[PractitionerResults] Share error: $e');
+    }
+  }
+}
+
+class _ResultDetailSheet extends StatelessWidget {
+  final TestResultModel result;
+  final Function(String?, String?) onShareImage;
+
+  const _ResultDetailSheet({required this.result, required this.onShareImage});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      padding: const EdgeInsets.all(24),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Test Results',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              DateFormat('MMMM dd, yyyy • h:mm a').format(result.timestamp),
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            _buildSection('Visual Acuity', [
+              _buildDetailRow(
+                'Right Eye',
+                result.visualAcuityRight?.snellenScore ?? 'N/A',
+              ),
+              _buildDetailRow(
+                'Left Eye',
+                result.visualAcuityLeft?.snellenScore ?? 'N/A',
+              ),
+            ]),
+            if (result.shortDistance != null)
+              _buildSection('Reading Test (Near Vision)', [
+                _buildDetailRow(
+                  'Best Acuity',
+                  result.shortDistance!.bestAcuity,
+                ),
+                _buildDetailRow(
+                  'Sentences',
+                  '${result.shortDistance!.correctSentences}/${result.shortDistance!.totalSentences}',
+                ),
+                _buildDetailRow(
+                  'Average Match',
+                  '${result.shortDistance!.averageSimilarity.toStringAsFixed(1)}%',
+                ),
+                _buildDetailRow('Status', result.shortDistance!.status),
+              ]),
+            _buildSection('Color Vision', [
+              _buildDetailRow(
+                'Score',
+                '${result.colorVision?.correctAnswers ?? 0}/${result.colorVision?.totalPlates ?? 0}',
+              ),
+              _buildDetailRow('Status', result.colorVision?.status ?? 'N/A'),
+            ]),
+            if (result.amslerGridRight != null || result.amslerGridLeft != null)
+              _buildSection('Amsler Grid', [
+                if (result.amslerGridRight != null) ...[
+                  _buildDetailRow(
+                    'Right Eye',
+                    result.amslerGridRight!.hasDistortions
+                        ? 'Distortions detected'
+                        : 'Normal',
+                  ),
+                  _buildGridImage(
+                    result.amslerGridRight!.annotatedImagePath,
+                    result.amslerGridRight!.firebaseImageUrl,
+                  ),
+                ],
+                if (result.amslerGridLeft != null) ...[
+                  const SizedBox(height: 12),
+                  _buildDetailRow(
+                    'Left Eye',
+                    result.amslerGridLeft!.hasDistortions
+                        ? 'Distortions detected'
+                        : 'Normal',
+                  ),
+                  _buildGridImage(
+                    result.amslerGridLeft!.annotatedImagePath,
+                    result.amslerGridLeft!.firebaseImageUrl,
+                  ),
+                ],
+              ]),
+            if (result.pelliRobson != null)
+              () {
+                final pr = result.pelliRobson!;
+                final List<Widget> prRows = [];
+                if (pr.rightEye != null) {
+                  if (pr.rightEye!.shortDistance != null) {
+                    prRows.add(
+                      _buildDetailRow(
+                        'Right Eye (Near)',
+                        '${pr.rightEye!.shortDistance!.adjustedScore.toStringAsFixed(2)} log CS',
+                      ),
+                    );
+                  }
+                  if (pr.rightEye!.longDistance != null) {
+                    prRows.add(
+                      _buildDetailRow(
+                        'Right Eye (Dist)',
+                        '${pr.rightEye!.longDistance!.adjustedScore.toStringAsFixed(2)} log CS',
+                      ),
+                    );
+                  }
+                }
+                if (pr.leftEye != null) {
+                  if (pr.leftEye!.shortDistance != null) {
+                    prRows.add(
+                      _buildDetailRow(
+                        'Left Eye (Near)',
+                        '${pr.leftEye!.shortDistance!.adjustedScore.toStringAsFixed(2)} log CS',
+                      ),
+                    );
+                  }
+                  if (pr.leftEye!.longDistance != null) {
+                    prRows.add(
+                      _buildDetailRow(
+                        'Left Eye (Dist)',
+                        '${pr.leftEye!.longDistance!.adjustedScore.toStringAsFixed(2)} log CS',
+                      ),
+                    );
+                  }
+                }
+                return Column(
+                  children: [
+                    _buildSection('Contrast Sensitivity', [
+                      ...prRows,
+                      _buildDetailRow('Status', pr.overallCategory),
+                    ]),
+                  ],
+                );
+              }(),
+            if (result.questionnaire != null)
+              _buildQuestionnaireSection(result.questionnaire!),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.info.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Recommendation',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    result.recommendation,
+                    style: const TextStyle(fontSize: 13),
                   ),
                 ],
               ),
             ),
-
-            // Status indicator
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                statusText,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: statusColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-
-            // Arrow
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: AppColors.textTertiary,
-            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Color _getStatusColor(TestStatus status) {
-    switch (status) {
-      case TestStatus.normal:
-        return AppColors.success;
-      case TestStatus.review:
-        return AppColors.warning;
-      case TestStatus.urgent:
-        return AppColors.error;
-    }
+  Widget _buildSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        ...children,
+        const SizedBox(height: 16),
+      ],
+    );
   }
 
-  String _getStatusText(TestStatus status) {
-    switch (status) {
-      case TestStatus.normal:
-        return 'Normal';
-      case TestStatus.review:
-        return 'Review';
-      case TestStatus.urgent:
-        return 'Urgent';
-    }
-  }
-
-  void _viewResult(TestResultModel result) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => QuickTestResultScreen(historicalResult: result),
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ],
       ),
     );
+  }
+
+  Widget _buildGridImage(String? path, String? url) {
+    if (path == null && url == null) return const SizedBox.shrink();
+    final bool isNetwork = path != null && path.startsWith('http');
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: isNetwork
+              ? Image.network(
+                  path,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                )
+              : (path != null)
+              ? Image.file(
+                  File(path),
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                )
+              : Image.network(
+                  url!,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuestionnaireSection(dynamic questionnaire) {
+    final complaints = <String>[];
+    if (questionnaire.chiefComplaints.hasRedness) complaints.add('Redness');
+    if (questionnaire.chiefComplaints.hasWatering) complaints.add('Watering');
+    if (questionnaire.chiefComplaints.hasItching) complaints.add('Itching');
+    if (questionnaire.chiefComplaints.hasHeadache) complaints.add('Headache');
+    if (questionnaire.chiefComplaints.hasDryness) complaints.add('Dryness');
+    if (questionnaire.chiefComplaints.hasStickyDischarge) {
+      complaints.add('Sticky Discharge');
+    }
+    return _buildSection('Questionnaire Responses', [
+      _buildDetailRow(
+        'Complaints',
+        complaints.isEmpty ? 'None' : complaints.join(', '),
+      ),
+      if (questionnaire.currentMedications != null)
+        _buildDetailRow('Medications', questionnaire.currentMedications),
+      _buildDetailRow(
+        'Recent Surgery',
+        questionnaire.hasRecentSurgery ? 'Yes' : 'No',
+      ),
+    ]);
   }
 }

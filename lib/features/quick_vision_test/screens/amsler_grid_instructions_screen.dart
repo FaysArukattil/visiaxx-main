@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/utils/navigation_utils.dart';
 import '../widgets/amsler_grid_drawing_animation.dart';
 
 /// Initial instruction screen for Amsler Grid Test
@@ -111,13 +112,9 @@ class _AmslerGridInstructionsScreenState
             child: const Text('Continue Test'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context); // Close dialog
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
+              await NavigationUtils.navigateHome(context);
             },
             child: const Text('Exit', style: TextStyle(color: Colors.red)),
           ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/session_monitor_service.dart';
-import '../../../data/models/user_model.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 /// Login screen with Firebase authentication
 class LoginScreen extends StatefulWidget {
@@ -93,11 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // 4. Navigate based on role
       if (!mounted) return;
-      if (result.user?.role == UserRole.examiner) {
-        Navigator.pushReplacementNamed(context, '/practitioner-home');
-      } else {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      await NavigationUtils.navigateHome(context);
     } else {
       setState(() {
         _errorMessage = result.message;

@@ -8,6 +8,7 @@ import 'package:visiaxx/features/quick_vision_test/screens/cover_left_eye_instru
 import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
+import '../../../core/utils/navigation_utils.dart';
 import '../../../core/services/speech_service.dart';
 import '../../../core/services/continuous_speech_manager.dart';
 import '../../../core/services/distance_detection_service.dart';
@@ -803,13 +804,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               const SizedBox(height: 8),
               // Exit Test
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(dialogContext);
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/home',
-                    (route) => false,
-                  );
+                  await NavigationUtils.navigateHome(context);
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.error,

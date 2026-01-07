@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 /// Registration screen with Firebase authentication
 class RegistrationScreen extends StatefulWidget {
@@ -74,11 +75,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       );
 
       // Navigate based on role
-      if (result.user?.role == UserRole.examiner) {
-        Navigator.pushReplacementNamed(context, '/practitioner-home');
-      } else {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      await NavigationUtils.navigateHome(context);
     } else {
       setState(() {
         _errorMessage = result.message;

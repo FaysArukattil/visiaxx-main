@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../data/models/user_model.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 /// Professional eye care splash screen with elegant animations
 class SplashScreen extends StatefulWidget {
@@ -146,14 +147,9 @@ class _SplashScreenState extends State<SplashScreen>
         }
       }
 
-      final role = user?.role ?? await _authService.getCurrentUserRole();
       if (!mounted) return;
 
-      if (role == UserRole.examiner) {
-        Navigator.pushReplacementNamed(context, '/practitioner-home');
-      } else {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      await NavigationUtils.navigateHome(context);
     } else {
       Navigator.pushReplacementNamed(context, '/login');
     }

@@ -16,6 +16,7 @@ import '../../../data/models/amsler_grid_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/services/distance_skip_manager.dart';
 import 'amsler_grid_instructions_screen.dart';
+import '../../../core/utils/navigation_utils.dart';
 import 'distance_calibration_screen.dart';
 import 'amsler_grid_cover_eye_screen.dart';
 
@@ -338,13 +339,9 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               const SizedBox(height: 8),
               // Exit Test
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(dialogContext);
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/home',
-                    (route) => false,
-                  );
+                  await NavigationUtils.navigateHome(context);
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.error,

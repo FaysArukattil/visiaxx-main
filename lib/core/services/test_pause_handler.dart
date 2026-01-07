@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../utils/navigation_utils.dart';
 
 /// Global service to handle app pause/resume across all test screens
 /// Provides consistent pause dialog and behavior throughout the app
@@ -276,14 +277,12 @@ class TestPauseHandler {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context); // Close confirmation
-                        Navigator.pop(dialogContext); // Close pause dialog
-                        Navigator.pushNamedAndRemoveUntil(
-                          _context!,
-                          '/home',
-                          (route) => false,
-                        );
+                      onPressed: () async {
+                        if (context.mounted) {
+                          Navigator.pop(context); // Close confirmation
+                          Navigator.pop(dialogContext); // Close pause dialog
+                          await NavigationUtils.navigateHome(_context!);
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.error,

@@ -5,10 +5,6 @@ import '../../../core/services/auth_service.dart';
 import '../../../core/services/data_cleanup_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 
-/// Practitioner home screen with customized layout
-/// - "Add Patient" instead of "Test for Yourself"
-/// - No Consultation tile
-/// - My Results spans full width
 class PractitionerHomeScreen extends StatefulWidget {
   const PractitionerHomeScreen({super.key});
 
@@ -24,24 +20,31 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
 
   final List<Map<String, dynamic>> _carouselSlides = [
     {
-      'heading': 'Practitioner Dashboard',
+      'heading': 'Who We Are',
       'content':
-          'Manage your patients and access their vision test results efficiently.',
-      'supportText': 'Professional eye care management.',
+          'Vision Optocare reshapes eye care with mobile-first technology and optometric precision.',
+      'supportText': 'Built by professionals',
+      'hasImages': true,
+    },
+    {
+      'heading': 'Our Product',
+      'content':
+          'Visiaxx Digital Eye Clinic App conducts clinically approved vision screenings from your smartphone.',
+      'supportText': 'Smart. Clinical. Mobile-first.',
       'hasImages': false,
     },
     {
-      'heading': 'Patient Testing',
+      'heading': 'Our Mission',
       'content':
-          'Conduct validated vision screenings for your patients directly from this app.',
-      'supportText': 'Clinical-grade assessments.',
+          'Deliver high-quality, validated eye-care solutions through intuitive digital platforms.',
+      'supportText': 'Accessible eye care everywhere.',
       'hasImages': false,
     },
     {
-      'heading': 'Results & Reports',
+      'heading': 'Our Vision',
       'content':
-          'Access comprehensive test results, generate PDF reports, and track patient progress over time.',
-      'supportText': 'Complete eye health records.',
+          'Create a future where comprehensive eye care is universally accessible and technology-driven.',
+      'supportText': 'Redefining digital eye health.',
       'hasImages': false,
     },
   ];
@@ -211,21 +214,8 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                 ),
                 onSelected: (value) {
                   if (value == 'logout') _handleLogout();
-                  if (value == 'dashboard') {
-                    Navigator.pushNamed(context, '/practitioner-dashboard');
-                  }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'dashboard',
-                    child: Row(
-                      children: [
-                        Icon(Icons.dashboard_outlined, size: 20),
-                        SizedBox(width: 12),
-                        Text('Dashboard'),
-                      ],
-                    ),
-                  ),
                   const PopupMenuItem(
                     value: 'profile',
                     child: Row(
@@ -284,7 +274,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Hello, Dr. $_userName 👋',
+            'Hello, $_userName 👋',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.grey[900],
@@ -340,9 +330,14 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   }
 
   Widget _buildCarousel() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final carouselHeight = screenHeight * 0.22;
+
     return CarouselSlider(
       options: CarouselOptions(
-        height: 180,
+        height: carouselHeight > 220
+            ? 220
+            : (carouselHeight < 180 ? 180 : carouselHeight),
         autoPlay: true,
         autoPlayInterval: const Duration(seconds: 5),
         enlargeCenterPage: true,
@@ -361,6 +356,13 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
               color: AppColors.primary.withValues(alpha: 0.2),
               width: 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
@@ -379,59 +381,177 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     ),
                   ),
                 ),
+                Positioned(
+                  left: -20,
+                  bottom: -20,
+                  child: Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                    ),
+                  ),
+                ),
                 // Content
                 Padding(
                   padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        slide['heading'] as String,
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        slide['content'] as String,
-                        style: TextStyle(
-                          color: Colors.grey[800],
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          slide['supportText'] as String,
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: slide['hasImages'] as bool
+                      ? _buildSlideWithImages(slide)
+                      : _buildSlideWithoutImages(slide),
                 ),
               ],
             ),
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildSlideWithImages(Map<String, dynamic> slide) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Text content (left side)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                slide['heading'] as String,
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                slide['content'] as String,
+                style: TextStyle(
+                  color: Colors.grey[800],
+                  fontSize: 10.5,
+                  height: 1.2,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                slide['supportText'] as String,
+                style: TextStyle(
+                  color: AppColors.primary.withValues(alpha: 0.8),
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Founder images (right side) - staggered diagonally
+        SizedBox(
+          width: 70,
+          height: 150,
+          child: Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                child: _buildFounderImage('assets/images/founder_image_1.png'),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: _buildFounderImage('assets/images/founder_image_2.png'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFounderImage(String imagePath) {
+    return Container(
+      width: 45,
+      height: 85,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.asset(
+          imagePath,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.white.withValues(alpha: 0.2),
+              child: Icon(
+                Icons.person,
+                color: Colors.white.withValues(alpha: 0.6),
+                size: 28,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSlideWithoutImages(Map<String, dynamic> slide) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          slide['heading'] as String,
+          style: TextStyle(
+            color: AppColors.primary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          slide['content'] as String,
+          style: TextStyle(
+            color: Colors.grey[800],
+            fontSize: 11.5,
+            height: 1.4,
+          ),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            slide['supportText'] as String,
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -479,9 +599,9 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
             children: [
               Expanded(
                 child: _ServiceCard(
-                  icon: Icons.person_add_rounded,
-                  title: 'Add Patient',
-                  subtitle: 'Start a patient test',
+                  icon: Icons.speed_rounded,
+                  title: 'Quick Test',
+                  subtitle: 'Immediate vision check',
                   onTap: () => Navigator.pushNamed(
                     context,
                     '/practitioner-profile-selection',
@@ -493,7 +613,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                 child: _ServiceCard(
                   icon: Icons.assessment_rounded,
                   title: 'Full Eye Exam',
-                  subtitle: 'Comprehensive test',
+                  subtitle: 'Comprehensive analysis',
                   onTap: () => Navigator.pushNamed(
                     context,
                     '/practitioner-profile-selection',
@@ -624,35 +744,28 @@ class _WideServiceCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.primary,
-              AppColors.primary.withValues(alpha: 0.8),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(14),
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: Colors.white, size: 28),
+              child: Icon(icon, color: AppColors.primary, size: 26),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -662,27 +775,20 @@ class _WideServiceCard extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white.withValues(alpha: 0.8),
-              size: 20,
-            ),
+            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
           ],
         ),
       ),

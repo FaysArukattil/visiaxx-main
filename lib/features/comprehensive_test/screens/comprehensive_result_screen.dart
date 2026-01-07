@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 /// Comprehensive test result screen
-class ComprehensiveResultScreen extends StatelessWidget {
+class ComprehensiveResultScreen extends StatefulWidget {
   const ComprehensiveResultScreen({super.key});
 
+  @override
+  State<ComprehensiveResultScreen> createState() =>
+      _ComprehensiveResultScreenState();
+}
+
+class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,13 +113,7 @@ class ComprehensiveResultScreen extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/home',
-                        (route) => false,
-                      );
-                    },
+                    onPressed: () => _navigateHome(),
                     child: const Padding(
                       padding: EdgeInsets.all(16.0),
                       child: Text('Done'),
@@ -125,6 +126,10 @@ class ComprehensiveResultScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _navigateHome() async {
+    await NavigationUtils.navigateHome(context);
   }
 
   Widget _buildResultSection(

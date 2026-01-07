@@ -126,7 +126,6 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                 const SizedBox(height: 16),
               ],
 
-
               const SizedBox(height: 32),
 
               // Summary Info
