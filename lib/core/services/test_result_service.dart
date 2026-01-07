@@ -202,7 +202,14 @@ class TestResultService {
       debugPrint('[TestResultService] Found ${snapshot.docs.length} documents');
 
       final List<TestResultModel> results = [];
+      final List<String> hiddenIds = userModel.hiddenResultIds;
+
       for (final doc in snapshot.docs) {
+        if (hiddenIds.contains(doc.id)) {
+          debugPrint('[TestResultService] Skipping hidden result: ${doc.id}');
+          continue;
+        }
+
         try {
           // Get document data as Map and add the ID
           final data = doc.data();
@@ -265,6 +272,7 @@ class TestResultService {
       if (userModel == null) return [];
 
       final identity = userModel.identityString;
+      final hiddenIds = userModel.hiddenResultIds;
 
       final snapshot = await _firestore
           .collection(_identifiedResultsCollection)
@@ -275,6 +283,7 @@ class TestResultService {
           .get();
 
       return snapshot.docs
+          .where((doc) => !hiddenIds.contains(doc.id))
           .map((doc) => TestResultModel.fromJson({...doc.data(), 'id': doc.id}))
           .toList();
     } catch (e) {
@@ -282,7 +291,7 @@ class TestResultService {
     }
   }
 
-  /// Delete a test result
+  /// Soft delete a test result (add to user's hiddenResultIds instead of actual deletion)
   Future<void> deleteTestResult(String userId, String resultId) async {
     try {
       final authService = AuthService();
@@ -290,15 +299,21 @@ class TestResultService {
       if (userModel == null) return;
 
       final identity = userModel.identityString;
+      final collection = userModel.roleCollection;
 
-      await _firestore
-          .collection(_identifiedResultsCollection)
-          .doc(identity)
-          .collection('tests')
-          .doc(resultId)
-          .delete();
+      debugPrint(
+        '[TestResultService] Soft deleting result $resultId for $identity',
+      );
+
+      // Add to user's hidden list in Firestore
+      await _firestore.collection(collection).doc(identity).update({
+        'hiddenResultIds': FieldValue.arrayUnion([resultId]),
+      });
+
+      debugPrint('[TestResultService] ✅ Result $resultId added to hidden list');
     } catch (e) {
-      throw Exception('Failed to delete test result: $e');
+      debugPrint('[TestResultService] ❌ Soft delete ERROR: $e');
+      throw Exception('Failed to hide test result: $e');
     }
   }
 

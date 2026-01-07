@@ -16,6 +16,7 @@ class UserModel {
   final DateTime createdAt;
   final DateTime? lastLoginAt;
   final List<String> familyMemberIds;
+  final List<String> hiddenResultIds;
 
   UserModel({
     required this.id,
@@ -29,6 +30,7 @@ class UserModel {
     required this.createdAt,
     this.lastLoginAt,
     this.familyMemberIds = const [],
+    this.hiddenResultIds = const [],
   });
 
   String get fullName => '$firstName $lastName';
@@ -77,6 +79,7 @@ class UserModel {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lastLoginAt: (data['lastLoginAt'] as Timestamp?)?.toDate(),
       familyMemberIds: List<String>.from(data['familyMemberIds'] ?? []),
+      hiddenResultIds: List<String>.from(data['hiddenResultIds'] ?? []),
     );
   }
 
@@ -96,6 +99,7 @@ class UserModel {
           ? Timestamp.fromDate(lastLoginAt!)
           : null,
       'familyMemberIds': familyMemberIds,
+      'hiddenResultIds': hiddenResultIds,
     };
   }
 
@@ -128,6 +132,7 @@ class UserModel {
           ? (data['lastLoginAt'] as Timestamp).toDate()
           : null,
       familyMemberIds: List<String>.from(data['familyMemberIds'] ?? []),
+      hiddenResultIds: List<String>.from(data['hiddenResultIds'] ?? []),
     );
   }
 
@@ -144,6 +149,7 @@ class UserModel {
     DateTime? createdAt,
     DateTime? lastLoginAt,
     List<String>? familyMemberIds,
+    List<String>? hiddenResultIds,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -157,6 +163,7 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       familyMemberIds: familyMemberIds ?? this.familyMemberIds,
+      hiddenResultIds: hiddenResultIds ?? this.hiddenResultIds,
     );
   }
 }

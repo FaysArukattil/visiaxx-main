@@ -5,8 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:visiaxx/core/widgets/download_success_dialog.dart';
+`import 'package:visiaxx/core/widgets/download_success_dialog.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/services/pdf_export_service.dart';
@@ -177,14 +176,14 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     }
   }
 
-  /// Show confirmation dialog before deleting
+  /// Show confirmation dialog before hiding from view
   Future<void> _confirmDeleteResult(TestResultModel result) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Result?'),
+        title: const Text('Remove Result?'),
         content: Text(
-          'Are you sure you want to delete the test result from ${result.profileName.isEmpty ? 'Self' : result.profileName}?\n\nThis action cannot be undone.',
+          'Are you sure you want to remove the test result for ${result.profileName.isEmpty ? 'Self' : result.profileName} from your view',
         ),
         actions: [
           TextButton(
@@ -194,7 +193,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: const Text('Remove'),
           ),
         ],
       ),
