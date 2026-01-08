@@ -1,12 +1,12 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// A professional, eye-themed custom loading animation.
-/// Features a pulsing iris, a scanning arc, and smooth transitions.
+/// A high-speed, dynamic eye loading animation with integrated theme support.
+/// Features rapid iris sliding, snappy pupil pulsing, and smooth but fast blinks.
 class EyeLoader extends StatefulWidget {
   final double size;
   final Color? color;
-  final double? value; // Added for determinate progress
+  final double? value;
 
   const EyeLoader({super.key, this.size = 40.0, this.color, this.value});
 
@@ -23,7 +23,7 @@ class _EyeLoaderState extends State<EyeLoader>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 3000), // Enhanced 3s cycle
     );
     if (widget.value == null) {
       _controller.repeat();
@@ -58,9 +58,8 @@ class _EyeLoaderState extends State<EyeLoader>
         builder: (context, child) {
           return CustomPaint(
             painter: _EyePainter(
-              animationValue: widget.value ?? _controller.value,
+              progress: widget.value ?? _controller.value,
               color: themeColor,
-              isDeterminate: widget.value != null,
             ),
           );
         },
@@ -70,111 +69,125 @@ class _EyeLoaderState extends State<EyeLoader>
 }
 
 class _EyePainter extends CustomPainter {
-  final double animationValue;
+  final double progress;
   final Color color;
-  final bool isDeterminate;
 
-  _EyePainter({
-    required this.animationValue,
-    required this.color,
-    required this.isDeterminate,
-  });
+  _EyePainter({required this.progress, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
+    final eyeWidth = size.width * 0.95;
+    double baseEyeHeight = size.height * 0.52;
 
-    // 1. Draw Eye Eyelids (Stylized Outline)
+    // --- ENHANCED TIMING LOGIC ---
+    double irisXOffset = 0;
+    double blinkFactor = 1.0;
+
+    // 1. High-Speed Sliding (Snappier 3000ms Loop)
+    if (progress < 0.15) {
+      // Resting center
+      irisXOffset = 0;
+    } else if (progress < 0.3) {
+      // FAST move to Left
+      double t = Curves.easeInOut.transform((progress - 0.15) / 0.15);
+      irisXOffset = -t * (eyeWidth * 0.3);
+    } else if (progress < 0.55) {
+      // FAST slide all the way to Right
+      double t = Curves.easeInOut.transform((progress - 0.3) / 0.25);
+      irisXOffset = -(eyeWidth * 0.3) + (t * eyeWidth * 0.6);
+    } else if (progress < 0.75) {
+      // FAST return to center
+      double t = Curves.easeInOut.transform((progress - 0.55) / 0.2);
+      irisXOffset = (eyeWidth * 0.3) - (t * eyeWidth * 0.3);
+    }
+
+    // 2. Focused Pupil Pulsing (Huge size difference: transitions from tiny to very large)
+    final pulseScale = 0.8 + (math.sin(progress * 8 * math.pi) * 0.45);
+
+    // 3. Refined Blink Rhythm (Exactly 3 smooth blinks per cycle)
+    final blinkMarkers = [0.2, 0.5, 0.8];
+    const blinkHalfWindow = 0.08; // Increased for a smoother, slower feel
+    for (final marker in blinkMarkers) {
+      if (progress > marker - blinkHalfWindow &&
+          progress < marker + blinkHalfWindow) {
+        final t =
+            (progress - (marker - blinkHalfWindow)) / (blinkHalfWindow * 2);
+        // Using easeInOut curve instead of pure sin for more controlled smoothing
+        final easedT = math.sin(t * math.pi);
+        blinkFactor = 1.0 - easedT;
+        break;
+      }
+    }
+
+    // --- DRAWING ---
+    final currentHeight = baseEyeHeight * blinkFactor;
+
+    // Sclera Movement (Follows iris for dynamic feel)
+    final scleraCenter = center + Offset(irisXOffset * 0.25, 0);
+
     final eyePath = Path();
-    final eyeWidth = size.width * 0.9;
-    final eyeHeight = size.height * 0.6;
-
-    eyePath.moveTo(center.dx - eyeWidth / 2, center.dy);
+    eyePath.moveTo(scleraCenter.dx - eyeWidth / 2, scleraCenter.dy);
     eyePath.quadraticBezierTo(
-      center.dx,
-      center.dy - eyeHeight,
-      center.dx + eyeWidth / 2,
-      center.dy,
+      scleraCenter.dx,
+      scleraCenter.dy - currentHeight,
+      scleraCenter.dx + eyeWidth / 2,
+      scleraCenter.dy,
     );
     eyePath.quadraticBezierTo(
-      center.dx,
-      center.dy + eyeHeight,
-      center.dx - eyeWidth / 2,
-      center.dy,
+      scleraCenter.dx,
+      scleraCenter.dy + currentHeight,
+      scleraCenter.dx - eyeWidth / 2,
+      scleraCenter.dy,
     );
     eyePath.close();
 
-    final outlinePaint = Paint()
-      ..color = color.withValues(alpha: 0.2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    canvas.drawPath(eyePath, outlinePaint);
-
-    // 2. Draw Iris (Pulsing)
-    final irisPulse = 0.85 + (math.sin(animationValue * 2 * math.pi) * 0.08);
-    final irisRadius = radius * 0.45 * irisPulse;
-
-    final irisPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(center, irisRadius, irisPaint);
-
-    // 3. Draw Pupil
-    final pupilRadius = irisRadius * 0.4;
-    final pupilPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.9)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(center, pupilRadius, pupilPaint);
-
-    // 4. Draw Shine/Reflection
-    final reflectionPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.5)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(
-      Offset(center.dx - irisRadius * 0.3, center.dy - irisRadius * 0.3),
-      irisRadius * 0.15,
-      reflectionPaint,
+    // Sclera (Dark Portion)
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = const Color(0xFF14142B)
+        ..style = PaintingStyle.fill,
     );
 
-    // 5. Draw Scanning/Progress Arc (Rotating)
-    final arcPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
+    // Iris & Pupil (Clipped)
+    if (blinkFactor > 0.1) {
+      canvas.save();
+      canvas.clipPath(eyePath);
 
-    final startAngle = animationValue * 2 * math.pi;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius * 0.85),
-      startAngle,
-      math.pi * 0.6,
-      false,
-      arcPaint,
-    );
+      final irisCenter = center + Offset(irisXOffset, 0);
+      final irisRadius = (size.width / 2) * 0.5;
 
-    // Draw trailing subtle arc
-    final trailPaint = Paint()
-      ..color = color.withValues(alpha: 0.3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      // Theme-matched Iris (Steady size)
+      canvas.drawCircle(irisCenter, irisRadius, Paint()..color = color);
 
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius * 0.85),
-      startAngle + (math.pi * 0.8),
-      math.pi * 0.3,
-      false,
-      trailPaint,
-    );
+      // Black Pupil (Huge dynamic pulse)
+      canvas.drawCircle(
+        irisCenter,
+        irisRadius * 0.45 * pulseScale,
+        Paint()..color = Colors.black,
+      );
+
+      // Reactive White Reflection (Opposite side and reactive to movement)
+      final baseReflectionOffset = Offset(
+        irisRadius * 0.25,
+        -irisRadius * 0.25,
+      );
+      // Shifts slightly in same direction as iris to simulate sphere depth
+      final reactiveReflectionOffset =
+          baseReflectionOffset + Offset(irisXOffset * 0.15, 0);
+
+      canvas.drawCircle(
+        irisCenter + reactiveReflectionOffset,
+        irisRadius * 0.15,
+        Paint()..color = Colors.white.withOpacity(0.45),
+      );
+
+      canvas.restore();
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _EyePainter oldDelegate) {
-    return oldDelegate.animationValue != animationValue ||
-        oldDelegate.color != color;
-  }
+  bool shouldRepaint(covariant _EyePainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.color != color;
 }
