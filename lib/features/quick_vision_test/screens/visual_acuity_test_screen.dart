@@ -24,6 +24,7 @@ import 'distance_calibration_screen.dart';
 import 'cover_right_eye_instruction_screen.dart';
 import 'cover_left_eye_instruction_screen.dart';
 import '../../../core/services/distance_skip_manager.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
 /// Implements Visiaxx specification for 1-meter testing
@@ -1852,7 +1853,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(),
+          const EyeLoader(size: 45),
           const SizedBox(height: 24),
           Text(
             'Preparing left eye test...',

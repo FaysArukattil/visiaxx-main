@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../core/constants/app_colors.dart';
+import '../core/widgets/eye_loader.dart';
 
 /// Universal voice recognition indicator widget
 /// Shows listening state and recognized text like Siri
@@ -181,14 +182,9 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
           ),
           const SizedBox(width: 8),
           SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                AppColors.primary.withValues(alpha: 0.7),
-              ),
-            ),
+            width: 40, // Adjusted width to accommodate EyeLoader size
+            height: 40, // Adjusted height to accommodate EyeLoader size
+            child: EyeLoader(size: 40, color: AppColors.primary),
           ),
         ],
       );

@@ -3,6 +3,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import 'profile_screen.dart';
 
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _authService = AuthService();
   UserModel? _user;
   bool _isLoading = true;
+  bool _isConsultationLoading = false; // For demonstration
   String _selectedLanguage = 'English';
 
   final List<Map<String, String>> _languages = [
@@ -182,29 +184,39 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 20),
-                    _buildTagline(),
-                    const SizedBox(height: 16),
-                    _buildCarousel(),
-                    const SizedBox(height: 16),
-                    _buildCarouselIndicators(),
-                    const SizedBox(height: 28),
-                    _buildSectionTitle('Services'),
-                    const SizedBox(height: 16),
-                    _buildServicesGrid(),
-                    const SizedBox(height: 32),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: _isLoading
+                ? const Center(child: EyeLoader(size: 50))
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: 20),
+                        _buildTagline(),
+                        const SizedBox(height: 16),
+                        _buildCarousel(),
+                        const SizedBox(height: 16),
+                        _buildCarouselIndicators(),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle('Services'),
+                        const SizedBox(height: 16),
+                        _buildServicesGrid(),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+          ),
+          if (_isConsultationLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.1),
+                child: const Center(child: EyeLoader(size: 80)),
               ),
+            ),
+        ],
       ),
     );
   }
@@ -675,7 +687,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _ServiceCard(
                   icon: Icons.calendar_month_rounded,
                   title: 'Consultation',
-                  onTap: () => SnackbarUtils.showInfo(context, 'Coming soon!'),
+                  onTap: () async {
+                    setState(() => _isConsultationLoading = true);
+                    await Future.delayed(const Duration(seconds: 4));
+                    if (mounted) {
+                      setState(() => _isConsultationLoading = false);
+                      SnackbarUtils.showInfo(
+                        context,
+                        'Consultation feature coming soon!',
+                      );
+                    }
+                  },
                 ),
               ),
             ],

@@ -5,6 +5,7 @@ import '../../../core/services/review_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/review_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class ReviewDialog extends StatefulWidget {
   const ReviewDialog({super.key});
@@ -314,11 +315,9 @@ class _ReviewDialogState extends State<ReviewDialog> {
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
+                                  child: EyeLoader(
+                                    size: 24,
+                                    color: Colors.white,
                                   ),
                                 )
                               : const Text(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/session_monitor_service.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/utils/snackbar_utils.dart';
 
@@ -447,12 +448,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? const SizedBox(
                                         width: 24,
                                         height: 24,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
+                                        child: EyeLoader(
+                                          size: 24,
+                                          color: Colors.white,
                                         ),
                                       )
                                     : const Text(

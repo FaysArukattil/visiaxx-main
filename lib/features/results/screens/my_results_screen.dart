@@ -9,6 +9,7 @@ import 'package:visiaxx/core/widgets/download_success_dialog.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/services/pdf_export_service.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
@@ -272,7 +273,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 _buildFilters(),
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(child: EyeLoader(size: 45))
                       : _filteredResults.isEmpty
                       ? _buildEmptyState()
                       : RefreshIndicator(

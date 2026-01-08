@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../../data/models/user_model.dart';
 
 /// Registration screen with Firebase authentication
@@ -566,12 +567,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   ? const SizedBox(
                                       width: 24,
                                       height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
+                                      child: EyeLoader(
+                                        size: 24,
+                                        color: Colors.white,
                                       ),
                                     )
                                   : const Text(

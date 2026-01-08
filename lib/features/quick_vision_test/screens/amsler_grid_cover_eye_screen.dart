@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 class AmslerGridCoverEyeScreen extends StatefulWidget {
@@ -264,17 +265,10 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
-                                    value: 1 - (_countdown / 3),
-                                  ),
+                                EyeLoader(
+                                  size: 20,
+                                  color: Colors.white,
+                                  value: 1 - (_countdown / 3),
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
