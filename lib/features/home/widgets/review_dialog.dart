@@ -5,7 +5,6 @@ import '../../../core/services/review_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/review_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
-import '../screens/review_email_preview_screen.dart';
 
 class ReviewDialog extends StatefulWidget {
   const ReviewDialog({super.key});
@@ -64,32 +63,18 @@ class _ReviewDialogState extends State<ReviewDialog> {
         timestamp: DateTime.now(),
       );
 
-      // Submit review to Firebase first
-      final reviewId = await _reviewService.saveReview(review);
+      // Submit review (Save to Firebase + Open Email)
+      final success = await _reviewService.submitReview(review);
 
       if (!mounted) return;
 
-      if (reviewId != null) {
-        // Success! Now go to the preview screen
+      if (success) {
         Navigator.of(context).pop(); // Close dialog
-
-        // Update local review count
-        await _reviewService.incrementReviewCount(review.userId);
-
-        // Navigate to the stylized preview screen
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) =>
-                  ReviewEmailPreviewScreen(review: review, reviewId: reviewId),
-            ),
-          );
-        }
+        SnackbarUtils.showSuccess(context, 'Feedback submitted successfully!');
       } else {
         SnackbarUtils.showError(
           context,
-          'Failed to save review. Please try again.',
+          'Failed to submit review. Please try again.',
         );
       }
     } catch (e) {
