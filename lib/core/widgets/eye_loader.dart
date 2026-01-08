@@ -123,15 +123,12 @@ class _EyePainter extends CustomPainter {
       irisXOffset = (eyeWidth * 0.28) - (t * eyeWidth * 0.28);
     }
 
-    // 2. Focused Pupil Reaction (Intro dilation that stabilizes)
-    // Pupil starts huge and snaps to normal size at the start of the cycle
+    // 2. Focused Pupil Reaction (Intro dilation + Blink reactivity)
     double pulseScale = 1.0;
     if (progress < 0.15) {
-      // Fast exponential contraction from 1.8x (max) to 1.0x (normal)
+      // Intro: Fast exponential contraction from 1.8x to 1.0x
       final t = progress / 0.15;
       pulseScale = 1.8 - (Curves.easeOutExpo.transform(t) * 0.8);
-    } else {
-      pulseScale = 1.0; // Steady after stabilization
     }
 
     // 3. Refined Blink Rhythm (3 smooth, snappy blinks)
@@ -147,6 +144,10 @@ class _EyePainter extends CustomPainter {
         break;
       }
     }
+
+    // Add Blink-Reactive Pupil Shift (Pupil dilates slightly as eye closes)
+    final blinkAdjustment = (1.0 - blinkFactor) * 0.45;
+    pulseScale += blinkAdjustment;
 
     // --- DRAWING ---
     final currentHeight = baseEyeHeight * blinkFactor;
