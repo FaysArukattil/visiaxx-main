@@ -58,7 +58,8 @@ class _EyeLoaderState extends State<EyeLoader>
   @override
   Widget build(BuildContext context) {
     final themeColor = widget.color ?? Theme.of(context).primaryColor;
-    final fallbackSclera = const Color(0xFF14142B);
+    final fallbackSclera =
+        Colors.white; // Refined to white for "Normal Eye" look
     final fallbackPupil = Colors.black;
 
     return SizedBox(
@@ -179,6 +180,15 @@ class _EyePainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
+    // Subtle Sclera Border (Visibility for light themes)
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = color.withOpacity(0.15)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+
     // Iris & Pupil (Clipped)
     if (blinkFactor > 0.1) {
       canvas.save();
@@ -217,5 +227,8 @@ class _EyePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _EyePainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.color != color;
+      oldDelegate.progress != progress ||
+      oldDelegate.color != color ||
+      oldDelegate.scleraColor != scleraColor ||
+      oldDelegate.pupilColor != pupilColor;
 }
