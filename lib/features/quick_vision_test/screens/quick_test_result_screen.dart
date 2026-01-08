@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:visiaxx/core/constants/app_colors.dart';
+import 'package:visiaxx/core/services/review_service.dart';
 import 'package:visiaxx/core/services/test_result_service.dart';
 import 'package:visiaxx/core/services/pdf_export_service.dart';
 import 'package:visiaxx/core/utils/ui_utils.dart';
@@ -16,6 +17,7 @@ import 'package:visiaxx/data/providers/test_session_provider.dart';
 import 'package:visiaxx/data/models/color_vision_result.dart';
 import 'package:visiaxx/data/models/pelli_robson_result.dart';
 import 'package:flutter/foundation.dart';
+import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
 /// Comprehensive results screen displaying all test data
 class QuickTestResultScreen extends StatefulWidget {
@@ -108,6 +110,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           context,
           'Results & Report saved successfully!',
         );
+
+        // ✨ NEW: Check if this is first test and show review dialog
+        await _checkAndShowReviewDialog();
       }
     } catch (e) {
       debugPrint('[QuickTestResult] ❌ ERROR saving results: $e');
@@ -116,6 +121,48 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         // Show error message
         SnackbarUtils.showError(context, 'Failed to save results: $e');
       }
+    }
+  }
+
+  Future<void> _checkAndShowReviewDialog() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final reviewService = ReviewService();
+
+      // Check if user already reviewed
+      final hasReviewed = await reviewService.hasUserReviewed(user.uid);
+      if (hasReviewed) {
+        debugPrint('[QuickTestResult] User already reviewed, skipping dialog');
+        return;
+      }
+
+      // Check if this is first test
+      final isFirst = await reviewService.isFirstTest(user.uid);
+      if (!isFirst) {
+        debugPrint('[QuickTestResult] Not first test, skipping review dialog');
+        return;
+      }
+
+      // Mark first test as completed
+      await reviewService.markFirstTestCompleted(user.uid);
+
+      // Show review dialog after a short delay
+      if (mounted) {
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            isDismissible: false,
+            builder: (context) => const ReviewDialog(),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[QuickTestResult] Error checking review dialog: $e');
     }
   }
 

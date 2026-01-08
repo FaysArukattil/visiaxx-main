@@ -1,0 +1,240 @@
+import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../data/models/review_model.dart';
+
+class ReviewService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Check if user has already submitted a review
+  Future<bool> hasUserReviewed(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final reviewCount = prefs.getInt('review_count_$userId') ?? 0;
+
+      debugPrint(
+        '[ReviewService] 🔍 Checking review status for $userId: $reviewCount reviews',
+      );
+      return reviewCount > 0;
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Error checking review status: $e');
+      return false;
+    }
+  }
+
+  /// Get the number of reviews submitted by user
+  Future<int> getReviewCount(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final count = prefs.getInt('review_count_$userId') ?? 0;
+      debugPrint('[ReviewService] 🔍 Review count for $userId: $count');
+      return count;
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Error getting review count: $e');
+      return 0;
+    }
+  }
+
+  /// Increment review count for user
+  Future<void> incrementReviewCount(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentCount = prefs.getInt('review_count_$userId') ?? 0;
+      await prefs.setInt('review_count_$userId', currentCount + 1);
+      debugPrint(
+        '[ReviewService] ✅ Incremented review count for $userId to ${currentCount + 1}',
+      );
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Error incrementing review count: $e');
+    }
+  }
+
+  /// Mark that user has reviewed (kept for backward compatibility)
+  @Deprecated('Use incrementReviewCount instead')
+  Future<void> markAsReviewed(String userId) async {
+    await incrementReviewCount(userId);
+  }
+
+  /// Check if this is user's first test
+  Future<bool> isFirstTest(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isFirst = prefs.getBool('first_test_completed_$userId') != true;
+
+      debugPrint(
+        '[ReviewService] 🔍 Checking first test for $userId: $isFirst',
+      );
+      return isFirst;
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Error checking first test: $e');
+      return true; // Assume first test on error
+    }
+  }
+
+  /// Mark first test as completed
+  Future<void> markFirstTestCompleted(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('first_test_completed_$userId', true);
+      debugPrint('[ReviewService] ✅ Marked first test completed for $userId');
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Error marking first test: $e');
+    }
+  }
+
+  /// Save review to Firebase
+  Future<String?> saveReview(ReviewModel review) async {
+    try {
+      debugPrint('[ReviewService] 📤 Saving review to Firebase...');
+
+      final docRef = await _firestore
+          .collection('AppReviews')
+          .add(review.toFirestore());
+
+      debugPrint('[ReviewService] ✅ Review saved to Firebase: ${docRef.id}');
+      return docRef.id;
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Error saving review to Firebase: $e');
+      return null;
+    }
+  }
+
+  /// Send email notification via user's email client (Primary Method)
+  Future<bool> sendEmailViaMailClient(
+    ReviewModel review, {
+    String? reviewId,
+  }) async {
+    try {
+      debugPrint('[ReviewService] 📧 Opening user email client...');
+
+      // Format the email body professionally
+      final dateStr = DateFormat(
+        'MMMM dd, yyyy • h:mm a',
+      ).format(review.timestamp);
+      final stars = '⭐' * review.rating;
+      final emptyStars = '☆' * (5 - review.rating);
+      final refId = reviewId ?? 'PENDING';
+
+      final emailBody =
+          '''
+VISIAXX DIGITAL EYE CLINIC - REVIEW REPORT
+══════════════════════════════════════════════════
+Reference ID:  #$refId
+Generated on:  $dateStr
+
+USER DETAILS
+──────────────────────────────────────────────────
+Name:        ${review.userName}
+Age:         ${review.userAge} years
+Status:      Verified App User
+
+OVERALL RATING
+──────────────────────────────────────────────────
+Score:       $stars$emptyStars (${review.rating}/5 stars)
+
+USER FEEDBACK
+──────────────────────────────────────────────────
+"${review.reviewText}"
+
+──────────────────────────────────────────────────
+This report was generated via the Visiaxx App.
+Please retain this for your records.
+Vision Optocare © 2026
+══════════════════════════════════════════════════
+''';
+
+      final Uri emailUri = Uri(
+        scheme: 'mailto',
+        path: 'vnoptocare@gmail.com',
+        query:
+            'subject=${Uri.encodeComponent('App Review - ${review.userName}')}&body=${Uri.encodeComponent(emailBody)}',
+      );
+
+      debugPrint('[ReviewService] 📧 Launching email URI...');
+
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri);
+        debugPrint('[ReviewService] ✅ Email client opened successfully');
+        return true;
+      } else {
+        debugPrint('[ReviewService] ❌ Could not launch email client');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Error opening email client: $e');
+      return false;
+    }
+  }
+
+  /// Submit review (save + email)
+  Future<bool> submitReview(ReviewModel review) async {
+    try {
+      debugPrint('[ReviewService] 🚀 Starting review submission...');
+
+      // 1. Save to Firebase (critical)
+      final reviewId = await saveReview(review);
+      if (reviewId == null) {
+        debugPrint('[ReviewService] ❌ Failed to save review to Firebase');
+        return false;
+      }
+
+      // 2. Open email client for manual sending
+      final emailSent = await sendEmailViaMailClient(
+        review,
+        reviewId: reviewId,
+      );
+
+      // 3. Update review with email status
+      try {
+        await _firestore.collection('AppReviews').doc(reviewId).update({
+          'emailSent': emailSent,
+        });
+        debugPrint('[ReviewService] ✅ Updated email status in Firebase');
+      } catch (e) {
+        debugPrint('[ReviewService] ⚠️ Failed to update email status: $e');
+      }
+
+      // 4. Increment review count
+      await incrementReviewCount(review.userId);
+
+      debugPrint('[ReviewService] ✅ Review submission completed successfully');
+      return true;
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Critical error submitting review: $e');
+      return false;
+    }
+  }
+
+  /// Get all reviews (for admin panel or analytics)
+  Future<List<ReviewModel>> getAllReviews() async {
+    try {
+      final snapshot = await _firestore
+          .collection('AppReviews')
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => ReviewModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Error fetching reviews: $e');
+      return [];
+    }
+  }
+
+  /// Get average rating
+  Future<double> getAverageRating() async {
+    try {
+      final reviews = await getAllReviews();
+      if (reviews.isEmpty) return 0.0;
+
+      final sum = reviews.fold<int>(0, (sum, review) => sum + review.rating);
+      return sum / reviews.length;
+    } catch (e) {
+      debugPrint('[ReviewService] ❌ Error calculating average rating: $e');
+      return 0.0;
+    }
+  }
+}

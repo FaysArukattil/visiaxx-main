@@ -1,6 +1,11 @@
+import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:visiaxx/core/services/review_service.dart';
+import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/data_cleanup_service.dart';
 import '../../../core/services/session_monitor_service.dart';
@@ -226,6 +231,27 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 24),
+            _buildSection(
+              title: 'Feedback',
+              items: [
+                _buildProfileItem(
+                  icon: Icons.reviews_outlined,
+                  title: 'Give us Feedback',
+                  subtitle: 'Share your experience',
+                  onTap: () => _showReviewDialog(context),
+                ),
+                _buildProfileItem(
+                  icon: Icons.store_outlined,
+                  title: Platform.isIOS
+                      ? 'Rate us on App Store'
+                      : 'Rate us on Play Store',
+                  subtitle: 'Help us grow',
+                  onTap: () => _openStoreRating(),
+                ),
+              ],
+            ),
+
             const SizedBox(height: 32),
             _buildLogoutButton(context),
             const SizedBox(height: 48),
@@ -397,7 +423,7 @@ class ProfileScreen extends StatelessWidget {
   Future<void> _launchEmail() async {
     final Uri emailLaunchUri = Uri(
       scheme: 'mailto',
-      path: 'contact@visionoptocare.co.in',
+      path: 'vnoptocare@gmail.com',
     );
     if (await canLaunchUrl(emailLaunchUri)) {
       await launchUrl(emailLaunchUri);
@@ -411,6 +437,99 @@ class ProfileScreen extends StatelessWidget {
     );
     if (await canLaunchUrl(googleMapsUri)) {
       await launchUrl(googleMapsUri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _showReviewDialog(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final reviewService = ReviewService();
+    final hasReviewed = await reviewService.hasUserReviewed(user.uid);
+
+    if (hasReviewed) {
+      // Show confirmation dialog
+      if (context.mounted) {
+        final reviewCount = await reviewService.getReviewCount(user.uid);
+        final shouldProceed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.star, color: AppColors.primary, size: 24),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Submit Another Review?',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'You have already submitted ${reviewCount == 1 ? 'a review' : '$reviewCount reviews'}. Would you like to send one more?',
+              style: const TextStyle(fontSize: 14, height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Yes, Continue'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldProceed == true && context.mounted) {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => const ReviewDialog(),
+          );
+        }
+      }
+      return;
+    }
+
+    if (context.mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const ReviewDialog(),
+      );
+    }
+  }
+
+  Future<void> _openStoreRating() async {
+    try {
+      final inAppReview = InAppReview.instance;
+
+      // Try to show in-app review first
+      if (await inAppReview.isAvailable()) {
+        await inAppReview.requestReview();
+      } else {
+        // Fallback to opening store listing
+        await inAppReview.openStoreListing(
+          appStoreId:
+              '', // iOS App Store ID - will be configured when available
+        );
+      }
+    } catch (e) {
+      debugPrint('Error opening store rating: $e');
     }
   }
 
@@ -442,7 +561,7 @@ class ProfileScreen extends StatelessWidget {
         _buildContactDetailItem(
           icon: Icons.email_outlined,
           title: 'Email',
-          value: 'contact@visionoptocare.co.in',
+          value: 'vnoptocare@gmail.com',
           showCopyIcon: false,
           onTap: _launchEmail,
         ),
@@ -580,6 +699,11 @@ class ProfileScreen extends StatelessWidget {
           title: '5. Data Collection',
           content:
               'We collect test data, including vision scores, Amsler grid tracings, and user-provided information, to generate reports, improve our AI algorithms, and conduct clinical research. Your privacy is protected in accordance with our data policy.',
+        ),
+        _LegalSection(
+          title: '6. User Reviews & Feedback Collection',
+          content:
+              'When you submit a review or feedback through the app, we collect your name, age, rating, and written feedback. This information is sent via email to vnoptocare@gmail.com and stored in our database for the purpose of improving our product and services. Your feedback helps us enhance user experience and develop better features.',
         ),
         SizedBox(height: 20),
         Text(

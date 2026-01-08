@@ -40,6 +40,8 @@ class TestSessionProvider extends ChangeNotifier {
   // Comprehensive test mode flag
   bool _isComprehensiveTest = false;
 
+  bool _shouldShowReviewDialog = false;
+
   // Getters
   String get profileType => _profileType;
   String get profileId => _profileId;
@@ -56,6 +58,7 @@ class TestSessionProvider extends ChangeNotifier {
   ShortDistanceResult? get shortDistance => _shortDistance;
   PelliRobsonResult? get pelliRobson => _pelliRobson;
   bool get isComprehensiveTest => _isComprehensiveTest;
+  bool get shouldShowReviewDialog => _shouldShowReviewDialog;
 
   /// Set profile for self-testing
   void selectSelfProfile(String userId, String userName, [int? age]) {
@@ -74,6 +77,11 @@ class TestSessionProvider extends ChangeNotifier {
     _profileName = member.firstName;
     _profileAge = member.age;
     _selectedFamilyMember = member;
+    notifyListeners();
+  }
+
+  void setShouldShowReviewDialog(bool value) {
+    _shouldShowReviewDialog = value;
     notifyListeners();
   }
 

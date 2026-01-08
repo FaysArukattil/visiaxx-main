@@ -74,7 +74,6 @@ void main() async {
       '[VisiAxx] ⚠️ AWS credentials failed to load - will use Firebase only',
     );
   }
-
   runApp(const VisiaxApp());
 }
 
