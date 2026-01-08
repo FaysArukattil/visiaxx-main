@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/review_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/review_model.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import '../screens/review_email_preview_screen.dart';
 
 class ReviewDialog extends StatefulWidget {
@@ -29,22 +30,12 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
   Future<void> _submitReview() async {
     if (_rating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a rating'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      SnackbarUtils.showError(context, 'Please select a rating');
       return;
     }
 
     if (_reviewController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please write your review'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      SnackbarUtils.showError(context, 'Please write your review');
       return;
     }
 
@@ -96,21 +87,14 @@ class _ReviewDialogState extends State<ReviewDialog> {
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to save review. Please try again.'),
-            backgroundColor: AppColors.error,
-          ),
+        SnackbarUtils.showError(
+          context,
+          'Failed to save review. Please try again.',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Error: $e');
       }
     } finally {
       if (mounted) {

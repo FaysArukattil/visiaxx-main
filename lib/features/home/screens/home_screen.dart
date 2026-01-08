@@ -3,6 +3,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import 'profile_screen.dart';
 
 /// User home screen with navigation grid and carousel
@@ -674,9 +675,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _ServiceCard(
                   icon: Icons.calendar_month_rounded,
                   title: 'Consultation',
-                  onTap: () => ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Coming soon!'))),
+                  onTap: () => SnackbarUtils.showInfo(context, 'Coming soon!'),
                 ),
               ),
             ],

@@ -12,6 +12,7 @@ import '../../../core/services/pdf_export_service.dart';
 import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
+import '../../../core/utils/snackbar_utils.dart';
 
 /// My Results screen showing test history with Firebase integration and PDF export
 class MyResultsScreen extends StatefulWidget {
@@ -139,13 +140,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             ? 'Storage permission denied. PDF saved to app folder instead.'
             : 'Failed to generate PDF: $e';
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        SnackbarUtils.showError(context, errorMessage);
       }
     }
   }
@@ -166,12 +161,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     } catch (e) {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to share PDF: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Failed to share PDF: $e');
       }
     }
   }
@@ -229,12 +219,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Failed to delete: $e');
       }
     }
   }
@@ -256,17 +241,13 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         ], text: 'Amsler Grid Tracing');
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to load results')),
-          );
+          SnackbarUtils.showError(context, 'Failed to load results');
         }
       }
     } catch (e) {
       debugPrint('[MyResults] Share error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to share image: $e')));
+        SnackbarUtils.showError(context, 'Failed to share image: $e');
       }
     }
   }

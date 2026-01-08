@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/utils/snackbar_utils.dart';
 
 /// Login screen with Firebase authentication
 class LoginScreen extends StatefulWidget {
@@ -145,16 +146,17 @@ class _LoginScreenState extends State<LoginScreen> {
               final resendResult = await _authService.sendEmailVerification();
               if (mounted) {
                 setState(() => _isLoading = false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      resendResult.message ?? 'Verification email sent',
-                    ),
-                    backgroundColor: resendResult.isSuccess
-                        ? AppColors.success
-                        : AppColors.error,
-                  ),
-                );
+                if (resendResult.isSuccess) {
+                  SnackbarUtils.showSuccess(
+                    context,
+                    resendResult.message ?? 'Verification email sent',
+                  );
+                } else {
+                  SnackbarUtils.showError(
+                    context,
+                    resendResult.message ?? 'Failed to send verification email',
+                  );
+                }
               }
             },
             child: const Text('Resend Email'),
@@ -167,16 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleForgotPassword() async {
     final result = await Navigator.pushNamed(context, '/forgot-password');
     if (result != null && result is String && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result),
-          backgroundColor: AppColors.info,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+      SnackbarUtils.showInfo(context, result);
     }
   }
 

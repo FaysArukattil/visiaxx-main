@@ -11,6 +11,7 @@ import '../../../core/services/data_cleanup_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../eye_care_tips/screens/eye_care_tips_screen.dart';
+import '../../../core/utils/snackbar_utils.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserModel user;
@@ -553,9 +554,7 @@ class ProfileScreen extends StatelessWidget {
           value: '7208804568',
           onTap: () {
             Clipboard.setData(const ClipboardData(text: '7208804568'));
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Number copied to clipboard')),
-            );
+            SnackbarUtils.showSuccess(context, 'Number copied to clipboard');
           },
         ),
         _buildContactDetailItem(
