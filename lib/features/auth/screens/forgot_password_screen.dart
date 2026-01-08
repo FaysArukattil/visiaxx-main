@@ -41,18 +41,48 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _isLinkSent) {
+    if (state == AppLifecycleState.resumed && _isLinkSent && mounted) {
       // User returned to app after we sent the link.
-      // We automatically redirect them to the Login screen.
-      // Note: We can only "confirm" success if they actually log in,
-      // as browser-based resets happen outside the app's control.
-      if (mounted) {
-        Navigator.pop(
-          context,
-          'Password reset link sent. Please log in with your new password if you have reset it.',
-        );
-      }
+      // Ask them if they succeeded.
+      _showSuccessConfirmationDialog();
     }
+  }
+
+  void _showSuccessConfirmationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Password Reset'),
+        content: const Text(
+          'Have you successfully reset your password in your email?\n\nWould you like to continue to the login page?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // Close dialog only
+            child: const Text('Not Yet'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(
+                context,
+                'Password reset link sent. Please log in with your new password.',
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Yes, Continue'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _startTimer() {
@@ -62,7 +92,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_resendCountdown == 0) {
-        timer.cancel();
+        setState(() {
+          timer.cancel();
+        });
       } else {
         setState(() {
           _resendCountdown--;
@@ -90,7 +122,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           _isLoading = false;
           if (result.isSuccess) {
             _successMessage =
-                "Look in your mail for the reset link and reset it.";
+                "Verification link has been sent to your email. Check your inbox to reset your password.";
             _isLinkSent = true;
             _startTimer();
           } else {
@@ -243,21 +275,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                 child: Column(
                                   children: [
                                     const Icon(
-                                      Icons.info_outline_rounded,
+                                      Icons.mark_email_read_rounded,
                                       color: AppColors.info,
-                                      size: 40,
+                                      size: 48,
                                     ),
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: 16),
                                     Text(
                                       _successMessage!,
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
                                         color: AppColors.info,
-                                        fontSize: 14,
+                                        fontSize: 15,
                                         fontWeight: FontWeight.w600,
+                                        height: 1.4,
                                       ),
                                     ),
-                                    const SizedBox(height: 20),
+                                    const SizedBox(height: 24),
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton(
@@ -265,6 +298,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: AppColors.primary,
                                           foregroundColor: Colors.white,
+                                          elevation: 0,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               12,
