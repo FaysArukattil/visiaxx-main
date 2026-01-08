@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
-import '../../../core/utils/navigation_utils.dart';
 
 /// Registration screen with Firebase authentication
 class RegistrationScreen extends StatefulWidget {
@@ -78,14 +77,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
       if (result.isSuccess) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Account created successfully!'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-          // Keep _isLoading = true until navigation starts
-          await NavigationUtils.navigateHome(context);
+          setState(() => _isLoading = false);
+          _showSuccessDialog();
         }
       } else {
         if (mounted) {
@@ -103,6 +96,28 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         });
       }
     }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Registration Successful!'),
+        content: const Text(
+          'A verification email has been sent to your email address. Please verify your account before signing in.',
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(context).pop(); // Go back to login screen
+            },
+            child: const Text('Go to Sign In'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSectionTitle(String title, IconData icon) {

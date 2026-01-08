@@ -10,6 +10,7 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/screens/splashscreen.dart';
 import 'features/auth/screens/loginscreen.dart';
 import 'features/auth/screens/registration_screen.dart';
+import 'features/auth/screens/forgot_password_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/quick_vision_test/screens/profile_selection_screen.dart';
 import 'features/quick_vision_test/screens/questionnaire_screen.dart';
@@ -125,6 +126,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/': (context) => const SplashScreen(),
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegistrationScreen(),
+          '/forgot-password': (context) => const ForgotPasswordScreen(),
           '/home': (context) => const HomeScreen(),
           '/quick-test': (context) => const QuickTestIntroScreen(),
           '/profile-selection': (context) => const ProfileSelectionScreen(),

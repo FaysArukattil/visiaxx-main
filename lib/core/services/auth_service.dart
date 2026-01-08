@@ -52,7 +52,6 @@ class AuthService {
           if (userDoc.exists) {
             userModel = UserModel.fromMap(userDoc.data()!, userDoc.id);
 
-            // 3. Update last login in both places
             await _firestore.collection(collection).doc(identityString).update({
               'lastLoginAt': FieldValue.serverTimestamp(),
             });
@@ -66,7 +65,16 @@ class AuthService {
           userModel = await getUserData(credential.user!.uid);
         }
 
-        return AuthResult.success(user: userModel);
+        // Check if email is verified
+        if (!credential.user!.emailVerified) {
+          return AuthResult.success(
+            user: userModel,
+            isVerified: false,
+            message: 'Please verify your email address.',
+          );
+        }
+
+        return AuthResult.success(user: userModel, isVerified: true);
       }
 
       return AuthResult.failure(message: 'Sign in failed');
@@ -192,7 +200,14 @@ class AuthService {
         // Update display name
         await credential.user!.updateDisplayName('$firstName $lastName');
 
-        return AuthResult.success(user: userModel);
+        // Send verification email
+        await sendEmailVerification();
+
+        return AuthResult.success(
+          user: userModel,
+          isVerified: false,
+          message: 'Verification email sent. Please check your inbox.',
+        );
       }
 
       return AuthResult.failure(message: 'Registration failed');
@@ -302,13 +317,31 @@ class AuthService {
   Future<AuthResult> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email.trim());
-      return AuthResult.success(message: 'Password reset email sent');
+      return AuthResult.success(
+        message: 'Password reset link has been sent to your email.',
+      );
     } on FirebaseAuthException catch (e) {
       return AuthResult.failure(message: _getAuthErrorMessage(e.code));
     } on FirebaseException catch (e) {
       return AuthResult.failure(message: _getAuthErrorMessage(e.code));
     } catch (e) {
       return AuthResult.failure(message: 'Failed to send reset email: $e');
+    }
+  }
+
+  /// Send email verification
+  Future<AuthResult> sendEmailVerification() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        return AuthResult.success(message: 'Verification email sent');
+      }
+      return AuthResult.failure(message: 'No user to verify');
+    } on FirebaseAuthException catch (e) {
+      return AuthResult.failure(message: _getAuthErrorMessage(e.code));
+    } catch (e) {
+      return AuthResult.failure(message: 'Failed to send verification: $e');
     }
   }
 
@@ -403,11 +436,26 @@ class AuthResult {
   final bool isSuccess;
   final String? message;
   final UserModel? user;
+  final bool isEmailVerified;
 
-  AuthResult._({required this.isSuccess, this.message, this.user});
+  AuthResult._({
+    required this.isSuccess,
+    this.message,
+    this.user,
+    this.isEmailVerified = true,
+  });
 
-  factory AuthResult.success({UserModel? user, String? message}) {
-    return AuthResult._(isSuccess: true, user: user, message: message);
+  factory AuthResult.success({
+    UserModel? user,
+    String? message,
+    bool isVerified = true,
+  }) {
+    return AuthResult._(
+      isSuccess: true,
+      user: user,
+      message: message,
+      isEmailVerified: isVerified,
+    );
   }
 
   factory AuthResult.failure({required String message}) {

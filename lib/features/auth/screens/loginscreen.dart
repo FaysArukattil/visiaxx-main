@@ -44,6 +44,17 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (result.isSuccess && result.user != null) {
+        // Check for email verification
+        if (!result.isEmailVerified) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+            _showVerificationDialog(_emailController.text.trim());
+          }
+          return;
+        }
+
         // 1. Check for existing active session on another device
         final sessionService = SessionMonitorService();
         final checkResult = await sessionService.checkExistingSession(
@@ -114,29 +125,59 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _handleForgotPassword() async {
-    final email = _emailController.text.trim();
-
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your email first'),
-          backgroundColor: AppColors.warning,
+  void _showVerificationDialog(String email) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Verify Your Email'),
+        content: Text(
+          'Your email $email is not verified. Please check your inbox for the verification link.',
         ),
-      );
-      return;
-    }
-
-    final result = await _authService.sendPasswordResetEmail(email);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message ?? 'Check your email'),
-        backgroundColor: result.isSuccess ? AppColors.success : AppColors.error,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              setState(() => _isLoading = true);
+              final resendResult = await _authService.sendEmailVerification();
+              if (mounted) {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      resendResult.message ?? 'Verification email sent',
+                    ),
+                    backgroundColor: resendResult.isSuccess
+                        ? AppColors.success
+                        : AppColors.error,
+                  ),
+                );
+              }
+            },
+            child: const Text('Resend Email'),
+          ),
+        ],
       ),
     );
+  }
+
+  void _handleForgotPassword() async {
+    final result = await Navigator.pushNamed(context, '/forgot-password');
+    if (result != null && result is String && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result),
+          backgroundColor: AppColors.info,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
   }
 
   @override
