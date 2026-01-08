@@ -101,27 +101,23 @@ class ReviewService {
     }
   }
 
-  /// Send email notification via user's email client (Primary Method)
-  Future<bool> sendEmailViaMailClient(
-    ReviewModel review, {
-    String? reviewId,
-  }) async {
-    try {
-      debugPrint('[ReviewService] 📧 Opening user email client...');
+  static const String supportEmail = 'vnoptocare@gmail.com';
 
-      // Format the email body professionally
-      final dateStr = DateFormat(
-        'MMMM dd, yyyy • h:mm a',
-      ).format(review.timestamp);
-      final stars = '⭐' * review.rating;
-      final emptyStars = '☆' * (5 - review.rating);
-      final refId = reviewId ?? 'PENDING';
+  /// Format the email body professionally for review reports
+  String formatReviewEmailBody({
+    required ReviewModel review,
+    required String reviewId,
+  }) {
+    final dateStr = DateFormat(
+      'MMMM dd, yyyy • h:mm a',
+    ).format(review.timestamp);
+    final stars = '⭐' * review.rating;
+    final emptyStars = '☆' * (5 - review.rating);
 
-      final emailBody =
-          '''
+    return '''
 VISIAXX DIGITAL EYE CLINIC - REVIEW REPORT
 ══════════════════════════════════════════════════
-Reference ID:  #$refId
+Reference ID:  #$reviewId
 Generated on:  $dateStr
 
 USER DETAILS
@@ -144,12 +140,25 @@ Please retain this for your records.
 Vision Optocare © 2026
 ══════════════════════════════════════════════════
 ''';
+  }
+
+  /// Send email notification via user's email client (Primary Method)
+  Future<bool> sendEmailViaMailClient(
+    ReviewModel review, {
+    String? reviewId,
+  }) async {
+    try {
+      debugPrint('[ReviewService] 📧 Opening user email client...');
+
+      final refId = reviewId ?? 'PENDING';
+      final emailBody = formatReviewEmailBody(review: review, reviewId: refId);
+      final subject = 'App Review - ${review.userName}';
 
       final Uri emailUri = Uri(
         scheme: 'mailto',
-        path: 'vnoptocare@gmail.com',
+        path: supportEmail,
         query:
-            'subject=${Uri.encodeComponent('App Review - ${review.userName}')}&body=${Uri.encodeComponent(emailBody)}',
+            'subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(emailBody)}',
       );
 
       debugPrint('[ReviewService] 📧 Launching email URI...');

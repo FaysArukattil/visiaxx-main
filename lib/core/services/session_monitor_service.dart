@@ -126,9 +126,12 @@ class SessionMonitorService with WidgetsBindingObserver {
       final sessionRef = _database.ref('active_sessions/$identityString');
       await sessionRef.set(sessionData.toMap());
 
-      // Use onDisconnect to mark session as "Offline" (lastActiveMillis = 0)
-      // This allows immediate takeover by other devices if this device is gone
-      await sessionRef.onDisconnect().update({'lastActiveMillis': 0});
+      // Use onDisconnect to mark session as "Offline" with a special Kill Signal (-1)
+      // This allows INSTANT takeover by other devices if this device is killed/crashed
+      await sessionRef.onDisconnect().update({
+        'isOnline': false,
+        'lastActiveMillis': -1,
+      });
 
       // Store session info locally
       await _secureStorage.write(key: _sessionIdKey, value: sessionId);
@@ -147,16 +150,7 @@ class SessionMonitorService with WidgetsBindingObserver {
       return SessionCreationResult(sessionId: sessionId);
     } catch (e) {
       debugPrint('[SessionMonitor] ❌ Failed to create session: $e');
-      String errorMessage = 'Failed to create session';
-      if (e.toString().contains('permission_denied') ||
-          e.toString().contains('PERMISSION_DENIED')) {
-        errorMessage =
-            'Firebase Permission Denied. Please check Realtime Database rules.';
-      } else if (e.toString().contains('network') ||
-          e.toString().contains('host')) {
-        errorMessage = 'Network error. Please check your connection.';
-      }
-      return SessionCreationResult(error: '$errorMessage ($e)');
+      return SessionCreationResult(error: 'Failed to create session: $e');
     }
   }
 
@@ -174,21 +168,28 @@ class SessionMonitorService with WidgetsBindingObserver {
         snapshot.value as Map<dynamic, dynamic>,
       );
 
-      // Check if session is "Online" (Double-Lock: boolean OR active within last 90 seconds)
+      // Instant Takeover Logic:
+      // If lastActiveMillis is -1, it means the previous device was killed/disconnected
+      final bool isKilled = sessionData.lastActiveMillis == -1;
+
+      // Double-Lock Time Logic:
+      // Only consider "Online" if isOnline is true AND it has been active within last 45 seconds
+      // (reduced from 90s for tighter security, heartbeat is every 30s)
       final now = DateTime.now().millisecondsSinceEpoch;
-      final isOnline =
-          sessionData.isOnline ||
-          (now - sessionData.lastActiveMillis) < (90 * 1000);
+      final bool isTimedOut =
+          (now - sessionData.lastActiveMillis) > (45 * 1000);
+
+      final bool isActuallyOnline =
+          !isKilled && sessionData.isOnline && !isTimedOut;
 
       // Check if we have a stored session that matches
       final storedSessionId = await _secureStorage.read(key: _sessionIdKey);
 
       if (storedSessionId != null && storedSessionId == sessionData.sessionId) {
-        // This is our session
         return SessionCheckResult(
           exists: true,
           isOurSession: true,
-          isOnline: isOnline,
+          isOnline: isActuallyOnline,
           sessionData: sessionData,
         );
       }
@@ -197,7 +198,7 @@ class SessionMonitorService with WidgetsBindingObserver {
       return SessionCheckResult(
         exists: true,
         isOurSession: false,
-        isOnline: isOnline,
+        isOnline: isActuallyOnline,
         sessionData: sessionData,
       );
     } catch (e) {
@@ -215,7 +216,6 @@ class SessionMonitorService with WidgetsBindingObserver {
     }
 
     debugPrint('[SessionMonitor] 🔄 Monitoring session for: $identityString');
-
     _isMonitoring = true;
 
     final sessionRef = _database.ref('active_sessions/$identityString');
@@ -232,13 +232,16 @@ class SessionMonitorService with WidgetsBindingObserver {
     );
 
     // Set online status and onDisconnect every time we start monitoring
+    final now = DateTime.now().millisecondsSinceEpoch;
     _database.ref('active_sessions/$identityString').update({
       'isOnline': true,
-      'lastActiveMillis': DateTime.now().millisecondsSinceEpoch,
+      'lastActiveMillis': now,
     });
+
+    // Ensure onDisconnect is refreshed
     _database.ref('active_sessions/$identityString').onDisconnect().update({
       'isOnline': false,
-      'lastActiveMillis': 0,
+      'lastActiveMillis': -1, // Kill Signal
     });
 
     // Listen to connection status to trigger re-verification on network recovery
@@ -252,7 +255,7 @@ class SessionMonitorService with WidgetsBindingObserver {
       }
     });
 
-    // Start heartbeat heartbeat
+    // Start heartbeat
     _startHeartbeat();
   }
 

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:in_app_review/in_app_review.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/review_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/review_model.dart';
+import '../screens/review_email_preview_screen.dart';
 
 class ReviewDialog extends StatefulWidget {
   const ReviewDialog({super.key});
@@ -17,7 +17,6 @@ class _ReviewDialogState extends State<ReviewDialog> {
   final ReviewService _reviewService = ReviewService();
   final AuthService _authService = AuthService();
   final TextEditingController _reviewController = TextEditingController();
-  final InAppReview _inAppReview = InAppReview.instance;
 
   int _rating = 0;
   bool _isSubmitting = false;
@@ -74,30 +73,32 @@ class _ReviewDialogState extends State<ReviewDialog> {
         timestamp: DateTime.now(),
       );
 
-      // Submit review
-      final success = await _reviewService.submitReview(review);
+      // Submit review to Firebase first
+      final reviewId = await _reviewService.saveReview(review);
 
       if (!mounted) return;
 
-      if (success) {
-        Navigator.of(context).pop();
+      if (reviewId != null) {
+        // Success! Now go to the preview screen
+        Navigator.of(context).pop(); // Close dialog
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Thank you for your review! 🌟'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        // Update local review count
+        await _reviewService.incrementReviewCount(review.userId);
 
-        // Prompt for store rating
-        await Future.delayed(const Duration(seconds: 1));
-        _promptStoreRating();
+        // Navigate to the stylized preview screen
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) =>
+                  ReviewEmailPreviewScreen(review: review, reviewId: reviewId),
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to submit review. Please try again.'),
+            content: Text('Failed to save review. Please try again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -115,18 +116,6 @@ class _ReviewDialogState extends State<ReviewDialog> {
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
-    }
-  }
-
-  Future<void> _promptStoreRating() async {
-    try {
-      if (await _inAppReview.isAvailable()) {
-        await _inAppReview.requestReview();
-      } else {
-        await _inAppReview.openStoreListing(appStoreId: 'YOUR_APP_STORE_ID');
-      }
-    } catch (e) {
-      debugPrint('Error opening store rating: $e');
     }
   }
 
