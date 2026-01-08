@@ -192,7 +192,7 @@ Organization: Vision Optocare Private Limited
 Location: Mumbai, Maharashtra, India
 
 📧 vnoptocare@gmail.com
-🌐 www.visiaxx.com
+🌐 https://visionoptocare.com/home
 
 © 2026 Vision Optocare. All Rights Reserved.
 
