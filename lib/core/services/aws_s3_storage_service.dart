@@ -55,6 +55,7 @@ class AWSS3StorageService {
     required String testCategory,
     required String testId,
     required File pdfFile,
+    String? memberIdentityString, // Optional for family members
   }) async {
     if (!isAvailable) {
       debugPrint('[AWS S3] Service not available, skipping upload');
@@ -65,9 +66,13 @@ class AWSS3StorageService {
       final dateStr = DateTime.now().toIso8601String().split('T')[0];
       final fileName = pdfFile.path.split(Platform.pathSeparator).last;
 
-      // New organized path: Role/Identity/Date/Category/Reports/FileName
-      final objectName =
-          '$roleCollection/$identityString/$dateStr/$testCategory/reports/$fileName';
+      // New organized path: Role/IdentityString/[members/MemberIdentity/]?Date/Category/Reports/FileName
+      String basePath = '$roleCollection/$identityString';
+      if (memberIdentityString != null && memberIdentityString.isNotEmpty) {
+        basePath += '/members/$memberIdentityString';
+      }
+
+      final objectName = '$basePath/$dateStr/$testCategory/reports/$fileName';
       final bucket = AWSCredentials.bucketName;
 
       debugPrint('[AWS S3] 📄 PDF UPLOAD START:');
@@ -139,6 +144,7 @@ class AWSS3StorageService {
     required String testId,
     required String eye, // 'right' or 'left'
     required File imageFile,
+    String? memberIdentityString, // Optional for family members
   }) async {
     if (!isAvailable) {
       debugPrint('[AWS S3] Service not available, skipping upload');
@@ -149,9 +155,13 @@ class AWSS3StorageService {
       final dateStr = DateTime.now().toIso8601String().split('T')[0];
       final fileName = 'amsler_${testId}_$eye.png';
 
-      // New organized path: Role/Identity/Date/Category/Images/FileName
-      final objectName =
-          '$roleCollection/$identityString/$dateStr/$testCategory/images/$fileName';
+      // New organized path: Role/IdentityString/[members/MemberIdentity/]?Date/Category/Images/FileName
+      String basePath = '$roleCollection/$identityString';
+      if (memberIdentityString != null && memberIdentityString.isNotEmpty) {
+        basePath += '/members/$memberIdentityString';
+      }
+
+      final objectName = '$basePath/$dateStr/$testCategory/images/$fileName';
       final bucket = AWSCredentials.bucketName;
 
       debugPrint('[AWS S3] 🖼️ IMAGE UPLOAD START:');

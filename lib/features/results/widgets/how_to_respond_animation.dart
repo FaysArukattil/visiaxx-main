@@ -104,72 +104,75 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                   ? ((_controller.value - 0.4) / 0.3).clamp(0.0, 1.0)
                   : 0.0;
 
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Top button
-                  _buildDirectionButton(
-                    Icons.arrow_upward,
-                    buttonSize,
-                    _ButtonPosition.top,
-                    buttonPress,
-                    fadeIn,
-                  ),
-                  const SizedBox(height: 12),
+              return FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Top button
+                    _buildDirectionButton(
+                      Icons.arrow_upward,
+                      buttonSize,
+                      _ButtonPosition.top,
+                      buttonPress,
+                      fadeIn,
+                    ),
+                    const SizedBox(height: 12),
 
-                  // Middle row: Left button, E, Right button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildDirectionButton(
-                        Icons.arrow_back,
-                        buttonSize,
-                        _ButtonPosition.left,
-                        buttonPress,
-                        fadeIn,
-                      ),
-                      SizedBox(width: widget.isCompact ? 40 : 50),
+                    // Middle row: Left button, E, Right button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildDirectionButton(
+                          Icons.arrow_back,
+                          buttonSize,
+                          _ButtonPosition.left,
+                          buttonPress,
+                          fadeIn,
+                        ),
+                        SizedBox(width: widget.isCompact ? 40 : 50),
 
-                      // E letter in center
-                      Opacity(
-                        opacity: fadeIn,
-                        child: Transform.rotate(
-                          angle:
-                              _directions[_currentDirection].rotation *
-                              pi /
-                              180,
-                          child: Text(
-                            'E',
-                            style: TextStyle(
-                              fontSize: eSize,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                        // E letter in center
+                        Opacity(
+                          opacity: fadeIn,
+                          child: Transform.rotate(
+                            angle:
+                                _directions[_currentDirection].rotation *
+                                pi /
+                                180,
+                            child: Text(
+                              'E',
+                              style: TextStyle(
+                                fontSize: eSize,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
-                      SizedBox(width: widget.isCompact ? 40 : 50),
-                      _buildDirectionButton(
-                        Icons.arrow_forward,
-                        buttonSize,
-                        _ButtonPosition.right,
-                        buttonPress,
-                        fadeIn,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                        SizedBox(width: widget.isCompact ? 40 : 50),
+                        _buildDirectionButton(
+                          Icons.arrow_forward,
+                          buttonSize,
+                          _ButtonPosition.right,
+                          buttonPress,
+                          fadeIn,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
 
-                  // Bottom button
-                  _buildDirectionButton(
-                    Icons.arrow_downward,
-                    buttonSize,
-                    _ButtonPosition.bottom,
-                    buttonPress,
-                    fadeIn,
-                  ),
-                ],
+                    // Bottom button
+                    _buildDirectionButton(
+                      Icons.arrow_downward,
+                      buttonSize,
+                      _ButtonPosition.bottom,
+                      buttonPress,
+                      fadeIn,
+                    ),
+                  ],
+                ),
               );
             },
           ),

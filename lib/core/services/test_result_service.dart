@@ -5,6 +5,7 @@ import 'package:visiaxx/core/services/auth_service.dart';
 import 'dart:io';
 import '../../data/models/test_result_model.dart';
 import 'package:intl/intl.dart';
+import 'package:visiaxx/core/services/family_member_service.dart';
 import '../providers/network_connectivity_provider.dart';
 
 /// Service for storing and retrieving test results from Firebase
@@ -50,12 +51,24 @@ class TestResultService {
           '${timestampStr}_${result.overallStatus.name}_$testCategory';
 
       // 5. Initial save to Firestore (FAST)
-      await _firestore
+      // If it's a family member, nest under members/{profileId}
+      var testDocRef = _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
           .collection('tests')
-          .doc(customDocId)
-          .set(result.toFirestore());
+          .doc(customDocId);
+
+      if (result.profileType == 'family' && result.profileId.isNotEmpty) {
+        testDocRef = _firestore
+            .collection(_identifiedResultsCollection)
+            .doc(identity)
+            .collection('members')
+            .doc(result.profileId)
+            .collection('tests')
+            .doc(customDocId);
+      }
+
+      await testDocRef.set(result.toFirestore());
 
       // Start AWS uploads in background - don't await!
       performBackgroundAWSUploads(
@@ -121,6 +134,10 @@ class TestResultService {
       debugPrint('[TestResultService]    AWS Endpoint Reachable: $isConnected');
 
       // 1. Upload Images
+      final String? memberId = result.profileType == 'family'
+          ? result.profileId
+          : null;
+
       TestResultModel updatedResult = await _uploadImagesIfExist(
         userId: userId,
         identityString: identity,
@@ -128,6 +145,7 @@ class TestResultService {
         testCategory: testCategory,
         testId: customDocId,
         result: result,
+        memberId: memberId,
       );
 
       // 2. Upload PDF
@@ -144,6 +162,7 @@ class TestResultService {
           testCategory: testCategory,
           testId: customDocId,
           pdfFile: pdfFile,
+          memberIdentityString: memberId,
         );
 
         if (pdfUrl != null) {
@@ -264,6 +283,7 @@ class TestResultService {
     required String testCategory,
     required String testId,
     required TestResultModel result,
+    String? memberId,
   }) async {
     debugPrint(
       '[TestResultService] 📤 Checking for images to upload for $testId...',
@@ -296,6 +316,7 @@ class TestResultService {
           testId: testId, // ⚡ Use testId instead of result.id
           eye: 'right',
           imageFile: file,
+          memberIdentityString: memberId,
         );
 
         if (awsUrl != null) {
@@ -324,6 +345,7 @@ class TestResultService {
           testId: testId, // ⚡ Use testId instead of result.id
           eye: 'left',
           imageFile: file,
+          memberIdentityString: memberId,
         );
 
         if (awsUrl != null) {
@@ -420,6 +442,56 @@ class TestResultService {
         );
       }
 
+      // 3. NEW: Fetch results from all family member nested collections
+      try {
+        final familyMemberService = FamilyMemberService();
+        final members = await familyMemberService.getFamilyMembers(userId);
+
+        if (members.isNotEmpty) {
+          debugPrint(
+            '[TestResultService] 👨‍👩‍👧‍👦 Fetching results for ${members.length} family members...',
+          );
+          final List<Future<QuerySnapshot>> memberFetches = [];
+          for (final member in members) {
+            memberFetches.add(
+              _firestore
+                  .collection(_identifiedResultsCollection)
+                  .doc(identity)
+                  .collection('members')
+                  .doc(member.id)
+                  .collection('tests')
+                  .orderBy('timestamp', descending: true)
+                  .get(const GetOptions(source: Source.serverAndCache))
+                  .timeout(
+                    const Duration(seconds: 2),
+                    onTimeout: () {
+                      // Fallback to cache for this specific member
+                      return _firestore
+                          .collection(_identifiedResultsCollection)
+                          .doc(identity)
+                          .collection('members')
+                          .doc(member.id)
+                          .collection('tests')
+                          .orderBy('timestamp', descending: true)
+                          .get(const GetOptions(source: Source.cache));
+                    },
+                  ),
+            );
+          }
+
+          final memberSnapshots = await Future.wait(memberFetches);
+          for (final snap in memberSnapshots) {
+            processDocs(
+              snap.docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>(),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint(
+          '[TestResultService] ⚠️ Error fetching family member results: $e',
+        );
+      }
+
       // Sort merged results by timestamp descending
       results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
@@ -445,12 +517,34 @@ class TestResultService {
 
       final identity = userModel.identityString;
 
-      final doc = await _firestore
+      // Try main collection first
+      var doc = await _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
           .collection('tests')
           .doc(resultId)
           .get();
+
+      // If not found, it might be in a nested family member collection
+      if (!doc.exists) {
+        debugPrint(
+          '[TestResultService] Result $resultId not in main tests, searching members...',
+        );
+        final familyMemberService = FamilyMemberService();
+        final members = await familyMemberService.getFamilyMembers(userId);
+
+        for (final member in members) {
+          doc = await _firestore
+              .collection(_identifiedResultsCollection)
+              .doc(identity)
+              .collection('members')
+              .doc(member.id)
+              .collection('tests')
+              .doc(resultId)
+              .get();
+          if (doc.exists) break;
+        }
+      }
 
       if (!doc.exists || doc.data() == null) return null;
 
@@ -475,18 +569,46 @@ class TestResultService {
       final identity = userModel.identityString;
       final hiddenIds = userModel.hiddenResultIds;
 
-      final snapshot = await _firestore
+      // 1. Try legacy path (flat collection)
+      final legacySnapshot = await _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
           .collection('tests')
           .where('profileId', isEqualTo: profileId)
-          .orderBy('timestamp', descending: true)
           .get();
 
-      return snapshot.docs
-          .where((doc) => !hiddenIds.contains(doc.id))
-          .map((doc) => TestResultModel.fromJson({...doc.data(), 'id': doc.id}))
-          .toList();
+      // 2. Try nested path (new organized structure)
+      final nestedSnapshot = await _firestore
+          .collection(_identifiedResultsCollection)
+          .doc(identity)
+          .collection('members')
+          .doc(profileId)
+          .collection('tests')
+          .get();
+
+      final List<TestResultModel> results = [];
+      final Set<String> processedIds = {};
+
+      void addDocs(QuerySnapshot snap) {
+        for (final doc in snap.docs) {
+          if (processedIds.contains(doc.id)) continue;
+          if (hiddenIds.contains(doc.id)) continue;
+
+          results.add(
+            TestResultModel.fromJson({
+              ...doc.data() as Map<String, dynamic>,
+              'id': doc.id,
+            }),
+          );
+          processedIds.add(doc.id);
+        }
+      }
+
+      addDocs(legacySnapshot);
+      addDocs(nestedSnapshot);
+
+      results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return results;
     } catch (e) {
       throw Exception('Failed to get profile test results: $e');
     }

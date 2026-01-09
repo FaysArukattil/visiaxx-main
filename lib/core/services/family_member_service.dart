@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:visiaxx/core/services/auth_service.dart';
+import 'package:visiaxx/core/services/local_storage_service.dart';
 import '../../data/models/family_member_model.dart';
 
 /// Service for managing family members in Firebase
@@ -9,6 +10,13 @@ class FamilyMemberService {
 
   /// Get the organized collection path for family members
   Future<String> _familyMembersPath(String userId) async {
+    // Try local storage FIRST for zero-latency offline path resolution
+    final cachedUser = await LocalStorageService().getUserProfile();
+    if (cachedUser != null && cachedUser.id == userId) {
+      return 'NormalUsers/${cachedUser.identityString}/members';
+    }
+
+    // Fallback to AuthService (which has its own cache + fast timeout)
     final authService = AuthService();
     final user = await authService.getUserData(userId);
     if (user == null) {

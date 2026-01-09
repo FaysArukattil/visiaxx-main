@@ -7,6 +7,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../data/models/family_member_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/utils/snackbar_utils.dart';
 
 /// Profile selection screen - choose self or family member for testing
 class ProfileSelectionScreen extends StatefulWidget {
@@ -133,17 +134,16 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     if (_formKey.currentState!.validate()) {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please log in to add family members'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        if (mounted) {
+          SnackbarUtils.showError(
+            context,
+            'Please log in to add family members',
+          );
+        }
         return;
       }
 
-      // ✅ Show loading indicator
+      // Show loading indicator
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -162,52 +162,56 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       try {
         debugPrint('[ProfileSelection] Saving member: ${newMember.firstName}');
 
-        // Save to Firebase
-        final savedId = await _familyMemberService.saveFamilyMember(
-          userId: user.uid,
-          member: newMember,
-        );
+        // Save to Firebase with 5s timeout for offline resilience
+        final savedId = await _familyMemberService
+            .saveFamilyMember(userId: user.uid, member: newMember)
+            .timeout(const Duration(seconds: 5));
 
         debugPrint('[ProfileSelection] ✅ Member saved with ID: $savedId');
 
-        // Update local list with Firebase ID
+        if (mounted) Navigator.pop(context); // Close loader
+
         final savedMember = newMember.copyWith(id: savedId);
 
-        // ✅ Close loading dialog
-        if (mounted) Navigator.pop(context);
+        if (mounted) {
+          setState(() {
+            _familyMembers.insert(0, savedMember);
+            _showAddForm = false;
+            _nameController.clear();
+            _ageController.clear();
+          });
 
-        if (!mounted) return;
-
-        setState(() {
-          _familyMembers.insert(0, savedMember);
-          _showAddForm = false;
-          _nameController.clear();
-          _ageController.clear();
-          _selectedSex = 'Male';
-          _selectedRelationship = 'Spouse';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${savedMember.firstName} added successfully'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+          SnackbarUtils.showSuccess(
+            context,
+            '${savedMember.firstName} added successfully',
+          );
+        }
       } catch (e) {
-        debugPrint('[ProfileSelection] ❌ Error saving member: $e');
+        debugPrint('[ProfileSelection] ⚠️ Save timed out or errored: $e');
 
-        // ✅ Close loading dialog
-        if (mounted) Navigator.pop(context);
+        if (mounted) Navigator.pop(context); // Close loader
 
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        if (e.toString().contains('TimeoutException') ||
+            e.toString().contains('UNAVAILABLE')) {
+          // It's likely queued in Firestore local persistence
+          if (mounted) {
+            setState(() {
+              _familyMembers.insert(0, newMember); // Show immediately
+              _showAddForm = false;
+              _nameController.clear();
+              _ageController.clear();
+            });
+
+            SnackbarUtils.showInfo(
+              context,
+              'Saved locally. Will sync when online.',
+            );
+          }
+        } else {
+          if (mounted) {
+            SnackbarUtils.showError(context, 'Failed to save: $e');
+          }
+        }
       }
     }
   }
