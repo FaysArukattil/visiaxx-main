@@ -5,6 +5,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/constants/app_status.dart';
 
 /// Professional eye care splash screen with elegant animations
 class SplashScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    AppStatus.isSplashActive = true;
     _setupAnimations();
     _startAnimationSequence();
   }
@@ -195,6 +197,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    AppStatus.isSplashActive = false;
     _logoController.dispose();
     super.dispose();
   }

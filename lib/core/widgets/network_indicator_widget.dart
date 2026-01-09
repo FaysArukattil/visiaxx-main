@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/network_connectivity_provider.dart';
+import '../constants/app_status.dart';
 
 /// Non-intrusive network status indicator that appears on the right side as overlay
 class NetworkIndicatorWidget extends StatefulWidget {
@@ -40,7 +41,7 @@ class _NetworkIndicatorWidgetState extends State<NetworkIndicatorWidget> {
               } else {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   final currentRoute = ModalRoute.of(context)?.settings.name;
-                  final isOnSplashScreen = currentRoute == '/';
+                  final isOnSplashScreen = AppStatus.isSplashActive;
                   final isPersistentRoute = _persistentOfflineRoutes.contains(
                     currentRoute,
                   );

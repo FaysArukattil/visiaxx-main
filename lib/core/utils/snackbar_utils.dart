@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_status.dart';
 
 /// Centralized utility for showing professional, consistent snackbars throughout the app.
 /// These snackbars use Overlay to show on top of everything, including modal bottom sheets.
@@ -70,6 +71,14 @@ class SnackbarUtils {
     Duration duration = const Duration(seconds: 3),
   }) {
     final now = DateTime.now();
+
+    // 🚫 SUPPRESSION: Never show snackbars on the splash screen
+    if (AppStatus.isSplashActive) {
+      debugPrint(
+        '[SnackbarUtils] 🤐 Suppressing snackbar on splash screen: $message',
+      );
+      return;
+    }
 
     // Anti-ghosting: If it's the same message triggered within 1 second,
     // don't re-trigger a new animation to avoid flickering.
