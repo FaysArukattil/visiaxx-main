@@ -445,13 +445,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 child: _isLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: EyeLoader(
-                                          size: 24,
-                                          color: Colors.white,
-                                        ),
+                                    ? const EyeLoader(
+                                        size: 32,
+                                        color: Colors.white,
                                       )
                                     : const Text(
                                         'Sign In',
