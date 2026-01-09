@@ -2,11 +2,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// A calm, themed eye loading animation.
-/// Features a gentle 5s cycle, smooth iris transitions, and subtle breathing pupil pulse.
+/// Features a gentle 4s cycle, smooth iris transitions, and subtle breathing pupil pulse.
 class EyeLoader extends StatefulWidget {
   final double size;
   final Color? color; // Iris color (defaults to theme primary)
-  final Color? scleraColor; // Background eye color (defaults to dark navy)
+  final Color? scleraColor; // Background eye color (defaults to white)
   final Color? pupilColor; // Pupil color (defaults to black)
   final double? value;
 
@@ -18,6 +18,20 @@ class EyeLoader extends StatefulWidget {
     this.pupilColor,
     this.value,
   });
+
+  /// Constructor for button usage - larger and more visible
+  const EyeLoader.button({super.key, this.color})
+    : size = 28.0, // Larger for buttons
+      scleraColor = null,
+      pupilColor = null,
+      value = null;
+
+  /// Constructor for full screen usage - even larger
+  const EyeLoader.fullScreen({super.key, this.color})
+    : size = 80.0,
+      scleraColor = null,
+      pupilColor = null,
+      value = null;
 
   @override
   State<EyeLoader> createState() => _EyeLoaderState();
@@ -32,7 +46,7 @@ class _EyeLoaderState extends State<EyeLoader>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4000), // Snappier 4s cycle
+      duration: const Duration(milliseconds: 4000),
     );
     if (widget.value == null) {
       _controller.repeat();
@@ -58,8 +72,7 @@ class _EyeLoaderState extends State<EyeLoader>
   @override
   Widget build(BuildContext context) {
     final themeColor = widget.color ?? Theme.of(context).primaryColor;
-    final fallbackSclera =
-        Colors.white; // Refined to white for "Normal Eye" look
+    final fallbackSclera = Colors.white;
     final fallbackPupil = Colors.black;
 
     return SizedBox(
@@ -101,38 +114,29 @@ class _EyePainter extends CustomPainter {
     final eyeWidth = size.width * 0.95;
     double baseEyeHeight = size.height * 0.52;
 
-    // --- DYNAMIC TIMING LOGIC ---
     double irisXOffset = 0;
     double blinkFactor = 1.0;
 
-    // 1. Fluid Sliding (Balanced 4000ms Loop with Cubic Easing)
     const curve = Curves.easeInOutCubic;
     if (progress < 0.15) {
-      // Snappier start
       irisXOffset = 0;
     } else if (progress < 0.35) {
-      // Fluid move to Left
       double t = curve.transform((progress - 0.15) / 0.2);
       irisXOffset = -t * (eyeWidth * 0.28);
     } else if (progress < 0.65) {
-      // Fluid slide to Right
       double t = curve.transform((progress - 0.35) / 0.3);
       irisXOffset = -(eyeWidth * 0.28) + (t * eyeWidth * 0.56);
     } else if (progress < 0.85) {
-      // Fluid return to center
       double t = curve.transform((progress - 0.65) / 0.2);
       irisXOffset = (eyeWidth * 0.28) - (t * eyeWidth * 0.28);
     }
 
-    // 2. Focused Pupil Reaction (Intro dilation + Blink reactivity)
     double pulseScale = 1.0;
     if (progress < 0.15) {
-      // Intro: Fast exponential contraction from 1.8x to 1.0x
       final t = progress / 0.15;
       pulseScale = 1.8 - (Curves.easeOutExpo.transform(t) * 0.8);
     }
 
-    // 3. Refined Blink Rhythm (3 smooth, snappy blinks)
     final blinkMarkers = [0.2, 0.5, 0.8];
     const blinkHalfWindow = 0.07;
     for (final marker in blinkMarkers) {
@@ -146,14 +150,10 @@ class _EyePainter extends CustomPainter {
       }
     }
 
-    // Add Blink-Reactive Pupil Shift (Pupil dilates slightly as eye closes)
     final blinkAdjustment = (1.0 - blinkFactor) * 0.45;
     pulseScale += blinkAdjustment;
 
-    // --- DRAWING ---
     final currentHeight = baseEyeHeight * blinkFactor;
-
-    // Sclera Movement (Enhanced reactive depth)
     final scleraCenter = center + Offset(irisXOffset * 0.22, 0);
 
     final eyePath = Path();
@@ -172,7 +172,6 @@ class _EyePainter extends CustomPainter {
     );
     eyePath.close();
 
-    // Sclera (Background Portion)
     canvas.drawPath(
       eyePath,
       Paint()
@@ -180,7 +179,6 @@ class _EyePainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
-    // Subtle Sclera Border (Visibility for light themes)
     canvas.drawPath(
       eyePath,
       Paint()
@@ -189,7 +187,6 @@ class _EyePainter extends CustomPainter {
         ..strokeWidth = 1.2,
     );
 
-    // Iris & Pupil (Clipped)
     if (blinkFactor > 0.1) {
       canvas.save();
       canvas.clipPath(eyePath);
@@ -197,17 +194,14 @@ class _EyePainter extends CustomPainter {
       final irisCenter = center + Offset(irisXOffset, 0);
       final irisRadius = (size.width / 2) * 0.5;
 
-      // Theme-matched Iris (Steady size for structural stability)
       canvas.drawCircle(irisCenter, irisRadius, Paint()..color = color);
 
-      // Pupil (Dramatic dynamic pulse)
       canvas.drawCircle(
         irisCenter,
         irisRadius * 0.48 * pulseScale,
         Paint()..color = pupilColor,
       );
 
-      // Reactive White Reflection (Optimized for depth)
       final baseReflectionOffset = Offset(
         irisRadius * 0.25,
         -irisRadius * 0.25,

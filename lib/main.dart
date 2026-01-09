@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'package:visiaxx/features/eye_care_tips/screens/eye_care_tips_screen.dart';
 import 'package:visiaxx/features/eye_exercises/screens/eye_exercise_reels_screen.dart';
 import 'package:visiaxx/features/results/screens/speech_log_viewer_screen.dart';
@@ -64,6 +65,20 @@ void main() async {
   // Initialize Firebase (keep this)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AppLogger.initialize();
+  // Preload eye animation by creating it off-screen
+  runApp(
+    const MaterialApp(
+      home: Scaffold(
+        body: Offstage(
+          offstage: true,
+          child: EyeLoader(size: 1), // Invisible preload
+        ),
+      ),
+    ),
+  );
+
+  // Small delay to let animation initialize
+  await Future.delayed(const Duration(milliseconds: 100));
 
   // Initialize AWS credentials from Firebase Remote Config
   debugPrint('[VisiAxx] 🔄 Loading AWS credentials...');

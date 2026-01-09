@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'dart:async';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/session_monitor_service.dart';
@@ -227,6 +228,13 @@ class _SplashScreenState extends State<SplashScreen>
                     ],
                   ),
                 ),
+              ),
+              // Loading indicator at bottom
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 40,
+                child: Center(child: EyeLoader.fullScreen()),
               ),
             ],
           ),
