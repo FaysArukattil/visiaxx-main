@@ -28,11 +28,11 @@ class AWSCredentials {
 
       _remoteConfig = FirebaseRemoteConfig.instance;
 
-      // Configure Remote Config settings
+      // Fast settings for diagnostics
       await _remoteConfig!.setConfigSettings(
         RemoteConfigSettings(
-          fetchTimeout: const Duration(seconds: 10),
-          minimumFetchInterval: const Duration(hours: 1), // Cache for 1 hour
+          fetchTimeout: const Duration(seconds: 5),
+          minimumFetchInterval: const Duration(minutes: 5),
         ),
       );
 

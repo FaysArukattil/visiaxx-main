@@ -9,16 +9,29 @@ import 'aws_credentials_manager.dart';
 class AWSS3StorageService {
   Minio? _client;
 
+  /// Check if AWS S3 is available
+  bool get isAvailable {
+    _initializeClient(); // Attempt to initialize if not already
+    final configured = AWSCredentials.isConfigured;
+    if (!configured) {
+      debugPrint('[AWS S3] ⚠️ isAvailable: FALSE (Credentials not configured)');
+    }
+    // Removed: if (_client == null) { debugPrint('[AWS S3] ❌ isAvailable: FALSE (Client is NULL)'); }
+    return _client != null && configured;
+  }
+
   /// Initialize S3 client
   void _initializeClient() {
+    // If client exists AND bucket is current, return
     if (_client != null) return;
 
     if (!AWSCredentials.isConfigured) {
-      debugPrint('[AWS S3] ⚠️ Credentials not configured. Service disabled.');
+      debugPrint('[AWS S3] 🔄 Waiting for credentials to initialize Minio...');
       return;
     }
 
     try {
+      debugPrint('[AWS S3] ⚙️ Configuring Minio with credentials...');
       _client = Minio(
         endPoint: 's3.${AWSCredentials.region}.amazonaws.com',
         accessKey: AWSCredentials.accessKeyId,
@@ -26,21 +39,11 @@ class AWSS3StorageService {
         useSSL: true,
         region: AWSCredentials.region,
       );
-      debugPrint('[AWS S3] ✅ Client initialized successfully');
+      debugPrint('[AWS S3] ✅ Minio client initialized');
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Failed to initialize client: $e');
+      debugPrint('[AWS S3] ❌ Minio initialization error: $e');
       _client = null;
     }
-  }
-
-  /// Check if AWS S3 is available
-  bool get isAvailable {
-    _initializeClient();
-    final configured = AWSCredentials.isConfigured;
-    if (!configured) {
-      debugPrint('[AWS S3] ⚠️ AWSCredentials.isConfigured is FALSE');
-    }
-    return _client != null && configured;
   }
 
   /// Upload PDF report to S3
@@ -65,19 +68,33 @@ class AWSS3StorageService {
       // New organized path: Role/Identity/Date/Category/Reports/FileName
       final objectName =
           '$roleCollection/$identityString/$dateStr/$testCategory/reports/$fileName';
+      final bucket = AWSCredentials.bucketName;
 
-      debugPrint(
-        '[AWS S3] Uploading PDF to: $objectName (Bucket: ${AWSCredentials.bucketName})',
-      );
+      debugPrint('[AWS S3] 📄 PDF UPLOAD START:');
+      debugPrint('   Bucket: $bucket');
+      debugPrint('   Path: $objectName');
+      debugPrint('   File: ${pdfFile.path}');
+
+      if (!await pdfFile.exists()) {
+        debugPrint('[AWS S3] ❌ ERROR: PDF File does not exist at path');
+        return null;
+      }
 
       // Read file bytes
       final bytes = await pdfFile.readAsBytes();
+      debugPrint('   Size: ${bytes.length} bytes');
+
+      if (bytes.isEmpty) {
+        debugPrint('[AWS S3] ❌ ERROR: PDF File is empty');
+        return null;
+      }
+
       final stream = Stream.value(bytes);
 
       // Upload to S3 with timeout
       await _client!
           .putObject(
-            AWSCredentials.bucketName,
+            bucket,
             objectName,
             stream,
             size: bytes.length,
@@ -93,7 +110,7 @@ class AWSS3StorageService {
       // Generate public URL
       final url = await getPresignedUrl(objectName);
 
-      debugPrint('[AWS S3] ✅ PDF Upload successful: $url');
+      debugPrint('[AWS S3] ✅ PDF UPLOAD SUCCESS: $url');
       return url;
     } on SocketException {
       debugPrint('[AWS S3] ❌ Network error: No internet connection');
@@ -135,17 +152,33 @@ class AWSS3StorageService {
       // New organized path: Role/Identity/Date/Category/Images/FileName
       final objectName =
           '$roleCollection/$identityString/$dateStr/$testCategory/images/$fileName';
+      final bucket = AWSCredentials.bucketName;
 
-      debugPrint('[AWS S3] Uploading to: $objectName');
+      debugPrint('[AWS S3] 🖼️ IMAGE UPLOAD START:');
+      debugPrint('   Bucket: $bucket');
+      debugPrint('   Path: $objectName');
+      debugPrint('   File: ${imageFile.path}');
+
+      if (!await imageFile.exists()) {
+        debugPrint('[AWS S3] ❌ ERROR: Image file missing');
+        return null;
+      }
 
       // Read file bytes
       final bytes = await imageFile.readAsBytes();
+      debugPrint('   Size: ${bytes.length} bytes');
+
+      if (bytes.isEmpty) {
+        debugPrint('[AWS S3] ❌ ERROR: Image file is empty');
+        return null;
+      }
+
       final stream = Stream.value(bytes);
 
       // Upload to S3 with timeout
       await _client!
           .putObject(
-            AWSCredentials.bucketName,
+            bucket,
             objectName,
             stream,
             size: bytes.length,
@@ -162,7 +195,7 @@ class AWSS3StorageService {
       // Generate public URL (with presigned URL for private buckets)
       final url = await getPresignedUrl(objectName);
 
-      debugPrint('[AWS S3] ✅ Upload successful: $url');
+      debugPrint('[AWS S3] ✅ IMAGE UPLOAD SUCCESS: $url');
       return url;
     } on SocketException {
       debugPrint('[AWS S3] ❌ Network error: No internet connection');

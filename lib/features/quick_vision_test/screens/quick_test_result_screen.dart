@@ -73,49 +73,42 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         listen: false,
       );
 
-      if (!connectivity.isOnline) {
-        debugPrint('[QuickTestResult] 📶 Device is OFFLINE. Saving locally...');
-
-        final resultId = await _testResultService.saveResultOffline(
-          userId: user.uid,
-          result: result,
-        );
-
-        if (mounted) {
-          setState(() {
-            _hasSaved = true;
-            _savedResult = result.copyWith(id: resultId);
-          });
-
-          SnackbarUtils.showInfo(
-            context,
-            'Saved locally. Results will upload automatically when online.',
-          );
-
-          await _checkAndShowReviewDialog();
-        }
-        return;
-      }
-
-      // Verify AWS Connection (Informational only now, doesn't block)
-      debugPrint('[QuickTestResult] 🔄 Informational AWS connection check...');
-      _testResultService.checkAWSConnection().then((awsReady) {
-        if (!awsReady) {
-          debugPrint('[QuickTestResult] ⚠️ AWS S3 may not be available.');
-        }
-      });
-
-      debugPrint(
-        '[QuickTestResult] Generating local PDF for action buttons...',
-      );
-      // We still need PDF locally for the "Download PDF" button to work immediately
+      // 1. Generate local PDF (ALWAYS do this, even offline)
+      debugPrint('[QuickTestResult] Generating local PDF for report...');
       final String pdfPath = await _pdfExportService.generateAndDownloadPdf(
         result,
       );
       final File pdfFile = File(pdfPath);
 
+      if (!connectivity.isOnline) {
+        debugPrint(
+          '[QuickTestResult] 📶 Device is OFFLINE. Saving locally and queuing sync...',
+        );
+
+        // Save offline using the service which handles queuing internally
+        final offlineId = await _testResultService.saveResultOffline(
+          userId: user.uid,
+          result: result,
+          connectivity: connectivity,
+          pdfFile: pdfFile,
+        );
+
+        if (mounted) {
+          setState(() {
+            _hasSaved = true;
+            _savedResult = result.copyWith(id: offlineId);
+          });
+          SnackbarUtils.showInfo(
+            context,
+            'Saved locally. Results will upload automatically when online.',
+          );
+          await _checkAndShowReviewDialog();
+        }
+        return;
+      }
+
+      // 2. Online path: Save result and trigger background AWS upload
       debugPrint('[QuickTestResult] Triggering background save...');
-      // 2. Save result (Returns FAST, AWS happens in background)
       final resultId = await _testResultService.saveTestResult(
         userId: user.uid,
         result: result,
@@ -132,13 +125,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           _savedResult = result.copyWith(id: resultId);
         });
 
-        // Show success message
         SnackbarUtils.showSuccess(
           context,
           'Results & Report saved successfully!',
         );
 
-        // ✨ NEW: Check if this is first test and show review dialog
         await _checkAndShowReviewDialog();
       }
     } catch (e) {

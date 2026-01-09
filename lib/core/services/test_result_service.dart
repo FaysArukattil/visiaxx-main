@@ -5,6 +5,7 @@ import 'package:visiaxx/core/services/auth_service.dart';
 import 'dart:io';
 import '../../data/models/test_result_model.dart';
 import 'package:intl/intl.dart';
+import '../providers/network_connectivity_provider.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
@@ -56,8 +57,8 @@ class TestResultService {
           .doc(customDocId)
           .set(result.toFirestore());
 
-      // 6. Start AWS uploads in BACKGROUND (non-blocking)
-      _performBackgroundAWSUploads(
+      // Start AWS uploads in background - don't await!
+      performBackgroundAWSUploads(
         userId: userId,
         identity: identity,
         roleCol: roleCol,
@@ -83,8 +84,8 @@ class TestResultService {
     }
   }
 
-  /// Perform AWS uploads in background and update Firestore when done
-  void _performBackgroundAWSUploads({
+  /// Start background AWS uploads (public for sync retry)
+  Future<void> performBackgroundAWSUploads({
     required String userId,
     required String identity,
     required String roleCol,
@@ -94,7 +95,30 @@ class TestResultService {
     File? pdfFile,
   }) async {
     try {
-      debugPrint('[TestResultService] ☁️ Starting background AWS uploads...');
+      debugPrint(
+        '[TestResultService] ☁️ Starting background AWS uploads for ID: $customDocId',
+      );
+
+      // 0. Wait for AWS credentials to be ready (up to 10 seconds)
+      int retryCount = 0;
+      while (!_awsStorageService.isAvailable && retryCount < 10) {
+        debugPrint(
+          '[TestResultService] ⏳ Waiting for AWS credentials... (Attempt ${retryCount + 1})',
+        );
+        await Future.delayed(const Duration(seconds: 1));
+        retryCount++;
+      }
+
+      if (!_awsStorageService.isAvailable) {
+        debugPrint(
+          '[TestResultService] ❌ AWS S3 not available after waiting. Aborting sync.',
+        );
+        return;
+      }
+
+      // Check connection specifically to AWS endpoint
+      final isConnected = await _awsStorageService.testConnection();
+      debugPrint('[TestResultService]    AWS Endpoint Reachable: $isConnected');
 
       // 1. Upload Images
       TestResultModel updatedResult = await _uploadImagesIfExist(
@@ -102,25 +126,40 @@ class TestResultService {
         identityString: identity,
         roleCollection: roleCol,
         testCategory: testCategory,
+        testId: customDocId,
         result: result,
       );
 
       // 2. Upload PDF
       if (pdfFile != null && await pdfFile.exists()) {
+        final fileSize = await pdfFile.length();
+        debugPrint(
+          '[TestResultService] 📤 Uploading PDF: ${pdfFile.path} ($fileSize bytes)',
+        );
+
         final pdfUrl = await _awsStorageService.uploadPdfReport(
           userId: userId,
           identityString: identity,
           roleCollection: roleCol,
           testCategory: testCategory,
-          testId: result.id,
+          testId: customDocId,
           pdfFile: pdfFile,
         );
+
         if (pdfUrl != null) {
+          debugPrint('[TestResultService] ✅ PDF uploaded: $pdfUrl');
           updatedResult = updatedResult.copyWith(pdfUrl: pdfUrl);
+        } else {
+          debugPrint('[TestResultService] ❌ PDF upload FAILED (returned null)');
         }
+      } else {
+        debugPrint(
+          '[TestResultService] ⚠️ PDF missing or empty: ${pdfFile?.path}',
+        );
       }
 
       // 3. Update Firestore with new AWS URLs
+      debugPrint('[TestResultService] 🔄 Updating Firestore with AWS URLs...');
       await _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
@@ -129,11 +168,10 @@ class TestResultService {
           .update(updatedResult.toFirestore());
 
       debugPrint(
-        '[TestResultService] ✅ Background AWS sync complete for $customDocId',
+        '[TestResultService] ✅ Background AWS sync COMPLETE for $customDocId',
       );
     } catch (e) {
-      debugPrint('[TestResultService] ⚠️ Background AWS sync failed: $e');
-      // No need to throw, it's background
+      debugPrint('[TestResultService] ❌ Background AWS sync ERROR: $e');
     }
   }
 
@@ -141,13 +179,15 @@ class TestResultService {
   Future<String> saveResultOffline({
     required String userId,
     required TestResultModel result,
+    required NetworkConnectivityProvider connectivity,
+    File? pdfFile,
   }) async {
     try {
       debugPrint(
         '[TestResultService] 💾 Saving result OFFLINE for user: $userId',
       );
 
-      // Document ID: [TIMESTAMP]_[STATUS]_[TYPE] (same as online)
+      // 1. Generate ID and save to Firestore (local cache)
       final testCategory = result.testType == 'comprehensive'
           ? 'FullExam'
           : 'QuickTest';
@@ -157,15 +197,11 @@ class TestResultService {
       final customDocId =
           '${timestampStr}_${result.overallStatus.name}_$testCategory';
 
-      // We can't easily get identityString offline because getUserData might hang
-      // if not cached, but we already added GetOptions(source: Source.serverAndCache)
-      // to getUserData which should help.
-
       final authService = AuthService();
       final userModel = await authService.getUserData(userId);
-      final identity = userModel?.identityString ?? userId; // Fallback to UID
+      final identity = userModel?.identityString ?? userId;
+      final roleCol = userModel?.roleCollection ?? 'Patients';
 
-      // Save to Firestore (it will queue locally automatically by Firestore SDK)
       await _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
@@ -173,7 +209,6 @@ class TestResultService {
           .doc(customDocId)
           .set(result.toFirestore());
 
-      // ALSO save to UID-based path for extra safety if they're different (for future retrieval resilience)
       if (identity != userId) {
         await _firestore
             .collection(_identifiedResultsCollection)
@@ -184,6 +219,26 @@ class TestResultService {
       }
 
       debugPrint('[TestResultService] ✅ Saved to local queue: $customDocId');
+
+      // 2. Queue AWS Sync (This survives screen disposal)
+      debugPrint(
+        '[TestResultService] 📥 Queuing background sync for $customDocId',
+      );
+      connectivity.queueOperation(() async {
+        debugPrint(
+          '[TestResultService] 🔄 Executing queued AWS sync for $customDocId',
+        );
+        await performBackgroundAWSUploads(
+          userId: userId,
+          identity: identity,
+          roleCol: roleCol,
+          testCategory: testCategory,
+          customDocId: customDocId,
+          result: result,
+          pdfFile: pdfFile,
+        );
+      });
+
       return customDocId;
     } catch (e) {
       debugPrint('[TestResultService] ❌ Offline Save ERROR: $e');
@@ -207,9 +262,12 @@ class TestResultService {
     required String identityString,
     required String roleCollection,
     required String testCategory,
+    required String testId,
     required TestResultModel result,
   }) async {
-    debugPrint('[TestResultService] 📤 Starting AWS image upload process...');
+    debugPrint(
+      '[TestResultService] 📤 Checking for images to upload for $testId...',
+    );
 
     // Check if AWS is available
     final bool awsAvailable = _awsStorageService.isAvailable;
@@ -235,7 +293,7 @@ class TestResultService {
           identityString: identityString,
           roleCollection: roleCollection,
           testCategory: testCategory,
-          testId: result.id,
+          testId: testId, // ⚡ Use testId instead of result.id
           eye: 'right',
           imageFile: file,
         );
@@ -263,7 +321,7 @@ class TestResultService {
           identityString: identityString,
           roleCollection: roleCollection,
           testCategory: testCategory,
-          testId: result.id,
+          testId: testId, // ⚡ Use testId instead of result.id
           eye: 'left',
           imageFile: file,
         );

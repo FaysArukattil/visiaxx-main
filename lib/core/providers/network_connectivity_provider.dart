@@ -79,10 +79,29 @@ class NetworkConnectivityProvider extends ChangeNotifier {
 
   /// Add operation to pending queue
   void queueOperation(Function operation) {
-    _pendingOperations.add(operation);
-    debugPrint(
-      '[NetworkConnectivity] Queued operation. Total pending: ${_pendingOperations.length}',
-    );
+    if (_isOnline) {
+      debugPrint(
+        '[NetworkConnectivity] ⚡ Already online, executing operation immediately',
+      );
+      _executeOperation(operation);
+    } else {
+      _pendingOperations.add(operation);
+      debugPrint(
+        '[NetworkConnectivity] 📥 Queued operation. Total pending: ${_pendingOperations.length}',
+      );
+    }
+  }
+
+  Future<void> _executeOperation(Function operation) async {
+    try {
+      if (operation is Future Function()) {
+        await operation();
+      } else {
+        operation();
+      }
+    } catch (e) {
+      debugPrint('[NetworkConnectivity] ❌ Error executing operation: $e');
+    }
   }
 
   /// Process all pending operations when back online
