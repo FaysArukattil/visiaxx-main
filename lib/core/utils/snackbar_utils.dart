@@ -12,32 +12,47 @@ class SnackbarUtils {
   static Timer? _dismissTimer;
 
   /// Show a success snackbar with premium styling
-  static void showSuccess(BuildContext context, String message) {
+  static void showSuccess(
+    BuildContext context,
+    String message, {
+    Duration? duration,
+  }) {
     _showSnackbar(
       context,
       message: message,
       icon: Icons.check_circle_outline_rounded,
       backgroundColor: AppColors.success,
+      duration: duration ?? const Duration(seconds: 3),
     );
   }
 
   /// Show an error snackbar with premium styling
-  static void showError(BuildContext context, String message) {
+  static void showError(
+    BuildContext context,
+    String message, {
+    Duration? duration,
+  }) {
     _showSnackbar(
       context,
       message: message,
       icon: Icons.error_outline_rounded,
       backgroundColor: AppColors.error,
+      duration: duration ?? const Duration(seconds: 4),
     );
   }
 
   /// Show a warning snackbar with premium styling
-  static void showWarning(BuildContext context, String message) {
+  static void showWarning(
+    BuildContext context,
+    String message, {
+    Duration? duration,
+  }) {
     _showSnackbar(
       context,
       message: message,
       icon: Icons.warning_amber_rounded,
       backgroundColor: AppColors.warning,
+      duration: duration ?? const Duration(seconds: 4),
     );
   }
 
@@ -53,12 +68,17 @@ class SnackbarUtils {
   }
 
   /// Show an info snackbar with premium styling
-  static void showInfo(BuildContext context, String message) {
+  static void showInfo(
+    BuildContext context,
+    String message, {
+    Duration? duration,
+  }) {
     _showSnackbar(
       context,
       message: message,
       icon: Icons.info_outline_rounded,
       backgroundColor: AppColors.info,
+      duration: duration ?? const Duration(seconds: 3),
     );
   }
 

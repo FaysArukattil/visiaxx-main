@@ -72,7 +72,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           if (!connectivity.isOnline) {
             SnackbarUtils.showInfo(
               context,
-              'Showing local data. Connect to see latest sync.',
+              'No internet connection. Showing cached results. Please turn on internet and refresh to sync newest data.',
+              duration: const Duration(seconds: 5),
             );
           }
         });
@@ -440,13 +441,19 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Take a vision test to see\nyour results here',
+              'No local results found.\nPlease turn on internet and\nclick refresh to fetch your data.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
                 height: 1.4,
               ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadResults,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh Data'),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(

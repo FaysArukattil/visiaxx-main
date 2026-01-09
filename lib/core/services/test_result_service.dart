@@ -292,25 +292,44 @@ class TestResultService {
 
       debugPrint('[TestResultService] Getting results for: $identity');
 
-      // 1. Fetch from Identity path
-      final identitySnapshot = await _firestore
-          .collection(_identifiedResultsCollection)
-          .doc(identity)
-          .collection('tests')
-          .orderBy('timestamp', descending: true)
-          .get(const GetOptions(source: Source.serverAndCache))
-          .timeout(const Duration(seconds: 4));
+      // Helper to fetch results with timeout and automatic cache fallback
+      Future<QuerySnapshot> fetchResults(String docId, int timeoutSecs) async {
+        try {
+          return await _firestore
+              .collection(_identifiedResultsCollection)
+              .doc(docId)
+              .collection('tests')
+              .orderBy('timestamp', descending: true)
+              .get(const GetOptions(source: Source.serverAndCache))
+              .timeout(Duration(seconds: timeoutSecs));
+        } catch (e) {
+          debugPrint(
+            '[TestResultService] ⚡ Fetch failed/timed out for $docId, trying CACHE: $e',
+          );
+          try {
+            // Fallback: Fetch strictly from local cache (fast)
+            return await _firestore
+                .collection(_identifiedResultsCollection)
+                .doc(docId)
+                .collection('tests')
+                .orderBy('timestamp', descending: true)
+                .get(const GetOptions(source: Source.cache));
+          } catch (cacheError) {
+            debugPrint(
+              '[TestResultService] ❌ Cache fetch also failed: $cacheError',
+            );
+            rethrow; // Final failure
+          }
+        }
+      }
 
-      // 2. Fetch from UID path (fallback for results saved before identity resolution or during failures)
+      // 1. Fetch from Identity path
+      final identitySnapshot = await fetchResults(identity, 4);
+
+      // 2. Fetch from UID path (fallback)
       QuerySnapshot? uidSnapshot;
       if (identity != userId) {
-        uidSnapshot = await _firestore
-            .collection(_identifiedResultsCollection)
-            .doc(userId)
-            .collection('tests')
-            .orderBy('timestamp', descending: true)
-            .get(const GetOptions(source: Source.serverAndCache))
-            .timeout(const Duration(seconds: 2));
+        uidSnapshot = await fetchResults(userId, 2);
       }
 
       final List<TestResultModel> results = [];
