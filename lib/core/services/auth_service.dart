@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/user_model.dart';
 import 'session_monitor_service.dart';
+import 'local_storage_service.dart';
 
 /// Firebase Authentication Service
 class AuthService {
@@ -60,9 +61,10 @@ class AuthService {
                 .doc(credential.user!.uid)
                 .update({'lastLoginAt': FieldValue.serverTimestamp()});
           }
-        } else {
-          // Fallback: This might happen if someone logs in but wasn't migrated/registered with new system
-          userModel = await getUserData(credential.user!.uid);
+          // Save to local cache for offline-first access
+          if (userModel != null) {
+            await LocalStorageService().saveUserProfile(userModel);
+          }
         }
 
         // Check if email is verified
@@ -180,6 +182,9 @@ class AuthService {
             .doc(identity)
             .set(userModel.toMap());
 
+        // Save to local cache
+        await LocalStorageService().saveUserProfile(userModel);
+
         // 2. Save to lookup collection for UID -> Path mapping
         await _firestore
             .collection('all_users_lookup')
@@ -257,7 +262,16 @@ class AuthService {
   /// Get user data from Firestore using the lookup system
   Future<UserModel?> getUserData(String uid) async {
     try {
-      // 1. Check lookup first
+      // 1. Check local cache FIRST (Fastest)
+      final cachedUser = await LocalStorageService().getUserProfile();
+      if (cachedUser != null && cachedUser.id == uid) {
+        debugPrint('[AuthService] ⚡ Returning cached user data');
+        // Still try to refresh in background or later, but return immediately for UI
+        _refreshUserDataInBackground(uid);
+        return cachedUser;
+      }
+
+      // 2. Check lookup if not in cache or wrong user
       final lookupDoc = await _firestore
           .collection('all_users_lookup')
           .doc(uid)
@@ -282,12 +296,43 @@ class AuthService {
           .get(const GetOptions(source: Source.serverAndCache))
           .timeout(const Duration(seconds: 2)); // ⚡ FAST TIMEOUT
       if (doc.exists && doc.data() != null) {
-        return UserModel.fromMap(doc.data()!, doc.id);
+        final user = UserModel.fromMap(doc.data()!, doc.id);
+        // Save to cache
+        await LocalStorageService().saveUserProfile(user);
+        return user;
       }
       return null;
     } catch (e) {
       debugPrint('[AuthService] getUserData error: $e');
-      return null;
+      // Final fallback to cache on error
+      return await LocalStorageService().getUserProfile();
+    }
+  }
+
+  /// Refresh user data in background without blocking
+  Future<void> _refreshUserDataInBackground(String uid) async {
+    try {
+      final lookupDoc = await _firestore
+          .collection('all_users_lookup')
+          .doc(uid)
+          .get(const GetOptions(source: Source.serverAndCache));
+
+      if (lookupDoc.exists && lookupDoc.data() != null) {
+        final collection = lookupDoc.data()!['collection'] as String;
+        final identityString = lookupDoc.data()!['identityString'] as String;
+
+        final doc = await _firestore
+            .collection(collection)
+            .doc(identityString)
+            .get(const GetOptions(source: Source.serverAndCache));
+
+        if (doc.exists && doc.data() != null) {
+          final user = UserModel.fromMap(doc.data()!, doc.id);
+          await LocalStorageService().saveUserProfile(user);
+        }
+      }
+    } catch (e) {
+      debugPrint('[AuthService] Background refresh error: $e');
     }
   }
 
@@ -310,6 +355,9 @@ class AuthService {
     } catch (e) {
       debugPrint('[AuthService] ⚠️ Error removing session: $e');
     }
+
+    // Clear local cache
+    await LocalStorageService().clearUserData();
 
     // Sign out from Firebase Auth
     await _auth.signOut();

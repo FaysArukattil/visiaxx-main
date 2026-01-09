@@ -1,5 +1,6 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
+import 'local_storage_service.dart';
 
 /// Secure AWS Credentials Manager using Firebase Remote Config
 /// Credentials are stored server-side in Firebase, not in app code
@@ -44,13 +45,36 @@ class AWSCredentials {
       });
 
       // Fetch and activate values from Firebase
-      await _remoteConfig!.fetchAndActivate();
+      await _remoteConfig!.fetchAndActivate().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => false,
+      );
 
       // Load credentials into memory
       _accessKeyId = _remoteConfig!.getString('aws_access_key_id');
       _secretAccessKey = _remoteConfig!.getString('aws_secret_access_key');
       _bucketName = _remoteConfig!.getString('aws_bucket_name');
       _region = _remoteConfig!.getString('aws_region');
+
+      // If Remote Config empty, try loading from local cache
+      if (_accessKeyId.isEmpty) {
+        debugPrint('[AWS Credentials] ⚠️ Remote keys empty, trying cache...');
+        final cached = await LocalStorageService().getAWSCredentials();
+        if (cached != null) {
+          _accessKeyId = cached['aws_access_key_id'] ?? '';
+          _secretAccessKey = cached['aws_secret_access_key'] ?? '';
+          _bucketName = cached['aws_bucket_name'] ?? '';
+          _region = cached['aws_region'] ?? '';
+        }
+      } else {
+        // Save successfully fetched keys to local cache
+        await LocalStorageService().saveAWSCredentials({
+          'aws_access_key_id': _accessKeyId,
+          'aws_secret_access_key': _secretAccessKey,
+          'aws_bucket_name': _bucketName,
+          'aws_region': _region,
+        });
+      }
 
       _initialized = true;
 

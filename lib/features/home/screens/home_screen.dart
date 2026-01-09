@@ -75,16 +75,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUserData() async {
-    if (_authService.currentUserId != null) {
-      final user = await _authService.getUserData(_authService.currentUserId!);
-      if (mounted && user != null) {
-        setState(() {
-          _user = user;
-          _isLoading = false;
-        });
+    try {
+      if (_authService.currentUserId != null) {
+        // Now returns from local cache instantly or refreshes from server
+        final user = await _authService.getUserData(
+          _authService.currentUserId!,
+        );
+
+        if (mounted && user != null) {
+          setState(() {
+            _user = user;
+            _isLoading = false;
+          });
+        } else if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      } else {
+        if (mounted) setState(() => _isLoading = false);
       }
-    } else {
-      setState(() => _isLoading = false);
+    } catch (e) {
+      debugPrint('[HomeScreen] ❌ Error loading user data: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

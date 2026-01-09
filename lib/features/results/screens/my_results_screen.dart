@@ -61,18 +61,21 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         return;
       }
 
-      // Check connectivity and show snackbar if offline
+      // Check connectivity and show snackbar safely using addPostFrameCallback
       if (mounted) {
-        final connectivity = Provider.of<NetworkConnectivityProvider>(
-          context,
-          listen: false,
-        );
-        if (!connectivity.isOnline) {
-          SnackbarUtils.showInfo(
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final connectivity = Provider.of<NetworkConnectivityProvider>(
             context,
-            'Showing local data. Connect to see latest sync.',
+            listen: false,
           );
-        }
+          if (!connectivity.isOnline) {
+            SnackbarUtils.showInfo(
+              context,
+              'Showing local data. Connect to see latest sync.',
+            );
+          }
+        });
       }
 
       debugPrint('[MyResults] Fetching results...');

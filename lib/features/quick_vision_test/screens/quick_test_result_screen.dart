@@ -97,28 +97,25 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         return;
       }
 
-      // Verify AWS Connection first
-      debugPrint('[QuickTestResult] 🔄 Testing AWS S3 connection...');
-      final bool awsReady = await _testResultService.checkAWSConnection();
-      if (!awsReady) {
-        debugPrint(
-          '[QuickTestResult] ⚠️ AWS S3 is NOT available. Will save only to Firestore.',
-        );
-      }
+      // Verify AWS Connection (Informational only now, doesn't block)
+      debugPrint('[QuickTestResult] 🔄 Informational AWS connection check...');
+      _testResultService.checkAWSConnection().then((awsReady) {
+        if (!awsReady) {
+          debugPrint('[QuickTestResult] ⚠️ AWS S3 may not be available.');
+        }
+      });
 
       debugPrint(
-        '[QuickTestResult] Generating PDF for simultaneous storage...',
+        '[QuickTestResult] Generating local PDF for action buttons...',
       );
-      // 1. Generate PDF locally first
+      // We still need PDF locally for the "Download PDF" button to work immediately
       final String pdfPath = await _pdfExportService.generateAndDownloadPdf(
         result,
       );
       final File pdfFile = File(pdfPath);
 
-      debugPrint(
-        '[QuickTestResult] Saving test result with PDF to AWS/Firestore...',
-      );
-      // 2. Save result to Firestore and upload PDF/Images to AWS
+      debugPrint('[QuickTestResult] Triggering background save...');
+      // 2. Save result (Returns FAST, AWS happens in background)
       final resultId = await _testResultService.saveTestResult(
         userId: user.uid,
         result: result,
@@ -293,8 +290,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
                     // Action buttons
                     _buildDisclaimer(),
-                    const SizedBox(height: 24),
                     _buildActionButtons(provider),
+                    const SizedBox(height: 80), // ⚡ Fixes bottom overflow
                   ],
                 ),
               ),

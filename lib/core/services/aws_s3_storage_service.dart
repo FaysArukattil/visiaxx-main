@@ -74,19 +74,21 @@ class AWSS3StorageService {
       final bytes = await pdfFile.readAsBytes();
       final stream = Stream.value(bytes);
 
-      // Upload to S3
-      await _client!.putObject(
-        AWSCredentials.bucketName,
-        objectName,
-        stream,
-        size: bytes.length,
-        metadata: {
-          'Content-Type': 'application/pdf',
-          'user-id': userId,
-          'test-id': testId,
-          'upload-date': DateTime.now().toIso8601String(),
-        },
-      );
+      // Upload to S3 with timeout
+      await _client!
+          .putObject(
+            AWSCredentials.bucketName,
+            objectName,
+            stream,
+            size: bytes.length,
+            metadata: {
+              'Content-Type': 'application/pdf',
+              'user-id': userId,
+              'test-id': testId,
+              'upload-date': DateTime.now().toIso8601String(),
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
       // Generate public URL
       final url = await getPresignedUrl(objectName);
@@ -140,20 +142,22 @@ class AWSS3StorageService {
       final bytes = await imageFile.readAsBytes();
       final stream = Stream.value(bytes);
 
-      // Upload to S3
-      await _client!.putObject(
-        AWSCredentials.bucketName,
-        objectName,
-        stream,
-        size: bytes.length,
-        metadata: {
-          'Content-Type': 'image/png',
-          'user-id': userId,
-          'test-id': testId,
-          'eye': eye,
-          'upload-date': DateTime.now().toIso8601String(),
-        },
-      );
+      // Upload to S3 with timeout
+      await _client!
+          .putObject(
+            AWSCredentials.bucketName,
+            objectName,
+            stream,
+            size: bytes.length,
+            metadata: {
+              'Content-Type': 'image/png',
+              'user-id': userId,
+              'test-id': testId,
+              'eye': eye,
+              'upload-date': DateTime.now().toIso8601String(),
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       // Generate public URL (with presigned URL for private buckets)
       final url = await getPresignedUrl(objectName);
@@ -384,7 +388,9 @@ class AWSS3StorageService {
     if (!isAvailable) return false;
 
     try {
-      await _client!.bucketExists(AWSCredentials.bucketName);
+      await _client!
+          .bucketExists(AWSCredentials.bucketName)
+          .timeout(const Duration(seconds: 5));
       debugPrint('[AWS S3] ✅ Connection test successful');
       return true;
     } catch (e) {

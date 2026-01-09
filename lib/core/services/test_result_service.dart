@@ -41,7 +41,62 @@ class TestResultService {
           ? 'FullExam'
           : 'QuickTest';
 
-      // 2. Upload images to AWS with descriptive path
+      // 4. Document ID: [TIMESTAMP]_[STATUS]_[TYPE]
+      final timestampStr = DateFormat(
+        'yyyy-MM-dd_HH-mm',
+      ).format(result.timestamp);
+      final customDocId =
+          '${timestampStr}_${result.overallStatus.name}_$testCategory';
+
+      // 5. Initial save to Firestore (FAST)
+      await _firestore
+          .collection(_identifiedResultsCollection)
+          .doc(identity)
+          .collection('tests')
+          .doc(customDocId)
+          .set(result.toFirestore());
+
+      // 6. Start AWS uploads in BACKGROUND (non-blocking)
+      _performBackgroundAWSUploads(
+        userId: userId,
+        identity: identity,
+        roleCol: roleCol,
+        testCategory: testCategory,
+        customDocId: customDocId,
+        result: result,
+        pdfFile: pdfFile,
+      );
+
+      debugPrint('[TestResultService] ✅ Initial save successful: $customDocId');
+      return customDocId;
+    } catch (e) {
+      debugPrint('[TestResultService] ❌ Save ERROR: $e');
+      // If organized save fails, try quick fallback to UID path
+      try {
+        await _firestore
+            .collection(_identifiedResultsCollection)
+            .doc(userId)
+            .collection('tests')
+            .add(result.toFirestore());
+      } catch (_) {}
+      throw Exception('Failed to save test result: $e');
+    }
+  }
+
+  /// Perform AWS uploads in background and update Firestore when done
+  void _performBackgroundAWSUploads({
+    required String userId,
+    required String identity,
+    required String roleCol,
+    required String testCategory,
+    required String customDocId,
+    required TestResultModel result,
+    File? pdfFile,
+  }) async {
+    try {
+      debugPrint('[TestResultService] ☁️ Starting background AWS uploads...');
+
+      // 1. Upload Images
       TestResultModel updatedResult = await _uploadImagesIfExist(
         userId: userId,
         identityString: identity,
@@ -50,9 +105,8 @@ class TestResultService {
         result: result,
       );
 
-      // 3. Upload PDF report to AWS if provided
+      // 2. Upload PDF
       if (pdfFile != null && await pdfFile.exists()) {
-        debugPrint('[TestResultService] 📤 Uploading PDF report to AWS...');
         final pdfUrl = await _awsStorageService.uploadPdfReport(
           userId: userId,
           identityString: identity,
@@ -61,33 +115,25 @@ class TestResultService {
           testId: result.id,
           pdfFile: pdfFile,
         );
-
         if (pdfUrl != null) {
-          debugPrint('[TestResultService] ✅ PDF upload successful');
           updatedResult = updatedResult.copyWith(pdfUrl: pdfUrl);
         }
       }
 
-      // 4. Save to Firestore in the organized "IdentifiedResults" collection
-      // Document ID: [TIMESTAMP]_[STATUS]_[TYPE]
-      final timestampStr = DateFormat(
-        'yyyy-MM-dd_HH-mm',
-      ).format(result.timestamp);
-      final customDocId =
-          '${timestampStr}_${result.overallStatus.name}_$testCategory';
-
+      // 3. Update Firestore with new AWS URLs
       await _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
           .collection('tests')
           .doc(customDocId)
-          .set(updatedResult.toFirestore());
+          .update(updatedResult.toFirestore());
 
-      debugPrint('[TestResultService] ✅ Saved to Firestore: $customDocId');
-      return customDocId;
+      debugPrint(
+        '[TestResultService] ✅ Background AWS sync complete for $customDocId',
+      );
     } catch (e) {
-      debugPrint('[TestResultService] ❌ Save ERROR: $e');
-      throw Exception('Failed to save test result: $e');
+      debugPrint('[TestResultService] ⚠️ Background AWS sync failed: $e');
+      // No need to throw, it's background
     }
   }
 
@@ -126,6 +172,16 @@ class TestResultService {
           .collection('tests')
           .doc(customDocId)
           .set(result.toFirestore());
+
+      // ALSO save to UID-based path for extra safety if they're different (for future retrieval resilience)
+      if (identity != userId) {
+        await _firestore
+            .collection(_identifiedResultsCollection)
+            .doc(userId)
+            .collection('tests')
+            .doc(customDocId)
+            .set(result.toFirestore());
+      }
 
       debugPrint('[TestResultService] ✅ Saved to local queue: $customDocId');
       return customDocId;
@@ -236,38 +292,62 @@ class TestResultService {
 
       debugPrint('[TestResultService] Getting results for: $identity');
 
-      final snapshot = await _firestore
+      // 1. Fetch from Identity path
+      final identitySnapshot = await _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
           .collection('tests')
           .orderBy('timestamp', descending: true)
-          .get(const GetOptions(source: Source.serverAndCache));
+          .get(const GetOptions(source: Source.serverAndCache))
+          .timeout(const Duration(seconds: 4));
 
-      debugPrint('[TestResultService] Found ${snapshot.docs.length} documents');
+      // 2. Fetch from UID path (fallback for results saved before identity resolution or during failures)
+      QuerySnapshot? uidSnapshot;
+      if (identity != userId) {
+        uidSnapshot = await _firestore
+            .collection(_identifiedResultsCollection)
+            .doc(userId)
+            .collection('tests')
+            .orderBy('timestamp', descending: true)
+            .get(const GetOptions(source: Source.serverAndCache))
+            .timeout(const Duration(seconds: 2));
+      }
 
       final List<TestResultModel> results = [];
       final List<String> hiddenIds = userModel.hiddenResultIds;
+      final Set<String> processedDocIds = {};
 
-      for (final doc in snapshot.docs) {
-        if (hiddenIds.contains(doc.id)) {
-          debugPrint('[TestResultService] Skipping hidden result: ${doc.id}');
-          continue;
-        }
+      void processDocs(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+        for (final doc in docs) {
+          if (processedDocIds.contains(doc.id)) continue;
+          if (hiddenIds.contains(doc.id)) continue;
 
-        try {
-          // Get document data as Map and add the ID
-          final data = doc.data();
-          data['id'] = doc.id;
-          debugPrint('[TestResultService] Loading doc ${doc.id}');
-          results.add(TestResultModel.fromJson(data));
-        } catch (e) {
-          // Skip malformed documents but log error
-          debugPrint('[TestResultService] ❌ Error parsing ${doc.id}: $e');
+          try {
+            final data = doc.data();
+            data['id'] = doc.id;
+            results.add(TestResultModel.fromJson(data));
+            processedDocIds.add(doc.id);
+          } catch (e) {
+            debugPrint('[TestResultService] ❌ Error parsing ${doc.id}: $e');
+          }
         }
       }
 
+      processDocs(
+        identitySnapshot.docs
+            .cast<QueryDocumentSnapshot<Map<String, dynamic>>>(),
+      );
+      if (uidSnapshot != null) {
+        processDocs(
+          uidSnapshot.docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>(),
+        );
+      }
+
+      // Sort merged results by timestamp descending
+      results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
       debugPrint(
-        '[TestResultService] ✅ Successfully loaded ${results.length} results',
+        '[TestResultService] ✅ Successfully loaded ${results.length} results (Identified: ${identitySnapshot.docs.length}, UID-fallback: ${uidSnapshot?.docs.length ?? 0})',
       );
       return results;
     } catch (e) {

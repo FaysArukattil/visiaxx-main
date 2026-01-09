@@ -83,10 +83,10 @@ class UserModel {
     );
   }
 
-  /// Convert UserModel to Firestore document
+  /// Convert UserModel to Firestore document (uses Timestamps)
   Map<String, dynamic> toFirestore() {
     return {
-      'id': id, // Store UID explicitly
+      'id': id,
       'firstName': firstName,
       'lastName': lastName,
       'email': email,
@@ -101,6 +101,49 @@ class UserModel {
       'familyMemberIds': familyMemberIds,
       'hiddenResultIds': hiddenResultIds,
     };
+  }
+
+  /// Convert to JSON-compatible map for local storage (uses Strings instead of Timestamps)
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'firstName': firstName,
+      'lastName': lastName,
+      'email': email,
+      'age': age,
+      'sex': sex,
+      'phone': phone,
+      'role': role.name,
+      'createdAt': createdAt.toIso8601String(),
+      'lastLoginAt': lastLoginAt?.toIso8601String(),
+      'familyMemberIds': familyMemberIds,
+      'hiddenResultIds': hiddenResultIds,
+    };
+  }
+
+  /// Create UserModel from JSON map (local storage)
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] ?? '',
+      firstName: json['firstName'] ?? '',
+      lastName: json['lastName'] ?? '',
+      email: json['email'] ?? '',
+      age: json['age'] ?? 0,
+      sex: json['sex'] ?? '',
+      phone: json['phone'] ?? '',
+      role: UserRole.values.firstWhere(
+        (r) => r.name == json['role'],
+        orElse: () => UserRole.user,
+      ),
+      createdAt: DateTime.parse(
+        json['createdAt'] ?? DateTime.now().toIso8601String(),
+      ),
+      lastLoginAt: json['lastLoginAt'] != null
+          ? DateTime.parse(json['lastLoginAt'])
+          : null,
+      familyMemberIds: List<String>.from(json['familyMemberIds'] ?? []),
+      hiddenResultIds: List<String>.from(json['hiddenResultIds'] ?? []),
+    );
   }
 
   /// Alias for toFirestore for compatibility
