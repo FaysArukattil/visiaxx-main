@@ -261,7 +261,8 @@ class AuthService {
       final lookupDoc = await _firestore
           .collection('all_users_lookup')
           .doc(uid)
-          .get(const GetOptions(source: Source.serverAndCache));
+          .get(const GetOptions(source: Source.serverAndCache))
+          .timeout(const Duration(seconds: 2)); // ⚡ FAST TIMEOUT
       if (!lookupDoc.exists || lookupDoc.data() == null) {
         // Check legacy 'users' collection as fallback
         final legacyDoc = await _firestore.collection('users').doc(uid).get();
@@ -278,7 +279,8 @@ class AuthService {
       final doc = await _firestore
           .collection(collection)
           .doc(identityString)
-          .get(const GetOptions(source: Source.serverAndCache));
+          .get(const GetOptions(source: Source.serverAndCache))
+          .timeout(const Duration(seconds: 2)); // ⚡ FAST TIMEOUT
       if (doc.exists && doc.data() != null) {
         return UserModel.fromMap(doc.data()!, doc.id);
       }

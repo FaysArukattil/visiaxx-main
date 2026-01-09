@@ -20,6 +20,8 @@ class ContinuousSpeechManager {
   bool _isActive = false;
   Timer? _restartTimer;
   int _restartAttempts = 0;
+  DateTime? _lastFailureTime;
+  int _rapidFailureCount = 0;
 
   // Accumulated results
   final List<String> _allDetectedSpeech = [];
@@ -127,7 +129,12 @@ class ContinuousSpeechManager {
 
       _isActive = true;
       _restartAttempts = 0;
-      debugPrint('[ContinuousSpeech] ✅ Speech service started successfully');
+
+      // 🎤 LOG RECOGNITION MODE
+      final isOffline = _speechService.isAvailable; // Approximate check
+      debugPrint(
+        '[ContinuousSpeech] ✅ Started (Probable mode: ${isOffline ? "Offline-Ready" : "Cloud"})',
+      );
     } catch (e) {
       debugPrint('[ContinuousSpeech] ❌ Error starting speech: $e');
       _scheduleRestart();
@@ -225,12 +232,33 @@ class ContinuousSpeechManager {
 
     _restartTimer?.cancel();
 
-    // Exponential backoff: 200ms, 400ms, 800ms, max 2000ms
-    final delayMs = (200 * (1 << _restartAttempts)).clamp(200, 2000);
+    // Check for rapid failures (e.g. within 2 seconds)
+    final now = DateTime.now();
+    if (_lastFailureTime != null &&
+        now.difference(_lastFailureTime!) < const Duration(seconds: 2)) {
+      _rapidFailureCount++;
+    } else {
+      _rapidFailureCount = 0;
+    }
+    _lastFailureTime = now;
+
+    // If we have too many rapid failures, wait MUCH longer (cooldown)
+    int delayMs;
+    if (_rapidFailureCount > 3) {
+      delayMs = 8000; // Increased to 8 second cooldown
+      debugPrint(
+        '[ContinuousSpeech] 🛑 CRITICAL RESTART LOOP. Cooling down for 8s to prevent UI freeze.',
+      );
+      _rapidFailureCount = 0;
+    } else {
+      // Increased base delay to 1.5s - this is usually enough to stop the "spam" sound
+      delayMs = (1500 * (1 << _restartAttempts)).clamp(1500, 5000);
+    }
+
     _restartAttempts++;
 
     debugPrint(
-      '[ContinuousSpeech] ⏰ Scheduling restart in ${delayMs}ms (attempt $_restartAttempts)',
+      '[ContinuousSpeech] ⏰ Scheduling restart in ${delayMs}ms (attempts: $_restartAttempts, rapid: $_rapidFailureCount)',
     );
 
     _restartTimer = Timer(Duration(milliseconds: delayMs), () async {

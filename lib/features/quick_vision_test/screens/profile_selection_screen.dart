@@ -55,7 +55,12 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     }
 
     try {
-      final members = await _familyMemberService.getFamilyMembers(user.uid);
+      final members = await _familyMemberService
+          .getFamilyMembers(user.uid)
+          .timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => _familyMembers, // Return existing or empty
+          );
       if (mounted) {
         setState(() {
           _familyMembers = members;
@@ -91,9 +96,19 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     // Use actual user data if available
     final String userId = user.uid;
 
-    // Fetch profile data for age
+    // Fetch profile data for age with FAST TIMEOUT
     final authService = AuthService();
-    final userData = await authService.getUserData(userId);
+    final userData = await authService
+        .getUserData(userId)
+        .timeout(
+          const Duration(seconds: 1),
+          onTimeout: () {
+            debugPrint(
+              '[ProfileSelection] ⚡ Profile fetch timed out, using fallback',
+            );
+            return null;
+          },
+        );
 
     String userName = userData?.fullName ?? user.displayName ?? 'User';
     if (userName == 'User' && user.email != null) {

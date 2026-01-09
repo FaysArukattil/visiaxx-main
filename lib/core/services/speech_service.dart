@@ -20,6 +20,9 @@ class SpeechService {
   double _lastConfidence = 0.0;
   Timer? _bufferTimer;
 
+  // Optimized Offline Support
+  bool _hasOnDeviceRecognition = false;
+
   // Callbacks
   Function(String recognized)? onResult;
   Function(String error)? onError;
@@ -77,6 +80,14 @@ class SpeechService {
           debugPrint('[SpeechService] ❌ Speech error: ${error.errorMsg}');
           _isListening = false;
 
+          // ⭐ If the language isn't available, we don't want to spam retries
+          if (error.errorMsg == 'error_language_unavailable') {
+            debugPrint(
+              '[SpeechService] 🛑 Ignoring language error to prevent restart loop',
+            );
+            return;
+          }
+
           // Call callbacks safely
           if (onListeningStopped != null) {
             onListeningStopped!();
@@ -107,14 +118,19 @@ class SpeechService {
         '[SpeechService] ${_isInitialized ? "✅" : "❌"} Initialization result: $_isInitialized',
       );
 
-      if (!_isInitialized) {
+      if (_isInitialized) {
+        // Reset onDevice flag for safety unless we specifically want it
+        _hasOnDeviceRecognition = false;
+        debugPrint('[SpeechService] 🛠️ Init success. Using default English.');
+      } else {
+        debugPrint('[SpeechService] ❌ _speechToText.initialize returned false');
         onError?.call('Speech recognition not available on this device');
       }
 
       return _isInitialized;
     } catch (e) {
-      debugPrint('[SpeechService] ❌ Initialization error: $e');
-      onError?.call('Failed to initialize speech recognition: $e');
+      debugPrint('[SpeechService] ❌ Initialization exception: $e');
+      onError?.call('Failed to initialize speech: $e');
       return false;
     }
   }
@@ -156,16 +172,13 @@ class SpeechService {
     debugPrint('[SpeechService] 🎤 Starting to listen...');
 
     try {
-      // Get available locales and prefer English
-      final locales = await _speechToText.locales();
-      String? localeId;
-      for (final locale in locales) {
-        if (locale.localeId.startsWith('en_')) {
-          localeId = locale.localeId;
-          break;
-        }
-      }
-      debugPrint('[SpeechService] 🌍 Using locale: ${localeId ?? "default"}');
+      // ⭐ OPTIMIZATION: Use NULL for localeId to let the system choose its best default English
+      // This fixes the "error_language_unavailable" on devices that don't have "en-US" specifically.
+      final useOnDevice = _hasOnDeviceRecognition;
+
+      debugPrint(
+        '[SpeechService] 🎧 Mode: ${useOnDevice ? "ON-DEVICE" : "Cloud (Default)"}, Locale: System Default',
+      );
 
       await _speechToText.listen(
         onResult: (result) => _onSpeechResult(result, bufferMs, minConfidence),
@@ -178,9 +191,9 @@ class SpeechService {
           partialResults: true,
           cancelOnError: false,
           listenMode: ListenMode.dictation,
-          onDevice: false, // Default
+          onDevice: useOnDevice,
         ),
-        localeId: localeId,
+        localeId: null, // ⚡ Use system default
       );
 
       debugPrint('[SpeechService] ✅ Listen started successfully');
