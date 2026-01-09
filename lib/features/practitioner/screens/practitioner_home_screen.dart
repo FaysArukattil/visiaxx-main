@@ -3,6 +3,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../home/screens/profile_screen.dart';
 
 class PractitionerHomeScreen extends StatefulWidget {
@@ -57,17 +58,28 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   }
 
   Future<void> _loadUserData() async {
-    if (_authService.currentUserId != null) {
-      final user = await _authService.getUserData(_authService.currentUserId!);
-      if (mounted && user != null) {
-        setState(() {
-          _user = user;
-          _userName = user.firstName;
-          _isLoading = false;
-        });
+    try {
+      if (_authService.currentUserId != null) {
+        // Now returns from local cache instantly or refreshes from server
+        final user = await _authService.getUserData(
+          _authService.currentUserId!,
+        );
+
+        if (mounted && user != null) {
+          setState(() {
+            _user = user;
+            _userName = user.firstName;
+            _isLoading = false;
+          });
+        } else if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      } else {
+        if (mounted) setState(() => _isLoading = false);
       }
-    } else {
-      setState(() => _isLoading = false);
+    } catch (e) {
+      debugPrint('[PractitionerHomeScreen] ❌ Error loading user data: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -77,7 +89,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
       backgroundColor: const Color(0xFFF8F9FB),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: EyeLoader(size: 80))
             : SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

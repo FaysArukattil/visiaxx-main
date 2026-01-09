@@ -362,7 +362,10 @@ class TestResultService {
   }
 
   /// Get all test results for a user
-  Future<List<TestResultModel>> getTestResults(String userId) async {
+  Future<List<TestResultModel>> getTestResults(
+    String userId, {
+    Source source = Source.serverAndCache,
+  }) async {
     try {
       final authService = AuthService();
       final userModel = await authService.getUserData(userId);
@@ -380,7 +383,7 @@ class TestResultService {
               .doc(docId)
               .collection('tests')
               .orderBy('timestamp', descending: true)
-              .get(const GetOptions(source: Source.serverAndCache))
+              .get(GetOptions(source: source))
               .timeout(Duration(seconds: timeoutSecs));
         } catch (e) {
           debugPrint(
@@ -461,7 +464,7 @@ class TestResultService {
                   .doc(member.id)
                   .collection('tests')
                   .orderBy('timestamp', descending: true)
-                  .get(const GetOptions(source: Source.serverAndCache))
+                  .get(GetOptions(source: source))
                   .timeout(
                     const Duration(seconds: 2),
                     onTimeout: () {

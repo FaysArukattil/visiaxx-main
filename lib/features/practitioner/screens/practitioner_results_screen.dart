@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
@@ -59,8 +60,44 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
       return;
     }
 
+    // 1. Try to load from CACHE ONLY for immediate display
     try {
+      debugPrint('[PractitionerResults] ⚡ Fetching from CACHE first...');
+      final cachedResults = await _resultService.getTestResults(
+        user.uid,
+        source: Source.cache,
+      );
+      if (mounted && cachedResults.isNotEmpty) {
+        setState(() {
+          _allResults = cachedResults;
+          _groupResults();
+          _isLoading = false; // Show cached data right away
+        });
+        debugPrint(
+          '[PractitionerResults] ⚡ Showing ${cachedResults.length} cached results',
+        );
+      }
+    } catch (e) {
+      debugPrint('[PractitionerResults] ⚡ Initial cache fetch failed: $e');
+    }
+
+    // 2. Full refresh from server
+    try {
+      debugPrint('[PractitionerResults] 🔄 Refreshing from server...');
+
+      // If we still don't have results, show loading
+      if (_allResults.isEmpty) {
+        setState(() {
+          _isLoading = true;
+          _errorMessage = null;
+        });
+      }
+
       final results = await _resultService.getTestResults(user.uid);
+      debugPrint(
+        '[PractitionerResults] ✅ Server refresh complete: ${results.length} results',
+      );
+
       if (mounted) {
         setState(() {
           _allResults = results;
@@ -69,11 +106,14 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
         });
       }
     } catch (e) {
-      debugPrint('[PractitionerResults] Error loading results: $e');
+      debugPrint('[PractitionerResults] ❌ Error loading results: $e');
       if (mounted) {
         setState(() {
+          // Only show error if we have NO results at all
+          if (_allResults.isEmpty) {
+            _errorMessage = 'Failed to load results';
+          }
           _isLoading = false;
-          _errorMessage = 'Failed to load results';
         });
       }
     }

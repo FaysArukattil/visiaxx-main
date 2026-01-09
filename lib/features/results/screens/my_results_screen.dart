@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/providers/network_connectivity_provider.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
@@ -42,23 +43,47 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   }
 
   Future<void> _loadResults() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        _results = [];
+        _isLoading = false;
+        _error = 'Please log in to view results';
+      });
+      return;
+    }
 
+    // 1. Try to load from CACHE ONLY for immediate display
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      debugPrint('[MyResults] Loading results for user: ${user?.uid}');
-
-      if (user == null) {
-        debugPrint('[MyResults] ❌ No user logged in');
+      debugPrint('[MyResults] ⚡ Fetching from CACHE first...');
+      final cachedResults = await _testResultService.getTestResults(
+        user.uid,
+        source: Source.cache,
+      );
+      if (mounted && cachedResults.isNotEmpty) {
         setState(() {
-          _results = [];
-          _isLoading = false;
-          _error = 'Please log in to view results';
+          _results = cachedResults;
+          _results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          _isLoading = false; // Show cached data right away
         });
-        return;
+        debugPrint(
+          '[MyResults] ⚡ Showing ${cachedResults.length} cached results',
+        );
+      }
+    } catch (e) {
+      debugPrint('[MyResults] ⚡ Initial cache fetch failed: $e');
+    }
+
+    // 2. Refresh from server (or cache+server)
+    try {
+      debugPrint('[MyResults] 🔄 Refreshing from server...');
+
+      // If we still don't have results, show loading
+      if (_results.isEmpty) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
       }
 
       // Check connectivity and show snackbar safely using addPostFrameCallback
@@ -79,11 +104,11 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         });
       }
 
-      debugPrint('[MyResults] Fetching results...');
-
       // Load results from service (which handles local/remote)
       final results = await _testResultService.getTestResults(user.uid);
-      debugPrint('[MyResults] ✅ Loaded ${results.length} results');
+      debugPrint(
+        '[MyResults] ✅ Server refresh complete: ${results.length} results',
+      );
 
       // Sort by date descending
       results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -99,7 +124,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
       if (mounted) {
         setState(() {
-          _error = 'Failed to load results: $e';
+          // Only show error if we have NO results at all
+          if (_results.isEmpty) {
+            _error = 'Failed to load results: $e';
+          }
           _isLoading = false;
         });
       }
