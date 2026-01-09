@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/core/services/notification_service.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
+import 'package:visiaxx/core/widgets/network_indicator_widget.dart';
 import 'package:visiaxx/features/eye_care_tips/screens/eye_care_tips_screen.dart';
 import 'package:visiaxx/features/eye_exercises/screens/eye_exercise_reels_screen.dart';
 import 'package:visiaxx/features/home/screens/settings_screen.dart';
@@ -40,6 +41,7 @@ import 'features/quick_vision_test/screens/quick_test_intro_screen.dart';
 import 'data/providers/test_session_provider.dart';
 import 'data/providers/eye_exercise_provider.dart';
 import 'data/providers/locale_provider.dart';
+import 'core/providers/network_connectivity_provider.dart';
 
 // AWS Credentials Manager
 import 'core/services/aws_credentials_manager.dart';
@@ -145,6 +147,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => NetworkConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => TestSessionProvider()),
         ChangeNotifierProvider(create: (_) => EyeExerciseProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
@@ -156,6 +159,12 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.light,
         initialRoute: '/',
+        builder: (context, child) {
+          // Add network indicator to all screens
+          return NetworkIndicatorWidget(
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
         routes: {
           '/': (context) => const SplashScreen(),
           '/login': (context) => const LoginScreen(),

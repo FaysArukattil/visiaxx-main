@@ -112,7 +112,10 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         if (mounted) {
           setState(() {
-            _errorMessage = result.message;
+            _errorMessage =
+                result.message?.contains('network-request-failed') == true
+                ? 'No internet connection. Please check your network and try again.'
+                : result.message;
             _isLoading = false;
           });
         }

@@ -6,6 +6,7 @@ import '../../../core/services/family_member_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/family_member_model.dart';
 import '../../../data/providers/test_session_provider.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 /// Profile selection screen - choose self or family member for testing
 class ProfileSelectionScreen extends StatefulWidget {
@@ -131,7 +132,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) => const Center(child: EyeLoader(size: 60)),
       );
 
       final newMember = FamilyMemberModel(
@@ -244,7 +245,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
+                  child: EyeLoader(size: 50),
                 ),
               )
             else if (_familyMembers.isEmpty && !_showAddForm)

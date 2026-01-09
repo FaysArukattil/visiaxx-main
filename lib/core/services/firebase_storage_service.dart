@@ -25,14 +25,27 @@ class FirebaseStorageService {
       final downloadUrl = await uploadTask.ref.getDownloadURL();
 
       return downloadUrl;
-    } catch (e) {
-      if (e.toString().contains('billing') || e.toString().contains('quota')) {
+    } on SocketException {
+      debugPrint(
+        '[FirebaseStorageService] ❌ Network error: No internet connection',
+      );
+      return null;
+    } on FirebaseException catch (e) {
+      if (e.code == 'network-request-failed') {
+        debugPrint('[FirebaseStorageService] ❌ Network error: ${e.message}');
+      } else if (e.toString().contains('billing') ||
+          e.toString().contains('quota')) {
         debugPrint(
           '[FirebaseStorageService] ⚠️ Firebase Storage quota exceeded or billing required. Working in offline mode.',
         );
       } else {
-        debugPrint('[FirebaseStorageService] Error uploading image: $e');
+        debugPrint(
+          '[FirebaseStorageService] ❌ Firebase error: ${e.code} - ${e.message}',
+        );
       }
+      return null;
+    } catch (e) {
+      debugPrint('[FirebaseStorageService] ❌ Error uploading image: $e');
       return null;
     }
   }
@@ -68,8 +81,24 @@ class FirebaseStorageService {
       await ref.writeToFile(tempFile);
 
       return tempFile;
+    } on SocketException {
+      debugPrint(
+        '[FirebaseStorageService] ❌ Network error downloading image: No internet connection',
+      );
+      return null;
+    } on FirebaseException catch (e) {
+      if (e.code == 'network-request-failed') {
+        debugPrint(
+          '[FirebaseStorageService] ❌ Network error downloading: ${e.message}',
+        );
+      } else {
+        debugPrint(
+          '[FirebaseStorageService] ❌ Firebase error downloading: ${e.code}',
+        );
+      }
+      return null;
     } catch (e) {
-      debugPrint('[FirebaseStorageService] Error downloading image: $e');
+      debugPrint('[FirebaseStorageService] ❌ Error downloading image: $e');
       return null;
     }
   }

@@ -91,6 +91,50 @@ class TestResultService {
     }
   }
 
+  /// Save result locally when offline and queue for upload
+  Future<String> saveResultOffline({
+    required String userId,
+    required TestResultModel result,
+  }) async {
+    try {
+      debugPrint(
+        '[TestResultService] 💾 Saving result OFFLINE for user: $userId',
+      );
+
+      // Document ID: [TIMESTAMP]_[STATUS]_[TYPE] (same as online)
+      final testCategory = result.testType == 'comprehensive'
+          ? 'FullExam'
+          : 'QuickTest';
+      final timestampStr = DateFormat(
+        'yyyy-MM-dd_HH-mm',
+      ).format(result.timestamp);
+      final customDocId =
+          '${timestampStr}_${result.overallStatus.name}_$testCategory';
+
+      // We can't easily get identityString offline because getUserData might hang
+      // if not cached, but we already added GetOptions(source: Source.serverAndCache)
+      // to getUserData which should help.
+
+      final authService = AuthService();
+      final userModel = await authService.getUserData(userId);
+      final identity = userModel?.identityString ?? userId; // Fallback to UID
+
+      // Save to Firestore (it will queue locally automatically by Firestore SDK)
+      await _firestore
+          .collection(_identifiedResultsCollection)
+          .doc(identity)
+          .collection('tests')
+          .doc(customDocId)
+          .set(result.toFirestore());
+
+      debugPrint('[TestResultService] ✅ Saved to local queue: $customDocId');
+      return customDocId;
+    } catch (e) {
+      debugPrint('[TestResultService] ❌ Offline Save ERROR: $e');
+      throw Exception('Failed to save result offline: $e');
+    }
+  }
+
   /// Check if AWS S3 is configured and reachable
   Future<bool> checkAWSConnection() async {
     try {
@@ -197,7 +241,7 @@ class TestResultService {
           .doc(identity)
           .collection('tests')
           .orderBy('timestamp', descending: true)
-          .get();
+          .get(const GetOptions(source: Source.serverAndCache));
 
       debugPrint('[TestResultService] Found ${snapshot.docs.length} documents');
 

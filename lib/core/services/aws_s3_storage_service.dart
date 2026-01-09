@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:minio/minio.dart';
 import 'aws_credentials_manager.dart';
@@ -92,8 +93,19 @@ class AWSS3StorageService {
 
       debugPrint('[AWS S3] ✅ PDF Upload successful: $url');
       return url;
+    } on SocketException {
+      debugPrint('[AWS S3] ❌ Network error: No internet connection');
+      return null;
+    } on TimeoutException {
+      debugPrint('[AWS S3] ❌ Network timeout during PDF upload');
+      return null;
     } catch (e) {
-      debugPrint('[AWS S3] ❌ PDF Upload failed: $e');
+      if (e.toString().toLowerCase().contains('network') ||
+          e.toString().toLowerCase().contains('connection')) {
+        debugPrint('[AWS S3] ❌ Network-related error during PDF upload: $e');
+      } else {
+        debugPrint('[AWS S3] ❌ PDF Upload failed: $e');
+      }
       return null;
     }
   }
@@ -148,8 +160,19 @@ class AWSS3StorageService {
 
       debugPrint('[AWS S3] ✅ Upload successful: $url');
       return url;
+    } on SocketException {
+      debugPrint('[AWS S3] ❌ Network error: No internet connection');
+      return null;
+    } on TimeoutException {
+      debugPrint('[AWS S3] ❌ Network timeout during image upload');
+      return null;
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Upload failed: $e');
+      if (e.toString().toLowerCase().contains('network') ||
+          e.toString().toLowerCase().contains('connection')) {
+        debugPrint('[AWS S3] ❌ Network-related error during image upload: $e');
+      } else {
+        debugPrint('[AWS S3] ❌ Upload failed: $e');
+      }
       return null;
     }
   }
@@ -235,8 +258,19 @@ class AWSS3StorageService {
 
       debugPrint('[AWS S3] ✅ Download successful: ${localFile.path}');
       return localFile;
+    } on SocketException {
+      debugPrint('[AWS S3] ❌ Network error: No internet connection');
+      return null;
+    } on TimeoutException {
+      debugPrint('[AWS S3] ❌ Network timeout during download');
+      return null;
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Download failed: $e');
+      if (e.toString().toLowerCase().contains('network') ||
+          e.toString().toLowerCase().contains('connection')) {
+        debugPrint('[AWS S3] ❌ Network-related error during download: $e');
+      } else {
+        debugPrint('[AWS S3] ❌ Download failed: $e');
+      }
       return null;
     }
   }

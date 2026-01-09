@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/network_connectivity_provider.dart';
 
 /// PDF download button widget
 class PdfDownloadButton extends StatefulWidget {
@@ -43,6 +45,35 @@ class _PdfDownloadButtonState extends State<PdfDownloadButton> {
   }
 
   Future<void> _handleDownload() async {
+    // Check network connectivity
+    final connectivity = Provider.of<NetworkConnectivityProvider>(
+      context,
+      listen: false,
+    );
+
+    if (!connectivity.isOnline) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.wifi_off, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'No internet connection. Please connect to download the PDF.',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isDownloading = true;
     });

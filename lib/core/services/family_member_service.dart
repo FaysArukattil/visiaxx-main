@@ -51,7 +51,7 @@ class FamilyMemberService {
       final snapshot = await _firestore
           .collection(path)
           .orderBy('createdAt', descending: true)
-          .get();
+          .get(const GetOptions(source: Source.serverAndCache));
 
       debugPrint('[FamilyMemberService] Found ${snapshot.docs.length} members');
 

@@ -127,7 +127,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             _isLinkSent = true;
             _startTimer();
           } else {
-            _errorMessage = result.message;
+            _errorMessage =
+                result.message?.contains('network-request-failed') == true
+                ? 'No internet connection. Please check your network and try again.'
+                : result.message;
           }
         });
       }

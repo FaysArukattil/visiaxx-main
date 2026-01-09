@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/network_connectivity_provider.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -59,11 +61,27 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         return;
       }
 
-      debugPrint('[MyResults] Fetching from Firebase...');
+      // Check connectivity and show snackbar if offline
+      if (mounted) {
+        final connectivity = Provider.of<NetworkConnectivityProvider>(
+          context,
+          listen: false,
+        );
+        if (!connectivity.isOnline) {
+          SnackbarUtils.showInfo(
+            context,
+            'Showing local data. Connect to see latest sync.',
+          );
+        }
+      }
+
+      debugPrint('[MyResults] Fetching results...');
+
+      // Load results from service (which handles local/remote)
       final results = await _testResultService.getTestResults(user.uid);
       debugPrint('[MyResults] ✅ Loaded ${results.length} results');
 
-      // Explicitly sort by date descending to ensure latest is first
+      // Sort by date descending
       results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       if (mounted) {

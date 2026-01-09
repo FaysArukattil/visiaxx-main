@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/network_connectivity_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -20,6 +22,18 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, required this.user});
 
   Future<void> _handleLogout(BuildContext context) async {
+    final connectivity = Provider.of<NetworkConnectivityProvider>(
+      context,
+      listen: false,
+    );
+    if (!connectivity.isOnline) {
+      SnackbarUtils.showNoInternet(
+        context,
+        customMessage: "Can't logout without internet",
+      );
+      return;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

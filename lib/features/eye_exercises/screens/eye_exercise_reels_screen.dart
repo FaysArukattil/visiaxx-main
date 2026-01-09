@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/providers/eye_exercise_provider.dart';
+import '../../../core/providers/network_connectivity_provider.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import '../widgets/video_reel_item.dart';
 import '../widgets/youtube_popup_dialog.dart';
 
@@ -21,6 +23,19 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
     // Initialize provider data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<EyeExerciseProvider>().initialize();
+
+      // Check connectivity for Visiaxx TV
+      final isOnline = Provider.of<NetworkConnectivityProvider>(
+        context,
+        listen: false,
+      ).isOnline;
+      if (!isOnline && mounted) {
+        SnackbarUtils.showNoInternet(
+          context,
+          customMessage:
+              'You are offline. Some features like Visiaxx TV (YouTube link) may not work.',
+        );
+      }
     });
   }
 
@@ -153,6 +168,13 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
               Image.network(
                 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/1024px-YouTube_full-color_icon_%282017%29.svg.png',
                 height: 16,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.play_circle_fill,
+                    color: Colors.red,
+                    size: 16,
+                  );
+                },
               ),
               const SizedBox(width: 8),
               const Text(

@@ -40,6 +40,17 @@ class SnackbarUtils {
     );
   }
 
+  /// Show a standardized no internet warning
+  static void showNoInternet(BuildContext context, {String? customMessage}) {
+    _showSnackbar(
+      context,
+      message:
+          customMessage ?? 'No internet connection. Please check your network.',
+      icon: Icons.wifi_off_rounded,
+      backgroundColor: AppColors.error,
+    );
+  }
+
   /// Show an info snackbar with premium styling
   static void showInfo(BuildContext context, String message) {
     _showSnackbar(

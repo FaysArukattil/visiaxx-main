@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:visiaxx/core/providers/network_connectivity_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:visiaxx/core/constants/app_colors.dart';
@@ -66,6 +67,35 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     try {
       final provider = context.read<TestSessionProvider>();
       final result = provider.buildTestResult(user.uid);
+
+      final connectivity = Provider.of<NetworkConnectivityProvider>(
+        context,
+        listen: false,
+      );
+
+      if (!connectivity.isOnline) {
+        debugPrint('[QuickTestResult] 📶 Device is OFFLINE. Saving locally...');
+
+        final resultId = await _testResultService.saveResultOffline(
+          userId: user.uid,
+          result: result,
+        );
+
+        if (mounted) {
+          setState(() {
+            _hasSaved = true;
+            _savedResult = result.copyWith(id: resultId);
+          });
+
+          SnackbarUtils.showInfo(
+            context,
+            'Saved locally. Results will upload automatically when online.',
+          );
+
+          await _checkAndShowReviewDialog();
+        }
+        return;
+      }
 
       // Verify AWS Connection first
       debugPrint('[QuickTestResult] 🔄 Testing AWS S3 connection...');

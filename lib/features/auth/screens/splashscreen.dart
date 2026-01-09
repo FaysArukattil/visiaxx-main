@@ -65,11 +65,30 @@ class _SplashScreenState extends State<SplashScreen>
 
     _logoController.forward();
 
-    // Reduced total time
-    await Future.delayed(
-      const Duration(milliseconds: 1500),
-    ); // Reduced from 2800
-    _checkAuthAndNavigate();
+    // 2. Reduced total time
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    // Add a timeout to the auth check to prevent getting stuck
+    try {
+      await _checkAuthAndNavigate().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint(
+            '[SplashScreen] ⏱️ Auth check timed out. Navigating to Login.',
+          );
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/login');
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint(
+        '[SplashScreen] ❌ Error during auth check: $e. Navigating to Login.',
+      );
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    }
   }
 
   Future<void> _checkAuthAndNavigate() async {
@@ -79,77 +98,95 @@ class _SplashScreenState extends State<SplashScreen>
       final userId = _authService.currentUserId;
       UserModel? user;
       if (userId != null) {
-        // 1. Fetch user data to get identityString
-        user = await _authService.getUserData(userId);
+        // 1. Fetch user data with a small retry/timeout
+        try {
+          user = await _authService
+              .getUserData(userId)
+              .timeout(const Duration(seconds: 3));
+        } catch (e) {
+          debugPrint('[SplashScreen] ⚠️ Failed to fetch user data: $e');
+          // Fallthrough to login if we can't get user data
+        }
 
         if (user != null && mounted) {
           // 2. STRICTOR CHECK: Verify if we still own the active session
           final sessionService = SessionMonitorService();
-          final checkResult = await sessionService.checkExistingSession(
-            user.identityString,
-          );
 
-          if (checkResult.exists && !checkResult.isOurSession) {
-            debugPrint(
-              '[SplashScreen] 🚨 Session stolen by another device. Forcing logout.',
-            );
+          try {
+            final checkResult = await sessionService
+                .checkExistingSession(user.identityString)
+                .timeout(const Duration(seconds: 3));
 
-            // FLAG as kicked out so removeSession doesn't delete the new remote session!
-            sessionService.markKickedOut();
+            if (checkResult.exists && !checkResult.isOurSession) {
+              debugPrint(
+                '[SplashScreen] 🚨 Session stolen by another device. Forcing logout.',
+              );
 
-            // Show alert before navigating
-            if (mounted) {
-              await showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (ctx) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  title: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.orange,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Logged Out',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+              sessionService.markKickedOut();
+
+              if (mounted) {
+                await showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (ctx) => AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    title: Row(
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.orange,
+                          size: 28,
                         ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Logged Out',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    content: Text(
+                      'Your account is currently active on: ${checkResult.sessionData?.deviceInfo ?? 'Another Device'}.\n\nYou have been logged out on this device.',
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                    actions: [
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('OK'),
                       ),
                     ],
                   ),
-                  content: Text(
-                    'Your account is currently active on: ${checkResult.sessionData?.deviceInfo ?? 'Another Device'}.\n\nYou have been logged out on this device.',
-                    style: const TextStyle(fontSize: 15),
-                  ),
-                  actions: [
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              );
+                );
+              }
+
+              await _authService.signOut();
+              if (!mounted) return;
+              Navigator.pushReplacementNamed(context, '/login');
+              return;
             }
 
-            // Perform cleanup
-            await _authService.signOut();
-            if (!mounted) return;
+            sessionService.startMonitoring(user.identityString, context);
+          } catch (e) {
+            debugPrint('[SplashScreen] ⚠️ Session check error: $e');
+            // If we can't check session due to network, but user data was fetched,
+            // we could potentially proceed or go to login.
+            // Given the user request, let's go to login to be safe.
             Navigator.pushReplacementNamed(context, '/login');
             return;
           }
-
-          // 3. Start monitoring if session is valid
-          sessionService.startMonitoring(user.identityString, context);
+        } else {
+          // user is null or not mounted after fetch
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/login');
+            return;
+          }
         }
       }
 
       if (!mounted) return;
-
       await NavigationUtils.navigateHome(context);
     } else {
       Navigator.pushReplacementNamed(context, '/login');
@@ -201,7 +238,7 @@ class _SplashScreenState extends State<SplashScreen>
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 100,
+                bottom: 130, // Increased from 100
                 child: FadeTransition(
                   opacity: _textFadeAnimation,
                   child: Column(
@@ -233,7 +270,7 @@ class _SplashScreenState extends State<SplashScreen>
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 40,
+                bottom: 30, // Decreased from 40
                 child: Center(child: EyeLoader.fullScreen()),
               ),
             ],

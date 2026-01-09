@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/network_connectivity_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/review_service.dart';
 import '../../../core/services/auth_service.dart';
@@ -41,43 +43,32 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
     setState(() => _isSubmitting = true);
 
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not logged in');
-      }
+    final connectivity = Provider.of<NetworkConnectivityProvider>(
+      context,
+      listen: false,
+    );
 
-      // Get user data
-      final userData = await _authService.getUserData(user.uid);
-      if (userData == null) {
-        throw Exception('User data not found');
-      }
+    if (!connectivity.isOnline) {
+      // Queue the operation
+      connectivity.queueOperation(() async {
+        debugPrint(
+          '[ReviewDialog] 🔄 Processing queued feedback submission...',
+        );
+        await _submitReviewLogic();
+      });
 
-      // Create review model
-      final review = ReviewModel(
-        id: '',
-        userId: user.uid,
-        userName: userData.fullName,
-        userAge: userData.age,
-        rating: _rating,
-        reviewText: _reviewController.text.trim(),
-        timestamp: DateTime.now(),
-      );
-
-      // Submit review (Save to Firebase + Open Email)
-      final success = await _reviewService.submitReview(review);
-
-      if (!mounted) return;
-
-      if (success) {
+      if (mounted) {
         Navigator.of(context).pop(); // Close dialog
-        SnackbarUtils.showSuccess(context, 'Feedback submitted successfully!');
-      } else {
-        SnackbarUtils.showError(
+        SnackbarUtils.showInfo(
           context,
-          'Failed to submit review. Please try again.',
+          'No internet. Your feedback will be submitted when you are back online.',
         );
       }
+      return;
+    }
+
+    try {
+      await _submitReviewLogic();
     } catch (e) {
       if (mounted) {
         SnackbarUtils.showError(context, 'Error: $e');
@@ -86,6 +77,42 @@ class _ReviewDialogState extends State<ReviewDialog> {
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
+    }
+  }
+
+  /// Extracted logic for review submission to reuse in queued operation
+  Future<void> _submitReviewLogic() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('User not logged in');
+    }
+
+    // Get user data
+    final userData = await _authService.getUserData(user.uid);
+    if (userData == null) {
+      throw Exception('User data not found');
+    }
+
+    // Create review model
+    final review = ReviewModel(
+      id: '',
+      userId: user.uid,
+      userName: userData.fullName,
+      userAge: userData.age,
+      rating: _rating,
+      reviewText: _reviewController.text.trim(),
+      timestamp: DateTime.now(),
+    );
+
+    // Submit review (Save to Firebase + Open Email)
+    final success = await _reviewService.submitReview(review);
+
+    if (success) {
+      debugPrint('[ReviewDialog] ✅ Review submitted successfully');
+      // If we are currently in the dialog (not a queued op), we pop it.
+      // But _submitReview already handles popping for live submissions.
+    } else {
+      debugPrint('[ReviewDialog] ❌ Failed to submit review');
     }
   }
 
