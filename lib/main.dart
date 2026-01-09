@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:visiaxx/core/services/notification_service.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'package:visiaxx/features/eye_care_tips/screens/eye_care_tips_screen.dart';
 import 'package:visiaxx/features/eye_exercises/screens/eye_exercise_reels_screen.dart';
+import 'package:visiaxx/features/home/screens/settings_screen.dart';
 import 'package:visiaxx/features/results/screens/speech_log_viewer_screen.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
@@ -62,23 +64,10 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Initialize Firebase (keep this)
+  // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AppLogger.initialize();
-  // Preload eye animation by creating it off-screen
-  runApp(
-    const MaterialApp(
-      home: Scaffold(
-        body: Offstage(
-          offstage: true,
-          child: EyeLoader(size: 1), // Invisible preload
-        ),
-      ),
-    ),
-  );
-
-  // Small delay to let animation initialize
-  await Future.delayed(const Duration(milliseconds: 100));
+  await NotificationService().initialize();
 
   // Initialize AWS credentials from Firebase Remote Config
   debugPrint('[VisiAxx] 🔄 Loading AWS credentials...');
@@ -90,6 +79,7 @@ void main() async {
       '[VisiAxx] ⚠️ AWS credentials failed to load - will use Firebase only',
     );
   }
+
   runApp(const VisiaxApp());
 }
 
@@ -105,6 +95,35 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Preload animation in background after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadEyeAnimation();
+    });
+  }
+
+  void _preloadEyeAnimation() {
+    // Create an invisible overlay to preload the animation
+    final overlay = OverlayEntry(
+      builder: (context) => const Positioned(
+        left: -1000, // Off-screen
+        top: -1000,
+        child: SizedBox(width: 1, height: 1, child: EyeLoader(size: 1)),
+      ),
+    );
+
+    // Add overlay
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final overlayState = Overlay.of(context);
+        overlayState.insert(overlay);
+
+        // Remove after animation is cached (500ms should be enough)
+        Future.delayed(const Duration(milliseconds: 500), () {
+          overlay.remove();
+          debugPrint('[VisiAxx] ✅ Eye animation preloaded');
+        });
+      }
+    });
   }
 
   @override
@@ -171,6 +190,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/pelli-robson-test': (context) => const PelliRobsonTestScreen(),
           '/eye-exercises': (context) => const EyeExerciseReelsScreen(),
           '/eye-care-tips': (context) => const EyeCareTipsScreen(),
+          '/settings': (context) => const SettingsScreen(),
         },
       ),
     );

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiaxx/core/services/review_service.dart';
+import 'package:visiaxx/features/home/screens/settings_screen.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/data_cleanup_service.dart';
@@ -149,10 +150,11 @@ class ProfileScreen extends StatelessWidget {
                   icon: Icons.settings_outlined,
                   title: 'Settings',
                   onTap: () {
-                    _showOptionDetails(
+                    Navigator.push(
                       context,
-                      'Settings',
-                      _buildSettingsContent(context),
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsScreen(),
+                      ),
                     );
                   },
                 ),
@@ -628,35 +630,6 @@ class ProfileScreen extends StatelessWidget {
       trailing: showCopyIcon
           ? const Icon(Icons.copy_outlined, size: 16, color: Colors.grey)
           : null,
-    );
-  }
-
-  Widget _buildSettingsContent(BuildContext context) {
-    return Column(
-      children: [
-        _buildContentItem(
-          icon: Icons.language,
-          title: 'Language',
-          subtitle: 'English (United States)',
-          onTap: () {},
-        ),
-        _buildContentItem(
-          icon: Icons.notifications_none,
-          title: 'Notifications',
-          subtitle: 'On',
-          onTap: () {},
-        ),
-        _buildContentItem(
-          icon: Icons.security,
-          title: 'Privacy & Security',
-          onTap: () {},
-        ),
-        _buildContentItem(
-          icon: Icons.help_outline,
-          title: 'Help Center',
-          onTap: () {},
-        ),
-      ],
     );
   }
 

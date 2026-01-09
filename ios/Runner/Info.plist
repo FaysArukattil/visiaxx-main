@@ -79,6 +79,8 @@
         <string>vnd.youtube</string>
         <string>https</string>
         <string>http</string>
+		<string>mailto</string>
+		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>
