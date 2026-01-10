@@ -12,157 +12,222 @@ class ComprehensiveIntroScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Comprehensive Eye Test'),
+        title: const Text(''),
         backgroundColor: AppColors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: AppColors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.1),
-                      AppColors.secondary.withValues(alpha: 0.1),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Compact Hero Card - Row based
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 18,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primary,
+                            AppColors.primary.withValues(alpha: 0.85),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.medical_services_rounded,
+                              color: AppColors.white,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Full Eye Examination',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.white,
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Comprehensive vision assessment.',
+                                  style: TextStyle(
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.9,
+                                    ),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
                     Row(
                       children: [
-                        Icon(
-                          Icons.medical_services,
-                          color: AppColors.primary,
-                          size: 28,
+                        Container(
+                          width: 4,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Full Eye Examination',
+                        const SizedBox(width: 10),
+                        Text(
+                          'Included Tests',
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Complete vision assessment with all tests',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
-              Text(
-                'Tests Included:',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-
-              // Test list
-              Expanded(
-                child: ListView(
-                  children: [
+                    // Test list
                     _buildTestComponent(
                       context,
-                      icon: Icons.quiz,
+                      icon: Icons.quiz_rounded,
                       title: 'Health Questionnaire',
-                      description: 'Eye health history assessment',
+                      description:
+                          'Evaluates lifestyle and eye health history.',
                       duration: '3 min',
                     ),
                     _buildTestComponent(
                       context,
-                      icon: Icons.visibility,
+                      icon: Icons.visibility_rounded,
                       title: 'Visual Acuity',
-                      description: 'Distance vision (Tumbling E test)',
+                      description:
+                          'Standard distance vision check (Tumbling E).',
                       duration: '5 min',
                     ),
                     _buildTestComponent(
                       context,
-                      icon: Icons.text_fields,
+                      icon: Icons.menu_book_rounded,
                       title: 'Near Vision',
-                      description: 'Reading test at 40cm',
+                      description: 'Reading and close-up focus assessment.',
                       duration: '3 min',
                     ),
                     _buildTestComponent(
                       context,
-                      icon: Icons.palette,
+                      icon: Icons.palette_rounded,
                       title: 'Color Vision',
-                      description: 'Ishihara plates test',
+                      description: 'Comprehensive Ishihara plates test.',
                       duration: '5 min',
                     ),
                     _buildTestComponent(
                       context,
-                      icon: Icons.grid_on,
+                      icon: Icons.grid_view_rounded,
                       title: 'Amsler Grid',
-                      description: 'Macular health screening',
+                      description:
+                          'In-depth central vision and macular screen.',
                       duration: '4 min',
                     ),
                     _buildTestComponent(
                       context,
-                      icon: Icons.contrast,
+                      icon: Icons.contrast_rounded,
                       title: 'Contrast Sensitivity',
-                      description: 'Pelli-Robson test (Right & Left eyes)',
+                      description: 'Pelli-Robson chart for both eyes.',
                       duration: '10 min',
                     ),
-                  ],
-                ),
-              ),
 
-              // Duration info
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.info.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.info.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.timer, color: AppColors.info, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Total duration: approximately 30-35 minutes',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.info,
+                    const SizedBox(height: 24),
+
+                    // Duration info
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.info.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.info.withValues(alpha: 0.15),
                         ),
                       ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            color: AppColors.info,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Total duration: ~30-35 minutes',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.info,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+            ),
 
-              // Start button
-              SizedBox(
+            // Integrated Action Button - No white container
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                8,
+                24,
+                MediaQuery.of(context).padding.bottom > 0 ? 8 : 24,
+              ),
+              child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Set comprehensive mode in provider
                     context
                         .read<TestSessionProvider>()
                         .startComprehensiveTest();
-                    // Navigate to profile selection instead of direct questionnaire
                     Navigator.pushNamed(context, '/profile-selection');
                   },
                   style: ElevatedButton.styleFrom(
@@ -170,17 +235,30 @@ class ComprehensiveIntroScreen extends StatelessWidget {
                     foregroundColor: AppColors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                    elevation: 4,
+                    shadowColor: AppColors.primary.withValues(alpha: 0.4),
                   ),
-                  child: const Text(
-                    'Begin Full Examination',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Begin Full Examination',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_rounded, size: 18),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -197,62 +275,58 @@ class ComprehensiveIntroScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: AppColors.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: AppColors.primary, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      duration,
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   description,
                   style: TextStyle(
                     color: AppColors.textSecondary,
-                    fontSize: 13,
+                    fontSize: 12,
+                    height: 1.4,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              duration,
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
             ),
           ),
         ],
