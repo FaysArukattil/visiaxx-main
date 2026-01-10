@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/network_connectivity_provider.dart';
+import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 /// PDF download button widget
 class PdfDownloadButton extends StatefulWidget {
@@ -27,14 +30,7 @@ class _PdfDownloadButtonState extends State<PdfDownloadButton> {
       child: ElevatedButton.icon(
         onPressed: _isDownloading ? null : _handleDownload,
         icon: _isDownloading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+            ? const EyeLoader.button(color: AppColors.textOnPrimary)
             : const Icon(Icons.picture_as_pdf),
         label: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -53,22 +49,9 @@ class _PdfDownloadButtonState extends State<PdfDownloadButton> {
 
     if (!connectivity.isOnline) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.wifi_off, color: Colors.white),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'No internet connection. Please connect to download the PDF.',
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 4),
-          ),
+        SnackbarUtils.showWarning(
+          context,
+          'No internet connection. Please connect to download the PDF.',
         );
       }
       return;
@@ -88,12 +71,7 @@ class _PdfDownloadButtonState extends State<PdfDownloadButton> {
         _isDownloading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PDF downloaded successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      SnackbarUtils.showSuccess(context, 'PDF downloaded successfully');
     }
   }
 }

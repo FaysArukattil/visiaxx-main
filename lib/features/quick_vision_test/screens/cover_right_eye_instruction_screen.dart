@@ -182,7 +182,7 @@ class _CoverRightEyeInstructionScreenState
                             width: 60,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.7),
+                              color: AppColors.black.withValues(alpha: 0.7),
                               borderRadius: const BorderRadius.only(
                                 topRight: Radius.circular(40),
                                 bottomRight: Radius.circular(40),
@@ -266,7 +266,7 @@ class _CoverRightEyeInstructionScreenState
                               children: [
                                 EyeLoader(
                                   size: 20,
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   value: 1 - (_countdown / 3),
                                 ),
                                 const SizedBox(width: 12),

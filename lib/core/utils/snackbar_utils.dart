@@ -201,7 +201,7 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
       left: 20,
       right: 20,
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
@@ -212,12 +212,12 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
                 color: widget.backgroundColor.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: AppColors.white.withValues(alpha: 0.2),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
+                    color: AppColors.black.withValues(alpha: 0.15),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -228,7 +228,7 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
+                      color: AppColors.white.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(widget.icon, color: Colors.white, size: 22),
@@ -238,7 +238,7 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
                     child: Text(
                       widget.message,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.2,

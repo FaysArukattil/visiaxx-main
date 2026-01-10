@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:firebase_database/firebase_database.dart';
@@ -319,7 +320,11 @@ class SessionMonitorService with WidgetsBindingObserver {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.warning,
+              size: 28,
+            ),
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
@@ -340,7 +345,7 @@ class SessionMonitorService with WidgetsBindingObserver {
             const SizedBox(height: 12),
             Text(
               'Device: ${remoteSession.deviceInfo}',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
           ],
         ),

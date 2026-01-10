@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Pelli-Robson contrast sensitivity chart widget
 class PelliRobsonChart extends StatelessWidget {
@@ -16,7 +17,7 @@ class PelliRobsonChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -44,7 +45,7 @@ class PelliRobsonChart extends StatelessWidget {
         style: TextStyle(
           fontSize: 64,
           fontWeight: FontWeight.bold,
-          color: Colors.black.withValues(alpha: contrast.clamp(0.1, 1.0)),
+          color: AppColors.black.withValues(alpha: contrast.clamp(0.1, 1.0)),
         ),
       );
     }).toList();

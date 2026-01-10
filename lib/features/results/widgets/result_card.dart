@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Result card widget for displaying test results
 class ResultCard extends StatelessWidget {
@@ -52,7 +53,10 @@ class ResultCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       date,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),

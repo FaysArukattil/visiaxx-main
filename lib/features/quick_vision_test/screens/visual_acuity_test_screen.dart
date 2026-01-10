@@ -195,7 +195,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               reason == 'minimized'
                   ? 'The test was paused because the app was minimized.'
                   : 'What would you like to do?',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -212,7 +212,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -231,8 +231,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   _restartCurrentTest();
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.orange),
-                  foregroundColor: Colors.orange,
+                  side: const BorderSide(color: AppColors.warning),
+                  foregroundColor: AppColors.warning,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1303,7 +1303,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: Colors.black.withValues(alpha: 0.85),
+      color: AppColors.overlayDark,
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1623,14 +1623,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
+        color: AppColors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         _lastDetectedSpeech!,
         style: const TextStyle(
           fontSize: 16,
-          color: Colors.white,
+          color: AppColors.white,
           fontWeight: FontWeight.bold,
         ),
         textAlign: TextAlign.center,
@@ -1746,7 +1746,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   child: Text(
                     '$_relaxationCountdown',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1850,7 +1850,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   fontSize: eSize,
                   fontWeight: FontWeight.bold, // Maximum boldness
 
-                  color: Colors.black,
+                  color: AppColors.black,
                   letterSpacing: 0,
                   height: 1.0,
                 ),
@@ -2099,7 +2099,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                     child: Text(
                       '$_autoNavigationCountdown',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -2213,7 +2213,7 @@ class _DirectionButton extends StatelessWidget {
         child: SizedBox(
           width: 70,
           height: 70,
-          child: Icon(_icon, color: Colors.white, size: 32),
+          child: Icon(_icon, color: AppColors.white, size: 32),
         ),
       ),
     );

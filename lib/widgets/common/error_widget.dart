@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 
 /// Error widget for displaying error messages
 class ErrorWidget extends StatelessWidget {
@@ -21,25 +22,19 @@ class ErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 64,
-              color: Colors.red.shade300,
-            ),
+            Icon(icon, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               'Oops!',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey[600],
-              ),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 24),

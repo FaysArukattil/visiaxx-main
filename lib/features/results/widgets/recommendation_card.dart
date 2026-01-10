@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Recommendation card widget for displaying health recommendations
 class RecommendationCard extends StatelessWidget {
@@ -12,7 +13,7 @@ class RecommendationCard extends StatelessWidget {
     required this.title,
     required this.recommendations,
     this.icon = Icons.lightbulb_outline,
-    this.color = Colors.blue,
+    this.color = AppColors.primary,
   });
 
   @override

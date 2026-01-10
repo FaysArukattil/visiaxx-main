@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
 
 /// A calm, themed eye loading animation.
 /// Features a gentle 4s cycle, smooth iris transitions, and subtle breathing pupil pulse.
@@ -72,8 +73,8 @@ class _EyeLoaderState extends State<EyeLoader>
   @override
   Widget build(BuildContext context) {
     final themeColor = widget.color ?? Theme.of(context).primaryColor;
-    final fallbackSclera = Colors.white;
-    final fallbackPupil = Colors.black;
+    final fallbackSclera = AppColors.white;
+    final fallbackPupil = AppColors.black;
 
     return SizedBox(
       width: widget.size,
@@ -212,7 +213,7 @@ class _EyePainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reactiveReflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withOpacity(0.42),
+        Paint()..color = AppColors.white.withValues(alpha: 0.42),
       );
 
       canvas.restore();

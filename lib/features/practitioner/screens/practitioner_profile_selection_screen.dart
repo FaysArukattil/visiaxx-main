@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../../core/services/patient_service.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -99,12 +101,7 @@ class _PractitionerProfileSelectionScreenState
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please log in to add patients'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Please log in to add patients');
         return;
       }
 
@@ -112,7 +109,7 @@ class _PractitionerProfileSelectionScreenState
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) => const Center(child: EyeLoader.fullScreen()),
       );
 
       final newPatient = PatientModel(
@@ -159,12 +156,10 @@ class _PractitionerProfileSelectionScreenState
           _clearForm();
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${savedPatient.fullName} added successfully'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
-          ),
+        if (!mounted) return;
+        SnackbarUtils.showSuccess(
+          context,
+          '✅ ${savedPatient.fullName} added successfully',
         );
       } catch (e) {
         debugPrint('[PractitionerProfile] ❌ Error saving patient: $e');
@@ -173,13 +168,7 @@ class _PractitionerProfileSelectionScreenState
         if (mounted) Navigator.pop(context);
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        SnackbarUtils.showError(context, 'Failed to save: ${e.toString()}');
       }
     }
   }
@@ -282,7 +271,7 @@ class _PractitionerProfileSelectionScreenState
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
+                  child: EyeLoader.fullScreen(),
                 ),
               )
             else if (_filteredPatients.isEmpty && !_showAddForm)
@@ -364,12 +353,12 @@ class _PractitionerProfileSelectionScreenState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: AppColors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(
                 Icons.person_add,
-                color: Colors.white,
+                color: AppColors.white,
                 size: 36,
               ),
             ),
@@ -381,7 +370,7 @@ class _PractitionerProfileSelectionScreenState
                   const Text(
                     'Add New Patient',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -390,14 +379,14 @@ class _PractitionerProfileSelectionScreenState
                   Text(
                     'Register a new patient for vision testing',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: AppColors.white.withValues(alpha: 0.9),
                       fontSize: 14,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white),
+            const Icon(Icons.arrow_forward_ios, color: AppColors.white),
           ],
         ),
       ),

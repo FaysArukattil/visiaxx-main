@@ -306,12 +306,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('My Results'),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
-        foregroundColor: Colors.grey[900],
+        foregroundColor: AppColors.textPrimary,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadResults),
         ],
@@ -323,7 +323,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 _buildFilters(),
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: EyeLoader(size: 45))
+                      ? const Center(child: EyeLoader.fullScreen())
                       : _filteredResults.isEmpty
                       ? _buildEmptyState()
                       : RefreshIndicator(
@@ -360,7 +360,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   Widget _buildFilters() {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      color: AppColors.surface,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -385,7 +385,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? (color ?? AppColors.primary) : Colors.transparent,
+          color: isSelected
+              ? (color ?? AppColors.primary)
+              : AppColors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? (color ?? AppColors.primary) : AppColors.border,
@@ -394,7 +396,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textSecondary,
+            color: isSelected
+                ? AppColors.textOnPrimary
+                : AppColors.textSecondary,
             fontWeight: FontWeight.w500,
             fontSize: 13,
           ),
@@ -417,14 +421,14 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[900],
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _error ?? 'Unknown error',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -464,16 +468,16 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[900],
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'No local results found.\nPlease turn on internet and\nclick refresh to fetch your data.',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: AppColors.textSecondary,
                 height: 1.4,
               ),
             ),
@@ -520,7 +524,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isComprehensive ? const Color(0xFFF0F7FF) : Colors.white,
+        color: isComprehensive
+            ? AppColors.primary.withValues(alpha: 0.05)
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: isComprehensive
             ? Border.all(
@@ -532,7 +538,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           BoxShadow(
             color: isComprehensive
                 ? AppColors.primary.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.05),
+                : AppColors.cardShadow,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -574,7 +580,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                       DateFormat(
                         'MMM dd, yyyy • h:mm a',
                       ).format(result.timestamp),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     if (isComprehensive) ...[
                       const SizedBox(height: 4),
@@ -590,7 +599,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                         child: const Text(
                           'FULL EXAMINATION',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontSize: 8,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
@@ -747,7 +756,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textSecondary,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -805,7 +817,7 @@ class _ResultDetailSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               DateFormat('MMMM dd, yyyy • h:mm a').format(result.timestamp),
-              style: TextStyle(color: Colors.grey[600]),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
 
@@ -1009,7 +1021,7 @@ class _ResultDetailSheet extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: const TextStyle(color: AppColors.textSecondary)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),

@@ -99,7 +99,7 @@ class _ColorVisionResponseAnimationState
                 height: 90,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.grey.shade100,
+                  color: AppColors.background,
                   border: Border.all(
                     color: AppColors.primary.withValues(alpha: 0.5),
                     width: 2,
@@ -161,7 +161,7 @@ class _ColorVisionResponseAnimationState
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: isSelected
-                                ? Colors.white
+                                ? AppColors.white
                                 : AppColors.textPrimary,
                           ),
                         ),

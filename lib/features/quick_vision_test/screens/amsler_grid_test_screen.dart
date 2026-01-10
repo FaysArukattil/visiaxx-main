@@ -278,7 +278,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             const SizedBox(width: 12),
             const Text(
               'Test Paused',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ],
         ),
@@ -307,7 +310,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -326,8 +329,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   _restartCurrentTest();
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.orange),
-                  foregroundColor: Colors.orange,
+                  side: const BorderSide(color: AppColors.warning),
+                  foregroundColor: AppColors.warning,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -719,24 +722,27 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     return Scaffold(
       backgroundColor: AppColors.testBackground,
       appBar: AppBar(
-        title: Text('Amsler Grid - ${_currentEye.toUpperCase()} Eye'),
+        title: Text(
+          'Amsler Grid - ${_currentEye.toUpperCase()} Eye',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
         backgroundColor: _currentEye == 'right'
             ? AppColors.rightEye.withValues(alpha: 0.1)
             : AppColors.leftEye.withValues(alpha: 0.1),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.close, color: AppColors.textPrimary),
           onPressed: _showExitConfirmation,
         ),
         actions: [
           if (_testingStarted && !_eyeSwitchPending && !_testComplete)
             IconButton(
-              icon: const Icon(Icons.undo),
+              icon: const Icon(Icons.undo, color: AppColors.textPrimary),
               onPressed: _undoLastPoint,
               tooltip: 'Undo last mark',
             ),
           if (_testingStarted && !_eyeSwitchPending && !_testComplete)
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
               onPressed: _clearPoints,
               tooltip: 'Reset marks',
             ),
@@ -868,7 +874,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                     onPanStart: _onPanStart,
                     onPanUpdate: _onPanUpdate,
                     child: Container(
-                      color: Colors.white,
+                      color: AppColors.white,
                       child: RepaintBoundary(
                         key: _gridKey,
                         child: SizedBox(
@@ -1006,14 +1012,14 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             Icon(
               icon,
               size: 14,
-              color: isSelected ? Colors.white : _getPointColor(mode),
+              color: isSelected ? AppColors.white : _getPointColor(mode),
             ),
             const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: isSelected ? Colors.white : _getPointColor(mode),
+                color: isSelected ? AppColors.white : _getPointColor(mode),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1061,7 +1067,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.transparent,
+          color: selected ? AppColors.primary : AppColors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
@@ -1070,7 +1076,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : AppColors.textSecondary,
+            color: selected ? AppColors.white : AppColors.textSecondary,
             fontWeight: FontWeight.w500,
             fontSize: 12,
           ),
@@ -1081,7 +1087,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   Widget _buildFallbackGrid() {
     return Container(
-      color: Colors.white,
+      color: AppColors.white,
       child: CustomPaint(painter: _AmslerGridPainter(), size: Size.infinite),
     );
   }
@@ -1132,11 +1138,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     final leftResult = provider.amslerGridLeft;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       appBar: AppBar(
         title: const Text('Test Summary'),
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -1216,7 +1222,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                         child: Text(
                           '$_autoNavigationCountdown',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1271,7 +1277,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                         ? AppColors.primary
                         : null,
                     foregroundColor: provider.isComprehensiveTest
-                        ? Colors.white
+                        ? AppColors.white
                         : null,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -1319,7 +1325,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             child: Text(
               isNormal ? 'Normal' : 'Review',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -1382,7 +1388,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: Colors.black.withValues(alpha: 0.85),
+      color: AppColors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1506,7 +1512,7 @@ class _AmslerGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black
+      ..color = AppColors.amslerGridLine
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
@@ -1535,7 +1541,7 @@ class _AmslerGridPainter extends CustomPainter {
 
     // Draw center dot
     final centerDotPaint = Paint()
-      ..color = Colors.red
+      ..color = AppColors.amslerCenterDot
       ..style = PaintingStyle.fill;
 
     canvas.drawCircle(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/navigation_utils.dart';
 
 /// Comprehensive test result screen
@@ -38,7 +39,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                     title: 'Visual Acuity',
                     results: ['Right Eye: 20/25', 'Left Eye: 20/30'],
                     status: 'Good',
-                    color: Colors.green,
+                    color: AppColors.success,
                   ),
                   const SizedBox(height: 16),
                   _buildResultSection(
@@ -46,7 +47,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                     title: 'Contrast Sensitivity',
                     results: ['Score: 1.65 log units'],
                     status: 'Normal',
-                    color: Colors.green,
+                    color: AppColors.success,
                   ),
                   const SizedBox(height: 16),
                   _buildResultSection(
@@ -54,11 +55,11 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                     title: 'Color Vision',
                     results: ['Ishihara Test: 5/5'],
                     status: 'Normal',
-                    color: Colors.green,
+                    color: AppColors.success,
                   ),
                   const SizedBox(height: 24),
                   Card(
-                    color: Colors.blue.shade50,
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     child: const Padding(
                       padding: EdgeInsets.all(20.0),
                       child: Column(
@@ -66,7 +67,10 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.medical_services, color: Colors.blue),
+                              Icon(
+                                Icons.medical_services,
+                                color: AppColors.primary,
+                              ),
                               SizedBox(width: 12),
                               Text(
                                 'Recommendations',

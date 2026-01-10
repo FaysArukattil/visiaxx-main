@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/widgets/eye_loader.dart';
 
 /// Loading indicator widget with optional message
@@ -19,7 +20,10 @@ class LoadingIndicator extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               message!,
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
             ),
           ],
         ],

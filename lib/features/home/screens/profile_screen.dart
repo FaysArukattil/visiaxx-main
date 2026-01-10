@@ -66,11 +66,11 @@ class ProfileScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.9,
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.white,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(25),
             topRight: Radius.circular(25),
@@ -83,7 +83,7 @@ class ProfileScreen extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -105,7 +105,7 @@ class ProfileScreen extends StatelessWidget {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.grey[100],
+                      backgroundColor: AppColors.background,
                       padding: const EdgeInsets.all(8),
                     ),
                   ),
@@ -128,14 +128,14 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.black,
+            color: AppColors.textPrimary,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
@@ -143,7 +143,7 @@ class ProfileScreen extends StatelessWidget {
         title: const Text(
           'My Profile',
           style: TextStyle(
-            color: Colors.black,
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -301,7 +301,7 @@ class ProfileScreen extends StatelessWidget {
             child: Text(
               user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'U',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.white,
                 fontSize: 40,
                 fontWeight: FontWeight.bold,
               ),
@@ -320,12 +320,12 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           user.email,
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 2),
         Text(
           user.phone,
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -342,18 +342,18 @@ class ProfileScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.grey,
+              color: AppColors.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: AppColors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -402,7 +402,7 @@ class ProfileScreen extends StatelessWidget {
       trailing: const Icon(
         Icons.arrow_forward_ios,
         size: 14,
-        color: Colors.grey,
+        color: AppColors.textSecondary,
       ),
     );
   }
@@ -413,7 +413,7 @@ class ProfileScreen extends StatelessWidget {
       child: ElevatedButton(
         onPressed: () => _handleLogout(context),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.white,
           foregroundColor: AppColors.error,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -513,7 +513,7 @@ class ProfileScreen extends StatelessWidget {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
-            backgroundColor: Colors.transparent,
+            backgroundColor: AppColors.transparent,
             builder: (context) => const ReviewDialog(),
           );
         }
@@ -525,7 +525,7 @@ class ProfileScreen extends StatelessWidget {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         builder: (context) => const ReviewDialog(),
       );
     }
@@ -561,7 +561,11 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           'Our customer support team is available to assist you with any queries or technical issues.',
-          style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5),
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+            height: 1.5,
+          ),
         ),
         const SizedBox(height: 24),
         _buildContactDetailItem(
@@ -624,14 +628,14 @@ class ProfileScreen extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: AppColors.background,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: AppColors.primary, size: 20),
       ),
       title: Text(
         title,
-        style: const TextStyle(fontSize: 13, color: Colors.grey),
+        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
       ),
       subtitle: Text(
         value,
@@ -642,7 +646,11 @@ class ProfileScreen extends StatelessWidget {
         ),
       ),
       trailing: showCopyIcon
-          ? const Icon(Icons.copy_outlined, size: 16, color: Colors.grey)
+          ? const Icon(
+              Icons.copy_outlined,
+              size: 16,
+              color: AppColors.textTertiary,
+            )
           : null,
     );
   }
@@ -850,7 +858,7 @@ class ProfileScreen extends StatelessWidget {
             width: 40,
             height: 1.5,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(1),
             ),
           ),
@@ -862,7 +870,7 @@ class ProfileScreen extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w500,
               fontStyle: FontStyle.italic,
-              color: Colors.grey[500],
+              color: AppColors.textTertiary,
               height: 1.5,
               letterSpacing: 0.2,
             ),
@@ -917,7 +925,7 @@ class _ExpertiseItem extends StatelessWidget {
                   description,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[700],
+                    color: AppColors.textSecondary,
                     height: 1.4,
                   ),
                 ),
@@ -942,9 +950,9 @@ class _LegalSection extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -962,7 +970,7 @@ class _LegalSection extends StatelessWidget {
             content,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.grey[700],
+              color: AppColors.textSecondary,
               height: 1.5,
             ),
           ),

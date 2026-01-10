@@ -11,6 +11,8 @@ import '../../../core/services/test_result_service.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
+import '../../../core/widgets/eye_loader.dart';
+import 'package:visiaxx/core/utils/snackbar_utils.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import '../../../core/widgets/download_success_dialog.dart';
 
@@ -250,7 +252,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
 
   Widget _buildResultsList() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: EyeLoader.fullScreen());
     }
 
     if (_errorMessage != null) {
@@ -300,7 +302,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[900],
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -309,9 +311,9 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                     ? 'Conduct a vision test for a patient\nto see results here'
                     : 'No results matching "$_searchQuery"',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary,
                   height: 1.4,
                 ),
               ),
@@ -419,7 +421,9 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isComprehensive ? const Color(0xFFF0F7FF) : Colors.white,
+        color: isComprehensive
+            ? AppColors.primary.withValues(alpha: 0.05)
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: isComprehensive
             ? Border.all(
@@ -431,7 +435,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
           BoxShadow(
             color: isComprehensive
                 ? AppColors.primary.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.05),
+                : AppColors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -473,7 +477,10 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                       DateFormat(
                         'MMM dd, yyyy • h:mm a',
                       ).format(result.timestamp),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     if (isComprehensive) ...[
                       const SizedBox(height: 4),
@@ -489,7 +496,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                         child: const Text(
                           'FULL EXAMINATION',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontSize: 8,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
@@ -646,7 +653,10 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textSecondary,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -688,12 +698,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
     } catch (e) {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to generate PDF: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Failed to generate PDF: $e');
       }
     }
   }
@@ -709,12 +714,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
     } catch (e) {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to share PDF: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Failed to share PDF: $e');
       }
     }
   }
@@ -755,12 +755,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
       _loadResults(); // Refresh list
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Failed to delete: $e');
       }
     }
   }
@@ -832,7 +827,7 @@ class _ResultDetailSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               DateFormat('MMMM dd, yyyy • h:mm a').format(result.timestamp),
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
             _buildSection('Visual Acuity', [
@@ -997,7 +992,7 @@ class _ResultDetailSheet extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: const TextStyle(color: AppColors.textSecondary)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),

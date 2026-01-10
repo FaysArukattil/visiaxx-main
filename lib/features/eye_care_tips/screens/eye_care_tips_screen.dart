@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/eye_care_tips_data.dart';
 import '../widgets/category_card.dart';
 import 'category_detail_screen.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Main eye care tips screen with categories and daily tip
 class EyeCareTipsScreen extends StatelessWidget {
@@ -13,23 +14,26 @@ class EyeCareTipsScreen extends StatelessWidget {
     final categories = EyeCareTipsData.categories;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             // App Bar
             SliverAppBar(
               floating: true,
-              backgroundColor: const Color(0xFFF8F9FB),
+              backgroundColor: AppColors.background,
               elevation: 0,
               leading: IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A2E)),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppColors.textPrimary,
+                ),
               ),
               title: const Text(
                 'Eye Care Tips',
                 style: TextStyle(
-                  color: Color(0xFF1A1A2E),
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -52,7 +56,7 @@ class EyeCareTipsScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -130,7 +134,7 @@ class EyeCareTipsScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.textOnPrimary,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -178,9 +182,9 @@ class EyeCareTipsScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       _getTodayDate(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
-                        color: Colors.grey[600],
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -219,9 +223,9 @@ class EyeCareTipsScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       tip.description,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[800],
+                        color: AppColors.textPrimary,
                         height: 1.5,
                       ),
                     ),

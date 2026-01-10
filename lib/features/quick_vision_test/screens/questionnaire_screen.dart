@@ -168,7 +168,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               Navigator.pop(context); // Close dialog
               await NavigationUtils.navigateHome(context);
             },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -813,7 +813,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.transparent,
+          color: selected ? AppColors.primary : AppColors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
@@ -822,7 +822,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : AppColors.textSecondary,
+            color: selected ? AppColors.white : AppColors.textSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),

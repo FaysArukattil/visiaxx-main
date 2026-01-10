@@ -343,10 +343,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: AppColors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: Colors.white, size: 36),
+              child: Icon(icon, color: AppColors.white, size: 36),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -356,7 +356,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -365,14 +365,14 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: AppColors.white.withValues(alpha: 0.9),
                       fontSize: 14,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white),
+            const Icon(Icons.arrow_forward_ios, color: AppColors.white),
           ],
         ),
       ),

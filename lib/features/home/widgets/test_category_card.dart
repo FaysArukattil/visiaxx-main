@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Card widget for displaying test categories on home screen
 class TestCategoryCard extends StatelessWidget {
@@ -47,7 +48,7 @@ class TestCategoryCard extends StatelessWidget {
                   color: color,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: Colors.white, size: 32),
+                child: Icon(icon, color: AppColors.white, size: 32),
               ),
               const SizedBox(height: 16),
               Text(
@@ -59,9 +60,9 @@ class TestCategoryCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 description,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 16),
               Row(

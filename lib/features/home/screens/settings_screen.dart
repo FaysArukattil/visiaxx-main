@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -69,58 +71,27 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showDisableInfoSnackbar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.info_outline, color: Colors.white),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Please disable notifications in your device settings',
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 3),
-      ),
+    SnackbarUtils.showInfo(
+      context,
+      'Please disable notifications in your device settings',
     );
   }
 
   void _showSuccessSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    SnackbarUtils.showSuccess(context, message);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.black,
+            color: AppColors.textPrimary,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
@@ -128,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         title: const Text(
           'Settings',
           style: TextStyle(
-            color: Colors.black,
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -136,9 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
+          ? const Center(child: EyeLoader.fullScreen())
           : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
@@ -264,7 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         style: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Colors.grey,
+          color: AppColors.textSecondary,
           letterSpacing: 0.5,
         ),
       ),
@@ -274,11 +243,11 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _buildSettingsCard({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: AppColors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -317,15 +286,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1C1E),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary,
                     height: 1.3,
                   ),
                 ),
@@ -352,9 +321,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       margin: const EdgeInsets.symmetric(horizontal: 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.1),
+        color: AppColors.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.warning.withOpacity(0.3), width: 1),
+        border: Border.all(
+          color: AppColors.warning.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -375,9 +347,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                 const SizedBox(height: 4),
                 Text(
                   'Enable them to receive important eye health updates',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[700],
+                    color: AppColors.textSecondary,
                     height: 1.3,
                   ),
                 ),
@@ -391,7 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
@@ -430,16 +402,23 @@ class _SettingsScreenState extends State<SettingsScreen>
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF1A1C1E),
+          color: AppColors.textPrimary,
         ),
       ),
       subtitle: subtitle != null
           ? Text(
               subtitle,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             )
           : null,
-      trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+      trailing: const Icon(
+        Icons.chevron_right,
+        size: 20,
+        color: AppColors.textSecondary,
+      ),
     );
   }
 
@@ -447,9 +426,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,15 +444,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1C1E),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                const Text(
                   'We\'ll send you reminders for eye tests, health tips, and important updates. You can manage these preferences anytime in your device settings.',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[700],
+                    color: AppColors.textSecondary,
                     height: 1.4,
                   ),
                 ),
@@ -491,16 +470,19 @@ class _SettingsScreenState extends State<SettingsScreen>
         children: [
           Text(
             'Visiaxx Digital Eye Clinic',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Version 1.0.0',
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

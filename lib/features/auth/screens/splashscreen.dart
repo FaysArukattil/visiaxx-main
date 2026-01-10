@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'dart:async';
 import '../../../core/services/auth_service.dart';
@@ -138,7 +139,7 @@ class _SplashScreenState extends State<SplashScreen>
                       children: [
                         const Icon(
                           Icons.warning_amber_rounded,
-                          color: Colors.orange,
+                          color: AppColors.warning,
                           size: 28,
                         ),
                         const SizedBox(width: 12),
@@ -205,7 +206,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -213,7 +214,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.white, Colors.grey.shade50],
+            colors: [AppColors.white, AppColors.surfaceLight],
           ),
         ),
         child: SafeArea(
@@ -251,7 +252,7 @@ class _SplashScreenState extends State<SplashScreen>
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade700,
+                          color: AppColors.textSecondary,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -261,7 +262,7 @@ class _SplashScreenState extends State<SplashScreen>
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w400,
-                          color: Colors.grey.shade500,
+                          color: AppColors.textTertiary,
                           letterSpacing: 1.0,
                         ),
                       ),

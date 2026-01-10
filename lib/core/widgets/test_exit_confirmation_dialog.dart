@@ -46,7 +46,7 @@ class TestExitConfirmationDialog extends StatelessWidget {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -60,8 +60,8 @@ class TestExitConfirmationDialog extends StatelessWidget {
                 onRestart();
               },
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.orange),
-                foregroundColor: Colors.orange,
+                side: const BorderSide(color: AppColors.warning),
+                foregroundColor: AppColors.warning,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

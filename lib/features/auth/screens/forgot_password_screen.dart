@@ -74,7 +74,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -152,7 +152,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Reset Password'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
       ),
       extendBodyBehindAppBar: true,
@@ -220,7 +220,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                               child: const Icon(
                                 Icons.lock_reset_rounded,
                                 size: 40,
-                                color: Colors.white,
+                                color: AppColors.white,
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -255,7 +255,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: AppColors.black.withValues(alpha: 0.05),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -301,7 +301,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                         onPressed: () => Navigator.pop(context),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: AppColors.primary,
-                                          foregroundColor: Colors.white,
+                                          foregroundColor: AppColors.white,
                                           elevation: 0,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
@@ -365,7 +365,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: _resendCountdown > 0
-                                      ? [Colors.grey[400]!, Colors.grey[500]!]
+                                      ? [
+                                          AppColors.textTertiary,
+                                          AppColors.textSecondary,
+                                        ]
                                       : AppColors.primaryGradient,
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
@@ -400,7 +403,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                         height: 24,
                                         child: EyeLoader(
                                           size: 24,
-                                          color: Colors.white,
+                                          color: AppColors.white,
                                         ),
                                       )
                                     : Text(
@@ -412,7 +415,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.white,
+                                          color: AppColors.white,
                                         ),
                                       ),
                               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import '../../../core/constants/app_colors.dart';
 import '../models/exercise_video_model.dart';
 import '../../../core/widgets/eye_loader.dart';
 import 'dart:async';
@@ -155,7 +156,7 @@ class _VideoReelItemState extends State<VideoReelItem>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     if (!_isInitialized) {
       return Container(
-        color: Colors.black,
+        color: AppColors.black,
         child: const Center(child: EyeLoader.fullScreen()),
       );
     }
@@ -187,9 +188,9 @@ class _VideoReelItemState extends State<VideoReelItem>
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.7),
-                    Colors.black.withValues(alpha: 0.3),
-                    Colors.transparent,
+                    AppColors.black.withValues(alpha: 0.7),
+                    AppColors.black.withValues(alpha: 0.3),
+                    AppColors.transparent,
                   ],
                 ),
               ),
@@ -205,7 +206,7 @@ class _VideoReelItemState extends State<VideoReelItem>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: const BoxDecoration(
-                    color: Colors.black45,
+                    color: AppColors.black45,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -213,7 +214,7 @@ class _VideoReelItemState extends State<VideoReelItem>
                         ? Icons.play_arrow
                         : Icons.pause,
                     size: 48,
-                    color: Colors.white70,
+                    color: AppColors.white70,
                   ),
                 ),
               ),
@@ -234,13 +235,13 @@ class _VideoReelItemState extends State<VideoReelItem>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.8),
+                    color: AppColors.error.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
                     'VISIAXX TV',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1,
@@ -251,15 +252,15 @@ class _VideoReelItemState extends State<VideoReelItem>
                 Text(
                   widget.video.title,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     height: 1.2,
                     shadows: [
                       Shadow(
                         blurRadius: 10,
-                        color: Colors.black87,
-                        offset: Offset(0, 2),
+                        color: AppColors.black87,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -269,14 +270,14 @@ class _VideoReelItemState extends State<VideoReelItem>
                   Text(
                     widget.video.description!,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
+                      color: AppColors.white.withValues(alpha: 0.85),
                       fontSize: 15,
                       height: 1.4,
                       shadows: [
                         Shadow(
                           blurRadius: 4,
-                          color: Colors.black45,
-                          offset: Offset(0, 1),
+                          color: AppColors.black45,
+                          offset: const Offset(0, 1),
                         ),
                       ],
                     ),

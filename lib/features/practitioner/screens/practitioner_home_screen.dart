@@ -86,7 +86,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: _isLoading
             ? const Center(child: EyeLoader.fullScreen())
@@ -125,11 +125,11 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                 width: 120,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.white,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: AppColors.black.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -203,7 +203,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     child: Text(
                       _userName.isNotEmpty ? _userName[0].toUpperCase() : 'P',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -218,7 +218,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
             'Hello, $_userName 👋',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.grey[900],
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -226,7 +226,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
             'Ready to help your patients today?',
             style: Theme.of(
               context,
-            ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+            ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -371,8 +371,8 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
               const SizedBox(height: 10),
               Text(
                 slide['content'] as String,
-                style: TextStyle(
-                  color: Colors.grey[800],
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
                   fontSize: 10.5,
                   height: 1.2,
                 ),
@@ -421,11 +421,11 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
       width: 45,
       height: 85,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: AppColors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -438,10 +438,10 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: AppColors.white.withValues(alpha: 0.2),
               child: Icon(
                 Icons.person,
-                color: Colors.white.withValues(alpha: 0.6),
+                color: AppColors.white.withValues(alpha: 0.6),
                 size: 28,
               ),
             );
@@ -468,8 +468,8 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
         const SizedBox(height: 8),
         Text(
           slide['content'] as String,
-          style: TextStyle(
-            color: Colors.grey[800],
+          style: const TextStyle(
+            color: AppColors.textSecondary,
             fontSize: 11.5,
             height: 1.4,
           ),
@@ -509,7 +509,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           decoration: BoxDecoration(
             color: _currentCarouselIndex == index
                 ? AppColors.primary
-                : Colors.grey[300],
+                : AppColors.border,
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -524,7 +524,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
-          color: Colors.grey[900],
+          color: AppColors.textPrimary,
         ),
       ),
     );
@@ -621,11 +621,11 @@ class _ServiceCard extends StatelessWidget {
         height: 130,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: AppColors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -652,7 +652,10 @@ class _ServiceCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle!,
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -686,11 +689,11 @@ class _WideServiceCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: AppColors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -715,7 +718,7 @@ class _WideServiceCard extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.black,
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -723,12 +726,19 @@ class _WideServiceCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: AppColors.textTertiary,
+              size: 16,
+            ),
           ],
         ),
       ),

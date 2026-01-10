@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import '../../../data/models/test_result_model.dart';
 
 /// Practitioner Dashboard with tabbed interface
@@ -114,9 +115,7 @@ class _PractitionerDashboardScreenState
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications coming soon')),
-              );
+              SnackbarUtils.showInfo(context, 'Notifications coming soon');
             },
           ),
           PopupMenuButton<String>(
@@ -161,7 +160,7 @@ class _PractitionerDashboardScreenState
                       child: Text(
                         '${_pendingResults.length}',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -190,7 +189,7 @@ class _PractitionerDashboardScreenState
                       child: Text(
                         '${_flaggedResults.length}',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -336,7 +335,7 @@ class _PractitionerDashboardScreenState
                               child: const Text(
                                 'NEW',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -549,12 +548,7 @@ class _PractitionerDashboardScreenState
             result.isReviewed = true;
           });
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Notes saved successfully'),
-              backgroundColor: AppColors.success,
-            ),
-          );
+          SnackbarUtils.showSuccess(context, 'Notes saved successfully');
         },
       ),
     );
@@ -674,7 +668,7 @@ class _PatientDetailSheetState extends State<_PatientDetailSheet> {
                   child: Text(
                     widget.result.status.label,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

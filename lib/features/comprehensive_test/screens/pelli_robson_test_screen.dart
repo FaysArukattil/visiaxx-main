@@ -769,7 +769,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -788,8 +788,8 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   _restartCurrentTest();
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.orange),
-                  foregroundColor: Colors.orange,
+                  side: const BorderSide(color: AppColors.warning),
+                  foregroundColor: AppColors.warning,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -888,7 +888,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   Widget build(BuildContext context) {
     if (_showingInstructions) {
       return const Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         body: SizedBox.shrink(),
       );
     }
@@ -899,11 +899,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         if (!didPop) _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: const Color(
-          0xFFFFFFFF,
-        ), // Pure white for clinical accuracy
+        backgroundColor: AppColors.white, // Pure white for clinical accuracy
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.white,
           elevation: 0,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -911,7 +909,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             children: [
               Text(
                 'Contrast Test - ${_currentMode == 'short' ? '40cm' : '1m'}',
-                style: const TextStyle(color: Colors.black87, fontSize: 16),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                ),
               ),
               Text(
                 '${_currentEye.toUpperCase()} EYE',
@@ -926,7 +927,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             ],
           ),
           leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.black87),
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: _showExitConfirmation,
           ),
           actions: [
@@ -973,7 +974,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               child: Center(
                 child: Text(
                   'Screen ${_currentScreenIndex + 1}/${PelliRobsonScoring.totalScreens}',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ),
@@ -989,7 +993,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                     value:
                         (_currentScreenIndex + 1) /
                         PelliRobsonScoring.totalScreens,
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: AppColors.border,
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       AppColors.primary,
                     ),
@@ -1045,7 +1049,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               label: const Text('Visible'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1138,14 +1142,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isCurrent
-            ? Colors.blue.withValues(
+            ? AppColors.primary.withValues(
                 alpha: 0.15,
-              ) // Explicit blue for current triplet
-            : Colors.transparent, // No background for next or other triplets
+              ) // Explicit primary for current triplet
+            : AppColors.transparent, // No background for next or other triplets
         borderRadius: BorderRadius.circular(12),
         border: isCurrent
             ? Border.all(
-                color: Colors.blue, // Explicit blue border
+                color: AppColors.primary, // Explicit primary border
                 width: 3, // Thicker border to make it more prominent
               )
             : null, // No border for next or other triplets
@@ -1164,7 +1168,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   fontSize: fontSize,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Sloan',
-                  color: Colors.black,
+                  color: AppColors.black,
                 ),
               ),
             );
@@ -1267,7 +1271,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: Colors.black.withValues(alpha: 0.85),
+      color: AppColors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),

@@ -168,7 +168,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                             width: 60,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.7),
+                              color: AppColors.black.withValues(alpha: 0.7),
                               borderRadius: BorderRadius.only(
                                 topLeft: widget.eyeToCover == 'left'
                                     ? const Radius.circular(40)
@@ -271,7 +271,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                               children: [
                                 EyeLoader(
                                   size: 20,
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   value: 1 - (_countdown / 3),
                                 ),
                                 const SizedBox(width: 12),

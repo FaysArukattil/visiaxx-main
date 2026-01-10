@@ -80,25 +80,25 @@ class _AmslerGridDrawingAnimationState extends State<AmslerGridDrawingAnimation>
                 builder: (context, child) {
                   String label = "";
                   Color color = AppColors.primary;
-                  
+
                   if (_progress.value < 0.15) {
                     label = "Select 'Wavy'";
-                    color = Colors.red;
+                    color = AppColors.error;
                   } else if (_progress.value < 0.35) {
                     label = "Draw wavy lines";
-                    color = Colors.red;
+                    color = AppColors.error;
                   } else if (_progress.value < 0.45) {
                     label = "Select 'Missing'";
-                    color = Colors.blue;
+                    color = AppColors.primary;
                   } else if (_progress.value < 0.65) {
                     label = "Mark missing area";
-                    color = Colors.blue;
+                    color = AppColors.primary;
                   } else if (_progress.value < 0.75) {
                     label = "Select 'Blurry'";
-                    color = Colors.orange;
+                    color = AppColors.warning;
                   } else if (_progress.value < 0.95) {
                     label = "Mark blurry area";
-                    color = Colors.orange;
+                    color = AppColors.warning;
                   } else {
                     label = "Try again";
                     color = AppColors.primary;
@@ -136,7 +136,7 @@ class _MockAmslerGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.grey.withValues(alpha: 0.3)
+      ..color = AppColors.grey.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -152,12 +152,12 @@ class _MockAmslerGridPainter extends CustomPainter {
     canvas.drawCircle(
       Offset(size.width / 2, size.height / 2),
       3,
-      Paint()..color = Colors.black,
+      Paint()..color = AppColors.black,
     );
 
     // Draw a wavy area (simulated distortion)
     final wavyPaint = Paint()
-      ..color = Colors.black
+      ..color = AppColors.black
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
@@ -196,7 +196,7 @@ class _AnimationPainter extends CustomPainter {
         _drawHand(canvas, const Offset(40, 180), handPaint);
       } else {
         final subProgress = (progress - 0.15) / 0.2;
-        drawingPaint.color = Colors.red;
+        drawingPaint.color = AppColors.error;
         final path = Path();
         const startX = 20.0;
         final endX = 20.0 + (60.0 * subProgress);
@@ -216,7 +216,7 @@ class _AnimationPainter extends CustomPainter {
         _drawHand(canvas, const Offset(100, 180), handPaint);
       } else {
         final subProgress = (progress - 0.45) / 0.2;
-        drawingPaint.color = Colors.blue;
+        drawingPaint.color = AppColors.primary;
         final path = Path();
         const startX = 120.0;
         final endX = 120.0 + (50.0 * subProgress);
@@ -227,11 +227,20 @@ class _AnimationPainter extends CustomPainter {
           path.lineTo(x, y);
         }
         // Draw a cloud-like shape for missing area
-        final missingFillPaint = Paint()..color = Colors.blue.withValues(alpha: 0.2);
-        canvas.drawCircle(const Offset(145, 150), subProgress * 15, missingFillPaint);
-        
+        final missingFillPaint = Paint()
+          ..color = AppColors.primary.withValues(alpha: 0.2);
+        canvas.drawCircle(
+          const Offset(145, 150),
+          subProgress * 15,
+          missingFillPaint,
+        );
+
         canvas.drawPath(path, drawingPaint);
-        _drawHand(canvas, Offset(endX, centerY + 4 * math.sin((endX - 120) / 4)), handPaint);
+        _drawHand(
+          canvas,
+          Offset(endX, centerY + 4 * math.sin((endX - 120) / 4)),
+          handPaint,
+        );
       }
     }
     // Phase 3: Select/Mark Blurry (0.65 to 0.95)
@@ -241,7 +250,7 @@ class _AnimationPainter extends CustomPainter {
         _drawHand(canvas, const Offset(160, 180), handPaint);
       } else {
         final subProgress = (progress - 0.75) / 0.2;
-        drawingPaint.color = Colors.orange;
+        drawingPaint.color = AppColors.warning;
         final path = Path();
         const startX = 30.0;
         final endX = 30.0 + (50.0 * subProgress);
@@ -251,12 +260,21 @@ class _AnimationPainter extends CustomPainter {
           final y = centerY + 6 * math.cos((x - 30) / 5);
           path.lineTo(x, y);
         }
-        // Draw a blur-like shape 
-        final blurryFillPaint = Paint()..color = Colors.orange.withValues(alpha: 0.2);
-        canvas.drawCircle(const Offset(55, 140), subProgress * 18, blurryFillPaint);
+        // Draw a blur-like shape
+        final blurryFillPaint = Paint()
+          ..color = AppColors.warning.withValues(alpha: 0.2);
+        canvas.drawCircle(
+          const Offset(55, 140),
+          subProgress * 18,
+          blurryFillPaint,
+        );
 
         canvas.drawPath(path, drawingPaint);
-        _drawHand(canvas, Offset(endX, centerY + 6 * math.cos((endX - 30) / 5)), handPaint);
+        _drawHand(
+          canvas,
+          Offset(endX, centerY + 6 * math.cos((endX - 30) / 5)),
+          handPaint,
+        );
       }
     }
   }
@@ -264,9 +282,9 @@ class _AnimationPainter extends CustomPainter {
   void _drawModeSelector(Canvas canvas, Size size, String selectedMode) {
     const buttonY = 180.0;
     final modes = [
-      {'name': 'wavy', 'x': 40.0, 'color': Colors.red},
-      {'name': 'missing', 'x': 100.0, 'color': Colors.blue},
-      {'name': 'blurry', 'x': 160.0, 'color': Colors.orange},
+      {'name': 'wavy', 'x': 40.0, 'color': AppColors.error},
+      {'name': 'missing', 'x': 100.0, 'color': AppColors.primary},
+      {'name': 'blurry', 'x': 160.0, 'color': AppColors.warning},
     ];
 
     for (var mode in modes) {
@@ -275,11 +293,13 @@ class _AnimationPainter extends CustomPainter {
       final x = mode['x'] as double;
 
       final buttonPaint = Paint()
-        ..color = isSelected ? color.withAlpha(76) : Colors.grey.withAlpha(51)
+        ..color = isSelected
+            ? color.withAlpha(76)
+            : AppColors.grey.withAlpha(51)
         ..style = PaintingStyle.fill;
 
       final borderPaint = Paint()
-        ..color = isSelected ? color : Colors.grey
+        ..color = isSelected ? color : AppColors.grey
         ..style = PaintingStyle.stroke
         ..strokeWidth = isSelected ? 2.0 : 1.0;
 
@@ -315,7 +335,7 @@ class _AnimationPainter extends CustomPainter {
     canvas.drawRect(const Rect.fromLTWH(-4, 0, 8, 20), iconPaint);
 
     // Add white dot for touch feedback
-    canvas.drawCircle(Offset.zero, 3, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset.zero, 3, Paint()..color = AppColors.white);
 
     canvas.restore();
   }

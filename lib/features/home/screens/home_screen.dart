@@ -102,12 +102,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showLanguageSelector() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.6,
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -117,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppColors.divider,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppColors.primary.withValues(alpha: 0.1)
-                            : Colors.grey[100],
+                            : AppColors.background,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.bold,
                             color: isSelected
                                 ? AppColors.primary
-                                : Colors.grey[600],
+                                : AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -170,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     subtitle: Text(
                       language['native']!,
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: const TextStyle(color: AppColors.textSecondary),
                     ),
                     trailing: isSelected
                         ? const Icon(
@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           SafeArea(
             child: _isLoading
-                ? const Center(child: EyeLoader(size: 50))
+                ? const Center(child: EyeLoader.fullScreen())
                 : SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,8 +223,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_isConsultationLoading)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withValues(alpha: 0.1),
-                child: const Center(child: EyeLoader(size: 80)),
+                color: AppColors.black.withValues(alpha: 0.1),
+                child: const Center(child: EyeLoader.fullScreen()),
               ),
             ),
         ],
@@ -249,11 +249,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 120,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.white,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: AppColors.black.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -279,27 +279,31 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.white,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.language, size: 18, color: Colors.grey[700]),
+                      Icon(
+                        Icons.language,
+                        size: 18,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         selectedLang['code']!.toUpperCase(),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
-                          color: Colors.grey[800],
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      Icon(
+                      const Icon(
                         Icons.keyboard_arrow_down,
                         size: 18,
-                        color: Colors.grey[600],
+                        color: AppColors.textSecondary,
                       ),
                     ],
                   ),
@@ -330,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ? _user!.firstName[0].toUpperCase()
                           : 'U',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -345,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'Hello, ${_user?.firstName ?? 'User'} 👋',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.grey[900],
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -353,7 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'How can we help you today?',
             style: Theme.of(
               context,
-            ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+            ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -499,8 +503,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               Text(
                 slide['content'] as String,
-                style: TextStyle(
-                  color: Colors.grey[800],
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
                   fontSize: 10.5,
                   height: 1.2,
                 ),
@@ -549,11 +553,11 @@ class _HomeScreenState extends State<HomeScreen> {
       width: 45, // Reduced from 50
       height: 85, // Reduced from 100
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: AppColors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -566,10 +570,10 @@ class _HomeScreenState extends State<HomeScreen> {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: AppColors.white.withValues(alpha: 0.2),
               child: Icon(
                 Icons.person,
-                color: Colors.white.withValues(alpha: 0.6),
+                color: AppColors.white.withValues(alpha: 0.6),
                 size: 28,
               ),
             );
@@ -596,8 +600,8 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 8),
         Text(
           slide['content'] as String,
-          style: TextStyle(
-            color: Colors.grey[800],
+          style: const TextStyle(
+            color: AppColors.textSecondary,
             fontSize: 11.5,
             height: 1.4,
           ),
@@ -637,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             color: _currentCarouselIndex == index
                 ? AppColors.primary
-                : Colors.grey[300],
+                : AppColors.divider,
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -652,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
-          color: Colors.grey[900],
+          color: AppColors.textPrimary,
         ),
       ),
     );
@@ -758,11 +762,11 @@ class _ServiceCard extends StatelessWidget {
         height: 130,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: AppColors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -786,7 +790,7 @@ class _ServiceCard extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: Color(0xFF1A1A2E),
+                color: AppColors.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

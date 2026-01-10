@@ -93,7 +93,7 @@ class _WearSpecsAnimationState extends State<WearSpecsAnimation>
                             width: eyeSize,
                             height: eyeSize,
                             decoration: const BoxDecoration(
-                              color: Colors.black,
+                              color: AppColors.textPrimary,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -105,7 +105,7 @@ class _WearSpecsAnimationState extends State<WearSpecsAnimation>
                             width: eyeSize,
                             height: eyeSize,
                             decoration: const BoxDecoration(
-                              color: Colors.black,
+                              color: AppColors.textPrimary,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -120,7 +120,7 @@ class _WearSpecsAnimationState extends State<WearSpecsAnimation>
                             decoration: const BoxDecoration(
                               border: Border(
                                 bottom: BorderSide(
-                                  color: Colors.black,
+                                  color: AppColors.textPrimary,
                                   width: 3,
                                 ),
                               ),
@@ -171,7 +171,7 @@ class _WearSpecsAnimationState extends State<WearSpecsAnimation>
                       ),
                       child: Icon(
                         Icons.check,
-                        color: Colors.white,
+                        color: AppColors.surface,
                         size: widget.isCompact ? 16 : 20,
                       ),
                     ),
@@ -189,7 +189,7 @@ class _GlassesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black
+      ..color = AppColors.textPrimary
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
 

@@ -331,7 +331,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               Navigator.pop(context); // Close dialog
               await NavigationUtils.navigateHome(context);
             },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -347,7 +347,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.black,
         body: SafeArea(
           child: _isInitializing
               ? _buildLoadingView()
@@ -369,7 +369,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           Text(
             'Initializing Camera...',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: AppColors.white.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
@@ -388,13 +388,13 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
             const Icon(
               Icons.camera_alt_outlined,
               size: 80,
-              color: Colors.white54,
+              color: AppColors.white54,
             ),
             const SizedBox(height: 24),
             Text(
               'Camera Not Available',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
+                color: AppColors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -403,7 +403,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               _errorMessage ??
                   'Unable to access the camera for distance measurement.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+              style: TextStyle(color: AppColors.white.withValues(alpha: 0.7)),
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
@@ -416,7 +416,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               onPressed: _onSkipPressed,
               child: const Text(
                 'Skip Distance Check',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: AppColors.white70),
               ),
             ),
           ],
@@ -448,7 +448,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         else
           // ✅ ENHANCED: Better loading state
           Container(
-            color: Colors.black87, // Dark but not pure black
+            color: AppColors.black87, // Dark but not pure black
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -459,7 +459,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                   Text(
                     _hasError ? 'Camera not available' : 'Starting camera...',
                     style: TextStyle(
-                      color: _hasError ? AppColors.error : Colors.white,
+                      color: _hasError ? AppColors.error : AppColors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -469,7 +469,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                     _hasError
                         ? 'Please allow camera permission'
                         : 'This may take a few seconds',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: AppColors.white70, fontSize: 12),
                   ),
                   if (_hasError) ...[
                     const SizedBox(height: 16),
@@ -479,7 +479,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                       label: const Text('Try Again'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.white,
                       ),
                     ),
                   ],
@@ -499,8 +499,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withValues(alpha: 0.7),
-                  Colors.transparent,
+                  AppColors.black.withValues(alpha: 0.7),
+                  AppColors.transparent,
                 ],
               ),
             ),
@@ -519,8 +519,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  Colors.black.withValues(alpha: 0.85),
-                  Colors.transparent,
+                  AppColors.black.withValues(alpha: 0.85),
+                  AppColors.transparent,
                 ],
               ),
             ),
@@ -557,14 +557,14 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                         _distanceService.stopMonitoring();
                         Navigator.of(context).pop();
                       },
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: const Icon(Icons.close, color: AppColors.white),
                     ),
                     const Expanded(
                       child: Text(
                         'Distance Calibration',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -603,7 +603,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
+        color: AppColors.black.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -622,7 +622,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           Text(
             'Target: ${widget.targetDistanceCm.toInt()} cm (±${widget.toleranceCm.toInt()} cm)',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
+              color: AppColors.white.withValues(alpha: 0.6),
               fontSize: 14,
             ),
           ),
@@ -650,7 +650,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           Text(
             message,
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -674,7 +674,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               ? 'Hold still...'
               : 'Adjust your position',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
+            color: AppColors.white.withValues(alpha: 0.8),
             fontSize: 14,
           ),
         ),
@@ -683,7 +683,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           width: 200,
           height: 6,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
+            color: AppColors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(3),
           ),
           child: FractionallySizedBox(
@@ -714,7 +714,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               onPressed: _isDistanceStable ? _onContinuePressed : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
-                disabledBackgroundColor: Colors.grey.shade700,
+                disabledBackgroundColor: AppColors.textTertiary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -725,13 +725,13 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                 children: [
                   Icon(
                     _isDistanceStable ? Icons.check_circle : Icons.lock,
-                    color: Colors.white,
+                    color: AppColors.white,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     _isDistanceStable ? 'Continue to Test' : 'Adjust Distance',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -745,7 +745,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
             onPressed: _onSkipPressed,
             child: Text(
               'Skip Distance Calibration',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+              style: TextStyle(color: AppColors.white.withValues(alpha: 0.7)),
             ),
           ),
         ],
@@ -762,7 +762,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
       case DistanceStatus.tooFar:
         return AppColors.warning;
       case DistanceStatus.noFaceDetected:
-        return Colors.white54;
+        return AppColors.white54;
       case DistanceStatus.faceDetectedNoDistance:
         return AppColors.successLight; // Face visible, using cached distance
     }

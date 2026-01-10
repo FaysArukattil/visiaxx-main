@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 
 /// Distance check dialog to ensure proper viewing distance
 class DistanceCheckDialog extends StatelessWidget {
   final double recommendedDistance; // in cm
 
-  const DistanceCheckDialog({
-    super.key,
-    this.recommendedDistance = 40.0,
-  });
+  const DistanceCheckDialog({super.key, this.recommendedDistance = 40.0});
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.straighten, color: Colors.blue),
+          Icon(Icons.straighten, color: AppColors.primary),
           SizedBox(width: 8),
           Text('Viewing Distance'),
         ],
@@ -29,7 +27,7 @@ class DistanceCheckDialog extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Card(
-            color: Colors.blue.shade50,
+            color: AppColors.primary.withValues(alpha: 0.05),
             child: const Padding(
               padding: EdgeInsets.all(12.0),
               child: Column(
@@ -51,7 +49,7 @@ class DistanceCheckDialog extends StatelessWidget {
           const SizedBox(height: 16),
           const Row(
             children: [
-              Icon(Icons.info_outline, size: 20, color: Colors.orange),
+              Icon(Icons.info_outline, size: 20, color: AppColors.warning),
               SizedBox(width: 8),
               Expanded(
                 child: Text(

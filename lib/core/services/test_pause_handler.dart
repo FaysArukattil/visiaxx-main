@@ -93,11 +93,11 @@ class TestPauseHandler {
       barrierDismissible: false,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         child: Container(
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.white,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
@@ -132,7 +132,7 @@ class TestPauseHandler {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[900],
+                  color: AppColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -144,7 +144,7 @@ class TestPauseHandler {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -154,7 +154,7 @@ class TestPauseHandler {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
-                  color: Colors.grey[800],
+                  color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -174,7 +174,7 @@ class TestPauseHandler {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -244,7 +244,7 @@ class TestPauseHandler {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[900],
+                  color: AppColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -254,7 +254,7 @@ class TestPauseHandler {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -266,7 +266,7 @@ class TestPauseHandler {
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: Colors.grey[300]!),
+                        side: BorderSide(color: AppColors.divider),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -293,7 +293,7 @@ class TestPauseHandler {
                       ),
                       child: const Text(
                         'Yes, Exit',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppColors.white),
                       ),
                     ),
                   ),

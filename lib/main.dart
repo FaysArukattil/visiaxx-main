@@ -48,15 +48,17 @@ import 'core/providers/network_connectivity_provider.dart';
 import 'core/services/aws_credentials_manager.dart';
 import 'core/services/session_monitor_service.dart';
 
+import 'core/constants/app_colors.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set system UI FIRST
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
+      statusBarColor: AppColors.transparent,
       statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
+      systemNavigationBarColor: AppColors.white,
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );

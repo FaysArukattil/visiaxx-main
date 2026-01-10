@@ -4,6 +4,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:printing/printing.dart';
 import '../../core/constants/app_colors.dart';
+import '../widgets/eye_loader.dart';
 
 class DownloadSuccessDialog extends StatefulWidget {
   final String filePath;
@@ -186,15 +187,15 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 0,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: AppColors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -416,12 +417,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                AppColors.primary,
-                              ),
-                            ),
+                            child: EyeLoader.button(),
                           )
                         : const Icon(Icons.share_outlined, size: 18),
                     label: Text(_isSharing ? 'Sharing...' : 'Share'),
@@ -449,12 +445,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
+                            child: EyeLoader.button(),
                           )
                         : const Icon(Icons.open_in_new, size: 18),
                     label: Text(_isOpening ? 'Opening...' : 'Open'),
@@ -462,7 +453,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
                       backgroundColor: isAnyActionInProgress
                           ? AppColors.primary.withOpacity(0.5)
                           : AppColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -485,12 +476,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.primary,
-                          ),
-                        ),
+                        child: EyeLoader.button(),
                       )
                     : const Icon(Icons.file_download_outlined, size: 18),
                 label: Text(

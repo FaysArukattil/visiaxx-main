@@ -360,7 +360,7 @@ class AppTheme {
     return CardThemeData(
       elevation: 2,
       color: AppColors.surfaceDark,
-      shadowColor: Colors.black26,
+      shadowColor: AppColors.black26,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.symmetric(vertical: 8),
     );

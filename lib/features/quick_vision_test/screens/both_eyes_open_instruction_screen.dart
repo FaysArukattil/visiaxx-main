@@ -145,7 +145,7 @@ class _BothEyesOpenInstructionScreenState
               Navigator.pop(context);
               await NavigationUtils.navigateHome(context);
             },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -268,7 +268,7 @@ class _BothEyesOpenInstructionScreenState
                             children: [
                               EyeLoader(
                                 size: 20,
-                                color: Colors.white,
+                                color: AppColors.white,
                                 value: 1 - (_countdown / 3),
                               ),
                               const SizedBox(width: 12),

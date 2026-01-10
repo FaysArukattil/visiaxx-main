@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Relaxation animation widget to show between tests
 class RelaxationAnimation extends StatefulWidget {
@@ -52,11 +53,7 @@ class _RelaxationAnimationState extends State<RelaxationAnimation>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.remove_red_eye,
-            size: 80,
-            color: Colors.blue,
-          ),
+          const Icon(Icons.remove_red_eye, size: 80, color: AppColors.primary),
           const SizedBox(height: 32),
           Text(
             'Relax Your Eyes',

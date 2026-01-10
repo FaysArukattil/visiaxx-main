@@ -166,7 +166,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -185,8 +185,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   _restartCurrentTest();
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.orange),
-                  foregroundColor: Colors.orange,
+                  side: const BorderSide(color: AppColors.warning),
+                  foregroundColor: AppColors.warning,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -953,8 +953,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             },
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.zero,
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
+              backgroundColor: AppColors.transparent,
+              shadowColor: AppColors.transparent,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -970,18 +970,20 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isSelected && !isCorrect
-                        ? Colors.red.withValues(alpha: 0.2)
+                        ? AppColors.error.withValues(alpha: 0.2)
                         : isSelected && isCorrect
-                        ? Colors.green.withValues(alpha: 0.2)
+                        ? AppColors.success.withValues(alpha: 0.2)
                         : isSelected
                         ? AppColors.primary.withValues(alpha: 0.2)
-                        : Colors.transparent,
+                        : AppColors.transparent,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
                           ? (isCorrect
-                                ? Colors.green
-                                : (isWrong ? Colors.red : AppColors.primary))
+                                ? AppColors.success
+                                : (isWrong
+                                      ? AppColors.error
+                                      : AppColors.primary))
                           : AppColors.primary.withValues(alpha: 0.3),
                       width: isSelected ? 3 : 2,
                     ),
@@ -990,9 +992,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                             BoxShadow(
                               color:
                                   (isCorrect
-                                          ? Colors.green
+                                          ? AppColors.success
                                           : (isWrong
-                                                ? Colors.red
+                                                ? AppColors.error
                                                 : AppColors.primary))
                                       .withValues(alpha: 0.4),
                               blurRadius: 10,
@@ -1009,8 +1011,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                         fontWeight: FontWeight.bold,
                         color: isSelected
                             ? (isCorrect
-                                  ? Colors.green
-                                  : (isWrong ? Colors.red : AppColors.primary))
+                                  ? AppColors.success
+                                  : (isWrong
+                                        ? AppColors.error
+                                        : AppColors.primary))
                             : AppColors.textPrimary,
                       ),
                     ),
@@ -1251,7 +1255,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: Colors.black.withValues(alpha: 0.85),
+      color: AppColors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),

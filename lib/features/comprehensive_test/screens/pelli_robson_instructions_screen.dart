@@ -121,7 +121,7 @@ class _PelliRobsonInstructionsScreenState
               Navigator.pop(context); // Close dialog
               await NavigationUtils.navigateHome(context);
             },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -282,7 +282,7 @@ class _PelliRobsonInstructionsScreenState
                         onPressed: _nextStep,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

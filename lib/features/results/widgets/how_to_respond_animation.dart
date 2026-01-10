@@ -152,7 +152,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                                     style: TextStyle(
                                       fontSize: eSize,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -163,7 +163,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                                 child: Icon(
                                   Icons.blur_on,
                                   size: eSize,
-                                  color: Colors.grey.shade300,
+                                  color: AppColors.grey.withValues(alpha: 0.3),
                                 ),
                               ),
 
@@ -300,7 +300,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
             decoration: BoxDecoration(
               color: isActive && pressProgress > 0
                   ? AppColors.primary
-                  : Colors.blue,
+                  : AppColors.primary,
               borderRadius: BorderRadius.circular(12),
               boxShadow: isActive && pressProgress > 0
                   ? [
@@ -312,13 +312,13 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                     ]
                   : [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: AppColors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
                     ],
             ),
-            child: Icon(icon, color: Colors.white, size: size * 0.5),
+            child: Icon(icon, color: AppColors.surface, size: size * 0.5),
           ),
         ),
       ),
@@ -342,7 +342,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
         decoration: BoxDecoration(
           color: isActive && pressProgress > 0
               ? AppColors.warning
-              : Colors.orange.shade100,
+              : AppColors.warning.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.warning, width: 2),
           boxShadow: isActive && pressProgress > 0
@@ -355,7 +355,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: AppColors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -368,7 +368,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
               Icons.visibility_off,
               size: isCompact ? 16 : 18,
               color: isActive && pressProgress > 0
-                  ? Colors.white
+                  ? AppColors.white
                   : AppColors.warning,
             ),
             const SizedBox(width: 8),
@@ -379,7 +379,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                   fontSize: isCompact ? 12 : 14,
                   fontWeight: FontWeight.w600,
                   color: isActive && pressProgress > 0
-                      ? Colors.white
+                      ? AppColors.surface
                       : AppColors.warning,
                 ),
                 overflow: TextOverflow.ellipsis,

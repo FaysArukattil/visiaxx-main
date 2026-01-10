@@ -105,11 +105,11 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.black87,
+            color: AppColors.surfaceDark.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: AppColors.cardShadow,
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -130,7 +130,7 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
                       widget.isListening ? Icons.mic : Icons.mic_none,
                       color: widget.isListening
                           ? AppColors.primary
-                          : Colors.white70,
+                          : AppColors.textOnDark.withValues(alpha: 0.7),
                       size: 20,
                     ),
                   );
@@ -159,7 +159,7 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
         _displayedText!,
         key: ValueKey(_displayedText),
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.textOnDark,
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
@@ -175,7 +175,7 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
           const Text(
             'Listening...',
             style: TextStyle(
-              color: Colors.white70,
+              color: AppColors.textOnDark.withValues(alpha: 0.7),
               fontSize: 14,
               fontStyle: FontStyle.italic,
             ),

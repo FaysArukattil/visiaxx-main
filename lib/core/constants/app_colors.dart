@@ -106,4 +106,19 @@ class AppColors {
   static const Color userRole = Color(0xFF007AFF);
   static const Color examinerRole = Color(0xFF5856D6);
   static const Color adminRole = Color(0xFFFF3B30);
+
+  // Common Colors
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color white70 = Color(0xB3FFFFFF);
+  static const Color white54 = Color(0x8AFFFFFF);
+  static const Color white24 = Color(0x3DFFFFFF);
+  static const Color white12 = Color(0x1FFFFFFF);
+  static const Color black = Color(0xFF000000);
+  static const Color black87 = Color(0xDD000000);
+  static const Color black54 = Color(0x8A000000);
+  static const Color black45 = Color(0x73000000);
+  static const Color black26 = Color(0x42000000);
+  static const Color black12 = Color(0x1F000000);
+  static const Color transparent = Color(0x00000000);
+  static const Color grey = Color(0xFF8E8E93);
 }

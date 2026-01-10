@@ -125,7 +125,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
               Navigator.pop(context); // Close dialog
               await NavigationUtils.navigateHome(context);
             },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),

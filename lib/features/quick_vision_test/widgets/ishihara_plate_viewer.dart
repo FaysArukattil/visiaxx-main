@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Ishihara plate viewer widget for color vision testing
 /// Supports both PNG and SVG formats
@@ -24,10 +25,10 @@ class IshiharaPlateViewer extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white,
+        color: AppColors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: AppColors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -56,16 +57,16 @@ class IshiharaPlateViewer extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return Container(
-      color: Colors.grey.shade200,
+      color: AppColors.grey.withValues(alpha: 0.2),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.palette, size: 64, color: Colors.grey),
+            const Icon(Icons.palette, size: 64, color: AppColors.grey),
             const SizedBox(height: 8),
             Text(
               'Plate $plateNumber',
-              style: const TextStyle(color: Colors.grey),
+              style: const TextStyle(color: AppColors.grey),
             ),
           ],
         ),

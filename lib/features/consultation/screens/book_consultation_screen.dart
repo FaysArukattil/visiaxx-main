@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Book consultation screen
 class BookConsultationScreen extends StatefulWidget {
@@ -22,9 +23,7 @@ class _BookConsultationScreenState extends State<BookConsultationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Book Consultation'),
-      ),
+      appBar: AppBar(title: const Text('Book Consultation')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -32,9 +31,9 @@ class _BookConsultationScreenState extends State<BookConsultationScreen> {
           children: [
             Text(
               'Schedule Your Appointment',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             Card(
@@ -94,7 +93,9 @@ class _BookConsultationScreenState extends State<BookConsultationScreen> {
                           context: context,
                           initialDate: DateTime.now(),
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 90)),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 90),
+                          ),
                         );
                         if (date != null) {
                           setState(() {
@@ -105,7 +106,7 @@ class _BookConsultationScreenState extends State<BookConsultationScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(color: AppColors.border),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -155,7 +156,7 @@ class _BookConsultationScreenState extends State<BookConsultationScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(color: AppColors.border),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -193,7 +194,9 @@ class _BookConsultationScreenState extends State<BookConsultationScreen> {
   }
 
   bool _canBookAppointment() {
-    return _selectedDoctor != null && _selectedDate != null && _selectedTime != null;
+    return _selectedDoctor != null &&
+        _selectedDate != null &&
+        _selectedTime != null;
   }
 
   void _bookAppointment() {
@@ -207,7 +210,9 @@ class _BookConsultationScreenState extends State<BookConsultationScreen> {
           children: [
             Text('Doctor: $_selectedDoctor'),
             const SizedBox(height: 8),
-            Text('Date: ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
+            Text(
+              'Date: ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+            ),
             const SizedBox(height: 8),
             Text('Time: ${_selectedTime!.format(context)}'),
           ],

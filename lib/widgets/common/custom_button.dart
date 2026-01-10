@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/widgets/eye_loader.dart';
 
 /// Custom button widget with consistent styling
@@ -24,17 +25,13 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final buttonStyle = isOutlined
         ? OutlinedButton.styleFrom(
-            foregroundColor: color ?? Theme.of(context).primaryColor,
-            side: BorderSide(color: color ?? Theme.of(context).primaryColor),
+            foregroundColor: color ?? AppColors.primary,
+            side: BorderSide(color: color ?? AppColors.primary),
           )
-        : ElevatedButton.styleFrom(backgroundColor: color);
+        : ElevatedButton.styleFrom(backgroundColor: color ?? AppColors.primary);
 
     final child = isLoading
-        ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: EyeLoader(size: 20, color: Colors.white),
-          )
+        ? const SizedBox(width: 20, height: 20, child: EyeLoader.button())
         : Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,

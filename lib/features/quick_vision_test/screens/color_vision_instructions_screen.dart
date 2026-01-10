@@ -110,7 +110,7 @@ class _ColorVisionInstructionsScreenState
               Navigator.pop(context); // Close dialog
               await NavigationUtils.navigateHome(context);
             },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -273,7 +273,7 @@ class _ColorVisionInstructionsScreenState
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppColors.white,
                           ),
                         ),
                       ),
@@ -307,7 +307,7 @@ class _ColorVisionInstructionsScreenState
             height: 160,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey.shade200,
+              color: AppColors.surface,
               border: Border.all(color: AppColors.primary, width: 3),
             ),
             child: Center(
@@ -316,7 +316,7 @@ class _ColorVisionInstructionsScreenState
                 style: TextStyle(
                   fontSize: 60,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade400,
+                  color: AppColors.textTertiary,
                 ),
               ),
             ),

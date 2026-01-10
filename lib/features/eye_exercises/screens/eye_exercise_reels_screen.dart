@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/providers/eye_exercise_provider.dart';
 import '../../../core/providers/network_connectivity_provider.dart';
@@ -82,12 +83,12 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.black,
       body: Consumer<EyeExerciseProvider>(
         builder: (context, provider, child) {
           if (!provider.isInitialized) {
             return Container(
-              color: Colors.black,
+              color: AppColors.black,
               child: const Center(child: EyeLoader.fullScreen()),
             );
           }
@@ -132,11 +133,11 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(
                           Icons.arrow_back_ios_new,
-                          color: Colors.white,
+                          color: AppColors.white,
                           size: 24,
                         ),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.black26,
+                          backgroundColor: AppColors.black26,
                         ),
                       ),
                       _buildYouTubeButton(),
@@ -155,7 +156,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
                     width: 2,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: Colors.white12,
+                      color: AppColors.white12,
                       borderRadius: BorderRadius.circular(1),
                     ),
                     child: Stack(
@@ -168,7 +169,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
                           child: Container(
                             width: 2,
                             height: 100 / provider.videos.length,
-                            color: Colors.white,
+                            color: AppColors.white,
                           ),
                         ),
                       ],
@@ -218,7 +219,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
 
   Widget _buildYouTubeButton() {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: () {
           _dismissHint();
@@ -231,9 +232,9 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.black26,
+            color: AppColors.black26,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white24),
+            border: Border.all(color: AppColors.white24),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -244,7 +245,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
                 errorBuilder: (context, error, stackTrace) {
                   return const Icon(
                     Icons.play_circle_fill,
-                    color: Colors.red,
+                    color: AppColors.error,
                     size: 16,
                   );
                 },
@@ -254,7 +255,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
                 const Text(
                   'Click Me!',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -263,7 +264,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
                 const Text(
                   'Visiaxx TV',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -283,17 +284,20 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
           const Icon(
             Icons.video_library_outlined,
             size: 64,
-            color: Colors.white24,
+            color: AppColors.white24,
           ),
           const SizedBox(height: 16),
           const Text(
             'No exercises available',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+            style: const TextStyle(color: AppColors.white70, fontSize: 16),
           ),
           const SizedBox(height: 24),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Go Back', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Go Back',
+              style: TextStyle(color: AppColors.white),
+            ),
           ),
         ],
       ),

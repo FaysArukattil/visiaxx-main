@@ -266,7 +266,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -285,8 +285,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                   _restartCurrentTest();
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.orange),
-                  foregroundColor: Colors.orange,
+                  side: const BorderSide(color: AppColors.warning),
+                  foregroundColor: AppColors.warning,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -892,7 +892,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: Colors.black.withValues(alpha: 0.85),
+      color: AppColors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1321,14 +1321,14 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
+        color: AppColors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         _recognizedText!,
         style: const TextStyle(
           fontSize: 16,
-          color: Colors.white,
+          color: AppColors.white,
           fontWeight: FontWeight.bold,
         ),
         textAlign: TextAlign.center,

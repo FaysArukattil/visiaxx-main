@@ -247,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: const Icon(
                                 Icons.visibility_rounded,
                                 size: 40,
-                                color: Colors.white,
+                                color: AppColors.white,
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -280,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: AppColors.black.withValues(alpha: 0.05),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -441,8 +441,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _handleLogin,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
+                                  backgroundColor: AppColors.transparent,
+                                  shadowColor: AppColors.transparent,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
@@ -450,14 +450,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: _isLoading
                                     ? const EyeLoader(
                                         size: 32,
-                                        color: Colors.white,
+                                        color: AppColors.white,
                                       )
                                     : const Text(
                                         'Sign In',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.white,
+                                          color: AppColors.white,
                                         ),
                                       ),
                               ),

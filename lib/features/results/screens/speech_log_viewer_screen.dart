@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class SpeechLogViewerScreen extends StatefulWidget {
   const SpeechLogViewerScreen({super.key});
@@ -56,7 +58,10 @@ class _SpeechLogViewerScreenState extends State {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Clear',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -66,24 +71,14 @@ class _SpeechLogViewerScreenState extends State {
       await AppLogger.clearLogs();
       _loadLogs();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Logs cleared'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        SnackbarUtils.showSuccess(context, 'Logs cleared');
       }
     }
   }
 
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: _logs));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Logs copied to clipboard'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    SnackbarUtils.showSuccess(context, 'Logs copied to clipboard');
   }
 
   @override
@@ -110,7 +105,7 @@ class _SpeechLogViewerScreenState extends State {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: EyeLoader.fullScreen())
           : Column(
               children: [
                 // Info banner

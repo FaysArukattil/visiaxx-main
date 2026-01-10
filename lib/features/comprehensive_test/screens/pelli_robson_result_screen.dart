@@ -85,7 +85,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -272,7 +272,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.normal,
-                          color: Colors.white70,
+                          color: AppColors.white70,
                         ),
                       ),
                     ],

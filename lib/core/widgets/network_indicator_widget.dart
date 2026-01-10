@@ -1,8 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/network_connectivity_provider.dart';
 import '../constants/app_status.dart';
+import '../utils/snackbar_utils.dart';
 
 /// Non-intrusive network status indicator that appears on the right side as overlay
 class NetworkIndicatorWidget extends StatefulWidget {
@@ -57,9 +57,6 @@ class _NetworkIndicatorWidgetState extends State<NetworkIndicatorWidget> {
                       _showTemporaryOfflineSnackbar(context);
                     }
                   } else if (connectivity.justCameOnline) {
-                    // Dismiss any existing snackbar
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
                     // Only show "Connected to Network" if not on splash screen
                     if (!isOnSplashScreen) {
                       _showConnectedSnackbar(context);
@@ -82,101 +79,15 @@ class _NetworkIndicatorWidgetState extends State<NetworkIndicatorWidget> {
   }
 
   void _showPersistentOfflineSnackbar(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'No Internet Connection',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Please connect to network',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.orange.shade700,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(days: 365), // Persistent until dismissed
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    SnackbarUtils.showNoInternet(context);
   }
 
   void _showTemporaryOfflineSnackbar(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Network disconnected',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.orange.shade700,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3), // Temporary - goes away
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    SnackbarUtils.showError(context, 'Network disconnected');
   }
 
   void _showConnectedSnackbar(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Connected to Network',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.green.shade700,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    SnackbarUtils.showSuccess(context, 'Connected to Network');
   }
 }
 

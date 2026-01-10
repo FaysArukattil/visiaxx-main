@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 
 /// Calibration dialog for screen calibration
 class CalibrationDialog extends StatefulWidget {
@@ -41,7 +42,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                 width: _creditCardWidth * (_screenWidth / 85.6),
                 height: 54 * (_screenWidth / 85.6),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.blue, width: 2),
+                  border: Border.all(color: AppColors.primary, width: 2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Center(

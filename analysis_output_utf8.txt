@@ -1,0 +1,48 @@
+﻿Analyzing visiaxx-main...                                       
+
+   info - Don't use 'BuildContext's across async gaps - lib\core\services\data_cleanup_service.dart:41:29 - use_build_context_synchronously
+warning - The declaration '_fallbackSave' isn't referenced - lib\core\services\pdf_export_service.dart:75:18 - unused_element
+warning - The declaration '_saveToDownloadsAndroid' isn't referenced - lib\core\services\pdf_export_service.dart:158:18 - unused_element
+   info - Statements in an if should be enclosed in a block - lib\core\services\pdf_export_service.dart:1672:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\pdf_export_service.dart:1678:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\pdf_export_service.dart:1685:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\pdf_export_service.dart:1692:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\pdf_export_service.dart:1699:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\pdf_export_service.dart:1705:9 - curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps - lib\core\services\session_monitor_service.dart:290:38 - use_build_context_synchronously
+warning - The value of the local variable 'oldSessionId' isn't used - lib\core\services\session_monitor_service.dart:309:11 - unused_local_variable
+   info - Uses 'await' on an instance of 'bool', which is not a subtype of 'Future' - lib\core\services\test_result_service.dart:271:14 - await_only_futures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\download_success_dialog.dart:214:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\download_success_dialog.dart:226:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\download_success_dialog.dart:289:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\download_success_dialog.dart:335:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\download_success_dialog.dart:381:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\download_success_dialog.dart:384:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\download_success_dialog.dart:454:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\widgets\eye_loader.dart:186:25 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\screens\loginscreen.dart:155:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\screens\loginscreen.dart:160:21 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\features\auth\screens\registration_screen.dart:392:39 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\auth\screens\registration_screen.dart:395:39 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\auth\screens\registration_screen.dart:423:33 - curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps - lib\features\auth\screens\splashscreen.dart:174:65 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\auth\screens\splashscreen.dart:180:44 - use_build_context_synchronously
+   info - Unnecessary 'const' keyword - lib\features\eye_exercises\screens\eye_exercise_reels_screen.dart:292:20 - unnecessary_const
+   info - Unnecessary 'const' keyword - lib\features\eye_exercises\widgets\video_reel_item.dart:263:33 - unnecessary_const
+   info - Don't use 'BuildContext's across async gaps - lib\features\home\screens\profile_screen.dart:58:47 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\home\screens\profile_screen.dart:472:11 - use_build_context_synchronously
+warning - The declaration '_buildContentItem' isn't referenced - lib\features\home\screens\profile_screen.dart:834:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\settings_screen.dart:274:40 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeTrackColor instead. This feature was deprecated after v3.24.0-0.2.pre - lib\features\home\screens\settings_screen.dart:310:15 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\widgets\review_dialog.dart:190:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\widgets\review_dialog.dart:285:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\widgets\review_dialog.dart:288:47 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\practitioner\screens\practitioner_profile_selection_screen.dart:533:21 - deprecated_member_use
+   info - The private field _isNavigatingToNextTest could be 'final' - lib\features\quick_vision_test\screens\color_vision_test_screen.dart:63:8 - prefer_final_fields
+   info - Unnecessary 'const' keyword - lib\features\quick_vision_test\screens\color_vision_test_screen.dart:807:15 - unnecessary_const
+   info - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:21:8 - unnecessary_import
+   info - Unnecessary 'const' keyword - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:1079:23 - unnecessary_const
+warning - The value of the field '_isTestPausedForDistance' isn't used - lib\features\quick_vision_test\screens\short_distance_test_screen.dart:62:8 - unused_field
+warning - The value of the field '_lastShouldPauseTime' isn't used - lib\features\quick_vision_test\screens\short_distance_test_screen.dart:63:13 - unused_field
+  error - Methods can't be invoked in constant expressions - lib\widgets\voice_recognition_indicator.dart:178:22 - const_eval_method_invocation
+

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/exercise_videos.dart';
 
 /// YouTube channel popup dialog
@@ -17,7 +17,7 @@ class YouTubePopupDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -25,7 +25,7 @@ class YouTubePopupDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
+              color: AppColors.black.withValues(alpha: 0.4),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -39,7 +39,7 @@ class YouTubePopupDialog extends StatelessWidget {
               alignment: Alignment.topRight,
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: Colors.grey),
+                icon: const Icon(Icons.close, color: AppColors.textTertiary),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -66,10 +66,13 @@ class YouTubePopupDialog extends StatelessWidget {
                         width: 35,
                         height: 35,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.white,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
-                            BoxShadow(color: Colors.black12, blurRadius: 4),
+                            BoxShadow(
+                              color: AppColors.black.withValues(alpha: 0.12),
+                              blurRadius: 4,
+                            ),
                           ],
                         ),
                         child: Padding(
@@ -99,7 +102,7 @@ class YouTubePopupDialog extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A2E),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -117,9 +120,9 @@ class YouTubePopupDialog extends StatelessWidget {
             Text(
               'Get complete eye exercise tutorials and health tips on our YouTube channel',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: AppColors.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -138,7 +141,7 @@ class YouTubePopupDialog extends StatelessWidget {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF0000),
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -160,7 +163,7 @@ class YouTubePopupDialog extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey,
+                    color: AppColors.textTertiary,
                   ),
                 ),
               ],

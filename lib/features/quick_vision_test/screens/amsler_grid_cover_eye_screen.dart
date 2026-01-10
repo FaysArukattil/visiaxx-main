@@ -169,7 +169,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                             width: 60,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.7),
+                              color: AppColors.black.withValues(alpha: 0.7),
                               borderRadius: BorderRadius.only(
                                 topLeft: widget.eyeToCover == 'left'
                                     ? const Radius.circular(40)
@@ -267,7 +267,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                               children: [
                                 EyeLoader(
                                   size: 20,
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   value: 1 - (_countdown / 3),
                                 ),
                                 const SizedBox(width: 12),
@@ -275,7 +275,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                   'Starting in $_countdown... (Tap to skip)',
                                   style: const TextStyle(
                                     fontSize: 16,
-                                    color: Colors.white,
+                                    color: AppColors.white,
                                   ),
                                 ),
                               ],
@@ -284,7 +284,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                               'Start ${eyeBeingTested.toUpperCase()} Eye Test',
                               style: const TextStyle(
                                 fontSize: 16,
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

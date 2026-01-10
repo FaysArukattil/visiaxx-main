@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Test instruction card widget
 class TestInstructionCard extends StatelessWidget {
@@ -32,26 +33,20 @@ class TestInstructionCard extends StatelessWidget {
                   child: Text(
                     title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              description,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            Text(description, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 8),
             const Text(
               'Instructions:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
             ...steps.asMap().entries.map((entry) {
@@ -71,7 +66,7 @@ class TestInstructionCard extends StatelessWidget {
                         child: Text(
                           '${entry.key + 1}',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),

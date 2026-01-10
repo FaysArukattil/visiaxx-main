@@ -116,7 +116,7 @@ class _AmslerGridInstructionsScreenState
               Navigator.pop(context); // Close dialog
               await NavigationUtils.navigateHome(context);
             },
-            child: const Text('Exit', style: TextStyle(color: Colors.red)),
+            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -247,8 +247,12 @@ class _AmslerGridInstructionsScreenState
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => Container(
           height: 180,
-          color: Colors.grey.shade200,
-          child: const Icon(Icons.grid_on, size: 50, color: Colors.grey),
+          color: AppColors.surface,
+          child: const Icon(
+            Icons.grid_on,
+            size: 50,
+            color: AppColors.textTertiary,
+          ),
         ),
       ),
     );
@@ -294,7 +298,7 @@ class _AmslerGridInstructionsScreenState
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.white,
                   ),
                 ),
               ),

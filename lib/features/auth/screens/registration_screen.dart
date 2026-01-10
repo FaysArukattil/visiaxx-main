@@ -220,7 +220,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               ? FontWeight.bold
                               : FontWeight.w500,
                           color: isSelected
-                              ? Colors.white
+                              ? AppColors.white
                               : AppColors.textSecondary,
                         ),
                       ),
@@ -243,7 +243,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Create Account'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
       ),
       extendBodyBehindAppBar: true,
@@ -304,11 +304,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.white,
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
+                            color: AppColors.black.withValues(alpha: 0.04),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -560,8 +560,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleRegister,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
+                                backgroundColor: AppColors.transparent,
+                                shadowColor: AppColors.transparent,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -572,7 +572,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                       height: 24,
                                       child: EyeLoader(
                                         size: 24,
-                                        color: Colors.white,
+                                        color: AppColors.white,
                                       ),
                                     )
                                   : const Text(
@@ -580,7 +580,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: AppColors.white,
                                       ),
                                     ),
                             ),
@@ -641,7 +641,7 @@ class _RoleCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.05)
-              : Colors.white,
+              : AppColors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,

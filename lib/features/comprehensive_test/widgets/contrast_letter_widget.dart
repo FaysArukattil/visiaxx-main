@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 
 /// Contrast letter widget for displaying letters with varying contrast
 class ContrastLetterWidget extends StatelessWidget {
@@ -18,7 +19,7 @@ class ContrastLetterWidget extends StatelessWidget {
       style: TextStyle(
         fontSize: 48,
         fontWeight: FontWeight.bold,
-        color: Colors.black.withValues(alpha: contrastLevel.clamp(0.0, 1.0)),
+        color: AppColors.black.withValues(alpha: contrastLevel.clamp(0.0, 1.0)),
       ),
     );
   }
