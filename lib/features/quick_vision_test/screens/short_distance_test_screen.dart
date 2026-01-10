@@ -378,6 +378,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     _accumulatedSpeech = '';
     _speechChunks.clear();
     _speechBufferTimer?.cancel();
+    _speechService.clearBuffer(); // ✅ FIXED: Clear underlying service too
 
     setState(() {
       _showSentence = true;
@@ -570,11 +571,63 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     final matchResult = FuzzyMatcher.getMatchResult(
       normalizedExpected,
       normalizedUser,
-      threshold:
-          65.0, // Reduced slightly to be more forgiving with normalization
+      threshold: 65.0,
     );
 
-    final isCorrect = matchResult.passed;
+    // ✅ 1. ABSOLUTE REJECTION: If user says "blurry" or "can't see", it's an immediate fail (0%)
+    final blurryKeywords = [
+      'blurry',
+      'blur',
+      'cannot see',
+      'can\'t see',
+      'not clear',
+      'nothing',
+      'country',
+    ];
+    bool userReportedIssue = false;
+    for (var keyword in blurryKeywords) {
+      if (normalizedUser.contains(keyword)) {
+        userReportedIssue = true;
+        break;
+      }
+    }
+
+    bool isCorrect = false;
+    double similarity = matchResult.similarity;
+
+    if (userReportedIssue) {
+      debugPrint(
+        '[ShortDistance] ❌ User reported blurry/cannot see - forcing Incorrect',
+      );
+      isCorrect = false;
+      similarity = 0.0;
+    } else {
+      // ✅ 2. SUBSTRING MATCH: If the entire expected sentence is found in the user input, it's 100% correct
+      if (normalizedUser.contains(normalizedExpected)) {
+        debugPrint(
+          '[ShortDistance] 🎯 PERFECT SUBSTRING MATCH - forcing Correct',
+        );
+        isCorrect = true;
+        similarity = 100.0;
+      } else {
+        // ✅ 3. FUZZY MATCH: Fallback to existing fuzzy/keyword logic
+        isCorrect = matchResult.passed;
+        if (!isCorrect) {
+          final hasKeywords = FuzzyMatcher.containsKeywords(
+            normalizedExpected,
+            normalizedUser,
+            keywordThreshold: 0.75,
+          );
+          if (hasKeywords) {
+            debugPrint(
+              '[ShortDistance] 💎 KEYWORD MATCH (Similarity: ${matchResult.similarity.toStringAsFixed(1)}%)',
+            );
+            isCorrect = true;
+          }
+        }
+      }
+    }
+
     if (isCorrect) _correctCount++;
 
     // Store result as SentenceResponse
@@ -582,7 +635,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       screenNumber: _currentScreen + 1,
       expectedSentence: sentence.sentence,
       userResponse: userSaid,
-      similarity: matchResult.similarity,
+      similarity: similarity,
       passed: isCorrect,
       snellen: sentence.snellen,
       fontSize: sentence.fontSize,
@@ -596,7 +649,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       fontSize: sentence.fontSize,
       expected: sentence.sentence,
       userSaid: userSaid,
-      similarity: matchResult.similarity,
+      similarity: similarity,
       pass: isCorrect,
     );
 
@@ -611,7 +664,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     setState(() {
       _showResult = true;
       _lastResultCorrect = isCorrect;
-      _lastSimilarity = matchResult.similarity;
+      _lastSimilarity = similarity;
     });
 
     // Move to next after brief delay

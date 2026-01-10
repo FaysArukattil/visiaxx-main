@@ -426,6 +426,34 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         _isSpeechActive = true;
       });
 
+      // ✅ RAPID RESPONSE: If we match a direction even in partial speech, trigger now!
+      if (_showE && _waitingForResponse) {
+        final direction = SpeechService.parseDirection(partialResult);
+        if (direction != null) {
+          debugPrint(
+            '[VisualAcuity] ⚡ Rapid recognition from partial speech: $direction',
+          );
+          _recordResponse(direction);
+          return;
+        }
+
+        // Check for blurry
+        final normalized = partialResult.toLowerCase().trim();
+        final blurryKeywords = [
+          'blurry',
+          'blur',
+          'cannot see',
+          'can\'t see',
+          'country',
+        ];
+        for (var keyword in blurryKeywords) {
+          if (normalized.contains(keyword)) {
+            _recordResponse('blurry');
+            return;
+          }
+        }
+      }
+
       // ✅ Make waveform responsive for 500ms
       _speechActiveTimer?.cancel();
       _speechActiveTimer = Timer(const Duration(milliseconds: 500), () {
@@ -709,10 +737,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _showTumblingE() {
+    // ✅ NEW: Clear ANY stale speech before rotation to prevent "leakage" from last E
+    _continuousSpeech.clearAccumulated();
+
     final directions = EDirection.values
-        .where((d) => d != _currentDirection)
+        .where((d) => d != _currentDirection && d != EDirection.blurry)
         .toList();
     _currentDirection = directions[_random.nextInt(directions.length)];
+
+    // ✅ Reset preview when NEW E starts
+    _lastDetectedSpeech = null;
 
     setState(() {
       _showRelaxation = false;
@@ -724,18 +758,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     _eDisplayStartTime = DateTime.now();
 
-    // ✅ CHECK FOR INSTANT RESPONSE: See if the user already said the direction during pre-capture
-    final preCaptured = _continuousSpeech.getLastRecognized();
-    if (preCaptured != null) {
-      final direction = SpeechService.parseDirection(preCaptured);
-      if (direction != null) {
-        debugPrint(
-          '[VisualAcuity] ⚡ Instant recognition from pre-capture: $direction',
-        );
-        _recordResponse(direction);
-        return; // Early exit - E answered instantly
-      }
-    }
+    // ✅ Mic is already started during relaxation, so we just wait for results now.
 
     // ✅ FALLBACK: If mic isn't active at the moment E appears, force a start
     if (!_continuousSpeech.isActive) {
@@ -804,6 +827,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       return;
     }
 
+    // ✅ NEW: Strict timing guard - ignore speech that arrived too quickly after rotation
+    // Results arriving within ~800ms of rotation are likely for the PREVIOUS orientation
+    if (_eDisplayStartTime != null) {
+      final sinceRotation = DateTime.now().difference(_eDisplayStartTime!);
+      if (sinceRotation < const Duration(milliseconds: 800)) {
+        debugPrint(
+          '[VisualAcuity] ⏳ Ignoring result: arrived too fast after rotation (${sinceRotation.inMilliseconds}ms)',
+        );
+        return;
+      }
+    }
+
     debugPrint('[VisualAcuity] Voice recognized: "$recognized"');
 
     final normalized = recognized.toLowerCase().trim();
@@ -821,6 +856,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       'too blurry',
       'not clear',
       'nothing', // User can't see anything
+      'country', // Common misrecognition of 'can't see'
     ];
 
     for (var keyword in blurryKeywords) {
@@ -838,6 +874,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     if (direction != null) {
       debugPrint('[VisualAcuity] ✅ Recording direction: $direction');
+      // ✅ Update preview IMMEDIATELY so user sees what was recognized
+      if (mounted) setState(() => _lastDetectedSpeech = recognized);
       _recordResponse(direction);
     } else {
       debugPrint('[VisualAcuity] ❌ Direction is NULL - not recording');
@@ -854,7 +892,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eCountdownTimer?.cancel();
     // ✅ Keep listening continuously - just clear buffers when E changes
     _continuousSpeech.clearAccumulated();
-    _lastDetectedSpeech = null;
+    // ❌ DO NOT clear _lastDetectedSpeech here - let it persist for result screen
 
     // ✅ HANDLE NO RESPONSE: Rotate E in SAME size and try again
     if (userResponse == null) {
@@ -911,8 +949,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _showResult = true;
     });
 
-    // Show result briefly
-    Future.delayed(const Duration(milliseconds: 800), () {
+    // Show result briefly - REDUCED for "instant" feel
+    Future.delayed(const Duration(milliseconds: 400), () {
       if (!mounted) return;
       _evaluateAndContinue();
     });

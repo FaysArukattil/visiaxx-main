@@ -85,7 +85,8 @@ class ContinuousSpeechManager {
     _shouldBeListening = true;
     _restartAttempts = 0;
     _allDetectedSpeech.clear();
-    _lastRecognizedValue = null; // ✅ Reset last recognized value on start
+    _lastRecognizedValue = null;
+    _speechService.clearBuffer(); // ✅ Fixed: Clear underlying service too
 
     // Don't start if paused for TTS
     if (_isPausedForTts) {
@@ -321,6 +322,7 @@ class ContinuousSpeechManager {
     _restartTimer?.cancel();
 
     await _speechService.stopListening();
+    _speechService.clearBuffer(); // ✅ Fixed: Clear underlying service too
 
     onListeningStateChanged?.call(false);
   }
@@ -335,6 +337,7 @@ class ContinuousSpeechManager {
   void clearAccumulated() {
     _allDetectedSpeech.clear();
     _lastRecognizedValue = null;
+    _speechService.clearBuffer(); // ✅ Fixed: Clear underlying service too
   }
 
   /// Check if currently active

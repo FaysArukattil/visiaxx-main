@@ -8,7 +8,7 @@ class TestConstants {
   TestConstants._();
 
   // Visual Acuity Test Settings
-  static const int relaxationDurationSeconds = 10;
+  static const int relaxationDurationSeconds = 6;
   static const int eDisplayDurationSeconds = 6;
   static const int maxTriesPerLevel = 3;
   static const int minCorrectToAdvance = 2;
@@ -132,37 +132,37 @@ class TestConstants {
   // ✅ FIXED: Updated short distance font sizes to match visual acuity
   static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(
-      sentence: 'Clear sky',
+      sentence: 'Clear vision',
       fontSize: 120.0,
       snellen: '6/60',
     ),
     ShortDistanceSentence(
-      sentence: 'Seeing life',
+      sentence: 'I can read this text',
       fontSize: 72.0,
       snellen: '6/36',
     ),
     ShortDistanceSentence(
-      sentence: 'Clear eyes',
+      sentence: 'Focus on the bright light',
       fontSize: 48.0,
       snellen: '6/24',
     ),
     ShortDistanceSentence(
-      sentence: 'Vision is good',
+      sentence: 'Protect your eyes every day',
       fontSize: 36.0,
       snellen: '6/18',
     ),
     ShortDistanceSentence(
-      sentence: 'Look at the light',
+      sentence: 'Good sight is a blessing',
       fontSize: 24.0,
       snellen: '6/12',
     ),
     ShortDistanceSentence(
-      sentence: 'Read this',
+      sentence: 'Keep your eyes healthy',
       fontSize: 18.0,
       snellen: '6/9',
     ),
     ShortDistanceSentence(
-      sentence: 'Health is wealth',
+      sentence: 'See the beauty of life',
       fontSize: 12.0,
       snellen: '6/6',
     ),

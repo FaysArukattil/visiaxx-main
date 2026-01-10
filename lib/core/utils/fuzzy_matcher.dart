@@ -30,6 +30,38 @@ class FuzzyMatcher {
         .trim();
   }
 
+  /// ✅ NEW: Check if speech contains most/all important words of the target
+  /// Useful for "Short Distance Reading" where users say extra words.
+  static bool containsKeywords(
+    String target,
+    String actual, {
+    double keywordThreshold = 0.7,
+  }) {
+    final targetWords = _normalize(
+      target,
+    ).split(' ').where((w) => w.length > 2).toSet();
+    if (targetWords.isEmpty) return false;
+
+    final actualWords = _normalize(actual).split(' ').toSet();
+
+    int matches = 0;
+    for (final tWord in targetWords) {
+      if (actualWords.contains(tWord)) {
+        matches++;
+      } else {
+        // Soft match for minor typos (e.g. "vision" vs "missions")
+        for (final aWord in actualWords) {
+          if (aWord.similarityTo(tWord) > 0.8) {
+            matches++;
+            break;
+          }
+        }
+      }
+    }
+
+    return (matches / targetWords.length) >= keywordThreshold;
+  }
+
   /// Get match result with details
   static MatchResult getMatchResult(
     String expected,

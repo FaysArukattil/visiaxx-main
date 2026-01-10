@@ -119,9 +119,11 @@ class SpeechService {
       );
 
       if (_isInitialized) {
-        // Reset onDevice flag for safety unless we specifically want it
-        _hasOnDeviceRecognition = false;
-        debugPrint('[SpeechService] 🛠️ Init success. Using default English.');
+        // ✅ Enforced: Offline mode requested as primary
+        _hasOnDeviceRecognition = true;
+        debugPrint(
+          '[SpeechService] 🛠️ Offline mode enforced as primary method',
+        );
       } else {
         debugPrint('[SpeechService] ❌ _speechToText.initialize returned false');
         onError?.call('Speech recognition not available on this device');
@@ -174,10 +176,11 @@ class SpeechService {
     try {
       // ⭐ OPTIMIZATION: Use NULL for localeId to let the system choose its best default English
       // This fixes the "error_language_unavailable" on devices that don't have "en-US" specifically.
+      // ✅ MANDATORY: Use on-device recognition (offline) as primary
       final useOnDevice = _hasOnDeviceRecognition;
 
       debugPrint(
-        '[SpeechService] 🎧 Mode: ${useOnDevice ? "ON-DEVICE" : "Cloud (Default)"}, Locale: System Default',
+        '[SpeechService] 🎧 Mode: ENFORCED ON-DEVICE (Offline), Locale: System Default',
       );
 
       await _speechToText.listen(
@@ -190,7 +193,7 @@ class SpeechService {
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: false,
-          listenMode: ListenMode.dictation,
+          listenMode: ListenMode.confirmation,
           onDevice: useOnDevice,
         ),
         localeId: null, // ⚡ Use system default
@@ -282,6 +285,14 @@ class SpeechService {
     }
   }
 
+  /// ✅ NEW: Clear internal buffers manually
+  void clearBuffer() {
+    _lastRecognizedValue = null;
+    _lastConfidence = 0.0;
+    _bufferTimer?.cancel();
+    debugPrint('[SpeechService] 🧹 Buffers cleared');
+  }
+
   /// Cancel listening completely
   Future<void> cancel() async {
     _bufferTimer?.cancel();
@@ -310,190 +321,146 @@ class SpeechService {
   /// Check if speech recognition is available
   bool get isAvailable => _isInitialized;
 
-  /// Parse direction from speech
   static String? parseDirection(String speech) {
     final s = speech.toLowerCase().trim();
     debugPrint('[SpeechService] 🔍 parseDirection input: "$s"');
 
-    // UP Detection
-    // UP Detection - MOST SPECIFIC FIRST
-    // Multi-word variants (check FIRST to avoid partial matches)
-    if (s.contains('upper') ||
-        s.contains('upward') ||
-        s.contains('upwards') ||
-        s.contains('up ward') ||
-        s.contains('upword') ||
-        s.contains('apward') ||
-        s.contains('uhpward') ||
-        s.contains('up word') ||
-        s.contains('op word') ||
-        s.contains('awkward') ||
-        s.contains('afford') ||
-        s.contains('appuard') ||
-        s.contains('appaurd') ||
-        s.contains('appuvert') ||
-        s.contains('appward') ||
-        s.contains('abort') ||
-        s.contains('about') ||
-        s.contains('op ward')) {
-      debugPrint('[SpeechService] ✅ Matched: upward/upper variants → UP');
-      return 'up';
-    }
-    // Single word "up" - check as whole word
-    if (s == 'up' || s == 'upp' || s == 'op') {
-      debugPrint('[SpeechService] ✅ Matched: up (exact) → UP');
-      return 'up';
-    }
-    // "up" as part of phrase
-    if (RegExp(r'\bup\b|\bupp\b|\bop\b').hasMatch(s)) {
-      debugPrint('[SpeechService] ✅ Matched: up (word boundary) → UP');
-      return 'up';
-    }
-    if (s.contains('top') ||
-        s.contains('upper') ||
-        s.contains('above') ||
-        s.contains('ceiling') ||
-        s.contains('sky')) {
-      debugPrint('[SpeechService] ✅ Matched: positional → UP');
-      return 'up';
-    }
+    // ✅ NEW: Find the LAST occurrence of any valid direction to handle "right right" or "up down"
+    String? lastMatch;
+    int lastIndex = -1;
 
-    // DOWN Detection
-    if (s.contains('downward') ||
-        s.contains('downwards') ||
-        s.contains('down ward')) {
-      debugPrint('[SpeechService] ✅ Matched: downward/downwards → DOWN');
-      return 'down';
-    }
-    if (s.contains('down')) {
-      debugPrint('[SpeechService] ✅ Matched: down → DOWN');
-      return 'down';
-    }
-    if (s.contains('bottom') || s.contains('botto') || s.contains('bottam')) {
-      debugPrint('[SpeechService] ✅ Matched: bottom → DOWN');
-      return 'down';
-    }
-    if (s.contains('lower') ||
-        s.contains('below') ||
-        s.contains('beneath') ||
-        s.contains('floor') ||
-        s.contains('ground')) {
-      debugPrint('[SpeechService] ✅ Matched: positional → DOWN');
-      return 'down';
-    }
+    final directionsMap = {
+      'up': [
+        'up',
+        'upp',
+        'op',
+        'top',
+        'upper',
+        'above',
+        'ceiling',
+        'sky',
+        'north',
+        'upward',
+        'upwards',
+        'up ward',
+        'upword',
+        'apward',
+        'uhpward',
+        'awkward',
+        'afford',
+        'appuard',
+        'appaurd',
+        'appuvert',
+        'appward',
+        'abort',
+        'about',
+        'aboard',
+      ],
+      'down': [
+        'down',
+        'downward',
+        'downwards',
+        'down ward',
+        'bottom',
+        'botto',
+        'bottam',
+        'lower',
+        'below',
+        'beneath',
+        'floor',
+        'ground',
+        'south',
+      ],
+      'right': [
+        'right',
+        'rightward',
+        'rightwards',
+        'write',
+        'wright',
+        'rite',
+        'ride',
+        'east',
+      ],
+      'left': ['left', 'leftward', 'leftwards', 'lift', 'loft', 'west'],
+    };
 
-    // RIGHT Detection
-    if (s.contains('rightward') || s.contains('rightwards')) {
-      debugPrint('[SpeechService] ✅ Matched: rightward/rightwards → RIGHT');
-      return 'right';
-    }
-    if (s.contains('right')) {
-      debugPrint('[SpeechService] ✅ Matched: right → RIGHT');
-      return 'right';
-    }
-    if (s.contains('write') ||
-        s.contains('wright') ||
-        s.contains('rite') ||
-        s.contains('ride')) {
-      debugPrint('[SpeechService] ✅ Matched: homophone → RIGHT');
-      return 'right';
-    }
+    directionsMap.forEach((label, variants) {
+      for (final variant in variants) {
+        final index = s.lastIndexOf(variant);
+        if (index != -1 && index > lastIndex) {
+          lastIndex = index;
+          lastMatch = label;
+        }
+      }
+    });
 
-    // LEFT Detection
-    if (s.contains('leftward') || s.contains('leftwards')) {
-      debugPrint('[SpeechService] ✅ Matched: leftward/leftwards → LEFT');
-      return 'left';
+    if (lastMatch != null) {
+      debugPrint(
+        '[SpeechService] ✅ Matched (Last): "$lastMatch" (at index $lastIndex)',
+      );
+      return lastMatch;
     }
-    if (s.contains('left')) {
-      debugPrint('[SpeechService] ✅ Matched: left → LEFT');
-      return 'left';
-    }
-    if (s.contains('lift') || s.contains('loft')) {
-      debugPrint('[SpeechService] ✅ Matched: homophone → LEFT');
-      return 'left';
-    }
-
-    // Compass Directions
-    if (s.contains('east')) return 'right';
-    if (s.contains('west')) return 'left';
-    if (s.contains('north')) return 'up';
-    if (s.contains('south')) return 'down';
 
     debugPrint('[SpeechService] ❌ parseDirection: NO MATCH for "$s"');
     return null;
   }
 
-  /// Parse number from speech (0-99)
   static String? parseNumber(String speech) {
     final s = speech.toLowerCase().trim();
     debugPrint('[SpeechService] 🔍 parseNumber input: "$s"');
 
-    // Check for digit first (including standalone digits)
-    final digitMatch = RegExp(r'(\d{1,2})').firstMatch(s);
-    if (digitMatch != null) {
-      final num = digitMatch.group(1)!;
-      debugPrint('[SpeechService] ✅ Matched digit: $num');
-      return num;
-    }
+    // ✅ NEW: Find the LAST occurrence of any valid number/variant
+    String? lastMatch;
+    int lastIndex = -1;
 
-    // ✅ NEW: Special cases for commonly confused numbers
-    if (s.contains('too') && !s.contains('twenty')) return '2';
-    if (s.contains('for') && !s.contains('forty')) return '4';
-    if (s.contains('ate') && !s.contains('eight')) return '8';
-    if (s.contains('won') && !s.contains('one')) return '1';
-
-    // Priority numbers
-    if (s.contains('twelve') || s.contains('twelf')) return '12';
-    if ((s.contains('seventy') && s.contains('four')) ||
-        (s.contains('seven') && s.contains('four'))) {
-      return '74';
-    }
-    if ((s.contains('forty') || s.contains('fourty')) && s.contains('two')) {
-      return '42';
-    }
-
-    // Compound numbers (abbreviated for space)
-    final compounds = <String, String>{
-      'twenty one': '21',
-      'twenty-one': '21',
-      'twenty two': '22',
-      'twenty-two': '22',
-      'thirty': '30',
-      'forty': '40',
-      'fifty': '50',
-      'sixty': '60',
-      'seventy': '70',
-      'eighty': '80',
-      'ninety': '90',
+    // Special cases
+    final specialMap = {
+      '2': ['too', 'two', 'to'],
+      '4': ['for', 'four'],
+      '8': ['ate', 'eight'],
+      '1': ['won', 'one'],
+      '12': ['twelve', 'twelf'],
+      '74': ['seventy four', 'seventy-four', 'seven four', 'seven-four'],
+      '42': ['forty two', 'forty-two', 'fourty two', 'fourty-two'],
+      '21': ['twenty one', 'twenty-one'],
+      '22': ['twenty two', 'twenty-two'],
+      '30': ['thirty'],
+      '40': ['forty', 'fourty'],
+      '50': ['fifty'],
+      '60': ['sixty'],
+      '70': ['seventy'],
+      '80': ['eighty'],
+      '90': ['ninety'],
+      '0': ['zero', 'oh'],
+      '3': ['three', 'tree'],
+      '5': ['five'],
+      '6': ['six'],
+      '7': ['seven'],
+      '9': ['nine'],
     };
 
-    for (final entry in compounds.entries) {
-      if (s.contains(entry.key)) return entry.value;
+    specialMap.forEach((label, variants) {
+      for (final variant in variants) {
+        final index = s.lastIndexOf(variant);
+        if (index != -1 && index > lastIndex) {
+          lastIndex = index;
+          lastMatch = label;
+        }
+      }
+    });
+
+    // Also check for digits themselves
+    final digitMatch = RegExp(r'(\d{1,2})').allMatches(s);
+    for (final m in digitMatch) {
+      if (m.start > lastIndex) {
+        lastIndex = m.start;
+        lastMatch = m.group(1);
+      }
     }
 
-    // Single digits
-    final singles = <String, String>{
-      'zero': '0',
-      'oh': '0',
-      'one': '1',
-      'won': '1',
-      'two': '2',
-      'to': '2',
-      'three': '3',
-      'tree': '3',
-      'four': '4',
-      'for': '4',
-      'five': '5',
-      'six': '6',
-      'seven': '7',
-      'eight': '8',
-      'ate': '8',
-      'nine': '9',
-    };
-
-    final words = s.split(RegExp(r'\s+'));
-    for (final word in words) {
-      if (singles.containsKey(word)) return singles[word];
+    if (lastMatch != null) {
+      debugPrint('[SpeechService] ✅ Matched number (Last): "$lastMatch"');
+      return lastMatch;
     }
 
     debugPrint('[SpeechService] ❌ parseNumber: NO MATCH for "$s"');
