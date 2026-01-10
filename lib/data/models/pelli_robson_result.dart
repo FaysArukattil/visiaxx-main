@@ -239,17 +239,17 @@ class PelliRobsonResult {
 
     if (rightEye != null) {
       buffer.writeln(
-        '• Right Eye: Near ${rightEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${rightEye?.longDistance?.adjustedScore.toStringAsFixed(2)}',
+        '- Right Eye: Near ${rightEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${rightEye?.longDistance?.adjustedScore.toStringAsFixed(2)}',
       );
     }
     if (leftEye != null) {
       buffer.writeln(
-        '• Left Eye: Near ${leftEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${leftEye?.longDistance?.adjustedScore.toStringAsFixed(2)}',
+        '- Left Eye: Near ${leftEye?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${leftEye?.longDistance?.adjustedScore.toStringAsFixed(2)}',
       );
     }
     if (bothEyes != null) {
       buffer.writeln(
-        '• Both Eyes: Near ${bothEyes?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${bothEyes?.longDistance?.adjustedScore.toStringAsFixed(2)}',
+        '- Both Eyes: Near ${bothEyes?.shortDistance?.adjustedScore.toStringAsFixed(2)}, Distance ${bothEyes?.longDistance?.adjustedScore.toStringAsFixed(2)}',
       );
     }
 

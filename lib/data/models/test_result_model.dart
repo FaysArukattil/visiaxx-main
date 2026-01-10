@@ -25,6 +25,7 @@ class TestResultModel {
   final String profileId;
   final String profileName;
   final int? profileAge; // Age for PDF naming
+  final String? profileSex; // Gender for PDF
   final String profileType; // 'self' or 'family'
   final DateTime timestamp;
   final String testType; // 'quick' or 'comprehensive'
@@ -48,6 +49,7 @@ class TestResultModel {
     required this.profileId,
     required this.profileName,
     this.profileAge,
+    this.profileSex,
     required this.profileType,
     required this.timestamp,
     required this.testType,
@@ -78,6 +80,7 @@ class TestResultModel {
       profileId: data['profileId'] ?? '',
       profileName: data['profileName'] ?? '',
       profileAge: data['profileAge'],
+      profileSex: data['profileSex'],
       profileType: data['profileType'] ?? 'self',
       timestamp: data['timestamp'] is Timestamp
           ? (data['timestamp'] as Timestamp).toDate()
@@ -131,6 +134,7 @@ class TestResultModel {
       'profileId': profileId,
       'profileName': profileName,
       'profileAge': profileAge,
+      'profileSex': profileSex,
       'profileType': profileType,
       'timestamp': timestamp.toIso8601String(),
       'testType': testType,
@@ -258,6 +262,7 @@ class TestResultModel {
     String? profileId,
     String? profileName,
     int? profileAge,
+    String? profileSex,
     String? profileType,
     DateTime? timestamp,
     String? testType,
@@ -281,6 +286,7 @@ class TestResultModel {
       profileId: profileId ?? this.profileId,
       profileName: profileName ?? this.profileName,
       profileAge: profileAge ?? this.profileAge,
+      profileSex: profileSex ?? this.profileSex,
       profileType: profileType ?? this.profileType,
       timestamp: timestamp ?? this.timestamp,
       testType: testType ?? this.testType,

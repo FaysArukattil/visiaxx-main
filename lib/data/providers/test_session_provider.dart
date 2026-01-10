@@ -18,6 +18,7 @@ class TestSessionProvider extends ChangeNotifier {
   String _profileId = '';
   String _profileName = '';
   int? _profileAge;
+  String? _profileSex;
   FamilyMemberModel? _selectedFamilyMember;
 
   // Questionnaire
@@ -59,13 +60,20 @@ class TestSessionProvider extends ChangeNotifier {
   PelliRobsonResult? get pelliRobson => _pelliRobson;
   bool get isComprehensiveTest => _isComprehensiveTest;
   bool get shouldShowReviewDialog => _shouldShowReviewDialog;
+  String? get profileSex => _profileSex;
 
   /// Set profile for self-testing
-  void selectSelfProfile(String userId, String userName, [int? age]) {
+  void selectSelfProfile(
+    String userId,
+    String userName, [
+    int? age,
+    String? sex,
+  ]) {
     _profileType = 'self';
     _profileId = userId;
     _profileName = userName;
     _profileAge = age;
+    _profileSex = sex;
     _selectedFamilyMember = null;
     notifyListeners();
   }
@@ -76,6 +84,7 @@ class TestSessionProvider extends ChangeNotifier {
     _profileId = member.id;
     _profileName = member.firstName;
     _profileAge = member.age;
+    _profileSex = member.sex;
     _selectedFamilyMember = member;
     notifyListeners();
   }
@@ -91,6 +100,7 @@ class TestSessionProvider extends ChangeNotifier {
     _profileId = patient.id;
     _profileName = patient.fullName;
     _profileAge = patient.age;
+    _profileSex = patient.sex;
     _selectedFamilyMember = null;
     notifyListeners();
   }
@@ -224,6 +234,7 @@ class TestSessionProvider extends ChangeNotifier {
       profileId: _profileId,
       profileName: _profileName,
       profileAge: _profileAge,
+      profileSex: _profileSex,
       profileType: _profileType,
       timestamp: DateTime.now(),
       testType: _isComprehensiveTest ? 'comprehensive' : 'quick',
@@ -249,6 +260,8 @@ class TestSessionProvider extends ChangeNotifier {
     _profileType = 'self';
     _profileId = '';
     _profileName = '';
+    _profileAge = null;
+    _profileSex = null;
     _selectedFamilyMember = null;
     _questionnaire = null;
     resetAllResults();
