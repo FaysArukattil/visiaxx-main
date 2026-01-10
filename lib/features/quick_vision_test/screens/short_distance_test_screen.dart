@@ -59,8 +59,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   bool _showResult = false;
   bool _testComplete = false;
   bool _isPausedForExit = false;
-  bool _isTestPausedForDistance = false;
-  DateTime? _lastShouldPauseTime;
 
   // Voice recognition
   bool _isListening = false;
@@ -334,8 +332,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     if (_testComplete) {
       setState(() {
         _isPausedForExit = false;
-        _isTestPausedForDistance = false;
-        _lastShouldPauseTime = null;
       });
       _startAutoNavigationTimer(); // ✅ Resume auto-navigation
       return;
@@ -343,8 +339,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
     setState(() {
       _isPausedForExit = false;
-      _isTestPausedForDistance = false;
-      _lastShouldPauseTime = null;
     });
 
     // Restart distance monitoring

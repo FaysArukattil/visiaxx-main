@@ -287,6 +287,7 @@ class SessionMonitorService with WidgetsBindingObserver {
         debugPrint(
           '[SessionMonitor] ⚠️ Session conflict detected! Remote: ${sessionData.sessionId}, Local: $_currentSessionId',
         );
+        if (!context.mounted) return;
         await _handleSessionConflict(context, sessionData);
       }
     } catch (e) {
@@ -306,7 +307,6 @@ class SessionMonitorService with WidgetsBindingObserver {
     _wasKickedOut = true;
 
     // Clear local session info from memory immediately
-    final oldSessionId = _currentSessionId;
     _currentSessionId = null;
     _currentUserId = null;
 
@@ -365,6 +365,7 @@ class SessionMonitorService with WidgetsBindingObserver {
   /// Navigate to login screen after cleanup
   Future<void> _navigateToLogin(BuildContext context) async {
     // Perform full cleanup
+    if (!context.mounted) return;
     await DataCleanupService.cleanupAllData(context);
 
     if (!context.mounted) return;

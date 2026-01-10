@@ -172,7 +172,7 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
         key: const ValueKey('listening'),
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'Listening...',
             style: TextStyle(
               color: AppColors.textOnDark.withValues(alpha: 0.7),

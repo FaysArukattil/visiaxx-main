@@ -289,7 +289,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
           const SizedBox(height: 16),
           const Text(
             'No exercises available',
-            style: const TextStyle(color: AppColors.white70, fontSize: 16),
+            style: TextStyle(color: AppColors.white70, fontSize: 16),
           ),
           const SizedBox(height: 24),
           TextButton(

@@ -171,6 +171,7 @@ class _SplashScreenState extends State<SplashScreen>
               return;
             }
 
+            if (!mounted) return;
             sessionService.startMonitoring(user.identityString, context);
           } catch (e) {
             debugPrint('[SplashScreen] ⚠️ Session check error: $e');

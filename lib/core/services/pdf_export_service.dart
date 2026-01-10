@@ -11,7 +11,6 @@ import '../../data/models/test_result_model.dart';
 import '../../data/models/questionnaire_model.dart';
 import '../../data/models/amsler_grid_result.dart';
 import '../../data/models/color_vision_result.dart';
-import 'package:flutter/services.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -70,13 +69,6 @@ class PdfExportService {
         );
       }
     }
-  }
-
-  Future<String> _fallbackSave(Uint8List bytes, String filename) async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final file = File('${appDir.path}/$filename');
-    await file.writeAsBytes(bytes);
-    return file.path;
   }
 
   /// Save file to Downloads folder (works on Android & iOS)
@@ -155,149 +147,6 @@ class PdfExportService {
   }
 
   /// Save PDF to Android Downloads folder using MediaStore (Android 10+)
-  Future<String> _saveToDownloadsAndroid(
-    Uint8List pdfBytes,
-    TestResultModel result,
-  ) async {
-    try {
-      // Generate filename
-      final name = result.profileName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
-      final age = result.profileAge != null ? '${result.profileAge}' : 'NA';
-      final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
-      final timeStr = DateFormat('HH-mm').format(result.timestamp);
-      final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
-
-      // Check Android version
-      int sdkInt = 0;
-      try {
-        final androidInfo = await _getAndroidSdkVersion();
-        sdkInt = androidInfo;
-      } catch (e) {
-        debugPrint('[PdfExportService] Could not get SDK version: $e');
-      }
-
-      debugPrint('[PdfExportService] Android SDK: $sdkInt');
-
-      if (sdkInt >= 29) {
-        // Android 10+ (API 29+) - Use MediaStore via platform channel
-        return await _saveViaMediaStore(pdfBytes, filename);
-      } else {
-        // Android 9 and below - Use traditional file system
-        return await _saveViaLegacyStorage(pdfBytes, filename);
-      }
-    } catch (e) {
-      debugPrint('[PdfExportService] ❌ Android save failed: $e');
-      rethrow;
-    }
-  }
-
-  /// Get Android SDK version
-  Future<int> _getAndroidSdkVersion() async {
-    if (!Platform.isAndroid) return 0;
-
-    try {
-      const platform = MethodChannel('com.example.visiaxx/system_info');
-      final int version = await platform.invokeMethod('getAndroidVersion');
-      return version;
-    } catch (e) {
-      // Fallback: assume modern Android
-      debugPrint('[PdfExportService] Could not get SDK version, assuming 29+');
-      return 29;
-    }
-  }
-
-  /// Save using MediaStore (Android 10+)
-  Future<String> _saveViaMediaStore(Uint8List pdfBytes, String filename) async {
-    try {
-      const platform = MethodChannel('com.example.visiaxx/downloads');
-      final String? path = await platform.invokeMethod('saveToDownloads', {
-        'filename': filename,
-        'bytes': pdfBytes,
-        'mimeType': 'application/pdf',
-      });
-
-      if (path != null && path.isNotEmpty) {
-        debugPrint('[PdfExportService] ✅ Saved via MediaStore: $path');
-        return path;
-      } else {
-        throw Exception('MediaStore returned null path');
-      }
-    } catch (e) {
-      debugPrint('[PdfExportService] ❌ MediaStore failed: $e');
-      // Fallback to legacy method
-      return await _saveViaLegacyStorage(pdfBytes, filename);
-    }
-  }
-
-  /// Save using legacy file system (Android 9 and below)
-  Future<String> _saveViaLegacyStorage(
-    Uint8List pdfBytes,
-    String filename,
-  ) async {
-    try {
-      // Request storage permission
-      final status = await Permission.storage.request();
-
-      if (!status.isGranted) {
-        throw Exception('Storage permission denied');
-      }
-
-      // Try common Download paths
-      final List<String> candidatePaths = [
-        '/storage/emulated/0/Download',
-        '/storage/emulated/0/Downloads',
-        '/sdcard/Download',
-        '/sdcard/Downloads',
-      ];
-
-      for (final dirPath in candidatePaths) {
-        final dir = Directory(dirPath);
-        if (await dir.exists()) {
-          try {
-            final file = File('$dirPath/$filename');
-            await file.writeAsBytes(pdfBytes);
-
-            // Make file visible in Downloads app
-            await _scanFile(file.path);
-
-            debugPrint('[PdfExportService] ✅ Saved to: ${file.path}');
-            return file.path;
-          } catch (e) {
-            debugPrint('[PdfExportService] ⚠️ Failed to write to $dirPath: $e');
-            continue;
-          }
-        }
-      }
-
-      throw Exception('Could not find writable Downloads directory');
-    } catch (e) {
-      debugPrint('[PdfExportService] ❌ Legacy storage failed: $e');
-
-      // Last resort: app-specific directory
-      final appDir = await getExternalStorageDirectory();
-      if (appDir != null) {
-        final file = File('${appDir.path}/$filename');
-        await file.writeAsBytes(pdfBytes);
-        debugPrint(
-          '[PdfExportService] ⚠️ Saved to app directory: ${file.path}',
-        );
-        return file.path;
-      }
-
-      rethrow;
-    }
-  }
-
-  /// Scan file to make it visible in Downloads app (legacy Android)
-  Future<void> _scanFile(String filePath) async {
-    try {
-      const platform = MethodChannel('com.example.visiaxx/media_scanner');
-      await platform.invokeMethod('scanFile', {'path': filePath});
-      debugPrint('[PdfExportService] 📱 File scanned for media store');
-    } catch (e) {
-      debugPrint('[PdfExportService] ⚠️ Media scan failed: $e');
-    }
-  }
 
   /// Get the expected file path for a test result PDF
   /// Get the expected file path for a test result PDF
@@ -1668,41 +1517,47 @@ class PdfExportService {
 
     if (cc.hasRedness) {
       String detail = 'Redness';
-      if (cc.rednessFollowUp?.duration != null)
+      if (cc.rednessFollowUp?.duration != null) {
         detail += ' (${cc.rednessFollowUp!.duration})';
+      }
       detailedComplaints.add(detail);
     }
     if (cc.hasWatering) {
       String detail = 'Watering';
-      if (cc.wateringFollowUp != null)
+      if (cc.wateringFollowUp != null) {
         detail +=
             ' (${cc.wateringFollowUp!.days}d, ${cc.wateringFollowUp!.pattern})';
+      }
       detailedComplaints.add(detail);
     }
     if (cc.hasItching) {
       String detail = 'Itching';
-      if (cc.itchingFollowUp != null)
+      if (cc.itchingFollowUp != null) {
         detail +=
             ' (${cc.itchingFollowUp!.bothEyes ? 'Both' : 'Single'}, ${cc.itchingFollowUp!.location})';
+      }
       detailedComplaints.add(detail);
     }
     if (cc.hasHeadache) {
       String detail = 'Headache';
-      if (cc.headacheFollowUp != null)
+      if (cc.headacheFollowUp != null) {
         detail +=
             ' (${cc.headacheFollowUp!.location}, ${cc.headacheFollowUp!.painType})';
+      }
       detailedComplaints.add(detail);
     }
     if (cc.hasDryness) {
       String detail = 'Dryness';
-      if (cc.drynessFollowUp != null)
+      if (cc.drynessFollowUp != null) {
         detail += ' (${cc.drynessFollowUp!.screenTimeHours}h/d)';
+      }
       detailedComplaints.add(detail);
     }
     if (cc.hasStickyDischarge) {
       String detail = 'Sticky Discharge';
-      if (cc.dischargeFollowUp != null)
+      if (cc.dischargeFollowUp != null) {
         detail += ' (${cc.dischargeFollowUp!.color})';
+      }
       detailedComplaints.add(detail);
     }
 

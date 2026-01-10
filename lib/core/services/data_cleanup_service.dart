@@ -38,6 +38,7 @@ class DataCleanupService {
       }
 
       // 1. Reset all providers
+      if (!context.mounted) return;
       await _resetProviders(context);
 
       // 2. Clear local storage (except preserved settings)

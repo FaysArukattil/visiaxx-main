@@ -148,19 +148,18 @@ class _LoginScreenState extends State<LoginScreen> {
               Navigator.pop(context);
               setState(() => _isLoading = true);
               final resendResult = await _authService.sendEmailVerification();
-              if (mounted) {
-                setState(() => _isLoading = false);
-                if (resendResult.isSuccess) {
-                  SnackbarUtils.showSuccess(
-                    context,
-                    resendResult.message ?? 'Verification email sent',
-                  );
-                } else {
-                  SnackbarUtils.showError(
-                    context,
-                    resendResult.message ?? 'Failed to send verification email',
-                  );
-                }
+              if (!context.mounted) return;
+              setState(() => _isLoading = false);
+              if (resendResult.isSuccess) {
+                SnackbarUtils.showSuccess(
+                  context,
+                  resendResult.message ?? 'Verification email sent',
+                );
+              } else {
+                SnackbarUtils.showError(
+                  context,
+                  resendResult.message ?? 'Failed to send verification email',
+                );
               }
             },
             child: const Text('Resend Email'),

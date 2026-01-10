@@ -55,6 +55,7 @@ class ProfileScreen extends StatelessWidget {
 
     if (confirm == true) {
       SessionMonitorService().stopMonitoring();
+      if (!context.mounted) return;
       await DataCleanupService.cleanupAllData(context);
       if (context.mounted) {
         Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
@@ -468,6 +469,7 @@ class ProfileScreen extends StatelessWidget {
       // Show confirmation dialog
       if (context.mounted) {
         final reviewCount = await reviewService.getReviewCount(user.uid);
+        if (!context.mounted) return;
         final shouldProceed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -828,24 +830,6 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildContentItem({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      onTap: onTap,
-      leading: Icon(icon, color: AppColors.primary),
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-      ),
-      subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: const Icon(Icons.chevron_right, size: 20),
     );
   }
 

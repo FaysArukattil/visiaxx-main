@@ -271,7 +271,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: AppColors.primary, size: 24),
@@ -307,7 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             scale: 0.85,
             child: CupertinoSwitch(
               value: value,
-              activeColor: AppColors.primary,
+              activeTrackColor: AppColors.primary,
               onChanged: onChanged,
             ),
           ),

@@ -18,7 +18,6 @@ import 'package:visiaxx/data/models/test_result_model.dart';
 import 'package:visiaxx/data/providers/test_session_provider.dart';
 import 'package:visiaxx/data/models/color_vision_result.dart';
 import 'package:visiaxx/data/models/pelli_robson_result.dart';
-import 'package:flutter/foundation.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
 /// Comprehensive results screen displaying all test data
@@ -331,7 +330,6 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [primaryColor, secondaryColor],
-          stops: const [0.0, 1.0],
         ),
         borderRadius: BorderRadius.circular(24), // ⚡ Now rounded
         boxShadow: [
@@ -1069,15 +1067,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.visibility_off_rounded,
                         color: Color(0xFFDC2626),
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      const Text(
                         'Clinical Findings',
                         style: TextStyle(
                           color: Color(0xFFDC2626),

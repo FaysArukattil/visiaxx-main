@@ -268,7 +268,7 @@ class TestResultService {
   /// Check if AWS S3 is configured and reachable
   Future<bool> checkAWSConnection() async {
     try {
-      return await _awsStorageService.isAvailable &&
+      return _awsStorageService.isAvailable &&
           await _awsStorageService.testConnection();
     } catch (e) {
       debugPrint('[TestResultService] ❌ AWS Connection Check Failed: $e');
@@ -476,7 +476,7 @@ class TestResultService {
                           .doc(member.id)
                           .collection('tests')
                           .orderBy('timestamp', descending: true)
-                          .get(const GetOptions(source: Source.cache));
+                          .get(GetOptions(source: Source.cache));
                     },
                   ),
             );

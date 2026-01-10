@@ -388,11 +388,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                     labelText: 'Age',
                                   ),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty)
+                                    if (value == null || value.isEmpty) {
                                       return 'Age?';
+                                    }
                                     final age = int.tryParse(value);
-                                    if (age == null || age < 1 || age > 120)
+                                    if (age == null || age < 1 || age > 120) {
                                       return '!';
+                                    }
                                     return null;
                                   },
                                 ),
@@ -419,8 +421,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               labelText: 'Email Address',
                             ),
                             validator: (value) {
-                              if (value == null || value.isEmpty)
+                              if (value == null || value.isEmpty) {
                                 return 'Required';
+                              }
                               if (!value.contains('@')) return 'Invalid email';
                               return null;
                             },

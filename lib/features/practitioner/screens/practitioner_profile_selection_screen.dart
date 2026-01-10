@@ -530,7 +530,7 @@ class _PractitionerProfileSelectionScreenState
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedSex,
+                    initialValue: _selectedSex,
                     decoration: const InputDecoration(labelText: 'Sex *'),
                     items: const [
                       DropdownMenuItem(value: 'Male', child: Text('Male')),

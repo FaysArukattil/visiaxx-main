@@ -251,7 +251,7 @@ class _VideoReelItemState extends State<VideoReelItem>
                 const SizedBox(height: 12),
                 Text(
                   widget.video.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.w800,

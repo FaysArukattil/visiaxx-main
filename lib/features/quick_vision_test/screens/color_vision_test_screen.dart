@@ -60,7 +60,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       false; // ✅ Prevent distance warning during pause dialog
   Timer? _autoNavigationTimer; // ✅ Added timer for cancellable navigation
   bool _userDismissedDistanceWarning = false;
-  bool _isNavigatingToNextTest = false;
+  final bool _isNavigatingToNextTest = false;
   int _secondsRemaining = 5;
   DateTime? _lastShouldPauseTime;
   static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
@@ -804,7 +804,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         _phase == TestPhase.leftEyeInstruction) {
       return const Scaffold(
         backgroundColor: AppColors.testBackground,
-        body: const Center(child: EyeLoader(size: 80)),
+        body: Center(child: EyeLoader(size: 80)),
       );
     }
 
