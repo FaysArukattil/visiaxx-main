@@ -8,6 +8,7 @@ import 'dart:ui' as ui;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/services/tts_service.dart';
@@ -760,7 +761,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     }
 
     if (!_testingStarted) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: EyeLoader(size: 80));
     }
 
     return _buildTestView();

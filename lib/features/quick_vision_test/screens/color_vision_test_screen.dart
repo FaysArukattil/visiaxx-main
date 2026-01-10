@@ -6,6 +6,7 @@ import 'package:visiaxx/core/constants/ishihara_plate_data.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/color_vision_cover_eye_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../core/services/distance_skip_manager.dart';
@@ -766,7 +767,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         _phase == TestPhase.leftEyeInstruction) {
       return const Scaffold(
         backgroundColor: AppColors.testBackground,
-        body: Center(child: CircularProgressIndicator()),
+        body: const Center(child: EyeLoader(size: 80)),
       );
     }
 

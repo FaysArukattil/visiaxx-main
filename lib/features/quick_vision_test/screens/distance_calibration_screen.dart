@@ -7,6 +7,7 @@ import '../../../core/services/distance_detection_service.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/distance_helper.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 /// Distance Calibration Screen with real camera preview and face detection
 /// Shows real-time distance and guidance to position correctly
@@ -350,7 +351,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: Colors.white),
+          const EyeLoader(size: 80),
           const SizedBox(height: 24),
           Text(
             'Initializing Camera...',
@@ -440,14 +441,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // ✅ Add animated loading indicator
-                  SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      strokeWidth: 3,
-                    ),
-                  ),
+                  const EyeLoader(size: 60),
                   const SizedBox(height: 20),
                   Text(
                     _hasError ? 'Camera not available' : 'Starting camera...',

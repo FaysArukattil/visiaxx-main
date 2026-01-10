@@ -7,6 +7,7 @@ import 'package:visiaxx/core/utils/distance_helper.dart';
 import 'package:visiaxx/core/utils/fuzzy_matcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
+import '../../../core/widgets/eye_loader.dart';
 import '../../../core/services/speech_service.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/services/distance_detection_service.dart';
@@ -819,7 +820,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                       physics: const AlwaysScrollableScrollPhysics(),
                       child: _showSentence
                           ? _buildSentenceView()
-                          : const Center(child: CircularProgressIndicator()),
+                          : const Center(child: EyeLoader(size: 80)),
                     ),
                   ),
                   if (_showResult) _buildResultFeedback(),

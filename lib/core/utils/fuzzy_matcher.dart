@@ -44,22 +44,40 @@ class FuzzyMatcher {
 
     final actualWords = _normalize(actual).split(' ').toSet();
 
-    int matches = 0;
+    int matchesCount = 0;
     for (final tWord in targetWords) {
       if (actualWords.contains(tWord)) {
-        matches++;
+        matchesCount++;
       } else {
         // Soft match for minor typos (e.g. "vision" vs "missions")
         for (final aWord in actualWords) {
-          if (aWord.similarityTo(tWord) > 0.8) {
-            matches++;
+          double similarity = aWord.similarityTo(tWord);
+
+          // ✅ SPECIAL CASE: "green" & "grass" often misheard
+          if (tWord == 'green') {
+            final greenVariants = [
+              'grin',
+              'grain',
+              'grand',
+              'great',
+              'greene',
+              'grim',
+            ];
+            if (greenVariants.contains(aWord)) similarity = 0.9;
+          } else if (tWord == 'grass') {
+            final grassVariants = ['glass', 'gras', 'gross', 'crass', 'grace'];
+            if (grassVariants.contains(aWord)) similarity = 0.9;
+          }
+
+          if (similarity > 0.8) {
+            matchesCount++;
             break;
           }
         }
       }
     }
 
-    return (matches / targetWords.length) >= keywordThreshold;
+    return (matchesCount / targetWords.length) >= keywordThreshold;
   }
 
   /// Get match result with details

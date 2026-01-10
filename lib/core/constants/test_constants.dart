@@ -35,43 +35,43 @@ class TestConstants {
       sizeMm: 87.0,
       snellen: '6/60',
       logMAR: 1.0,
-      flutterFontSize: 120.0, // ✅ INCREASED from 55
+      flutterFontSize: 120.0,
     ),
     VisualAcuityLevel(
       sizeMm: 52.2,
       snellen: '6/36',
       logMAR: 0.78,
-      flutterFontSize: 72.0, // ✅ INCREASED from 34
+      flutterFontSize: 72.0,
     ),
     VisualAcuityLevel(
       sizeMm: 34.8,
       snellen: '6/24',
       logMAR: 0.60,
-      flutterFontSize: 48.0, // ✅ INCREASED from 22
+      flutterFontSize: 48.0,
     ),
     VisualAcuityLevel(
       sizeMm: 26.1,
       snellen: '6/18',
       logMAR: 0.48,
-      flutterFontSize: 36.0, // ✅ INCREASED from 16.5
+      flutterFontSize: 36.0,
     ),
     VisualAcuityLevel(
       sizeMm: 17.4,
       snellen: '6/12',
       logMAR: 0.30,
-      flutterFontSize: 24.0, // ✅ INCREASED from 11
+      flutterFontSize: 24.0,
     ),
     VisualAcuityLevel(
       sizeMm: 13.05,
       snellen: '6/9',
       logMAR: 0.18,
-      flutterFontSize: 18.0, // ✅ INCREASED from 8.3
+      flutterFontSize: 18.0,
     ),
     VisualAcuityLevel(
       sizeMm: 8.7,
       snellen: '6/6',
       logMAR: 0.0,
-      flutterFontSize: 12.0, // ✅ INCREASED from 5.5
+      flutterFontSize: 12.0,
     ),
   ];
 
@@ -133,7 +133,7 @@ class TestConstants {
   static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(
       sentence: 'Clear vision',
-      fontSize: 110.0, // ✅ Slightly reduced to prevent "n" from wrapping
+      fontSize: 65.0, // ✅ Snellen-accurate for 40cm and fits on one row
       snellen: '6/60',
     ),
     ShortDistanceSentence(
@@ -152,7 +152,7 @@ class TestConstants {
       snellen: '6/18',
     ),
     ShortDistanceSentence(
-      sentence: 'The grass is green', // ✅ More recognizable
+      sentence: 'Vision is a precious gift', // ✅ Changed as requested
       fontSize: 24.0,
       snellen: '6/12',
     ),
@@ -162,7 +162,7 @@ class TestConstants {
       snellen: '6/9',
     ),
     ShortDistanceSentence(
-      sentence: 'See the beauty of life',
+      sentence: 'Beauty of life', // ✅ Shortened as requested
       fontSize: 12.0,
       snellen: '6/6',
     ),

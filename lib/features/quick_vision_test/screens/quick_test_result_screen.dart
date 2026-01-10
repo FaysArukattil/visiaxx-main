@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:visiaxx/core/providers/network_connectivity_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../core/widgets/eye_loader.dart';
 import 'package:visiaxx/core/constants/app_colors.dart';
 import 'package:visiaxx/core/services/review_service.dart';
 import 'package:visiaxx/core/services/test_result_service.dart';
@@ -1732,14 +1733,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               ),
             ),
             icon: _isGeneratingPdf
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
+                ? const EyeLoader(size: 20)
                 : const Icon(Icons.picture_as_pdf_rounded),
             label: Text(
               _isGeneratingPdf ? 'Generating Report...' : 'Download PDF Report',
