@@ -1135,22 +1135,17 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isCurrent
-            ? AppColors.primary.withValues(alpha: 0.05)
-            : (isNext
-                  ? AppColors.secondary.withValues(alpha: 0.03)
-                  : Colors.transparent),
+            ? Colors.blue.withValues(
+                alpha: 0.15,
+              ) // Explicit blue for current triplet
+            : Colors.transparent, // No background for next or other triplets
         borderRadius: BorderRadius.circular(12),
         border: isCurrent
             ? Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                width: 2,
+                color: Colors.blue, // Explicit blue border
+                width: 3, // Thicker border to make it more prominent
               )
-            : (isNext
-                  ? Border.all(
-                      color: AppColors.secondary.withValues(alpha: 0.2),
-                      width: 1,
-                    )
-                  : null),
+            : null, // No border for next or other triplets
       ),
       child: Opacity(
         opacity: rowOpacity,

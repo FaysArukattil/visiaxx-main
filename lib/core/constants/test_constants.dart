@@ -206,7 +206,8 @@ enum EDirection {
   right(0, 'Right'),
   down(90, 'Down'),
   left(180, 'Left'),
-  up(270, 'Up');
+  up(270, 'Up'),
+  blurry(-1, 'Blurry'); // Special case: user cannot see clearly
 
   final int rotationDegrees;
   final String label;
@@ -223,6 +224,13 @@ enum EDirection {
         return EDirection.left;
       case 'up':
         return EDirection.up;
+      case 'blurry':
+      case 'blur':
+      case 'cannot see':
+      case 'can\'t see':
+      case 'cannot see clearly':
+      case 'can\'t see clearly':
+        return EDirection.blurry;
       default:
         return EDirection.right;
     }

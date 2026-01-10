@@ -42,6 +42,12 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
       voiceText: 'Say: "Right"',
       buttonPosition: _ButtonPosition.right,
     ),
+    _DirectionDemo(
+      label: 'BLURRY',
+      rotation: 0, // Doesn't matter for blurry
+      voiceText: 'Say: "Blurry" or "Nothing" if you can\'t see clearly',
+      buttonPosition: _ButtonPosition.blurry,
+    ),
   ];
 
   @override
@@ -132,24 +138,34 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                         ),
                         SizedBox(width: widget.isCompact ? 40 : 50),
 
-                        // E letter in center
-                        Opacity(
-                          opacity: fadeIn,
-                          child: Transform.rotate(
-                            angle:
-                                _directions[_currentDirection].rotation *
-                                pi /
-                                180,
-                            child: Text(
-                              'E',
-                              style: TextStyle(
-                                fontSize: eSize,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                        // E letter in center (hidden for blurry demo)
+                        _currentDirection < 4
+                            ? Opacity(
+                                opacity: fadeIn,
+                                child: Transform.rotate(
+                                  angle:
+                                      _directions[_currentDirection].rotation *
+                                      pi /
+                                      180,
+                                  child: Text(
+                                    'E',
+                                    style: TextStyle(
+                                      fontSize: eSize,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : SizedBox(
+                                width: eSize,
+                                height: eSize,
+                                child: Icon(
+                                  Icons.blur_on,
+                                  size: eSize,
+                                  color: Colors.grey.shade300,
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
 
                         SizedBox(width: widget.isCompact ? 40 : 50),
                         _buildDirectionButton(
@@ -170,6 +186,14 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                       _ButtonPosition.bottom,
                       buttonPress,
                       fadeIn,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Blurry button at bottom
+                    Opacity(
+                      opacity: fadeIn,
+                      child: _buildBlurryButton(buttonPress, widget.isCompact),
                     ),
                   ],
                 ),
@@ -200,17 +224,25 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      _getDirectionIcon(),
-                      color: AppColors.primary,
+                      _currentDirection < 4
+                          ? _getDirectionIcon()
+                          : Icons.visibility_off,
+                      color: _currentDirection < 4
+                          ? AppColors.primary
+                          : AppColors.warning,
                       size: widget.isCompact ? 18 : 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Tap ${_directions[_currentDirection].label} button',
+                      _currentDirection < 4
+                          ? 'Tap ${_directions[_currentDirection].label} button'
+                          : 'Tap "Can\'t See Clearly" button',
                       style: TextStyle(
                         fontSize: widget.isCompact ? 13 : 14,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: _currentDirection < 4
+                            ? AppColors.primary
+                            : AppColors.warning,
                       ),
                     ),
                   ],
@@ -225,12 +257,15 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                       size: widget.isCompact ? 14 : 16,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      _directions[_currentDirection].voiceText,
-                      style: TextStyle(
-                        fontSize: widget.isCompact ? 11 : 12,
-                        color: AppColors.success,
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        _directions[_currentDirection].voiceText,
+                        style: TextStyle(
+                          fontSize: widget.isCompact ? 11 : 12,
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ],
@@ -290,6 +325,72 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
     );
   }
 
+  Widget _buildBlurryButton(double pressProgress, bool isCompact) {
+    final isActive =
+        _directions[_currentDirection].buttonPosition == _ButtonPosition.blurry;
+    final scale = isActive ? 1.0 - (pressProgress * 0.1) : 1.0;
+
+    return Transform.scale(
+      scale: scale,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: isCompact
+              ? 150.0
+              : 180.0, // Reduced width to prevent overflow
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive && pressProgress > 0
+              ? AppColors.warning
+              : Colors.orange.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.warning, width: 2),
+          boxShadow: isActive && pressProgress > 0
+              ? [
+                  BoxShadow(
+                    color: AppColors.warning.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.visibility_off,
+              size: isCompact ? 16 : 18,
+              color: isActive && pressProgress > 0
+                  ? Colors.white
+                  : AppColors.warning,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                "Can't See Clearly",
+                style: TextStyle(
+                  fontSize: isCompact ? 12 : 14,
+                  fontWeight: FontWeight.w600,
+                  color: isActive && pressProgress > 0
+                      ? Colors.white
+                      : AppColors.warning,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   IconData _getDirectionIcon() {
     switch (_currentDirection) {
       case 0:
@@ -306,7 +407,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
   }
 }
 
-enum _ButtonPosition { top, bottom, left, right }
+enum _ButtonPosition { top, bottom, left, right, blurry }
 
 class _DirectionDemo {
   final String label;

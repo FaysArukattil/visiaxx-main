@@ -22,12 +22,12 @@ class CoverLeftEyeInstructionScreen extends StatefulWidget {
     this.title = 'Test Instructions',
     this.subtitle = 'Focus with your RIGHT eye only',
     this.ttsMessage =
-        'Cover your left eye with your palm or a paper. Keep your right eye open. Stand at one meter distance from the screen. You will see the letter E pointing in different directions. Say upward, down, left, or right to indicate the direction.',
+        'Cover your left eye with your palm or a paper. Keep your right eye open. Stand at one meter distance from the screen. You will see the letter E pointing in different directions. Say upward, down, left, or right to indicate the direction. If you cannot see clearly, say blurry or nothing.',
     this.targetDistance = 100.0,
     this.startButtonText = 'Start Right Eye Test',
     this.instructionTitle = 'Voice Commands',
     this.instructionDescription =
-        'Say the direction the E is pointing:\nUPPER or UPWARD, DOWN or DOWNWARD, LEFT, RIGHT',
+        'Say the direction the E is pointing:\nUPPER or UPWARD, DOWN or DOWNWARD, LEFT, RIGHT\n\nOr say BLURRY / NOTHING if you can\'t see clearly',
     this.instructionIcon = Icons.mic,
     this.onContinue,
   });

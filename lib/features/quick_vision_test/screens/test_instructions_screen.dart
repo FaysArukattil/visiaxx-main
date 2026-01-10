@@ -39,7 +39,8 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
       title: 'How to Respond',
       description:
           'You will see the letter E pointing in different directions. '
-          'Tap the arrow button in that direction or use voice commands.',
+          'Tap the arrow button in that direction or use voice commands. '
+          'If you cannot see clearly, tap the "Can\'t See Clearly / Blurry" button or say "blurry".',
       icon: Icons.touch_app,
       type: _StepType.howToRespond,
     ),

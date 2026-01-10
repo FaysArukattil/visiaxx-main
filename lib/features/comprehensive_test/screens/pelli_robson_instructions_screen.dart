@@ -48,7 +48,7 @@ class _PelliRobsonInstructionsScreenState
       _InstructionStep(
         title: 'Reading Letters',
         description:
-            'You will see groups of 3 letters (triplets). Read them aloud from left to right as they appear.',
+            'You will see groups of 3 letters (triplets) inside a blue box. Read the triplets inside the blue box aloud from left to right.',
         icon: Icons.record_voice_over_outlined,
       ),
       _InstructionStep(

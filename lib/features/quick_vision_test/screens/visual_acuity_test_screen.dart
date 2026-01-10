@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:visiaxx/core/utils/app_logger.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
 import 'package:visiaxx/core/utils/navigation_utils.dart';
 
@@ -796,13 +795,43 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     debugPrint(
       '[VisualAcuity] 🔥🔥🔥 _handleVoiceResponse called with: "$recognized"',
     );
-    debugPrint('[VisualAcuity] Waiting for response: $_waitingForResponse');
 
-    if (!_waitingForResponse) {
-      debugPrint('[VisualAcuity] ⚠️ NOT waiting for response - ignoring');
+    // Only process if the E is currently displayed and we are waiting for a response
+    if (!mounted || !_showE || !_waitingForResponse) {
+      debugPrint(
+        '[VisualAcuity] ⚠️ Not in E display phase or not waiting for response - ignoring voice input',
+      );
       return;
     }
 
+    debugPrint('[VisualAcuity] Voice recognized: "$recognized"');
+
+    final normalized = recognized.toLowerCase().trim();
+
+    // Check for blurry keywords first
+    final blurryKeywords = [
+      'blurry',
+      'blur',
+      'bloody', // Common misrecognition of 'blurry'
+      'cannot see',
+      'can\'t see',
+      'kanchi', // Common misrecognition of 'can't see'
+      'cannot see clearly',
+      'can\'t see clearly',
+      'too blurry',
+      'not clear',
+      'nothing', // User can't see anything
+    ];
+
+    for (var keyword in blurryKeywords) {
+      if (normalized.contains(keyword)) {
+        debugPrint('[VisualAcuity] 📝 Recognized "blurry" keyword');
+        _recordResponse('blurry'); // Record "blurry" as the response
+        return;
+      }
+    }
+
+    // If not blurry, try to match a direction
     debugPrint('[VisualAcuity] 🔍 Parsing direction from: "$recognized"');
     final direction = SpeechService.parseDirection(recognized);
     debugPrint('[VisualAcuity] 📝 Parsed direction: $direction');
@@ -845,28 +874,24 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         ? DateTime.now().difference(_eDisplayStartTime!).inMilliseconds
         : 0;
 
+    // Check if response was "blurry"
+    final wasBlurry = userResponse.toLowerCase() == 'blurry';
     final isCorrect =
+        !wasBlurry &&
         userResponse.toLowerCase() == _currentDirection.label.toLowerCase();
 
+    // Create response record
     final record = EResponseRecord(
       level: _currentLevel,
-      eSize: TestConstants.visualAcuityLevels[_currentLevel].sizeMm,
+      eSize: TestConstants.visualAcuityLevels[_currentLevel].flutterFontSize,
       expectedDirection: _currentDirection.label,
       userResponse: userResponse,
       isCorrect: isCorrect,
       responseTimeMs: responseTime,
+      wasBlurry: wasBlurry,
     );
 
     _responses.add(record);
-    AppLogger.logLongDistance(
-      eye: _currentEye.toUpperCase(),
-      plateNumber: _responses.length,
-      snellen: TestConstants.visualAcuityLevels[_currentLevel].snellen,
-      fontSize: TestConstants.visualAcuityLevels[_currentLevel].flutterFontSize,
-      expected: _currentDirection.label.toLowerCase(),
-      userSaid: userResponse,
-      correct: isCorrect,
-    );
     _totalResponses++;
 
     // Voice confirmation feedback
@@ -1795,6 +1820,27 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             direction: EDirection.down,
             onPressed: () => _handleButtonResponse(EDirection.down),
           ),
+          const SizedBox(height: 20),
+          // Blurry/Can't See Clearly button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _handleButtonResponse(EDirection.blurry),
+              icon: const Icon(Icons.visibility_off, size: 20),
+              label: const Text(
+                "Can't See Clearly / Blurry",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.warning,
+                side: BorderSide(color: AppColors.warning, width: 2),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -2025,6 +2071,8 @@ class _DirectionButton extends StatelessWidget {
         return Icons.arrow_back;
       case EDirection.right:
         return Icons.arrow_forward;
+      case EDirection.blurry:
+        return Icons.visibility_off; // Can't see clearly icon
     }
   }
 

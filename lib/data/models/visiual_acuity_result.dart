@@ -28,7 +28,8 @@ class VisualAcuityResult {
       correctResponses: data['correctResponses'] ?? 0,
       totalResponses: data['totalResponses'] ?? 0,
       durationSeconds: data['durationSeconds'] ?? 0,
-      responses: (data['responses'] as List<dynamic>?)
+      responses:
+          (data['responses'] as List<dynamic>?)
               ?.map((e) => EResponseRecord.fromMap(e))
               .toList() ??
           [],
@@ -65,6 +66,8 @@ class EResponseRecord {
   final String userResponse;
   final bool isCorrect;
   final int responseTimeMs;
+  final bool
+  wasBlurry; // True if user responded with "Blurry/Can't see clearly"
 
   EResponseRecord({
     required this.level,
@@ -73,6 +76,7 @@ class EResponseRecord {
     required this.userResponse,
     required this.isCorrect,
     required this.responseTimeMs,
+    this.wasBlurry = false,
   });
 
   factory EResponseRecord.fromMap(Map<String, dynamic> data) {
@@ -83,6 +87,7 @@ class EResponseRecord {
       userResponse: data['userResponse'] ?? '',
       isCorrect: data['isCorrect'] ?? false,
       responseTimeMs: data['responseTimeMs'] ?? 0,
+      wasBlurry: data['wasBlurry'] ?? false,
     );
   }
 
@@ -94,6 +99,7 @@ class EResponseRecord {
       'userResponse': userResponse,
       'isCorrect': isCorrect,
       'responseTimeMs': responseTimeMs,
+      'wasBlurry': wasBlurry,
     };
   }
 }
