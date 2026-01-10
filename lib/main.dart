@@ -96,6 +96,9 @@ void main() async {
 }
 
 class VisiaxApp extends StatefulWidget {
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   const VisiaxApp({super.key});
 
   @override
@@ -163,6 +166,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
       child: MaterialApp(
+        navigatorKey: VisiaxApp.navigatorKey,
         title: 'Visiaxx - Digital Eye Clinic',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/network_connectivity_provider.dart';
 import '../constants/app_status.dart';
 import '../utils/snackbar_utils.dart';
+import 'package:visiaxx/main.dart';
 
 /// Non-intrusive network status indicator that appears on the right side as overlay
 class NetworkIndicatorWidget extends StatefulWidget {
@@ -40,7 +41,14 @@ class _NetworkIndicatorWidgetState extends State<NetworkIndicatorWidget> {
                 _hasShownInitialStatus = true;
               } else {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  final currentRoute = ModalRoute.of(context)?.settings.name;
+                  // ModalRoute.of(context) is null here because we're above Navigator
+                  // Use the global navigator key to find the current route name
+                  String? currentRoute;
+                  VisiaxApp.navigatorKey.currentState?.popUntil((route) {
+                    currentRoute = route.settings.name;
+                    return true;
+                  });
+
                   final isOnSplashScreen = AppStatus.isSplashActive;
                   final isPersistentRoute = _persistentOfflineRoutes.contains(
                     currentRoute,

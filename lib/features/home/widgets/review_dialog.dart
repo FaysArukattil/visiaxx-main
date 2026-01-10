@@ -69,6 +69,10 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
     try {
       await _submitReviewLogic();
+      if (mounted) {
+        Navigator.of(context).pop(); // Close dialog on success
+        SnackbarUtils.showSuccess(context, 'Thank you for your feedback!');
+      }
     } catch (e) {
       if (mounted) {
         SnackbarUtils.showError(context, 'Error: $e');

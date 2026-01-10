@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:visiaxx/main.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_status.dart';
 
 /// Centralized utility for showing professional, consistent snackbars throughout the app.
 /// These snackbars use Overlay to show on top of everything, including modal bottom sheets.
@@ -92,13 +92,7 @@ class SnackbarUtils {
   }) {
     final now = DateTime.now();
 
-    // 🚫 SUPPRESSION: Never show snackbars on the splash screen
-    if (AppStatus.isSplashActive) {
-      debugPrint(
-        '[SnackbarUtils] 🤐 Suppressing snackbar on splash screen: $message',
-      );
-      return;
-    }
+    // Simplified: Show all snackbars as requested
 
     // Anti-ghosting: If it's the same message triggered within 1 second,
     // don't re-trigger a new animation to avoid flickering.
@@ -117,7 +111,19 @@ class SnackbarUtils {
 
     _removeCurrentSnackbar();
 
-    final overlay = Overlay.of(context);
+    // Try to get overlay from provided context, fall back to global navigator key
+    OverlayState? overlay;
+    try {
+      overlay = Overlay.of(context);
+    } catch (_) {
+      overlay = VisiaxApp.navigatorKey.currentState?.overlay;
+    }
+
+    if (overlay == null) {
+      debugPrint('[SnackbarUtils] ❌ Could not find Overlay to show snackbar.');
+      return;
+    }
+
     _currentOverlay = OverlayEntry(
       builder: (context) => _SnackbarWidget(
         message: message,
