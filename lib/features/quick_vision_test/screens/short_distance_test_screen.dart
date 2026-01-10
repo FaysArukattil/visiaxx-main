@@ -602,23 +602,37 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       isCorrect = false;
       similarity = 0.0;
     } else {
-      // ✅ 2. SUBSTRING MATCH: If the entire expected sentence is found in the user input, it's 100% correct
-      if (normalizedUser.contains(normalizedExpected)) {
+      // ✅ 2. ALL KEYWORDS PRESENT: If every significant word is found (even if jumbled or with extra words), it's 100%
+      final hasAllKeywords = FuzzyMatcher.containsKeywords(
+        normalizedExpected,
+        normalizedUser,
+        keywordThreshold: 1.0, // Force 100% word coverage
+      );
+
+      if (hasAllKeywords) {
+        debugPrint(
+          '[ShortDistance] 🎯 ALL KEYWORDS FOUND - forcing 100% Correct',
+        );
+        isCorrect = true;
+        similarity = 100.0;
+      }
+      // ✅ 3. SUBSTRING MATCH: If the entire literal phrase is found inside
+      else if (normalizedUser.contains(normalizedExpected)) {
         debugPrint(
           '[ShortDistance] 🎯 PERFECT SUBSTRING MATCH - forcing Correct',
         );
         isCorrect = true;
         similarity = 100.0;
       } else {
-        // ✅ 3. FUZZY MATCH: Fallback to existing fuzzy/keyword logic
+        // ✅ 4. FUZZY MATCH: Fallback to existing fuzzy/partial keyword logic
         isCorrect = matchResult.passed;
         if (!isCorrect) {
-          final hasKeywords = FuzzyMatcher.containsKeywords(
+          final hasMostKeywords = FuzzyMatcher.containsKeywords(
             normalizedExpected,
             normalizedUser,
             keywordThreshold: 0.75,
           );
-          if (hasKeywords) {
+          if (hasMostKeywords) {
             debugPrint(
               '[ShortDistance] 💎 KEYWORD MATCH (Similarity: ${matchResult.similarity.toStringAsFixed(1)}%)',
             );

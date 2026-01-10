@@ -133,7 +133,7 @@ class TestConstants {
   static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(
       sentence: 'Clear vision',
-      fontSize: 120.0,
+      fontSize: 110.0, // ✅ Slightly reduced to prevent "n" from wrapping
       snellen: '6/60',
     ),
     ShortDistanceSentence(
@@ -147,12 +147,12 @@ class TestConstants {
       snellen: '6/24',
     ),
     ShortDistanceSentence(
-      sentence: 'Protect your eyes every day',
+      sentence: 'The sky is clear and blue', // ✅ More recognizable
       fontSize: 36.0,
       snellen: '6/18',
     ),
     ShortDistanceSentence(
-      sentence: 'Good sight is a blessing',
+      sentence: 'The grass is green', // ✅ More recognizable
       fontSize: 24.0,
       snellen: '6/12',
     ),
