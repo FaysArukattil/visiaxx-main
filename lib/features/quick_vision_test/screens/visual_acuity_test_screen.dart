@@ -446,7 +446,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           debugPrint(
             '[VisualAcuity] ⚡ Rapid recognition from partial speech: $direction',
           );
-          _recordResponse(direction);
+          _recordResponse(direction, source: 'partial_speech');
           return;
         }
 
@@ -711,6 +711,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _startEyeTest() {
+    if (!mounted || _testComplete || _showE || _showRelaxation) {
+      debugPrint(
+        '[VisualAcuity] ⚠️ _startEyeTest IGNORED: Test already in progress',
+      );
+      return;
+    }
+
     debugPrint('🔥 [VisualAcuity] _startEyeTest called for eye: $_currentEye');
     setState(() {
       _isTestPausedForDistance = false;
@@ -751,16 +758,42 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _showTumblingE() {
+    if (!mounted || (_showE && _waitingForResponse)) {
+      debugPrint(
+        '[VisualAcuity] ⚠️ _showTumblingE IGNORED: Already in E phase',
+      );
+      return;
+    }
+
     debugPrint(
       '🔥 [VisualAcuity] _showTumblingE called (Current Level: $_currentLevel)',
     );
     // ✅ NEW: Clear ANY stale speech before rotation to prevent "leakage" from last E
     _continuousSpeech.clearAccumulated();
 
+    // ✅ Explicitly reset display state
+    _eDisplayCountdown = TestConstants.eDisplayDurationSeconds;
+    _eDisplayStartTime = DateTime.now();
+
+    // ✅ Cancel ANY existing timers for this eye/trial
+    _eDisplayTimer?.cancel();
+    _eCountdownTimer?.cancel();
+    _relaxationTimer?.cancel();
+
+    _currentLevel = _currentLevel.clamp(
+      0,
+      TestConstants.visualAcuityLevels.length - 1,
+    );
+
     final directions = EDirection.values
         .where((d) => d != _currentDirection && d != EDirection.blurry)
         .toList();
-    _currentDirection = directions[_random.nextInt(directions.length)];
+    final newDirection = directions[_random.nextInt(directions.length)];
+
+    debugPrint(
+      '🔥 [VisualAcuity] DIRECTION ROTATION: $_currentDirection -> $newDirection',
+    );
+    _currentDirection = newDirection;
 
     // ✅ Reset preview when NEW E starts
     _lastDetectedSpeech = null;
@@ -768,14 +801,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     setState(() {
       _showRelaxation = false;
       _showE = true;
+      _showResult = false;
       _waitingForResponse = true;
       _lastDetectedSpeech = null;
-      _eDisplayCountdown = TestConstants.eDisplayDurationSeconds;
-      _eDisplayStartTime = DateTime.now(); // ✅ Capture precisely when rendered
+      _eDisplayStartTime =
+          DateTime.now(); // ✅ Re-capture precisely after setState triggers
 
       debugPrint(
         '🔥 [VisualAcuity] 🎯 Displaying E: Size=${TestConstants.visualAcuityLevels[_currentLevel].sizeMm}mm '
-        '(Logical Pixels: ${(TestConstants.visualAcuityLevels[_currentLevel].sizeMm * _pixelsPerMm).toStringAsFixed(1)})',
+        '(Index: $_currentLevel)',
       );
     });
 
@@ -831,9 +865,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           final lastValue = _continuousSpeech.getLastRecognized();
           if (lastValue != null) {
             final direction = SpeechService.parseDirection(lastValue);
-            _recordResponse(direction);
+            _recordResponse(direction, source: 'timer_timeout_last_value');
           } else {
-            _recordResponse(null); // No response
+            _recordResponse(
+              null,
+              source: 'timer_timeout_no_value',
+            ); // No response
           }
         }
       },
@@ -859,7 +896,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       final sinceRotation = DateTime.now().difference(_eDisplayStartTime!);
       if (sinceRotation < const Duration(milliseconds: 1500)) {
         debugPrint(
-          '[VisualAcuity] ⏳ Ignoring result: arrived too fast after rotation (${sinceRotation.inMilliseconds}ms)',
+          '[VisualAcuity] ⏳ Ignoring final result: arrived too fast after rotation (${sinceRotation.inMilliseconds}ms)',
         );
         return;
       }
@@ -888,21 +925,25 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     for (var keyword in blurryKeywords) {
       if (normalized.contains(keyword)) {
         debugPrint('[VisualAcuity] 📝 Recognized "blurry" keyword');
-        _recordResponse('blurry'); // Record "blurry" as the response
+        _recordResponse(
+          'blurry',
+          source: 'voice_blurry_keyword',
+        ); // Record "blurry" as the response
         return;
       }
     }
 
     // If not blurry, try to match a direction
     debugPrint('[VisualAcuity] 🔍 Parsing direction from: "$recognized"');
-    final direction = SpeechService.parseDirection(recognized);
+    final direction = SpeechService.parseDirection(normalized);
     debugPrint('[VisualAcuity] 📝 Parsed direction: $direction');
 
     if (direction != null) {
       debugPrint('[VisualAcuity] ✅ Recording direction: $direction');
       // ✅ Update preview IMMEDIATELY so user sees what was recognized
       if (mounted) setState(() => _lastDetectedSpeech = recognized);
-      _recordResponse(direction);
+      _recordResponse(direction, source: 'voice_final');
+      return;
     } else {
       debugPrint('[VisualAcuity] ❌ Direction is NULL - not recording');
     }
@@ -910,11 +951,17 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   void _handleButtonResponse(EDirection direction) {
     if (!_waitingForResponse) return;
-    _recordResponse(direction.label.toLowerCase());
+    _recordResponse(direction.label.toLowerCase(), source: 'manual_button');
   }
 
-  void _recordResponse(String? userResponse) {
-    if (!_waitingForResponse) return; // ✅ Guard against double calls
+  void _recordResponse(String? userResponse, {String source = 'unknown'}) {
+    debugPrint(
+      '[VisualAcuity] 📝 _recordResponse called from $source with: $userResponse',
+    );
+    if (!_waitingForResponse) {
+      debugPrint('[VisualAcuity] ⚠️ _recordResponse IGNORED: Already recorded');
+      return;
+    }
 
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
