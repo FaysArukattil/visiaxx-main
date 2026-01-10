@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/providers/eye_exercise_provider.dart';
 import '../../../core/providers/network_connectivity_provider.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../widgets/video_reel_item.dart';
 import '../widgets/youtube_popup_dialog.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class EyeExerciseReelsScreen extends StatefulWidget {
   const EyeExerciseReelsScreen({super.key});
@@ -15,6 +17,10 @@ class EyeExerciseReelsScreen extends StatefulWidget {
 
 class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
   late PageController _pageController;
+  int _videosWatched = 0;
+  bool _isPopupShowing = false;
+  bool _wasPopupDismissedManually = false;
+  bool _showYouTubeHint = false;
 
   @override
   void initState() {
@@ -36,7 +42,35 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
               'You are offline. Some features like Visiaxx TV (YouTube link) may not work.',
         );
       }
+      _checkYouTubeHint();
     });
+  }
+
+  Future<void> _checkYouTubeHint() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShownHint = prefs.getBool('has_shown_youtube_hint') ?? false;
+    if (!hasShownHint && mounted) {
+      setState(() {
+        _showYouTubeHint = true;
+      });
+      // Automatically hide after 8 seconds
+      Future.delayed(const Duration(seconds: 8), () {
+        if (mounted && _showYouTubeHint) {
+          _dismissHint();
+        }
+      });
+    }
+  }
+
+  Future<void> _dismissHint() async {
+    if (!_showYouTubeHint) return;
+    if (mounted) {
+      setState(() {
+        _showYouTubeHint = false;
+      });
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_shown_youtube_hint', true);
   }
 
   @override
@@ -52,8 +86,9 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
       body: Consumer<EyeExerciseProvider>(
         builder: (context, provider, child) {
           if (!provider.isInitialized) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.white),
+            return Container(
+              color: Colors.black,
+              child: const Center(child: EyeLoader.fullScreen()),
             );
           }
 
@@ -69,6 +104,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
                 scrollDirection: Axis.vertical,
                 onPageChanged: (index) {
                   provider.setCurrentIndex(index);
+                  _onPageChanged(index);
                 },
                 itemCount: provider.videos.length,
                 itemBuilder: (context, index) {
@@ -77,6 +113,7 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
                     key: ValueKey(video.id),
                     video: video,
                     isActive: index == provider.currentIndex,
+                    onVideoEnd: () => _handleVideoEnd(index),
                   );
                 },
               ),
@@ -146,14 +183,50 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
     );
   }
 
+  void _onPageChanged(int index) {
+    _videosWatched++;
+    // Show popup every 5 videos watched if not dismissed manually
+    if (_videosWatched % 5 == 0 && !_wasPopupDismissedManually) {
+      _showYouTubePopup();
+    }
+  }
+
+  void _handleVideoEnd(int index) {
+    final provider = context.read<EyeExerciseProvider>();
+    // Check if it's the last video
+    if (index == provider.videos.length - 1) {
+      _showYouTubePopup();
+    }
+  }
+
+  void _showYouTubePopup() {
+    if (_isPopupShowing || !mounted) return;
+
+    _isPopupShowing = true;
+    showDialog(
+      context: context,
+      builder: (_) => const YouTubePopupDialog(),
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _isPopupShowing = false;
+          _wasPopupDismissedManually = true;
+        });
+      }
+    });
+  }
+
   Widget _buildYouTubeButton() {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => showDialog(
-          context: context,
-          builder: (_) => const YouTubePopupDialog(),
-        ),
+        onTap: () {
+          _dismissHint();
+          showDialog(
+            context: context,
+            builder: (_) => const YouTubePopupDialog(),
+          );
+        },
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -177,14 +250,24 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
                 },
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Visiaxx TV',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+              if (_showYouTubeHint)
+                const Text(
+                  'Click Me!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                )
+              else
+                const Text(
+                  'Visiaxx TV',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
-              ),
             ],
           ),
         ),

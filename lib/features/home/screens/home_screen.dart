@@ -718,8 +718,8 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Expanded(
                 child: _ServiceCard(
-                  icon: Icons.self_improvement_rounded,
-                  title: 'Eye Exercises',
+                  icon: Icons.remove_red_eye_rounded,
+                  title: 'Visiaxx TV',
                   onTap: () => Navigator.pushNamed(context, '/eye-exercises'),
                 ),
               ),

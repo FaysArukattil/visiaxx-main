@@ -89,7 +89,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
       backgroundColor: const Color(0xFFF8F9FB),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: EyeLoader(size: 80))
+            ? const Center(child: EyeLoader.fullScreen())
             : SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -578,9 +578,8 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
             children: [
               Expanded(
                 child: _ServiceCard(
-                  icon: Icons.self_improvement_rounded,
-                  title: 'Eye Exercises',
-                  subtitle: 'For patients',
+                  icon: Icons.remove_red_eye_rounded,
+                  title: 'Visiaxx TV',
                   onTap: () => Navigator.pushNamed(context, '/eye-exercises'),
                 ),
               ),

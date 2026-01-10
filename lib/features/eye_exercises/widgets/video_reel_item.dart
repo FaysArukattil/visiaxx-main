@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../models/exercise_video_model.dart';
+import '../../../core/widgets/eye_loader.dart';
 import 'dart:async';
 
 class VideoReelItem extends StatefulWidget {
   final ExerciseVideo video;
   final bool isActive;
+  final VoidCallback? onVideoEnd;
 
-  const VideoReelItem({super.key, required this.video, required this.isActive});
+  const VideoReelItem({
+    super.key,
+    required this.video,
+    required this.isActive,
+    this.onVideoEnd,
+  });
 
   @override
   State<VideoReelItem> createState() => _VideoReelItemState();
@@ -42,13 +49,25 @@ class _VideoReelItemState extends State<VideoReelItem>
 
     try {
       await _controller.initialize();
-      _controller.setLooping(true);
+      _controller.setLooping(false); // Changed to false to detect end
+      _controller.addListener(_videoListener);
       if (mounted) {
         setState(() => _isInitialized = true);
         debugPrint('✅ Video initialized: ${widget.video.id}');
         if (widget.isActive && !_isManuallyPaused) {
           debugPrint('▶️ Auto-playing active video: ${widget.video.id}');
           _controller.play();
+
+          // Verify playback started (some devices need a small kick)
+          Future.delayed(const Duration(milliseconds: 200), () {
+            if (mounted &&
+                !_controller.value.isPlaying &&
+                widget.isActive &&
+                !_isManuallyPaused) {
+              debugPrint('⚠️ Initial autoplay failed, retrying...');
+              _controller.play();
+            }
+          });
         }
       }
     } catch (e) {
@@ -72,9 +91,24 @@ class _VideoReelItemState extends State<VideoReelItem>
     }
   }
 
+  void _videoListener() {
+    if (_isInitialized &&
+        _controller.value.position >= _controller.value.duration &&
+        !_controller.value.isPlaying) {
+      debugPrint('🏁 Video finished: ${widget.video.id}');
+      widget.onVideoEnd?.call();
+
+      if (widget.isActive && !_isManuallyPaused) {
+        _controller.seekTo(Duration.zero);
+        _controller.play();
+      }
+    }
+  }
+
   @override
   void dispose() {
     _iconTimer?.cancel();
+    _controller.removeListener(_videoListener);
     _controller.dispose();
     super.dispose();
   }
@@ -120,8 +154,9 @@ class _VideoReelItemState extends State<VideoReelItem>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     if (!_isInitialized) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white24),
+      return Container(
+        color: Colors.black,
+        child: const Center(child: EyeLoader.fullScreen()),
       );
     }
 
@@ -203,7 +238,7 @@ class _VideoReelItemState extends State<VideoReelItem>
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
-                    'EYE EXERCISE',
+                    'VISIAXX TV',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10,

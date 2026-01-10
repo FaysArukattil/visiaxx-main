@@ -147,12 +147,12 @@ class TestConstants {
       snellen: '6/24',
     ),
     ShortDistanceSentence(
-      sentence: 'The sky is clear and blue', // ✅ More recognizable
+      sentence: 'The sky is clear and blue',
       fontSize: 36.0,
       snellen: '6/18',
     ),
     ShortDistanceSentence(
-      sentence: 'Vision is a precious gift', // ✅ Changed as requested
+      sentence: 'look at the light', // ✅ Changed as requested
       fontSize: 24.0,
       snellen: '6/12',
     ),
