@@ -208,8 +208,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         if (isHistorical) {
           Navigator.pop(context);
         } else {
-          provider.reset();
-          _navigateHome();
+          // Navigate away FIRST, then reset provider to avoid showing null data
+          _navigateHome().then((_) => provider.reset());
         }
       },
       child: Scaffold(
@@ -221,8 +221,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               IconButton(
                 icon: const Icon(Icons.home),
                 onPressed: () {
-                  provider.reset();
-                  _navigateHome();
+                  // Navigate away FIRST, then reset provider to avoid showing null data
+                  _navigateHome().then((_) => provider.reset());
                 },
               ),
           ],
@@ -230,14 +230,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         body: SingleChildScrollView(
           child: Column(
             children: [
-              // Overall status header
-              _buildStatusHeader(overallStatus, timestamp),
-
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Overall status header
+                    _buildStatusHeader(overallStatus, timestamp),
+                    const SizedBox(height: 20),
+
                     // Patient info card
                     _buildPatientInfoCard(provider),
                     const SizedBox(height: 20),
@@ -277,10 +278,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
                     // Recommendation
                     _buildRecommendationCard(provider),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
                     // Action buttons
                     _buildDisclaimer(),
+                    const SizedBox(height: 32), // ⚡ Spacing after disclaimer
                     _buildActionButtons(provider),
                     const SizedBox(height: 80), // ⚡ Fixes bottom overflow
                   ],
@@ -294,54 +296,109 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildStatusHeader(TestStatus status, DateTime timestamp) {
-    Color backgroundColor;
+    Color primaryColor;
+    Color secondaryColor;
     Color textColor;
     IconData statusIcon;
 
     switch (status) {
       case TestStatus.normal:
-        backgroundColor = AppColors.success;
+        primaryColor = const Color(0xFF10B981); // Emerald green
+        secondaryColor = const Color(0xFF059669);
         textColor = Colors.white;
-        statusIcon = Icons.check_circle;
+        statusIcon = Icons.check_circle_rounded;
         break;
       case TestStatus.review:
-        backgroundColor = AppColors.warning;
+        primaryColor = const Color(0xFFF59E0B); // Amber
+        secondaryColor = const Color(0xFFD97706);
         textColor = Colors.white;
-        statusIcon = Icons.warning;
+        statusIcon = Icons.warning_amber_rounded;
         break;
       case TestStatus.urgent:
-        backgroundColor = AppColors.error;
+        primaryColor = const Color(0xFFEF4444); // Red
+        secondaryColor = const Color(0xFFDC2626);
         textColor = Colors.white;
-        statusIcon = Icons.error;
+        statusIcon = Icons.error_rounded;
         break;
     }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [backgroundColor, backgroundColor.withValues(alpha: 0.8)],
+          colors: [primaryColor, secondaryColor],
+          stops: const [0.0, 1.0],
         ),
+        borderRadius: BorderRadius.circular(24), // ⚡ Now rounded
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Icon(statusIcon, size: 64, color: textColor),
-          const SizedBox(height: 16),
+          // Icon with background circle
+          Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(statusIcon, size: 52, color: textColor),
+          ),
+          const SizedBox(height: 24),
           Text(
             '${status.emoji} ${status.label}',
             style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
               color: textColor,
+              letterSpacing: -0.5,
+              height: 1.2,
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
-          Text(
-            DateFormat('MMMM dd, yyyy • h:mm a').format(timestamp),
-            style: TextStyle(color: textColor.withValues(alpha: 0.9)),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.calendar_today_rounded, size: 16, color: textColor),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    DateFormat('MMM dd, yyyy • h:mm a').format(timestamp),
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -375,15 +432,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white, // ⚡ Pure white
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04), // ⚡ Neutal shadow
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -392,15 +449,23 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(
+                    alpha: 0.1,
+                  ), // ⚡ Soft background
+                  shape: BoxShape.circle,
+                ),
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.transparent,
+                  child: Text(
+                    name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900, // ⚡ Stronger weight
+                      color: AppColors.primary, // ⚡ Use primary color
+                    ),
                   ),
                 ),
               ),
@@ -432,51 +497,45 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 12,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: isFamily
-                      ? AppColors.info.withValues(alpha: 0.1)
-                      : AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: (isFamily ? AppColors.info : AppColors.primary)
+                      .withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(100), // ⚡ Pill shape
                 ),
                 child: Text(
-                  isFamily ? 'Family' : 'Self',
+                  isFamily ? 'Family Member' : 'Primary Account',
                   style: TextStyle(
                     color: isFamily ? AppColors.info : AppColors.primary,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 14,
+          const SizedBox(height: 16),
+          // Test Date
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today_rounded,
+                size: 14,
+                color: AppColors.textSecondary.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                testDate,
+                style: TextStyle(
                   color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  testDate,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -484,15 +543,37 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildSectionTitle(String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      padding: const EdgeInsets.only(bottom: 16, top: 4),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: AppColors.primaryGradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
           Text(
             title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.3,
+            ),
           ),
         ],
       ),
@@ -507,15 +588,20 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         widget.historicalResult?.visualAcuityLeft ?? provider.visualAcuityLeft;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.blue.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -529,21 +615,35 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   'Right Eye',
                   rightResult?.snellenScore ?? 'N/A',
                   rightResult?.status ?? 'N/A',
-                  AppColors.rightEye,
+                  const Color(0xFF3B82F6), // Stronger blue
                 ),
               ),
-              Container(width: 1, height: 80, color: AppColors.border),
+              Container(
+                width: 1.5,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.grey.withValues(alpha: 0.1),
+                      Colors.grey.withValues(alpha: 0.3),
+                      Colors.grey.withValues(alpha: 0.1),
+                    ],
+                  ),
+                ),
+              ),
               Expanded(
                 child: _buildEyeResult(
                   'Left Eye',
                   leftResult?.snellenScore ?? 'N/A',
                   leftResult?.status ?? 'N/A',
-                  AppColors.leftEye,
+                  const Color(0xFF6366F1), // Indigo
                 ),
               ),
             ],
           ),
-          const Divider(height: 32),
+          const Divider(height: 48, thickness: 1),
           // Clinical Interpretation
           _buildClinicalInfoSection(
             'Clinical Interpretation',
@@ -705,27 +805,33 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     final result = widget.historicalResult?.colorVision ?? provider.colorVision;
     if (result == null) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
         ),
-        child: const Center(child: Text('No color vision data available')),
+        child: const Center(
+          child: Text(
+            'No color vision data available',
+            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+          ),
+        ),
       );
     }
 
     final isNormal = result.isNormal;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.purple.withValues(alpha: 0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -738,20 +844,34 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 child: _buildColorEyeResult(
                   'Right Eye',
                   result.rightEye,
-                  AppColors.rightEye,
+                  const Color(0xFF8B5CF6), // Violet
                 ),
               ),
-              Container(width: 1, height: 80, color: AppColors.border),
+              Container(
+                width: 1.5,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.grey.withValues(alpha: 0.1),
+                      Colors.grey.withValues(alpha: 0.3),
+                      Colors.grey.withValues(alpha: 0.1),
+                    ],
+                  ),
+                ),
+              ),
               Expanded(
                 child: _buildColorEyeResult(
                   'Left Eye',
                   result.leftEye,
-                  AppColors.leftEye,
+                  const Color(0xFFEC4899), // Pink
                 ),
               ),
             ],
           ),
-          const Divider(height: 32),
+          const Divider(height: 48, thickness: 1),
           // Clinical Interpretation
           _buildClinicalInfoSection(
             'Clinical Finding',
@@ -761,22 +881,30 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           // Recommendation if not normal
           if (!isNormal)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info, color: AppColors.warning, size: 20),
+                  const Icon(
+                    Icons.lightbulb_rounded,
+                    color: Color(0xFFD97706),
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       result.recommendation,
                       style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                        color: Color(0xFFB45309),
+                        fontWeight: FontWeight.w600,
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -873,15 +1001,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         widget.historicalResult?.amslerGridLeft ?? provider.amslerGridLeft;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.grey.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -893,47 +1021,64 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 child: _buildAmslerEyeResult(
                   'Right Eye',
                   rightResult,
-                  AppColors.rightEye,
+                  const Color(0xFF3B82F6),
                 ),
               ),
-              Container(width: 1, height: 80, color: AppColors.border),
+              Container(
+                width: 1.5,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.grey.withValues(alpha: 0.1),
+                      Colors.grey.withValues(alpha: 0.3),
+                      Colors.grey.withValues(alpha: 0.1),
+                    ],
+                  ),
+                ),
+              ),
               Expanded(
                 child: _buildAmslerEyeResult(
                   'Left Eye',
                   leftResult,
-                  AppColors.leftEye,
+                  const Color(0xFF6366F1),
                 ),
               ),
             ],
           ),
-          const Divider(height: 32),
+          const Divider(height: 48, thickness: 1),
           _buildAmslerLegend(),
           if ((rightResult?.hasDistortions ?? false) ||
               (leftResult?.hasDistortions ?? false)) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: AppColors.warning,
+                      Icon(
+                        Icons.visibility_off_rounded,
+                        color: Color(0xFFDC2626),
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'Clinical Findings',
                         style: TextStyle(
-                          color: AppColors.warning,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          color: Color(0xFFDC2626),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -943,7 +1088,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     'The markings indicate potential metamorphosis (wavy lines) or scotoma (missing spots). This often signals physical changes in the macula. Please consult an eye care professional.',
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 12,
+                      fontSize: 13,
+                      height: 1.5,
                     ),
                   ),
                 ],
@@ -1012,15 +1158,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.blueGrey.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -1029,9 +1175,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         children: [
           // Overall category header
           _buildPelliRobsonOverallHeader(result),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          const SizedBox(height: 24),
 
           // Per-eye results
           if (result.rightEye != null)
@@ -1041,8 +1187,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildEyeSectionTitle('Right Eye'),
+                  const SizedBox(height: 8),
                   _buildPelliRobsonEyeResults(re),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                 ],
               );
             }(),
@@ -1053,16 +1200,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildEyeSectionTitle('Left Eye'),
+                  const SizedBox(height: 8),
                   _buildPelliRobsonEyeResults(le),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                 ],
               );
             }(),
-          if (result.bothEyes != null || result.shortDistance != null) ...[
-            // LEGACY: If we have old "Both Eyes" results, we can show them,
-            // but the user said they are replaced by R/L.
-            // For now, I'll remove this to hide "Both Eyes" as requested.
-          ],
 
           // Explanation
           _buildPelliRobsonExplanation(result.userSummary),
@@ -1305,40 +1448,49 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   Widget _buildDisclaimer() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+        color: const Color(0xFFF1F5F9), // Very light slate
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.warning_amber_rounded,
-            color: AppColors.success,
-            size: 24,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Color(0xFF0F172A),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.gavel_rounded,
+              color: Colors.white,
+              size: 16,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'DISCLAIMER:',
+                  'MEDICAL DISCLAIMER',
                   style: TextStyle(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.w900,
                     fontSize: 13,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                SizedBox(height: 4),
+                SizedBox(height: 6),
                 Text(
-                  'This vision test is a screening tool and is not a substitute for a professional eye examination by a qualified optometrist or ophthalmologist. If you have concerns about your vision, please seek professional medical advice.',
+                  'This vision screening tool does not provide medical diagnosis. It is intended for early detection support. Always visit a licensed ophthalmologist for a comprehensive eye exam and medical advice.',
                   style: TextStyle(
-                    color: AppColors.success,
+                    color: Color(0xFF475569),
                     fontSize: 12,
-                    height: 1.4,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -1447,53 +1599,98 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     final status =
         widget.historicalResult?.overallStatus ?? provider.getOverallStatus();
 
-    Color bgColor = AppColors.success.withValues(alpha: 0.1);
-    Color borderColor = AppColors.success.withValues(alpha: 0.3);
-    IconData icon = Icons.check_circle_outline;
+    Color baseColor;
+    IconData icon;
+    String title = 'Medical Consultation Advice';
 
     switch (status) {
       case TestStatus.normal:
-        bgColor = AppColors.success.withValues(alpha: 0.1);
-        borderColor = AppColors.success.withValues(alpha: 0.3);
-        icon = Icons.check_circle_outline;
+        baseColor = const Color(0xFF10B981);
+        icon = Icons.health_and_safety_rounded;
         break;
       case TestStatus.review:
-        bgColor = AppColors.warning.withValues(alpha: 0.1);
-        borderColor = AppColors.warning.withValues(alpha: 0.3);
-        icon = Icons.schedule;
+        baseColor = const Color(0xFFF59E0B);
+        icon = Icons.healing_rounded;
         break;
       case TestStatus.urgent:
-        bgColor = AppColors.error.withValues(alpha: 0.1);
-        borderColor = AppColors.error.withValues(alpha: 0.3);
-        icon = Icons.priority_high;
+        baseColor = const Color(0xFFEF4444);
+        icon = Icons.emergency_rounded;
+        title = 'Urgent Consultation Required';
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
+        color: baseColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: baseColor.withValues(alpha: 0.2), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: baseColor.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.textPrimary),
-              const SizedBox(width: 8),
-              const Text(
-                'Recommendation',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: baseColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: baseColor, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        color: baseColor,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Based on your screening results',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            widget.historicalResult?.recommendation ??
-                provider.getRecommendation(),
-            style: TextStyle(color: AppColors.textPrimary, height: 1.5),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              widget.historicalResult?.recommendation ??
+                  provider.getRecommendation(),
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                height: 1.6,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),
@@ -1506,10 +1703,34 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Column(
       children: [
         // Primary action - Download PDF
-        SizedBox(
+        Container(
           width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)], // Premium blue
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
           child: ElevatedButton.icon(
             onPressed: _isGeneratingPdf ? null : _generatePdf,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shadowColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
             icon: _isGeneratingPdf
                 ? const SizedBox(
                     width: 20,
@@ -1519,108 +1740,74 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Icon(Icons.download),
-            label: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                _isGeneratingPdf ? 'Generating...' : 'Download PDF Report',
+                : const Icon(Icons.picture_as_pdf_rounded),
+            label: Text(
+              _isGeneratingPdf ? 'Generating Report...' : 'Download PDF Report',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
 
-        // Secondary actions - Fixed with Flexible and proper constraints
+        // Secondary actions - Shared and Logs
         Row(
           children: [
             // Share button
-            Flexible(
-              flex: 1,
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _isGeneratingPdf
-                      ? null
-                      : () {
-                          final user = FirebaseAuth.instance.currentUser;
-                          final result =
-                              widget.historicalResult ??
-                              _savedResult ??
-                              provider.buildTestResult(user?.uid ?? '');
-                          _sharePdfReport(result);
-                        },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.share, size: 20),
-                        SizedBox(height: 4),
-                        Text('Share', style: TextStyle(fontSize: 11)),
-                      ],
-                    ),
-                  ),
-                ),
+            Expanded(
+              child: _buildSecondaryButton(
+                onPressed: _isGeneratingPdf
+                    ? null
+                    : () {
+                        final user = FirebaseAuth.instance.currentUser;
+                        final result =
+                            widget.historicalResult ??
+                            _savedResult ??
+                            provider.buildTestResult(user?.uid ?? '');
+                        _sharePdfReport(result);
+                      },
+                icon: Icons.ios_share_rounded,
+                label: 'Share',
+                color: const Color(0xFF6366F1), // Indigo
               ),
             ),
             const SizedBox(width: 12),
 
-            // History button - Only show if not already coming from history
+            // History button
             if (!isHistorical) ...[
-              Flexible(
-                flex: 1,
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/my-results');
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.history, size: 20),
-                          SizedBox(height: 4),
-                          Text('History', style: TextStyle(fontSize: 11)),
-                        ],
-                      ),
-                    ),
-                  ),
+              Expanded(
+                child: _buildSecondaryButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/my-results');
+                  },
+                  icon: Icons.history_rounded,
+                  label: 'History',
+                  color: const Color(0xFF8B5CF6), // Violet
                 ),
               ),
               const SizedBox(width: 12),
             ],
 
             // Logs button
-            Flexible(
-              flex: 1,
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/speech-logs');
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.article_outlined, size: 20),
-                        SizedBox(height: 4),
-                        Text('Logs', style: TextStyle(fontSize: 11)),
-                      ],
-                    ),
-                  ),
-                ),
+            Expanded(
+              child: _buildSecondaryButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/speech-logs');
+                },
+                icon: Icons.terminal_rounded,
+                label: 'Logs',
+                color: const Color(0xFF64748B), // Slate
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 32),
 
         // Retake test
-        TextButton.icon(
+        TextButton(
           onPressed: () {
             provider.reset();
             Navigator.pushNamedAndRemoveUntil(
@@ -1629,10 +1816,69 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               (route) => false,
             );
           },
-          icon: const Icon(Icons.replay),
-          label: Text(isHistorical ? 'Start New Test' : 'Retake Test'),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.refresh_rounded, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                isHistorical ? 'Start New Test' : 'Retake Full Test',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSecondaryButton({
+    required VoidCallback? onPressed,
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: 22),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1729,22 +1975,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
     if (result == null) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.cardShadow,
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
         ),
-        child: Center(
+        child: const Center(
           child: Text(
             'No reading test data available',
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
           ),
         ),
       );
@@ -1753,15 +1993,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     final isGood = result.averageSimilarity >= 70.0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.green.withValues(alpha: 0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -1773,14 +2013,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isGood
-                      ? AppColors.success.withValues(alpha: 0.1)
-                      : AppColors.warning.withValues(alpha: 0.1),
+                  color: (isGood ? Colors.green : Colors.orange).withValues(
+                    alpha: 0.1,
+                  ),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isGood ? Icons.check : Icons.warning,
-                  color: isGood ? AppColors.success : AppColors.warning,
+                  isGood ? Icons.auto_stories_rounded : Icons.menu_book_rounded,
+                  color: isGood ? Colors.green : Colors.orange,
                 ),
               ),
               const SizedBox(width: 16),
@@ -1791,9 +2031,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     Text(
                       result.status,
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: isGood ? AppColors.success : AppColors.warning,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        color: isGood
+                            ? Colors.green.shade700
+                            : Colors.orange.shade700,
+                        letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1802,80 +2045,145 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
               // Score display
-              Column(
-                children: [
-                  Text(
-                    '${result.averageSimilarity.toStringAsFixed(0)}%',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '${result.averageSimilarity.toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primary,
+                        height: 1,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Match',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
+                    const SizedBox(height: 2),
+                    Text(
+                      'Match',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.primary.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           // Progress bar
-          Row(
+          Stack(
             children: [
-              Expanded(
-                flex: result.correctSentences,
-                child: Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+              Container(
+                height: 10,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(5),
                 ),
               ),
-              if (result.correctSentences < result.totalSentences)
-                Expanded(
-                  flex: result.totalSentences - result.correctSentences,
-                  child: Container(
-                    height: 8,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final double width =
+                      constraints.maxWidth *
+                      (result.correctSentences / result.totalSentences);
+                  return Container(
+                    height: 10,
+                    width: width,
                     decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(4),
+                      gradient: LinearGradient(
+                        colors: [Colors.green.shade400, Colors.green.shade600],
+                      ),
+                      borderRadius: BorderRadius.circular(5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
+                  );
+                },
+              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
 
           // Stats
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem(
-                'Sentences',
-                '${result.correctSentences}/${result.totalSentences}',
+              Expanded(
+                child: _buildNewStatItem(
+                  'Sentences',
+                  '${result.correctSentences}/${result.totalSentences}',
+                  Icons.text_format_rounded,
+                ),
               ),
-              Container(width: 1, height: 30, color: AppColors.border),
-              _buildStatItem(
-                'Accuracy',
-                '${(result.accuracy * 100).toStringAsFixed(0)}%',
+              Container(
+                width: 1,
+                height: 40,
+                color: Colors.grey.withValues(alpha: 0.1),
+              ),
+              Expanded(
+                child: _buildNewStatItem(
+                  'Accuracy',
+                  '${(result.accuracy * 100).toStringAsFixed(0)}%',
+                  Icons.track_changes_rounded,
+                ),
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNewStatItem(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: AppColors.textSecondary.withValues(alpha: 0.6),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
     );
   }
 }
