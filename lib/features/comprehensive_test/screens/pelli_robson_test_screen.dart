@@ -241,6 +241,20 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _startTest();
   }
 
+  // List of phrases indicating the user cannot see the letters
+  static const List<String> negativePhrases = [
+    'not visible',
+    'nothing',
+    'cannot',
+    "can't",
+    'skip',
+    'none',
+    'cannot see',
+    "can't see",
+    'invisible',
+    'no',
+  ];
+
   Timer? _speechActiveTimer;
   void _handleSpeechDetected(String partialResult) {
     if (!mounted || !_isTestActive) return;
@@ -262,26 +276,17 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       () {
         if (mounted && _isTestActive && _recognizedText.isNotEmpty) {
           final normalized = _recognizedText.toLowerCase();
-          final skipWords = [
-            'nothing',
-            'cannot',
-            'can\'t',
-            'skip',
-            'none',
-            'cannot see',
-            'can\'t see',
-          ];
 
-          bool shouldSkip = false;
-          for (var word in skipWords) {
-            if (normalized.contains(word)) {
-              shouldSkip = true;
+          bool isNegativePhrase = false;
+          for (var phrase in negativePhrases) {
+            if (normalized.contains(phrase)) {
+              isNegativePhrase = true;
               break;
             }
           }
 
-          if (shouldSkip) {
-            _submitCurrentTriplet('');
+          if (isNegativePhrase) {
+            _submitCurrentTriplet('Not visible');
           } else {
             _submitCurrentTriplet(_recognizedText);
           }
@@ -296,26 +301,17 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     setState(() => _recognizedText = result);
     if (result.isNotEmpty) {
       final normalized = result.toLowerCase();
-      final skipWords = [
-        'nothing',
-        'cannot',
-        'can\'t',
-        'skip',
-        'none',
-        'cannot see',
-        'can\'t see',
-      ];
 
-      bool shouldSkip = false;
-      for (var word in skipWords) {
-        if (normalized.contains(word)) {
-          shouldSkip = true;
+      bool isNegativePhrase = false;
+      for (var phrase in negativePhrases) {
+        if (normalized.contains(phrase)) {
+          isNegativePhrase = true;
           break;
         }
       }
 
-      if (shouldSkip) {
-        _submitCurrentTriplet('');
+      if (isNegativePhrase) {
+        _submitCurrentTriplet('Not visible');
       } else {
         _submitCurrentTriplet(result);
       }
@@ -544,16 +540,19 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         : 0;
 
     // Use fuzzy matcher to count correct letters
-    final matchResult = _fuzzyMatcher.matchTriplet(
-      heardLetters,
-      triplet.letters,
-    );
+    // Special case: If user said 'not visible', they get 0
+    final bool isNotVisible = heardLetters == 'Not visible';
+    final matchResult = isNotVisible
+        ? (count: 0, matches: [false, false, false])
+        : _fuzzyMatcher.matchTriplet(heardLetters, triplet.letters);
 
     final response = TripletResponse(
       tripletCode: triplet.code,
       logCSValue: triplet.logCS,
       expectedLetters: triplet.letters,
-      heardLetters: heardLetters.isEmpty ? 'No response' : heardLetters,
+      heardLetters: heardLetters.isEmpty || heardLetters == 'Not visible'
+          ? 'Not visible'
+          : heardLetters,
       correctLetters: matchResult.count,
       responseTimeMs: responseTime,
       wasAutoAdvanced: heardLetters.isEmpty,
@@ -1055,7 +1054,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           Expanded(
             child: OutlinedButton.icon(
               onPressed: () {
-                _submitCurrentTriplet('');
+                _submitCurrentTriplet('Not visible');
               },
               icon: const Icon(Icons.visibility_off, size: 20),
               label: const Text('Not Visible'),
