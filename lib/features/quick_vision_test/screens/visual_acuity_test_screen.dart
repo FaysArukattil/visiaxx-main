@@ -768,12 +768,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _showTumblingE() {
-    if (!mounted || (_showE && _waitingForResponse)) {
-      debugPrint(
-        '[VisualAcuity] ⚠️ _showTumblingE IGNORED: Already in E phase',
-      );
-      return;
-    }
+    if (!mounted) return;
 
     debugPrint(
       '🔥 [VisualAcuity] _showTumblingE called (Current Level: $_currentLevel)',
@@ -1494,6 +1489,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _testComplete = false;
       _waitingForResponse = false;
       _isTestPausedForDistance = false;
+      _isNavigatingToNextTest = false;
       _showDistanceCalibration = true;
     });
 
