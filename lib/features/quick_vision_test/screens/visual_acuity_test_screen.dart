@@ -160,6 +160,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _relaxationTimer?.cancel();
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
+    _autoNavigationTimer?.cancel(); // ✅ Added: Pause auto-navigation timer
 
     setState(() {
       _isPausedForExit = true;
@@ -270,12 +271,19 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   /// Resume the test from the pause dialog
   void _resumeTestFromDialog() {
-    if (!mounted || _testComplete) return;
+    if (!mounted) return;
+
+    if (_testComplete) {
+      setState(() {
+        _isPausedForExit = false;
+        _isTestPausedForDistance = false;
+        _lastShouldPauseTime = null;
+      });
+      _startAutoNavigationTimer(); // ✅ Resume auto-navigation
+      return;
+    }
 
     debugPrint('[VisualAcuity] 🔄 Resuming test from dialog');
-    debugPrint(
-      '[VisualAcuity] Current state: showE=$_showE, showRelaxation=$_showRelaxation, eCountdown=$_eDisplayCountdown, relaxCountdown=$_relaxationCountdown',
-    );
 
     // Clear pause flags
     setState(() {
@@ -310,10 +318,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         );
       }
       _restartRelaxationTimer();
-    } else {
-      debugPrint('[VisualAcuity] 🔄 Starting fresh relaxation');
-      // Not in an active phase, start relaxation
-      _startRelaxation();
     }
   }
 
@@ -641,6 +645,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
       _restartRelaxationTimer();
     }
+    HapticFeedback.mediumImpact();
   }
 
   void _restartRelaxationTimer() {

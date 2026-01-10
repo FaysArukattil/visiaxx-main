@@ -256,6 +256,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     // Pause services while dialog is shown
     _distanceService.stopMonitoring();
     _ttsService.stop();
+    _autoNavigationTimer?.cancel(); // ✅ Pause auto-navigation timer
 
     setState(() {
       _isPausedForExit = true;
@@ -369,7 +370,16 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   /// Resume the test from the pause dialog
   void _resumeTestFromDialog() {
-    if (!mounted || _testComplete) return;
+    if (!mounted) return;
+
+    if (_testComplete) {
+      setState(() {
+        _isPausedForExit = false;
+        _isTestPausedForDistance = false;
+      });
+      _startAutoNavigationTimer(); // ✅ Resume auto-navigation
+      return;
+    }
 
     setState(() {
       _isPausedForExit = false;
@@ -693,9 +703,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_testComplete) {
-      return _buildCompleteView();
-    }
+    final body = _testComplete ? _buildCompleteView() : _buildManualScaffold();
 
     return PopScope(
       canPop: false, // Prevent accidental exit
@@ -703,53 +711,57 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         if (didPop) return;
         _showExitConfirmation();
       },
-      child: Scaffold(
-        backgroundColor: AppColors.testBackground,
-        appBar: AppBar(
-          title: Text('Amsler Grid - ${_currentEye.toUpperCase()} Eye'),
-          backgroundColor: _currentEye == 'right'
-              ? AppColors.rightEye.withValues(alpha: 0.1)
-              : AppColors.leftEye.withValues(alpha: 0.1),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: _showExitConfirmation,
-          ),
-          actions: [
-            if (_testingStarted && !_eyeSwitchPending && !_testComplete)
-              IconButton(
-                icon: const Icon(Icons.undo),
-                onPressed: _undoLastPoint,
-                tooltip: 'Undo last mark',
-              ),
-            if (_testingStarted && !_eyeSwitchPending && !_testComplete)
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _clearPoints,
-                tooltip: 'Reset marks',
-              ),
-          ],
+      child: body,
+    );
+  }
+
+  Widget _buildManualScaffold() {
+    return Scaffold(
+      backgroundColor: AppColors.testBackground,
+      appBar: AppBar(
+        title: Text('Amsler Grid - ${_currentEye.toUpperCase()} Eye'),
+        backgroundColor: _currentEye == 'right'
+            ? AppColors.rightEye.withValues(alpha: 0.1)
+            : AppColors.leftEye.withValues(alpha: 0.1),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: _showExitConfirmation,
         ),
-        body: SafeArea(
-          child: Stack(
-            children: [
-              _buildContent(),
-              // Distance indicator
-              if (!_showDistanceCalibration && !_testComplete)
-                Positioned(
-                  right: 12,
-                  bottom: 12,
-                  child: _buildDistanceIndicator(),
-                ),
-              // Distance warning overlay - only show when explicitly paused
-              // ✅ FIX: Don't show overlay when pause dialog is active
-              if (_isTestPausedForDistance &&
-                  !_isPausedForExit &&
-                  _testingStarted &&
-                  !_testComplete &&
-                  !_eyeSwitchPending)
-                _buildDistanceWarningOverlay(),
-            ],
-          ),
+        actions: [
+          if (_testingStarted && !_eyeSwitchPending && !_testComplete)
+            IconButton(
+              icon: const Icon(Icons.undo),
+              onPressed: _undoLastPoint,
+              tooltip: 'Undo last mark',
+            ),
+          if (_testingStarted && !_eyeSwitchPending && !_testComplete)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _clearPoints,
+              tooltip: 'Reset marks',
+            ),
+        ],
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            _buildContent(),
+            // Distance indicator
+            if (!_showDistanceCalibration && !_testComplete)
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: _buildDistanceIndicator(),
+              ),
+            // Distance warning overlay - only show when explicitly paused
+            // ✅ FIX: Don't show overlay when pause dialog is active
+            if (_isTestPausedForDistance &&
+                !_isPausedForExit &&
+                _testingStarted &&
+                !_testComplete &&
+                !_eyeSwitchPending)
+              _buildDistanceWarningOverlay(),
+          ],
         ),
       ),
     );

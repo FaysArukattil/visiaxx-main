@@ -15,7 +15,7 @@ import '../../../data/models/color_vision_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../widgets/ishihara_plate_viewer.dart';
 import 'distance_calibration_screen.dart';
-import 'amsler_grid_test_screen.dart';
+
 import 'color_vision_instructions_screen.dart';
 import '../../../core/utils/navigation_utils.dart';
 
@@ -58,7 +58,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   bool _isTestPausedForDistance = false;
   bool _isPausedForExit =
       false; // ✅ Prevent distance warning during pause dialog
+  Timer? _autoNavigationTimer; // ✅ Added timer for cancellable navigation
   bool _userDismissedDistanceWarning = false;
+  bool _isNavigatingToNextTest = false;
+  int _secondsRemaining = 5;
   DateTime? _lastShouldPauseTime;
   static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
   Timer? _distanceAutoSkipTimer;
@@ -110,9 +113,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   /// Unified pause dialog for both back button and app minimization
   void _showPauseDialog({String reason = 'back button'}) {
     // Pause services while dialog is shown
-    _plateTimer?.cancel();
     _distanceService.stopMonitoring();
     _ttsService.stop();
+    _autoNavigationTimer?.cancel(); // ✅ Pause auto-navigation timer
 
     setState(() {
       _isPausedForExit = true;
@@ -226,7 +229,17 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   /// Resume the test from the pause dialog
   void _resumeTestFromDialog() {
-    if (!mounted || _phase == TestPhase.complete) return;
+    if (!mounted) return;
+
+    if (_phase == TestPhase.complete) {
+      setState(() {
+        _isPausedForExit = false;
+      });
+      // Restart the 5-second timer
+      _autoNavigationTimer?.cancel();
+      _startAutoNavigationTimer(); // ✅ Resume auto-navigation
+      return;
+    }
 
     setState(() {
       _isPausedForExit = false;
@@ -250,6 +263,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     _plateTimer?.cancel();
     _distanceService.stopMonitoring();
     _ttsService.stop();
+    _autoNavigationTimer?.cancel();
 
     setState(() {
       _phase = TestPhase.initialInstructions;
@@ -616,12 +630,30 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     );
     widget.onComplete?.call(result);
 
-    Future.delayed(const Duration(seconds: 5), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AmslerGridTestScreen()),
-        );
+    _startAutoNavigationTimer();
+  }
+
+  void _startAutoNavigationTimer() {
+    _autoNavigationTimer?.cancel();
+    setState(() {
+      _secondsRemaining = 5;
+    });
+    _autoNavigationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
       }
+
+      setState(() {
+        if (_secondsRemaining > 0) {
+          _secondsRemaining--;
+        } else {
+          timer.cancel();
+          if (!_isNavigatingToNextTest) {
+            _proceedToAmslerTest();
+          }
+        }
+      });
     });
   }
 
@@ -757,6 +789,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     _plateTimer?.cancel();
     _distanceAutoSkipTimer?.cancel();
     _distanceWarningReenableTimer?.cancel();
+    _autoNavigationTimer?.cancel(); // Cancel auto-navigation timer
     _distanceService.dispose();
     _ttsService.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -775,9 +808,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       );
     }
 
-    if (_phase == TestPhase.complete) {
-      return _buildCompleteView();
-    }
+    final body = _phase == TestPhase.complete
+        ? _buildCompleteView()
+        : _buildManualScaffold();
 
     return PopScope(
       canPop: false, // Prevent accidental exit
@@ -785,29 +818,29 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         if (didPop) return;
         _showExitConfirmation();
       },
-      child: Scaffold(
-        backgroundColor: AppColors.testBackground,
-        appBar: AppBar(
-          title: Text('Color Vision Test - ${_currentEye.toUpperCase()} Eye'),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: _showExitConfirmation,
-          ),
+      child: body,
+    );
+  }
+
+  Widget _buildManualScaffold() {
+    return Scaffold(
+      backgroundColor: AppColors.testBackground,
+      appBar: AppBar(
+        title: Text('Color Vision Test - ${_currentEye.toUpperCase()} Eye'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: _showExitConfirmation,
         ),
-        body: SafeArea(
-          child: Stack(
-            children: [
-              _buildTestView(),
-              Positioned(
-                right: 12,
-                bottom: 12,
-                child: _buildDistanceIndicator(),
-              ),
-              // ✅ FIX: Don't show overlay when pause dialog is active
-              if (_isTestPausedForDistance && !_isPausedForExit)
-                _buildDistanceWarningOverlay(),
-            ],
-          ),
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            _buildTestView(),
+            Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
+            // ✅ FIX: Don't show overlay when pause dialog is active
+            if (_isTestPausedForDistance && !_isPausedForExit)
+              _buildDistanceWarningOverlay(),
+          ],
         ),
       ),
     );
@@ -1140,14 +1173,23 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
+            Text(
+              'Redirecting to Amsler Grid test in $_secondsRemaining seconds...',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _proceedToAmslerTest,
+                onPressed: () {
+                  _autoNavigationTimer?.cancel();
+                  _proceedToAmslerTest();
+                },
                 child: const Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text('Continue to Amsler Grid Test'),
+                  child: Text('Continue Now'),
                 ),
               ),
             ),

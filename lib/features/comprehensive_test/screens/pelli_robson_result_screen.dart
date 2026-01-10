@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/pelli_robson_result.dart';
 import '../../../data/providers/test_session_provider.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 class PelliRobsonResultScreen extends StatefulWidget {
   const PelliRobsonResultScreen({super.key});
@@ -17,6 +18,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
   Timer? _autoContinueTimer;
   int _secondsRemaining = 5;
   bool _isNavigating = false;
+  bool _isPausedForExit = false;
 
   @override
   void initState() {
@@ -45,6 +47,87 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
     Navigator.pushReplacementNamed(context, '/quick-test-result');
   }
 
+  void _showPauseDialog() {
+    _autoContinueTimer?.cancel();
+    setState(() => _isPausedForExit = true);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(
+              Icons.pause_circle_outline,
+              color: AppColors.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Test Paused',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: const Text(
+          'What would you like to do?',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _resumeFromDialog();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue to Summary',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(dialogContext);
+                  await NavigationUtils.navigateHome(context);
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  'Exit and Lose Progress',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ).then((_) {
+      if (mounted && _isPausedForExit) {
+        _resumeFromDialog();
+      }
+    });
+  }
+
+  void _resumeFromDialog() {
+    if (!mounted) return;
+    setState(() => _isPausedForExit = false);
+    _startAutoContinueTimer();
+  }
+
   @override
   void dispose() {
     _autoContinueTimer?.cancel();
@@ -60,136 +143,143 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
       return const Scaffold(body: Center(child: Text('No results found')));
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.testBackground,
-      appBar: AppBar(
-        title: const Text('Contrast Sensitivity Results'),
-        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-        automaticallyImplyLeading: false,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Overall Status Card
-              _buildCategoryCard(result.overallCategory, result.averageScore),
-              const SizedBox(height: 24),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _showPauseDialog();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.testBackground,
+        appBar: AppBar(
+          title: const Text('Contrast Sensitivity Results'),
+          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          automaticallyImplyLeading: false,
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Overall Status Card
+                _buildCategoryCard(result.overallCategory, result.averageScore),
+                const SizedBox(height: 24),
 
-              // Breakdown section
-              const Text(
-                'Test Breakdown',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                // Breakdown section
+                const Text(
+                  'Test Breakdown',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // Right Eye
-              if (result.rightEye != null) ...[
-                _buildEyeTitle('Right Eye'),
-                if (result.rightEye!.shortDistance != null)
-                  _buildDistanceResultCard(
-                    'Near Vision (40cm)',
-                    result.rightEye!.shortDistance!,
-                    Icons.short_text,
-                  ),
-                const SizedBox(height: 8),
-                if (result.rightEye!.longDistance != null)
-                  _buildDistanceResultCard(
-                    'Distance Vision (1m)',
-                    result.rightEye!.longDistance!,
-                    Icons.visibility,
-                  ),
                 const SizedBox(height: 16),
+
+                // Right Eye
+                if (result.rightEye != null) ...[
+                  _buildEyeTitle('Right Eye'),
+                  if (result.rightEye!.shortDistance != null)
+                    _buildDistanceResultCard(
+                      'Near Vision (40cm)',
+                      result.rightEye!.shortDistance!,
+                      Icons.short_text,
+                    ),
+                  const SizedBox(height: 8),
+                  if (result.rightEye!.longDistance != null)
+                    _buildDistanceResultCard(
+                      'Distance Vision (1m)',
+                      result.rightEye!.longDistance!,
+                      Icons.visibility,
+                    ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Left Eye
+                if (result.leftEye != null) ...[
+                  _buildEyeTitle('Left Eye'),
+                  if (result.leftEye!.shortDistance != null)
+                    _buildDistanceResultCard(
+                      'Near Vision (40cm)',
+                      result.leftEye!.shortDistance!,
+                      Icons.short_text,
+                    ),
+                  const SizedBox(height: 8),
+                  if (result.leftEye!.longDistance != null)
+                    _buildDistanceResultCard(
+                      'Distance Vision (1m)',
+                      result.leftEye!.longDistance!,
+                      Icons.visibility,
+                    ),
+                  const SizedBox(height: 16),
+                ],
+
+                const SizedBox(height: 32),
+
+                // Summary Info
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.info_outline, color: AppColors.primary),
+                      const SizedBox(height: 12),
+                      Text(
+                        result.userSummary,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 48),
+
+                // Bottom Actions
+                ElevatedButton(
+                  onPressed: _navigateToSummary,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'View Detailed Summary',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '($_secondsRemaining)',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-
-              // Left Eye
-              if (result.leftEye != null) ...[
-                _buildEyeTitle('Left Eye'),
-                if (result.leftEye!.shortDistance != null)
-                  _buildDistanceResultCard(
-                    'Near Vision (40cm)',
-                    result.leftEye!.shortDistance!,
-                    Icons.short_text,
-                  ),
-                const SizedBox(height: 8),
-                if (result.leftEye!.longDistance != null)
-                  _buildDistanceResultCard(
-                    'Distance Vision (1m)',
-                    result.leftEye!.longDistance!,
-                    Icons.visibility,
-                  ),
-                const SizedBox(height: 16),
-              ],
-
-              const SizedBox(height: 32),
-
-              // Summary Info
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(Icons.info_outline, color: AppColors.primary),
-                    const SizedBox(height: 12),
-                    Text(
-                      result.userSummary,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.5,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 48),
-
-              // Bottom Actions
-              ElevatedButton(
-                onPressed: _navigateToSummary,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'View Detailed Summary',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '($_secondsRemaining)',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

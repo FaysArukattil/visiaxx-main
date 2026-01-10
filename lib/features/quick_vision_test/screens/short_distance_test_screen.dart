@@ -58,8 +58,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   bool _waitingForResponse = false;
   bool _showResult = false;
   bool _testComplete = false;
-  bool _isPausedForExit =
-      false; // ✅ Prevent distance warning during pause dialog
+  bool _isPausedForExit = false;
+  bool _isTestPausedForDistance = false;
+  DateTime? _lastShouldPauseTime;
 
   // Voice recognition
   bool _isListening = false;
@@ -79,7 +80,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   double _lastSimilarity = 0.0;
 
   Timer? _autoNavigationTimer;
-  int _autoNavigationCountdown = 3;
+  bool _isNavigatingToNextTest = false;
+  int _secondsRemaining = 5;
 
   @override
   void initState() {
@@ -214,6 +216,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     _speechService.cancel();
     _distanceService.stopMonitoring();
     _ttsService.stop();
+    _autoNavigationTimer?.cancel(); // ✅ Pause auto-navigation timer
 
     setState(() {
       _isPausedForExit = true;
@@ -326,10 +329,22 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   /// Resume the test from the pause dialog
   void _resumeTestFromDialog() {
-    if (!mounted || _testComplete) return;
+    if (!mounted) return;
+
+    if (_testComplete) {
+      setState(() {
+        _isPausedForExit = false;
+        _isTestPausedForDistance = false;
+        _lastShouldPauseTime = null;
+      });
+      _startAutoNavigationTimer(); // ✅ Resume auto-navigation
+      return;
+    }
 
     setState(() {
       _isPausedForExit = false;
+      _isTestPausedForDistance = false;
+      _lastShouldPauseTime = null;
     });
 
     // Restart distance monitoring
@@ -379,11 +394,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       return;
     }
 
-    // Reset ALL speech state
     _accumulatedSpeech = '';
     _speechChunks.clear();
     _speechBufferTimer?.cancel();
-    _speechService.clearBuffer(); // ✅ FIXED: Clear underlying service too
+    _speechService.clearBuffer();
 
     setState(() {
       _showSentence = true;
@@ -696,31 +710,38 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   void _startAutoNavigationTimer() {
     _autoNavigationTimer?.cancel();
-
+    setState(() {
+      _secondsRemaining = 5;
+    });
     _autoNavigationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
-
       setState(() {
-        _autoNavigationCountdown--;
-      });
-
-      if (_autoNavigationCountdown <= 0) {
-        timer.cancel();
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/color-vision-test');
+        if (_secondsRemaining > 0) {
+          _secondsRemaining--;
+        } else {
+          timer.cancel();
+          if (!_isNavigatingToNextTest) {
+            _navigateToColorVision();
+          }
         }
-      }
+      });
     });
+  }
+
+  void _navigateToColorVision() {
+    if (_isNavigatingToNextTest || !mounted) return;
+    setState(() => _isNavigatingToNextTest = true);
+    Navigator.pushReplacementNamed(context, '/color-vision-test');
   }
 
   void _completeTest() {
     setState(() {
       _testComplete = true;
       _showSentence = false;
-      _autoNavigationCountdown = 3; // Initialize countdown
+      _secondsRemaining = 5; // Initialize countdown
     });
 
     // Calculate best acuity
@@ -792,9 +813,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_testComplete) {
-      return _buildCompleteView();
-    }
+    final body = _testComplete ? _buildCompleteView() : _buildTestView();
 
     return PopScope(
       canPop: false, // Prevent accidental exit
@@ -802,58 +821,56 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         if (didPop) return;
         _showExitConfirmation();
       },
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        backgroundColor: AppColors.testBackground,
-        appBar: AppBar(
-          title: const Text('Reading Test'),
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: _showExitConfirmation,
-          ),
+      child: body,
+    );
+  }
+
+  Widget _buildTestView() {
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: AppColors.testBackground,
+      appBar: AppBar(
+        title: const Text('Reading Test'),
+        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: _showExitConfirmation,
         ),
-        body: SafeArea(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  _buildProgressBar(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: _showSentence
-                          ? _buildSentenceView()
-                          : const Center(child: EyeLoader(size: 80)),
-                    ),
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                _buildProgressBar(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: _showSentence
+                        ? _buildSentenceView()
+                        : const Center(child: EyeLoader(size: 80)),
                   ),
-                  if (_showResult) _buildResultFeedback(),
-                ],
-              ),
-
-              // Recognized text (bottom center)
-              if (_recognizedText != null && _recognizedText!.isNotEmpty)
-                Positioned(
-                  bottom: 120, // Lowered but visible
-                  left: 0,
-                  right: 0,
-                  child: Center(child: _buildRecognizedTextIndicator()),
                 ),
+                if (_showResult) _buildResultFeedback(),
+              ],
+            ),
 
-              // Distance indicator in bottom right
+            // Recognized text (bottom center)
+            if (_recognizedText != null && _recognizedText!.isNotEmpty)
               Positioned(
-                right: 12,
-                bottom: 12,
-                child: _buildDistanceIndicator(),
+                bottom: 120, // Lowered but visible
+                left: 0,
+                right: 0,
+                child: Center(child: _buildRecognizedTextIndicator()),
               ),
 
-              // ✅ Distance warning overlay (voice continues in background)
-              if (_isDistanceOk == false &&
-                  _showSentence &&
-                  _waitingForResponse)
-                _buildDistanceWarningOverlay(),
-            ],
-          ),
+            // Distance indicator in bottom right
+            Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
+
+            // ✅ Distance warning overlay (voice continues in background)
+            if (_isDistanceOk == false && _showSentence && _waitingForResponse)
+              _buildDistanceWarningOverlay(),
+          ],
         ),
       ),
     );
