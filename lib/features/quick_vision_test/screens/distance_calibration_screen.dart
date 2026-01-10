@@ -132,9 +132,16 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
 
       if (_cameraController == null ||
           !_cameraController!.value.isInitialized) {
-        throw Exception(
-          'Failed to initialize camera after $maxRetries attempts',
-        );
+        // One last quick retry with a small delay
+        await Future.delayed(const Duration(milliseconds: 500));
+        _cameraController = await _distanceService.initializeCamera();
+
+        if (_cameraController == null ||
+            !_cameraController!.value.isInitialized) {
+          throw Exception(
+            'Failed to initialize camera after $maxRetries attempts',
+          );
+        }
       }
 
       // Add a listener to ensure UI updates on any controller changes
@@ -278,9 +285,15 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
   }
 
   Future<void> _disposeCamera() async {
-    await _distanceService.stopMonitoring();
-    await _cameraController?.dispose();
-    _cameraController = null;
+    try {
+      await _distanceService.stopMonitoring();
+      if (_cameraController != null) {
+        await _cameraController!.dispose();
+        _cameraController = null;
+      }
+    } catch (e) {
+      debugPrint('[DistanceCalibration] Error during camera disposal: $e');
+    }
   }
 
   @override

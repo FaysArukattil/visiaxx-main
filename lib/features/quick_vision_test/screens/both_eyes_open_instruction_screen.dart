@@ -44,6 +44,7 @@ class _BothEyesOpenInstructionScreenState
   final TtsService _ttsService = TtsService();
   Timer? _countdownTimer;
   bool _isPaused = false;
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -82,6 +83,9 @@ class _BothEyesOpenInstructionScreenState
   }
 
   void _navigateToTest() {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

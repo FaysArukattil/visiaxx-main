@@ -97,6 +97,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   int _autoNavigationCountdown = 3;
 
   bool _isPausedForExit = false;
+  bool _isNavigatingToNextTest = false;
 
   Timer? _speechEraserTimer; // ✅ Timer to clear recognized text
 
@@ -1151,6 +1152,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _proceedToBothEyesTest() {
+    if (_isNavigatingToNextTest) return;
+    _isNavigatingToNextTest = true;
+
     // Stop distance monitoring before navigating
     _distanceService.stopMonitoring();
 
