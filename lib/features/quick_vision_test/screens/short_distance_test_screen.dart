@@ -314,7 +314,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           ),
         ],
       ),
-    );
+    ).then((_) {
+      if (mounted && _isPausedForExit) {
+        _resumeTestFromDialog();
+      }
+    });
   }
 
   /// Alias for back button

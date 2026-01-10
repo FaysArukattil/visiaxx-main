@@ -357,7 +357,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           ),
         ],
       ),
-    );
+    ).then((_) {
+      if (mounted && _isPausedForExit) {
+        _resumeTestFromDialog();
+      }
+    });
   }
 
   /// Alias for back button

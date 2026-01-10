@@ -820,7 +820,11 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           ),
         ],
       ),
-    );
+    ).then((_) {
+      if (mounted && _isPausedForExit) {
+        _resumeTest();
+      }
+    });
   }
 
   /// Alias for back button

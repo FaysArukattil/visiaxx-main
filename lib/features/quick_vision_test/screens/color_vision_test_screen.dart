@@ -214,7 +214,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           ),
         ],
       ),
-    );
+    ).then((_) {
+      if (mounted && _isPausedForExit) {
+        _resumeTestFromDialog();
+      }
+    });
   }
 
   /// Alias for back button

@@ -261,7 +261,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           ),
         ],
       ),
-    );
+    ).then((_) {
+      if (mounted && _isPausedForExit) {
+        _resumeTestFromDialog();
+      }
+    });
   }
 
   /// Resume the test from the pause dialog
