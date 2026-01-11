@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
@@ -23,9 +24,15 @@ class ColorVisionCoverEyeScreen extends StatefulWidget {
 
 class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
   int _countdown = 3;
+  int _totalDuration = 3;
+  double _progress = 0.0;
+  bool _isAutoScrolling = true;
   bool _isPaused = false;
+  bool _reachedBottom = false;
   Timer? _countdownTimer;
+  Timer? _resumeTimer;
   final TtsService _ttsService = TtsService();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -57,23 +64,73 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
 
   void _startCountdown() {
     _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
+    _resumeTimer?.cancel();
+    _isAutoScrolling = true;
+    _scrollController.removeListener(_onScroll);
+    _scrollController.addListener(_onScroll);
 
-      if (_isPaused) {
-        timer.cancel();
-        return;
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
 
-      if (_countdown > 0) {
-        setState(() => _countdown--);
-      } else {
-        timer.cancel();
-        _handleContinue();
-      }
+      setState(() => _progress = 0.0);
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+
+      final maxScroll = _scrollController.hasClients
+          ? _scrollController.position.maxScrollExtent
+          : 0.0;
+      const duration = 3;
+
+      setState(() {
+        _countdown = duration;
+        _totalDuration = duration;
+      });
+
+      _countdownTimer = Timer.periodic(const Duration(milliseconds: 16), (
+        timer,
+      ) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+
+        if (_isPaused) return;
+
+        final elapsedMs = timer.tick * 16;
+        final totalMs = _totalDuration * 1000;
+
+        final currentSec = elapsedMs ~/ 1000;
+        final newCountdown = (_totalDuration - currentSec).clamp(
+          0,
+          _totalDuration,
+        );
+
+        if (newCountdown != _countdown) {
+          setState(() => _countdown = newCountdown);
+        }
+
+        final progress = (elapsedMs / totalMs).clamp(0.0, 1.0);
+        setState(() => _progress = progress);
+
+        if (_isAutoScrolling && _scrollController.hasClients && maxScroll > 0) {
+          _scrollController.jumpTo(maxScroll * progress);
+        }
+
+        // Check if reached bottom
+        if (_scrollController.hasClients &&
+            (maxScroll == 0 || _scrollController.offset >= maxScroll - 5)) {
+          if (!_reachedBottom) {
+            setState(() => _reachedBottom = true);
+          }
+        }
+
+        // Auto-continue only if timer finished AND scrolled to bottom
+        if (elapsedMs >= totalMs && _reachedBottom) {
+          timer.cancel();
+          _handleContinue();
+        }
+      });
     });
   }
 
@@ -114,8 +171,26 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _resumeTimer?.cancel();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _ttsService.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.userScrollDirection !=
+        ScrollDirection.idle) {
+      if (_isAutoScrolling) {
+        setState(() => _isAutoScrolling = false);
+      }
+      _resumeTimer?.cancel();
+      _resumeTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted && !_isPaused) {
+          setState(() => _isAutoScrolling = true);
+        }
+      });
+    }
   }
 
   @override
@@ -132,168 +207,264 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.testBackground,
+        backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('Test Instructions'),
-          backgroundColor: eyeColor.withValues(alpha: 0.1),
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: _showExitConfirmation,
           ),
         ),
         body: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Eye icon with side covered
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: eyeColor.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+          child: Column(
+            children: [
+              // Fixed Illustration Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                decoration: const BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x0D000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
                     ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Icon(Icons.visibility, size: 60, color: eyeColor),
-                        // Cover appropriate side
-                        Positioned(
-                          left: widget.eyeToCover == 'left' ? 0 : null,
-                          right: widget.eyeToCover == 'right' ? 0 : null,
-                          child: Container(
-                            width: 60,
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      height: 100,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Circular Face Silhouette
+                          Container(
+                            width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: AppColors.black.withValues(alpha: 0.7),
-                              borderRadius: BorderRadius.only(
-                                topLeft: widget.eyeToCover == 'left'
-                                    ? const Radius.circular(40)
-                                    : Radius.zero,
-                                bottomLeft: widget.eyeToCover == 'left'
-                                    ? const Radius.circular(40)
-                                    : Radius.zero,
-                                topRight: widget.eyeToCover == 'right'
-                                    ? const Radius.circular(40)
-                                    : Radius.zero,
-                                bottomRight: widget.eyeToCover == 'right'
-                                    ? const Radius.circular(40)
-                                    : Radius.zero,
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  AppColors.primary.withValues(alpha: 0.1),
+                                  AppColors.primary.withValues(alpha: 0.2),
+                                ],
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  Text(
-                    'COVER YOUR ${widget.eyeToCover.toUpperCase()} EYE',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: eyeColor,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 16),
-
-                  Text(
-                    'Focus with your ${eyeBeingTested.toUpperCase()} eye only',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppColors.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.visible,
-                  ),
-                  const SizedBox(height: 48),
-
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.cardShadow,
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInstructionItem(
-                          Icons.straighten,
-                          'Testing Distance',
-                          'Stand 40 centimeters from screen',
-                        ),
-                        const SizedBox(height: 16),
-                        _buildInstructionItem(
-                          Icons.palette,
-                          'Color Plates',
-                          'Look at colored plates and identify the number',
-                        ),
-                        const SizedBox(height: 16),
-                        _buildInstructionItem(
-                          Icons.touch_app,
-                          'Tap to Respond',
-                          'Identify the number on the plate and tap the corresponding option button',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Countdown and auto-start
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed:
-                          _handleContinue, // ✅ Always enabled for instant skip
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.all(16),
-                        backgroundColor: eyeColor,
-                      ),
-                      child: _countdown > 0
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                          // Eyes
+                          Positioned(
+                            top: 35,
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                EyeLoader(
-                                  size: 20,
-                                  color: AppColors.white,
-                                  value: 1 - (_countdown / 3),
-                                ),
-                                const SizedBox(width: 12),
-                                Flexible(
-                                  child: Text(
-                                    'Starting in $_countdown... (Tap to skip)',
-                                    style: const TextStyle(fontSize: 16),
-                                    overflow: TextOverflow.ellipsis,
+                                _CircularEye(color: eyeColor),
+                                const SizedBox(width: 25),
+                                _CircularEye(color: eyeColor),
+                              ],
+                            ),
+                          ),
+                          // Semi-circular Hand Cover
+                          TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 1000),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) {
+                              final isLeft = widget.eyeToCover == 'left';
+                              return Positioned(
+                                left: isLeft ? 10 + (25 * (1 - value)) : null,
+                                right: !isLeft ? 10 + (25 * (1 - value)) : null,
+                                top: 15 + (10 * (1 - value)),
+                                child: Opacity(
+                                  opacity: value,
+                                  child: Container(
+                                    width: 45,
+                                    height: 55,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: isLeft
+                                            ? const Radius.circular(30)
+                                            : const Radius.circular(10),
+                                        bottomLeft: isLeft
+                                            ? const Radius.circular(30)
+                                            : const Radius.circular(10),
+                                        topRight: !isLeft
+                                            ? const Radius.circular(30)
+                                            : const Radius.circular(10),
+                                        bottomRight: !isLeft
+                                            ? const Radius.circular(30)
+                                            : const Radius.circular(10),
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.pan_tool_rounded,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ],
-                            )
-                          : Text(
-                              'Start ${eyeBeingTested.toUpperCase()} Eye Test',
-                              style: const TextStyle(fontSize: 16),
-                              overflow: TextOverflow.ellipsis,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'COVER YOUR ${widget.eyeToCover.toUpperCase()} EYE',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1B3A57),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Focus with your ${eyeBeingTested.toUpperCase()} eye only',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF4A90E2),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Fixed Instruction Window
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: AppColors.border.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Listener(
+                      onPointerDown: (_) {
+                        if (_isAutoScrolling) {
+                          setState(() => _isAutoScrolling = false);
+                        }
+                        _resumeTimer?.cancel();
+                      },
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildInstructionItem(
+                              Icons.straighten,
+                              'Testing Distance',
+                              'Stand 40 centimeters from screen',
                             ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Divider(height: 1),
+                            ),
+                            _buildInstructionItem(
+                              Icons.palette,
+                              'Color Plates',
+                              'Look at colored plates and identify the number',
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Divider(height: 1),
+                            ),
+                            _buildInstructionItem(
+                              Icons.touch_app,
+                              'Tap to Respond',
+                              'Identify the number on the plate and tap the matching button',
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+
+              // Bottom Button Section
+              Container(
+                padding: const EdgeInsets.all(24.0),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton(
+                    onPressed: _handleContinue,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: eyeColor,
+                      foregroundColor: AppColors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: _countdown > 0
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              EyeLoader(
+                                size: 32,
+                                color: AppColors.white,
+                                value: _progress,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Starting in $_countdown...',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.white,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            'Start ${eyeBeingTested.toUpperCase()} Eye Test',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.white,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -345,6 +516,31 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CircularEye extends StatelessWidget {
+  final Color color;
+  const _CircularEye({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 18,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+      ),
+      child: Center(
+        child: Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+      ),
     );
   }
 }

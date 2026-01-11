@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_screen.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/short_distance_test_screen.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 class BothEyesOpenInstructionScreen extends StatefulWidget {
   final String title;
@@ -20,16 +23,16 @@ class BothEyesOpenInstructionScreen extends StatefulWidget {
 
   const BothEyesOpenInstructionScreen({
     super.key,
-    this.title = 'Reading Test Instructions',
-    this.subtitle = 'Reading Test - Near Vision',
+    this.title = 'Near Vision Test',
+    this.subtitle = 'Reading Test - Both Eyes Open',
     this.ttsMessage =
         'Now we will test your near vision for reading. Keep both eyes open. Hold your device at 40 centimeters from your eyes. That is about the length from your elbow to your fingertips. Read each sentence aloud clearly and completely.',
     this.targetDistance = 40.0,
-    this.startButtonText = 'Start Reading Test',
-    this.instructionTitle = 'Tap to Respond',
+    this.startButtonText = 'Start Reading Exercise',
+    this.instructionTitle = 'Voice/Tap Response',
     this.instructionDescription =
-        'Identify the item on screen and tap the correct option',
-    this.instructionIcon = Icons.touch_app,
+        'Identify the text on screen and respond accordingly',
+    this.instructionIcon = Icons.record_voice_over_rounded,
     this.onContinue,
   });
 
@@ -41,10 +44,16 @@ class BothEyesOpenInstructionScreen extends StatefulWidget {
 class _BothEyesOpenInstructionScreenState
     extends State<BothEyesOpenInstructionScreen> {
   int _countdown = 3;
+  int _totalDuration = 3;
+  double _progress = 0.0;
+  bool _isAutoScrolling = true;
   final TtsService _ttsService = TtsService();
+  final ScrollController _scrollController = ScrollController();
   Timer? _countdownTimer;
+  Timer? _resumeTimer;
   bool _isPaused = false;
   bool _isNavigating = false;
+  bool _reachedBottom = false;
 
   @override
   void initState() {
@@ -56,29 +65,85 @@ class _BothEyesOpenInstructionScreenState
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
     await _ttsService.speak(widget.ttsMessage, speechRate: 0.5);
   }
 
   void _startCountdown() {
     _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
+    _resumeTimer?.cancel();
+    _isAutoScrolling = true;
+    _scrollController.removeListener(_onScroll);
+    _scrollController.addListener(_onScroll);
 
-      if (_isPaused) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
 
-      if (_countdown > 0) {
-        setState(() => _countdown--);
-      } else {
-        timer.cancel();
-        if (widget.onContinue != null) {
-          widget.onContinue!();
-        } else {
-          _navigateToTest();
+      // Step 1: Eye focusing animation delay (1s)
+      setState(() => _progress = 0.0);
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted || !_scrollController.hasClients) return;
+
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final calculatedDuration = (maxScroll / 150).ceil().clamp(3, 10);
+
+      setState(() {
+        _countdown = calculatedDuration;
+        _totalDuration = calculatedDuration;
+      });
+
+      _countdownTimer = Timer.periodic(const Duration(milliseconds: 16), (
+        timer,
+      ) {
+        if (!mounted) {
+          timer.cancel();
+          return;
         }
-      }
+
+        if (_isPaused) return;
+
+        final elapsedMs = timer.tick * 16;
+        final totalMs = _totalDuration * 1000;
+
+        // Update countdown text every second
+        final currentSec = elapsedMs ~/ 1000;
+        final newCountdown = (_totalDuration - currentSec).clamp(
+          0,
+          _totalDuration,
+        );
+
+        if (newCountdown != _countdown) {
+          setState(() => _countdown = newCountdown);
+        }
+
+        // Update progress for EyeLoader (always syncs with timer)
+        final progress = (elapsedMs / totalMs).clamp(0.0, 1.0);
+        setState(() => _progress = progress);
+
+        // Auto-scroll only if active
+        if (_isAutoScrolling && _scrollController.hasClients) {
+          _scrollController.jumpTo(maxScroll * progress);
+        }
+
+        // Check if reached bottom
+        if (_scrollController.hasClients &&
+            _scrollController.offset >= maxScroll - 5) {
+          if (!_reachedBottom) {
+            setState(() => _reachedBottom = true);
+          }
+        }
+
+        // Auto-continue only if timer finished AND scrolled to bottom
+        if (elapsedMs >= totalMs && _reachedBottom) {
+          timer.cancel();
+          if (widget.onContinue != null) {
+            widget.onContinue!();
+          } else {
+            _navigateToTest();
+          }
+        }
+      });
     });
   }
 
@@ -116,8 +181,26 @@ class _BothEyesOpenInstructionScreenState
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _resumeTimer?.cancel();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _ttsService.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.userScrollDirection !=
+        ScrollDirection.idle) {
+      if (_isAutoScrolling) {
+        setState(() => _isAutoScrolling = false);
+      }
+      _resumeTimer?.cancel();
+      _resumeTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted && !_isPaused) {
+          setState(() => _isAutoScrolling = true);
+        }
+      });
+    }
   }
 
   void _showExitConfirmation() {
@@ -127,27 +210,21 @@ class _BothEyesOpenInstructionScreenState
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _isPaused = false);
-            },
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await NavigationUtils.navigateHome(context);
-            },
-            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+      builder: (context) => TestExitConfirmationDialog(
+        onContinue: () {
+          setState(() => _isPaused = false);
+        },
+        onRestart: () {
+          setState(() {
+            _isPaused = false;
+            _countdown = 3;
+          });
+          _startCountdown();
+          _ttsService.speak(widget.ttsMessage, speechRate: 0.5);
+        },
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
+        },
       ),
     );
   }
@@ -157,158 +234,284 @@ class _BothEyesOpenInstructionScreenState
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          return;
-        }
+        if (didPop) return;
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.testBackground,
+        backgroundColor: AppColors.background,
         appBar: AppBar(
           title: Text(widget.title),
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: _showExitConfirmation,
           ),
         ),
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+          child: Column(
+            children: [
+              // Fixed Illustration Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                decoration: const BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
                   ),
-                  child: const Icon(
-                    Icons.visibility,
-                    size: 60,
-                    color: AppColors.primary,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x0D000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Illustration Scale Reduced to minimize white space
+                    SizedBox(
+                      width: 120,
+                      height: 100,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Circular Face Silhouette
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  AppColors.primary.withValues(alpha: 0.1),
+                                  AppColors.primary.withValues(alpha: 0.2),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Pulsing Focus Ring
+                          TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0.8, end: 1.2),
+                            duration: const Duration(milliseconds: 1500),
+                            curve: Curves.easeInOutSine,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: (1.2 - value).clamp(0.0, 0.4),
+                                child: Transform.scale(
+                                  scale: value * 1.5,
+                                  child: Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFF4A90E2),
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          // Eyes
+                          Positioned(
+                            top: 35,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                _AnimatedProfessionalEye(),
+                                SizedBox(width: 25),
+                                _AnimatedProfessionalEye(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Keep Both Eyes Open',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1B3A57),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF4A90E2),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Fixed Instruction Window
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: AppColors.border.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Listener(
+                      onPointerDown: (_) {
+                        if (_isAutoScrolling) {
+                          setState(() => _isAutoScrolling = false);
+                        }
+                        _resumeTimer?.cancel();
+                      },
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildModernInstructionItem(
+                              Icons.phonelink_setup_rounded,
+                              'Device Position',
+                              'Hold device ${widget.targetDistance.toInt()}cm from your eyes',
+                              AppColors.primary,
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Divider(height: 1),
+                            ),
+                            _buildModernInstructionItem(
+                              widget.instructionIcon,
+                              widget.instructionTitle,
+                              widget.instructionDescription,
+                              AppColors.success,
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Divider(height: 1),
+                            ),
+                            _buildModernInstructionItem(
+                              Icons.center_focus_strong_rounded,
+                              'Stay Focused',
+                              'Keep your head steady and maintain distance',
+                              AppColors.warning,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 32),
+              ),
 
-                const Text(
-                  'KEEP BOTH EYES OPEN',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                  textAlign: TextAlign.center,
+              // Bottom Button Section
+              Container(
+                padding: const EdgeInsets.all(24.0),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-
-                Text(
-                  widget.subtitle,
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: AppColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
-
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.cardShadow,
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildInstructionItem(
-                        Icons.straighten,
-                        'Testing Distance',
-                        'Hold device ${widget.targetDistance.toInt()}cm from your eyes',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildInstructionItem(
-                        widget.instructionIcon,
-                        widget.instructionTitle,
-                        widget.instructionDescription,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildInstructionItem(
-                        Icons.center_focus_strong,
-                        'Stay Focused',
-                        'Keep your head steady and maintain the correct distance',
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-
-                SizedBox(
+                child: SizedBox(
                   width: double.infinity,
+                  height: 60,
                   child: ElevatedButton(
-                    onPressed: _countdown == 0
-                        ? (widget.onContinue ?? _navigateToTest)
-                        : null,
+                    onPressed: _handleContinue,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
                       backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                     child: _countdown > 0
                         ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               EyeLoader(
-                                size: 20,
+                                size: 32,
                                 color: AppColors.white,
-                                value: 1 - (_countdown / 3),
+                                value: _progress,
                               ),
                               const SizedBox(width: 12),
                               Text(
                                 'Starting in $_countdown...',
-                                style: const TextStyle(fontSize: 16),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.white,
+                                ),
                               ),
                             ],
                           )
                         : Text(
                             widget.startButtonText,
-                            style: const TextStyle(fontSize: 16),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.white,
+                            ),
                           ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInstructionItem(
+  void _handleContinue() {
+    _countdownTimer?.cancel();
+    _ttsService.stop();
+    if (widget.onContinue != null) {
+      widget.onContinue!();
+    } else {
+      _navigateToTest();
+    }
+  }
+
+  Widget _buildModernInstructionItem(
     IconData icon,
     String title,
     String description,
+    Color accentColor,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: accentColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: AppColors.primary, size: 24),
+          child: Icon(icon, color: accentColor, size: 24),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,16 +520,18 @@ class _BothEyesOpenInstructionScreenState
                 title,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 description,
                 style: TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 13,
-                  height: 1.4,
+                  fontSize: 14,
+                  height: 1.5,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
@@ -335,4 +540,176 @@ class _BothEyesOpenInstructionScreenState
       ],
     );
   }
+}
+
+class _AnimatedProfessionalEye extends StatefulWidget {
+  const _AnimatedProfessionalEye();
+
+  @override
+  __AnimatedProfessionalEyeState createState() =>
+      __AnimatedProfessionalEyeState();
+}
+
+class __AnimatedProfessionalEyeState extends State<_AnimatedProfessionalEye>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 34,
+      height: 20,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _EyeInstructionPainter(
+              progress: _controller.value,
+              color: const Color(0xFF4A90E2),
+              scleraColor: Colors.white,
+              pupilColor: Colors.black,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _EyeInstructionPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color scleraColor;
+  final Color pupilColor;
+
+  _EyeInstructionPainter({
+    required this.progress,
+    required this.color,
+    required this.scleraColor,
+    required this.pupilColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final eyeWidth = size.width * 0.95;
+    double baseEyeHeight = size.height * 0.52;
+
+    double irisXOffset = 0;
+    double blinkFactor = 1.0;
+
+    const curve = Curves.easeInOutCubic;
+    if (progress < 0.15) {
+      irisXOffset = 0;
+    } else if (progress < 0.35) {
+      double t = curve.transform((progress - 0.15) / 0.2);
+      irisXOffset = -t * (eyeWidth * 0.28);
+    } else if (progress < 0.65) {
+      double t = curve.transform((progress - 0.35) / 0.3);
+      irisXOffset = -(eyeWidth * 0.28) + (t * eyeWidth * 0.56);
+    } else if (progress < 0.85) {
+      double t = curve.transform((progress - 0.65) / 0.2);
+      irisXOffset = (eyeWidth * 0.28) - (t * eyeWidth * 0.28);
+    }
+
+    double pulseScale = 1.0;
+    if (progress < 0.15) {
+      final t = progress / 0.15;
+      pulseScale = 1.4 - (Curves.easeOutExpo.transform(t) * 0.4);
+    }
+
+    final blinkMarkers = [0.2, 0.5, 0.8];
+    const blinkHalfWindow = 0.07;
+    for (final marker in blinkMarkers) {
+      if (progress > marker - blinkHalfWindow &&
+          progress < marker + blinkHalfWindow) {
+        final t =
+            (progress - (marker - blinkHalfWindow)) / (blinkHalfWindow * 2);
+        final easedT = math.sin(t * math.pi);
+        blinkFactor = 1.0 - easedT;
+        break;
+      }
+    }
+
+    final currentHeight = baseEyeHeight * blinkFactor;
+    final scleraCenter = center + Offset(irisXOffset * 0.22, 0);
+
+    final eyePath = Path();
+    eyePath.moveTo(scleraCenter.dx - eyeWidth / 2, scleraCenter.dy);
+    eyePath.quadraticBezierTo(
+      scleraCenter.dx,
+      scleraCenter.dy - currentHeight,
+      scleraCenter.dx + eyeWidth / 2,
+      scleraCenter.dy,
+    );
+    eyePath.quadraticBezierTo(
+      scleraCenter.dx,
+      scleraCenter.dy + currentHeight,
+      scleraCenter.dx - eyeWidth / 2,
+      scleraCenter.dy,
+    );
+    eyePath.close();
+
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = scleraColor
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = color.withValues(alpha: 0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    if (blinkFactor > 0.1) {
+      canvas.save();
+      canvas.clipPath(eyePath);
+
+      final irisCenter = center + Offset(irisXOffset, 0);
+      final irisRadius = (size.width / 2) * 0.5;
+
+      canvas.drawCircle(irisCenter, irisRadius, Paint()..color = color);
+
+      canvas.drawCircle(
+        irisCenter,
+        irisRadius * 0.48 * pulseScale,
+        Paint()..color = pupilColor,
+      );
+
+      final reflectionOffset =
+          Offset(irisRadius * 0.25, -irisRadius * 0.25) +
+          Offset(irisXOffset * 0.14, 0);
+
+      canvas.drawCircle(
+        irisCenter + reflectionOffset,
+        irisRadius * 0.15,
+        Paint()..color = Colors.white.withValues(alpha: 0.6),
+      );
+
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
