@@ -148,7 +148,7 @@ class _AmslerGridInstructionsScreenState
                       'The Amsler Grid',
                       'This test checks for distortions, wavy lines, or blank spots in your central vision.',
                       AppColors.primary,
-                      animation: const AmslerIntroAnimation(),
+                      animation: const AmslerIntroAnimation(isCompact: true),
                     ),
                     _buildStep(
                       1,
@@ -156,7 +156,10 @@ class _AmslerGridInstructionsScreenState
                       'Keep Eye on Center',
                       'Focus purely on the central black dot. Do not look away from it during the test.',
                       AppColors.success,
-                      animation: const StayFocusedAnimation(),
+                      animation: const StayFocusedAnimation(
+                        isCompact: true,
+                        color: AppColors.black,
+                      ),
                     ),
                     _buildStep(
                       2,
@@ -255,46 +258,36 @@ class _AmslerGridInstructionsScreenState
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppColors.border.withOpacity(0.5)),
         ),
-        padding: const EdgeInsets.all(24.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Step ${index + 1} of $_totalPages',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                ),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Step ${index + 1} of $_totalPages',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.1,
               ),
-              const SizedBox(height: 8),
-              Text(
-                _stepTitles[index],
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _stepTitles[index],
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(height: 24),
-              _buildModernInstructionItem(icon, title, description, color),
-              if (animation != null) ...[
-                const SizedBox(height: 24),
-                const Text(
-                  'Demonstration',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                animation,
-              ],
+            ),
+            const SizedBox(height: 12),
+            _buildModernInstructionItem(icon, title, description, color),
+            if (animation != null) ...[
+              const Spacer(),
+              Center(child: animation),
+              const Spacer(),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -326,17 +319,17 @@ class _AmslerGridInstructionsScreenState
                 title,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 16,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 description,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 15,
-                  height: 1.5,
+                  fontSize: 14,
+                  height: 1.4,
                   fontWeight: FontWeight.w400,
                 ),
               ),

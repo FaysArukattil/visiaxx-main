@@ -149,7 +149,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'Well-lit Room',
                       'Ensure your room is well-lit and quiet for the most accurate results.',
                       AppColors.warning,
-                      animation: const LightingAnimation(),
+                      animation: const LightingAnimation(isCompact: true),
                     ),
                     _buildStep(
                       1,
@@ -157,7 +157,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'Optimal Distance',
                       'Hold the device about 40 centimeters (arm\'s length) away from your eyes.',
                       AppColors.primary,
-                      animation: const DistanceAnimation(),
+                      animation: const DistanceAnimation(isCompact: true),
                     ),
                     _buildStep(
                       2,
@@ -165,7 +165,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'How to Respond',
                       'Speak the direction of the letter "E" clearly or tap the buttons below.',
                       AppColors.success,
-                      animation: const HowToRespondAnimation(),
+                      animation: const HowToRespondAnimation(isCompact: true),
                     ),
                     _buildStep(
                       3,
@@ -173,7 +173,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'Wear Your Glasses',
                       'If you wear distance correction glasses, please keep them on.',
                       AppColors.info,
-                      animation: const WearSpecsAnimation(),
+                      animation: const WearSpecsAnimation(isCompact: true),
                     ),
                   ],
                 ),
@@ -264,34 +264,36 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppColors.border.withOpacity(0.5)),
         ),
-        padding: const EdgeInsets.all(24.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Step ${index + 1} of $_totalPages',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                ),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Step ${index + 1} of $_totalPages',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.1,
               ),
-              const SizedBox(height: 8),
-              Text(
-                _stepTitles[index],
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _stepTitles[index],
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(height: 24),
-              _buildModernInstructionItem(icon, title, description, color),
-              if (animation != null) ...[const SizedBox(height: 32), animation],
+            ),
+            const SizedBox(height: 12),
+            _buildModernInstructionItem(icon, title, description, color),
+            if (animation != null) ...[
+              const Spacer(),
+              Center(child: animation),
+              const Spacer(),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -323,17 +325,17 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                 title,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 16,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 description,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 15,
-                  height: 1.5,
+                  fontSize: 14,
+                  height: 1.4,
                   fontWeight: FontWeight.w400,
                 ),
               ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import '../../quick_vision_test/widgets/instruction_animations.dart';
-import '../../results/widgets/how_to_respond_animation.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -150,7 +149,7 @@ class _PelliRobsonInstructionsScreenState
                       'Brightness Check',
                       'Turn your screen brightness to maximum for the most accurate contrast measurements.',
                       AppColors.warning,
-                      animation: const LightingAnimation(),
+                      animation: const LightingAnimation(isCompact: true),
                     ),
                     _buildStep(
                       1,
@@ -158,7 +157,7 @@ class _PelliRobsonInstructionsScreenState
                       'What is Contrast?',
                       'Contrast sensitivity is your eye\'s ability to distinguish an object from its background.',
                       AppColors.primary,
-                      animation: const IshiharaIntroAnimation(),
+                      animation: const AlignmentAnimation(isCompact: true),
                     ),
                     _buildStep(
                       2,
@@ -168,7 +167,7 @@ class _PelliRobsonInstructionsScreenState
                           ? 'Hold the device about 40 centimeters (arm\'s length) away from your eyes.'
                           : 'Sit exactly 1 meter away from the screen for the long-distance test.',
                       AppColors.success,
-                      animation: const DistanceAnimation(),
+                      animation: const DistanceAnimation(isCompact: true),
                     ),
                     _buildStep(
                       3,
@@ -176,7 +175,9 @@ class _PelliRobsonInstructionsScreenState
                       'How to Perform',
                       'Read the triplets of letters inside the blue box aloud from left to right.',
                       AppColors.info,
-                      animation: const HowToRespondAnimation(),
+                      animation: const ContrastTripletAnimation(
+                        isCompact: true,
+                      ),
                     ),
                     _buildStep(
                       4,
@@ -184,6 +185,9 @@ class _PelliRobsonInstructionsScreenState
                       'Fading Letters',
                       'The letters will get fainter. Read as many as possible. If you can\'t see any, say "skip".',
                       AppColors.error,
+                      animation: const ContrastTripletAnimation(
+                        isCompact: true,
+                      ),
                     ),
                   ],
                 ),
@@ -274,34 +278,36 @@ class _PelliRobsonInstructionsScreenState
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppColors.border.withOpacity(0.5)),
         ),
-        padding: const EdgeInsets.all(24.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Step ${index + 1} of $_totalPages',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                ),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Step ${index + 1} of $_totalPages',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.1,
               ),
-              const SizedBox(height: 8),
-              Text(
-                _stepTitles[index],
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _stepTitles[index],
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(height: 24),
-              _buildModernInstructionItem(icon, title, description, color),
-              if (animation != null) ...[const SizedBox(height: 32), animation],
+            ),
+            const SizedBox(height: 12),
+            _buildModernInstructionItem(icon, title, description, color),
+            if (animation != null) ...[
+              const Spacer(),
+              Center(child: animation),
+              const Spacer(),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -333,17 +339,17 @@ class _PelliRobsonInstructionsScreenState
                 title,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 16,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 description,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 15,
-                  height: 1.5,
+                  fontSize: 14,
+                  height: 1.4,
                   fontWeight: FontWeight.w400,
                 ),
               ),

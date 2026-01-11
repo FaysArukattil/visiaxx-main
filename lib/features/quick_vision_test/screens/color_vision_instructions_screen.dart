@@ -148,7 +148,7 @@ class _ColorVisionInstructionsScreenState
                       'Ishihara Plates',
                       'This test uses circular plates with dots of different colors and sizes.',
                       AppColors.primary,
-                      animation: const IshiharaIntroAnimation(),
+                      animation: const IshiharaIntroAnimation(isCompact: true),
                     ),
                     _buildStep(
                       1,
@@ -161,10 +161,10 @@ class _ColorVisionInstructionsScreenState
                     _buildStep(
                       2,
                       Icons.visibility_rounded,
-                      'Stay Focused',
+                      'Optimal Position',
                       'Hold the device at comfortable reading distance and keep your head steady.',
                       AppColors.warning,
-                      animation: const StayFocusedAnimation(),
+                      animation: const SteadyReadingAnimation(isCompact: true),
                     ),
                   ],
                 ),
@@ -255,34 +255,36 @@ class _ColorVisionInstructionsScreenState
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppColors.border.withOpacity(0.5)),
         ),
-        padding: const EdgeInsets.all(24.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Step ${index + 1} of $_totalPages',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                ),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Step ${index + 1} of $_totalPages',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.1,
               ),
-              const SizedBox(height: 8),
-              Text(
-                _stepTitles[index],
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _stepTitles[index],
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(height: 24),
-              _buildModernInstructionItem(icon, title, description, color),
-              if (animation != null) ...[const SizedBox(height: 32), animation],
+            ),
+            const SizedBox(height: 12),
+            _buildModernInstructionItem(icon, title, description, color),
+            if (animation != null) ...[
+              const Spacer(),
+              Center(child: animation),
+              const Spacer(),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -314,17 +316,17 @@ class _ColorVisionInstructionsScreenState
                 title,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 16,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 description,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 15,
-                  height: 1.5,
+                  fontSize: 14,
+                  height: 1.4,
                   fontWeight: FontWeight.w400,
                 ),
               ),
