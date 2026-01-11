@@ -1,133 +1,110 @@
 import 'package:flutter/material.dart';
-import 'package:visiaxx/features/results/widgets/how_to_respond_animation.dart';
-import 'package:visiaxx/features/results/widgets/wear_specs_animation.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:async';
+import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_assets.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../../results/widgets/how_to_respond_animation.dart';
+import '../../results/widgets/wear_specs_animation.dart';
 
-/// Test instructions screen with TTS and relaxation image
 class TestInstructionsScreen extends StatefulWidget {
-  const TestInstructionsScreen({super.key});
+  final VoidCallback? onContinue;
+
+  const TestInstructionsScreen({super.key, this.onContinue});
 
   @override
   State<TestInstructionsScreen> createState() => _TestInstructionsScreenState();
 }
 
 class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  final int _totalPages = 4;
   final TtsService _ttsService = TtsService();
-  int _currentStep = 0;
+  bool _isPaused = false;
 
-  final List<_InstructionStep> _steps = [
-    _InstructionStep(
-      title: 'Prepare Your Space',
-      description:
-          'Find a well-lit room and sit comfortably. '
-          'Make sure your screen brightness is at maximum.',
-      icon: Icons.light_mode,
-      type: _StepType.basic,
-    ),
-    _InstructionStep(
-      title: 'Maintain Distance',
-      description:
-          'Position yourself 100cm (approximately 1 meter) away from the screen. '
-          'The app will use your camera to monitor distance.',
-      icon: Icons.straighten,
-      type: _StepType.distance,
-    ),
-    _InstructionStep(
-      title: 'How to Respond',
-      description:
-          'You will see the letter E pointing in different directions. '
-          'Tap the arrow button in that direction or use voice commands. '
-          'If you cannot see clearly, tap the "Can\'t See Clearly / Blurry" button or say "blurry".',
-      icon: Icons.touch_app,
-      type: _StepType.howToRespond,
-    ),
-    _InstructionStep(
-      title: 'Wear Your Specs',
-      description:
-          'If you normally wear glasses or contact lenses, please wear them now. '
-          'This ensures accurate testing.',
-      icon: Icons.visibility,
-      type: _StepType.wearSpecs,
-    ),
-    _InstructionStep(
-      title: 'Relax Your Eyes',
-      description:
-          'Before each test, look at the relaxation image for 10 seconds. '
-          'Focus on the distant horizon to rest your eyes.',
-      icon: Icons.self_improvement,
-      type: _StepType.relaxation,
-    ),
+  final List<String> _stepTitles = [
+    'Lighting Check',
+    'Perfect Distance',
+    'How to Respond',
+    'Vision Correction',
+  ];
+
+  final List<String> _ttsMessages = [
+    'First, find a quiet, well-lit room for the best results.',
+    'Hold the device about 40 centimeters away from your face.',
+    'You can speak your answers clearly or use the buttons on screen.',
+    'If you wear glasses for distance, please keep them on during the test.',
   ];
 
   @override
   void initState() {
     super.initState();
-    _initTts();
+    _initializeTts();
   }
 
-  Future<void> _initTts() async {
+  Future<void> _initializeTts() async {
     await _ttsService.initialize();
-    _speakCurrentStep();
+    _playCurrentStepTts();
   }
 
-  void _speakCurrentStep() {
-    if (_currentStep < _steps.length) {
-      _ttsService.speak(
-        '${_steps[_currentStep].title}. ${_steps[_currentStep].description}',
+  void _playCurrentStepTts() {
+    _ttsService.stop();
+    _ttsService.speak(_ttsMessages[_currentPage], speechRate: 0.5);
+  }
+
+  void _handleNext() {
+    if (_currentPage < _totalPages - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
       );
-    }
-  }
-
-  void _nextStep() {
-    if (_currentStep < _steps.length - 1) {
-      setState(() => _currentStep++);
-      _speakCurrentStep();
     } else {
-      _ttsService.stop();
-      Navigator.pushReplacementNamed(context, '/visual-acuity-test');
+      _handleContinue();
     }
   }
 
-  void _previousStep() {
-    if (_currentStep > 0) {
-      setState(() => _currentStep--);
-      _speakCurrentStep();
+  void _handleContinue() {
+    _ttsService.stop();
+    if (widget.onContinue != null) {
+      widget.onContinue!();
+    } else {
+      Navigator.pushReplacementNamed(context, '/visual-acuity-test');
     }
   }
 
   @override
   void dispose() {
+    _pageController.dispose();
     _ttsService.dispose();
     super.dispose();
   }
 
   void _showExitConfirmation() {
     _ttsService.stop();
+    setState(() => _isPaused = true);
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              await NavigationUtils.navigateHome(context);
-            },
-            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+      builder: (context) => TestExitConfirmationDialog(
+        onContinue: () {
+          setState(() => _isPaused = false);
+          _playCurrentStepTts();
+        },
+        onRestart: () {
+          setState(() {
+            _isPaused = false;
+            _currentPage = 0;
+          });
+          _pageController.jumpToPage(0);
+          _playCurrentStepTts();
+        },
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
+        },
       ),
     );
   }
@@ -143,169 +120,117 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Test Instructions'),
+          title: const Text('Test Preparation'),
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: _showExitConfirmation,
           ),
-          actions: [
-            IconButton(
-              icon: Icon(
-                _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
-              ),
-              onPressed: () {
-                if (_ttsService.isSpeaking) {
-                  _ttsService.stop();
-                } else {
-                  _speakCurrentStep();
-                }
-                setState(() {});
-              },
-            ),
-          ],
         ),
-        body: Column(
-          children: [
-            // Progress bar
-            LinearProgressIndicator(
-              value: (_currentStep + 1) / _steps.length,
-              backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.primary,
-              ),
-            ),
-
-            // Main content (responsive layout)
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final availableHeight = constraints.maxHeight;
-                  final isCompact = availableHeight < 600;
-
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: availableHeight),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: isCompact ? 8 : 16,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Step indicator
-                            Text(
-                              'Step ${_currentStep + 1} of ${_steps.length}',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: isCompact ? 12 : 14,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(height: isCompact ? 12 : 16),
-
-                            // Step icon (hidden for relaxation to give more space)
-                            if (_steps[_currentStep].type !=
-                                _StepType.relaxation)
-                              Container(
-                                width: isCompact ? 60 : 70,
-                                height: isCompact ? 60 : 70,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  _steps[_currentStep].icon,
-                                  size: isCompact ? 30 : 35,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            if (_steps[_currentStep].type !=
-                                _StepType.relaxation)
-                              SizedBox(height: isCompact ? 12 : 16),
-
-                            // Step title
-                            Text(
-                              _steps[_currentStep].title,
-                              style: TextStyle(
-                                fontSize: isCompact ? 20 : 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(height: isCompact ? 8 : 12),
-
-                            // Step description
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              child: Text(
-                                _steps[_currentStep].description,
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: isCompact ? 13 : 15,
-                                  height: 1.4,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            SizedBox(height: isCompact ? 16 : 24),
-
-                            // Step-specific content
-                            _buildStepContent(isCompact),
-
-                            SizedBox(height: isCompact ? 12 : 16),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Fixed navigation buttons at bottom
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Row(
+        body: SafeArea(
+          child: Column(
+            children: [
+              // PageView Content
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const BouncingScrollPhysics(),
+                  onPageChanged: (page) {
+                    setState(() => _currentPage = page);
+                    _playCurrentStepTts();
+                  },
                   children: [
-                    if (_currentStep > 0)
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _previousStep,
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: Text('Back'),
+                    _buildStep(
+                      0,
+                      Icons.wb_sunny_rounded,
+                      'Well-lit Room',
+                      'Ensure your room is well-lit and quiet for the most accurate results.',
+                      AppColors.warning,
+                    ),
+                    _buildStep(
+                      1,
+                      Icons.straighten_rounded,
+                      'Optimal Distance',
+                      'Hold the device about 40 centimeters (arm\'s length) away from your eyes.',
+                      AppColors.primary,
+                    ),
+                    _buildStep(
+                      2,
+                      Icons.mic_rounded,
+                      'How to Respond',
+                      'Speak the direction of the letter "E" clearly or tap the buttons below.',
+                      AppColors.success,
+                      animation: const HowToRespondAnimation(),
+                    ),
+                    _buildStep(
+                      3,
+                      Icons.visibility_rounded,
+                      'Wear Your Glasses',
+                      'If you wear distance correction glasses, please keep them on.',
+                      AppColors.info,
+                      animation: const WearSpecsAnimation(),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Bottom Navigation Section
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Dot Indicator
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _totalPages,
+                        (index) => Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentPage == index
+                                ? AppColors.primary
+                                : AppColors.border,
                           ),
                         ),
                       ),
-                    if (_currentStep > 0) const SizedBox(width: 16),
-                    Expanded(
-                      flex: _currentStep == 0 ? 1 : 1,
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 60,
                       child: ElevatedButton(
-                        onPressed: _nextStep,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            _currentStep == _steps.length - 1
-                                ? 'Start Test'
-                                : 'Next',
+                        onPressed: _handleNext,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          _currentPage < _totalPages - 1
+                              ? 'Next'
+                              : 'Start Exam',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -313,204 +238,278 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStepContent(bool isCompact) {
-    final step = _steps[_currentStep];
-
-    switch (step.type) {
-      case _StepType.distance:
-        return _buildDistanceDiagram(isCompact);
-
-      case _StepType.howToRespond:
-        return HowToRespondAnimation(isCompact: isCompact);
-
-      case _StepType.wearSpecs:
-        return WearSpecsAnimation(isCompact: isCompact);
-
-      case _StepType.relaxation:
-        return _buildRelaxationPreview(isCompact);
-
-      case _StepType.basic:
-        return const SizedBox(height: 100);
-    }
-  }
-
-  Widget _buildDistanceDiagram(bool isCompact) {
-    return Container(
-      padding: EdgeInsets.all(isCompact ? 16 : 20),
-      decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildStep(
+    int index,
+    IconData icon,
+    String title,
+    String description,
+    Color color, {
+    Widget? animation,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        ),
+        padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.person, size: isCompact ? 32 : 40),
-              Expanded(
-                child: Container(
-                  height: 2,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  child: CustomPaint(painter: _DashedLinePainter()),
+              Text(
+                'Step ${index + 1} of $_totalPages',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
                 ),
               ),
-              Icon(Icons.phone_android, size: isCompact ? 32 : 40),
+              const SizedBox(height: 8),
+              Text(
+                _stepTitles[index],
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildModernInstructionItem(icon, title, description, color),
+              if (animation != null) ...[const SizedBox(height: 32), animation],
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            '1 metre / 3 feet',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: isCompact ? 16 : 18,
-              color: AppColors.info,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildRelaxationPreview(bool isCompact) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calculate image height based on available space
-        // Leave room for title, description, and buttons
-        final maxImageHeight = isCompact ? 250.0 : 350.0;
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Large relaxation image
-            Container(
-              constraints: BoxConstraints(
-                maxHeight: maxImageHeight,
-                maxWidth: constraints.maxWidth,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Image.asset(
-                  AppAssets.relaxationImage,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: AppColors.surface,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.landscape,
-                            size: isCompact ? 60 : 80,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Relaxation Image',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+  Widget _buildModernInstructionItem(
+    IconData icon,
+    String title,
+    String description,
+    Color accentColor,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: accentColor, size: 24),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppColors.textPrimary,
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // Instruction card
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.3),
-                  width: 1.5,
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                  height: 1.5,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.remove_red_eye,
-                    color: AppColors.success,
-                    size: isCompact ? 20 : 24,
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(
-                      'Focus on the distant horizon for 10 seconds',
-                      style: TextStyle(
-                        color: AppColors.success,
-                        fontWeight: FontWeight.w600,
-                        fontSize: isCompact ? 13 : 14,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
-enum _StepType { basic, distance, howToRespond, wearSpecs, relaxation }
+class _AnimatedProfessionalEye extends StatefulWidget {
+  const _AnimatedProfessionalEye();
 
-class _InstructionStep {
-  final String title;
-  final String description;
-  final IconData icon;
-  final _StepType type;
-
-  _InstructionStep({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.type,
-  });
+  @override
+  __AnimatedProfessionalEyeState createState() =>
+      __AnimatedProfessionalEyeState();
 }
 
-class _DashedLinePainter extends CustomPainter {
+class __AnimatedProfessionalEyeState extends State<_AnimatedProfessionalEye>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 34,
+      height: 20,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _EyeInstructionPainter(
+              progress: _controller.value,
+              color: const Color(0xFF4A90E2),
+              scleraColor: Colors.white,
+              pupilColor: Colors.black,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _EyeInstructionPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color scleraColor;
+  final Color pupilColor;
+
+  _EyeInstructionPainter({
+    required this.progress,
+    required this.color,
+    required this.scleraColor,
+    required this.pupilColor,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.info
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
+    final center = Offset(size.width / 2, size.height / 2);
+    final eyeWidth = size.width * 0.95;
+    double baseEyeHeight = size.height * 0.52;
 
-    const dashWidth = 8.0;
-    const dashSpace = 4.0;
-    double startX = 0;
+    double irisXOffset = 0;
+    double blinkFactor = 1.0;
 
-    while (startX < size.width) {
-      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
-      startX += dashWidth + dashSpace;
+    const curve = Curves.easeInOutCubic;
+    if (progress < 0.15) {
+      irisXOffset = 0;
+    } else if (progress < 0.35) {
+      double t = curve.transform((progress - 0.15) / 0.2);
+      irisXOffset = -t * (eyeWidth * 0.28);
+    } else if (progress < 0.65) {
+      double t = curve.transform((progress - 0.35) / 0.3);
+      irisXOffset = -(eyeWidth * 0.28) + (t * eyeWidth * 0.56);
+    } else if (progress < 0.85) {
+      double t = curve.transform((progress - 0.65) / 0.2);
+      irisXOffset = (eyeWidth * 0.28) - (t * eyeWidth * 0.28);
+    }
+
+    double pulseScale = 1.0;
+    if (progress < 0.15) {
+      final t = progress / 0.15;
+      pulseScale = 1.4 - (Curves.easeOutExpo.transform(t) * 0.4);
+    }
+
+    final blinkMarkers = [0.2, 0.5, 0.8];
+    const blinkHalfWindow = 0.07;
+    for (final marker in blinkMarkers) {
+      if (progress > marker - blinkHalfWindow &&
+          progress < marker + blinkHalfWindow) {
+        final t =
+            (progress - (marker - blinkHalfWindow)) / (blinkHalfWindow * 2);
+        final easedT = math.sin(t * math.pi);
+        blinkFactor = 1.0 - easedT;
+        break;
+      }
+    }
+
+    final currentHeight = baseEyeHeight * blinkFactor;
+    final scleraCenter = center + Offset(irisXOffset * 0.22, 0);
+
+    final eyePath = Path();
+    eyePath.moveTo(scleraCenter.dx - eyeWidth / 2, scleraCenter.dy);
+    eyePath.quadraticBezierTo(
+      scleraCenter.dx,
+      scleraCenter.dy - currentHeight,
+      scleraCenter.dx + eyeWidth / 2,
+      scleraCenter.dy,
+    );
+    eyePath.quadraticBezierTo(
+      scleraCenter.dx,
+      scleraCenter.dy + currentHeight,
+      scleraCenter.dx - eyeWidth / 2,
+      scleraCenter.dy,
+    );
+    eyePath.close();
+
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = scleraColor
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = color.withOpacity(0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    if (blinkFactor > 0.1) {
+      canvas.save();
+      canvas.clipPath(eyePath);
+
+      final irisCenter = center + Offset(irisXOffset, 0);
+      final irisRadius = (size.width / 2) * 0.5;
+
+      canvas.drawCircle(irisCenter, irisRadius, Paint()..color = color);
+
+      canvas.drawCircle(
+        irisCenter,
+        irisRadius * 0.48 * pulseScale,
+        Paint()..color = pupilColor,
+      );
+
+      final reflectionOffset =
+          Offset(irisRadius * 0.25, -irisRadius * 0.25) +
+          Offset(irisXOffset * 0.14, 0);
+
+      canvas.drawCircle(
+        irisCenter + reflectionOffset,
+        irisRadius * 0.15,
+        Paint()..color = Colors.white.withOpacity(0.6),
+      );
+
+      canvas.restore();
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }

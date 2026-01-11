@@ -30,7 +30,7 @@ class CoverRightEyeInstructionScreen extends StatefulWidget {
     this.startButtonText = 'Start Left Eye Test',
     this.instructionTitle = 'Voice Commands',
     this.instructionDescription =
-        'Say the direction the E is pointing:\nUP / UPWARD / UPPER,\nDOWN / DOWNWARD / BOTTOM,\nLEFT, RIGHT\n\nOr say BLURRY / NOTHING if you can\'t see clearly',
+        'Indicate the direction clearly:\n• UP, DOWN, LEFT, or RIGHT\n• Say BLURRY if you cannot see clearly',
     this.instructionIcon = Icons.mic,
     this.onContinue,
   });
@@ -42,8 +42,8 @@ class CoverRightEyeInstructionScreen extends StatefulWidget {
 
 class _CoverRightEyeInstructionScreenState
     extends State<CoverRightEyeInstructionScreen> {
-  int _countdown = 3;
-  int _totalDuration = 3;
+  int _countdown = 4;
+  int _totalDuration = 4;
   double _progress = 0.0;
   bool _isAutoScrolling = true;
   final TtsService _ttsService = TtsService();
@@ -84,11 +84,11 @@ class _CoverRightEyeInstructionScreenState
       if (!mounted || !_scrollController.hasClients) return;
 
       final maxScroll = _scrollController.position.maxScrollExtent;
-      final calculatedDuration = (maxScroll / 150).ceil().clamp(3, 10);
+      const duration = 4;
 
       setState(() {
-        _countdown = calculatedDuration;
-        _totalDuration = calculatedDuration;
+        _countdown = duration;
+        _totalDuration = duration;
       });
 
       _countdownTimer = Timer.periodic(const Duration(milliseconds: 16), (
@@ -119,9 +119,11 @@ class _CoverRightEyeInstructionScreenState
         final progress = (elapsedMs / totalMs).clamp(0.0, 1.0);
         setState(() => _progress = progress);
 
-        // Auto-scroll only if active
+        // Auto-scroll only if active (Increased speed: reaches bottom at 80% progress)
         if (_isAutoScrolling && _scrollController.hasClients) {
-          _scrollController.jumpTo(maxScroll * progress);
+          _scrollController.jumpTo(
+            maxScroll * (progress * 1.25).clamp(0.0, 1.0),
+          );
         }
 
         // Check if reached bottom
@@ -132,8 +134,8 @@ class _CoverRightEyeInstructionScreenState
           }
         }
 
-        // Auto-continue only if timer finished AND scrolled to bottom
-        if (elapsedMs >= totalMs && _reachedBottom) {
+        // Auto-continue only if timer finished
+        if (elapsedMs >= totalMs) {
           timer.cancel();
           _handleContinue();
         }
@@ -237,119 +239,122 @@ class _CoverRightEyeInstructionScreenState
         body: SafeArea(
           child: Column(
             children: [
-              // Fixed Illustration Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                decoration: const BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x0D000000),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
+              // Card-ified Illustration Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: AppColors.border.withOpacity(0.5),
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Illustration Scale Reduced to minimize white space
-                    SizedBox(
-                      width: 120,
-                      height: 100,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Circular Face Silhouette
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  AppColors.primary.withValues(alpha: 0.1),
-                                  AppColors.primary.withValues(alpha: 0.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Illustration Scale Reduced
+                      SizedBox(
+                        width: 120,
+                        height: 100,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Circular Face Silhouette
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    AppColors.primary.withOpacity(0.1),
+                                    AppColors.primary.withOpacity(0.2),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Eyes
+                            Positioned(
+                              top: 35,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const _AnimatedProfessionalEye(),
+                                  const SizedBox(width: 25),
+                                  const _AnimatedProfessionalEye(),
                                 ],
                               ),
                             ),
-                          ),
-                          // Eyes
-                          Positioned(
-                            top: 35,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const _AnimatedProfessionalEye(),
-                                const SizedBox(width: 25),
-                                const _AnimatedProfessionalEye(),
-                              ],
-                            ),
-                          ),
-                          // Semi-circular Hand Cover (Sliding Right)
-                          TweenAnimationBuilder<double>(
-                            tween: Tween<double>(begin: 0.0, end: 1.0),
-                            duration: const Duration(milliseconds: 1000),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, value, child) {
-                              return Positioned(
-                                right: 10 + (25 * (1 - value)),
-                                top: 15 + (10 * (1 - value)),
-                                child: Opacity(
-                                  opacity: value,
-                                  child: Container(
-                                    width: 45,
-                                    height: 55,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.8,
+                            // Semi-circular Hand Cover (Sliding Right)
+                            TweenAnimationBuilder<double>(
+                              tween: Tween<double>(begin: 0.0, end: 1.0),
+                              duration: const Duration(milliseconds: 1000),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, child) {
+                                return Positioned(
+                                  right: 10 + (25 * (1 - value)),
+                                  top: 15 + (10 * (1 - value)),
+                                  child: Opacity(
+                                    opacity: value,
+                                    child: Container(
+                                      width: 45,
+                                      height: 55,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.8,
+                                        ),
+                                        borderRadius: const BorderRadius.only(
+                                          topRight: Radius.circular(30),
+                                          bottomRight: Radius.circular(30),
+                                          topLeft: Radius.circular(10),
+                                          bottomLeft: Radius.circular(10),
+                                        ),
                                       ),
-                                      borderRadius: const BorderRadius.only(
-                                        topRight: Radius.circular(30),
-                                        bottomRight: Radius.circular(30),
-                                        topLeft: Radius.circular(10),
-                                        bottomLeft: Radius.circular(10),
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.pan_tool_rounded,
-                                        color: Colors.white,
-                                        size: 24,
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.pan_tool_rounded,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Cover Right Eye',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1B3A57),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Cover Right Eye',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1B3A57),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.subtitle,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF4A90E2),
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.subtitle,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF4A90E2),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
@@ -365,7 +370,7 @@ class _CoverRightEyeInstructionScreenState
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.5),
+                        color: AppColors.border.withOpacity(0.5),
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -419,12 +424,12 @@ class _CoverRightEyeInstructionScreenState
 
               // Bottom Button Section
               Container(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: AppColors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -493,7 +498,7 @@ class _CoverRightEyeInstructionScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
+            color: accentColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: accentColor, size: 24),
@@ -662,7 +667,7 @@ class _EyeInstructionPainter extends CustomPainter {
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = color.withValues(alpha: 0.2)
+        ..color = color.withOpacity(0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -689,7 +694,7 @@ class _EyeInstructionPainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withValues(alpha: 0.6),
+        Paint()..color = Colors.white.withOpacity(0.6),
       );
 
       canvas.restore();

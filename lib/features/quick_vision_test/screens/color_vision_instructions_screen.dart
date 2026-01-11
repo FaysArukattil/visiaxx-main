@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:async';
+import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../widgets/color_vision_response_animation.dart';
 
-/// Initial instruction screen for Color Vision Test
-/// Explains how the Ishihara plate test works
 class ColorVisionInstructionsScreen extends StatefulWidget {
-  final VoidCallback onContinue;
+  final VoidCallback? onContinue;
 
-  const ColorVisionInstructionsScreen({super.key, required this.onContinue});
+  const ColorVisionInstructionsScreen({super.key, this.onContinue});
 
   @override
   State<ColorVisionInstructionsScreen> createState() =>
@@ -18,101 +20,90 @@ class ColorVisionInstructionsScreen extends StatefulWidget {
 
 class _ColorVisionInstructionsScreenState
     extends State<ColorVisionInstructionsScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  final int _totalPages = 3;
   final TtsService _ttsService = TtsService();
-  int _currentStep = 0;
+  bool _isPaused = false;
 
-  final List<_InstructionStep> _steps = [
-    _InstructionStep(
-      title: 'Color Vision Test',
-      description:
-          'This test checks your ability to see colors correctly. '
-          'You will see circular plates with colored dots forming numbers.',
-      icon: Icons.palette,
-    ),
-    _InstructionStep(
-      title: 'How to Respond',
-      description:
-          'Look at each plate and identify the number. '
-          'You will see 4 options: what a normal person sees, what a color deficient person sees, a random number, and "Nothing". '
-          'Tap the option that matches what you see.',
-      icon: Icons.touch_app,
-    ),
+  final List<String> _stepTitles = [
+    'Ishihara Plates',
+    'Identifying Numbers',
+    'Optimal Position',
+  ];
+
+  final List<String> _ttsMessages = [
+    'You will see circular plates with colored dots forming numbers.',
+    'Identify the number on each plate and select the matching option.',
+    'Hold the device at a normal reading distance, about 40 centimeters.',
   ];
 
   @override
   void initState() {
     super.initState();
-    _initTts();
+    _initializeTts();
   }
 
-  Future<void> _initTts() async {
-    try {
-      await _ttsService.initialize();
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (mounted) {
-        _speakCurrentStep();
-      }
-    } catch (e) {
-      debugPrint('Error initializing TTS: $e');
-    }
+  Future<void> _initializeTts() async {
+    await _ttsService.initialize();
+    _playCurrentStepTts();
   }
 
-  void _speakCurrentStep() {
-    if (_currentStep < _steps.length) {
-      _ttsService.stop();
-      _ttsService.speak(
-        '${_steps[_currentStep].title}. ${_steps[_currentStep].description}',
+  void _playCurrentStepTts() {
+    _ttsService.stop();
+    _ttsService.speak(_ttsMessages[_currentPage], speechRate: 0.5);
+  }
+
+  void _handleNext() {
+    if (_currentPage < _totalPages - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
       );
-    }
-  }
-
-  void _nextStep() {
-    if (_currentStep < _steps.length - 1) {
-      setState(() => _currentStep++);
-      _speakCurrentStep();
     } else {
-      _ttsService.stop();
-      widget.onContinue();
+      _handleContinue();
     }
   }
 
-  void _previousStep() {
-    if (_currentStep > 0) {
-      setState(() => _currentStep--);
-      _speakCurrentStep();
+  void _handleContinue() {
+    _ttsService.stop();
+    if (widget.onContinue != null) {
+      widget.onContinue!();
+    } else {
+      Navigator.pushReplacementNamed(context, '/color-vision-test');
     }
   }
 
   @override
   void dispose() {
+    _pageController.dispose();
     _ttsService.dispose();
     super.dispose();
   }
 
   void _showExitConfirmation() {
     _ttsService.stop();
+    setState(() => _isPaused = true);
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              await NavigationUtils.navigateHome(context);
-            },
-            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+      builder: (context) => TestExitConfirmationDialog(
+        onContinue: () {
+          setState(() => _isPaused = false);
+          _playCurrentStepTts();
+        },
+        onRestart: () {
+          setState(() {
+            _isPaused = false;
+            _currentPage = 0;
+          });
+          _pageController.jumpToPage(0);
+          _playCurrentStepTts();
+        },
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
+        },
       ),
     );
   }
@@ -128,152 +119,109 @@ class _ColorVisionInstructionsScreenState
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Color Vision Test Instructions'),
-          backgroundColor: AppColors.surface,
+          title: const Text('Color Vision Instructions'),
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: _showExitConfirmation,
           ),
-          actions: [
-            IconButton(
-              icon: Icon(
-                _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
-              ),
-              onPressed: () {
-                if (_ttsService.isSpeaking) {
-                  _ttsService.stop();
-                } else {
-                  _speakCurrentStep();
-                }
-                setState(() {});
-              },
-            ),
-          ],
         ),
-        body: Column(
-          children: [
-            // Progress bar
-            LinearProgressIndicator(
-              value: (_currentStep + 1) / _steps.length,
-              backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.primary,
-              ),
-            ),
-
-            // Main content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // PageView Content
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const BouncingScrollPhysics(),
+                  onPageChanged: (page) {
+                    setState(() => _currentPage = page);
+                    _playCurrentStepTts();
+                  },
                   children: [
-                    const SizedBox(height: 12),
-
-                    // Step indicator
-                    Text(
-                      'Step ${_currentStep + 1} of ${_steps.length}',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
+                    _buildStep(
+                      0,
+                      Icons.palette_rounded,
+                      'Ishihara Plates',
+                      'This test uses circular plates with dots of different colors and sizes.',
+                      AppColors.primary,
                     ),
-                    const SizedBox(height: 12),
-
-                    // Icon
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _steps[_currentStep].icon,
-                        size: 30,
-                        color: AppColors.primary,
-                      ),
+                    _buildStep(
+                      1,
+                      Icons.touch_app_rounded,
+                      'Identifying Numbers',
+                      'Each plate contains a number. Select the option that matches what you see.',
+                      AppColors.success,
+                      animation: const ColorVisionResponseAnimation(),
                     ),
-                    const SizedBox(height: 12),
+                    _buildStep(
+                      2,
+                      Icons.visibility_rounded,
+                      'Stay Focused',
+                      'Hold the device at comfortable reading distance and keep your head steady.',
+                      AppColors.warning,
+                    ),
+                  ],
+                ),
+              ),
 
-                    // Title
-                    Text(
-                      _steps[_currentStep].title,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+              // Bottom Navigation Section
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Dot Indicator
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _totalPages,
+                        (index) => Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentPage == index
+                                ? AppColors.primary
+                                : AppColors.border,
                           ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Description
-                    Text(
-                      _steps[_currentStep].description,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                        height: 1.4,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
-
-                    _currentStep == 0
-                        ? _buildPlateExample()
-                        : _buildResponseExample(),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
-            ),
-
-            // Navigation buttons
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Row(
-                  children: [
-                    if (_currentStep > 0)
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _previousStep,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: AppColors.primary),
-                          ),
-                          child: const Text('Back'),
-                        ),
-                      ),
-                    if (_currentStep > 0) const SizedBox(width: 16),
-                    Expanded(
+                    SizedBox(
+                      width: double.infinity,
+                      height: 60,
                       child: ElevatedButton(
-                        onPressed: _nextStep,
+                        onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                         child: Text(
-                          _currentStep == _steps.length - 1
-                              ? 'Start Test'
-                              : 'Next',
+                          _currentPage < _totalPages - 1
+                              ? 'Next'
+                              : 'Start Color Test',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.white,
                           ),
                         ),
                       ),
@@ -281,69 +229,278 @@ class _ColorVisionInstructionsScreenState
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPlateExample() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
-          width: 2,
+  Widget _buildStep(
+    int index,
+    IconData icon,
+    String title,
+    String description,
+    Color color, {
+    Widget? animation,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border.withOpacity(0.5)),
         ),
-      ),
-      child: Column(
-        children: [
-          // Simulated plate
-          Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surface,
-              border: Border.all(color: AppColors.primary, width: 3),
-            ),
-            child: Center(
-              child: Text(
-                '12',
-                style: TextStyle(
-                  fontSize: 60,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textTertiary,
+        padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Step ${index + 1} of $_totalPages',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
                 ),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                _stepTitles[index],
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildModernInstructionItem(icon, title, description, color),
+              if (animation != null) ...[const SizedBox(height: 32), animation],
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Example: Ishihara Plate',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildResponseExample() {
-    return const ColorVisionResponseAnimation();
+  Widget _buildModernInstructionItem(
+    IconData icon,
+    String title,
+    String description,
+    Color accentColor,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: accentColor, size: 24),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                  height: 1.5,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
-class _InstructionStep {
-  final String title;
-  final String description;
-  final IconData icon;
+class _AnimatedProfessionalEye extends StatefulWidget {
+  const _AnimatedProfessionalEye();
 
-  _InstructionStep({
-    required this.title,
-    required this.description,
-    required this.icon,
+  @override
+  __AnimatedProfessionalEyeState createState() =>
+      __AnimatedProfessionalEyeState();
+}
+
+class __AnimatedProfessionalEyeState extends State<_AnimatedProfessionalEye>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 34,
+      height: 20,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _EyeInstructionPainter(
+              progress: _controller.value,
+              color: const Color(0xFF4A90E2),
+              scleraColor: Colors.white,
+              pupilColor: Colors.black,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _EyeInstructionPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color scleraColor;
+  final Color pupilColor;
+
+  _EyeInstructionPainter({
+    required this.progress,
+    required this.color,
+    required this.scleraColor,
+    required this.pupilColor,
   });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final eyeWidth = size.width * 0.95;
+    double baseEyeHeight = size.height * 0.52;
+
+    double irisXOffset = 0;
+    double blinkFactor = 1.0;
+
+    const curve = Curves.easeInOutCubic;
+    if (progress < 0.15) {
+      irisXOffset = 0;
+    } else if (progress < 0.35) {
+      double t = curve.transform((progress - 0.15) / 0.2);
+      irisXOffset = -t * (eyeWidth * 0.28);
+    } else if (progress < 0.65) {
+      double t = curve.transform((progress - 0.35) / 0.3);
+      irisXOffset = -(eyeWidth * 0.28) + (t * eyeWidth * 0.56);
+    } else if (progress < 0.85) {
+      double t = curve.transform((progress - 0.65) / 0.2);
+      irisXOffset = (eyeWidth * 0.28) - (t * eyeWidth * 0.28);
+    }
+
+    double pulseScale = 1.0;
+    if (progress < 0.15) {
+      final t = progress / 0.15;
+      pulseScale = 1.4 - (Curves.easeOutExpo.transform(t) * 0.4);
+    }
+
+    final blinkMarkers = [0.2, 0.5, 0.8];
+    const blinkHalfWindow = 0.07;
+    for (final marker in blinkMarkers) {
+      if (progress > marker - blinkHalfWindow &&
+          progress < marker + blinkHalfWindow) {
+        final t =
+            (progress - (marker - blinkHalfWindow)) / (blinkHalfWindow * 2);
+        final easedT = math.sin(t * math.pi);
+        blinkFactor = 1.0 - easedT;
+        break;
+      }
+    }
+
+    final currentHeight = baseEyeHeight * blinkFactor;
+    final scleraCenter = center + Offset(irisXOffset * 0.22, 0);
+
+    final eyePath = Path();
+    eyePath.moveTo(scleraCenter.dx - eyeWidth / 2, scleraCenter.dy);
+    eyePath.quadraticBezierTo(
+      scleraCenter.dx,
+      scleraCenter.dy - currentHeight,
+      scleraCenter.dx + eyeWidth / 2,
+      scleraCenter.dy,
+    );
+    eyePath.quadraticBezierTo(
+      scleraCenter.dx,
+      scleraCenter.dy + currentHeight,
+      scleraCenter.dx - eyeWidth / 2,
+      scleraCenter.dy,
+    );
+    eyePath.close();
+
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = scleraColor
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = color.withOpacity(0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    if (blinkFactor > 0.1) {
+      canvas.save();
+      canvas.clipPath(eyePath);
+
+      final irisCenter = center + Offset(irisXOffset, 0);
+      final irisRadius = (size.width / 2) * 0.5;
+
+      canvas.drawCircle(irisCenter, irisRadius, Paint()..color = color);
+
+      canvas.drawCircle(
+        irisCenter,
+        irisRadius * 0.48 * pulseScale,
+        Paint()..color = pupilColor,
+      );
+
+      final reflectionOffset =
+          Offset(irisRadius * 0.25, -irisRadius * 0.25) +
+          Offset(irisXOffset * 0.14, 0);
+
+      canvas.drawCircle(
+        irisCenter + reflectionOffset,
+        irisRadius * 0.15,
+        Paint()..color = Colors.white.withOpacity(0.6),
+      );
+
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }

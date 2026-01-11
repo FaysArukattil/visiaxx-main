@@ -29,9 +29,9 @@ class BothEyesOpenInstructionScreen extends StatefulWidget {
         'Now we will test your near vision for reading. Keep both eyes open. Hold your device at 40 centimeters from your eyes. That is about the length from your elbow to your fingertips. Read each sentence aloud clearly and completely.',
     this.targetDistance = 40.0,
     this.startButtonText = 'Start Reading Exercise',
-    this.instructionTitle = 'Voice/Tap Response',
+    this.instructionTitle = 'Reading Response',
     this.instructionDescription =
-        'Identify the text on screen and respond accordingly',
+        'Read the text displayed on screen:\n• Speak clearly and completely\n• Maintain a steady reading pace',
     this.instructionIcon = Icons.record_voice_over_rounded,
     this.onContinue,
   });
@@ -43,8 +43,8 @@ class BothEyesOpenInstructionScreen extends StatefulWidget {
 
 class _BothEyesOpenInstructionScreenState
     extends State<BothEyesOpenInstructionScreen> {
-  int _countdown = 3;
-  int _totalDuration = 3;
+  int _countdown = 4;
+  int _totalDuration = 4;
   double _progress = 0.0;
   bool _isAutoScrolling = true;
   final TtsService _ttsService = TtsService();
@@ -86,11 +86,11 @@ class _BothEyesOpenInstructionScreenState
       if (!mounted || !_scrollController.hasClients) return;
 
       final maxScroll = _scrollController.position.maxScrollExtent;
-      final calculatedDuration = (maxScroll / 150).ceil().clamp(3, 10);
+      const duration = 4;
 
       setState(() {
-        _countdown = calculatedDuration;
-        _totalDuration = calculatedDuration;
+        _countdown = duration;
+        _totalDuration = duration;
       });
 
       _countdownTimer = Timer.periodic(const Duration(milliseconds: 16), (
@@ -121,9 +121,11 @@ class _BothEyesOpenInstructionScreenState
         final progress = (elapsedMs / totalMs).clamp(0.0, 1.0);
         setState(() => _progress = progress);
 
-        // Auto-scroll only if active
+        // Auto-scroll only if active (Increased speed: reaches bottom at 80% progress)
         if (_isAutoScrolling && _scrollController.hasClients) {
-          _scrollController.jumpTo(maxScroll * progress);
+          _scrollController.jumpTo(
+            maxScroll * (progress * 1.25).clamp(0.0, 1.0),
+          );
         }
 
         // Check if reached bottom
@@ -134,14 +136,10 @@ class _BothEyesOpenInstructionScreenState
           }
         }
 
-        // Auto-continue only if timer finished AND scrolled to bottom
-        if (elapsedMs >= totalMs && _reachedBottom) {
+        // Auto-continue only if timer finished
+        if (elapsedMs >= totalMs) {
           timer.cancel();
-          if (widget.onContinue != null) {
-            widget.onContinue!();
-          } else {
-            _navigateToTest();
-          }
+          _handleContinue();
         }
       });
     });
@@ -252,107 +250,110 @@ class _BothEyesOpenInstructionScreenState
         body: SafeArea(
           child: Column(
             children: [
-              // Fixed Illustration Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                decoration: const BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x0D000000),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
+              // Card-ified Illustration Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: AppColors.border.withOpacity(0.5),
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Illustration Scale Reduced to minimize white space
-                    SizedBox(
-                      width: 120,
-                      height: 100,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Circular Face Silhouette
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  AppColors.primary.withValues(alpha: 0.1),
-                                  AppColors.primary.withValues(alpha: 0.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Illustration Scale Reduced
+                      SizedBox(
+                        width: 120,
+                        height: 100,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Circular Face Silhouette
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    AppColors.primary.withOpacity(0.1),
+                                    AppColors.primary.withOpacity(0.2),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Eyes
+                            const Positioned(
+                              top: 35,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _AnimatedProfessionalEye(),
+                                  SizedBox(width: 25),
+                                  _AnimatedProfessionalEye(),
                                 ],
                               ),
                             ),
-                          ),
-                          // Pulsing Focus Ring
-                          TweenAnimationBuilder<double>(
-                            tween: Tween<double>(begin: 0.8, end: 1.2),
-                            duration: const Duration(milliseconds: 1500),
-                            curve: Curves.easeInOutSine,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: (1.2 - value).clamp(0.0, 0.4),
-                                child: Transform.scale(
-                                  scale: value * 1.5,
-                                  child: Container(
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: const Color(0xFF4A90E2),
-                                        width: 2,
+                            // Pulsing Focus Ring
+                            TweenAnimationBuilder<double>(
+                              tween: Tween<double>(begin: 0.8, end: 1.2),
+                              duration: const Duration(milliseconds: 1500),
+                              curve: Curves.easeInOutSine,
+                              builder: (context, value, child) {
+                                return Opacity(
+                                  opacity: (1.2 - value).clamp(0.0, 0.4),
+                                  child: Transform.scale(
+                                    scale: value * 1.5,
+                                    child: Container(
+                                      width: 100,
+                                      height: 100,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: const Color(0xFF4A90E2),
+                                          width: 2,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                          // Eyes
-                          Positioned(
-                            top: 35,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                _AnimatedProfessionalEye(),
-                                SizedBox(width: 25),
-                                _AnimatedProfessionalEye(),
-                              ],
+                                );
+                              },
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Keep Both Eyes Open',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1B3A57),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Keep Both Eyes Open',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1B3A57),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.subtitle,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF4A90E2),
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.subtitle,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF4A90E2),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
@@ -368,7 +369,7 @@ class _BothEyesOpenInstructionScreenState
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.5),
+                        color: AppColors.border.withOpacity(0.5),
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -422,12 +423,12 @@ class _BothEyesOpenInstructionScreenState
 
               // Bottom Button Section
               Container(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: AppColors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -506,7 +507,7 @@ class _BothEyesOpenInstructionScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
+            color: accentColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: accentColor, size: 24),
@@ -675,7 +676,7 @@ class _EyeInstructionPainter extends CustomPainter {
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = color.withValues(alpha: 0.2)
+        ..color = color.withOpacity(0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -702,7 +703,7 @@ class _EyeInstructionPainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withValues(alpha: 0.6),
+        Paint()..color = Colors.white.withOpacity(0.6),
       );
 
       canvas.restore();

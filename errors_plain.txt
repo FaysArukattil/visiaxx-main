@@ -1,0 +1,5 @@
+Analyzing visiaxx-main...                                       
+
+  error - Too many positional arguments: 0 expected, but 2 found - lib\features\quick_vision_test\screens\cover_left_eye_instruction_screen.dart:355:15 - extra_positional_arguments_could_be_named
+  error - Expected to find ')' - lib\features\quick_vision_test\screens\cover_left_eye_instruction_screen.dart:475:13 - expected_token
+

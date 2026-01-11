@@ -1,0 +1,12 @@
+Analyzing visiaxx-main...                                       
+
+  error - Too many positional arguments: 0 expected, but 2 found - lib\features\quick_vision_test\screens\cover_left_eye_instruction_screen.dart:355:15 - extra_positional_arguments_could_be_named
+  error - Expected to find ')' - lib\features\quick_vision_test\screens\cover_left_eye_instruction_screen.dart:475:13 - expected_token
+  error - Target of URI doesn't exist: '../widgets/how_to_respond_animation.dart' - lib\features\quick_vision_test\screens\test_instructions_screen.dart:10:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: '../widgets/wear_specs_animation.dart' - lib\features\quick_vision_test\screens\test_instructions_screen.dart:11:8 - uri_does_not_exist
+  error - Invalid constant value - lib\features\quick_vision_test\screens\test_instructions_screen.dart:348:49 - invalid_constant
+  error - The method 'HowToRespondAnimation' isn't defined for the type '_TestInstructionsScreenState' - lib\features\quick_vision_test\screens\test_instructions_screen.dart:348:49 - undefined_method
+  error - Invalid constant value - lib\features\quick_vision_test\screens\test_instructions_screen.dart:360:49 - invalid_constant
+  error - The method 'WearSpecsAnimation' isn't defined for the type '_TestInstructionsScreenState' - lib\features\quick_vision_test\screens\test_instructions_screen.dart:360:49 - undefined_method
+  error - The named parameter 'onContinue' is required, but there's no corresponding argument - lib\main.dart:191:52 - missing_required_argument
+

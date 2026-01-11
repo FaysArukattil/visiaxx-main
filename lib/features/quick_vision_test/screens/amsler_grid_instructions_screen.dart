@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:async';
+import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../widgets/amsler_grid_drawing_animation.dart';
 
-/// Initial instruction screen for Amsler Grid Test
 class AmslerGridInstructionsScreen extends StatefulWidget {
-  final VoidCallback onContinue;
+  final VoidCallback? onContinue;
 
-  const AmslerGridInstructionsScreen({super.key, required this.onContinue});
+  const AmslerGridInstructionsScreen({super.key, this.onContinue});
 
   @override
   State<AmslerGridInstructionsScreen> createState() =>
@@ -17,108 +20,90 @@ class AmslerGridInstructionsScreen extends StatefulWidget {
 
 class _AmslerGridInstructionsScreenState
     extends State<AmslerGridInstructionsScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  final int _totalPages = 3;
   final TtsService _ttsService = TtsService();
-  int _currentStep = 0;
+  bool _isPaused = false;
 
-  final List<_InstructionStep> _steps = [
-    _InstructionStep(
-      title: 'Amsler Grid Test',
-      description:
-          'This test checks for distortions in your central vision. '
-          'Hold the device at a normal reading distance (about 30-40cm).',
-      icon: Icons.grid_on,
-    ),
-    _InstructionStep(
-      title: 'Cover One Eye',
-      description:
-          'Test one eye at a time. Start by covering your LEFT eye '
-          'to test your RIGHT eye first.',
-      icon: Icons.visibility_off,
-    ),
-    _InstructionStep(
-      title: 'Focus on Center',
-      description:
-          'Focus purely on the black dot in the center. '
-          'While looking at the dot, check if any lines appear wavy, blurry, or missing.',
-      icon: Icons.center_focus_strong,
-    ),
-    _InstructionStep(
-      title: 'Trace Distortions',
-      description:
-          'If you see any wavy or missing areas, use your finger to '
-          'trace directly over them on the screen.',
-      icon: Icons.gesture,
-    ),
+  final List<String> _stepTitles = [
+    'Amsler Grid Test',
+    'Eye Alignment',
+    'Drawing Distortions',
+  ];
+
+  final List<String> _ttsMessages = [
+    'This test checks for distortions in your central vision using a grid pattern.',
+    'Focus purely on the black dot in the center. Do not look away from it.',
+    'If lines look wavy or broken, trace those areas on the screen with your finger.',
   ];
 
   @override
   void initState() {
     super.initState();
-    _initTts();
+    _initializeTts();
   }
 
-  Future<void> _initTts() async {
+  Future<void> _initializeTts() async {
     await _ttsService.initialize();
-    // Add a small delay to ensure TTS engine is ready
-    await Future.delayed(const Duration(milliseconds: 500));
-    _speakCurrentStep();
+    _playCurrentStepTts();
   }
 
-  void _speakCurrentStep() {
-    if (_currentStep < _steps.length) {
-      _ttsService.speak(
-        '${_steps[_currentStep].title}. ${_steps[_currentStep].description}',
+  void _playCurrentStepTts() {
+    _ttsService.stop();
+    _ttsService.speak(_ttsMessages[_currentPage], speechRate: 0.5);
+  }
+
+  void _handleNext() {
+    if (_currentPage < _totalPages - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
       );
-    }
-  }
-
-  void _nextStep() {
-    if (_currentStep < _steps.length - 1) {
-      setState(() => _currentStep++);
-      _speakCurrentStep();
     } else {
-      _ttsService.stop();
-      widget.onContinue();
+      _handleContinue();
     }
   }
 
-  void _previousStep() {
-    if (_currentStep > 0) {
-      setState(() => _currentStep--);
-      _speakCurrentStep();
+  void _handleContinue() {
+    _ttsService.stop();
+    if (widget.onContinue != null) {
+      widget.onContinue!();
+    } else {
+      Navigator.pushReplacementNamed(context, '/amsler-grid-test');
     }
   }
 
   @override
   void dispose() {
+    _pageController.dispose();
     _ttsService.dispose();
     super.dispose();
   }
 
   void _showExitConfirmation() {
     _ttsService.stop();
+    setState(() => _isPaused = true);
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              await NavigationUtils.navigateHome(context);
-            },
-            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+      builder: (context) => TestExitConfirmationDialog(
+        onContinue: () {
+          setState(() => _isPaused = false);
+          _playCurrentStepTts();
+        },
+        onRestart: () {
+          setState(() {
+            _isPaused = false;
+            _currentPage = 0;
+          });
+          _pageController.jumpToPage(0);
+          _playCurrentStepTts();
+        },
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
+        },
       ),
     );
   }
@@ -135,189 +120,399 @@ class _AmslerGridInstructionsScreenState
         backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('Amsler Grid Instructions'),
-          backgroundColor: AppColors.surface,
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: _showExitConfirmation,
           ),
-          actions: [
-            IconButton(
-              icon: Icon(
-                _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
-              ),
-              onPressed: () {
-                if (_ttsService.isSpeaking) {
-                  _ttsService.stop();
-                } else {
-                  _speakCurrentStep();
-                }
-                setState(() {});
-              },
-            ),
-          ],
         ),
-        body: Column(
-          children: [
-            LinearProgressIndicator(
-              value: (_currentStep + 1) / _steps.length,
-              backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.primary,
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // PageView Content
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const BouncingScrollPhysics(),
+                  onPageChanged: (page) {
+                    setState(() => _currentPage = page);
+                    _playCurrentStepTts();
+                  },
                   children: [
-                    const SizedBox(height: 20),
-                    Text(
-                      'Step ${_currentStep + 1} of ${_steps.length}',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
+                    _buildStep(
+                      0,
+                      Icons.grid_on_rounded,
+                      'The Amsler Grid',
+                      'This test checks for distortions, wavy lines, or blank spots in your central vision.',
+                      AppColors.primary,
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _steps[_currentStep].icon,
-                        size: 30,
-                        color: AppColors.primary,
-                      ),
+                    _buildStep(
+                      1,
+                      Icons.center_focus_strong_rounded,
+                      'Keep Eye on Center',
+                      'Focus purely on the central black dot. Do not look away from it during the test.',
+                      AppColors.success,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _steps[_currentStep].title,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                      textAlign: TextAlign.center,
+                    _buildStep(
+                      2,
+                      Icons.gesture_rounded,
+                      'Trace Distortions',
+                      'If lines look wavy or broken, trace them on the screen with your finger.',
+                      AppColors.warning,
+                      animation: const AmslerGridDrawingAnimation(),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _steps[_currentStep].description,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 15,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Animation or Static Preview
-                    _currentStep == 3
-                        ? const AmslerGridDrawingAnimation()
-                        : _buildGridPreview(),
-
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
-            ),
-            _buildNavigationButtons(),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildGridPreview() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Image.network(
-        'https://upload.wikimedia.org/wikipedia/commons/e/e0/Amsler_grid.png',
-        height: 180,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => Container(
-          height: 180,
-          color: AppColors.surface,
-          child: const Icon(
-            Icons.grid_on,
-            size: 50,
-            color: AppColors.textTertiary,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavigationButtons() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            if (_currentStep > 0)
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _previousStep,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text('Back'),
+              // Bottom Navigation Section
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Dot Indicator
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _totalPages,
+                        (index) => Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentPage == index
+                                ? AppColors.primary
+                                : AppColors.border,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 60,
+                      child: ElevatedButton(
+                        onPressed: _handleNext,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          _currentPage < _totalPages - 1
+                              ? 'Next'
+                              : 'Start Amsler Test',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            if (_currentStep > 0) const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _nextStep,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep(
+    int index,
+    IconData icon,
+    String title,
+    String description,
+    Color color, {
+    Widget? animation,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        ),
+        padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Step ${index + 1} of $_totalPages',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
                 ),
-                child: Text(
-                  _currentStep == _steps.length - 1 ? 'Start Test' : 'Next',
-                  style: const TextStyle(
-                    fontSize: 16,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _stepTitles[index],
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildModernInstructionItem(icon, title, description, color),
+              if (animation != null) ...[
+                const SizedBox(height: 24),
+                const Text(
+                  'Demonstration',
+                  style: TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.white,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-              ),
-            ),
-          ],
+                const SizedBox(height: 12),
+                animation,
+              ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildModernInstructionItem(
+    IconData icon,
+    String title,
+    String description,
+    Color accentColor,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: accentColor, size: 24),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                  height: 1.5,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AnimatedProfessionalEye extends StatefulWidget {
+  const _AnimatedProfessionalEye();
+
+  @override
+  __AnimatedProfessionalEyeState createState() =>
+      __AnimatedProfessionalEyeState();
+}
+
+class __AnimatedProfessionalEyeState extends State<_AnimatedProfessionalEye>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 34,
+      height: 20,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _EyeInstructionPainter(
+              progress: _controller.value,
+              color: const Color(0xFF4A90E2),
+              scleraColor: Colors.white,
+              pupilColor: Colors.black,
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class _InstructionStep {
-  final String title;
-  final String description;
-  final IconData icon;
+class _EyeInstructionPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color scleraColor;
+  final Color pupilColor;
 
-  _InstructionStep({
-    required this.title,
-    required this.description,
-    required this.icon,
+  _EyeInstructionPainter({
+    required this.progress,
+    required this.color,
+    required this.scleraColor,
+    required this.pupilColor,
   });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final eyeWidth = size.width * 0.95;
+    double baseEyeHeight = size.height * 0.52;
+
+    double irisXOffset = 0;
+    double blinkFactor = 1.0;
+
+    const curve = Curves.easeInOutCubic;
+    if (progress < 0.15) {
+      irisXOffset = 0;
+    } else if (progress < 0.35) {
+      double t = curve.transform((progress - 0.15) / 0.2);
+      irisXOffset = -t * (eyeWidth * 0.28);
+    } else if (progress < 0.65) {
+      double t = curve.transform((progress - 0.35) / 0.3);
+      irisXOffset = -(eyeWidth * 0.28) + (t * eyeWidth * 0.56);
+    } else if (progress < 0.85) {
+      double t = curve.transform((progress - 0.65) / 0.2);
+      irisXOffset = (eyeWidth * 0.28) - (t * eyeWidth * 0.28);
+    }
+
+    double pulseScale = 1.0;
+    if (progress < 0.15) {
+      final t = progress / 0.15;
+      pulseScale = 1.4 - (Curves.easeOutExpo.transform(t) * 0.4);
+    }
+
+    final blinkMarkers = [0.2, 0.5, 0.8];
+    const blinkHalfWindow = 0.07;
+    for (final marker in blinkMarkers) {
+      if (progress > marker - blinkHalfWindow &&
+          progress < marker + blinkHalfWindow) {
+        final t =
+            (progress - (marker - blinkHalfWindow)) / (blinkHalfWindow * 2);
+        final easedT = math.sin(t * math.pi);
+        blinkFactor = 1.0 - easedT;
+        break;
+      }
+    }
+
+    final currentHeight = baseEyeHeight * blinkFactor;
+    final scleraCenter = center + Offset(irisXOffset * 0.22, 0);
+
+    final eyePath = Path();
+    eyePath.moveTo(scleraCenter.dx - eyeWidth / 2, scleraCenter.dy);
+    eyePath.quadraticBezierTo(
+      scleraCenter.dx,
+      scleraCenter.dy - currentHeight,
+      scleraCenter.dx + eyeWidth / 2,
+      scleraCenter.dy,
+    );
+    eyePath.quadraticBezierTo(
+      scleraCenter.dx,
+      scleraCenter.dy + currentHeight,
+      scleraCenter.dx - eyeWidth / 2,
+      scleraCenter.dy,
+    );
+    eyePath.close();
+
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = scleraColor
+        ..style = PaintingStyle.fill,
+    );
+
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = color.withOpacity(0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    if (blinkFactor > 0.1) {
+      canvas.save();
+      canvas.clipPath(eyePath);
+
+      final irisCenter = center + Offset(irisXOffset, 0);
+      final irisRadius = (size.width / 2) * 0.5;
+
+      canvas.drawCircle(irisCenter, irisRadius, Paint()..color = color);
+
+      canvas.drawCircle(
+        irisCenter,
+        irisRadius * 0.48 * pulseScale,
+        Paint()..color = pupilColor,
+      );
+
+      final reflectionOffset =
+          Offset(irisRadius * 0.25, -irisRadius * 0.25) +
+          Offset(irisXOffset * 0.14, 0);
+
+      canvas.drawCircle(
+        irisCenter + reflectionOffset,
+        irisRadius * 0.15,
+        Paint()..color = Colors.white.withOpacity(0.6),
+      );
+
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
