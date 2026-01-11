@@ -7,6 +7,7 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../widgets/color_vision_response_animation.dart';
+import '../widgets/instruction_animations.dart';
 
 class ColorVisionInstructionsScreen extends StatefulWidget {
   final VoidCallback? onContinue;
@@ -147,6 +148,7 @@ class _ColorVisionInstructionsScreenState
                       'Ishihara Plates',
                       'This test uses circular plates with dots of different colors and sizes.',
                       AppColors.primary,
+                      animation: const IshiharaIntroAnimation(),
                     ),
                     _buildStep(
                       1,
@@ -162,6 +164,7 @@ class _ColorVisionInstructionsScreenState
                       'Stay Focused',
                       'Hold the device at comfortable reading distance and keep your head steady.',
                       AppColors.warning,
+                      animation: const StayFocusedAnimation(),
                     ),
                   ],
                 ),

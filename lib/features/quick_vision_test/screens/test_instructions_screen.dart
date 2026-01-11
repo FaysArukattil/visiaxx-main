@@ -8,6 +8,7 @@ import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../results/widgets/how_to_respond_animation.dart';
 import '../../results/widgets/wear_specs_animation.dart';
+import '../widgets/instruction_animations.dart';
 
 class TestInstructionsScreen extends StatefulWidget {
   final VoidCallback? onContinue;
@@ -148,6 +149,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'Well-lit Room',
                       'Ensure your room is well-lit and quiet for the most accurate results.',
                       AppColors.warning,
+                      animation: const LightingAnimation(),
                     ),
                     _buildStep(
                       1,
@@ -155,6 +157,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'Optimal Distance',
                       'Hold the device about 40 centimeters (arm\'s length) away from your eyes.',
                       AppColors.primary,
+                      animation: const DistanceAnimation(),
                     ),
                     _buildStep(
                       2,

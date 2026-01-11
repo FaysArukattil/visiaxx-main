@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import '../../quick_vision_test/widgets/instruction_animations.dart';
+import '../../results/widgets/how_to_respond_animation.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 /// Pelli-Robson Contrast Sensitivity Test Instructions Screen
 class PelliRobsonInstructionsScreen extends StatefulWidget {
@@ -21,84 +25,65 @@ class PelliRobsonInstructionsScreen extends StatefulWidget {
 
 class _PelliRobsonInstructionsScreenState
     extends State<PelliRobsonInstructionsScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  final int _totalPages = 5;
   final TtsService _ttsService = TtsService();
-  int _currentStep = 0;
 
-  late final List<_InstructionStep> _steps;
+  final List<String> _stepTitles = [
+    'Maximum Brightness',
+    'Contrast Sensitivity',
+    'Test Distance',
+    'Reading Triplets',
+    'Declining Contrast',
+  ];
+
+  late final List<String> _ttsMessages;
 
   @override
   void initState() {
     super.initState();
-    _steps = [
-      // ✅ NEW: Brightness instruction as first step
-      _InstructionStep(
-        title: 'Adjust Screen Brightness',
-        description:
-            'Please increase your screen brightness to maximum for accurate results. '
-            'This test measures subtle differences in contrast.',
-        icon: Icons.brightness_high,
-      ),
-      _InstructionStep(
-        title: 'Contrast Sensitivity Test',
-        description:
-            'This test measures how well you can distinguish objects from their background. '
-            'It is crucial for driving, reading, and seeing in low light.',
-        icon: Icons.palette_outlined,
-      ),
-      _InstructionStep(
-        title: 'Reading Letters',
-        description:
-            'You will see groups of 3 letters (triplets) inside a blue box. Read the triplets inside the blue box aloud from left to right.',
-        icon: Icons.record_voice_over_outlined,
-      ),
-      _InstructionStep(
-        title: 'Decreasing Contrast',
-        description:
-            'The letters will become fainter and harder to see. '
-            'Read as many as you can. If you can\'t see any, say "nothing" or "skip".',
-        icon: Icons.gradient_outlined,
-      ),
+    _ttsMessages = [
+      'Please increase your screen brightness to maximum for accurate results. This test measures subtle differences in contrast.',
+      'This test measures how well you can distinguish objects from their background. It is crucial for driving, reading, and seeing in low light.',
+      widget.testMode == 'short'
+          ? 'Hold the device about 40 centimeters away from your face.'
+          : 'Place the device exactly 1 meter away from your face.',
+      'You will see groups of 3 letters inside a blue box. Read them aloud from left to right.',
+      'The letters will become fainter and harder to see. Read as many as you can. If you cannot see any, say "nothing" or "skip".',
     ];
-    _initialize();
+    _initializeTts();
   }
 
-  Future<void> _initialize() async {
+  Future<void> _initializeTts() async {
     await _ttsService.initialize();
-    // ✅ FIX: Add delay to ensure TTS engine is fully ready
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      _speakCurrentStep();
-    }
+    _playCurrentStepTts();
   }
 
-  void _speakCurrentStep() {
-    if (_currentStep < _steps.length) {
-      _ttsService.stop();
-      _ttsService.speak(
-        '${_steps[_currentStep].title}. ${_steps[_currentStep].description}',
+  void _playCurrentStepTts() {
+    _ttsService.stop();
+    _ttsService.speak(_ttsMessages[_currentPage], speechRate: 0.5);
+  }
+
+  void _handleNext() {
+    if (_currentPage < _totalPages - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
       );
-    }
-  }
-
-  void _nextStep() {
-    if (_currentStep < _steps.length - 1) {
-      setState(() => _currentStep++);
-      _speakCurrentStep();
     } else {
-      _ttsService.stop();
-      widget.onContinue();
+      _handleContinue();
     }
   }
 
-  void _previousStep() {
-    if (_currentStep > 0) {
-      setState(() => _currentStep--);
-      _speakCurrentStep();
-    }
+  void _handleContinue() {
+    _ttsService.stop();
+    widget.onContinue();
   }
 
   @override
   void dispose() {
+    _pageController.dispose();
     _ttsService.dispose();
     super.dispose();
   }
@@ -108,190 +93,154 @@ class _PelliRobsonInstructionsScreenState
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text('Your progress will be lost. Are you sure?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              await NavigationUtils.navigateHome(context);
-            },
-            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
+      builder: (context) => TestExitConfirmationDialog(
+        onContinue: () {
+          _playCurrentStepTts();
+        },
+        onRestart: () {
+          setState(() {
+            _currentPage = 0;
+          });
+          _pageController.jumpToPage(0);
+          _playCurrentStepTts();
+        },
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
+        },
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final distanceLabel = widget.testMode == 'short'
-        ? 'Short Distance (40cm)'
-        : 'Long Distance (1m)';
-
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _showExitConfirmation();
+        if (didPop) return;
+        _showExitConfirmation();
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: Text('Contrast Test - $distanceLabel'),
-          backgroundColor: AppColors.surface,
+          title: const Text('Contrast Test Instructions'),
+          backgroundColor: AppColors.white,
           elevation: 0,
+          centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: _showExitConfirmation,
           ),
-          actions: [
-            IconButton(
-              icon: Icon(
-                _ttsService.isSpeaking ? Icons.volume_up : Icons.volume_off,
-                color: AppColors.primary,
-              ),
-              onPressed: () {
-                if (_ttsService.isSpeaking) {
-                  _ttsService.stop();
-                } else {
-                  _speakCurrentStep();
-                }
-                setState(() {});
-              },
-            ),
-          ],
         ),
-        body: Column(
-          children: [
-            // Progress bar
-            LinearProgressIndicator(
-              value: (_currentStep + 1) / _steps.length,
-              backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.primary,
-              ),
-            ),
-
-            // Main content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 32,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // PageView Content
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const BouncingScrollPhysics(),
+                  onPageChanged: (page) {
+                    setState(() => _currentPage = page);
+                    _playCurrentStepTts();
+                  },
                   children: [
-                    // Step indicator
-                    Text(
-                      'Step ${_currentStep + 1} of ${_steps.length}',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
+                    _buildStep(
+                      0,
+                      Icons.brightness_high_rounded,
+                      'Brightness Check',
+                      'Turn your screen brightness to maximum for the most accurate contrast measurements.',
+                      AppColors.warning,
+                      animation: const LightingAnimation(),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Icon
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _steps[_currentStep].icon,
-                        size: 40,
-                        color: AppColors.primary,
-                      ),
+                    _buildStep(
+                      1,
+                      Icons.palette_rounded,
+                      'What is Contrast?',
+                      'Contrast sensitivity is your eye\'s ability to distinguish an object from its background.',
+                      AppColors.primary,
+                      animation: const IshiharaIntroAnimation(),
                     ),
-                    const SizedBox(height: 24),
-
-                    // Title
-                    Text(
-                      _steps[_currentStep].title,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                      textAlign: TextAlign.center,
+                    _buildStep(
+                      2,
+                      Icons.straighten_rounded,
+                      'Perfect Distance',
+                      widget.testMode == 'short'
+                          ? 'Hold the device about 40 centimeters (arm\'s length) away from your eyes.'
+                          : 'Sit exactly 1 meter away from the screen for the long-distance test.',
+                      AppColors.success,
+                      animation: const DistanceAnimation(),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Description
-                    Text(
-                      _steps[_currentStep].description,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 16,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
+                    _buildStep(
+                      3,
+                      Icons.record_voice_over_rounded,
+                      'How to Perform',
+                      'Read the triplets of letters inside the blue box aloud from left to right.',
+                      AppColors.info,
+                      animation: const HowToRespondAnimation(),
                     ),
-                    const SizedBox(height: 48),
-
-                    // Visual aid/Example for current step
-                    _buildStepVisualAid(),
+                    _buildStep(
+                      4,
+                      Icons.gradient_rounded,
+                      'Fading Letters',
+                      'The letters will get fainter. Read as many as possible. If you can\'t see any, say "skip".',
+                      AppColors.error,
+                    ),
                   ],
                 ),
               ),
-            ),
 
-            // Navigation buttons
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Row(
+              // Bottom Navigation Section
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (_currentStep > 0)
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _previousStep,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: AppColors.primary),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                    // Dot Indicator
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _totalPages,
+                        (index) => Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentPage == index
+                                ? AppColors.primary
+                                : AppColors.border,
                           ),
-                          child: const Text('Back'),
                         ),
                       ),
-                    if (_currentStep > 0) const SizedBox(width: 16),
-                    Expanded(
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 60,
                       child: ElevatedButton(
-                        onPressed: _nextStep,
+                        onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                         child: Text(
-                          _currentStep == _steps.length - 1
-                              ? 'Start Test'
-                              : 'Next',
+                          _currentPage < _totalPages - 1
+                              ? 'Next'
+                              : 'Start Test',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -302,92 +251,106 @@ class _PelliRobsonInstructionsScreenState
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStepVisualAid() {
-    switch (_currentStep) {
-      case 0: // Intro
-        return _buildExampleTriplet('VRS', 1.0);
-      case 1: // Distance
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.info.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildStep(
+    int index,
+    IconData icon,
+    String title,
+    String description,
+    Color color, {
+    Widget? animation,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        ),
+        padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.person, size: 40, color: AppColors.info),
-              const SizedBox(width: 20),
-              Container(height: 2, width: 60, color: AppColors.info),
-              const SizedBox(width: 20),
-              Icon(Icons.phone_android, size: 40, color: AppColors.info),
-            ],
-          ),
-        );
-      case 2: // Reading
-        return _buildExampleTriplet('KDR', 0.6);
-      case 3: // Decreasing contrast
-        return Column(
-          children: [
-            _buildExampleTriplet('NHC', 0.4),
-            const SizedBox(height: 12),
-            _buildExampleTriplet('SOK', 0.15),
-          ],
-        );
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
-  Widget _buildExampleTriplet(String letters, double opacity) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: letters
-            .split('')
-            .map(
-              (l) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Opacity(
-                  opacity: opacity,
-                  child: Text(
-                    l,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Sloan',
-                    ),
-                  ),
+              Text(
+                'Step ${index + 1} of $_totalPages',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
                 ),
               ),
-            )
-            .toList(),
+              const SizedBox(height: 8),
+              Text(
+                _stepTitles[index],
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildModernInstructionItem(icon, title, description, color),
+              if (animation != null) ...[const SizedBox(height: 32), animation],
+            ],
+          ),
+        ),
       ),
     );
   }
-}
 
-class _InstructionStep {
-  final String title;
-  final String description;
-  final IconData icon;
-
-  _InstructionStep({
-    required this.title,
-    required this.description,
-    required this.icon,
-  });
+  Widget _buildModernInstructionItem(
+    IconData icon,
+    String title,
+    String description,
+    Color accentColor,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: accentColor, size: 24),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                  height: 1.5,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

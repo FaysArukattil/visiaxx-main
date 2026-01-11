@@ -7,6 +7,7 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../widgets/amsler_grid_drawing_animation.dart';
+import '../widgets/instruction_animations.dart';
 
 class AmslerGridInstructionsScreen extends StatefulWidget {
   final VoidCallback? onContinue;
@@ -147,6 +148,7 @@ class _AmslerGridInstructionsScreenState
                       'The Amsler Grid',
                       'This test checks for distortions, wavy lines, or blank spots in your central vision.',
                       AppColors.primary,
+                      animation: const AmslerIntroAnimation(),
                     ),
                     _buildStep(
                       1,
@@ -154,6 +156,7 @@ class _AmslerGridInstructionsScreenState
                       'Keep Eye on Center',
                       'Focus purely on the central black dot. Do not look away from it during the test.',
                       AppColors.success,
+                      animation: const StayFocusedAnimation(),
                     ),
                     _buildStep(
                       2,
