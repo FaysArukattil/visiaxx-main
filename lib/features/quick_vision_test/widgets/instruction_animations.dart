@@ -838,3 +838,133 @@ class _ContrastTripletAnimationState extends State<ContrastTripletAnimation>
     );
   }
 }
+
+/// New animation for Amsler Grid showing light rays traveling to central vision
+class AmslerLightRayAnimation extends StatefulWidget {
+  final bool isCompact;
+  const AmslerLightRayAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<AmslerLightRayAnimation> createState() =>
+      _AmslerLightRayAnimationState();
+}
+
+class _AmslerLightRayAnimationState extends State<AmslerLightRayAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double size = widget.isCompact ? 120 : 180;
+    return Center(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            size: Size(size, size),
+            painter: _AmslerLightRayPainter(
+              progress: _controller.value,
+              isCompact: widget.isCompact,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AmslerLightRayPainter extends CustomPainter {
+  final double progress;
+  final bool isCompact;
+
+  _AmslerLightRayPainter({required this.progress, required this.isCompact});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    // Draw background grid (static)
+    final gridPaint = Paint()
+      ..color = AppColors.black.withOpacity(0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    int divisions = 8;
+    double step = size.width / divisions;
+    for (int i = 0; i <= divisions; i++) {
+      canvas.drawLine(
+        Offset(i * step, 0),
+        Offset(i * step, size.height),
+        gridPaint,
+      );
+      canvas.drawLine(
+        Offset(0, i * step),
+        Offset(size.width, i * step),
+        gridPaint,
+      );
+    }
+
+    // Draw rays
+    final rayPaint = Paint()
+      ..color = AppColors.black.withOpacity(0.5)
+      ..strokeWidth = 2.0;
+
+    int rayCount = 12;
+    for (int i = 0; i < rayCount; i++) {
+      double angle = (2 * math.pi * i) / rayCount;
+      // Ray travels from outer circle to center
+      double startDist = size.width * 0.45;
+
+      // Calculate position based on progress
+      double currentDist = startDist * (1.0 - progress);
+
+      // Ray start/end (short segments traveling)
+      double rayLength = size.width * 0.1;
+      double rayStart = currentDist;
+      double rayEnd = (currentDist - rayLength).clamp(0, startDist);
+
+      canvas.drawLine(
+        center + Offset(math.cos(angle) * rayStart, math.sin(angle) * rayStart),
+        center + Offset(math.cos(angle) * rayEnd, math.sin(angle) * rayEnd),
+        rayPaint..color = AppColors.black.withOpacity(0.6 * (1.0 - progress)),
+      );
+    }
+
+    // Central Dot
+    canvas.drawCircle(
+      center,
+      isCompact ? 4 : 6,
+      Paint()
+        ..color = AppColors.black
+        ..style = PaintingStyle.fill,
+    );
+
+    // Focus ring
+    canvas.drawCircle(
+      center,
+      (isCompact ? 10 : 15) * (1.0 + 0.2 * math.sin(progress * 2 * math.pi)),
+      Paint()
+        ..color = AppColors.black.withOpacity(0.2 * (1.0 - (progress % 1.0)))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _AmslerLightRayPainter oldDelegate) =>
+      oldDelegate.progress != progress;
+}

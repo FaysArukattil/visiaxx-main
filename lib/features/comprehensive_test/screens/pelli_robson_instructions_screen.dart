@@ -56,6 +56,8 @@ class _PelliRobsonInstructionsScreenState
 
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
+    // Small delay to ensure service is ready for first load auto-play
+    await Future.delayed(const Duration(milliseconds: 500));
     _playCurrentStepTts();
   }
 

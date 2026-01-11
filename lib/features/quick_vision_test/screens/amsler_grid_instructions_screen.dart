@@ -47,6 +47,8 @@ class _AmslerGridInstructionsScreenState
 
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
+    // Small delay to ensure service is ready for first load auto-play
+    await Future.delayed(const Duration(milliseconds: 500));
     _playCurrentStepTts();
   }
 
@@ -148,7 +150,7 @@ class _AmslerGridInstructionsScreenState
                       'The Amsler Grid',
                       'This test checks for distortions, wavy lines, or blank spots in your central vision.',
                       AppColors.primary,
-                      animation: const AmslerIntroAnimation(isCompact: true),
+                      animation: const AmslerLightRayAnimation(isCompact: true),
                     ),
                     _buildStep(
                       1,
