@@ -754,17 +754,17 @@ class _SteadyReadingPainter extends CustomPainter {
       oldDelegate.shake != shake;
 }
 
-/// Animation for Pelli-Robson Contrast Sensitivity
-class ContrastTripletAnimation extends StatefulWidget {
+/// Animation for Step 4 of Pelli-Robson: Reading the triplet inside a blue box
+class ReadingTripletsAnimation extends StatefulWidget {
   final bool isCompact;
-  const ContrastTripletAnimation({super.key, this.isCompact = false});
+  const ReadingTripletsAnimation({super.key, this.isCompact = false});
 
   @override
-  State<ContrastTripletAnimation> createState() =>
-      _ContrastTripletAnimationState();
+  State<ReadingTripletsAnimation> createState() =>
+      _ReadingTripletsAnimationState();
 }
 
-class _ContrastTripletAnimationState extends State<ContrastTripletAnimation>
+class _ReadingTripletsAnimationState extends State<ReadingTripletsAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -773,7 +773,118 @@ class _ContrastTripletAnimationState extends State<ContrastTripletAnimation>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Wrap in FittedBox to ensure it never overflows regardless of internal content size
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Container(
+          width: 250, // Standard base width for the animation
+          height: 200, // Standard base height
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            border: Border.all(color: AppColors.border, width: 2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              // Triplets moving through
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  // Scrolling logic: move from -50 to 50
+                  double scrollOffset = -50 + (100 * (1.0 - _controller.value));
+                  return Positioned(
+                    top: scrollOffset,
+                    left: 0,
+                    right: 0,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildTriplet('V S K', 0.1),
+                        _buildTriplet('N H Z', 0.3),
+                        _buildTriplet('D R V', 1.0),
+                        _buildTriplet('K S O', 0.3),
+                        _buildTriplet('H N Z', 0.1),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              // The fixed highlight box in the center (matches test screen)
+              Center(
+                child: Container(
+                  width: 220,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.5),
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTriplet(String text, double opacity) {
+    return Container(
+      height: 60,
+      alignment: Alignment.center,
+      child: Opacity(
+        opacity: opacity,
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: AppColors.black,
+            letterSpacing: 4,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Animation for Step 5 of Pelli-Robson: Fading Triplets
+class FadingTripletsAnimation extends StatefulWidget {
+  final bool isCompact;
+  const FadingTripletsAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<FadingTripletsAnimation> createState() =>
+      _FadingTripletsAnimationState();
+}
+
+class _FadingTripletsAnimationState extends State<FadingTripletsAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
     )..repeat();
   }
 
@@ -785,54 +896,49 @@ class _ContrastTripletAnimationState extends State<ContrastTripletAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 140 : 200;
     return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Container(
-            width: size,
-            height: size * 0.6,
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              border: Border.all(color: AppColors.border, width: 2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                _buildTripletRow('V S K', 0.0, 0.25),
-                _buildTripletRow('N H Z', 0.25, 0.5),
-                _buildTripletRow('O R D', 0.5, 0.75),
-                _buildTripletRow('K S V', 0.75, 1.0),
-              ],
-            ),
-          );
-        },
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Container(
+          width: 250,
+          height: 200,
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            border: Border.all(color: AppColors.border, width: 2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildFadingRow('V S K', 1.0),
+                  _buildFadingRow('N H Z', 0.4),
+                  _buildFadingRow('O R D', 0.15),
+                  _buildFadingRow('K S V', 0.05),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildTripletRow(String letters, double start, double end) {
-    final t = (_controller.value - start) / (end - start);
-    if (t < 0 || t > 1) return const SizedBox.shrink();
-
-    // Opacity reduces as it "fades"
-    final opacity = (1.0 - t).clamp(0.05, 1.0);
-    final scale = 0.8 + (0.2 * t);
-
+  Widget _buildFadingRow(String text, double targetOpacity) {
+    // Subtle breathing effect for animation
+    final pulse = 0.9 + (0.1 * math.sin(_controller.value * 2 * math.pi));
     return Opacity(
-      opacity: opacity,
-      child: Transform.scale(
-        scale: scale,
-        child: Text(
-          letters,
-          style: TextStyle(
-            fontSize: widget.isCompact ? 24 : 32,
-            fontWeight: FontWeight.bold,
-            color: AppColors.black,
-            letterSpacing: 4,
-          ),
+      opacity: (targetOpacity * pulse).clamp(0.02, 1.0),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: AppColors.black,
+          letterSpacing: 4,
         ),
       ),
     );

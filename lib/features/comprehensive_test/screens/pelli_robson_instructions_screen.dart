@@ -48,7 +48,7 @@ class _PelliRobsonInstructionsScreenState
       widget.testMode == 'short'
           ? 'Hold the device about 40 centimeters away from your face.'
           : 'Place the device exactly 1 meter away from your face.',
-      'You will see groups of 3 letters inside a blue box. Read them aloud from left to right.',
+      'You will see groups of 3 letters. Only read the letters inside the blue box aloud from left to right.',
       'The letters will become fainter and harder to see. Read as many as you can. If you cannot see any, say "nothing" or "skip".',
     ];
     _initializeTts();
@@ -174,22 +174,20 @@ class _PelliRobsonInstructionsScreenState
                     _buildStep(
                       3,
                       Icons.record_voice_over_rounded,
-                      'How to Perform',
-                      'Read the triplets of letters inside the blue box aloud from left to right.',
+                      'Reading Triplets',
+                      'You will see several triplets. Read whichever three letters are inside the blue box.',
                       AppColors.info,
-                      animation: const ContrastTripletAnimation(
+                      animation: const ReadingTripletsAnimation(
                         isCompact: true,
                       ),
                     ),
                     _buildStep(
                       4,
                       Icons.gradient_rounded,
-                      'Fading Letters',
-                      'The letters will get fainter. Read as many as possible. If you can\'t see any, say "skip".',
+                      'Declining Contrast',
+                      'The letters will become fainter and harder to see. Read as many as possible until they are no longer visible.',
                       AppColors.error,
-                      animation: const ContrastTripletAnimation(
-                        isCompact: true,
-                      ),
+                      animation: const FadingTripletsAnimation(isCompact: true),
                     ),
                   ],
                 ),
