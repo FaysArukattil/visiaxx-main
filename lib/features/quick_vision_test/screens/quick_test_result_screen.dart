@@ -2199,68 +2199,127 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         provider.mobileRefractometry;
     if (result == null) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildRefractionEyeResult(
-                  'Right Eye',
-                  result.rightEye,
-                  AppColors.primary,
-                ),
-              ),
-              Container(
-                width: 1.5,
-                height: 100,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.divider.withValues(alpha: 0.1),
-                      AppColors.divider,
-                      AppColors.divider.withValues(alpha: 0.1),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _buildRefractionEyeResult(
-                  'Left Eye',
-                  result.leftEye,
-                  AppColors.secondary,
-                ),
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
-          if (result.healthWarnings.isNotEmpty) ...[
-            const Divider(height: 48, thickness: 1),
-            _buildClinicalInfoSection(
-              'Clinical Observations',
-              result.healthWarnings.join('. '),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Prescription Breakdown',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _buildEnhancedRefractionEye(
+                      'Right Eye',
+                      result.rightEye,
+                      AppColors.primary,
+                    ),
+                  ),
+                  Container(
+                    width: 1.5,
+                    height: 180,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.divider.withValues(alpha: 0.1),
+                          AppColors.divider,
+                          AppColors.divider.withValues(alpha: 0.1),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildEnhancedRefractionEye(
+                      'Left Eye',
+                      result.leftEye,
+                      AppColors.secondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Layman Interpretations Section
+        _buildRefractionInterpretations(result),
+
+        if (result.healthWarnings.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: AppColors.warning.withValues(alpha: 0.2),
+              ),
             ),
-          ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.analytics_rounded,
+                      color: AppColors.warning,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Clinical Observations',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: AppColors.warningDark,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  result.healthWarnings.join('. '),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
-      ),
+      ],
     );
   }
 
-  Widget _buildRefractionEyeResult(
-    String eye,
+  Widget _buildEnhancedRefractionEye(
+    String label,
     MobileRefractometryEyeResult? res,
     Color color,
   ) {
@@ -2277,50 +2336,253 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.visibility, color: color, size: 16),
-            const SizedBox(width: 4),
-            Text(
-              eye,
-              style: TextStyle(color: color, fontWeight: FontWeight.w500),
-            ),
-          ],
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.visibility_rounded, color: color, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
-        _buildRefractionValueRow('SPH', res.sphere),
-        const SizedBox(height: 8),
-        _buildRefractionValueRow('CYL', res.cylinder),
-        const SizedBox(height: 8),
-        _buildRefractionValueRow('AXIS', '${res.axis}°'),
+        const SizedBox(height: 20),
+        _buildValueRow('SPH', res.sphere, 'Sphere'),
+        _buildValueRow('CYL', res.cylinder, 'Cylinder'),
+        _buildValueRow('AXIS', '${res.axis}°', 'Axis'),
+        if (double.tryParse(res.addPower) != null &&
+            double.parse(res.addPower) > 0)
+          _buildValueRow('ADD', '+${res.addPower}', 'Reading'),
+        const SizedBox(height: 12),
+        Text(
+          'Accuracy: ${(double.parse(res.accuracy) * 100).toStringAsFixed(0)}%',
+          style: TextStyle(
+            fontSize: 10,
+            color: AppColors.textTertiary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildRefractionValueRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 40,
-          child: Text(
-            label,
+  Widget _buildValueRow(String label, String value, String fullName) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textTertiary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          Text(
+            fullName,
             style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
+              fontSize: 8,
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefractionInterpretations(MobileRefractometryResult result) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'What This Means',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (result.rightEye != null)
+            _buildLaymanEyeInterpretation(
+              'Right Eye',
+              result.rightEye!,
+              AppColors.primary,
+            ),
+          if (result.rightEye != null && result.leftEye != null)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: Divider(height: 1),
+            ),
+          if (result.leftEye != null)
+            _buildLaymanEyeInterpretation(
+              'Left Eye',
+              result.leftEye!,
+              AppColors.secondary,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLaymanEyeInterpretation(
+    String eyeLabel,
+    MobileRefractometryEyeResult res,
+    Color color,
+  ) {
+    final sph = double.tryParse(res.sphere) ?? 0.0;
+    final cyl = double.tryParse(res.cylinder) ?? 0.0;
+    final add = double.tryParse(res.addPower) ?? 0.0;
+
+    String condition = 'Healthy Vision';
+    String description = 'This eye shows no significant refractive issues.';
+    List<String> symptoms = [];
+
+    if (sph < -0.25) {
+      condition = 'Nearsightedness (Myopia)';
+      description = 'Distance objects may appear blurry or out of focus.';
+      symptoms.add('Difficulty seeing distant street signs or screens.');
+      symptoms.add('Squinting to see things far away.');
+    } else if (sph > 0.25) {
+      condition = 'Farsightedness (Hyperopia)';
+      description =
+          'May experience blurriness or strain during close-up tasks.';
+      symptoms.add('Eye strain during reading or phone use.');
+      symptoms.add('Headaches after prolonged close work.');
+    }
+
+    if (cyl.abs() > 0.25) {
+      if (condition == 'Healthy Vision') {
+        condition = 'Astigmatism';
+        description =
+            'Vision may be distorted at all distances due to eye shape.';
+      } else {
+        condition += ' with Astigmatism';
+      }
+      symptoms.add('Vision appearing stretched or light "smearing".');
+    }
+
+    if (add > 0.25) {
+      symptoms.add('Need to hold reading material further away (Presbyopia).');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              eyeLabel,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color:
+                    (condition == 'Healthy Vision'
+                            ? AppColors.success
+                            : AppColors.primary)
+                        .withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                condition,
+                style: TextStyle(
+                  color: condition == 'Healthy Vision'
+                      ? AppColors.successDark
+                      : AppColors.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
+        const SizedBox(height: 8),
         Text(
-          value,
+          description,
           style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontSize: 13,
             color: AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
           ),
         ),
+        if (symptoms.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ...symptoms.map(
+            (s) => Padding(
+              padding: const EdgeInsets.only(bottom: 6.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline_rounded,
+                    size: 14,
+                    color: color.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      s,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -6,6 +6,7 @@ import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../results/widgets/how_to_respond_animation.dart';
 import '../../quick_vision_test/widgets/instruction_animations.dart';
+import '../../quick_vision_test/widgets/glasses_removal_animation.dart';
 
 class MobileRefractometryInstructionsScreen extends StatefulWidget {
   final VoidCallback? onContinue;
@@ -21,10 +22,11 @@ class _MobileRefractometryInstructionsScreenState
     extends State<MobileRefractometryInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 4;
+  final int _totalPages = 5;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
+    'Remove Eyewear',
     'Lighting Check',
     'Dual Distance Focus',
     'How to Respond',
@@ -32,6 +34,7 @@ class _MobileRefractometryInstructionsScreenState
   ];
 
   final List<String> _ttsMessages = [
+    'If you wear glasses or contact lenses, please remove them for this test.',
     'First, find a quiet, well-lit room for the best results.',
     'This test checks your vision at two distances: arm\'s length and closer.',
     'Speak the direction of the letter "E". If it looks blurry, just say "blurry".',
@@ -140,6 +143,14 @@ class _MobileRefractometryInstructionsScreenState
                   children: [
                     _buildStep(
                       0,
+                      Icons.visibility_off_rounded,
+                      'No Eyewear',
+                      'Remove glasses or contact lenses. This test measures your natural vision.',
+                      AppColors.error,
+                      animation: const RemoveGlassesAnimation(isCompact: true),
+                    ),
+                    _buildStep(
+                      1,
                       Icons.wb_sunny_rounded,
                       'Well-lit Room',
                       'Ensure your room is well-lit and quiet for the most accurate results.',
@@ -147,7 +158,7 @@ class _MobileRefractometryInstructionsScreenState
                       animation: const LightingAnimation(isCompact: true),
                     ),
                     _buildStep(
-                      1,
+                      2,
                       Icons.straighten_rounded,
                       'Multi-Distance',
                       'You will be asked to hold the device at 100cm (distance) and 40cm (near).',
@@ -155,7 +166,7 @@ class _MobileRefractometryInstructionsScreenState
                       animation: const DistanceAnimation(isCompact: true),
                     ),
                     _buildStep(
-                      2,
+                      3,
                       Icons.mic_rounded,
                       'Voice & Blurry',
                       'Say the direction clearly. If the letter "E" is out of focus, say "Blurry".',
@@ -163,7 +174,7 @@ class _MobileRefractometryInstructionsScreenState
                       animation: const HowToRespondAnimation(isCompact: true),
                     ),
                     _buildStep(
-                      3,
+                      4,
                       Icons.self_improvement_rounded,
                       'Relaxation',
                       'Between rounds, relax your eyes by focusing on the distance image.',

@@ -296,43 +296,50 @@ class _MobileRefractometryTestScreenState
 
   void _resumeTestAfterDistance() {
     setState(() => _isTestPausedForDistance = false);
-    _startContinuousDistanceMonitoring();
+
+    // No need to restart distance monitoring as it's already running!
+    // Re-initialization (via _startContinuousDistanceMonitoring) causes "Searching..." stall.
 
     if (_currentPhase == RefractPhase.test && _waitingForResponse) {
       if (!_continuousSpeech.isActive) _continuousSpeech.start();
       _startRoundTimer();
     } else if (_currentPhase == RefractPhase.relaxation) {
-      _restartRelaxationTimer();
+      _startRelaxationTimer();
     }
     HapticFeedback.mediumImpact();
   }
 
   void _startRelaxation() {
+    // ✅ Stop mic during relaxation (matches VA)
+    _continuousSpeech.stop();
+    _continuousSpeech.clearAccumulated();
+
     setState(() {
       _currentPhase = RefractPhase.relaxation;
-      _relaxationCountdown = TestConstants.mobileRefractometryRelaxationSeconds;
-      _waitingForResponse = false;
+      _relaxationCountdown = TestConstants.relaxationDurationSeconds;
+      _lastDetectedSpeech = null;
+      _isSpeechActive = false;
     });
 
-    _continuousSpeech.stop();
     _ttsService.speak(TtsService.relaxationInstruction);
-    _restartRelaxationTimer();
+    _startRelaxationTimer();
   }
 
-  void _restartRelaxationTimer() {
+  void _startRelaxationTimer() {
     _relaxationTimer?.cancel();
     _relaxationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
-      if (_isTestPausedForDistance) return;
+
+      if (_isTestPausedForDistance) return; // Don't decrement if paused
 
       setState(() => _relaxationCountdown--);
 
       if (_relaxationCountdown <= 0) {
         timer.cancel();
-        _startRound();
+        _startRound(); // Check completion and distance before generating E
       }
     });
   }
@@ -394,21 +401,39 @@ class _MobileRefractometryTestScreenState
   }
 
   void _generateNewRound() {
+    // ✅ Clear state before generating new E (mic already stopped in relaxation)
+    _lastDetectedSpeech = null;
+    _isSpeechActive = false;
+    _eDisplayStartTime = null;
+
     final directions = [
       EDirection.up,
       EDirection.down,
       EDirection.left,
       EDirection.right,
-    ];
+    ].where((d) => d != _currentDirection).toList();
     _currentDirection = directions[math.Random().nextInt(directions.length)];
-    _eDisplayStartTime = DateTime.now();
-    _remainingSeconds = TestConstants.mobileRefractometryTimePerRoundSeconds;
-    _waitingForResponse = true;
-    _showResult = false;
-    _continuousSpeech.clearAccumulated();
-    setState(() {});
-    _startRoundTimer();
-    _continuousSpeech.start();
+
+    setState(() {
+      _currentPhase = RefractPhase.test;
+      _remainingSeconds = TestConstants.mobileRefractometryTimePerRoundSeconds;
+      _waitingForResponse = true;
+      _showResult = false;
+      _lastDetectedSpeech = null;
+      _isSpeechActive = false;
+    });
+
+    // ✅ MATCHES VA: Small delay then start mic
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      _eDisplayStartTime = DateTime.now();
+      _startRoundTimer();
+      _continuousSpeech.start(
+        listenDuration: const Duration(minutes: 10),
+        minConfidence: 0.15,
+        bufferMs: 1000,
+      );
+    });
   }
 
   void _startRoundTimer() {
@@ -420,7 +445,8 @@ class _MobileRefractometryTestScreenState
 
       if (_remainingSeconds <= 0) {
         timer.cancel();
-        _handleResponse(null);
+        // ✅ MATCHES VA: Rotate E at same size instead of scoring as incorrect
+        _generateNewRound();
       }
     });
   }
@@ -492,18 +518,24 @@ class _MobileRefractometryTestScreenState
     if (!_waitingForResponse || _showResult) return;
     _waitingForResponse = false;
     _roundTimer?.cancel();
+
+    // ✅ ULTRA-CRITICAL: STOP MICROPHONE IMMEDIATELY to prevent carryover
+    _continuousSpeech.stop();
     _continuousSpeech.clearAccumulated();
+    _speechEraserTimer?.cancel();
+    _speechActiveTimer?.cancel();
 
     final correct = response == _currentDirection;
     final isCantSee = response == EDirection.blurry;
 
-    // TTS Feedback
+    // ✅ TTS Feedback - MATCHES VA EXACTLY
     if (correct) {
       _ttsService.speakCorrect(response?.label ?? 'None');
     } else if (isCantSee) {
+      // For blurry, just say the response was heard but don't say correct/incorrect
       _ttsService.speak('Cannot see');
-    } else {
-      _ttsService.speakIncorrect(response?.label ?? 'None');
+    } else if (response != null) {
+      _ttsService.speakIncorrect(response.label);
     }
 
     final responseRecord = {
@@ -544,23 +576,51 @@ class _MobileRefractometryTestScreenState
     setState(() {
       _lastResponse = response;
       _showResult = true;
+      _lastDetectedSpeech = null;
+      _isSpeechActive = false;
     });
 
+    // ✅ MATCHES VA: 400ms result display, then relaxation
     Future.delayed(const Duration(milliseconds: 400), () {
       if (!mounted) return;
       setState(() {
         _showResult = false;
         _currentRound++;
       });
-      _startRound();
+      // ✅ Start relaxation BEFORE next E (matches VA flow)
+      _startRelaxation();
     });
   }
 
   void _finishEye() {
     if (_currentEye == 'right') {
+      // Reset for left eye
       setState(() {
         _currentEye = 'left';
+        _currentRound = 0;
+        _currentBlur = TestConstants.initialBlurLevel;
         _currentPhase = RefractPhase.instruction;
+      });
+
+      // Show left eye instruction AFTER state update
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => CoverRightEyeInstructionScreen(
+              title: 'Mobile Refractometry',
+              subtitle: 'Focus with your LEFT eye only',
+              ttsMessage:
+                  'Cover your right eye. Keep your left eye open. We will measure your refraction.',
+              targetDistance: TestConstants.mobileRefractometryDistanceCm,
+              startButtonText: 'Start Left Eye Test',
+              onContinue: () {
+                Navigator.of(context).pop();
+                _startRelaxation();
+              },
+            ),
+          ),
+        );
       });
     } else {
       _calculateResults();
@@ -717,6 +777,20 @@ class _MobileRefractometryTestScreenState
   String _formatDiopter(double val) =>
       (val >= 0 ? '+' : '') + val.toStringAsFixed(2);
 
+  String _getSnellenScore(double fontSize) {
+    VisualAcuityLevel closest = TestConstants.visualAcuityLevels[0];
+    double minDiff = (fontSize - closest.flutterFontSize).abs();
+
+    for (var level in TestConstants.visualAcuityLevels) {
+      double diff = (fontSize - level.flutterFontSize).abs();
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = level;
+      }
+    }
+    return closest.snellen;
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -756,6 +830,14 @@ class _MobileRefractometryTestScreenState
                 ],
               ),
               if (_isTestPausedForDistance) _buildDistanceWarningOverlay(),
+              // Distance indicator (bottom right corner) - MATCHES VA
+              if (_currentPhase == RefractPhase.test &&
+                  !_isTestPausedForDistance)
+                Positioned(
+                  right: 12,
+                  bottom: _waitingForResponse ? 120 : 12,
+                  child: _buildDistanceIndicator(),
+                ),
             ],
           ),
         ),
@@ -764,47 +846,92 @@ class _MobileRefractometryTestScreenState
   }
 
   Widget _buildInfoBar() {
-    final targetDistance = _isNearMode ? 40.0 : 100.0;
+    // Count total correct responses for this eye
+    final responses = _currentEye == 'right'
+        ? _rightEyeResponses
+        : _leftEyeResponses;
+    final correctCount = responses.where((r) => r['correct'] == true).length;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.5),
-            width: 1,
-          ),
-        ),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AppColors.surface,
       child: Row(
         children: [
           // Eye indicator
-          _buildInfoItem(
-            icon: Icons.remove_red_eye,
-            label: _currentEye.toUpperCase(),
-            color: _currentEye == 'right'
-                ? AppColors.rightEye
-                : AppColors.leftEye,
-          ),
-          const SizedBox(width: 4),
-          // Distance indicator
-          Flexible(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 100),
-              child: _buildDistanceIndicator(targetDistance),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: _currentEye == 'right'
+                  ? AppColors.rightEye.withValues(alpha: 0.1)
+                  : AppColors.leftEye.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.visibility,
+                  size: 14,
+                  color: _currentEye == 'right'
+                      ? AppColors.rightEye
+                      : AppColors.leftEye,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _currentEye.toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: _currentEye == 'right'
+                        ? AppColors.rightEye
+                        : AppColors.leftEye,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 4),
-          // Progress indicator
-          _buildInfoItem(
-            label:
-                '$_currentRound/${TestConstants.mobileRefractometryMaxRounds}',
-            color: AppColors.primary,
+          const SizedBox(width: 8),
+          // Level/Progress indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              '${_currentEye[0].toUpperCase()}$_currentRound/${TestConstants.mobileRefractometryMaxRounds}',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Score indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              '$correctCount/${responses.length}',
+              style: const TextStyle(
+                color: AppColors.success,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
           ),
           const Spacer(),
           // Speech waveform
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
@@ -823,75 +950,9 @@ class _MobileRefractometryTestScreenState
                   isTalking: _isSpeechActive,
                   color: AppColors.success,
                 ),
-                const SizedBox(width: 4),
-                const Icon(Icons.mic, size: 12, color: AppColors.success),
+                const SizedBox(width: 6),
+                const Icon(Icons.mic, size: 14, color: AppColors.success),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoItem({
-    IconData? icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 12, color: color),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 10,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDistanceIndicator(double targetDistance) {
-    final indicatorColor = DistanceHelper.getDistanceColor(
-      _currentDistance,
-      targetDistance,
-      testType: 'mobile_refractometry',
-    );
-    final distanceText = _currentDistance > 0
-        ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'Searching...';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: indicatorColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: indicatorColor.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.straighten, size: 12, color: indicatorColor),
-          const SizedBox(width: 4),
-          Text(
-            distanceText,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: indicatorColor,
             ),
           ),
         ],
@@ -987,7 +1048,7 @@ class _MobileRefractometryTestScreenState
                     _startRoundTimer();
                     _continuousSpeech.start();
                   } else if (_currentPhase == RefractPhase.relaxation) {
-                    _restartRelaxationTimer();
+                    _startRelaxationTimer();
                   }
                 },
                 child: const Text(
@@ -1146,6 +1207,7 @@ class _MobileRefractometryTestScreenState
   }
 
   Widget _buildEView() {
+    // Calculate E size based on round progression
     final baseSize = _isNearMode ? 70.0 : 150.0;
     final minSize = _isNearMode ? 28.0 : 40.0;
     final currentFontSize =
@@ -1155,12 +1217,14 @@ class _MobileRefractometryTestScreenState
 
     return Column(
       children: [
+        // Timer and Distance indicator row - MATCHES VA
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           color: AppColors.surface.withValues(alpha: 0.9),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Distance/Mode indicator on LEFT
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -1171,15 +1235,42 @@ class _MobileRefractometryTestScreenState
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.primary, width: 2),
                 ),
-                child: Text(
-                  _isNearMode ? 'NEAR (40cm)' : 'LONG (100cm)',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.straighten,
+                      size: 20,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _getSnellenScore(currentFontSize),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        Text(
+                          _isNearMode ? 'NEAR (40cm)' : 'LONG (100cm)',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.primary.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
+              // Timer on RIGHT
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1206,50 +1297,42 @@ class _MobileRefractometryTestScreenState
             ],
           ),
         ),
+        // E Display - MATCHES VA (no extra container, just centered)
         Expanded(
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  width: 2,
-                ),
-              ),
-              child: _showResult
-                  ? Icon(
-                      _lastResponse == _currentDirection
-                          ? Icons.check_circle
-                          : Icons.cancel,
-                      color: _lastResponse == _currentDirection
-                          ? AppColors.success
-                          : AppColors.error,
-                      size: 100,
-                    )
-                  : ImageFiltered(
-                      imageFilter: ui.ImageFilter.blur(
-                        sigmaX: _currentBlur,
-                        sigmaY: _currentBlur,
-                      ),
-                      child: Transform.rotate(
-                        angle:
-                            _currentDirection.rotationDegrees * math.pi / 180,
-                        child: Text(
-                          'E',
-                          textScaler: TextScaler.noScaling,
-                          style: TextStyle(
-                            fontSize: currentFontSize,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.black,
-                          ),
+          child: _showResult
+              ? Center(
+                  child: Icon(
+                    _lastResponse == _currentDirection
+                        ? Icons.check_circle
+                        : Icons.cancel,
+                    color: _lastResponse == _currentDirection
+                        ? AppColors.success
+                        : AppColors.error,
+                    size: 100,
+                  ),
+                )
+              : Center(
+                  child: ImageFiltered(
+                    imageFilter: ui.ImageFilter.blur(
+                      sigmaX: _currentBlur,
+                      sigmaY: _currentBlur,
+                    ),
+                    child: Transform.rotate(
+                      angle: _currentDirection.rotationDegrees * math.pi / 180,
+                      child: Text(
+                        'E',
+                        textScaler: TextScaler.noScaling,
+                        style: TextStyle(
+                          fontSize: currentFontSize,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.black,
                         ),
                       ),
                     ),
-            ),
-          ),
+                  ),
+                ),
         ),
+        // Speech recognition bubble - MATCHES VA
         if (_lastDetectedSpeech != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -1262,6 +1345,7 @@ class _MobileRefractometryTestScreenState
               child: Text(
                 _lastDetectedSpeech!,
                 style: const TextStyle(
+                  fontSize: 16,
                   color: AppColors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1321,6 +1405,43 @@ class _MobileRefractometryTestScreenState
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDistanceIndicator() {
+    final target = _isNearMode ? 40.0 : 100.0;
+    final indicatorColor = DistanceHelper.getDistanceColor(
+      _currentDistance,
+      target,
+      testType: _isNearMode ? 'short_distance' : 'visual_acuity',
+    );
+
+    final distanceText = _currentDistance > 0
+        ? '${_currentDistance.toStringAsFixed(0)}cm'
+        : 'Searching...';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: indicatorColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: indicatorColor, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.straighten, size: 14, color: indicatorColor),
+          const SizedBox(width: 4),
+          Text(
+            distanceText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: indicatorColor,
             ),
           ),
         ],
@@ -1397,7 +1518,7 @@ class _MobileRefractometryTestScreenState
                     _continuousSpeech.start();
                     _startRoundTimer();
                   } else if (_currentPhase == RefractPhase.relaxation) {
-                    _restartRelaxationTimer();
+                    _startRelaxationTimer();
                   }
                 },
                 style: ElevatedButton.styleFrom(

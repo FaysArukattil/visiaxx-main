@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
-/// Animation showing user wearing glasses/specs
-class WearSpecsAnimation extends StatefulWidget {
+/// Animation showing user removing glasses/specs
+class RemoveGlassesAnimation extends StatefulWidget {
   final bool isCompact;
 
-  const WearSpecsAnimation({super.key, this.isCompact = false});
+  const RemoveGlassesAnimation({super.key, this.isCompact = false});
 
   @override
-  State<WearSpecsAnimation> createState() => _WearSpecsAnimationState();
+  State<RemoveGlassesAnimation> createState() => _RemoveGlassesAnimationState();
 }
 
-class _WearSpecsAnimationState extends State<WearSpecsAnimation>
+class _RemoveGlassesAnimationState extends State<RemoveGlassesAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _slideAnimation;
@@ -25,17 +25,19 @@ class _WearSpecsAnimationState extends State<WearSpecsAnimation>
       duration: const Duration(milliseconds: 2000),
     );
 
-    _slideAnimation = Tween<double>(begin: 100, end: 0).animate(
+    // REMOVAL LOGIC: Glasses start ON face (0) and move UP/AWAY (100)
+    _slideAnimation = Tween<double>(begin: 0, end: 100).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInCubic),
       ),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    // Fade OUT as glasses move away
+    _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
+        curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
       ),
     );
 
@@ -137,7 +139,7 @@ class _WearSpecsAnimationState extends State<WearSpecsAnimation>
                 ),
               ),
 
-              // Glasses sliding in - positioned relative to center
+              // Glasses sliding AWAY - positioned relative to center
               Positioned.fill(
                 child: Center(
                   child: Transform.translate(
@@ -156,7 +158,7 @@ class _WearSpecsAnimationState extends State<WearSpecsAnimation>
                 ),
               ),
 
-              // Checkmark when glasses are on
+              // X mark when glasses are removed
               if (_controller.value > 0.7)
                 Positioned(
                   top: 10,
@@ -166,11 +168,11 @@ class _WearSpecsAnimationState extends State<WearSpecsAnimation>
                     child: Container(
                       padding: EdgeInsets.all(widget.isCompact ? 3 : 4),
                       decoration: const BoxDecoration(
-                        color: AppColors.success,
+                        color: AppColors.error,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.check,
+                        Icons.close,
                         color: AppColors.surface,
                         size: widget.isCompact ? 16 : 20,
                       ),
