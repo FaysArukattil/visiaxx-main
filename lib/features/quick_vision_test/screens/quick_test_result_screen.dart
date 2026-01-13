@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
@@ -2217,57 +2218,27 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Prescription Breakdown',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+              // Vertical Stacking of Eyes
+              if (result.rightEye != null)
+                _buildRefractometryEyeBlock(
+                  'Right Eye',
+                  result.rightEye!,
+                  AppColors.primary,
                 ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _buildEnhancedRefractionEye(
-                      'Right Eye',
-                      result.rightEye,
-                      AppColors.primary,
-                    ),
-                  ),
-                  Container(
-                    width: 1.5,
-                    height: 180,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.divider.withValues(alpha: 0.1),
-                          AppColors.divider,
-                          AppColors.divider.withValues(alpha: 0.1),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: _buildEnhancedRefractionEye(
-                      'Left Eye',
-                      result.leftEye,
-                      AppColors.secondary,
-                    ),
-                  ),
-                ],
-              ),
+              if (result.rightEye != null && result.leftEye != null)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24.0),
+                  child: Divider(height: 1),
+                ),
+              if (result.leftEye != null)
+                _buildRefractometryEyeBlock(
+                  'Left Eye',
+                  result.leftEye!,
+                  AppColors.secondary,
+                ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-
-        // Layman Interpretations Section
-        _buildRefractionInterpretations(result),
 
         if (result.healthWarnings.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -2318,152 +2289,139 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     );
   }
 
+  Widget _buildRefractometryEyeBlock(
+    String label,
+    MobileRefractometryEyeResult res,
+    Color color,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildEnhancedRefractionEye(label, res, color),
+        const SizedBox(height: 20),
+        _buildLaymanEyeInterpretation(label, res, color),
+      ],
+    );
+  }
+
   Widget _buildEnhancedRefractionEye(
     String label,
     MobileRefractometryEyeResult? res,
     Color color,
   ) {
-    if (res == null) {
-      return Center(
-        child: Text(
-          'N/A',
-          style: TextStyle(
-            color: AppColors.textSecondary.withValues(alpha: 0.5),
-          ),
-        ),
-      );
-    }
+    if (res == null) return const SizedBox.shrink();
 
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.visibility_rounded, color: color, size: 14),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.visibility_rounded, color: color, size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.divider.withValues(alpha: 0.5),
                 ),
               ),
-            ],
-          ),
+              child: Row(
+                children: [
+                  Text(
+                    '${double.parse(res.accuracy).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Accuracy',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 20),
-        _buildValueRow('SPH', res.sphere, 'Sphere'),
-        _buildValueRow('CYL', res.cylinder, 'Cylinder'),
-        _buildValueRow('AXIS', '${res.axis}°', 'Axis'),
-        if (double.tryParse(res.addPower) != null &&
-            double.parse(res.addPower) > 0)
-          _buildValueRow('ADD', '+${res.addPower}', 'Reading'),
-        const SizedBox(height: 12),
-        Text(
-          'Accuracy: ${(double.parse(res.accuracy) * 100).toStringAsFixed(0)}%',
-          style: TextStyle(
-            fontSize: 10,
-            color: AppColors.textTertiary,
-            fontWeight: FontWeight.w600,
-          ),
+        const SizedBox(height: 24),
+        Table(
+          children: [
+            TableRow(
+              children: [
+                _buildValueCell('SPH', res.sphere, 'Sphere'),
+                _buildValueCell('CYL', res.cylinder, 'Cylinder'),
+                _buildValueCell('AXIS', '${res.axis}°', 'Axis'),
+                if (double.tryParse(res.addPower) != null &&
+                    double.parse(res.addPower) > 0)
+                  _buildValueCell('ADD', '+${res.addPower}', 'Reading')
+                else
+                  const SizedBox.shrink(),
+              ],
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildValueRow(String label, String value, String fullName) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.textTertiary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
+  Widget _buildValueCell(String label, String value, String fullName) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            color: AppColors.textTertiary,
+            letterSpacing: 0.5,
           ),
-          Text(
-            fullName,
-            style: TextStyle(
-              fontSize: 8,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
-            ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.5,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRefractionInterpretations(MobileRefractometryResult result) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+        ),
+        Text(
+          fullName,
+          style: TextStyle(
+            fontSize: 8,
+            color: AppColors.textSecondary.withValues(alpha: 0.5),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'What This Means',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (result.rightEye != null)
-            _buildLaymanEyeInterpretation(
-              'Right Eye',
-              result.rightEye!,
-              AppColors.primary,
-            ),
-          if (result.rightEye != null && result.leftEye != null)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.0),
-              child: Divider(height: 1),
-            ),
-          if (result.leftEye != null)
-            _buildLaymanEyeInterpretation(
-              'Left Eye',
-              result.leftEye!,
-              AppColors.secondary,
-            ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -2477,31 +2435,50 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     final add = double.tryParse(res.addPower) ?? 0.0;
 
     String condition = 'Healthy Vision';
+    String reduction = '';
     String description = 'This eye shows no significant refractive issues.';
     List<String> symptoms = [];
 
+    final sphAbs = sph.abs();
+    final cylAbs = cyl.abs();
+
     if (sph < -0.25) {
-      condition = 'Nearsightedness (Myopia)';
+      String level = sphAbs > 6.0
+          ? 'High'
+          : (sphAbs > 3.0 ? 'Moderate' : 'Low');
+      condition = '$level Myopia';
       description = 'Distance objects may appear blurry or out of focus.';
       symptoms.add('Difficulty seeing distant street signs or screens.');
-      symptoms.add('Squinting to see things far away.');
     } else if (sph > 0.25) {
-      condition = 'Farsightedness (Hyperopia)';
+      String level = sphAbs > 6.0
+          ? 'High'
+          : (sphAbs > 3.0 ? 'Moderate' : 'Low');
+      condition = '$level Hyperopia';
       description =
           'May experience blurriness or strain during close-up tasks.';
       symptoms.add('Eye strain during reading or phone use.');
-      symptoms.add('Headaches after prolonged close work.');
     }
 
-    if (cyl.abs() > 0.25) {
+    if (cylAbs > 0.25) {
+      String level = cylAbs > 1.0 ? 'Significant' : 'Mild';
       if (condition == 'Healthy Vision') {
-        condition = 'Astigmatism';
+        condition = '$level Astigmatism';
         description =
             'Vision may be distorted at all distances due to eye shape.';
       } else {
         condition += ' with Astigmatism';
       }
       symptoms.add('Vision appearing stretched or light "smearing".');
+    }
+
+    // Vision Reduction Logic
+    final maxError = math.max(sphAbs, cylAbs);
+    if (maxError > 6.0) {
+      reduction = 'Heavy reduction';
+    } else if (maxError > 3.0) {
+      reduction = 'Moderate reduction';
+    } else if (maxError > 0.25) {
+      reduction = 'Slight reduction';
     }
 
     if (add > 0.25) {
@@ -2511,61 +2488,94 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              eyeLabel,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color:
+                (condition == 'Healthy Vision'
+                        ? AppColors.success
+                        : AppColors.primary)
+                    .withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color:
+                  (condition == 'Healthy Vision'
+                          ? AppColors.success
+                          : AppColors.primary)
+                      .withValues(alpha: 0.1),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color:
-                    (condition == 'Healthy Vision'
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                condition == 'Healthy Vision'
+                    ? Icons.check_circle_rounded
+                    : Icons.info_outline_rounded,
+                color: condition == 'Healthy Vision'
+                    ? AppColors.success
+                    : AppColors.primary,
+                size: 14,
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    condition,
+                    style: TextStyle(
+                      color: condition == 'Healthy Vision'
+                          ? AppColors.successDark
+                          : AppColors.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (reduction.isNotEmpty)
+                    Text(
+                      reduction,
+                      style: TextStyle(
+                        color: condition == 'Healthy Vision'
                             ? AppColors.success
-                            : AppColors.primary)
-                        .withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
+                            : AppColors.primary.withValues(alpha: 0.7),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
               ),
-              child: Text(
-                condition,
-                style: TextStyle(
-                  color: condition == 'Healthy Vision'
-                      ? AppColors.successDark
-                      : AppColors.primary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          description,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w500,
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
           ),
         ),
         if (symptoms.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ...symptoms.map(
             (s) => Padding(
-              padding: const EdgeInsets.only(bottom: 6.0),
+              padding: const EdgeInsets.only(bottom: 8.0, left: 4),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.check_circle_outline_rounded,
-                    size: 14,
-                    color: color.withValues(alpha: 0.6),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.arrow_right_alt_rounded,
+                      size: 16,
+                      color: color.withValues(alpha: 0.4),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -2574,7 +2584,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
-                        height: 1.3,
+                        height: 1.4,
                       ),
                     ),
                   ),

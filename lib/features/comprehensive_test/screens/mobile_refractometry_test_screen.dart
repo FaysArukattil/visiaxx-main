@@ -59,6 +59,7 @@ class _MobileRefractometryTestScreenState
   EDirection _currentDirection = EDirection.right;
   bool _waitingForResponse = false;
   bool _showResult = false;
+  bool _instructionShown = false;
   EDirection? _lastResponse;
   final DistanceSkipManager _skipManager = DistanceSkipManager();
   DateTime? _eDisplayStartTime;
@@ -233,7 +234,12 @@ class _MobileRefractometryTestScreenState
 
   void _onCalibrationComplete() {
     _startContinuousDistanceMonitoring();
-    _startInstruction();
+    if (!_instructionShown) {
+      _instructionShown = true;
+      _startInstruction();
+    } else {
+      _showEyeInstructionStage();
+    }
   }
 
   Future<void> _startContinuousDistanceMonitoring() async {
@@ -576,7 +582,7 @@ class _MobileRefractometryTestScreenState
     setState(() {
       _lastResponse = response;
       _showResult = true;
-      _lastDetectedSpeech = null;
+      // Don't clear _lastDetectedSpeech immediately so it stays visible during result display
       _isSpeechActive = false;
     });
 
@@ -804,12 +810,15 @@ class _MobileRefractometryTestScreenState
         appBar: AppBar(
           backgroundColor: AppColors.white,
           elevation: 0,
-          title: Text(
-            'Refraction: ${_currentEye.toUpperCase()}',
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+          title: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'Mobile Refractometry ${_currentEye.toUpperCase()}',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
           centerTitle: true,
@@ -1072,8 +1081,12 @@ class _MobileRefractometryTestScreenState
     switch (_currentPhase) {
       case RefractPhase.instruction:
         return _currentEye == 'right'
-            ? CoverLeftEyeInstructionScreen(onContinue: _onInstructionComplete)
+            ? CoverLeftEyeInstructionScreen(
+                title: 'Mobile Refractometry',
+                onContinue: _onInstructionComplete,
+              )
             : CoverRightEyeInstructionScreen(
+                title: 'Mobile Refractometry',
                 onContinue: () => _startDistanceCalibration(
                   TestConstants.mobileRefractometryDistanceCm,
                 ),

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'dart:math' as math;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -1440,95 +1441,48 @@ class PdfExportService {
           ),
           pw.SizedBox(height: 16),
 
-          pw.Container(
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
-              borderRadius: pw.BorderRadius.circular(6),
+          // Vertical Stacking of Eyes
+          if (refract.rightEye != null) ...[
+            _buildRefractionEyePdfBlock(
+              'RIGHT EYE',
+              refract.rightEye!,
+              PdfColors.blue800,
             ),
-            child: pw.Table(
-              columnWidths: {
-                0: const pw.FlexColumnWidth(1),
-                1: const pw.FlexColumnWidth(1),
-                2: const pw.FlexColumnWidth(1),
-                3: const pw.FlexColumnWidth(1),
-                4: const pw.FlexColumnWidth(1.2),
-              },
-              children: [
-                pw.TableRow(
-                  decoration: const pw.BoxDecoration(color: PdfColors.blue50),
-                  children: [
-                    _buildTableCell('EYE', isHeader: true),
-                    _buildTableCell('SPHERE', isHeader: true),
-                    _buildTableCell('CYL', isHeader: true),
-                    _buildTableCell('AXIS', isHeader: true),
-                    _buildTableCell('ACCURACY', isHeader: true),
-                  ],
-                ),
-                // Right Eye
-                if (refract.rightEye != null)
-                  pw.TableRow(
-                    children: [
-                      _buildTableCell('Right Eye'),
-                      _buildTableCell(refract.rightEye!.sphere),
-                      _buildTableCell(refract.rightEye!.cylinder),
-                      _buildTableCell('${refract.rightEye!.axis}°'),
-                      _buildTableCell('${refract.rightEye!.accuracy}%'),
-                    ],
-                  ),
-                // Left Eye
-                if (refract.leftEye != null)
-                  pw.TableRow(
-                    children: [
-                      _buildTableCell('Left Eye'),
-                      _buildTableCell(refract.leftEye!.sphere),
-                      _buildTableCell(refract.leftEye!.cylinder),
-                      _buildTableCell('${refract.leftEye!.axis}°'),
-                      _buildTableCell('${refract.leftEye!.accuracy}%'),
-                    ],
-                  ),
-              ],
+            if (refract.leftEye != null)
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(vertical: 16),
+                child: pw.Divider(height: 1, color: PdfColors.grey100),
+              ),
+          ],
+          if (refract.leftEye != null) ...[
+            _buildRefractionEyePdfBlock(
+              'LEFT EYE',
+              refract.leftEye!,
+              PdfColors.teal800,
             ),
-          ),
+          ],
 
-          pw.SizedBox(height: 12),
-          // Health Warnings and Interpretation
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.grey50,
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Clinical Interpretation:',
-                  style: pw.TextStyle(
-                    fontSize: 9,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blue900,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  refract.overallInterpretation,
-                  style: const pw.TextStyle(
-                    fontSize: 8.5,
-                    color: PdfColors.grey800,
-                    lineSpacing: 1.5,
-                  ),
-                ),
-                if (refract.healthWarnings.isNotEmpty) ...[
-                  pw.SizedBox(height: 8),
+          if (refract.healthWarnings.isNotEmpty) ...[
+            pw.SizedBox(height: 16),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColor.fromInt(0xFFFFEBEE),
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: PdfColors.red200, width: 0.5),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
                   pw.Text(
-                    'Health Alerts:',
+                    'CLINICAL OBSERVATIONS:',
                     style: pw.TextStyle(
                       fontSize: 8,
                       fontWeight: pw.FontWeight.bold,
                       color: PdfColors.red800,
                     ),
                   ),
-                  pw.SizedBox(height: 4),
+                  pw.SizedBox(height: 6),
                   ...refract.healthWarnings.map(
                     (warning) => pw.Bullet(
                       text: warning,
@@ -1540,12 +1494,13 @@ class PdfExportService {
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-          pw.SizedBox(height: 8),
+          ],
+
+          pw.SizedBox(height: 12),
           pw.Text(
-            'Note: Assessment performed using digital retinoscopy algorithms. Sphere (SPH) indicates Near/Farsightedness, Cylinder (CYL) indicates Astigmatism.',
+            'Note: Assessment performed using digital retinoscopy algorithms. SPH = Spherical Error, CYL = Astigmatism, AXIS = Orientation.',
             style: pw.TextStyle(
               fontSize: 7,
               color: PdfColors.grey500,
@@ -1554,6 +1509,177 @@ class PdfExportService {
           ),
         ],
       ),
+    );
+  }
+
+  pw.Widget _buildRefractionEyePdfBlock(
+    String label,
+    MobileRefractometryEyeResult res,
+    PdfColor color,
+  ) {
+    // Replicate interpretation logic from UI
+    final sph = double.tryParse(res.sphere) ?? 0.0;
+    final cyl = double.tryParse(res.cylinder) ?? 0.0;
+    final sphAbs = sph.abs();
+    final cylAbs = cyl.abs();
+
+    String condition = 'Healthy Vision';
+    String reduction = '';
+    String description = 'This eye shows no significant refractive issues.';
+
+    if (sph < -0.25) {
+      String level = sphAbs > 6.0
+          ? 'High'
+          : (sphAbs > 3.0 ? 'Moderate' : 'Low');
+      condition = '$level Myopia';
+      description = 'Distance objects may appear blurry or out of focus.';
+    } else if (sph > 0.25) {
+      String level = sphAbs > 6.0
+          ? 'High'
+          : (sphAbs > 3.0 ? 'Moderate' : 'Low');
+      condition = '$level Hyperopia';
+      description =
+          'May experience blurriness or strain during close-up tasks.';
+    }
+
+    if (cylAbs > 0.25) {
+      String level = cylAbs > 1.0 ? 'Significant' : 'Mild';
+      if (condition == 'Healthy Vision') {
+        condition = '$level Astigmatism';
+        description = 'Vision may be distorted at all distances.';
+      } else {
+        condition += ' with Astigmatism';
+      }
+    }
+
+    final maxError = math.max(sphAbs, cylAbs);
+    if (maxError > 6.0) {
+      reduction = 'Heavy reduction';
+    } else if (maxError > 3.0) {
+      reduction = 'Moderate reduction';
+    } else if (maxError > 0.25) {
+      reduction = 'Slight reduction';
+    }
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        // Header Row
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Row(
+              children: [
+                pw.Text(
+                  label,
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                pw.SizedBox(width: 10),
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey100,
+                    borderRadius: pw.BorderRadius.circular(4),
+                  ),
+                  child: pw.Text(
+                    condition.toUpperCase(),
+                    style: pw.TextStyle(
+                      fontSize: 8,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            pw.Text(
+              'ACCURACY: ${res.accuracy}%',
+              style: pw.TextStyle(
+                fontSize: 8,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey500,
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 12),
+
+        // Prescription Table
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey100, width: 0.5),
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey50),
+              children: [
+                _buildTableCell('SPHERE (SPH)', isHeader: true),
+                _buildTableCell('CYLINDER (CYL)', isHeader: true),
+                _buildTableCell('AXIS', isHeader: true),
+                if (double.tryParse(res.addPower) != null &&
+                    double.parse(res.addPower) > 0)
+                  _buildTableCell('ADD POWER', isHeader: true),
+              ],
+            ),
+            pw.TableRow(
+              children: [
+                _buildTableCell(res.sphere),
+                _buildTableCell(res.cylinder),
+                _buildTableCell('${res.axis}°'),
+                if (double.tryParse(res.addPower) != null &&
+                    double.parse(res.addPower) > 0)
+                  _buildTableCell('+${res.addPower}'),
+              ],
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 10),
+
+        // Layman Interpretation
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(
+              width: 3,
+              height: 25,
+              decoration: pw.BoxDecoration(
+                color:
+                    color, // Removed .withValues as it is not supported for PdfColor
+                borderRadius: pw.BorderRadius.circular(2),
+              ),
+            ),
+            pw.SizedBox(width: 8),
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    description,
+                    style: pw.TextStyle(
+                      fontSize: 9,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.grey800,
+                    ),
+                  ),
+                  if (reduction.isNotEmpty)
+                    pw.Text(
+                      'Impact: $reduction status detected based on clinical results.',
+                      style: const pw.TextStyle(
+                        fontSize: 8,
+                        color: PdfColors.grey600,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
