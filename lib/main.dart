@@ -39,6 +39,7 @@ import 'features/comprehensive_test/screens/comprehensive_intro_screen.dart';
 import 'features/quick_vision_test/screens/quick_test_intro_screen.dart';
 import 'features/comprehensive_test/screens/mobile_refractometry_test_screen.dart';
 import 'features/comprehensive_test/screens/comprehensive_result_screen.dart';
+import 'features/comprehensive_test/screens/mobile_refractometry_quick_result_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -220,6 +221,8 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               const MobileRefractometryTestScreen(),
           '/comprehensive-result': (context) =>
               const ComprehensiveResultScreen(),
+          '/mobile-refractometry-result': (context) =>
+              const MobileRefractometryQuickResultScreen(),
         },
       ),
     );

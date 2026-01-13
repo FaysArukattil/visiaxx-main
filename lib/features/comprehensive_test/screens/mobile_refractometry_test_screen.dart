@@ -689,7 +689,7 @@ class _MobileRefractometryTestScreenState
     context.read<TestSessionProvider>().setMobileRefractometryResult(
       finalResult,
     );
-    Navigator.of(context).pushReplacementNamed('/quick-test-result');
+    Navigator.of(context).pushReplacementNamed('/mobile-refractometry-result');
   }
 
   Map<String, dynamic> _processEyeData(List<Map<String, dynamic>> responses) {
