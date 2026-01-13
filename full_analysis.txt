@@ -1,0 +1,15 @@
+Analyzing visiaxx-main...                                       
+
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\comprehensive_test\screens\mobile_refractometry_test_screen.dart:4:8 - unnecessary_import
+   info - The import of 'package:flutter/rendering.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\comprehensive_test\screens\pelli_robson_instructions_screen.dart:2:8 - unnecessary_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\comprehensive_test\screens\pelli_robson_instructions_screen.dart:203:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\comprehensive_test\screens\pelli_robson_instructions_screen.dart:279:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\comprehensive_test\screens\pelli_robson_instructions_screen.dart:328:32 - deprecated_member_use
+   info - The import of 'package:flutter/rendering.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\quick_vision_test\screens\amsler_grid_instructions_screen.dart:2:8 - unnecessary_import
+   info - The import of 'package:flutter/rendering.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\quick_vision_test\screens\color_vision_instructions_screen.dart:2:8 - unnecessary_import
+   info - The import of 'package:flutter/rendering.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\quick_vision_test\screens\test_instructions_screen.dart:2:8 - unnecessary_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\results\widgets\how_to_respond_animation.dart:102:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\results\widgets\how_to_respond_animation.dart:167:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\results\widgets\how_to_respond_animation.dart:212:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\results\widgets\how_to_respond_animation.dart:215:52 - deprecated_member_use
+

@@ -129,6 +129,37 @@ class TestConstants {
 
   static const int shortDistanceScreens = 7;
 
+  // Mobile Refractometry Test Settings
+  static const int mobileRefractometryMaxRounds = 24;
+  static const double mobileRefractometryDistanceCm = 100.0;
+  static const double mobileRefractometryNearCm = 40.0;
+  static const double mobileRefractometryToleranceCm = 8.0;
+  static const int mobileRefractometryRelaxationSeconds = 10;
+  static const int mobileRefractometryTimePerRoundSeconds = 5;
+
+  // Blur level constants for adaptive difficulty
+  static const double initialBlurLevel = 0.5;
+  static const double minBlurLevel = 0.0;
+  static const double maxBlurLevel = 6.0;
+  static const double blurIncrementOnCorrect = 0.3;
+  static const double blurDecrementOnWrong = 0.5;
+  static const double blurDecrementOnCantSee = 0.75;
+
+  /// Calculate ADD power for presbyopia based on age
+  static double calculateAddPower(int age) {
+    if (age < 40) return 0.00;
+    if (age >= 40 && age <= 42) return 0.75;
+    if (age >= 43 && age <= 44) return 1.00;
+    if (age >= 45 && age <= 47) return 1.25;
+    if (age >= 48 && age <= 49) return 1.50;
+    if (age >= 50 && age <= 52) return 1.75;
+    if (age >= 53 && age <= 54) return 2.00;
+    if (age >= 55 && age <= 58) return 2.25;
+    if (age >= 59 && age <= 62) return 2.50;
+    if (age >= 63 && age <= 65) return 2.75;
+    return 3.00;
+  }
+
   // ✅ FIXED: Updated short distance font sizes to match visual acuity
   static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(

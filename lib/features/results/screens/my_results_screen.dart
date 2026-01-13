@@ -966,6 +966,28 @@ class _ResultDetailSheet extends StatelessWidget {
                 );
               }(),
 
+            // Mobile Refractometry
+            if (result.mobileRefractometry != null)
+              () {
+                final ref = result.mobileRefractometry!;
+                return _buildSection('Mobile Refractometry', [
+                  if (ref.rightEye != null)
+                    _buildDetailRow(
+                      'Right Eye',
+                      'SPH: ${ref.rightEye!.sphere}, CYL: ${ref.rightEye!.cylinder}, AX: ${ref.rightEye!.axis}°',
+                    ),
+                  if (ref.leftEye != null)
+                    _buildDetailRow(
+                      'Left Eye',
+                      'SPH: ${ref.leftEye!.sphere}, CYL: ${ref.leftEye!.cylinder}, AX: ${ref.leftEye!.axis}°',
+                    ),
+                  _buildDetailRow(
+                    'Status',
+                    ref.criticalAlert ? 'Urgent' : 'Normal',
+                  ),
+                ]);
+              }(),
+
             // Questionnaire Summary
             if (result.questionnaire != null)
               _buildQuestionnaireSection(result.questionnaire!),

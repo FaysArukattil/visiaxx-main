@@ -382,6 +382,20 @@ class SpeechService {
         'east',
       ],
       'left': ['left', 'leftward', 'leftwards', 'lift', 'loft', 'west'],
+      'blurry': [
+        'blurry',
+        'blur',
+        'blurb',
+        'blaring',
+        'cannot see',
+        'can\'t see',
+        'nothing',
+        'too small',
+        'zero',
+        'no',
+        'dark',
+        'not clear',
+      ],
     };
 
     directionsMap.forEach((label, variants) {

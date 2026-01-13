@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
@@ -24,7 +23,6 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
   int _currentPage = 0;
   final int _totalPages = 4;
   final TtsService _ttsService = TtsService();
-  bool _isPaused = false;
 
   final List<String> _stepTitles = [
     'Lighting Check',
@@ -87,19 +85,16 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
 
   void _showExitConfirmation() {
     _ttsService.stop();
-    setState(() => _isPaused = true);
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => TestExitConfirmationDialog(
         onContinue: () {
-          setState(() => _isPaused = false);
           _playCurrentStepTts();
         },
         onRestart: () {
           setState(() {
-            _isPaused = false;
             _currentPage = 0;
           });
           _pageController.jumpToPage(0);
@@ -188,7 +183,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.05),
+                      color: AppColors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -264,7 +259,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border.withOpacity(0.5)),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
         child: Column(
@@ -313,7 +308,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.1),
+            color: accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: accentColor, size: 24),
@@ -482,7 +477,7 @@ class _EyeInstructionPainter extends CustomPainter {
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = color.withOpacity(0.2)
+        ..color = color.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -509,7 +504,7 @@ class _EyeInstructionPainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withOpacity(0.6),
+        Paint()..color = Colors.white.withValues(alpha: 0.6),
       );
 
       canvas.restore();

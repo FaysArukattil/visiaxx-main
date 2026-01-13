@@ -1,0 +1,10 @@
+Analyzing visiaxx-main...                                       
+
+warning - The value of the field '_distanceStatus' isn't used - lib\features\comprehensive_test\screens\mobile_refractometry_test_screen.dart:75:18 - unused_field
+warning - The value of the field '_isListening' isn't used - lib\features\comprehensive_test\screens\mobile_refractometry_test_screen.dart:81:8 - unused_field
+  error - The argument type 'String' can't be assigned to the parameter type 'EDirection?'.  - lib\features\comprehensive_test\screens\mobile_refractometry_test_screen.dart:392:44 - argument_type_not_assignable
+  error - The argument type 'String' can't be assigned to the parameter type 'EDirection?'.  - lib\features\comprehensive_test\screens\mobile_refractometry_test_screen.dart:405:25 - argument_type_not_assignable
+   info - Unnecessary use of multiple underscores - lib\features\comprehensive_test\screens\mobile_refractometry_test_screen.dart:814:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\comprehensive_test\screens\mobile_refractometry_test_screen.dart:814:37 - unnecessary_underscores
+
+6 issues found. (ran in 7.1s)

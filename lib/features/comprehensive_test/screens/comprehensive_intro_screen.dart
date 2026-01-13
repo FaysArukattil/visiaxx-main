@@ -172,6 +172,14 @@ class ComprehensiveIntroScreen extends StatelessWidget {
                       description: 'Pelli-Robson chart for both eyes.',
                       duration: '10 min',
                     ),
+                    _buildTestComponent(
+                      context,
+                      icon: Icons.phone_android_rounded,
+                      title: 'Mobile Refractometry',
+                      description:
+                          'Assessment of refractive error (Sphere, Cylinder).',
+                      duration: '5 min',
+                    ),
 
                     const SizedBox(height: 24),
 
@@ -197,7 +205,7 @@ class ComprehensiveIntroScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           const Text(
-                            'Total duration: ~30-35 minutes',
+                            'Total duration: ~35-40 minutes',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               color: AppColors.info,

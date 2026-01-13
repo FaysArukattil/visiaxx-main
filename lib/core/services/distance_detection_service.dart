@@ -75,6 +75,25 @@ class DistanceDetectionService {
          ),
        );
 
+  /// Detect distance from a single image file
+  Future<double> detectDistance(String imagePath) async {
+    try {
+      final inputImage = InputImage.fromFilePath(imagePath);
+      final faces = await _faceDetector.processImage(inputImage);
+
+      if (faces.isEmpty) return -1.0;
+
+      final face = faces.reduce(
+        (a, b) => a.boundingBox.width > b.boundingBox.width ? a : b,
+      );
+
+      return _calculateDistanceFromFace(face);
+    } catch (e) {
+      debugPrint('[DistanceService] detectDistance error: $e');
+      return -1.0;
+    }
+  }
+
   /// Initialize camera for face detection
   Future<CameraController?> initializeCamera() async {
     try {

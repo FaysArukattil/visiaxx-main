@@ -37,6 +37,8 @@ import 'features/quick_vision_test/screens/short_distance_test_screen.dart';
 import 'features/comprehensive_test/screens/pelli_robson_test_screen.dart';
 import 'features/comprehensive_test/screens/comprehensive_intro_screen.dart';
 import 'features/quick_vision_test/screens/quick_test_intro_screen.dart';
+import 'features/comprehensive_test/screens/mobile_refractometry_test_screen.dart';
+import 'features/comprehensive_test/screens/comprehensive_result_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -214,6 +216,10 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/eye-exercises': (context) => const EyeExerciseReelsScreen(),
           '/eye-care-tips': (context) => const EyeCareTipsScreen(),
           '/settings': (context) => const SettingsScreen(),
+          '/mobile-refractometry-test': (context) =>
+              const MobileRefractometryTestScreen(),
+          '/comprehensive-result': (context) =>
+              const ComprehensiveResultScreen(),
         },
       ),
     );

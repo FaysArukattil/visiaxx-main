@@ -18,6 +18,7 @@ import 'package:visiaxx/data/models/test_result_model.dart';
 import 'package:visiaxx/data/providers/test_session_provider.dart';
 import 'package:visiaxx/data/models/color_vision_result.dart';
 import 'package:visiaxx/data/models/pelli_robson_result.dart';
+import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
 /// Comprehensive results screen displaying all test data
@@ -273,6 +274,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                         Icons.contrast,
                       ),
                       _buildPelliRobsonCard(provider),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Mobile Refractometry Results
+                    if (_hasRefractometryResults(provider)) ...[
+                      _buildSectionTitle(
+                        'Mobile Refractometry',
+                        Icons.phone_android_rounded,
+                      ),
+                      _buildRefractometryCard(provider),
                       const SizedBox(height: 20),
                     ],
 
@@ -2169,6 +2180,145 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             color: AppColors.textSecondary,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.3,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ========== MOBILE REFRACTOMETRY ==========
+
+  bool _hasRefractometryResults(TestSessionProvider provider) {
+    return widget.historicalResult?.mobileRefractometry != null ||
+        provider.mobileRefractometry != null;
+  }
+
+  Widget _buildRefractometryCard(TestSessionProvider provider) {
+    final result =
+        widget.historicalResult?.mobileRefractometry ??
+        provider.mobileRefractometry;
+    if (result == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildRefractionEyeResult(
+                  'Right Eye',
+                  result.rightEye,
+                  AppColors.primary,
+                ),
+              ),
+              Container(
+                width: 1.5,
+                height: 100,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.divider.withValues(alpha: 0.1),
+                      AppColors.divider,
+                      AppColors.divider.withValues(alpha: 0.1),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: _buildRefractionEyeResult(
+                  'Left Eye',
+                  result.leftEye,
+                  AppColors.secondary,
+                ),
+              ),
+            ],
+          ),
+          if (result.healthWarnings.isNotEmpty) ...[
+            const Divider(height: 48, thickness: 1),
+            _buildClinicalInfoSection(
+              'Clinical Observations',
+              result.healthWarnings.join('. '),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefractionEyeResult(
+    String eye,
+    MobileRefractometryEyeResult? res,
+    Color color,
+  ) {
+    if (res == null) {
+      return Center(
+        child: Text(
+          'N/A',
+          style: TextStyle(
+            color: AppColors.textSecondary.withValues(alpha: 0.5),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.visibility, color: color, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              eye,
+              style: TextStyle(color: color, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildRefractionValueRow('SPH', res.sphere),
+        const SizedBox(height: 8),
+        _buildRefractionValueRow('CYL', res.cylinder),
+        const SizedBox(height: 8),
+        _buildRefractionValueRow('AXIS', '${res.axis}°'),
+      ],
+    );
+  }
+
+  Widget _buildRefractionValueRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 40,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
           ),
         ),
       ],

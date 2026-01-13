@@ -1,61 +1,51 @@
 import 'package:flutter/material.dart';
-import '../../quick_vision_test/widgets/instruction_animations.dart';
+import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../../results/widgets/how_to_respond_animation.dart';
+import '../../quick_vision_test/widgets/instruction_animations.dart';
 
-/// Pelli-Robson Contrast Sensitivity Test Instructions Screen
-class PelliRobsonInstructionsScreen extends StatefulWidget {
-  final String testMode; // 'short' (40cm) or 'long' (1m)
-  final VoidCallback onContinue;
+class MobileRefractometryInstructionsScreen extends StatefulWidget {
+  final VoidCallback? onContinue;
 
-  const PelliRobsonInstructionsScreen({
-    super.key,
-    required this.testMode,
-    required this.onContinue,
-  });
+  const MobileRefractometryInstructionsScreen({super.key, this.onContinue});
 
   @override
-  State<PelliRobsonInstructionsScreen> createState() =>
-      _PelliRobsonInstructionsScreenState();
+  State<MobileRefractometryInstructionsScreen> createState() =>
+      _MobileRefractometryInstructionsScreenState();
 }
 
-class _PelliRobsonInstructionsScreenState
-    extends State<PelliRobsonInstructionsScreen> {
+class _MobileRefractometryInstructionsScreenState
+    extends State<MobileRefractometryInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 5;
+  final int _totalPages = 4;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
-    'Maximum Brightness',
-    'Contrast Sensitivity',
-    'Test Distance',
-    'Reading Triplets',
-    'Declining Contrast',
+    'Lighting Check',
+    'Dual Distance Focus',
+    'How to Respond',
+    'Relax and Blink',
   ];
 
-  late final List<String> _ttsMessages;
+  final List<String> _ttsMessages = [
+    'First, find a quiet, well-lit room for the best results.',
+    'This test checks your vision at two distances: arm\'s length and closer.',
+    'Speak the direction of the letter "E". If it looks blurry, just say "blurry".',
+    'Remember to blink naturally and focus on the image during relaxation periods.',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _ttsMessages = [
-      'Please increase your screen brightness to maximum for accurate results. This test measures subtle differences in contrast.',
-      'This test measures how well you can distinguish objects from their background. It is crucial for driving, reading, and seeing in low light.',
-      widget.testMode == 'short'
-          ? 'Hold the device about 40 centimeters away from your face.'
-          : 'Place the device exactly 1 meter away from your face.',
-      'You will see groups of 3 letters. Only read the letters inside the blue box aloud from left to right.',
-      'The letters will become fainter and harder to see. Read as many as you can. If you cannot see any, say "nothing" or "skip".',
-    ];
     _initializeTts();
   }
 
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
-    // Small delay to ensure service is ready for first load auto-play
     await Future.delayed(const Duration(milliseconds: 500));
     _playCurrentStepTts();
   }
@@ -78,7 +68,11 @@ class _PelliRobsonInstructionsScreenState
 
   void _handleContinue() {
     _ttsService.stop();
-    widget.onContinue();
+    if (widget.onContinue != null) {
+      widget.onContinue!();
+    } else {
+      Navigator.pushReplacementNamed(context, '/mobile-refractometry-test');
+    }
   }
 
   @override
@@ -90,6 +84,7 @@ class _PelliRobsonInstructionsScreenState
 
   void _showExitConfirmation() {
     _ttsService.stop();
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -122,7 +117,7 @@ class _PelliRobsonInstructionsScreenState
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Contrast Test Instructions'),
+          title: const Text('Mobile Refractometry'),
           backgroundColor: AppColors.white,
           elevation: 0,
           centerTitle: true,
@@ -134,7 +129,6 @@ class _PelliRobsonInstructionsScreenState
         body: SafeArea(
           child: Column(
             children: [
-              // PageView Content
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -146,53 +140,45 @@ class _PelliRobsonInstructionsScreenState
                   children: [
                     _buildStep(
                       0,
-                      Icons.brightness_high_rounded,
-                      'Brightness Check',
-                      'Turn your screen brightness to maximum for the most accurate contrast measurements.',
+                      Icons.wb_sunny_rounded,
+                      'Well-lit Room',
+                      'Ensure your room is well-lit and quiet for the most accurate results.',
                       AppColors.warning,
                       animation: const LightingAnimation(isCompact: true),
                     ),
                     _buildStep(
                       1,
-                      Icons.palette_rounded,
-                      'What is Contrast?',
-                      'Contrast sensitivity is your eye\'s ability to distinguish an object from its background.',
-                      AppColors.primary,
-                      animation: const AlignmentAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      2,
                       Icons.straighten_rounded,
-                      'Perfect Distance',
-                      widget.testMode == 'short'
-                          ? 'Hold the device about 40 centimeters (arm\'s length) away from your eyes.'
-                          : 'Sit exactly 1 meter away from the screen for the long-distance test.',
-                      AppColors.success,
+                      'Multi-Distance',
+                      'You will be asked to hold the device at 100cm (distance) and 40cm (near).',
+                      AppColors.primary,
                       animation: const DistanceAnimation(isCompact: true),
                     ),
                     _buildStep(
-                      3,
-                      Icons.record_voice_over_rounded,
-                      'Reading Triplets',
-                      'You will see several triplets. Read whichever three letters are inside the blue box.',
-                      AppColors.info,
-                      animation: const ReadingTripletsAnimation(
-                        isCompact: true,
-                      ),
+                      2,
+                      Icons.mic_rounded,
+                      'Voice & Blurry',
+                      'Say the direction clearly. If the letter "E" is out of focus, say "Blurry".',
+                      AppColors.success,
+                      animation: const HowToRespondAnimation(isCompact: true),
                     ),
                     _buildStep(
-                      4,
-                      Icons.gradient_rounded,
-                      'Declining Contrast',
-                      'The letters will become fainter and harder to see. Read as many as possible until they are no longer visible.',
-                      AppColors.error,
-                      animation: const FadingTripletsAnimation(isCompact: true),
+                      3,
+                      Icons.self_improvement_rounded,
+                      'Relaxation',
+                      'Between rounds, relax your eyes by focusing on the distance image.',
+                      AppColors.info,
+                      animation: const Center(
+                        child: Icon(
+                          Icons.spa,
+                          size: 100,
+                          color: AppColors.info,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-
-              // Bottom Navigation Section
               Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
@@ -208,7 +194,6 @@ class _PelliRobsonInstructionsScreenState
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Dot Indicator
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
@@ -243,7 +228,7 @@ class _PelliRobsonInstructionsScreenState
                         child: Text(
                           _currentPage < _totalPages - 1
                               ? 'Next'
-                              : 'Start Test',
+                              : 'Start Preparation',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

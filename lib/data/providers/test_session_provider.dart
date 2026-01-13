@@ -1,6 +1,7 @@
 // ignore_for_file: unused_local_variable
 
 import 'package:flutter/material.dart';
+import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
 import '../../data/models/family_member_model.dart';
 import '../../data/models/patient_model.dart';
 import '../../data/models/questionnaire_model.dart';
@@ -32,6 +33,7 @@ class TestSessionProvider extends ChangeNotifier {
   AmslerGridResult? _amslerGridLeft;
   ShortDistanceResult? _shortDistance;
   PelliRobsonResult? _pelliRobson;
+  MobileRefractometryResult? _mobileRefractometry;
 
   // Current test state
   String _currentEye = 'right';
@@ -54,10 +56,13 @@ class TestSessionProvider extends ChangeNotifier {
   ColorVisionResult? get colorVision => _colorVision;
   AmslerGridResult? get amslerGridRight => _amslerGridRight;
   AmslerGridResult? get amslerGridLeft => _amslerGridLeft;
+
   String get currentEye => _currentEye;
   bool get isTestInProgress => _isTestInProgress;
   ShortDistanceResult? get shortDistance => _shortDistance;
   PelliRobsonResult? get pelliRobson => _pelliRobson;
+  MobileRefractometryResult? get mobileRefractometry => _mobileRefractometry;
+  int? get profileAge => _profileAge;
   bool get isComprehensiveTest => _isComprehensiveTest;
   bool get shouldShowReviewDialog => _shouldShowReviewDialog;
   String? get profileSex => _profileSex;
@@ -189,6 +194,7 @@ class TestSessionProvider extends ChangeNotifier {
       amslerRight: _amslerGridRight,
       amslerLeft: _amslerGridLeft,
       pelliRobson: _pelliRobson,
+      mobileRefractometry: _mobileRefractometry,
     );
   }
 
@@ -208,7 +214,9 @@ class TestSessionProvider extends ChangeNotifier {
         _amslerGridLeft != null;
 
     if (_isComprehensiveTest) {
-      return quickTestsComplete && _pelliRobson != null;
+      return quickTestsComplete &&
+          _pelliRobson != null &&
+          _mobileRefractometry != null;
     }
     return quickTestsComplete;
   }
@@ -246,6 +254,7 @@ class TestSessionProvider extends ChangeNotifier {
       amslerGridRight: _amslerGridRight,
       amslerGridLeft: _amslerGridLeft,
       pelliRobson: _pelliRobson,
+      mobileRefractometry: _mobileRefractometry,
       overallStatus: getOverallStatus(),
       recommendation: getRecommendation(),
     );
@@ -281,6 +290,7 @@ class TestSessionProvider extends ChangeNotifier {
     _amslerGridRight = null;
     _amslerGridLeft = null;
     _pelliRobson = null;
+    _mobileRefractometry = null;
     notifyListeners();
   }
 
@@ -318,6 +328,19 @@ class TestSessionProvider extends ChangeNotifier {
 
   void resetPelliRobson() {
     _pelliRobson = null;
+    notifyListeners();
+  }
+
+  void setMobileRefractometryResult(MobileRefractometryResult result) {
+    _mobileRefractometry = result;
+    notifyListeners();
+    debugPrint(
+      '✅ [TestSessionProvider] Mobile Refractometry result saved for ${result.rightEye != null ? "right" : ""}${result.leftEye != null ? " left" : ""} eye',
+    );
+  }
+
+  void resetMobileRefractometry() {
+    _mobileRefractometry = null;
     notifyListeners();
   }
 }

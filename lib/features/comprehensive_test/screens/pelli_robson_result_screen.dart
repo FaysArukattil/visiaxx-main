@@ -44,7 +44,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
   void _navigateToSummary() {
     if (_isNavigating) return;
     _isNavigating = true;
-    Navigator.pushReplacementNamed(context, '/quick-test-result');
+    Navigator.pushReplacementNamed(context, '/mobile-refractometry-test');
   }
 
   void _showPauseDialog() {
@@ -92,7 +92,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                   ),
                 ),
                 child: const Text(
-                  'Continue to Summary',
+                  'Continue to Mobile Refractometry',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),

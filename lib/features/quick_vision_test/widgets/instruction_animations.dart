@@ -42,12 +42,14 @@ class _LightingAnimationState extends State<LightingAnimation>
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.warning.withOpacity(
-                0.1 + (_controller.value * 0.1),
+              color: AppColors.warning.withValues(
+                alpha: 0.1 + (_controller.value * 0.1),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.warning.withOpacity(0.2 * _controller.value),
+                  color: AppColors.warning.withValues(
+                    alpha: 0.2 * _controller.value,
+                  ),
                   blurRadius:
                       (widget.isCompact ? 15 : 20) + (20 * _controller.value),
                   spreadRadius:
@@ -58,8 +60,8 @@ class _LightingAnimationState extends State<LightingAnimation>
             child: Icon(
               Icons.wb_sunny_rounded,
               size: widget.isCompact ? 50 : 80,
-              color: AppColors.warning.withOpacity(
-                0.8 + (_controller.value * 0.2),
+              color: AppColors.warning.withValues(
+                alpha: 0.8 + (_controller.value * 0.2),
               ),
             ),
           );
@@ -233,8 +235,8 @@ class _IshiharaPainter extends CustomPainter {
           ? AppColors.success
           : (i % 3 == 1 ? AppColors.error : AppColors.warning);
 
-      paint.color = color.withOpacity(
-        0.5 + (0.5 * math.sin(progress * math.pi + i)),
+      paint.color = color.withValues(
+        alpha: 0.5 + (0.5 * math.sin(progress * math.pi + i)),
       );
 
       final radius =
@@ -307,7 +309,9 @@ class _StayFocusedAnimationState extends State<StayFocusedAnimation>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: widget.color.withOpacity(1 - _controller.value),
+                    color: widget.color.withValues(
+                      alpha: 1 - _controller.value,
+                    ),
                     width: (widget.isCompact ? 2 : 3) + (5 * _controller.value),
                   ),
                 ),
@@ -381,7 +385,7 @@ class _AmslerIntroAnimationState extends State<AmslerIntroAnimation>
                       bottom: 0,
                       child: Container(
                         width: 1,
-                        color: AppColors.black.withOpacity(0.3),
+                        color: AppColors.black.withValues(alpha: 0.3),
                       ),
                     ),
                     Positioned(
@@ -390,7 +394,7 @@ class _AmslerIntroAnimationState extends State<AmslerIntroAnimation>
                       right: 0,
                       child: Container(
                         height: 1,
-                        color: AppColors.black.withOpacity(0.3),
+                        color: AppColors.black.withValues(alpha: 0.3),
                       ),
                     ),
                   ],
@@ -460,7 +464,9 @@ class _AlignmentAnimationState extends State<AlignmentAnimation>
                 width: size,
                 height: size,
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.success.withOpacity(0.5)),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.5),
+                  ),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -692,7 +698,7 @@ class _SteadyReadingPainter extends CustomPainter {
     canvas.drawCircle(eyeCenter, 5, paint..style = PaintingStyle.fill);
 
     final bracketPaint = Paint()
-      ..color = AppColors.success.withOpacity(0.6 * pulse)
+      ..color = AppColors.success.withValues(alpha: 0.6 * pulse)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
       ..strokeCap = StrokeCap.round;
@@ -829,10 +835,10 @@ class _ReadingTripletsAnimationState extends State<ReadingTripletsAnimation>
                   width: 220,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: AppColors.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.5),
+                      color: AppColors.primary.withValues(alpha: 0.5),
                       width: 2,
                     ),
                   ),
@@ -1005,7 +1011,7 @@ class _AmslerLightRayPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     // Draw background grid (static)
     final gridPaint = Paint()
-      ..color = AppColors.black.withOpacity(0.1)
+      ..color = AppColors.black.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -1026,7 +1032,7 @@ class _AmslerLightRayPainter extends CustomPainter {
 
     // Draw rays
     final rayPaint = Paint()
-      ..color = AppColors.black.withOpacity(0.5)
+      ..color = AppColors.black.withValues(alpha: 0.5)
       ..strokeWidth = 2.0;
 
     int rayCount = 12;
@@ -1046,7 +1052,8 @@ class _AmslerLightRayPainter extends CustomPainter {
       canvas.drawLine(
         center + Offset(math.cos(angle) * rayStart, math.sin(angle) * rayStart),
         center + Offset(math.cos(angle) * rayEnd, math.sin(angle) * rayEnd),
-        rayPaint..color = AppColors.black.withOpacity(0.6 * (1.0 - progress)),
+        rayPaint
+          ..color = AppColors.black.withValues(alpha: 0.6 * (1.0 - progress)),
       );
     }
 
@@ -1064,7 +1071,9 @@ class _AmslerLightRayPainter extends CustomPainter {
       center,
       (isCompact ? 10 : 15) * (1.0 + 0.2 * math.sin(progress * 2 * math.pi)),
       Paint()
-        ..color = AppColors.black.withOpacity(0.2 * (1.0 - (progress % 1.0)))
+        ..color = AppColors.black.withValues(
+          alpha: 0.2 * (1.0 - (progress % 1.0)),
+        )
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );

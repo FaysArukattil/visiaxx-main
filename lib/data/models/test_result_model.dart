@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
 import 'questionnaire_model.dart';
 import 'visiual_acuity_result.dart';
 import 'color_vision_result.dart';
@@ -37,6 +38,7 @@ class TestResultModel {
   final AmslerGridResult? amslerGridRight;
   final AmslerGridResult? amslerGridLeft;
   final PelliRobsonResult? pelliRobson;
+  final MobileRefractometryResult? mobileRefractometry;
   final TestStatus overallStatus;
   final String recommendation;
   final String? pdfUrl;
@@ -61,6 +63,7 @@ class TestResultModel {
     this.amslerGridRight,
     this.amslerGridLeft,
     this.pelliRobson,
+    this.mobileRefractometry,
     required this.overallStatus,
     required this.recommendation,
     this.pdfUrl,
@@ -114,6 +117,10 @@ class TestResultModel {
       pelliRobson: data['pelliRobson'] != null
           ? PelliRobsonResult.fromMap(data['pelliRobson'])
           : null,
+
+      mobileRefractometry: data['mobileRefractometry'] != null
+          ? MobileRefractometryResult.fromMap(data['mobileRefractometry'])
+          : null,
       overallStatus: TestStatus.values.firstWhere(
         (s) => s.name == data['overallStatus'],
         orElse: () => TestStatus.normal,
@@ -146,6 +153,7 @@ class TestResultModel {
       'amslerGridRight': amslerGridRight?.toMap(),
       'amslerGridLeft': amslerGridLeft?.toMap(),
       'pelliRobson': pelliRobson?.toMap(),
+      'mobileRefractometry': mobileRefractometry?.toMap(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,
@@ -171,6 +179,7 @@ class TestResultModel {
       'amslerGridRight': amslerGridRight?.toMap(),
       'amslerGridLeft': amslerGridLeft?.toMap(),
       'pelliRobson': pelliRobson?.toMap(),
+      'mobileRefractometry': mobileRefractometry?.toMap(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,
@@ -187,6 +196,7 @@ class TestResultModel {
     AmslerGridResult? amslerRight,
     AmslerGridResult? amslerLeft,
     PelliRobsonResult? pelliRobson,
+    MobileRefractometryResult? mobileRefractometry,
   }) {
     // Check for URGENT conditions (severe/bilateral issues)
     // Urgent if: Both eyes have Amsler distortions OR either eye has extensive distortions
@@ -241,6 +251,16 @@ class TestResultModel {
       return TestStatus.review;
     }
 
+    // Check for Mobile Refractometry critical alerts
+    if (mobileRefractometry != null && mobileRefractometry.criticalAlert) {
+      return TestStatus.urgent;
+    }
+
+    // Review if Mobile Refractometry has health warnings
+    if (mobileRefractometry != null &&
+        mobileRefractometry.healthWarnings.isNotEmpty) {
+      return TestStatus.review;
+    }
     return TestStatus.normal;
   }
 
@@ -274,6 +294,7 @@ class TestResultModel {
     AmslerGridResult? amslerGridRight,
     AmslerGridResult? amslerGridLeft,
     PelliRobsonResult? pelliRobson,
+    MobileRefractometryResult? mobileRefractometry,
     TestStatus? overallStatus,
     String? recommendation,
     String? pdfUrl,
@@ -298,6 +319,7 @@ class TestResultModel {
       amslerGridRight: amslerGridRight ?? this.amslerGridRight,
       amslerGridLeft: amslerGridLeft ?? this.amslerGridLeft,
       pelliRobson: pelliRobson ?? this.pelliRobson,
+      mobileRefractometry: mobileRefractometry ?? this.mobileRefractometry,
       overallStatus: overallStatus ?? this.overallStatus,
       recommendation: recommendation ?? this.recommendation,
       pdfUrl: pdfUrl ?? this.pdfUrl,

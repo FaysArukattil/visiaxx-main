@@ -11,6 +11,8 @@ import '../../data/models/test_result_model.dart';
 import '../../data/models/questionnaire_model.dart';
 import '../../data/models/amsler_grid_result.dart';
 import '../../data/models/color_vision_result.dart';
+import '../../data/models/mobile_refractometry_result.dart';
+import '../../data/models/pelli_robson_result.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -244,6 +246,12 @@ class PdfExportService {
           // Pelli-Robson Contrast Sensitivity Section - DETAILED
           if (result.pelliRobson != null) ...[
             _buildPelliRobsonDetailedSection(result),
+            pw.SizedBox(height: 16),
+          ],
+
+          // Mobile Refractometry Section - DETAILED
+          if (result.mobileRefractometry != null) ...[
+            _buildMobileRefractometryDetailedSection(result),
             pw.SizedBox(height: 16),
           ],
 
@@ -1261,7 +1269,7 @@ class PdfExportService {
   /// PELLI-ROBSON - DETAILED
   pw.Widget _buildPelliRobsonDetailedSection(TestResultModel result) {
     if (result.pelliRobson == null) return pw.SizedBox();
-    final pr = result.pelliRobson!;
+    final PelliRobsonResult pr = result.pelliRobson!;
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -1403,6 +1411,166 @@ class PdfExportService {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// MOBILE REFRACTOMETRY - DETAILED
+  pw.Widget _buildMobileRefractometryDetailedSection(TestResultModel result) {
+    if (result.mobileRefractometry == null) return pw.SizedBox();
+    final MobileRefractometryResult refract = result.mobileRefractometry!;
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(12),
+        border: pw.Border.all(color: PdfColors.grey200, width: 1),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionHeader('MOBILE REFRACTOMETRY ASSESSMENT'),
+              if (refract.criticalAlert)
+                _buildStatusChip('CRITICAL', PdfColors.red700),
+            ],
+          ),
+          pw.SizedBox(height: 16),
+
+          pw.Container(
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            child: pw.Table(
+              columnWidths: {
+                0: const pw.FlexColumnWidth(1),
+                1: const pw.FlexColumnWidth(1),
+                2: const pw.FlexColumnWidth(1),
+                3: const pw.FlexColumnWidth(1),
+                4: const pw.FlexColumnWidth(1.2),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.blue50),
+                  children: [
+                    _buildTableCell('EYE', isHeader: true),
+                    _buildTableCell('SPHERE', isHeader: true),
+                    _buildTableCell('CYL', isHeader: true),
+                    _buildTableCell('AXIS', isHeader: true),
+                    _buildTableCell('ACCURACY', isHeader: true),
+                  ],
+                ),
+                // Right Eye
+                if (refract.rightEye != null)
+                  pw.TableRow(
+                    children: [
+                      _buildTableCell('Right Eye'),
+                      _buildTableCell(refract.rightEye!.sphere),
+                      _buildTableCell(refract.rightEye!.cylinder),
+                      _buildTableCell('${refract.rightEye!.axis}°'),
+                      _buildTableCell('${refract.rightEye!.accuracy}%'),
+                    ],
+                  ),
+                // Left Eye
+                if (refract.leftEye != null)
+                  pw.TableRow(
+                    children: [
+                      _buildTableCell('Left Eye'),
+                      _buildTableCell(refract.leftEye!.sphere),
+                      _buildTableCell(refract.leftEye!.cylinder),
+                      _buildTableCell('${refract.leftEye!.axis}°'),
+                      _buildTableCell('${refract.leftEye!.accuracy}%'),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+
+          pw.SizedBox(height: 12),
+          // Health Warnings and Interpretation
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey50,
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'Clinical Interpretation:',
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.blue900,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  refract.overallInterpretation,
+                  style: const pw.TextStyle(
+                    fontSize: 8.5,
+                    color: PdfColors.grey800,
+                    lineSpacing: 1.5,
+                  ),
+                ),
+                if (refract.healthWarnings.isNotEmpty) ...[
+                  pw.SizedBox(height: 8),
+                  pw.Text(
+                    'Health Alerts:',
+                    style: pw.TextStyle(
+                      fontSize: 8,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.red800,
+                    ),
+                  ),
+                  pw.SizedBox(height: 4),
+                  ...refract.healthWarnings.map(
+                    (warning) => pw.Bullet(
+                      text: warning,
+                      style: const pw.TextStyle(
+                        fontSize: 8,
+                        color: PdfColors.red700,
+                      ),
+                      bulletSize: 2,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Note: Assessment performed using digital retinoscopy algorithms. Sphere (SPH) indicates Near/Farsightedness, Cylinder (CYL) indicates Astigmatism.',
+            style: pw.TextStyle(
+              fontSize: 7,
+              color: PdfColors.grey500,
+              fontStyle: pw.FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildStatusChip(String label, PdfColor color) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: pw.BoxDecoration(
+        color: color,
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Text(
+        label,
+        style: pw.TextStyle(
+          fontSize: 7,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColors.white,
+        ),
       ),
     );
   }
