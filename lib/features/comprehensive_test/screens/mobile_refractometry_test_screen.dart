@@ -14,6 +14,7 @@ import '../../../core/services/distance_detection_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/utils/distance_helper.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../quick_vision_test/screens/distance_transition_screen.dart';
 import '../../../data/models/mobile_refractometry_result.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -1460,6 +1461,33 @@ class _MobileRefractometryTestScreenState
     );
   }
 
+  void _restartTest() {
+    _roundTimer?.cancel();
+    _relaxationTimer?.cancel();
+    _continuousSpeech.stop();
+    _distanceService.stopMonitoring();
+
+    setState(() {
+      _currentRound = 0;
+      _currentBlur = TestConstants.initialBlurLevel;
+      _waitingForResponse = false;
+      _showResult = false;
+      _lastDetectedSpeech = null;
+      _isSpeechActive = false;
+      _isTestPausedForDistance = false;
+      _lastShouldPauseTime = null;
+
+      if (_currentEye == 'right') {
+        _rightEyeResponses.clear();
+      } else {
+        _leftEyeResponses.clear();
+      }
+    });
+
+    _startContinuousDistanceMonitoring();
+    _startRelaxation();
+  }
+
   void _showPauseDialog({String reason = 'back button'}) {
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
@@ -1469,57 +1497,23 @@ class _MobileRefractometryTestScreenState
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.pause_circle_outline, color: AppColors.primary),
-            SizedBox(width: 12),
-            Text('Test Paused'),
-          ],
-        ),
-        content: Text(
-          reason == 'minimized'
-              ? 'The test was paused because the app was minimized.'
-              : 'What would you like to do?',
-        ),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  setState(() => _isTestPausedForDistance = false);
-                  _startContinuousDistanceMonitoring();
-                  if (_currentPhase == RefractPhase.test &&
-                      _waitingForResponse) {
-                    _continuousSpeech.start();
-                    _startRoundTimer();
-                  } else if (_currentPhase == RefractPhase.relaxation) {
-                    _startRelaxationTimer();
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
-                ),
-                child: const Text('Continue Test'),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(dialogContext);
-                  await NavigationUtils.navigateHome(context);
-                },
-                child: const Text(
-                  'Exit and Lose Progress',
-                  style: TextStyle(color: AppColors.error),
-                ),
-              ),
-            ],
-          ),
-        ],
+      builder: (dialogContext) => TestExitConfirmationDialog(
+        onContinue: () {
+          setState(() => _isTestPausedForDistance = false);
+          _startContinuousDistanceMonitoring();
+          if (_currentPhase == RefractPhase.test && _waitingForResponse) {
+            _continuousSpeech.start();
+            _startRoundTimer();
+          } else if (_currentPhase == RefractPhase.relaxation) {
+            _startRelaxationTimer();
+          }
+        },
+        onRestart: () {
+          _restartTest();
+        },
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
+        },
       ),
     );
   }
