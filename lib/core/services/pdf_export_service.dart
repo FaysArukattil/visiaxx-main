@@ -1618,12 +1618,12 @@ class PdfExportService {
             pw.TableRow(
               decoration: const pw.BoxDecoration(color: PdfColors.grey50),
               children: [
-                _buildTableCell('SPHERE (SPH)', isHeader: true),
-                _buildTableCell('CYLINDER (CYL)', isHeader: true),
+                _buildTableCell('SPH', isHeader: true),
+                _buildTableCell('CYL', isHeader: true),
                 _buildTableCell('AXIS', isHeader: true),
                 if (double.tryParse(res.addPower) != null &&
                     double.parse(res.addPower) > 0)
-                  _buildTableCell('ADD POWER', isHeader: true),
+                  _buildTableCell('ADD', isHeader: true),
               ],
             ),
             pw.TableRow(
@@ -1969,15 +1969,18 @@ class PdfExportService {
     PdfColor? color,
   }) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.all(8),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: isHeader ? 8 : 8,
-          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: color ?? (isHeader ? PdfColors.blue900 : PdfColors.grey900),
+      padding: const pw.EdgeInsets.all(4),
+      child: pw.FittedBox(
+        fit: pw.BoxFit.scaleDown,
+        child: pw.Text(
+          text,
+          style: pw.TextStyle(
+            fontSize: isHeader ? 7 : 8,
+            fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+            color: color ?? (isHeader ? PdfColors.blue900 : PdfColors.grey900),
+          ),
+          textAlign: pw.TextAlign.center,
         ),
-        textAlign: pw.TextAlign.center,
       ),
     );
   }

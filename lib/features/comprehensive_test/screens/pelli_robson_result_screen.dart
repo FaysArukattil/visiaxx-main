@@ -260,7 +260,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
-                        'View Detailed Summary',
+                        'Continue',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

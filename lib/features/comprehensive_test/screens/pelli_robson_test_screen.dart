@@ -20,6 +20,7 @@ import 'pelli_robson_result_screen.dart';
 import '../../../data/models/pelli_robson_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import 'pelli_robson_instructions_screen.dart';
+import '../../quick_vision_test/screens/distance_transition_screen.dart';
 
 /// Pelli-Robson Contrast Sensitivity Test Screen
 /// Clinical-grade test with 8 screens of decreasing contrast triplets
@@ -587,14 +588,23 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         _transitionToEye('left', 'short');
       } else {
         // Left eye complete at short distance. Now transition to long distance for Right eye.
-        _ttsService.speak(
-          'Short distance testing complete. Now we will do the 1 meter distance test. Please move back.',
+        // Left eye complete at short distance. Now transition to long distance for Right eye.
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => DistanceTransitionScreen(
+              title: 'Contrast Sensitivity',
+              headline: 'Switching to Distance Vision',
+              currentDistance: '40cm',
+              targetDistance: '1 Meter',
+              instruction:
+                  'Short distance testing complete. Now we will do the 1 meter distance test. Please move back to 1 meter.',
+              onContinue: () {
+                Navigator.of(context).pop();
+                _transitionToEye('right', 'long');
+              },
+            ),
+          ),
         );
-        Future.delayed(const Duration(seconds: 4), () {
-          if (mounted) {
-            _transitionToEye('right', 'long');
-          }
-        });
       }
     } else {
       // Mode long

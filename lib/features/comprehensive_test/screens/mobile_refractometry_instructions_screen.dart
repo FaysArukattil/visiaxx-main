@@ -22,23 +22,19 @@ class _MobileRefractometryInstructionsScreenState
     extends State<MobileRefractometryInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 5;
+  final int _totalPages = 4;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
-    'Remove Eyewear',
     'Lighting Check',
     'Dual Distance Focus',
     'How to Respond',
-    'Relax and Blink',
   ];
 
   final List<String> _ttsMessages = [
-    'If you wear glasses or contact lenses, please remove them for this test.',
     'First, find a quiet, well-lit room for the best results.',
     'This test checks your vision at two distances: arm\'s length and closer.',
     'Speak the direction of the letter "E". If it looks blurry, just say "blurry".',
-    'Remember to blink naturally and focus on the image during relaxation periods.',
   ];
 
   @override
@@ -172,20 +168,6 @@ class _MobileRefractometryInstructionsScreenState
                       'Say the direction clearly. If the letter "E" is out of focus, say "Blurry".',
                       AppColors.success,
                       animation: const HowToRespondAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      4,
-                      Icons.self_improvement_rounded,
-                      'Relaxation',
-                      'Between rounds, relax your eyes by focusing on the distance image.',
-                      AppColors.info,
-                      animation: const Center(
-                        child: Icon(
-                          Icons.spa,
-                          size: 100,
-                          color: AppColors.info,
-                        ),
-                      ),
                     ),
                   ],
                 ),

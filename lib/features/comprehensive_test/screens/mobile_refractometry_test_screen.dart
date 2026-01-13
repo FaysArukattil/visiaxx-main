@@ -14,6 +14,7 @@ import '../../../core/services/distance_detection_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/utils/distance_helper.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../quick_vision_test/screens/distance_transition_screen.dart';
 import '../../../data/models/mobile_refractometry_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import 'package:visiaxx/core/services/distance_skip_manager.dart';
@@ -24,14 +25,7 @@ import '../services/refraction_logic.dart';
 import './mobile_refractometry_instructions_screen.dart';
 
 /// Refractometry phases
-enum RefractPhase {
-  instruction,
-  calibration,
-  relaxation,
-  test,
-  switchingDistance,
-  complete,
-}
+enum RefractPhase { instruction, calibration, relaxation, test, complete }
 
 class MobileRefractometryTestScreen extends StatefulWidget {
   const MobileRefractometryTestScreen({super.key});
@@ -391,19 +385,25 @@ class _MobileRefractometryTestScreenState
   }
 
   void _showDistanceSwitchOverlay(bool toNear) {
-    setState(() => _currentPhase = RefractPhase.switchingDistance);
-
-    _ttsService.speak(
-      toNear
-          ? 'Switch to near vision at 40 centimeters'
-          : 'Switch to distance vision at 100 centimeters',
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DistanceTransitionScreen(
+          title: 'Mobile Refractometry',
+          headline: toNear
+              ? 'Switching to Near Vision'
+              : 'Switching to Distance Vision',
+          currentDistance: toNear ? '100 cm' : '40 cm',
+          targetDistance: toNear ? '40 cm' : '100 cm',
+          instruction: toNear
+              ? 'Please move closer to 40 centimeters for near vision testing.'
+              : 'Please move back to 100 centimeters for distance vision testing.',
+          onContinue: () {
+            Navigator.of(context).pop();
+            _startDistanceCalibration(toNear ? 40.0 : 100.0);
+          },
+        ),
+      ),
     );
-
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _startDistanceCalibration(toNear ? 40.0 : 100.0);
-      }
-    });
   }
 
   void _generateNewRound() {
@@ -1097,8 +1097,6 @@ class _MobileRefractometryTestScreenState
         return _buildRelaxationView();
       case RefractPhase.test:
         return _buildEView();
-      case RefractPhase.switchingDistance:
-        return _buildSwitchOverlay();
       case RefractPhase.complete:
         return const Center(child: EyeLoader(size: 80));
     }
@@ -1458,38 +1456,6 @@ class _MobileRefractometryTestScreenState
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSwitchOverlay() {
-    return Container(
-      color: AppColors.primary.withValues(alpha: 0.9),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.straighten, size: 100, color: AppColors.white),
-            const SizedBox(height: 40),
-            Text(
-              _isNearMode
-                  ? 'SWITCHING TO NEAR VISION'
-                  : 'SWITCHING TO DISTANCE VISION',
-              style: const TextStyle(
-                color: AppColors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Please hold phone at ${_isNearMode ? "40" : "100"} cm',
-              style: const TextStyle(color: AppColors.white, fontSize: 18),
-            ),
-            const SizedBox(height: 40),
-            const EyeLoader(size: 64),
-          ],
-        ),
       ),
     );
   }

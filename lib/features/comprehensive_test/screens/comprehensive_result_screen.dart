@@ -374,6 +374,9 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
         _buildRefractionValue('SPH', res.sphere),
         _buildRefractionValue('CYL', res.cylinder),
         _buildRefractionValue('AXIS', '${res.axis}°'),
+        if (double.tryParse(res.addPower) != null &&
+            double.parse(res.addPower) > 0)
+          _buildRefractionValue('ADD', '+${res.addPower}'),
       ],
     );
   }
@@ -394,12 +397,18 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
               ),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ),
           ),
         ],
