@@ -12,6 +12,7 @@ import '../../../data/models/color_vision_result.dart';
 import '../../../data/models/pelli_robson_result.dart';
 import '../../../data/models/short_distance_result.dart';
 import '../../../core/services/pdf_export_service.dart';
+import '../../../data/models/refraction_prescription_model.dart';
 
 /// Comprehensive test result screen
 class ComprehensiveResultScreen extends StatefulWidget {
@@ -146,6 +147,11 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                   if (refractometry != null) ...[
                     const SizedBox(height: 16),
                     _buildRefractometrySection(refractometry),
+                  ],
+
+                  if (_hasPrescription(provider)) ...[
+                    const SizedBox(height: 16),
+                    _buildPrescriptionCard(provider),
                   ],
 
                   const SizedBox(height: 24),
@@ -618,6 +624,214 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  bool _hasPrescription(TestSessionProvider provider) {
+    return provider.refractionPrescription != null &&
+        provider.refractionPrescription!.includeInResults;
+  }
+
+  Widget _buildPrescriptionCard(TestSessionProvider provider) {
+    final rx = provider.refractionPrescription;
+    if (rx == null) return const SizedBox.shrink();
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: AppColors.success.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+      ),
+      color: AppColors.success.withValues(alpha: 0.02),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.assignment_turned_in_rounded,
+                      color: AppColors.success,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Verified Prescription',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  'By ${rx.practitionerName}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Final Prescription Table
+            _buildRxDataTable(rx.finalPrescription),
+
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 12),
+
+            // Subjective Details
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSmallRxDetail(
+                    'RIGHT EYE',
+                    rx.rightEyeSubjective,
+                    AppColors.primary,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 60,
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  color: AppColors.border.withValues(alpha: 0.5),
+                ),
+                Expanded(
+                  child: _buildSmallRxDetail(
+                    'LEFT EYE',
+                    rx.leftEyeSubjective,
+                    AppColors.secondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRxDataTable(FinalPrescriptionData data) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Table(
+          columnWidths: const {
+            0: FlexColumnWidth(1),
+            1: FlexColumnWidth(0.8),
+            2: FlexColumnWidth(0.8),
+            3: FlexColumnWidth(0.8),
+          },
+          children: [
+            TableRow(
+              decoration: BoxDecoration(
+                color: AppColors.divider.withValues(alpha: 0.3),
+              ),
+              children: [
+                _buildRxTableCell('EYE', isHeader: true),
+                _buildRxTableCell('SPH', isHeader: true),
+                _buildRxTableCell('CYL', isHeader: true),
+                _buildRxTableCell('AXIS', isHeader: true),
+              ],
+            ),
+            _buildRxTableRow('Right', data.right),
+            _buildRxTableRow('Left', data.left),
+          ],
+        ),
+      ),
+    );
+  }
+
+  TableRow _buildRxTableRow(String eye, SubjectiveRefractionData data) {
+    return TableRow(
+      children: [
+        _buildRxTableCell(eye, isBold: true),
+        _buildRxTableCell(data.sph),
+        _buildRxTableCell(data.cyl),
+        _buildRxTableCell(data.axis),
+      ],
+    );
+  }
+
+  Widget _buildRxTableCell(
+    String text, {
+    bool isHeader = false,
+    bool isBold = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: isHeader ? 9 : 11,
+          fontWeight: (isHeader || isBold) ? FontWeight.bold : FontWeight.w500,
+          color: isHeader ? AppColors.textSecondary : AppColors.textPrimary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSmallRxDetail(
+    String eye,
+    SubjectiveRefractionData data,
+    Color color,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eye,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        _buildRxValueLabel('SPH', data.sph),
+        _buildRxValueLabel('CYL', data.cyl),
+        _buildRxValueLabel('AXIS', '${data.axis}°'),
+        _buildRxValueLabel('VN', data.vn),
+      ],
+    );
+  }
+
+  Widget _buildRxValueLabel(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 1),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }

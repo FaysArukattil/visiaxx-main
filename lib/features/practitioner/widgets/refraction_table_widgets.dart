@@ -8,6 +8,7 @@ class RefractionTableWidget extends StatefulWidget {
   final String title;
   final SubjectiveRefractionData initialData;
   final Function(SubjectiveRefractionData) onDataChanged;
+  final Function(bool) onVerifiedChanged;
   final bool showAddColumn;
 
   const RefractionTableWidget({
@@ -15,6 +16,7 @@ class RefractionTableWidget extends StatefulWidget {
     required this.title,
     required this.initialData,
     required this.onDataChanged,
+    required this.onVerifiedChanged,
     this.showAddColumn = true,
   });
 
@@ -55,8 +57,49 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
   void _markEdited(String field) {
     if (!_edited.containsKey(field)) {
       setState(() => _edited[field] = true);
+      _checkVerificationStatus();
       _notifyChange();
     }
+  }
+
+  bool get _isAllVerified {
+    final requiredFields = ['sph', 'cyl', 'axis', 'vn', 'prism'];
+    if (widget.showAddColumn) {
+      requiredFields.add('add');
+    }
+    for (final field in requiredFields) {
+      if (!(_edited[field] ?? false)) return false;
+    }
+    return true;
+  }
+
+  void _verifyAll() {
+    setState(() {
+      _edited['sph'] = true;
+      _edited['cyl'] = true;
+      _edited['axis'] = true;
+      _edited['vn'] = true;
+      _edited['prism'] = true;
+      _edited['add'] = true;
+    });
+    _checkVerificationStatus();
+    _notifyChange();
+  }
+
+  void _checkVerificationStatus() {
+    final requiredFields = ['sph', 'cyl', 'axis', 'vn', 'prism'];
+    if (widget.showAddColumn) {
+      requiredFields.add('add');
+    }
+
+    bool allVerified = true;
+    for (final field in requiredFields) {
+      if (!(_edited[field] ?? false)) {
+        allVerified = false;
+        break;
+      }
+    }
+    widget.onVerifiedChanged(allVerified);
   }
 
   void _notifyChange() {
@@ -77,9 +120,40 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
     double delta, {
     bool isAxis = false,
     bool isDiopter = false,
+    bool isVA = false,
     double min = -20.0,
     double max = 20.0,
   }) {
+    if (isVA) {
+      const vnList = [
+        '6/6',
+        '6/9',
+        '6/12',
+        '6/18',
+        '6/24',
+        '6/36',
+        '6/60',
+        '5/60',
+        '4/60',
+        '3/60',
+        '2/60',
+        '1/60',
+        'PL',
+        'NPL',
+      ];
+      String current = controller.text.toUpperCase().trim();
+      int index = vnList.indexOf(current);
+      if (index != -1) {
+        int nextIndex = index + (delta > 0 ? -1 : 1);
+        if (nextIndex >= 0 && nextIndex < vnList.length) {
+          controller.text = vnList[nextIndex];
+        }
+      } else {
+        controller.text = vnList[0];
+      }
+      return;
+    }
+
     if (isAxis) {
       int val = int.tryParse(controller.text) ?? 0;
       val = (val + delta.toInt());
@@ -87,12 +161,14 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
       if (val < 1) val = 180;
       controller.text = val.toString();
     } else if (isDiopter) {
-      double val = double.tryParse(controller.text) ?? 0.0;
-      val += delta;
-      val = val.clamp(min, max);
-      String sign = val > 0 ? '+' : '';
-      if (val == 0) sign = '';
-      controller.text = '$sign${val.toStringAsFixed(2)}';
+      double current = double.tryParse(controller.text) ?? 0.0;
+      double newVal = current + delta;
+      // Round to nearest 0.25 step (Discrete value logic)
+      newVal = (newVal / 0.25).roundToDouble() * 0.25;
+      newVal = newVal.clamp(min, max);
+      String sign = newVal > 0 ? '+' : '';
+      if (newVal == 0) sign = '';
+      controller.text = '$sign${newVal.toStringAsFixed(2)}';
     }
   }
 
@@ -143,23 +219,29 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                TextButton.icon(
+                  onPressed: _verifyAll,
+                  icon: Icon(
+                    _isAllVerified ? Icons.check_circle : Icons.done_all,
+                    size: 16,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.yellow.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Auto-calculated',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.orange,
-                      fontWeight: FontWeight.w600,
+                  label: Text(
+                    _isAllVerified ? 'Verified' : 'Verify All',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: _isAllVerified
+                        ? AppColors.success
+                        : AppColors.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
               ],
@@ -372,9 +454,10 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
               _buildTweakButton(Icons.remove, () {
                 _adjustValue(
                   controller,
-                  isAxis ? -5 : -0.25,
+                  isAxis ? -5 : (isVA ? -1 : -0.25),
                   isAxis: isAxis,
                   isDiopter: isDiopter,
+                  isVA: isVA,
                   min: min,
                   max: max,
                 );
@@ -436,9 +519,10 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
               _buildTweakButton(Icons.add, () {
                 _adjustValue(
                   controller,
-                  isAxis ? 5 : 0.25,
+                  isAxis ? 5 : (isVA ? 1 : 0.25),
                   isAxis: isAxis,
                   isDiopter: isDiopter,
+                  isVA: isVA,
                   min: min,
                   max: max,
                 );
@@ -543,9 +627,10 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                 _buildCellButton(Icons.remove, () {
                   _adjustValue(
                     controller,
-                    isAxis ? -5 : -0.25,
+                    isAxis ? -5 : (isVisualAcuity ? -1 : -0.25),
                     isAxis: isAxis,
                     isDiopter: isDiopter,
+                    isVA: isVisualAcuity,
                     min: min,
                     max: max,
                   );
@@ -554,9 +639,10 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                 _buildCellButton(Icons.add, () {
                   _adjustValue(
                     controller,
-                    isAxis ? 5 : 0.25,
+                    isAxis ? 5 : (isVisualAcuity ? 1 : 0.25),
                     isAxis: isAxis,
                     isDiopter: isDiopter,
+                    isVA: isVisualAcuity,
                     min: min,
                     max: max,
                   );
@@ -587,11 +673,13 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
 class FinalPrescriptionTableWidget extends StatefulWidget {
   final FinalPrescriptionData initialData;
   final Function(FinalPrescriptionData) onDataChanged;
+  final Function(bool) onVerifiedChanged;
 
   const FinalPrescriptionTableWidget({
     super.key,
     required this.initialData,
     required this.onDataChanged,
+    required this.onVerifiedChanged,
   });
 
   @override
@@ -607,6 +695,7 @@ class _FinalPrescriptionTableWidgetState
   late TextEditingController _rightAxisController;
   late TextEditingController _rightVnController;
   late TextEditingController _rightPrismController;
+  late TextEditingController _rightAddController;
 
   // Left eye controllers
   late TextEditingController _leftSphController;
@@ -636,6 +725,9 @@ class _FinalPrescriptionTableWidgetState
     _rightPrismController = TextEditingController(
       text: widget.initialData.right.prism,
     );
+    _rightAddController = TextEditingController(
+      text: widget.initialData.right.add,
+    );
 
     _leftSphController = TextEditingController(
       text: widget.initialData.left.sph,
@@ -660,6 +752,7 @@ class _FinalPrescriptionTableWidgetState
     _rightAxisController.addListener(() => _markEdited('rightAxis'));
     _rightVnController.addListener(() => _markEdited('rightVn'));
     _rightPrismController.addListener(() => _markEdited('rightPrism'));
+    _rightAddController.addListener(() => _markEdited('rightAdd'));
 
     _leftSphController.addListener(() => _markEdited('leftSph'));
     _leftCylController.addListener(() => _markEdited('leftCyl'));
@@ -672,8 +765,75 @@ class _FinalPrescriptionTableWidgetState
   void _markEdited(String field) {
     if (!_edited.containsKey(field)) {
       setState(() => _edited[field] = true);
+      _checkVerificationStatus();
       _notifyChange();
     }
+  }
+
+  bool get _isAllVerified {
+    final requiredFields = [
+      'rightSph',
+      'rightCyl',
+      'rightAxis',
+      'rightVn',
+      'rightPrism',
+      'rightAdd',
+      'leftSph',
+      'leftCyl',
+      'leftAxis',
+      'leftVn',
+      'leftPrism',
+      'leftAdd',
+    ];
+    for (final field in requiredFields) {
+      if (!(_edited[field] ?? false)) return false;
+    }
+    return true;
+  }
+
+  void _verifyAll() {
+    setState(() {
+      _edited['rightSph'] = true;
+      _edited['rightCyl'] = true;
+      _edited['rightAxis'] = true;
+      _edited['rightVn'] = true;
+      _edited['rightPrism'] = true;
+      _edited['rightAdd'] = true;
+      _edited['leftSph'] = true;
+      _edited['leftCyl'] = true;
+      _edited['leftAxis'] = true;
+      _edited['leftVn'] = true;
+      _edited['leftPrism'] = true;
+      _edited['leftAdd'] = true;
+    });
+    _checkVerificationStatus();
+    _notifyChange();
+  }
+
+  void _checkVerificationStatus() {
+    final requiredFields = [
+      'rightSph',
+      'rightCyl',
+      'rightAxis',
+      'rightVn',
+      'rightPrism',
+      'rightAdd',
+      'leftSph',
+      'leftCyl',
+      'leftAxis',
+      'leftVn',
+      'leftPrism',
+      'leftAdd',
+    ];
+
+    bool allVerified = true;
+    for (final field in requiredFields) {
+      if (!(_edited[field] ?? false)) {
+        allVerified = false;
+        break;
+      }
+    }
+    widget.onVerifiedChanged(allVerified);
   }
 
   void _notifyChange() {
@@ -685,7 +845,7 @@ class _FinalPrescriptionTableWidgetState
           axis: _rightAxisController.text,
           vn: _rightVnController.text,
           prism: _rightPrismController.text,
-          add: '0.00', // Final prescription doesn't include ADD for right
+          add: _rightAddController.text,
         ),
         left: SubjectiveRefractionData(
           sph: _leftSphController.text,
@@ -704,9 +864,40 @@ class _FinalPrescriptionTableWidgetState
     double delta, {
     bool isAxis = false,
     bool isDiopter = false,
+    bool isVA = false,
     double min = -20.0,
     double max = 20.0,
   }) {
+    if (isVA) {
+      const vnList = [
+        '6/6',
+        '6/9',
+        '6/12',
+        '6/18',
+        '6/24',
+        '6/36',
+        '6/60',
+        '5/60',
+        '4/60',
+        '3/60',
+        '2/60',
+        '1/60',
+        'PL',
+        'NPL',
+      ];
+      String current = controller.text.toUpperCase().trim();
+      int index = vnList.indexOf(current);
+      if (index != -1) {
+        int nextIndex = index + (delta > 0 ? -1 : 1);
+        if (nextIndex >= 0 && nextIndex < vnList.length) {
+          controller.text = vnList[nextIndex];
+        }
+      } else {
+        controller.text = vnList[0];
+      }
+      return;
+    }
+
     if (isAxis) {
       int val = int.tryParse(controller.text) ?? 0;
       val = (val + delta.toInt());
@@ -714,12 +905,14 @@ class _FinalPrescriptionTableWidgetState
       if (val < 1) val = 180;
       controller.text = val.toString();
     } else if (isDiopter) {
-      double val = double.tryParse(controller.text) ?? 0.0;
-      val += delta;
-      val = val.clamp(min, max);
-      String sign = val > 0 ? '+' : '';
-      if (val == 0) sign = '';
-      controller.text = '$sign${val.toStringAsFixed(2)}';
+      double current = double.tryParse(controller.text) ?? 0.0;
+      double newVal = current + delta;
+      // Round to nearest 0.25 step (Discrete value logic)
+      newVal = (newVal / 0.25).roundToDouble() * 0.25;
+      newVal = newVal.clamp(min, max);
+      String sign = newVal > 0 ? '+' : '';
+      if (newVal == 0) sign = '';
+      controller.text = '$sign${newVal.toStringAsFixed(2)}';
     }
   }
 
@@ -730,6 +923,7 @@ class _FinalPrescriptionTableWidgetState
     _rightAxisController.dispose();
     _rightVnController.dispose();
     _rightPrismController.dispose();
+    _rightAddController.dispose();
     _leftSphController.dispose();
     _leftCylController.dispose();
     _leftAxisController.dispose();
@@ -761,18 +955,43 @@ class _FinalPrescriptionTableWidgetState
                 topRight: Radius.circular(11),
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Expanded(
                   child: Text(
                     'Final Prescription',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _verifyAll,
+                  icon: Icon(
+                    _isAllVerified ? Icons.check_circle : Icons.done_all,
+                    size: 16,
+                  ),
+                  label: Text(
+                    _isAllVerified ? 'Verified' : 'Verify All',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: _isAllVerified
+                        ? AppColors.success
+                        : AppColors.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
               ],
@@ -804,8 +1023,8 @@ class _FinalPrescriptionTableWidgetState
                       axisController: _rightAxisController,
                       vnController: _rightVnController,
                       prismController: _rightPrismController,
+                      addController: _rightAddController,
                       prefix: 'right',
-                      showAdd: false,
                     ),
                   ],
                 );
@@ -840,8 +1059,8 @@ class _FinalPrescriptionTableWidgetState
                         axisController: _rightAxisController,
                         vnController: _rightVnController,
                         prismController: _rightPrismController,
+                        addController: _rightAddController,
                         prefix: 'right',
-                        showAdd: false,
                       ),
                     ],
                   ),
@@ -969,9 +1188,10 @@ class _FinalPrescriptionTableWidgetState
           _buildCompactTweakButton(Icons.remove, () {
             _adjustValue(
               controller,
-              isAxis ? -5 : -0.25,
+              isAxis ? -5 : (isVA ? -1 : -0.25),
               isAxis: isAxis,
               isDiopter: isDiopter,
+              isVA: isVA,
               min: min,
               max: max,
             );
@@ -1032,9 +1252,10 @@ class _FinalPrescriptionTableWidgetState
           _buildCompactTweakButton(Icons.add, () {
             _adjustValue(
               controller,
-              isAxis ? 5 : 0.25,
+              isAxis ? 5 : (isVA ? 1 : 0.25),
               isAxis: isAxis,
               isDiopter: isDiopter,
+              isVA: isVA,
               min: min,
               max: max,
             );

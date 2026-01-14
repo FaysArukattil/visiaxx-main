@@ -2111,7 +2111,7 @@ class PdfExportService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            'SUBJECTIVE REFRACTION \u0026 PRESCRIPTION',
+            'REFRACTION ASSESSMENT \u0026 PRESCRIPTION',
             style: pw.TextStyle(
               fontSize: 10,
               fontWeight: pw.FontWeight.bold,
@@ -2125,13 +2125,55 @@ class PdfExportService {
           ),
           pw.SizedBox(height: 16),
 
-          // Subjective Tables
+          // PREDICTED VALUES SECTION (Auto-calculated)
+          pw.Text(
+            'PREDICTED VALUES (AUTO-CALCULATED SUGGESTIONS)',
+            style: pw.TextStyle(
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey700,
+            ),
+          ),
+          pw.SizedBox(height: 8),
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Expanded(
                 child: _buildSubjectiveTable(
-                  'RIGHT EYE (OD)',
+                  'RIGHT EYE (PREDICTED)',
+                  prescription.predictedRight,
+                  PdfColors.grey600,
+                ),
+              ),
+              pw.SizedBox(width: 16),
+              pw.Expanded(
+                child: _buildSubjectiveTable(
+                  'LEFT EYE (PREDICTED)',
+                  prescription.predictedLeft,
+                  PdfColors.grey600,
+                ),
+              ),
+            ],
+          ),
+
+          pw.SizedBox(height: 20),
+
+          // VERIFIED REFRACTION SECTION
+          pw.Text(
+            'SUBJECTIVE REFRACTION (VERIFIED BY PRACTITIONER)',
+            style: pw.TextStyle(
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromInt(0xFF1A237E),
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: _buildSubjectiveTable(
+                  'RIGHT EYE (VERIFIED)',
                   prescription.rightEyeSubjective,
                   PdfColor.fromInt(0xFF1565C0), // Blue
                 ),
@@ -2139,7 +2181,7 @@ class PdfExportService {
               pw.SizedBox(width: 16),
               pw.Expanded(
                 child: _buildSubjectiveTable(
-                  'LEFT EYE (OS)',
+                  'LEFT EYE (VERIFIED)',
                   prescription.leftEyeSubjective,
                   PdfColor.fromInt(0xFF00695C), // Teal
                 ),

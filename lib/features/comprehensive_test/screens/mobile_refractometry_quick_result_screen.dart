@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -29,6 +30,10 @@ class _MobileRefractometryQuickResultScreenState
   bool _includeInResults = true;
   bool _isSaving = false;
   bool _isSaved = false;
+  bool _rightEyeVerified = false;
+  bool _leftEyeVerified = false;
+  bool _finalVerified = false;
+  Timer? _saveTimer;
 
   @override
   void initState() {
@@ -78,9 +83,7 @@ class _MobileRefractometryQuickResultScreenState
         );
         _isSaved = false;
       });
-      if (_includeInResults) {
-        _savePrescription(true);
-      }
+      _debouncedSave();
     }
   }
 
@@ -93,9 +96,7 @@ class _MobileRefractometryQuickResultScreenState
         );
         _isSaved = false;
       });
-      if (_includeInResults) {
-        _savePrescription(true);
-      }
+      _debouncedSave();
     }
   }
 
@@ -108,10 +109,40 @@ class _MobileRefractometryQuickResultScreenState
         );
         _isSaved = false;
       });
-      if (_includeInResults) {
-        _savePrescription(true);
-      }
+      _debouncedSave();
     }
+  }
+
+  void _onRightEyeVerified(bool verified) {
+    if (_rightEyeVerified != verified) {
+      setState(() => _rightEyeVerified = verified);
+    }
+  }
+
+  void _onLeftEyeVerified(bool verified) {
+    if (_leftEyeVerified != verified) {
+      setState(() => _leftEyeVerified = verified);
+    }
+  }
+
+  void _onFinalVerified(bool verified) {
+    if (_finalVerified != verified) {
+      setState(() => _finalVerified = verified);
+    }
+  }
+
+  void _debouncedSave() {
+    if (!_includeInResults) return;
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 800), () {
+      _savePrescription(true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _saveTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _savePrescription(bool include) async {
@@ -144,6 +175,10 @@ class _MobileRefractometryQuickResultScreenState
         );
 
         if (mounted) {
+          context.read<TestSessionProvider>().setRefractionPrescription(
+            updatedPrescription,
+          );
+
           setState(() {
             _isSaving = false;
             _isSaved = true;
@@ -220,27 +255,20 @@ class _MobileRefractometryQuickResultScreenState
           children: [
             _buildStatusHeader(overallStatus),
             const SizedBox(height: 32),
-
             if (result.rightEye != null)
               _buildEyeCard('Right Eye', result.rightEye!, AppColors.primary),
-
             if (result.leftEye != null) ...[
               const SizedBox(height: 24),
               _buildEyeCard('Left Eye', result.leftEye!, AppColors.secondary),
             ],
-
             const SizedBox(height: 32),
             _buildClinicalInsights(result),
-
-            // Practitioner-only prescription section
             if (_userRole == UserRole.examiner && _prescription != null) ...[
               const SizedBox(height: 32),
               _buildPractitionerPrescriptionSection(result),
             ],
-
             const SizedBox(height: 48),
-
-            _buildActionButtons(context),
+            _buildActionButtons(context, result),
             const SizedBox(height: 40),
           ],
         ),
@@ -503,44 +531,91 @@ class _MobileRefractometryQuickResultScreenState
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildActionButtons(
+    BuildContext context,
+    MobileRefractometryResult result,
+  ) {
+    final bool isRightEyeRequired = result.rightEye != null;
+    final bool isLeftEyeRequired = result.leftEye != null;
+
+    bool isBlocked = false;
+    if (_includeInResults) {
+      if (isRightEyeRequired && !_rightEyeVerified) isBlocked = true;
+      if (isLeftEyeRequired && !_leftEyeVerified) isBlocked = true;
+      if (!_finalVerified) isBlocked = true;
+    }
+
     return Column(
       children: [
+        if (isBlocked)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.lock_outline, color: AppColors.warning, size: 14),
+                const SizedBox(width: 8),
+                Text(
+                  'Verify all tables to enable results',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.warningDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
         Container(
           width: double.infinity,
           height: 60,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                AppColors.primary,
-                AppColors.primary.withValues(alpha: 0.8),
-              ],
+              colors: isBlocked
+                  ? [AppColors.border, AppColors.border]
+                  : [
+                      AppColors.primary,
+                      AppColors.primary.withValues(alpha: 0.8),
+                    ],
             ),
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            boxShadow: isBlocked
+                ? []
+                : [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
           ),
           child: ElevatedButton(
-            onPressed: () =>
-                Navigator.pushReplacementNamed(context, '/quick-test-result'),
+            onPressed: isBlocked
+                ? null
+                : () async {
+                    // Force final save before navigating
+                    await _savePrescription(true);
+                    if (mounted) {
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/quick-test-result',
+                      );
+                    }
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.transparent,
               shadowColor: AppColors.transparent,
+              disabledBackgroundColor: AppColors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text(
+            child: Text(
               'View Detailed Results',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppColors.white,
+                color: isBlocked ? AppColors.textSecondary : AppColors.white,
               ),
             ),
           ),
@@ -574,10 +649,10 @@ class _MobileRefractometryQuickResultScreenState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Auto-calculated suggestions - Review required',
+                  'Review and verify prescription details',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.warningDark,
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -590,33 +665,22 @@ class _MobileRefractometryQuickResultScreenState
                   'Save Prescription',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
-                if (_isSaving)
+                if (_isSaved && !_isSaving)
                   const Padding(
                     padding: EdgeInsets.only(left: 8.0),
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                    child: Icon(
+                      Icons.check_circle,
+                      color: AppColors.success,
+                      size: 18,
                     ),
-                  )
-                else ...[
-                  if (_isSaved)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8.0),
-                      child: Icon(
-                        Icons.check_circle,
-                        color: AppColors.success,
-                        size: 18,
-                      ),
-                    ),
-                  Checkbox(
-                    value: _includeInResults,
-                    activeColor: AppColors.primary,
-                    onChanged: (val) {
-                      _savePrescription(val ?? true);
-                    },
                   ),
-                ],
+                Checkbox(
+                  value: _includeInResults,
+                  activeColor: AppColors.primary,
+                  onChanged: (val) {
+                    _savePrescription(val ?? true);
+                  },
+                ),
               ],
             ),
           ],
@@ -625,24 +689,38 @@ class _MobileRefractometryQuickResultScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.warning.withValues(alpha: 0.1),
+            color: _includeInResults
+                ? AppColors.warning.withValues(alpha: 0.1)
+                : AppColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: _includeInResults
+                  ? AppColors.warning.withValues(alpha: 0.2)
+                  : AppColors.border,
+            ),
           ),
-          child: const Row(
+          child: Row(
             children: [
               Icon(
-                Icons.warning_amber_rounded,
-                color: AppColors.warning,
+                _includeInResults
+                    ? Icons.warning_amber_rounded
+                    : Icons.info_outline,
+                color: _includeInResults
+                    ? AppColors.warning
+                    : AppColors.textSecondary,
                 size: 20,
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Please verify and adjust all values before saving. At least one change is required to enable saving.',
+                  _includeInResults
+                      ? 'Mandatory Verification: Please verify all values (accept suggestions or edit) to enable Detailed Results and PDF generation.'
+                      : 'Prescription saving is disabled. You can proceed to results without verifying these tables.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.warningDark,
+                    color: _includeInResults
+                        ? AppColors.warningDark
+                        : AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -656,16 +734,19 @@ class _MobileRefractometryQuickResultScreenState
             title: 'Subjective Refraction - Right Eye',
             initialData: _prescription!.rightEyeSubjective,
             onDataChanged: _onRightEyeChanged,
+            onVerifiedChanged: _onRightEyeVerified,
           ),
         if (result.leftEye != null)
           RefractionTableWidget(
             title: 'Subjective Refraction - Left Eye',
             initialData: _prescription!.leftEyeSubjective,
             onDataChanged: _onLeftEyeChanged,
+            onVerifiedChanged: _onLeftEyeVerified,
           ),
         FinalPrescriptionTableWidget(
           initialData: _prescription!.finalPrescription,
           onDataChanged: _onFinalPrescriptionChanged,
+          onVerifiedChanged: _onFinalVerified,
         ),
         const SizedBox(height: 32),
         if (_isSaved)

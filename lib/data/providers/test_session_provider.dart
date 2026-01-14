@@ -11,6 +11,7 @@ import '../../data/models/amsler_grid_result.dart';
 import '../../data/models/test_result_model.dart';
 import '../../data/models/pelli_robson_result.dart';
 import '../models/short_distance_result.dart';
+import '../models/refraction_prescription_model.dart';
 
 /// Provider for managing test session state
 class TestSessionProvider extends ChangeNotifier {
@@ -34,6 +35,7 @@ class TestSessionProvider extends ChangeNotifier {
   ShortDistanceResult? _shortDistance;
   PelliRobsonResult? _pelliRobson;
   MobileRefractometryResult? _mobileRefractometry;
+  RefractionPrescriptionModel? _refractionPrescription;
 
   // Current test state
   String _currentEye = 'right';
@@ -68,6 +70,8 @@ class TestSessionProvider extends ChangeNotifier {
   bool get shouldShowReviewDialog => _shouldShowReviewDialog;
   String? get profileSex => _profileSex;
   String? get currentTestId => _currentTestId;
+  RefractionPrescriptionModel? get refractionPrescription =>
+      _refractionPrescription;
 
   /// Set profile for self-testing
   void selectSelfProfile(
@@ -258,6 +262,7 @@ class TestSessionProvider extends ChangeNotifier {
       amslerGridLeft: _amslerGridLeft,
       pelliRobson: _pelliRobson,
       mobileRefractometry: _mobileRefractometry,
+      refractionPrescription: _refractionPrescription,
       overallStatus: getOverallStatus(),
       recommendation: getRecommendation(),
     );
@@ -295,6 +300,7 @@ class TestSessionProvider extends ChangeNotifier {
     _amslerGridLeft = null;
     _pelliRobson = null;
     _mobileRefractometry = null;
+    _refractionPrescription = null;
     notifyListeners();
   }
 
@@ -346,5 +352,11 @@ class TestSessionProvider extends ChangeNotifier {
   void resetMobileRefractometry() {
     _mobileRefractometry = null;
     notifyListeners();
+  }
+
+  void setRefractionPrescription(RefractionPrescriptionModel prescription) {
+    _refractionPrescription = prescription;
+    notifyListeners();
+    debugPrint('✅ [TestSessionProvider] Refraction prescription saved.');
   }
 }
