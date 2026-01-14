@@ -259,16 +259,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     _buildPatientInfoCard(provider),
                     const SizedBox(height: 20),
 
-                    // Visual Acuity Results - show if not individual OR if individual VA test
-                    if (!provider.isIndividualTest ||
-                        provider.individualTestType == 'visual_acuity') ...[
+                    // Visual Acuity Results
+                    if (_hasVAData(provider)) ...[
                       _buildSectionTitle('Visual Acuity', Icons.visibility),
                       _buildVisualAcuityCard(provider),
                       const SizedBox(height: 20),
                     ],
 
-                    // Short Distance Results - show only if not individual test
-                    if (!provider.isIndividualTest) ...[
+                    // Short Distance Results
+                    if (_hasShortDistanceData(provider)) ...[
                       _buildSectionTitle(
                         'Reading Test (Near Vision)',
                         Icons.text_fields,
@@ -277,24 +276,22 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       const SizedBox(height: 20),
                     ],
 
-                    // Color Vision Results - show if not individual OR if individual color vision test
-                    if (!provider.isIndividualTest ||
-                        provider.individualTestType == 'color_vision') ...[
+                    // Color Vision Results
+                    if (_hasColorVisionData(provider)) ...[
                       _buildSectionTitle('Color Vision', Icons.palette),
                       _buildColorVisionCard(provider),
                       const SizedBox(height: 20),
                     ],
 
-                    // Amsler Grid Results - show only if not individual test
-                    if (!provider.isIndividualTest) ...[
+                    // Amsler Grid Results
+                    if (_hasAmslerData(provider)) ...[
                       _buildSectionTitle('Amsler Grid', Icons.grid_on),
                       _buildAmslerGridCard(provider),
                       const SizedBox(height: 20),
                     ],
 
-                    // Pelli-Robson Contrast Sensitivity Results - show only if not individual AND has results
-                    if (!provider.isIndividualTest &&
-                        _hasPelliRobsonResults(provider)) ...[
+                    // Pelli-Robson Contrast Sensitivity Results
+                    if (_hasPelliRobsonResults(provider)) ...[
                       _buildSectionTitle(
                         'Contrast Sensitivity',
                         Icons.contrast,
@@ -303,9 +300,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       const SizedBox(height: 20),
                     ],
 
-                    // Mobile Refractometry Results - show only if not individual AND has results
-                    if (!provider.isIndividualTest &&
-                        _hasRefractometryResults(provider)) ...[
+                    // Mobile Refractometry Results
+                    if (_hasRefractometryResults(provider)) ...[
                       _buildSectionTitle(
                         'Mobile Refractometry',
                         Icons.phone_android_rounded,
@@ -314,9 +310,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       const SizedBox(height: 20),
                     ],
 
-                    // Verified Prescription Results - show only if not individual AND has prescription
-                    if (!provider.isIndividualTest &&
-                        _hasPrescription(provider)) ...[
+                    // Verified Prescription Results
+                    if (_hasPrescription(provider)) ...[
                       _buildSectionTitle(
                         'Verified Prescription',
                         Icons.assignment_turned_in_rounded,
@@ -2940,5 +2935,29 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ],
       ),
     );
+  }
+
+  bool _hasVAData(TestSessionProvider provider) {
+    return widget.historicalResult?.visualAcuityRight != null ||
+        widget.historicalResult?.visualAcuityLeft != null ||
+        provider.visualAcuityRight != null ||
+        provider.visualAcuityLeft != null;
+  }
+
+  bool _hasShortDistanceData(TestSessionProvider provider) {
+    return widget.historicalResult?.shortDistance != null ||
+        provider.shortDistance != null;
+  }
+
+  bool _hasColorVisionData(TestSessionProvider provider) {
+    return widget.historicalResult?.colorVision != null ||
+        provider.colorVision != null;
+  }
+
+  bool _hasAmslerData(TestSessionProvider provider) {
+    return widget.historicalResult?.amslerGridRight != null ||
+        widget.historicalResult?.amslerGridLeft != null ||
+        provider.amslerGridRight != null ||
+        provider.amslerGridLeft != null;
   }
 }

@@ -224,8 +224,11 @@ class PdfExportService {
           pw.SizedBox(height: 12),
 
           // Visual Acuity Section - DETAILED
-          _buildVisualAcuityDetailedSection(result),
-          pw.SizedBox(height: 12),
+          if (result.visualAcuityRight != null ||
+              result.visualAcuityLeft != null) ...[
+            _buildVisualAcuityDetailedSection(result),
+            pw.SizedBox(height: 12),
+          ],
 
           // Short Distance Section - DETAILED
           if (result.shortDistance != null) ...[
@@ -234,16 +237,21 @@ class PdfExportService {
           ],
 
           // Color Vision Section - DETAILED
-          _buildColorVisionDetailedSection(result),
-          pw.SizedBox(height: 12),
+          if (result.colorVision != null) ...[
+            _buildColorVisionDetailedSection(result),
+            pw.SizedBox(height: 12),
+          ],
 
           // Amsler Grid Section - DETAILED
-          _buildAmslerGridDetailedSection(
-            result,
-            rightImageBytes: amslerRightBytes,
-            leftImageBytes: amslerLeftBytes,
-          ),
-          pw.SizedBox(height: 12),
+          if (result.amslerGridRight != null ||
+              result.amslerGridLeft != null) ...[
+            _buildAmslerGridDetailedSection(
+              result,
+              rightImageBytes: amslerRightBytes,
+              leftImageBytes: amslerLeftBytes,
+            ),
+            pw.SizedBox(height: 12),
+          ],
 
           // Pelli-Robson Contrast Sensitivity Section - DETAILED
           if (result.pelliRobson != null) ...[

@@ -277,7 +277,9 @@ class TestSessionProvider extends ChangeNotifier {
       profileSex: _profileSex,
       profileType: _profileType,
       timestamp: DateTime.now(),
-      testType: _isComprehensiveTest ? 'comprehensive' : 'quick',
+      testType: _isIndividualTest
+          ? (_individualTestType ?? 'individual')
+          : (_isComprehensiveTest ? 'comprehensive' : 'quick'),
       questionnaire: _questionnaire,
       visualAcuityRight: _visualAcuityRight,
       visualAcuityLeft: _visualAcuityLeft,

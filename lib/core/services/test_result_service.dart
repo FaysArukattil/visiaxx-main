@@ -40,9 +40,7 @@ class TestResultService {
       final roleCol = userModel.roleCollection;
 
       // Map technical testType to descriptive category for storage
-      final testCategory = result.testType == 'comprehensive'
-          ? 'FullExam'
-          : 'QuickTest';
+      final testCategory = _getTestFolderName(result.testType);
 
       // 4. Document ID: [TIMESTAMP]_[STATUS]_[TYPE]
       final timestampStr = DateFormat(
@@ -208,9 +206,7 @@ class TestResultService {
       );
 
       // 1. Generate ID and save to Firestore (local cache)
-      final testCategory = result.testType == 'comprehensive'
-          ? 'FullExam'
-          : 'QuickTest';
+      final testCategory = _getTestFolderName(result.testType);
       final timestampStr = DateFormat(
         'yyyy-MM-dd_HH-mm',
       ).format(result.timestamp);
@@ -787,5 +783,31 @@ class TestResultService {
       'averageLogMARLeft': leftCount > 0 ? totalLogMARLeft / leftCount : 0,
       'testCount': results.length.toDouble(),
     };
+  }
+
+  /// Helper to map technical test types to descriptive folder/category names
+  String _getTestFolderName(String testType) {
+    switch (testType) {
+      case 'comprehensive':
+        return 'FullExam';
+      case 'quick':
+        return 'QuickTest';
+      case 'visual_acuity':
+        return 'VisualAcuity';
+      case 'color_vision':
+        return 'ColorVision';
+      case 'amsler_grid':
+        return 'AmslerGrid';
+      case 'reading_test':
+        return 'ReadingTest';
+      case 'contrast_sensitivity':
+        return 'ContrastSensitivity';
+      case 'mobile_refractometry':
+        return 'MobileRefractometry';
+      default:
+        // Capitalize default
+        if (testType.isEmpty) return 'UnknownTest';
+        return testType[0].toUpperCase() + testType.substring(1);
+    }
   }
 }
