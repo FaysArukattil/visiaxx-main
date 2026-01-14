@@ -578,7 +578,9 @@ class _MobileRefractometryQuickResultScreenState
     final bool isLeftEyeRequired = result.leftEye != null;
 
     bool isBlocked = false;
-    if (_includeInResults) {
+    // ONLY block examiners/practitioners if they haven't verified tables.
+    // Patients/Normal users (UserRole.user) should NOT be blocked by verification.
+    if (_userRole == UserRole.examiner && _includeInResults) {
       if (isRightEyeRequired && !_rightEyeVerified) isBlocked = true;
       if (isLeftEyeRequired && !_leftEyeVerified) isBlocked = true;
       if (!_finalVerified) isBlocked = true;
