@@ -46,10 +46,39 @@ class _MobileRefractometryQuickResultScreenState
     if (mounted) {
       setState(() {
         _userRole = role;
-        if (role == UserRole.examiner) {
-          _initializePrescription();
-        }
       });
+
+      // Load prescription for ALL users (read-only for normal users)
+      await _loadExistingPrescription();
+
+      // Only initialize new prescription for examiners
+      if (role == UserRole.examiner && _prescription == null) {
+        _initializePrescription();
+      }
+    }
+  }
+
+  Future<void> _loadExistingPrescription() async {
+    final provider = context.read<TestSessionProvider>();
+    final testResultId = provider.currentTestId;
+    final currentUser = _authService.currentUser;
+
+    if (testResultId != null && currentUser != null) {
+      try {
+        final existingPrescription = await _refractionService.getPrescription(
+          currentUser.uid,
+          testResultId,
+        );
+
+        if (existingPrescription != null && mounted) {
+          setState(() {
+            _prescription = existingPrescription;
+            _includeInResults = existingPrescription.includeInResults;
+          });
+        }
+      } catch (e) {
+        debugPrint('[QuickResult] Error loading prescription: $e');
+      }
     }
   }
 
@@ -263,9 +292,12 @@ class _MobileRefractometryQuickResultScreenState
             ],
             const SizedBox(height: 32),
             _buildClinicalInsights(result),
-            if (_userRole == UserRole.examiner && _prescription != null) ...[
+            // Show prescription to ALL users if it exists and is included in results
+            if (_prescription != null && _prescription!.includeInResults) ...[
               const SizedBox(height: 32),
-              _buildPractitionerPrescriptionSection(result),
+              _userRole == UserRole.examiner
+                  ? _buildPractitionerPrescriptionSection(result)
+                  : _buildReadOnlyPrescriptionSection(result),
             ],
             const SizedBox(height: 48),
             _buildActionButtons(context, result),
@@ -621,6 +653,322 @@ class _MobileRefractometryQuickResultScreenState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildReadOnlyPrescriptionSection(MobileRefractometryResult result) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Verified Prescription Details',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Verified by: ${_prescription!.practitionerName}',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // SUBJECTIVE REFRACTION (VERIFIED BY PRACTITIONER)
+        const Text(
+          'Subjective Refraction (Verified)',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (result.rightEye != null)
+          _buildReadOnlyRefractionTable(
+            'Right Eye',
+            _prescription!.rightEyeSubjective,
+            AppColors.rightEye,
+          ),
+        const SizedBox(height: 16),
+        if (result.leftEye != null)
+          _buildReadOnlyRefractionTable(
+            'Left Eye',
+            _prescription!.leftEyeSubjective,
+            AppColors.leftEye,
+          ),
+
+        const SizedBox(height: 24),
+
+        // FINAL PRESCRIPTION
+        const Text(
+          'Final Prescription (Rx)',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildFinalPrescriptionTable(_prescription!.finalPrescription),
+
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.info.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, color: AppColors.info, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'This prescription has been verified by ${_prescription!.practitionerName}. Take this to your optometrist for glasses fitting.',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReadOnlyRefractionTable(
+    String title,
+    SubjectiveRefractionData data,
+    Color color,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.visibility, size: 16, color: color),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Table(
+              columnWidths: const {
+                0: FlexColumnWidth(1),
+                1: FlexColumnWidth(1),
+                2: FlexColumnWidth(1),
+                3: FlexColumnWidth(1),
+              },
+              children: [
+                TableRow(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  children: [
+                    _buildTableHeader('SPH'),
+                    _buildTableHeader('CYL'),
+                    _buildTableHeader('AXIS'),
+                    _buildTableHeader('VN'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    _buildTableValue(data.sph),
+                    _buildTableValue(data.cyl),
+                    _buildTableValue(data.axis),
+                    _buildTableValue(data.vn),
+                  ],
+                ),
+                if (data.add != '0.00' && data.add.isNotEmpty) ...[
+                  TableRow(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    children: [
+                      _buildTableHeader('ADD'),
+                      const SizedBox(),
+                      const SizedBox(),
+                      const SizedBox(),
+                    ],
+                  ),
+                  TableRow(
+                    children: [
+                      _buildTableValue(data.add),
+                      const SizedBox(),
+                      const SizedBox(),
+                      const SizedBox(),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinalPrescriptionTable(FinalPrescriptionData data) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.assignment, size: 16, color: AppColors.primary),
+                SizedBox(width: 8),
+                Text(
+                  'Prescription for Glasses',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Table(
+              columnWidths: const {
+                0: FlexColumnWidth(0.8),
+                1: FlexColumnWidth(1),
+                2: FlexColumnWidth(1),
+                3: FlexColumnWidth(1),
+                4: FlexColumnWidth(1),
+              },
+              children: [
+                TableRow(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  children: [
+                    _buildTableHeader('EYE'),
+                    _buildTableHeader('SPH'),
+                    _buildTableHeader('CYL'),
+                    _buildTableHeader('AXIS'),
+                    _buildTableHeader('VN'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    _buildTableHeader('OD (R)', isEyeLabel: true),
+                    _buildTableValue(data.right.sph),
+                    _buildTableValue(data.right.cyl),
+                    _buildTableValue(data.right.axis),
+                    _buildTableValue(data.right.vn),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    _buildTableHeader('OS (L)', isEyeLabel: true),
+                    _buildTableValue(data.left.sph),
+                    _buildTableValue(data.left.cyl),
+                    _buildTableValue(data.left.axis),
+                    _buildTableValue(data.left.vn),
+                  ],
+                ),
+                if (data.right.add != '0.00' || data.left.add != '0.00') ...[
+                  TableRow(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    children: [
+                      _buildTableHeader('ADD'),
+                      _buildTableValue(data.right.add),
+                      _buildTableValue(data.left.add),
+                      const SizedBox(),
+                      const SizedBox(),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableHeader(String text, {bool isEyeLabel = false}) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: isEyeLabel ? 12 : 11,
+          fontWeight: FontWeight.bold,
+          color: isEyeLabel ? AppColors.primary : AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTableValue(String text) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+      ),
     );
   }
 

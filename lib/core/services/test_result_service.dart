@@ -7,6 +7,7 @@ import '../../data/models/test_result_model.dart';
 import 'package:intl/intl.dart';
 import 'package:visiaxx/core/services/family_member_service.dart';
 import '../providers/network_connectivity_provider.dart';
+import 'refraction_prescription_service.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
@@ -313,7 +314,7 @@ class TestResultService {
           identityString: identityString,
           roleCollection: roleCollection,
           testCategory: testCategory,
-          testId: testId, // ⚡ Use testId instead of result.id
+          testId: testId,
           eye: 'right',
           imageFile: file,
           memberIdentityString: memberId,
@@ -342,7 +343,7 @@ class TestResultService {
           identityString: identityString,
           roleCollection: roleCollection,
           testCategory: testCategory,
-          testId: testId, // ⚡ Use testId instead of result.id
+          testId: testId,
           eye: 'left',
           imageFile: file,
           memberIdentityString: memberId,
@@ -359,6 +360,37 @@ class TestResultService {
     }
 
     return updatedResult;
+  }
+
+  /// Load refraction prescription for a specific test result
+  Future<TestResultModel> _loadPrescriptionForResult(
+    String userId,
+    TestResultModel result,
+  ) async {
+    try {
+      // Only load prescription for mobile refractometry tests
+      if (result.mobileRefractometry == null) return result;
+
+      final refractionService = RefractionPrescriptionService();
+      final prescription = await refractionService.getPrescription(
+        userId,
+        result.id,
+      );
+
+      if (prescription != null) {
+        debugPrint(
+          '[TestResultService] ✅ Loaded prescription for result: ${result.id}',
+        );
+        return result.copyWith(refractionPrescription: prescription);
+      }
+
+      return result;
+    } catch (e) {
+      debugPrint(
+        '[TestResultService] ⚠️ Error loading prescription for ${result.id}: $e',
+      );
+      return result; // Return result without prescription if loading fails
+    }
   }
 
   /// Get all test results for a user
@@ -419,7 +451,9 @@ class TestResultService {
       final List<String> hiddenIds = userModel.hiddenResultIds;
       final Set<String> processedDocIds = {};
 
-      void processDocs(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+      Future<void> processDocs(
+        List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+      ) async {
         for (final doc in docs) {
           if (processedDocIds.contains(doc.id)) continue;
           if (hiddenIds.contains(doc.id)) continue;
@@ -427,7 +461,12 @@ class TestResultService {
           try {
             final data = doc.data();
             data['id'] = doc.id;
-            results.add(TestResultModel.fromJson(data));
+            var result = TestResultModel.fromJson(data);
+
+            // Load prescription if this is a mobile refractometry test
+            result = await _loadPrescriptionForResult(userId, result);
+
+            results.add(result);
             processedDocIds.add(doc.id);
           } catch (e) {
             debugPrint('[TestResultService] ❌ Error parsing ${doc.id}: $e');
@@ -435,12 +474,12 @@ class TestResultService {
         }
       }
 
-      processDocs(
+      await processDocs(
         identitySnapshot.docs
             .cast<QueryDocumentSnapshot<Map<String, dynamic>>>(),
       );
       if (uidSnapshot != null) {
-        processDocs(
+        await processDocs(
           uidSnapshot.docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>(),
         );
       }
@@ -476,7 +515,7 @@ class TestResultService {
                           .doc(member.id)
                           .collection('tests')
                           .orderBy('timestamp', descending: true)
-                          .get(GetOptions(source: Source.cache));
+                          .get(const GetOptions(source: Source.cache));
                     },
                   ),
             );
@@ -484,7 +523,7 @@ class TestResultService {
 
           final memberSnapshots = await Future.wait(memberFetches);
           for (final snap in memberSnapshots) {
-            processDocs(
+            await processDocs(
               snap.docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>(),
             );
           }
@@ -553,7 +592,12 @@ class TestResultService {
 
       final data = doc.data()!;
       data['id'] = doc.id;
-      return TestResultModel.fromJson(data);
+      var result = TestResultModel.fromJson(data);
+
+      // Load prescription if this is a mobile refractometry test
+      result = await _loadPrescriptionForResult(userId, result);
+
+      return result;
     } catch (e) {
       throw Exception('Failed to get test result: $e');
     }
@@ -592,23 +636,26 @@ class TestResultService {
       final List<TestResultModel> results = [];
       final Set<String> processedIds = {};
 
-      void addDocs(QuerySnapshot snap) {
+      Future<void> addDocs(QuerySnapshot snap) async {
         for (final doc in snap.docs) {
           if (processedIds.contains(doc.id)) continue;
           if (hiddenIds.contains(doc.id)) continue;
 
-          results.add(
-            TestResultModel.fromJson({
-              ...doc.data() as Map<String, dynamic>,
-              'id': doc.id,
-            }),
-          );
+          var result = TestResultModel.fromJson({
+            ...doc.data() as Map<String, dynamic>,
+            'id': doc.id,
+          });
+
+          // Load prescription if this is a mobile refractometry test
+          result = await _loadPrescriptionForResult(userId, result);
+
+          results.add(result);
           processedIds.add(doc.id);
         }
       }
 
-      addDocs(legacySnapshot);
-      addDocs(nestedSnapshot);
+      await addDocs(legacySnapshot);
+      await addDocs(nestedSnapshot);
 
       results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return results;
@@ -663,7 +710,12 @@ class TestResultService {
       if (snapshot.docs.isEmpty) return null;
 
       final doc = snapshot.docs.first;
-      return TestResultModel.fromJson({...doc.data(), 'id': doc.id});
+      var result = TestResultModel.fromJson({...doc.data(), 'id': doc.id});
+
+      // Load prescription if this is a mobile refractometry test
+      result = await _loadPrescriptionForResult(userId, result);
+
+      return result;
     } catch (e) {
       throw Exception('Failed to get latest test result: $e');
     }

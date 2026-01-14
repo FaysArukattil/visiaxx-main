@@ -71,6 +71,19 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       final provider = context.read<TestSessionProvider>();
       final result = provider.buildTestResult(user.uid);
 
+      // DEBUG: Check if prescription is in the result
+      debugPrint(
+        '[QuickTestResult] 🔍 Prescription in result: ${result.refractionPrescription != null}',
+      );
+      if (result.refractionPrescription != null) {
+        debugPrint(
+          '[QuickTestResult] 📋 Prescription includeInResults: ${result.refractionPrescription!.includeInResults}',
+        );
+        debugPrint(
+          '[QuickTestResult] 👨‍⚕️ Practitioner: ${result.refractionPrescription!.practitionerName}',
+        );
+      }
+
       final connectivity = Provider.of<NetworkConnectivityProvider>(
         context,
         listen: false,

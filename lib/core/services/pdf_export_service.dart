@@ -253,15 +253,18 @@ class PdfExportService {
 
           // Mobile Refractometry Section - DETAILED
           if (result.mobileRefractometry != null) ...[
-            _buildMobileRefractometryDetailedSection(result),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                _buildMobileRefractometryDetailedSection(result),
+                if (result.refractionPrescription != null &&
+                    result.refractionPrescription!.includeInResults) ...[
+                  pw.SizedBox(height: 16),
+                  _buildRefractionPrescriptionSection(result),
+                ],
+              ],
+            ),
             pw.SizedBox(height: 16),
-
-            // NEW: Add Refraction Prescription section if available and enabled
-            if (result.refractionPrescription != null &&
-                result.refractionPrescription!.includeInResults) ...[
-              _buildRefractionPrescriptionSection(result),
-              pw.SizedBox(height: 16),
-            ],
           ],
 
           // Overall Assessment
@@ -2097,8 +2100,16 @@ class PdfExportService {
   }
 
   pw.Widget _buildRefractionPrescriptionSection(TestResultModel result) {
-    if (result.refractionPrescription == null) return pw.SizedBox();
+    debugPrint('[PDF] 🔍 Building prescription section...');
+    if (result.refractionPrescription == null) {
+      debugPrint('[PDF] ⚠️ No prescription data found');
+      return pw.SizedBox();
+    }
     final prescription = result.refractionPrescription!;
+    debugPrint(
+      '[PDF] ✅ Prescription found - Practitioner: ${prescription.practitionerName}',
+    );
+    debugPrint('[PDF] 📋 Include in results: ${prescription.includeInResults}');
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -2125,33 +2136,38 @@ class PdfExportService {
           ),
           pw.SizedBox(height: 16),
 
-          // PREDICTED VALUES SECTION (Auto-calculated)
-          pw.Text(
-            'PREDICTED VALUES (AUTO-CALCULATED SUGGESTIONS)',
-            style: pw.TextStyle(
-              fontSize: 9,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColors.grey700,
-            ),
-          ),
-          pw.SizedBox(height: 8),
-          pw.Row(
+          // PREDICTED VALUES SECTION
+          pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Expanded(
-                child: _buildSubjectiveTable(
-                  'RIGHT EYE (PREDICTED)',
-                  prescription.predictedRight,
-                  PdfColors.grey600,
+              pw.Text(
+                'PREDICTED VALUES (AUTO-CALCULATED SUGGESTIONS)',
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey700,
                 ),
               ),
-              pw.SizedBox(width: 16),
-              pw.Expanded(
-                child: _buildSubjectiveTable(
-                  'LEFT EYE (PREDICTED)',
-                  prescription.predictedLeft,
-                  PdfColors.grey600,
-                ),
+              pw.SizedBox(height: 8),
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Expanded(
+                    child: _buildSubjectiveTable(
+                      'RIGHT EYE (PREDICTED)',
+                      prescription.predictedRight,
+                      PdfColors.grey600,
+                    ),
+                  ),
+                  pw.SizedBox(width: 16),
+                  pw.Expanded(
+                    child: _buildSubjectiveTable(
+                      'LEFT EYE (PREDICTED)',
+                      prescription.predictedLeft,
+                      PdfColors.grey600,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -2159,51 +2175,59 @@ class PdfExportService {
           pw.SizedBox(height: 20),
 
           // VERIFIED REFRACTION SECTION
-          pw.Text(
-            'SUBJECTIVE REFRACTION (VERIFIED BY PRACTITIONER)',
-            style: pw.TextStyle(
-              fontSize: 9,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromInt(0xFF1A237E),
-            ),
-          ),
-          pw.SizedBox(height: 8),
-          pw.Row(
+          pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Expanded(
-                child: _buildSubjectiveTable(
-                  'RIGHT EYE (VERIFIED)',
-                  prescription.rightEyeSubjective,
-                  PdfColor.fromInt(0xFF1565C0), // Blue
+              pw.Text(
+                'SUBJECTIVE REFRACTION (VERIFIED BY PRACTITIONER)',
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColor.fromInt(0xFF1A237E),
                 ),
               ),
-              pw.SizedBox(width: 16),
-              pw.Expanded(
-                child: _buildSubjectiveTable(
-                  'LEFT EYE (VERIFIED)',
-                  prescription.leftEyeSubjective,
-                  PdfColor.fromInt(0xFF00695C), // Teal
-                ),
+              pw.SizedBox(height: 8),
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Expanded(
+                    child: _buildSubjectiveTable(
+                      'RIGHT EYE (VERIFIED)',
+                      prescription.rightEyeSubjective,
+                      PdfColor.fromInt(0xFF1565C0), // Blue
+                    ),
+                  ),
+                  pw.SizedBox(width: 16),
+                  pw.Expanded(
+                    child: _buildSubjectiveTable(
+                      'LEFT EYE (VERIFIED)',
+                      prescription.leftEyeSubjective,
+                      PdfColor.fromInt(0xFF00695C), // Teal
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
 
           pw.SizedBox(height: 24),
 
-          // Final Prescription Title
-          pw.Text(
-            'FINAL PRESCRIPTION (Rx)',
-            style: pw.TextStyle(
-              fontSize: 9,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColors.black,
-            ),
+          // FINAL PRESCRIPTION SECTION
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'FINAL PRESCRIPTION (Rx)',
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.black,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              _buildFinalRxTable(prescription.finalPrescription),
+            ],
           ),
-          pw.SizedBox(height: 8),
-
-          // Final Rx Table
-          _buildFinalRxTable(prescription.finalPrescription),
 
           pw.SizedBox(height: 12),
           pw.Text(

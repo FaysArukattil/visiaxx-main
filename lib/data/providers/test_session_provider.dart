@@ -127,6 +127,10 @@ class TestSessionProvider extends ChangeNotifier {
     _isTestInProgress = true;
     _testStartTime = DateTime.now();
     _currentEye = 'right';
+    _currentTestId = DateTime.now().millisecondsSinceEpoch.toString();
+    debugPrint(
+      '🏁 [TestSessionProvider] Started new test session with ID: $_currentTestId',
+    );
     notifyListeners();
   }
 
@@ -238,13 +242,18 @@ class TestSessionProvider extends ChangeNotifier {
     final overallStatus = getOverallStatus();
     final recommendation = getRecommendation();
 
-    // ✅ CRITICAL FIX: Generate unique ID based on timestamp to ensure
-    // each test's Amsler images are stored separately in AWS S3
-    final uniqueId = DateTime.now().millisecondsSinceEpoch.toString();
-    _currentTestId = uniqueId;
+    // Generate unique ID once per session
+    if (_currentTestId == null) {
+      _currentTestId = DateTime.now().millisecondsSinceEpoch.toString();
+      debugPrint(
+        '🆕 [TestSessionProvider] Generated new session ID: $_currentTestId',
+      );
+    }
+
+    final uniqueId = _currentTestId!;
 
     final result = TestResultModel(
-      id: uniqueId, // Unique ID for AWS S3 image naming
+      id: uniqueId,
       userId: userId,
       profileId: _profileId,
       profileName: _profileName,
