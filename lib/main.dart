@@ -201,8 +201,14 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/practitioner-dashboard': (context) =>
               const PractitionerDashboardScreen(),
           '/practitioner-home': (context) => const PractitionerHomeScreen(),
-          '/practitioner-profile-selection': (context) =>
-              const PractitionerProfileSelectionScreen(),
+          '/practitioner-profile-selection': (context) {
+            final args =
+                ModalRoute.of(context)?.settings.arguments
+                    as Map<String, dynamic>?;
+            return PractitionerProfileSelectionScreen(
+              isComprehensive: args?['comprehensive'] ?? false,
+            );
+          },
           '/practitioner-results': (context) =>
               const PractitionerResultsScreen(),
           '/cover-left-eye-instruction': (context) =>

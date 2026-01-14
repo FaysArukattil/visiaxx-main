@@ -87,13 +87,14 @@ class _PractitionerProfileSelectionScreenState
     final provider = context.read<TestSessionProvider>();
     // Use patient as a family member equivalent for test session
     provider.selectPatientProfile(patient);
-    provider.startTest();
 
     if (widget.isComprehensive) {
-      Navigator.pushNamed(context, '/questionnaire');
+      provider.startComprehensiveTest();
     } else {
-      Navigator.pushNamed(context, '/questionnaire');
+      provider.startTest();
     }
+
+    Navigator.pushNamed(context, '/questionnaire');
   }
 
   Future<void> _addPatient() async {

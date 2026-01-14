@@ -6,6 +6,7 @@ import 'color_vision_result.dart';
 import 'amsler_grid_result.dart';
 import 'short_distance_result.dart';
 import 'pelli_robson_result.dart';
+import 'refraction_prescription_model.dart';
 
 /// Test result status
 enum TestStatus {
@@ -39,6 +40,7 @@ class TestResultModel {
   final AmslerGridResult? amslerGridLeft;
   final PelliRobsonResult? pelliRobson;
   final MobileRefractometryResult? mobileRefractometry;
+  final RefractionPrescriptionModel? refractionPrescription;
   final TestStatus overallStatus;
   final String recommendation;
   final String? pdfUrl;
@@ -64,6 +66,7 @@ class TestResultModel {
     this.amslerGridLeft,
     this.pelliRobson,
     this.mobileRefractometry,
+    this.refractionPrescription,
     required this.overallStatus,
     required this.recommendation,
     this.pdfUrl,
@@ -121,6 +124,9 @@ class TestResultModel {
       mobileRefractometry: data['mobileRefractometry'] != null
           ? MobileRefractometryResult.fromMap(data['mobileRefractometry'])
           : null,
+      refractionPrescription: data['refractionPrescription'] != null
+          ? RefractionPrescriptionModel.fromMap(data['refractionPrescription'])
+          : null,
       overallStatus: TestStatus.values.firstWhere(
         (s) => s.name == data['overallStatus'],
         orElse: () => TestStatus.normal,
@@ -154,6 +160,7 @@ class TestResultModel {
       'amslerGridLeft': amslerGridLeft?.toMap(),
       'pelliRobson': pelliRobson?.toMap(),
       'mobileRefractometry': mobileRefractometry?.toMap(),
+      'refractionPrescription': refractionPrescription?.toMap(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,
@@ -180,6 +187,7 @@ class TestResultModel {
       'amslerGridLeft': amslerGridLeft?.toMap(),
       'pelliRobson': pelliRobson?.toMap(),
       'mobileRefractometry': mobileRefractometry?.toMap(),
+      'refractionPrescription': refractionPrescription?.toMap(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,
@@ -295,6 +303,7 @@ class TestResultModel {
     AmslerGridResult? amslerGridLeft,
     PelliRobsonResult? pelliRobson,
     MobileRefractometryResult? mobileRefractometry,
+    RefractionPrescriptionModel? refractionPrescription,
     TestStatus? overallStatus,
     String? recommendation,
     String? pdfUrl,
@@ -320,6 +329,8 @@ class TestResultModel {
       amslerGridLeft: amslerGridLeft ?? this.amslerGridLeft,
       pelliRobson: pelliRobson ?? this.pelliRobson,
       mobileRefractometry: mobileRefractometry ?? this.mobileRefractometry,
+      refractionPrescription:
+          refractionPrescription ?? this.refractionPrescription,
       overallStatus: overallStatus ?? this.overallStatus,
       recommendation: recommendation ?? this.recommendation,
       pdfUrl: pdfUrl ?? this.pdfUrl,

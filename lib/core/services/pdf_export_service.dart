@@ -14,6 +14,7 @@ import '../../data/models/amsler_grid_result.dart';
 import '../../data/models/color_vision_result.dart';
 import '../../data/models/mobile_refractometry_result.dart';
 import '../../data/models/pelli_robson_result.dart';
+import '../../data/models/refraction_prescription_model.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -254,6 +255,13 @@ class PdfExportService {
           if (result.mobileRefractometry != null) ...[
             _buildMobileRefractometryDetailedSection(result),
             pw.SizedBox(height: 16),
+
+            // NEW: Add Refraction Prescription section if available and enabled
+            if (result.refractionPrescription != null &&
+                result.refractionPrescription!.includeInResults) ...[
+              _buildRefractionPrescriptionSection(result),
+              pw.SizedBox(height: 16),
+            ],
           ],
 
           // Overall Assessment
@@ -2086,5 +2094,200 @@ class PdfExportService {
 
     debugPrint('[PdfExportService] ⚠️ No image bytes available');
     return null;
+  }
+
+  pw.Widget _buildRefractionPrescriptionSection(TestResultModel result) {
+    if (result.refractionPrescription == null) return pw.SizedBox();
+    final prescription = result.refractionPrescription!;
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(12),
+        border: pw.Border.all(color: PdfColors.grey200, width: 1),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'SUBJECTIVE REFRACTION \u0026 PRESCRIPTION',
+            style: pw.TextStyle(
+              fontSize: 10,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromInt(0xFF1A237E), // Deep Blue
+            ),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'Verified by Practitioner: ${prescription.practitionerName}',
+            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+          ),
+          pw.SizedBox(height: 16),
+
+          // Subjective Tables
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: _buildSubjectiveTable(
+                  'RIGHT EYE (OD)',
+                  prescription.rightEyeSubjective,
+                  PdfColor.fromInt(0xFF1565C0), // Blue
+                ),
+              ),
+              pw.SizedBox(width: 16),
+              pw.Expanded(
+                child: _buildSubjectiveTable(
+                  'LEFT EYE (OS)',
+                  prescription.leftEyeSubjective,
+                  PdfColor.fromInt(0xFF00695C), // Teal
+                ),
+              ),
+            ],
+          ),
+
+          pw.SizedBox(height: 24),
+
+          // Final Prescription Title
+          pw.Text(
+            'FINAL PRESCRIPTION (Rx)',
+            style: pw.TextStyle(
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.black,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+
+          // Final Rx Table
+          _buildFinalRxTable(prescription.finalPrescription),
+
+          pw.SizedBox(height: 12),
+          pw.Text(
+            'The above prescription is based on subjective refraction and clinical assessment. Please consult your optometrist for fitting.',
+            style: pw.TextStyle(
+              fontSize: 7,
+              color: PdfColors.grey500,
+              fontStyle: pw.FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildSubjectiveTable(
+    String title,
+    SubjectiveRefractionData data,
+    PdfColor color,
+  ) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: pw.BoxDecoration(
+            color: color,
+            borderRadius: const pw.BorderRadius.only(
+              topLeft: pw.Radius.circular(4),
+              topRight: pw.Radius.circular(4),
+            ),
+          ),
+          child: pw.Text(
+            title,
+            style: pw.TextStyle(
+              color: PdfColors.white,
+              fontSize: 7,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ),
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+          children: [
+            pw.TableRow(
+              decoration: pw.BoxDecoration(color: PdfColors.grey100),
+              children: [
+                _buildPdfTableCell('SPH', isHeader: true),
+                _buildPdfTableCell('CYL', isHeader: true),
+                _buildPdfTableCell('AXIS', isHeader: true),
+                _buildPdfTableCell('VN', isHeader: true),
+                if (data.prism != '0.00' && data.prism.isNotEmpty)
+                  _buildPdfTableCell('PRISM', isHeader: true),
+                if (data.add != '0.00' && data.add.isNotEmpty)
+                  _buildPdfTableCell('ADD', isHeader: true),
+              ],
+            ),
+            pw.TableRow(
+              children: [
+                _buildPdfTableCell(data.sph),
+                _buildPdfTableCell(data.cyl),
+                _buildPdfTableCell(data.axis),
+                _buildPdfTableCell(data.vn),
+                if (data.prism != '0.00' && data.prism.isNotEmpty)
+                  _buildPdfTableCell(data.prism),
+                if (data.add != '0.00' && data.add.isNotEmpty)
+                  _buildPdfTableCell(data.add),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildFinalRxTable(FinalPrescriptionData data) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+      children: [
+        pw.TableRow(
+          decoration: pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            _buildPdfTableCell('EYE', isHeader: true),
+            _buildPdfTableCell('SPH', isHeader: true),
+            _buildPdfTableCell('CYL', isHeader: true),
+            _buildPdfTableCell('AXIS', isHeader: true),
+            _buildPdfTableCell('VN', isHeader: true),
+            _buildPdfTableCell('ADD', isHeader: true),
+          ],
+        ),
+        pw.TableRow(
+          children: [
+            _buildPdfTableCell('R (OD)', isHeader: true),
+            _buildPdfTableCell(data.right.sph),
+            _buildPdfTableCell(data.right.cyl),
+            _buildPdfTableCell(data.right.axis),
+            _buildPdfTableCell(data.right.vn),
+            _buildPdfTableCell(data.right.add),
+          ],
+        ),
+        pw.TableRow(
+          children: [
+            _buildPdfTableCell('L (OS)', isHeader: true),
+            _buildPdfTableCell(data.left.sph),
+            _buildPdfTableCell(data.left.cyl),
+            _buildPdfTableCell(data.left.axis),
+            _buildPdfTableCell(data.left.vn),
+            _buildPdfTableCell(data.left.add),
+          ],
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildPdfTableCell(String text, {bool isHeader = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(4),
+      child: pw.Center(
+        child: pw.Text(
+          text,
+          style: pw.TextStyle(
+            fontSize: 7,
+            fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+          ),
+        ),
+      ),
+    );
   }
 }

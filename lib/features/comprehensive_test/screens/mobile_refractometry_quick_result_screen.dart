@@ -1,12 +1,176 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/utils/navigation_utils.dart';
-import '../../../../data/models/mobile_refractometry_result.dart';
-import '../../../../data/providers/test_session_provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/navigation_utils.dart';
+import '../../../data/models/mobile_refractometry_result.dart';
+import '../../../data/models/refraction_prescription_model.dart';
+import '../../../data/providers/test_session_provider.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/refraction_prescription_service.dart';
+import '../../../data/models/user_model.dart';
+import '../../practitioner/widgets/refraction_table_widgets.dart';
 
-class MobileRefractometryQuickResultScreen extends StatelessWidget {
+class MobileRefractometryQuickResultScreen extends StatefulWidget {
   const MobileRefractometryQuickResultScreen({super.key});
+
+  @override
+  State<MobileRefractometryQuickResultScreen> createState() =>
+      _MobileRefractometryQuickResultScreenState();
+}
+
+class _MobileRefractometryQuickResultScreenState
+    extends State<MobileRefractometryQuickResultScreen> {
+  final RefractionPrescriptionService _refractionService =
+      RefractionPrescriptionService();
+  final AuthService _authService = AuthService();
+
+  UserRole? _userRole;
+  RefractionPrescriptionModel? _prescription;
+  bool _includeInResults = true;
+  bool _isSaving = false;
+  bool _isSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUserRole();
+  }
+
+  Future<void> _checkUserRole() async {
+    final role = await _authService.getCurrentUserRole();
+    if (mounted) {
+      setState(() {
+        _userRole = role;
+        if (role == UserRole.examiner) {
+          _initializePrescription();
+        }
+      });
+    }
+  }
+
+  void _initializePrescription() {
+    final provider = context.read<TestSessionProvider>();
+    final result = provider.mobileRefractometry;
+    if (result != null) {
+      final currentUser = _authService.currentUser;
+      if (currentUser != null) {
+        _authService.getUserData(currentUser.uid).then((user) {
+          if (mounted && user != null) {
+            setState(() {
+              _prescription = _refractionService.createInitialPrescription(
+                result,
+                user.id,
+                user.fullName,
+              );
+            });
+          }
+        });
+      }
+    }
+  }
+
+  void _onRightEyeChanged(SubjectiveRefractionData data) {
+    if (_prescription != null) {
+      setState(() {
+        _prescription = _prescription!.copyWith(
+          rightEyeSubjective: data,
+          hasManualEdits: true,
+        );
+        _isSaved = false;
+      });
+      if (_includeInResults) {
+        _savePrescription(true);
+      }
+    }
+  }
+
+  void _onLeftEyeChanged(SubjectiveRefractionData data) {
+    if (_prescription != null) {
+      setState(() {
+        _prescription = _prescription!.copyWith(
+          leftEyeSubjective: data,
+          hasManualEdits: true,
+        );
+        _isSaved = false;
+      });
+      if (_includeInResults) {
+        _savePrescription(true);
+      }
+    }
+  }
+
+  void _onFinalPrescriptionChanged(FinalPrescriptionData data) {
+    if (_prescription != null) {
+      setState(() {
+        _prescription = _prescription!.copyWith(
+          finalPrescription: data,
+          hasManualEdits: true,
+        );
+        _isSaved = false;
+      });
+      if (_includeInResults) {
+        _savePrescription(true);
+      }
+    }
+  }
+
+  Future<void> _savePrescription(bool include) async {
+    if (_prescription == null) return;
+
+    setState(() {
+      _isSaving = true;
+      _includeInResults = include;
+    });
+
+    try {
+      final currentUser = _authService.currentUser;
+      final provider = context.read<TestSessionProvider>();
+      final testResultId = provider.currentTestId;
+
+      if (currentUser != null && testResultId != null) {
+        // Update prescription with accuracy metrics
+        final updatedPrescription = _refractionService
+            .updateWithManualEdits(
+              _prescription!,
+              _prescription!.rightEyeSubjective,
+              _prescription!.leftEyeSubjective,
+            )
+            .copyWith(includeInResults: _includeInResults);
+
+        await _refractionService.savePrescriptionToFirebase(
+          currentUser.uid,
+          testResultId,
+          updatedPrescription,
+        );
+
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+            _isSaved = true;
+            _prescription = updatedPrescription;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Prescription saved successfully'),
+              backgroundColor: AppColors.success,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving prescription: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +231,13 @@ class MobileRefractometryQuickResultScreen extends StatelessWidget {
 
             const SizedBox(height: 32),
             _buildClinicalInsights(result),
+
+            // Practitioner-only prescription section
+            if (_userRole == UserRole.examiner && _prescription != null) ...[
+              const SizedBox(height: 32),
+              _buildPractitionerPrescriptionSection(result),
+            ],
+
             const SizedBox(height: 48),
 
             _buildActionButtons(context),
@@ -374,21 +545,150 @@ class MobileRefractometryQuickResultScreen extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        TextButton(
-          onPressed: () => NavigationUtils.navigateHome(context),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-          ),
-          child: Text(
-            'Done',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
+      ],
+    );
+  }
+
+  Widget _buildPractitionerPrescriptionSection(
+    MobileRefractometryResult result,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 12,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Prescription Details (Suggested)',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Auto-calculated suggestions - Review required',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.warningDark,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Save Prescription',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                if (_isSaving)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8.0),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else ...[
+                  if (_isSaved)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8.0),
+                      child: Icon(
+                        Icons.check_circle,
+                        color: AppColors.success,
+                        size: 18,
+                      ),
+                    ),
+                  Checkbox(
+                    value: _includeInResults,
+                    activeColor: AppColors.primary,
+                    onChanged: (val) {
+                      _savePrescription(val ?? true);
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
+          ),
+          child: const Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.warning,
+                size: 20,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Please verify and adjust all values before saving. At least one change is required to enable saving.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.warningDark,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+        const SizedBox(height: 24),
+        if (result.rightEye != null)
+          RefractionTableWidget(
+            title: 'Subjective Refraction - Right Eye',
+            initialData: _prescription!.rightEyeSubjective,
+            onDataChanged: _onRightEyeChanged,
+          ),
+        if (result.leftEye != null)
+          RefractionTableWidget(
+            title: 'Subjective Refraction - Left Eye',
+            initialData: _prescription!.leftEyeSubjective,
+            onDataChanged: _onLeftEyeChanged,
+          ),
+        FinalPrescriptionTableWidget(
+          initialData: _prescription!.finalPrescription,
+          onDataChanged: _onFinalPrescriptionChanged,
+        ),
+        const SizedBox(height: 32),
+        if (_isSaved)
+          const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle, color: AppColors.success, size: 16),
+                  SizedBox(width: 8),
+                  Text(
+                    'All changes saved to result',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -404,8 +704,14 @@ class MobileRefractometryQuickResultScreen extends StatelessWidget {
 
     final rSph = double.tryParse(result.rightEye?.sphere ?? '0') ?? 0;
     final lSph = double.tryParse(result.leftEye?.sphere ?? '0') ?? 0;
+    final rCyl = double.tryParse(result.rightEye?.cylinder ?? '0') ?? 0;
+    final lCyl = double.tryParse(result.leftEye?.cylinder ?? '0') ?? 0;
 
-    if (rSph.abs() > 3.0 || lSph.abs() > 3.0) {
+    // High values or high astigmatism
+    if (rSph.abs() > 3.0 ||
+        lSph.abs() > 3.0 ||
+        rCyl.abs() > 2.0 ||
+        lCyl.abs() > 2.0) {
       return {
         'label': 'Review Needed',
         'color': AppColors.warning,
@@ -413,10 +719,26 @@ class MobileRefractometryQuickResultScreen extends StatelessWidget {
       };
     }
 
+    // Check if vision is within "Normal" range (minimal refraction)
+    final isNormal =
+        rSph.abs() <= 0.25 &&
+        lSph.abs() <= 0.25 &&
+        rCyl.abs() <= 0.5 &&
+        lCyl.abs() <= 0.5;
+
+    if (isNormal) {
+      return {
+        'label': 'Normal Vision',
+        'color': AppColors.success,
+        'icon': Icons.check_circle_rounded,
+      };
+    }
+
+    // Detected some level of refraction (Myopia, Hyperopia, etc.)
     return {
-      'label': 'Normal Vision',
-      'color': AppColors.success,
-      'icon': Icons.check_circle_rounded,
+      'label': 'Refraction Detected',
+      'color': AppColors.primary,
+      'icon': Icons.visibility_outlined,
     };
   }
 

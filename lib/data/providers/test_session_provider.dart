@@ -44,6 +44,7 @@ class TestSessionProvider extends ChangeNotifier {
   bool _isComprehensiveTest = false;
 
   bool _shouldShowReviewDialog = false;
+  String? _currentTestId;
 
   // Getters
   String get profileType => _profileType;
@@ -66,6 +67,7 @@ class TestSessionProvider extends ChangeNotifier {
   bool get isComprehensiveTest => _isComprehensiveTest;
   bool get shouldShowReviewDialog => _shouldShowReviewDialog;
   String? get profileSex => _profileSex;
+  String? get currentTestId => _currentTestId;
 
   /// Set profile for self-testing
   void selectSelfProfile(
@@ -235,6 +237,7 @@ class TestSessionProvider extends ChangeNotifier {
     // ✅ CRITICAL FIX: Generate unique ID based on timestamp to ensure
     // each test's Amsler images are stored separately in AWS S3
     final uniqueId = DateTime.now().millisecondsSinceEpoch.toString();
+    _currentTestId = uniqueId;
 
     final result = TestResultModel(
       id: uniqueId, // Unique ID for AWS S3 image naming
@@ -278,6 +281,7 @@ class TestSessionProvider extends ChangeNotifier {
     _isTestInProgress = false;
     _testStartTime = null;
     _isComprehensiveTest = false;
+    _currentTestId = null;
 
     notifyListeners();
   }
