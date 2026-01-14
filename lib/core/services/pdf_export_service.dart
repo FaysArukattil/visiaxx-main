@@ -211,31 +211,31 @@ class PdfExportService {
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(40),
+        margin: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 30),
         header: (context) => _buildHeader(context, result.profileName),
         footer: (context) => _buildFooter(context),
         build: (context) => [
           // Title Section
           _buildTitleSection(result, result.profileName, result.profileAge),
-          pw.SizedBox(height: 16),
+          pw.SizedBox(height: 12),
 
           // Executive Summary
           _buildExecutiveSummary(result),
-          pw.SizedBox(height: 16),
+          pw.SizedBox(height: 12),
 
           // Visual Acuity Section - DETAILED
           _buildVisualAcuityDetailedSection(result),
-          pw.SizedBox(height: 16),
+          pw.SizedBox(height: 12),
 
           // Short Distance Section - DETAILED
           if (result.shortDistance != null) ...[
             _buildShortDistanceDetailedSection(result),
-            pw.SizedBox(height: 16),
+            pw.SizedBox(height: 12),
           ],
 
           // Color Vision Section - DETAILED
           _buildColorVisionDetailedSection(result),
-          pw.SizedBox(height: 16),
+          pw.SizedBox(height: 12),
 
           // Amsler Grid Section - DETAILED
           _buildAmslerGridDetailedSection(
@@ -243,28 +243,25 @@ class PdfExportService {
             rightImageBytes: amslerRightBytes,
             leftImageBytes: amslerLeftBytes,
           ),
-          pw.SizedBox(height: 16),
+          pw.SizedBox(height: 12),
 
           // Pelli-Robson Contrast Sensitivity Section - DETAILED
           if (result.pelliRobson != null) ...[
             _buildPelliRobsonDetailedSection(result),
-            pw.SizedBox(height: 16),
+            pw.SizedBox(height: 12),
           ],
 
           // Mobile Refractometry Section - DETAILED
           if (result.mobileRefractometry != null) ...[
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                _buildMobileRefractometryDetailedSection(result),
-                if (result.refractionPrescription != null &&
-                    result.refractionPrescription!.includeInResults) ...[
-                  pw.SizedBox(height: 16),
-                  _buildRefractionPrescriptionSection(result),
-                ],
-              ],
-            ),
-            pw.SizedBox(height: 16),
+            _buildMobileRefractometryDetailedSection(result),
+            pw.SizedBox(height: 12),
+          ],
+
+          // Practitioner Prescription Section (if verified)
+          if (result.refractionPrescription != null &&
+              result.refractionPrescription!.includeInResults) ...[
+            _buildRefractionPrescriptionSection(result),
+            pw.SizedBox(height: 12),
           ],
 
           // Overall Assessment
@@ -272,7 +269,7 @@ class PdfExportService {
 
           // Questionnaire
           if (result.questionnaire != null) ...[
-            pw.SizedBox(height: 16),
+            pw.SizedBox(height: 12),
             _buildQuestionnaireSection(result.questionnaire!),
           ],
         ],
@@ -578,126 +575,117 @@ class PdfExportService {
 
   /// VISUAL ACUITY - DETAILED
   pw.Widget _buildVisualAcuityDetailedSection(TestResultModel result) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(12),
-        border: pw.Border.all(color: PdfColors.grey200, width: 1),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('DISTANCE VISION (1 METER)'),
-          pw.SizedBox(height: 16),
-
-          // Custom styled table
-          pw.Container(
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Table(
-              columnWidths: {
-                0: const pw.FlexColumnWidth(1.2),
-                1: const pw.FlexColumnWidth(1),
-                2: const pw.FlexColumnWidth(1),
-                3: const pw.FlexColumnWidth(2),
-              },
-              children: [
-                pw.TableRow(
-                  decoration: const pw.BoxDecoration(color: PdfColors.blue50),
-                  children: [
-                    _buildTableCell('EYE', isHeader: true),
-                    _buildTableCell('SNELLEN', isHeader: true),
-                    _buildTableCell('ACCURACY', isHeader: true),
-                    _buildTableCell('INTERPRETATION', isHeader: true),
-                  ],
-                ),
-                // Right Eye
-                pw.TableRow(
-                  children: [
-                    _buildTableCell('Right Eye'),
-                    _buildTableCell(
-                      result.visualAcuityRight?.snellenScore ?? 'N/A',
-                      color: _getScoreColor(
-                        result.visualAcuityRight?.snellenScore,
-                      ),
-                    ),
-                    _buildTableCell(
-                      '${result.visualAcuityRight?.correctResponses ?? 0}/${result.visualAcuityRight?.totalResponses ?? 0}',
-                    ),
-                    _buildTableCell(
-                      _getVAInterpretation(result.visualAcuityRight?.logMAR),
-                    ),
-                  ],
-                ),
-                // Left Eye
-                pw.TableRow(
-                  children: [
-                    _buildTableCell('Left Eye'),
-                    _buildTableCell(
-                      result.visualAcuityLeft?.snellenScore ?? 'N/A',
-                      color: _getScoreColor(
-                        result.visualAcuityLeft?.snellenScore,
-                      ),
-                    ),
-                    _buildTableCell(
-                      '${result.visualAcuityLeft?.correctResponses ?? 0}/${result.visualAcuityLeft?.totalResponses ?? 0}',
-                    ),
-                    _buildTableCell(
-                      _getVAInterpretation(result.visualAcuityLeft?.logMAR),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Divider(color: PdfColors.grey200, thickness: 0.5),
+        pw.SizedBox(height: 8),
+        _buildSectionHeader('DISTANCE VISION (1 METER)'),
+        pw.SizedBox(height: 8),
+        pw.Container(
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
+            borderRadius: pw.BorderRadius.circular(4),
           ),
-
-          pw.SizedBox(height: 12),
-          // Interpretation Footer
-          pw.Container(
-            padding: const pw.EdgeInsets.all(10),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.grey50,
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Clinical Finding:',
-                  style: pw.TextStyle(
-                    fontSize: 9,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blue900,
+          child: pw.Table(
+            columnWidths: {
+              0: const pw.FlexColumnWidth(1.2),
+              1: const pw.FlexColumnWidth(1),
+              2: const pw.FlexColumnWidth(1),
+              3: const pw.FlexColumnWidth(2),
+            },
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.blue50),
+                children: [
+                  _buildTableCell('EYE', isHeader: true),
+                  _buildTableCell('SNELLEN', isHeader: true),
+                  _buildTableCell('ACCURACY', isHeader: true),
+                  _buildTableCell('INTERPRETATION', isHeader: true),
+                ],
+              ),
+              // Right Eye
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Right Eye'),
+                  _buildTableCell(
+                    result.visualAcuityRight?.snellenScore ?? 'N/A',
+                    color: _getScoreColor(
+                      result.visualAcuityRight?.snellenScore,
+                    ),
                   ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  _getAcuityClinicalExplanation(
-                    result.visualAcuityRight?.snellenScore,
-                    result.visualAcuityLeft?.snellenScore,
+                  _buildTableCell(
+                    '${result.visualAcuityRight?.correctResponses ?? 0}/${result.visualAcuityRight?.totalResponses ?? 0}',
                   ),
-                  style: const pw.TextStyle(
-                    fontSize: 8,
-                    color: PdfColors.grey700,
+                  _buildTableCell(
+                    _getVAInterpretation(result.visualAcuityRight?.logMAR),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+              // Left Eye
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Left Eye'),
+                  _buildTableCell(
+                    result.visualAcuityLeft?.snellenScore ?? 'N/A',
+                    color: _getScoreColor(
+                      result.visualAcuityLeft?.snellenScore,
+                    ),
+                  ),
+                  _buildTableCell(
+                    '${result.visualAcuityLeft?.correctResponses ?? 0}/${result.visualAcuityLeft?.totalResponses ?? 0}',
+                  ),
+                  _buildTableCell(
+                    _getVAInterpretation(result.visualAcuityLeft?.logMAR),
+                  ),
+                ],
+              ),
+            ],
           ),
-          pw.SizedBox(height: 8),
-          pw.Text(
-            'Note: Measured using the Tumbling E optotype chart at 1-meter distance. Normal adult vision is 6/6.',
-            style: pw.TextStyle(
-              fontSize: 7,
-              color: PdfColors.grey500,
-              fontStyle: pw.FontStyle.italic,
-            ),
+        ),
+        pw.SizedBox(height: 12),
+        // Interpretation Footer
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey50,
+            borderRadius: pw.BorderRadius.circular(6),
           ),
-        ],
-      ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Clinical Finding:',
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue900,
+                ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                _getAcuityClinicalExplanation(
+                  result.visualAcuityRight?.snellenScore,
+                  result.visualAcuityLeft?.snellenScore,
+                ),
+                style: const pw.TextStyle(
+                  fontSize: 8,
+                  color: PdfColors.grey700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Note: Measured using the Tumbling E optotype chart at 1-meter distance. Normal adult vision is 6/6.',
+          style: pw.TextStyle(
+            fontSize: 7,
+            color: PdfColors.grey500,
+            fontStyle: pw.FontStyle.italic,
+          ),
+        ),
+      ],
     );
   }
 
@@ -733,145 +721,137 @@ class PdfExportService {
     if (result.shortDistance == null) return pw.SizedBox();
     final sd = result.shortDistance!;
 
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(12),
-        border: pw.Border.all(color: PdfColors.grey200, width: 1),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('NEAR VISION (READING)'),
-          pw.SizedBox(height: 16),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Divider(color: PdfColors.grey200, thickness: 0.5),
+        pw.SizedBox(height: 8),
+        _buildSectionHeader('NEAR VISION (READING)'),
+        pw.SizedBox(height: 8),
 
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.blue50,
-              borderRadius: pw.BorderRadius.circular(8),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'PERFORMANCE SUMMARY',
-                      style: pw.TextStyle(
-                        fontSize: 7,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue800,
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      _getReadingPerformance(
-                        sd.averageSimilarity,
-                      ).toUpperCase(),
-                      style: pw.TextStyle(
-                        fontSize: 10,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue900,
-                      ),
-                    ),
-                  ],
-                ),
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
-                  children: [
-                    pw.Text(
-                      'BEST ACUITY',
-                      style: pw.TextStyle(
-                        fontSize: 7,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue800,
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      sd.bestAcuity,
-                      style: pw.TextStyle(
-                        fontSize: 10,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue900,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.blue50,
+            borderRadius: pw.BorderRadius.circular(8),
           ),
-          pw.SizedBox(height: 12),
-
-          pw.Row(
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Expanded(
-                child: _buildMetricIndicator(
-                  'Accuracy',
-                  '${(sd.accuracy * 100).toStringAsFixed(0)}%',
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'PERFORMANCE SUMMARY',
+                    style: pw.TextStyle(
+                      fontSize: 7,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue800,
+                    ),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    _getReadingPerformance(sd.averageSimilarity).toUpperCase(),
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue900,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'BEST ACUITY',
+                    style: pw.TextStyle(
+                      fontSize: 7,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue800,
+                    ),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    sd.bestAcuity,
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue900,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 12),
+
+        pw.Row(
+          children: [
+            pw.Expanded(
+              child: _buildMetricIndicator(
+                'Accuracy',
+                '${(sd.accuracy * 100).toStringAsFixed(0)}%',
+              ),
+            ),
+            pw.SizedBox(width: 8),
+            pw.Expanded(
+              child: _buildMetricIndicator(
+                'Sentences',
+                '${sd.correctSentences}/${sd.totalSentences}',
+              ),
+            ),
+            pw.SizedBox(width: 8),
+            pw.Expanded(
+              child: _buildMetricIndicator(
+                'Match Qual.',
+                '${sd.averageSimilarity.toStringAsFixed(0)}%',
+              ),
+            ),
+          ],
+        ),
+
+        pw.SizedBox(height: 12),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey50,
+            borderRadius: pw.BorderRadius.circular(6),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Clinical Detail:',
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue900,
                 ),
               ),
-              pw.SizedBox(width: 8),
-              pw.Expanded(
-                child: _buildMetricIndicator(
-                  'Sentences',
-                  '${sd.correctSentences}/${sd.totalSentences}',
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Expanded(
-                child: _buildMetricIndicator(
-                  'Match Qual.',
-                  '${sd.averageSimilarity.toStringAsFixed(0)}%',
+              pw.Text(
+                sd.isNormal
+                    ? 'Normal performance. User is able to read and understand text at standard near distances.'
+                    : 'Review recommended. Some difficulty in reading or lower accuracy detected at near distance.',
+                style: const pw.TextStyle(
+                  fontSize: 8,
+                  color: PdfColors.grey700,
                 ),
               ),
             ],
           ),
-
-          pw.SizedBox(height: 12),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(10),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.grey50,
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Clinical Detail:',
-                  style: pw.TextStyle(
-                    fontSize: 8,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blue900,
-                  ),
-                ),
-                pw.Text(
-                  sd.isNormal
-                      ? 'Normal performance. User is able to read and understand text at standard near distances.'
-                      : 'Review recommended. Some difficulty in reading or lower accuracy detected at near distance.',
-                  style: const pw.TextStyle(
-                    fontSize: 8,
-                    color: PdfColors.grey700,
-                  ),
-                ),
-              ],
-            ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Note: Near vision (reading) test performed at a standard reading distance (approx. 40cm).',
+          style: pw.TextStyle(
+            fontSize: 7,
+            color: PdfColors.grey500,
+            fontStyle: pw.FontStyle.italic,
           ),
-          pw.SizedBox(height: 8),
-          pw.Text(
-            'Note: Near vision (reading) test performed at a standard reading distance (approx. 40cm).',
-            style: pw.TextStyle(
-              fontSize: 7,
-              color: PdfColors.grey500,
-              fontStyle: pw.FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -919,144 +899,138 @@ class PdfExportService {
     final cv = result.colorVision;
     if (cv == null) return pw.SizedBox();
 
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(12),
-        border: pw.Border.all(color: PdfColors.grey200, width: 1),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('COLOR VISION ASSESSMENT'),
-          pw.SizedBox(height: 16),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Divider(color: PdfColors.grey200, thickness: 0.5),
+        pw.SizedBox(height: 8),
+        _buildSectionHeader('COLOR VISION ASSESSMENT'),
+        pw.SizedBox(height: 8),
 
-          pw.Container(
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Table(
-              columnWidths: {
-                0: const pw.FlexColumnWidth(1),
-                1: const pw.FlexColumnWidth(1),
-                2: const pw.FlexColumnWidth(2),
-              },
-              children: [
-                pw.TableRow(
-                  decoration: const pw.BoxDecoration(color: PdfColors.blue50),
-                  children: [
-                    _buildTableCell('EYE', isHeader: true),
-                    _buildTableCell('SCORE', isHeader: true),
-                    _buildTableCell('STATUS', isHeader: true),
-                  ],
-                ),
-                // Right Eye
-                pw.TableRow(
-                  children: [
-                    _buildTableCell('Right Eye'),
-                    _buildTableCell(
-                      '${cv.rightEye.correctAnswers}/${cv.rightEye.totalDiagnosticPlates}',
-                    ),
-                    _buildTableCell(
-                      cv.rightEye.status.displayName,
-                      color: cv.rightEye.status == ColorVisionStatus.normal
-                          ? PdfColors.green800
-                          : PdfColors.orange800,
-                    ),
-                  ],
-                ),
-                // Left Eye
-                pw.TableRow(
-                  children: [
-                    _buildTableCell('Left Eye'),
-                    _buildTableCell(
-                      '${cv.leftEye.correctAnswers}/${cv.leftEye.totalDiagnosticPlates}',
-                    ),
-                    _buildTableCell(
-                      cv.leftEye.status.displayName,
-                      color: cv.leftEye.status == ColorVisionStatus.normal
-                          ? PdfColors.green800
-                          : PdfColors.orange800,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+        pw.Container(
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
+            borderRadius: pw.BorderRadius.circular(6),
           ),
-          pw.SizedBox(height: 12),
-
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: cv.isNormal
-                  ? PdfColor.fromInt(0xFFE8F5E9)
-                  : PdfColor.fromInt(0xFFFFF3E0),
-              borderRadius: pw.BorderRadius.circular(8),
-            ),
-            child: pw.Row(
-              children: [
-                pw.Expanded(
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'General Finding:',
-                        style: pw.TextStyle(
-                          fontSize: 10,
-                          fontWeight: pw.FontWeight.bold,
-                          color: cv.isNormal
-                              ? PdfColors.green900
-                              : PdfColors.orange900,
-                        ),
-                      ),
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        cv.isNormal
-                            ? 'The patient demonstrates normal color perception across the tested red-green spectrum.'
-                            : '${cv.deficiencyType.displayName} - ${cv.severity.displayName} deficiency indicated.',
-                        style: pw.TextStyle(
-                          fontSize: 9,
-                          color: cv.isNormal
-                              ? PdfColors.green800
-                              : PdfColors.orange900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (!cv.isNormal) ...[
-            pw.SizedBox(height: 8),
-            pw.Text(
-              'Detailed Clinical Explanation:',
-              style: pw.TextStyle(
-                fontSize: 8,
-                fontWeight: pw.FontWeight.bold,
-                color: PdfColors.grey700,
+          child: pw.Table(
+            columnWidths: {
+              0: const pw.FlexColumnWidth(1),
+              1: const pw.FlexColumnWidth(1),
+              2: const pw.FlexColumnWidth(2),
+            },
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.blue50),
+                children: [
+                  _buildTableCell('EYE', isHeader: true),
+                  _buildTableCell('SCORE', isHeader: true),
+                  _buildTableCell('STATUS', isHeader: true),
+                ],
               ),
-            ),
-            pw.Text(
-              _getColorVisionExplanation(cv.deficiencyType, cv.severity),
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
-            ),
-          ],
+              // Right Eye
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Right Eye'),
+                  _buildTableCell(
+                    '${cv.rightEye.correctAnswers}/${cv.rightEye.totalDiagnosticPlates}',
+                  ),
+                  _buildTableCell(
+                    cv.rightEye.status.displayName,
+                    color: cv.rightEye.status == ColorVisionStatus.normal
+                        ? PdfColors.green800
+                        : PdfColors.orange800,
+                  ),
+                ],
+              ),
+              // Left Eye
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Left Eye'),
+                  _buildTableCell(
+                    '${cv.leftEye.correctAnswers}/${cv.leftEye.totalDiagnosticPlates}',
+                  ),
+                  _buildTableCell(
+                    cv.leftEye.status.displayName,
+                    color: cv.leftEye.status == ColorVisionStatus.normal
+                        ? PdfColors.green800
+                        : PdfColors.orange800,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 12),
 
-          pw.SizedBox(height: 12),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            color: cv.isNormal
+                ? PdfColor.fromInt(0xFFE8F5E9)
+                : PdfColor.fromInt(0xFFFFF3E0),
+            borderRadius: pw.BorderRadius.circular(8),
+          ),
+          child: pw.Row(
+            children: [
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'General Finding:',
+                      style: pw.TextStyle(
+                        fontSize: 10,
+                        fontWeight: pw.FontWeight.bold,
+                        color: cv.isNormal
+                            ? PdfColors.green900
+                            : PdfColors.orange900,
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      cv.isNormal
+                          ? 'The patient demonstrates normal color perception across the tested red-green spectrum.'
+                          : '${cv.deficiencyType.displayName} - ${cv.severity.displayName} deficiency indicated.',
+                      style: pw.TextStyle(
+                        fontSize: 9,
+                        color: cv.isNormal
+                            ? PdfColors.green800
+                            : PdfColors.orange900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        if (!cv.isNormal) ...[
+          pw.SizedBox(height: 8),
           pw.Text(
-            'Note: Based on Ishihara 38-plate screening methodology. A comprehensive diagnostic test by a specialist is required for confirmation.',
+            'Detailed Clinical Explanation:',
             style: pw.TextStyle(
-              fontSize: 7,
-              color: PdfColors.grey500,
-              fontStyle: pw.FontStyle.italic,
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey700,
             ),
+          ),
+          pw.Text(
+            _getColorVisionExplanation(cv.deficiencyType, cv.severity),
+            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
           ),
         ],
-      ),
+
+        pw.SizedBox(height: 12),
+        pw.Text(
+          'Note: Based on Ishihara 38-plate screening methodology. A comprehensive diagnostic test by a specialist is required for confirmation.',
+          style: pw.TextStyle(
+            fontSize: 7,
+            color: PdfColors.grey500,
+            fontStyle: pw.FontStyle.italic,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1088,193 +1062,187 @@ class PdfExportService {
     final right = result.amslerGridRight;
     final left = result.amslerGridLeft;
 
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(12),
-        border: pw.Border.all(color: PdfColors.grey200, width: 1),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('AMSLER GRID (MACULAR ASSESSMENT)'),
-          pw.SizedBox(height: 16),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Divider(color: PdfColors.grey200, thickness: 0.5),
+        pw.SizedBox(height: 8),
+        _buildSectionHeader('AMSLER GRID (MACULAR ASSESSMENT)'),
+        pw.SizedBox(height: 8),
 
-          pw.Container(
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Table(
-              children: [
+        pw.Container(
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
+            borderRadius: pw.BorderRadius.circular(6),
+          ),
+          child: pw.Table(
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.blue50),
+                children: [
+                  _buildTableCell('EYE', isHeader: true),
+                  _buildTableCell('FINDINGS', isHeader: true),
+                  _buildTableCell('STATUS', isHeader: true),
+                  _buildTableCell('CLINICAL INTERPRETATION', isHeader: true),
+                ],
+              ),
+              if (right != null)
                 pw.TableRow(
-                  decoration: const pw.BoxDecoration(color: PdfColors.blue50),
                   children: [
-                    _buildTableCell('EYE', isHeader: true),
-                    _buildTableCell('FINDINGS', isHeader: true),
-                    _buildTableCell('STATUS', isHeader: true),
-                    _buildTableCell('CLINICAL INTERPRETATION', isHeader: true),
+                    _buildTableCell('Right Eye'),
+                    _buildTableCell(right.resultSummary),
+                    _buildTableCell(
+                      right.isNormal ? 'Normal' : 'Abnormal',
+                      color: right.isNormal
+                          ? PdfColors.green800
+                          : PdfColors.red800,
+                    ),
+                    _buildTableCell(_getAmslerInterpretation(right)),
                   ],
                 ),
-                if (right != null)
-                  pw.TableRow(
-                    children: [
-                      _buildTableCell('Right Eye'),
-                      _buildTableCell(right.resultSummary),
-                      _buildTableCell(
-                        right.isNormal ? 'Normal' : 'Abnormal',
-                        color: right.isNormal
-                            ? PdfColors.green800
-                            : PdfColors.red800,
-                      ),
-                      _buildTableCell(_getAmslerInterpretation(right)),
-                    ],
-                  ),
-                if (left != null)
-                  pw.TableRow(
-                    children: [
-                      _buildTableCell('Left Eye'),
-                      _buildTableCell(left.resultSummary),
-                      _buildTableCell(
-                        left.isNormal ? 'Normal' : 'Abnormal',
-                        color: left.isNormal
-                            ? PdfColors.green800
-                            : PdfColors.red800,
-                      ),
-                      _buildTableCell(_getAmslerInterpretation(left)),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-
-          if ((rightImageBytes != null) || (leftImageBytes != null)) ...[
-            pw.SizedBox(height: 20),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-              children: [
-                if (rightImageBytes != null)
-                  pw.Column(
-                    children: [
-                      pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: pw.BoxDecoration(
-                          color: PdfColors.blue50,
-                          borderRadius: pw.BorderRadius.circular(4),
-                        ),
-                        child: pw.Text(
-                          'RIGHT EYE TRACING',
-                          style: pw.TextStyle(
-                            fontSize: 7,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.blue800,
-                          ),
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      pw.Container(
-                        width: 160,
-                        height: 160,
-                        decoration: pw.BoxDecoration(
-                          border: pw.Border.all(color: PdfColors.grey300),
-                          borderRadius: pw.BorderRadius.circular(4),
-                        ),
-                        child: pw.ClipRRect(
-                          horizontalRadius: 4,
-                          verticalRadius: 4,
-                          child: pw.Image(
-                            pw.MemoryImage(rightImageBytes),
-                            fit: pw.BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                if (leftImageBytes != null)
-                  pw.Column(
-                    children: [
-                      pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: pw.BoxDecoration(
-                          color: PdfColors.blue50,
-                          borderRadius: pw.BorderRadius.circular(4),
-                        ),
-                        child: pw.Text(
-                          'LEFT EYE TRACING',
-                          style: pw.TextStyle(
-                            fontSize: 7,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.blue800,
-                          ),
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      pw.Container(
-                        width: 160,
-                        height: 160,
-                        decoration: pw.BoxDecoration(
-                          border: pw.Border.all(color: PdfColors.grey300),
-                          borderRadius: pw.BorderRadius.circular(4),
-                        ),
-                        child: pw.ClipRRect(
-                          horizontalRadius: 4,
-                          verticalRadius: 4,
-                          child: pw.Image(
-                            pw.MemoryImage(leftImageBytes),
-                            fit: pw.BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ],
-
-          pw.SizedBox(height: 16),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.start,
-            children: [
-              pw.Text(
-                'Marking Legend: ',
-                style: pw.TextStyle(
-                  fontSize: 8,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey700,
+              if (left != null)
+                pw.TableRow(
+                  children: [
+                    _buildTableCell('Left Eye'),
+                    _buildTableCell(left.resultSummary),
+                    _buildTableCell(
+                      left.isNormal ? 'Normal' : 'Abnormal',
+                      color: left.isNormal
+                          ? PdfColors.green800
+                          : PdfColors.red800,
+                    ),
+                    _buildTableCell(_getAmslerInterpretation(left)),
+                  ],
                 ),
-              ),
-              _buildPdfLegendItem('Distortion', PdfColors.red),
-              pw.SizedBox(width: 12),
-              _buildPdfLegendItem('Missing Area', PdfColors.orange),
-              pw.SizedBox(width: 12),
-              _buildPdfLegendItem('Blurry Area', PdfColors.blue),
             ],
           ),
-          pw.SizedBox(height: 12),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(10),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.grey50,
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Text(
-              'Clinical Significance: Metamorphopsia (distortion) or Scotoma (vision loss) are indicators of macular issues like ARMD or CSR. Prompt clinical evaluation is advised if markings are present.',
-              style: pw.TextStyle(
-                fontSize: 7,
-                color: PdfColors.grey600,
-                fontStyle: pw.FontStyle.italic,
-              ),
-            ),
+        ),
+
+        if ((rightImageBytes != null) || (leftImageBytes != null)) ...[
+          pw.SizedBox(height: 20),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+            children: [
+              if (rightImageBytes != null)
+                pw.Column(
+                  children: [
+                    pw.Container(
+                      padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.blue50,
+                        borderRadius: pw.BorderRadius.circular(4),
+                      ),
+                      child: pw.Text(
+                        'RIGHT EYE TRACING',
+                        style: pw.TextStyle(
+                          fontSize: 7,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue800,
+                        ),
+                      ),
+                    ),
+                    pw.SizedBox(height: 8),
+                    pw.Container(
+                      width: 160,
+                      height: 160,
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColors.grey300),
+                        borderRadius: pw.BorderRadius.circular(4),
+                      ),
+                      child: pw.ClipRRect(
+                        horizontalRadius: 4,
+                        verticalRadius: 4,
+                        child: pw.Image(
+                          pw.MemoryImage(rightImageBytes),
+                          fit: pw.BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              if (leftImageBytes != null)
+                pw.Column(
+                  children: [
+                    pw.Container(
+                      padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.blue50,
+                        borderRadius: pw.BorderRadius.circular(4),
+                      ),
+                      child: pw.Text(
+                        'LEFT EYE TRACING',
+                        style: pw.TextStyle(
+                          fontSize: 7,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue800,
+                        ),
+                      ),
+                    ),
+                    pw.SizedBox(height: 8),
+                    pw.Container(
+                      width: 160,
+                      height: 160,
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColors.grey300),
+                        borderRadius: pw.BorderRadius.circular(4),
+                      ),
+                      child: pw.ClipRRect(
+                        horizontalRadius: 4,
+                        verticalRadius: 4,
+                        child: pw.Image(
+                          pw.MemoryImage(leftImageBytes),
+                          fit: pw.BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
           ),
         ],
-      ),
+
+        pw.SizedBox(height: 16),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.start,
+          children: [
+            pw.Text(
+              'Marking Legend: ',
+              style: pw.TextStyle(
+                fontSize: 8,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey700,
+              ),
+            ),
+            _buildPdfLegendItem('Distortion', PdfColors.red),
+            pw.SizedBox(width: 12),
+            _buildPdfLegendItem('Missing Area', PdfColors.orange),
+            pw.SizedBox(width: 12),
+            _buildPdfLegendItem('Blurry Area', PdfColors.blue),
+          ],
+        ),
+        pw.SizedBox(height: 12),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey50,
+            borderRadius: pw.BorderRadius.circular(6),
+          ),
+          child: pw.Text(
+            'Clinical Significance: Metamorphopsia (distortion) or Scotoma (vision loss) are indicators of macular issues like ARMD or CSR. Prompt clinical evaluation is advised if markings are present.',
+            style: pw.TextStyle(
+              fontSize: 7,
+              color: PdfColors.grey600,
+              fontStyle: pw.FontStyle.italic,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1283,243 +1251,237 @@ class PdfExportService {
     if (result.pelliRobson == null) return pw.SizedBox();
     final PelliRobsonResult pr = result.pelliRobson!;
 
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(12),
-        border: pw.Border.all(color: PdfColors.grey200, width: 1),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('CONTRAST SENSITIVITY (PELLI-ROBSON)'),
-          pw.SizedBox(height: 16),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Divider(color: PdfColors.grey200, thickness: 0.5),
+        pw.SizedBox(height: 8),
+        _buildSectionHeader('CONTRAST SENSITIVITY (PELLI-ROBSON)'),
+        pw.SizedBox(height: 8),
 
-          pw.Container(
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Table(
-              columnWidths: {
-                0: const pw.FlexColumnWidth(1),
-                1: const pw.FlexColumnWidth(1),
-                2: const pw.FlexColumnWidth(1),
-                3: const pw.FlexColumnWidth(2),
-              },
-              children: [
-                pw.TableRow(
-                  decoration: const pw.BoxDecoration(color: PdfColors.blue50),
-                  children: [
-                    _buildTableCell('EYE', isHeader: true),
-                    _buildTableCell('NEAR (40CM)', isHeader: true),
-                    _buildTableCell('DIST (1M)', isHeader: true),
-                    _buildTableCell('FINDING', isHeader: true),
-                  ],
-                ),
-                // Right Eye
-                if (pr.rightEye != null)
-                  (() {
-                    final re = pr.rightEye!;
-                    return pw.TableRow(
-                      children: [
-                        _buildTableCell('Right Eye'),
-                        _buildTableCell(
-                          re.shortDistance != null
-                              ? '${re.shortDistance!.adjustedScore.toStringAsFixed(2)} LogCS'
-                              : 'N/A',
-                        ),
-                        _buildTableCell(
-                          re.longDistance != null
-                              ? '${re.longDistance!.adjustedScore.toStringAsFixed(2)} LogCS'
-                              : 'N/A',
-                        ),
-                        _buildTableCell(
-                          re.longDistance != null
-                              ? _getPelliRobsonInterpretation(
-                                  re.longDistance!.adjustedScore,
-                                )
-                              : (re.shortDistance != null
-                                    ? _getPelliRobsonInterpretation(
-                                        re.shortDistance!.adjustedScore,
-                                      )
-                                    : 'N/A'),
-                        ),
-                      ],
-                    );
-                  })(),
-                // Left Eye
-                if (pr.leftEye != null)
-                  (() {
-                    final le = pr.leftEye!;
-                    return pw.TableRow(
-                      children: [
-                        _buildTableCell('Left Eye'),
-                        _buildTableCell(
-                          le.shortDistance != null
-                              ? '${le.shortDistance!.adjustedScore.toStringAsFixed(2)} LogCS'
-                              : 'N/A',
-                        ),
-                        _buildTableCell(
-                          le.longDistance != null
-                              ? '${le.longDistance!.adjustedScore.toStringAsFixed(2)} LogCS'
-                              : 'N/A',
-                        ),
-                        _buildTableCell(
-                          le.longDistance != null
-                              ? _getPelliRobsonInterpretation(
-                                  le.longDistance!.adjustedScore,
-                                )
-                              : (le.shortDistance != null
-                                    ? _getPelliRobsonInterpretation(
-                                        le.shortDistance!.adjustedScore,
-                                      )
-                                    : 'N/A'),
-                        ),
-                      ],
-                    );
-                  })(),
-              ],
-            ),
+        pw.Container(
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
+            borderRadius: pw.BorderRadius.circular(6),
           ),
+          child: pw.Table(
+            columnWidths: {
+              0: const pw.FlexColumnWidth(1),
+              1: const pw.FlexColumnWidth(1),
+              2: const pw.FlexColumnWidth(1),
+              3: const pw.FlexColumnWidth(2),
+            },
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.blue50),
+                children: [
+                  _buildTableCell('EYE', isHeader: true),
+                  _buildTableCell('NEAR (40CM)', isHeader: true),
+                  _buildTableCell('DIST (1M)', isHeader: true),
+                  _buildTableCell('FINDING', isHeader: true),
+                ],
+              ),
+              // Right Eye
+              if (pr.rightEye != null)
+                (() {
+                  final re = pr.rightEye!;
+                  return pw.TableRow(
+                    children: [
+                      _buildTableCell('Right Eye'),
+                      _buildTableCell(
+                        re.shortDistance != null
+                            ? '${re.shortDistance!.adjustedScore.toStringAsFixed(2)} LogCS'
+                            : 'N/A',
+                      ),
+                      _buildTableCell(
+                        re.longDistance != null
+                            ? '${re.longDistance!.adjustedScore.toStringAsFixed(2)} LogCS'
+                            : 'N/A',
+                      ),
+                      _buildTableCell(
+                        re.longDistance != null
+                            ? _getPelliRobsonInterpretation(
+                                re.longDistance!.adjustedScore,
+                              )
+                            : (re.shortDistance != null
+                                  ? _getPelliRobsonInterpretation(
+                                      re.shortDistance!.adjustedScore,
+                                    )
+                                  : 'N/A'),
+                      ),
+                    ],
+                  );
+                })(),
+              // Left Eye
+              if (pr.leftEye != null)
+                (() {
+                  final le = pr.leftEye!;
+                  return pw.TableRow(
+                    children: [
+                      _buildTableCell('Left Eye'),
+                      _buildTableCell(
+                        le.shortDistance != null
+                            ? '${le.shortDistance!.adjustedScore.toStringAsFixed(2)} LogCS'
+                            : 'N/A',
+                      ),
+                      _buildTableCell(
+                        le.longDistance != null
+                            ? '${le.longDistance!.adjustedScore.toStringAsFixed(2)} LogCS'
+                            : 'N/A',
+                      ),
+                      _buildTableCell(
+                        le.longDistance != null
+                            ? _getPelliRobsonInterpretation(
+                                le.longDistance!.adjustedScore,
+                              )
+                            : (le.shortDistance != null
+                                  ? _getPelliRobsonInterpretation(
+                                      le.shortDistance!.adjustedScore,
+                                    )
+                                  : 'N/A'),
+                      ),
+                    ],
+                  );
+                })(),
+            ],
+          ),
+        ),
 
-          pw.SizedBox(height: 12),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(10),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.grey50,
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Assessment Summary:',
-                  style: pw.TextStyle(
-                    fontSize: 9,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blue900,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  pr.clinicalSummary,
-                  style: const pw.TextStyle(
-                    fontSize: 8,
-                    color: PdfColors.grey700,
-                  ),
-                ),
-              ],
-            ),
+        pw.SizedBox(height: 12),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey50,
+            borderRadius: pw.BorderRadius.circular(6),
           ),
-          pw.SizedBox(height: 8),
-          pw.Text(
-            'Note: Contrast sensitivity reflects the eye\'s ability to distinguish an object from its background. Impairment can affect mobility and reading in low light.',
-            style: pw.TextStyle(
-              fontSize: 7,
-              color: PdfColors.grey500,
-              fontStyle: pw.FontStyle.italic,
-            ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Assessment Summary:',
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue900,
+                ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                pr.clinicalSummary,
+                style: const pw.TextStyle(
+                  fontSize: 8,
+                  color: PdfColors.grey700,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Note: Contrast sensitivity reflects the eye\'s ability to distinguish an object from its background. Impairment can affect mobility and reading in low light.',
+          style: pw.TextStyle(
+            fontSize: 7,
+            color: PdfColors.grey500,
+            fontStyle: pw.FontStyle.italic,
+          ),
+        ),
+      ],
     );
   }
 
-  /// MOBILE REFRACTOMETRY - DETAILED
   pw.Widget _buildMobileRefractometryDetailedSection(TestResultModel result) {
     if (result.mobileRefractometry == null) return pw.SizedBox();
-    final MobileRefractometryResult refract = result.mobileRefractometry!;
+    final refract = result.mobileRefractometry!;
 
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(12),
-        border: pw.Border.all(color: PdfColors.grey200, width: 1),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              _buildSectionHeader('MOBILE REFRACTOMETRY ASSESSMENT'),
-              if (refract.criticalAlert)
-                _buildStatusChip('CRITICAL', PdfColors.red700),
-            ],
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Divider(color: PdfColors.grey200, thickness: 0.5),
+        pw.SizedBox(height: 8),
+        _buildSectionHeader('MOBILE REFRACTOMETRY'),
+        pw.SizedBox(height: 8),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.white,
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: PdfColors.grey200, width: 1),
           ),
-          pw.SizedBox(height: 16),
-
-          // Vertical Stacking of Eyes
-          if (refract.rightEye != null) ...[
-            _buildRefractionEyePdfBlock(
-              'RIGHT EYE',
-              refract.rightEye!,
-              PdfColors.blue800,
-            ),
-            if (refract.leftEye != null)
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(vertical: 16),
-                child: pw.Divider(height: 1, color: PdfColors.grey100),
-              ),
-          ],
-          if (refract.leftEye != null) ...[
-            _buildRefractionEyePdfBlock(
-              'LEFT EYE',
-              refract.leftEye!,
-              PdfColors.teal800,
-            ),
-          ],
-
-          if (refract.healthWarnings.isNotEmpty) ...[
-            pw.SizedBox(height: 16),
-            pw.Container(
-              padding: const pw.EdgeInsets.all(12),
-              decoration: pw.BoxDecoration(
-                color: PdfColor.fromInt(0xFFFFEBEE),
-                borderRadius: pw.BorderRadius.circular(6),
-                border: pw.Border.all(color: PdfColors.red200, width: 0.5),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text(
-                    'CLINICAL OBSERVATIONS:',
-                    style: pw.TextStyle(
-                      fontSize: 8,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.red800,
-                    ),
-                  ),
-                  pw.SizedBox(height: 6),
-                  ...refract.healthWarnings.map(
-                    (warning) => pw.Bullet(
-                      text: warning,
-                      style: const pw.TextStyle(
-                        fontSize: 8,
-                        color: PdfColors.red700,
-                      ),
-                      bulletSize: 2,
-                    ),
-                  ),
+                  pw.SizedBox(
+                    width: 8,
+                  ), // Replaced redundant header with a spacer
+                  if (refract.criticalAlert)
+                    _buildStatusChip('CRITICAL', PdfColors.red700),
                 ],
               ),
-            ),
-          ],
+              pw.SizedBox(height: 16),
 
-          pw.SizedBox(height: 12),
-          pw.Text(
-            'Note: Assessment performed using digital retinoscopy algorithms. SPH = Spherical Error, CYL = Astigmatism, AXIS = Orientation.',
-            style: pw.TextStyle(
-              fontSize: 7,
-              color: PdfColors.grey500,
-              fontStyle: pw.FontStyle.italic,
-            ),
+              // Vertical Stacking of Eyes
+              if (refract.rightEye != null) ...[
+                _buildRefractionEyePdfBlock(
+                  'RIGHT EYE',
+                  refract.rightEye!,
+                  PdfColors.blue800,
+                ),
+                if (refract.leftEye != null)
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.symmetric(vertical: 16),
+                    child: pw.Divider(height: 1, color: PdfColors.grey100),
+                  ),
+              ],
+              if (refract.leftEye != null) ...[
+                _buildRefractionEyePdfBlock(
+                  'LEFT EYE',
+                  refract.leftEye!,
+                  PdfColors.teal800,
+                ),
+              ],
+
+              if (refract.healthWarnings.isNotEmpty) ...[
+                pw.SizedBox(height: 16),
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(12),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColor.fromInt(0xFFFFEBEE),
+                    borderRadius: pw.BorderRadius.circular(6),
+                    border: pw.Border.all(color: PdfColors.red200, width: 0.5),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'CLINICAL OBSERVATIONS:',
+                        style: pw.TextStyle(
+                          fontSize: 8,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.red800,
+                        ),
+                      ),
+                      pw.SizedBox(height: 6),
+                      ...refract.healthWarnings.map(
+                        (warning) => pw.Bullet(
+                          text: warning,
+                          style: const pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.red700,
+                          ),
+                          bulletSize: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1908,11 +1870,13 @@ class PdfExportService {
             _buildHistoryRow(
               'Ocular Hist.',
               [
-                if (q.chiefComplaints.hasPreviousCataractOperation)
-                  'Cataract Operation',
-                if (q.chiefComplaints.hasFamilyGlaucomaHistory)
-                  'Family Glaucoma Hist.',
-              ].join(', '),
+                q.chiefComplaints.hasPreviousCataractOperation
+                    ? 'Cataract Operation'
+                    : null,
+                q.chiefComplaints.hasFamilyGlaucomaHistory
+                    ? 'Family Glaucoma Hist.'
+                    : null,
+              ].whereType<String>().join(', '),
             ),
         ],
       ),
@@ -2136,43 +2100,7 @@ class PdfExportService {
           ),
           pw.SizedBox(height: 16),
 
-          // PREDICTED VALUES SECTION
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                'PREDICTED VALUES (AUTO-CALCULATED SUGGESTIONS)',
-                style: pw.TextStyle(
-                  fontSize: 9,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey700,
-                ),
-              ),
-              pw.SizedBox(height: 8),
-              pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Expanded(
-                    child: _buildSubjectiveTable(
-                      'RIGHT EYE (PREDICTED)',
-                      prescription.predictedRight,
-                      PdfColors.grey600,
-                    ),
-                  ),
-                  pw.SizedBox(width: 16),
-                  pw.Expanded(
-                    child: _buildSubjectiveTable(
-                      'LEFT EYE (PREDICTED)',
-                      prescription.predictedLeft,
-                      PdfColors.grey600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          pw.SizedBox(height: 20),
+          pw.SizedBox(height: 16),
 
           // VERIFIED REFRACTION SECTION
           pw.Column(

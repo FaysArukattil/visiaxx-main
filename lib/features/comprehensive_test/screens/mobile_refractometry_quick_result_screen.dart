@@ -8,6 +8,7 @@ import '../../../data/models/refraction_prescription_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/refraction_prescription_service.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import '../../../data/models/user_model.dart';
 import '../../practitioner/widgets/refraction_table_widgets.dart';
 
@@ -214,24 +215,13 @@ class _MobileRefractometryQuickResultScreenState
             _prescription = updatedPrescription;
           });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Prescription saved successfully'),
-              backgroundColor: AppColors.success,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          SnackbarUtils.showSuccess(context, 'Prescription saved successfully');
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving prescription: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Error saving prescription: $e');
       }
     }
   }
@@ -264,16 +254,22 @@ class _MobileRefractometryQuickResultScreenState
     final overallStatus = _getOverallStatus(result);
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Refractometry Results'),
-        backgroundColor: AppColors.white,
+        title: const Text(
+          'Refractometry Results',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: const Icon(Icons.close_rounded, color: AppColors.textPrimary),
             onPressed: () => NavigationUtils.navigateHome(context),
           ),
         ],
@@ -312,32 +308,43 @@ class _MobileRefractometryQuickResultScreenState
     final Color color = statusInfo['color'];
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Icon(statusInfo['icon'], size: 64, color: color),
-          const SizedBox(height: 16),
-          Text(
-            statusInfo['label'],
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: color,
-              letterSpacing: -0.5,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
             ),
+            child: Icon(statusInfo['icon'], color: color, size: 28),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Refraction Screening Complete',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  statusInfo['label'],
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                Text(
+                  'Refraction Screening Complete',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -625,14 +632,9 @@ class _MobileRefractometryQuickResultScreenState
             onPressed: isBlocked
                 ? null
                 : () async {
-                    // Force final save before navigating
+                    final navigator = Navigator.of(context);
                     await _savePrescription(true);
-                    if (mounted) {
-                      Navigator.pushReplacementNamed(
-                        context,
-                        '/quick-test-result',
-                      );
-                    }
+                    navigator.pushReplacementNamed('/quick-test-result');
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.transparent,
