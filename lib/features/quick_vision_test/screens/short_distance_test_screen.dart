@@ -727,6 +727,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   void _navigateToColorVision() {
     if (_isNavigatingToNextTest || !mounted) return;
+
+    final provider = context.read<TestSessionProvider>();
+
+    // If individual test mode, navigate to standard result screen
+    if (provider.isIndividualTest) {
+      setState(() => _isNavigatingToNextTest = true);
+      Navigator.pushReplacementNamed(context, '/quick-test-result');
+      return;
+    }
+
     setState(() => _isNavigatingToNextTest = true);
     Navigator.pushReplacementNamed(context, '/color-vision-test');
   }

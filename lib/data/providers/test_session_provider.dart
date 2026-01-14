@@ -45,6 +45,10 @@ class TestSessionProvider extends ChangeNotifier {
   // Comprehensive test mode flag
   bool _isComprehensiveTest = false;
 
+  // Individual test mode flag and type
+  bool _isIndividualTest = false;
+  String? _individualTestType; // 'visual_acuity', 'color_vision', etc.
+
   bool _shouldShowReviewDialog = false;
   String? _currentTestId;
 
@@ -67,6 +71,8 @@ class TestSessionProvider extends ChangeNotifier {
   MobileRefractometryResult? get mobileRefractometry => _mobileRefractometry;
   int? get profileAge => _profileAge;
   bool get isComprehensiveTest => _isComprehensiveTest;
+  bool get isIndividualTest => _isIndividualTest;
+  String? get individualTestType => _individualTestType;
   bool get shouldShowReviewDialog => _shouldShowReviewDialog;
   String? get profileSex => _profileSex;
   String? get currentTestId => _currentTestId;
@@ -143,7 +149,17 @@ class TestSessionProvider extends ChangeNotifier {
   /// Start a quick test session
   void startQuickTest() {
     _isComprehensiveTest = false;
+    _isIndividualTest = false;
     startTest();
+  }
+
+  /// Start an individual test session
+  void startIndividualTest(String testType) {
+    _isComprehensiveTest = false;
+    _isIndividualTest = true;
+    _individualTestType = testType;
+    startTest();
+    debugPrint('🎯 [TestSessionProvider] Started individual test: $testType');
   }
 
   /// Switch to testing the other eye
@@ -295,6 +311,8 @@ class TestSessionProvider extends ChangeNotifier {
     _isTestInProgress = false;
     _testStartTime = null;
     _isComprehensiveTest = false;
+    _isIndividualTest = false;
+    _individualTestType = null;
     _currentTestId = null;
 
     notifyListeners();

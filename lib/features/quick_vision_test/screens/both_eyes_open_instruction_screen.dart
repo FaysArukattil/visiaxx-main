@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:provider/provider.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_screen.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/short_distance_test_screen.dart';
+import 'package:visiaxx/data/providers/test_session_provider.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
@@ -149,6 +151,20 @@ class _BothEyesOpenInstructionScreenState
     if (_isNavigating) return;
     _isNavigating = true;
 
+    final provider = context.read<TestSessionProvider>();
+
+    // Check if this is  individual Visual Acuity test
+    if (provider.isIndividualTest &&
+        provider.individualTestType == 'visual_acuity') {
+      // Navigate to standard quick test result screen (it will detect individual mode)
+      if (provider.visualAcuityRight != null &&
+          provider.visualAcuityLeft != null) {
+        Navigator.pushReplacementNamed(context, '/quick-test-result');
+        return;
+      }
+    }
+
+    // Otherwise continue to short distance test
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

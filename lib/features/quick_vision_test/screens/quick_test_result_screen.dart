@@ -259,31 +259,42 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     _buildPatientInfoCard(provider),
                     const SizedBox(height: 20),
 
-                    // Visual Acuity Results
-                    _buildSectionTitle('Visual Acuity', Icons.visibility),
-                    _buildVisualAcuityCard(provider),
-                    const SizedBox(height: 20),
+                    // Visual Acuity Results - show if not individual OR if individual VA test
+                    if (!provider.isIndividualTest ||
+                        provider.individualTestType == 'visual_acuity') ...[
+                      _buildSectionTitle('Visual Acuity', Icons.visibility),
+                      _buildVisualAcuityCard(provider),
+                      const SizedBox(height: 20),
+                    ],
 
-                    // Short Distance Results
-                    _buildSectionTitle(
-                      'Reading Test (Near Vision)',
-                      Icons.text_fields,
-                    ),
-                    _buildShortDistanceCard(provider),
-                    const SizedBox(height: 20),
+                    // Short Distance Results - show only if not individual test
+                    if (!provider.isIndividualTest) ...[
+                      _buildSectionTitle(
+                        'Reading Test (Near Vision)',
+                        Icons.text_fields,
+                      ),
+                      _buildShortDistanceCard(provider),
+                      const SizedBox(height: 20),
+                    ],
 
-                    // Color Vision Results
-                    _buildSectionTitle('Color Vision', Icons.palette),
-                    _buildColorVisionCard(provider),
-                    const SizedBox(height: 20),
+                    // Color Vision Results - show if not individual OR if individual color vision test
+                    if (!provider.isIndividualTest ||
+                        provider.individualTestType == 'color_vision') ...[
+                      _buildSectionTitle('Color Vision', Icons.palette),
+                      _buildColorVisionCard(provider),
+                      const SizedBox(height: 20),
+                    ],
 
-                    // Amsler Grid Results
-                    _buildSectionTitle('Amsler Grid', Icons.grid_on),
-                    _buildAmslerGridCard(provider),
-                    const SizedBox(height: 20),
+                    // Amsler Grid Results - show only if not individual test
+                    if (!provider.isIndividualTest) ...[
+                      _buildSectionTitle('Amsler Grid', Icons.grid_on),
+                      _buildAmslerGridCard(provider),
+                      const SizedBox(height: 20),
+                    ],
 
-                    // Pelli-Robson Contrast Sensitivity Results (if available)
-                    if (_hasPelliRobsonResults(provider)) ...[
+                    // Pelli-Robson Contrast Sensitivity Results - show only if not individual AND has results
+                    if (!provider.isIndividualTest &&
+                        _hasPelliRobsonResults(provider)) ...[
                       _buildSectionTitle(
                         'Contrast Sensitivity',
                         Icons.contrast,
@@ -292,8 +303,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       const SizedBox(height: 20),
                     ],
 
-                    // Mobile Refractometry Results
-                    if (_hasRefractometryResults(provider)) ...[
+                    // Mobile Refractometry Results - show only if not individual AND has results
+                    if (!provider.isIndividualTest &&
+                        _hasRefractometryResults(provider)) ...[
                       _buildSectionTitle(
                         'Mobile Refractometry',
                         Icons.phone_android_rounded,
@@ -302,8 +314,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       const SizedBox(height: 20),
                     ],
 
-                    // Verified Prescription Results (NEW)
-                    if (_hasPrescription(provider)) ...[
+                    // Verified Prescription Results - show only if not individual AND has prescription
+                    if (!provider.isIndividualTest &&
+                        _hasPrescription(provider)) ...[
                       _buildSectionTitle(
                         'Verified Prescription',
                         Icons.assignment_turned_in_rounded,

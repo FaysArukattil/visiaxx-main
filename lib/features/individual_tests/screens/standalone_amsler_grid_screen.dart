@@ -1,0 +1,25 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../data/providers/test_session_provider.dart';
+import '../../quick_vision_test/screens/amsler_grid_instructions_screen.dart';
+import '../../../core/services/auth_service.dart';
+
+class StandaloneAmslerGridScreen extends StatelessWidget {
+  const StandaloneAmslerGridScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<TestSessionProvider>(context, listen: false);
+    final authService = AuthService();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = await authService.getUserData(authService.currentUserId!);
+      if (user != null) {
+        provider.selectSelfProfile(user.id, user.fullName, user.age, user.sex);
+        provider.startIndividualTest('amsler_grid');
+      }
+    });
+
+    return const AmslerGridInstructionsScreen();
+  }
+}

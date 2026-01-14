@@ -689,7 +689,14 @@ class _MobileRefractometryTestScreenState
     context.read<TestSessionProvider>().setMobileRefractometryResult(
       finalResult,
     );
-    Navigator.of(context).pushReplacementNamed('/mobile-refractometry-result');
+    final prov = context.read<TestSessionProvider>();
+    if (prov.isIndividualTest) {
+      Navigator.pushReplacementNamed(context, '/quick-test-result');
+    } else {
+      Navigator.of(
+        context,
+      ).pushReplacementNamed('/mobile-refractometry-result');
+    }
   }
 
   Map<String, dynamic> _processEyeData(List<Map<String, dynamic>> responses) {

@@ -646,6 +646,13 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     _isNavigatingToNextTest = true;
 
     final provider = context.read<TestSessionProvider>();
+
+    // Check for individual test mode FIRST
+    if (provider.isIndividualTest) {
+      Navigator.pushReplacementNamed(context, '/quick-test-result');
+      return;
+    }
+
     if (!provider.isComprehensiveTest) {
       Navigator.pushReplacementNamed(context, '/quick-test-result');
       return;

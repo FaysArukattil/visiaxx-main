@@ -682,14 +682,19 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       'Contrast sensitivity test complete. Proceeding to results.',
     );
 
-    // Navigate to individual contrast results
+    // Navigate to results
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const PelliRobsonResultScreen(),
-          ),
-        );
+        final provider = context.read<TestSessionProvider>();
+        if (provider.isIndividualTest) {
+          Navigator.pushReplacementNamed(context, '/quick-test-result');
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const PelliRobsonResultScreen(),
+            ),
+          );
+        }
       }
     });
   }
