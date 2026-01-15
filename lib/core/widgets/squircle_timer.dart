@@ -26,18 +26,21 @@ class SquircleTimer extends StatelessWidget {
       width: size,
       height: size,
       decoration: ShapeDecoration(
-        color: AppColors.white,
+        color: themeColor,
         shape: ContinuousRectangleBorder(
-          borderRadius: BorderRadius.circular(size * 0.35),
-          side: BorderSide(color: themeColor, width: 2.5),
+          borderRadius: BorderRadius.circular(size * 0.42),
         ),
         shadows:
             shadows ??
             [
               BoxShadow(
-                color: themeColor.withOpacity(0.2),
-                blurRadius: 15,
-                spreadRadius: 2,
+                color: themeColor.withOpacity(0.24),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: themeColor.withOpacity(0.12),
+                blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -46,10 +49,11 @@ class SquircleTimer extends StatelessWidget {
         child: Text(
           '$seconds',
           style: TextStyle(
-            color: themeColor,
+            color: AppColors.white,
             fontSize: fontSize,
             fontWeight: FontWeight.w900,
-            fontFamily: 'Inter', // Ensuring premium typography if available
+            fontFamily: 'Inter',
+            letterSpacing: -1,
           ),
         ),
       ),

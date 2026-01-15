@@ -1678,73 +1678,71 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Widget _buildRelaxationView() {
     return Container(
       color: AppColors.testBackground,
-      child: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Hero Card with Image
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                height: MediaQuery.of(context).size.height * 0.68,
-                width: double.infinity,
-                decoration: ShapeDecoration(
-                  color: AppColors.white,
-                  shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  shadows: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.08),
-                      blurRadius: 40,
-                      offset: const Offset(0, 20),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Image.asset(
-                  AppAssets.relaxationImage,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: AppColors.primary.withOpacity(0.05),
-                    child: const Icon(
-                      Icons.landscape,
-                      size: 80,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
+      width: double.infinity,
+      height: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(flex: 2),
+          // Hero Card with Image (Maximized)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            height: MediaQuery.of(context).size.height * 0.60,
+            width: double.infinity,
+            decoration: ShapeDecoration(
+              color: AppColors.white,
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(32),
               ),
-              const SizedBox(height: 32),
-
-              // Standardized Instruction Text
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Relax and focus on the distance',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
+              shadows: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.08),
+                  blurRadius: 40,
+                  offset: const Offset(0, 20),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Image.asset(
+              AppAssets.relaxationImage,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: AppColors.primary.withOpacity(0.05),
+                child: const Icon(
+                  Icons.landscape,
+                  size: 80,
+                  color: AppColors.primary,
                 ),
               ),
-
-              const SizedBox(height: 32),
-
-              // Standardized Timer (Minimalist & Refined)
-              SquircleTimer(
-                seconds: _relaxationCountdown,
-                color: AppColors.primary,
-                size: 56,
-                fontSize: 20,
-              ),
-
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: 32),
+
+          // Standardized Instruction Text
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Relax and focus on the distance',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Standardized Timer (Minimalist & Premium)
+          SquircleTimer(
+            seconds: _relaxationCountdown,
+            color: AppColors.primary,
+            size: 56,
+            fontSize: 20,
+          ),
+          const Spacer(flex: 3),
+        ],
       ),
     );
   }

@@ -61,44 +61,51 @@ class _IndividualColorVisionResultScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Color Vision Results'),
-        backgroundColor: const Color(0xFFE91E63),
-        foregroundColor: AppColors.white,
-        actions: [
-          if (!_isSaving)
-            IconButton(
-              icon: const Icon(Icons.picture_as_pdf),
-              onPressed: () {
-                SnackbarUtils.showInfo(
-                  context,
-                  'PDF generation coming in next update!',
-                );
-              },
-              tooltip: 'Download PDF',
-            ),
-        ],
-      ),
-      body: _isSaving
-          ? const Center(child: EyeLoader())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSuccessBanner(),
-                  const SizedBox(height: 24),
-                  _buildScoreCard(),
-                  const SizedBox(height: 16),
-                  _buildDetailsCard(),
-                  const SizedBox(height: 24),
-                  _buildInterpretation(),
-                  const SizedBox(height: 32),
-                  _buildActionButtons(),
-                ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Color Vision Results'),
+          backgroundColor: const Color(0xFFE91E63),
+          foregroundColor: AppColors.white,
+          actions: [
+            if (!_isSaving)
+              IconButton(
+                icon: const Icon(Icons.picture_as_pdf),
+                onPressed: () {
+                  SnackbarUtils.showInfo(
+                    context,
+                    'PDF generation coming in next update!',
+                  );
+                },
+                tooltip: 'Download PDF',
               ),
-            ),
+          ],
+        ),
+        body: _isSaving
+            ? const Center(child: EyeLoader())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSuccessBanner(),
+                    const SizedBox(height: 24),
+                    _buildScoreCard(),
+                    const SizedBox(height: 16),
+                    _buildDetailsCard(),
+                    const SizedBox(height: 24),
+                    _buildInterpretation(),
+                    const SizedBox(height: 32),
+                    _buildActionButtons(),
+                  ],
+                ),
+              ),
+      ),
     );
   }
 

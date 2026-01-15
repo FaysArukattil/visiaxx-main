@@ -253,59 +253,69 @@ class _MobileRefractometryQuickResultScreenState
 
     final overallStatus = _getOverallStatus(result);
 
-    return Scaffold(
-      backgroundColor: AppColors.testBackground,
-      appBar: AppBar(
-        title: const Text('Refractometry Result'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        NavigationUtils.navigateHome(context);
+      },
+      child: Scaffold(
         backgroundColor: AppColors.testBackground,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Column(
-                children: [
-                  _buildStatusHeader(overallStatus),
-                  const SizedBox(height: 16),
-                  if (result.rightEye != null)
-                    _buildEyeCard(
-                      'Right Eye',
-                      result.rightEye!,
-                      AppColors.rightEye,
-                    ),
-                  if (result.leftEye != null) ...[
-                    const SizedBox(height: 12),
-                    _buildEyeCard(
-                      'Left Eye',
-                      result.leftEye!,
-                      AppColors.leftEye,
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  _buildClinicalInsights(result),
-                  // Show prescription to ALL users if it exists and is included in results
-                  if (_prescription != null &&
-                      _prescription!.includeInResults) ...[
+        appBar: AppBar(
+          title: const Text('Refractometry Result'),
+          backgroundColor: AppColors.testBackground,
+          elevation: 0,
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                child: Column(
+                  children: [
+                    _buildStatusHeader(overallStatus),
                     const SizedBox(height: 16),
-                    _userRole == UserRole.examiner
-                        ? _buildPractitionerPrescriptionSection(result)
-                        : _buildReadOnlyPrescriptionSection(result),
+                    if (result.rightEye != null)
+                      _buildEyeCard(
+                        'Right Eye',
+                        result.rightEye!,
+                        AppColors.rightEye,
+                      ),
+                    if (result.leftEye != null) ...[
+                      const SizedBox(height: 12),
+                      _buildEyeCard(
+                        'Left Eye',
+                        result.leftEye!,
+                        AppColors.leftEye,
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    _buildClinicalInsights(result),
+                    // Show prescription to ALL users if it exists and is included in results
+                    if (_prescription != null &&
+                        _prescription!.includeInResults) ...[
+                      const SizedBox(height: 16),
+                      _userRole == UserRole.examiner
+                          ? _buildPractitionerPrescriptionSection(result)
+                          : _buildReadOnlyPrescriptionSection(result),
+                    ],
+                    const SizedBox(height: 12),
                   ],
-                  const SizedBox(height: 12),
-                ],
+                ),
               ),
             ),
-          ),
-          // Sticky Bottom Button Area
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: _buildActionButtons(context, result),
-          ),
-        ],
+            // Sticky Bottom Button Area
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: _buildActionButtons(context, result),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -608,10 +618,7 @@ class _MobileRefractometryQuickResultScreenState
             gradient: LinearGradient(
               colors: isBlocked
                   ? [AppColors.border, AppColors.border]
-                  : [
-                      AppColors.primary,
-                      AppColors.primary.withOpacity(0.8),
-                    ],
+                  : [AppColors.primary, AppColors.primary.withOpacity(0.8)],
             ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: isBlocked

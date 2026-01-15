@@ -37,190 +37,187 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
     final AmslerGridResult? amslerLeft = provider.amslerGridLeft;
     final ShortDistanceResult? shortDistance = provider.shortDistance;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Comprehensive Results'),
-        backgroundColor: AppColors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: AppColors.transparent,
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textPrimary),
-          onPressed: () => _navigateHome(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _navigateHome();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Comprehensive Results'),
+          backgroundColor: AppColors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: AppColors.transparent,
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            onPressed: () => _navigateHome(),
+          ),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Overall Status Header
-            _buildOverallStatusHeader(provider.getOverallStatus()),
-            const SizedBox(height: 20),
-
-            Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  if (vaRight != null || vaLeft != null)
-                    _buildResultSection(
-                      context,
-                      title: 'Visual Acuity',
-                      results: [
-                        if (vaRight != null)
-                          'Right Eye: ${vaRight.snellenScore}',
-                        if (vaLeft != null) 'Left Eye: ${vaLeft.snellenScore}',
-                      ],
-                      status: _getVAStatus(vaRight, vaLeft),
-                      color: _getVAColor(vaRight, vaLeft),
-                      icon: Icons.visibility_rounded,
-                    ),
-
-                  if (shortDistance != null) ...[
-                    const SizedBox(height: 16),
-                    _buildResultSection(
-                      context,
-                      title: 'Near Vision',
-                      results: [
-                        'Acuity: ${shortDistance.bestAcuity}',
-                        'Accuracy: ${(shortDistance.accuracy * 100).toStringAsFixed(0)}%',
-                      ],
-                      status: shortDistance.averageSimilarity >= 0.8
-                          ? 'Good'
-                          : 'Review',
-                      color: shortDistance.averageSimilarity >= 0.8
-                          ? AppColors.success
-                          : AppColors.warning,
-                      icon: Icons.menu_book_rounded,
-                    ),
-                  ],
-
-                  if (pelliRobson != null) ...[
-                    const SizedBox(height: 16),
-                    _buildResultSection(
-                      context,
-                      title: 'Contrast Sensitivity',
-                      results: [
-                        'Score: ${pelliRobson.averageScore.toStringAsFixed(2)} log CS',
-                      ],
-                      status: pelliRobson.overallCategory,
-                      color: _getContrastColor(pelliRobson.overallCategory),
-                      icon: Icons.contrast_rounded,
-                    ),
-                  ],
-
-                  if (colorVision != null) ...[
-                    const SizedBox(height: 16),
-                    _buildResultSection(
-                      context,
-                      title: 'Color Vision',
-                      results: [
-                        'Score: ${colorVision.correctAnswers}/${colorVision.totalPlates}',
-                      ],
-                      status: colorVision.isNormal ? 'Normal' : 'Reduced',
-                      color: colorVision.isNormal
-                          ? AppColors.success
-                          : AppColors.error,
-                      icon: Icons.palette_rounded,
-                    ),
-                  ],
-
-                  if (amslerRight != null || amslerLeft != null) ...[
-                    const SizedBox(height: 16),
-                    _buildResultSection(
-                      context,
-                      title: 'Amsler Grid',
-                      results: [
-                        if (amslerRight != null)
-                          'Right Eye: ${amslerRight.hasDistortions ? "Distortions" : "Normal"}',
-                        if (amslerLeft != null)
-                          'Left Eye: ${amslerLeft.hasDistortions ? "Distortions" : "Normal"}',
-                      ],
-                      status: _getAmslerStatus(amslerRight, amslerLeft),
-                      color: _getAmslerColor(amslerRight, amslerLeft),
-                      icon: Icons.grid_view_rounded,
-                    ),
-                  ],
-
-                  if (refractometry != null) ...[
-                    const SizedBox(height: 16),
-                    _buildRefractometrySection(refractometry),
-                  ],
-
-                  if (_hasPrescription(provider)) ...[
-                    const SizedBox(height: 16),
-                    _buildPrescriptionCard(provider),
-                  ],
-
-                  const SizedBox(height: 24),
-
-                  // Recommendations Card
-                  _buildRecommendationsCard(
-                    provider.getOverallStatus(),
-                    provider.getRecommendation(),
-                  ),
-
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
-
-            // Action Buttons
-            Padding(
-              padding: const EdgeInsets.only(bottom: 24.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => _generatePDF(provider),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: AppColors.primary),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.picture_as_pdf_rounded, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'PDF Report',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Overall Status Header
+              _buildOverallStatusHeader(provider.getOverallStatus()),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    if (vaRight != null || vaLeft != null)
+                      _buildResultSection(
+                        context,
+                        title: 'Visual Acuity',
+                        results: [
+                          if (vaRight != null)
+                            'Right Eye: ${vaRight.snellenScore}',
+                          if (vaLeft != null)
+                            'Left Eye: ${vaLeft.snellenScore}',
                         ],
+                        status: _getVAStatus(vaRight, vaLeft),
+                        color: _getVAColor(vaRight, vaLeft),
+                        icon: Icons.visibility_rounded,
                       ),
+                    if (shortDistance != null) ...[
+                      const SizedBox(height: 16),
+                      _buildResultSection(
+                        context,
+                        title: 'Near Vision',
+                        results: [
+                          'Acuity: ${shortDistance.bestAcuity}',
+                          'Accuracy: ${(shortDistance.accuracy * 100).toStringAsFixed(0)}%',
+                        ],
+                        status: shortDistance.averageSimilarity >= 0.8
+                            ? 'Good'
+                            : 'Review',
+                        color: shortDistance.averageSimilarity >= 0.8
+                            ? AppColors.success
+                            : AppColors.warning,
+                        icon: Icons.menu_book_rounded,
+                      ),
+                    ],
+                    if (pelliRobson != null) ...[
+                      const SizedBox(height: 16),
+                      _buildResultSection(
+                        context,
+                        title: 'Contrast Sensitivity',
+                        results: [
+                          'Score: ${pelliRobson.averageScore.toStringAsFixed(2)} log CS',
+                        ],
+                        status: pelliRobson.overallCategory,
+                        color: _getContrastColor(pelliRobson.overallCategory),
+                        icon: Icons.contrast_rounded,
+                      ),
+                    ],
+                    if (colorVision != null) ...[
+                      const SizedBox(height: 16),
+                      _buildResultSection(
+                        context,
+                        title: 'Color Vision',
+                        results: [
+                          'Score: ${colorVision.correctAnswers}/${colorVision.totalPlates}',
+                        ],
+                        status: colorVision.isNormal ? 'Normal' : 'Reduced',
+                        color: colorVision.isNormal
+                            ? AppColors.success
+                            : AppColors.error,
+                        icon: Icons.palette_rounded,
+                      ),
+                    ],
+                    if (amslerRight != null || amslerLeft != null) ...[
+                      const SizedBox(height: 16),
+                      _buildResultSection(
+                        context,
+                        title: 'Amsler Grid',
+                        results: [
+                          if (amslerRight != null)
+                            'Right Eye: ${amslerRight.hasDistortions ? "Distortions" : "Normal"}',
+                          if (amslerLeft != null)
+                            'Left Eye: ${amslerLeft.hasDistortions ? "Distortions" : "Normal"}',
+                        ],
+                        status: _getAmslerStatus(amslerRight, amslerLeft),
+                        color: _getAmslerColor(amslerRight, amslerLeft),
+                        icon: Icons.grid_view_rounded,
+                      ),
+                    ],
+                    if (refractometry != null) ...[
+                      const SizedBox(height: 16),
+                      _buildRefractometrySection(refractometry),
+                    ],
+                    if (_hasPrescription(provider)) ...[
+                      const SizedBox(height: 16),
+                      _buildPrescriptionCard(provider),
+                    ],
+                    const SizedBox(height: 24),
+                    // Recommendations Card
+                    _buildRecommendationsCard(
+                      provider.getOverallStatus(),
+                      provider.getRecommendation(),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _navigateHome(),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Done',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
-            ),
-          ],
+              // Action Buttons
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => _generatePDF(provider),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: AppColors.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.picture_as_pdf_rounded, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'PDF Report',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => _navigateHome(),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -641,10 +638,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: AppColors.success.withOpacity(0.3),
-          width: 1.5,
-        ),
+        side: BorderSide(color: AppColors.success.withOpacity(0.3), width: 1.5),
       ),
       color: AppColors.success.withOpacity(0.02),
       child: Padding(

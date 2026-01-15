@@ -75,49 +75,56 @@ class _IndividualVisualAcuityResultScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Visual Acuity Results'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
-        actions: [
-          if (!_isSaving)
-            IconButton(
-              icon: const Icon(Icons.picture_as_pdf),
-              onPressed: _generatePdf,
-              tooltip: 'Download PDF',
-            ),
-        ],
-      ),
-      body: _isSaving
-          ? const Center(child: EyeLoader())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSuccessBanner(),
-                  const SizedBox(height: 24),
-                  _buildEyeCard(
-                    'Right Eye',
-                    widget.rightEye,
-                    Colors.blue,
-                    Icons.visibility,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildEyeCard(
-                    'Left Eye',
-                    widget.leftEye,
-                    Colors.teal,
-                    Icons.visibility,
-                  ),
-                  const SizedBox(height: 24),
-                  _buildInterpretation(),
-                  const SizedBox(height: 32),
-                  _buildActionButtons(),
-                ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Visual Acuity Results'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          actions: [
+            if (!_isSaving)
+              IconButton(
+                icon: const Icon(Icons.picture_as_pdf),
+                onPressed: _generatePdf,
+                tooltip: 'Download PDF',
               ),
-            ),
+          ],
+        ),
+        body: _isSaving
+            ? const Center(child: EyeLoader())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSuccessBanner(),
+                    const SizedBox(height: 24),
+                    _buildEyeCard(
+                      'Right Eye',
+                      widget.rightEye,
+                      Colors.blue,
+                      Icons.visibility,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildEyeCard(
+                      'Left Eye',
+                      widget.leftEye,
+                      Colors.teal,
+                      Icons.visibility,
+                    ),
+                    const SizedBox(height: 24),
+                    _buildInterpretation(),
+                    const SizedBox(height: 32),
+                    _buildActionButtons(),
+                  ],
+                ),
+              ),
+      ),
     );
   }
 
