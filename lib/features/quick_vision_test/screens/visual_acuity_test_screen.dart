@@ -24,6 +24,7 @@ import 'cover_right_eye_instruction_screen.dart';
 import 'cover_left_eye_instruction_screen.dart';
 import '../../../core/services/distance_skip_manager.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/squircle_timer.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
 /// Implements Visiaxx specification for 1-meter testing
@@ -1675,90 +1676,76 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildRelaxationView() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Relaxation image
-        Expanded(
-          child: Container(
-            margin: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cardShadow,
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Image.asset(
-              AppAssets.relaxationImage,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.primary.withOpacity(0.1),
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.landscape, size: 80, color: AppColors.primary),
-                      SizedBox(height: 16),
-                      Text(
-                        'Focus on the distance...',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        // Countdown
-        Container(
-          padding: const EdgeInsets.all(24),
+    return Container(
+      color: AppColors.testBackground,
+      child: Center(
+        child: SingleChildScrollView(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Relax and focus on the distance',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 20),
+              // Hero Card with Image
               Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                height: MediaQuery.of(context).size.height * 0.68,
+                width: double.infinity,
+                decoration: ShapeDecoration(
                   color: AppColors.white,
-                  border: Border.all(color: AppColors.primary, width: 3),
-                  boxShadow: [
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(32),
+                  ),
+                  shadows: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.2),
-                      blurRadius: 15,
-                      spreadRadius: 2,
+                      color: AppColors.primary.withOpacity(0.08),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20),
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Text(
-                    '$_relaxationCountdown',
-                    style: const TextStyle(
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  AppAssets.relaxationImage,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: AppColors.primary.withOpacity(0.05),
+                    child: const Icon(
+                      Icons.landscape,
+                      size: 80,
                       color: AppColors.primary,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
               ),
+              const SizedBox(height: 32),
+
+              // Standardized Instruction Text
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Relax and focus on the distance',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Standardized Timer (Minimalist & Refined)
+              SquircleTimer(
+                seconds: _relaxationCountdown,
+                color: AppColors.primary,
+                size: 56,
+                fontSize: 20,
+              ),
+
+              const SizedBox(height: 32),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -1786,12 +1773,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             children: [
               // ✅ PROMINENT Size indicator on LEFT
               Container(
-                width: 64,
+                width: 72,
                 height: 44,
                 decoration: ShapeDecoration(
                   color: AppColors.primary.withOpacity(0.08),
                   shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(24),
                   ),
                   shadows: [
                     BoxShadow(

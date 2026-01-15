@@ -15,6 +15,7 @@ import '../../../core/utils/navigation_utils.dart';
 import '../../../core/utils/distance_helper.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../../../core/widgets/squircle_timer.dart';
 import '../../quick_vision_test/screens/distance_transition_screen.dart';
 import '../../../data/models/mobile_refractometry_result.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -1142,85 +1143,74 @@ class _MobileRefractometryTestScreenState
 
   Widget _buildRelaxationView() {
     return Container(
-      color: AppColors.white,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+      color: AppColors.testBackground,
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Hero Card with Image
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                height: MediaQuery.of(context).size.height * 0.68,
+                width: double.infinity,
+                decoration: ShapeDecoration(
+                  color: AppColors.white,
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(32),
                   ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Image.asset(
-                AppAssets.relaxationImage,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: AppColors.primary.withOpacity(0.1),
-                  child: const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.landscape,
-                          size: 80,
-                          color: AppColors.primary,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Focus on the distance...',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ],
+                  shadows: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.08),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  AppAssets.relaxationImage,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: AppColors.primary.withOpacity(0.05),
+                    child: const Icon(
+                      Icons.landscape,
+                      size: 80,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                const Text(
+              const SizedBox(height: 40),
+
+              // Standardized Instruction Text
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
                   'Relax and focus on the distance',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 16,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$_relaxationCountdown',
-                      style: const TextStyle(
-                        color: AppColors.white,
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Standardized Timer (Minimalist & Refined)
+              SquircleTimer(
+                seconds: _relaxationCountdown,
+                color: AppColors.primary,
+                size: 56,
+                fontSize: 20,
+              ),
+
+              const SizedBox(height: 32),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1246,13 +1236,15 @@ class _MobileRefractometryTestScreenState
               // Distance/Mode indicator on LEFT
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
+                  horizontal: 12,
                   vertical: 8,
                 ),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: AppColors.primary.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary, width: 2),
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: const BorderSide(color: AppColors.primary, width: 2),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
