@@ -24,7 +24,6 @@ import 'cover_right_eye_instruction_screen.dart';
 import 'cover_left_eye_instruction_screen.dart';
 import '../../../core/services/distance_skip_manager.dart';
 import '../../../core/widgets/eye_loader.dart';
-import '../../../core/widgets/squircle_timer.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
 /// Implements Visiaxx specification for 1-meter testing
@@ -1676,6 +1675,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildRelaxationView() {
+    final double progress =
+        _relaxationCountdown / TestConstants.relaxationDurationSeconds;
+
     return Container(
       color: AppColors.testBackground,
       width: double.infinity,
@@ -1684,40 +1686,92 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Spacer(flex: 2),
-          // Hero Card with Image (Maximized)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            height: MediaQuery.of(context).size.height * 0.60,
-            width: double.infinity,
-            decoration: ShapeDecoration(
-              color: AppColors.white,
-              shape: ContinuousRectangleBorder(
-                borderRadius: BorderRadius.circular(32),
-              ),
-              shadows: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.08),
-                  blurRadius: 40,
-                  offset: const Offset(0, 20),
+          // Hero Card with Image and Overlapping Timer
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.bottomCenter,
+            children: [
+              // Image Card
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                height: MediaQuery.of(context).size.height * 0.60,
+                width: double.infinity,
+                decoration: ShapeDecoration(
+                  color: AppColors.white,
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(32),
+                  ),
+                  shadows: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.08),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Image.asset(
-              AppAssets.relaxationImage,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.primary.withOpacity(0.05),
-                child: const Icon(
-                  Icons.landscape,
-                  size: 80,
-                  color: AppColors.primary,
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  AppAssets.relaxationImage,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: AppColors.primary.withOpacity(0.05),
+                    child: const Icon(
+                      Icons.landscape,
+                      size: 80,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 32),
 
+              // Floating Integrated Timer
+              Positioned(
+                bottom: -28, // Half of timer height to overlap perfectly
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 3,
+                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '$_relaxationCountdown',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primary,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 56), // Increased to account for overlap
           // Standardized Instruction Text
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1732,15 +1786,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             ),
           ),
 
-          const SizedBox(height: 24),
-
-          // Standardized Timer (Minimalist & Premium)
-          SquircleTimer(
-            seconds: _relaxationCountdown,
-            color: AppColors.primary,
-            size: 56,
-            fontSize: 20,
-          ),
           const Spacer(flex: 3),
         ],
       ),
