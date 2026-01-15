@@ -1422,23 +1422,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         : _results.map((r) => r.similarity).reduce((a, b) => a + b) /
               _results.length;
 
-    // Qualitative feedback logic
-    String insightText =
-        "Your reading fluidity and accuracy have been assessed.";
-    IconData insightIcon = Icons.info_outline;
-    Color insightColor = AppColors.primary;
-
-    if (avgSimilarity >= 90.0 && _correctCount >= 6) {
-      insightText =
-          "Excellent reading fluidity and match accuracy observed. Your near vision reading is optimal.";
-      insightIcon = Icons.verified_user_rounded;
-      insightColor = AppColors.success;
-    } else if (avgSimilarity < 70.0) {
-      insightText =
-          "Some hesitation or mismatch in reading detected. This may warrant a more detailed near-vision review.";
-      insightIcon = Icons.warning_amber_rounded;
-      insightColor = AppColors.warning;
-    }
+    // Qualitative feedback integrated into cards.
 
     return Scaffold(
       backgroundColor: AppColors.testBackground,
@@ -1461,6 +1445,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                   children: [
                     // Header Section
                     Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color:
@@ -1512,48 +1497,17 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Professional Insight Card
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: insightColor.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: insightColor.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(insightIcon, color: insightColor, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              insightText,
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                     const SizedBox(height: 24),
 
-                    // Results summary card
+                    // Performance Metrics Section
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.1),
-                          width: 1.5,
+                          color: AppColors.border.withOpacity(0.5),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -1564,7 +1518,18 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                         ],
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(
+                            'PERFORMANCE METRICS',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textTertiary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           _buildStatRow(
                             'Sentences Mastered',
                             '$_correctCount/7',
@@ -1576,7 +1541,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                                       : 'Needs Review'),
                           ),
                           const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 14),
+                            padding: EdgeInsets.symmetric(vertical: 12),
                             child: Divider(height: 1),
                           ),
                           _buildStatRow(
@@ -1586,6 +1551,49 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                             status: avgSimilarity >= 85.0
                                 ? 'High Accuracy'
                                 : 'Moderate',
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Divider(height: 1),
+                          ),
+                          _buildStatRow(
+                            'Best Clarity',
+                            _results.isEmpty ? 'N/A' : _results.last.snellen,
+                            Colors.orange,
+                            status: 'Snellen Eq.',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Detailed Information
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.1),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline_rounded,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Near vision reading at 40cm is within healthy limits for standard print sizes.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textPrimary.withOpacity(0.8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
                         ],
                       ),

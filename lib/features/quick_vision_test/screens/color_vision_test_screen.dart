@@ -1126,26 +1126,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   Widget _buildCompleteView() {
     final result = context.read<TestSessionProvider>().colorVision;
     final isNormal = result?.isNormal == true;
-    final totalPlates = _testPlates.length;
-    final rightCorrect = result?.rightEye.correctAnswers ?? 0;
-    final leftCorrect = result?.leftEye.correctAnswers ?? 0;
-
-    // Qualitative feedback logic
-    String insightText = "Your color vision has been assessed.";
-    IconData insightIcon = Icons.info_outline;
-    Color insightColor = AppColors.primary;
-
-    if (isNormal && rightCorrect == totalPlates && leftCorrect == totalPlates) {
-      insightText =
-          "Perfect score! No color vision deficiencies detected in either eye.";
-      insightIcon = Icons.verified_user_rounded;
-      insightColor = AppColors.success;
-    } else if (!isNormal) {
-      insightText =
-          "Some indications of color vision deficiency were observed. Further clinical evaluation is recommended.";
-      insightIcon = Icons.warning_amber_rounded;
-      insightColor = AppColors.warning;
-    }
+    // Qualitative feedback integrated into individual cards.
 
     return Scaffold(
       backgroundColor: AppColors.testBackground,
@@ -1166,8 +1147,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 ),
                 child: Column(
                   children: [
-                    // Header Section with Pulse Icon
+                    // Header Section
                     Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color:
@@ -1215,109 +1197,19 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Professional Insight Card
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: insightColor.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: insightColor.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(insightIcon, color: insightColor, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              insightText,
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                     const SizedBox(height: 24),
 
-                    // Results Summary Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.1),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.black.withOpacity(0.05),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Total Score',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '${rightCorrect + leftCorrect}/${totalPlates * 2}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 14),
-                            child: Divider(height: 1),
-                          ),
-                          _buildDetailedScoreRow(
-                            'Right Eye',
-                            '$rightCorrect/$totalPlates correct',
-                            AppColors.rightEye,
-                            status: _getEyeStatus(rightCorrect, totalPlates),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildDetailedScoreRow(
-                            'Left Eye',
-                            '$leftCorrect/$totalPlates correct',
-                            AppColors.leftEye,
-                            status: _getEyeStatus(leftCorrect, totalPlates),
-                          ),
-                        ],
-                      ),
+                    // Separate Eye Result Cards
+                    _buildIndividualEyeCard(
+                      'Right Eye',
+                      result?.rightEye,
+                      AppColors.rightEye,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildIndividualEyeCard(
+                      'Left Eye',
+                      result?.leftEye,
+                      AppColors.leftEye,
                     ),
                   ],
                 ),
@@ -1546,82 +1438,117 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     );
   }
 
-  Widget _buildDetailedScoreRow(
-    String label,
-    String score,
-    Color color, {
-    String? status,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Row(
+  Widget _buildIndividualEyeCard(
+    String eye,
+    ColorVisionEyeResult? eyeResult,
+    Color color,
+  ) {
+    final int correct = eyeResult?.correctAnswers ?? 0;
+    final int total = eyeResult?.totalDiagnosticPlates ?? 14;
+    final String status = eyeResult?.status.displayName ?? 'Unknown';
+    final String deficiency = eyeResult?.detectedType?.displayName ?? 'None';
+    final bool isNormal = eyeResult?.status == ColorVisionStatus.normal;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.remove_red_eye_rounded,
-                  size: 18,
                   color: color,
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      eye,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
                         color: AppColors.textPrimary,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (status != null)
-                      Text(
-                        status,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: status == 'Normal'
-                              ? AppColors.success
-                              : AppColors.warning,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      status,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isNormal ? AppColors.success : AppColors.warning,
                       ),
+                    ),
                   ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: (isNormal ? AppColors.success : AppColors.warning)
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$correct/$total',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isNormal ? AppColors.success : AppColors.warning,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-        const SizedBox(width: 8),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            score,
+          const SizedBox(height: 12),
+          const Divider(height: 1, thickness: 0.5),
+          const SizedBox(height: 12),
+          Text(
+            'FINDINGS',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 9,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: AppColors.textTertiary,
+              letterSpacing: 0.5,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            deficiency,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: isNormal ? AppColors.textPrimary : AppColors.warning,
+            ),
+          ),
+        ],
+      ),
     );
-  }
-
-  String _getEyeStatus(int correct, int total) {
-    if (correct == total) return 'Normal';
-    if (correct >= total - 2) return 'Borderline';
-    return 'Attention Required';
   }
 }
 

@@ -1143,25 +1143,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     final provider = context.read<TestSessionProvider>();
     final rightResult = provider.amslerGridRight;
     final leftResult = provider.amslerGridLeft;
-    final isRightNormal = rightResult?.isNormal ?? true;
-    final isLeftNormal = leftResult?.isNormal ?? true;
 
-    // Qualitative feedback logic
-    String insightText = "Your central vision has been assessed.";
-    IconData insightIcon = Icons.info_outline;
-    Color insightColor = AppColors.primary;
+    final isNormal =
+        (rightResult?.isNormal ?? true) && (leftResult?.isNormal ?? true);
 
-    if (isRightNormal && isLeftNormal) {
-      insightText =
-          "Excellent! Central vision appears clear in both eyes with no distortions detected.";
-      insightIcon = Icons.verified_user_rounded;
-      insightColor = AppColors.success;
-    } else {
-      insightText =
-          "Distortions or blurry regions were detected. Please consult an eye care professional for a detailed evaluation.";
-      insightIcon = Icons.warning_amber_rounded;
-      insightColor = AppColors.warning;
-    }
+    // Qualitative feedback has been integrated into cards.
 
     return Scaffold(
       backgroundColor: AppColors.testBackground,
@@ -1184,19 +1170,16 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   children: [
                     // Header Section
                     Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color:
-                            (isRightNormal && isLeftNormal
-                                    ? AppColors.success
-                                    : AppColors.warning)
+                            (isNormal ? AppColors.success : AppColors.warning)
                                 .withOpacity(0.08),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color:
-                              (isRightNormal && isLeftNormal
-                                      ? AppColors.success
-                                      : AppColors.warning)
+                              (isNormal ? AppColors.success : AppColors.warning)
                                   .withOpacity(0.15),
                         ),
                       ),
@@ -1206,18 +1189,18 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color:
-                                  (isRightNormal && isLeftNormal
+                                  (isNormal
                                           ? AppColors.success
                                           : AppColors.warning)
                                       .withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              isRightNormal && isLeftNormal
+                              isNormal
                                   ? Icons.check_circle_rounded
                                   : Icons.info_outline_rounded,
                               size: 40,
-                              color: isRightNormal && isLeftNormal
+                              color: isNormal
                                   ? AppColors.success
                                   : AppColors.warning,
                             ),
@@ -1235,45 +1218,15 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Professional Insight Card
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: insightColor.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: insightColor.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(insightIcon, color: insightColor, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              insightText,
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                     const SizedBox(height: 24),
 
-                    // Summary cards
+                    // Separate Eye Result Cards
                     _buildEyeSummaryCard(
                       'Right Eye',
                       rightResult,
                       AppColors.rightEye,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     _buildEyeSummaryCard(
                       'Left Eye',
                       leftResult,
@@ -1358,9 +1311,26 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       if (result?.hasMissingAreas == true) findings.add('Missing Areas');
     }
 
+    // Determine severity
+    String severityLabel = 'Normal';
+    Color severityColor = AppColors.success;
+
+    if (!isNormal) {
+      final pointCount = result?.distortionPoints.length ?? 0;
+      if (pointCount >= 8 || findings.length >= 3) {
+        severityLabel = 'Severe';
+        severityColor = AppColors.error;
+      } else if (pointCount >= 4 || findings.length >= 2) {
+        severityLabel = 'Moderate';
+        severityColor = Colors.orange;
+      } else {
+        severityLabel = 'Mild';
+        severityColor = AppColors.warning;
+      }
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
@@ -1368,88 +1338,91 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.08),
-            blurRadius: 12,
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.grid_on_rounded, color: color, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  eye,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: AppColors.textPrimary,
-                  ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 4),
-                if (isNormal)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Normal',
-                      style: TextStyle(
-                        fontSize: 11,
+                child: Icon(Icons.grid_on_rounded, color: color, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      eye,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.success,
+                        fontSize: 15,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      severityLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: severityColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!isNormal) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1, thickness: 0.5),
+            const SizedBox(height: 12),
+            Text(
+              'FINDINGS',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textTertiary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: findings
+                  .map(
+                    (f) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: severityColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        f,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: severityColor,
+                        ),
                       ),
                     ),
                   )
-                else
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: findings
-                        .map(
-                          (f) => Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.warning.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              f,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.warning,
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-              ],
+                  .toList(),
             ),
-          ),
-          Icon(
-            isNormal ? Icons.verified_rounded : Icons.warning_rounded,
-            color: isNormal ? AppColors.success : AppColors.warning,
-          ),
+          ],
         ],
       ),
     );

@@ -152,135 +152,193 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
         appBar: AppBar(
-          title: const Text('Contrast Sensitivity Results'),
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          title: const Text('Contrast Sensitivity Result'),
+          backgroundColor: AppColors.testBackground,
+          elevation: 0,
           automaticallyImplyLeading: false,
         ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Overall Status Card
-                _buildCategoryCard(result.overallCategory, result.averageScore),
-                const SizedBox(height: 24),
-
-                // Breakdown section
-                const Text(
-                  'Test Breakdown',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Right Eye
-                if (result.rightEye != null) ...[
-                  _buildEyeTitle('Right Eye'),
-                  if (result.rightEye!.shortDistance != null)
-                    _buildDistanceResultCard(
-                      'Near Vision (40cm)',
-                      result.rightEye!.shortDistance!,
-                      Icons.short_text,
-                    ),
-                  const SizedBox(height: 8),
-                  if (result.rightEye!.longDistance != null)
-                    _buildDistanceResultCard(
-                      'Distance Vision (1m)',
-                      result.rightEye!.longDistance!,
-                      Icons.visibility,
-                    ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Left Eye
-                if (result.leftEye != null) ...[
-                  _buildEyeTitle('Left Eye'),
-                  if (result.leftEye!.shortDistance != null)
-                    _buildDistanceResultCard(
-                      'Near Vision (40cm)',
-                      result.leftEye!.shortDistance!,
-                      Icons.short_text,
-                    ),
-                  const SizedBox(height: 8),
-                  if (result.leftEye!.longDistance != null)
-                    _buildDistanceResultCard(
-                      'Distance Vision (1m)',
-                      result.leftEye!.longDistance!,
-                      Icons.visibility,
-                    ),
-                  const SizedBox(height: 16),
-                ],
-
-                const SizedBox(height: 32),
-
-                // Summary Info
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                    ),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 24,
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Icon(Icons.info_outline, color: AppColors.primary),
-                      const SizedBox(height: 12),
-                      Text(
-                        result.userSummary,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          height: 1.5,
-                          color: AppColors.textPrimary,
+                      // Header Section
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color:
+                              (result.overallCategory == 'Normal' ||
+                                          result.overallCategory == 'Excellent'
+                                      ? AppColors.success
+                                      : AppColors.warning)
+                                  .withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color:
+                                (result.overallCategory == 'Normal' ||
+                                            result.overallCategory ==
+                                                'Excellent'
+                                        ? AppColors.success
+                                        : AppColors.warning)
+                                    .withOpacity(0.15),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    (result.overallCategory == 'Normal' ||
+                                                result.overallCategory ==
+                                                    'Excellent'
+                                            ? AppColors.success
+                                            : AppColors.warning)
+                                        .withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                (result.overallCategory == 'Normal' ||
+                                        result.overallCategory == 'Excellent'
+                                    ? Icons.check_circle_rounded
+                                    : Icons.info_outline_rounded),
+                                size: 40,
+                                color:
+                                    (result.overallCategory == 'Normal' ||
+                                        result.overallCategory == 'Excellent'
+                                    ? AppColors.success
+                                    : AppColors.warning),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Contrast Sensitivity Test Completed',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                            Text(
+                              result.overallCategory,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    (result.overallCategory == 'Normal' ||
+                                        result.overallCategory == 'Excellent'
+                                    ? AppColors.success
+                                    : AppColors.warning),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 24),
+
+                      // Right Eye
+                      if (result.rightEye != null) ...[
+                        _buildEyeTitle('Right Eye'),
+                        const SizedBox(height: 8),
+                        if (result.rightEye!.shortDistance != null)
+                          _buildDistanceResultCard(
+                            'Near Vision (40cm)',
+                            result.rightEye!.shortDistance!,
+                            Icons.short_text,
+                          ),
+                        const SizedBox(height: 12),
+                        if (result.rightEye!.longDistance != null)
+                          _buildDistanceResultCard(
+                            'Distance Vision (1m)',
+                            result.rightEye!.longDistance!,
+                            Icons.visibility,
+                          ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // Left Eye
+                      if (result.leftEye != null) ...[
+                        _buildEyeTitle('Left Eye'),
+                        const SizedBox(height: 8),
+                        if (result.leftEye!.shortDistance != null)
+                          _buildDistanceResultCard(
+                            'Near Vision (40cm)',
+                            result.leftEye!.shortDistance!,
+                            Icons.short_text,
+                          ),
+                        const SizedBox(height: 12),
+                        if (result.leftEye!.longDistance != null)
+                          _buildDistanceResultCard(
+                            'Distance Vision (1m)',
+                            result.leftEye!.longDistance!,
+                            Icons.visibility,
+                          ),
+                      ],
                     ],
                   ),
                 ),
+              ),
+            ),
 
-                const SizedBox(height: 48),
-
-                // Bottom Actions
-                ElevatedButton(
+            // Sticky Bottom Button
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
                   onPressed: _navigateToSummary,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    elevation: 4,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
-                        'Continue',
+                        'Continue to Refractometry',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '($_secondsRemaining)',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.normal,
-                          color: AppColors.white70,
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${_secondsRemaining}s',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -296,61 +354,6 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
           fontWeight: FontWeight.bold,
           color: AppColors.primary,
         ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(String category, double score) {
-    Color color;
-    IconData icon;
-
-    switch (category) {
-      case 'Excellent':
-      case 'Normal':
-        color = AppColors.success;
-        icon = Icons.check_circle;
-        break;
-      case 'Borderline':
-        color = AppColors.warning;
-        icon = Icons.warning;
-        break;
-      case 'Reduced':
-      default:
-        color = AppColors.error;
-        icon = Icons.error;
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 64, color: color),
-          const SizedBox(height: 16),
-          Text(
-            category.toUpperCase(),
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Average: ${score.toStringAsFixed(2)} log CS',
-            style: TextStyle(
-              fontSize: 16,
-              color: color.withValues(alpha: 0.8),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ),
     );
   }

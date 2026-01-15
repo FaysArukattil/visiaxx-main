@@ -254,52 +254,58 @@ class _MobileRefractometryQuickResultScreenState
     final overallStatus = _getOverallStatus(result);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.testBackground,
       appBar: AppBar(
-        title: const Text(
-          'Refractometry Results',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: AppColors.transparent,
+        title: const Text('Refractometry Result'),
+        backgroundColor: AppColors.testBackground,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close_rounded, color: AppColors.textPrimary),
-            onPressed: () => NavigationUtils.navigateHome(context),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Column(
+                children: [
+                  _buildStatusHeader(overallStatus),
+                  const SizedBox(height: 24),
+                  if (result.rightEye != null)
+                    _buildEyeCard(
+                      'Right Eye',
+                      result.rightEye!,
+                      AppColors.rightEye,
+                    ),
+                  if (result.leftEye != null) ...[
+                    const SizedBox(height: 16),
+                    _buildEyeCard(
+                      'Left Eye',
+                      result.leftEye!,
+                      AppColors.leftEye,
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  _buildClinicalInsights(result),
+                  // Show prescription to ALL users if it exists and is included in results
+                  if (_prescription != null &&
+                      _prescription!.includeInResults) ...[
+                    const SizedBox(height: 24),
+                    _userRole == UserRole.examiner
+                        ? _buildPractitionerPrescriptionSection(result)
+                        : _buildReadOnlyPrescriptionSection(result),
+                  ],
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+          // Sticky Bottom Button Area
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: _buildActionButtons(context, result),
           ),
         ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            _buildStatusHeader(overallStatus),
-            const SizedBox(height: 32),
-            if (result.rightEye != null)
-              _buildEyeCard('Right Eye', result.rightEye!, AppColors.primary),
-            if (result.leftEye != null) ...[
-              const SizedBox(height: 24),
-              _buildEyeCard('Left Eye', result.leftEye!, AppColors.secondary),
-            ],
-            const SizedBox(height: 32),
-            _buildClinicalInsights(result),
-            // Show prescription to ALL users if it exists and is included in results
-            if (_prescription != null && _prescription!.includeInResults) ...[
-              const SizedBox(height: 32),
-              _userRole == UserRole.examiner
-                  ? _buildPractitionerPrescriptionSection(result)
-                  : _buildReadOnlyPrescriptionSection(result),
-            ],
-            const SizedBox(height: 48),
-            _buildActionButtons(context, result),
-            const SizedBox(height: 40),
-          ],
-        ),
       ),
     );
   }
@@ -310,41 +316,35 @@ class _MobileRefractometryQuickResultScreenState
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.15)),
       ),
-      child: Row(
+      child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(statusInfo['icon'], color: color, size: 28),
+            child: Icon(statusInfo['icon'], color: color, size: 40),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  statusInfo['label'],
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  'Refraction Screening Complete',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 12),
+          Text(
+            statusInfo['label'],
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            'Refraction Screening Complete',
+            style: TextStyle(
+              color: color.withOpacity(0.8),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

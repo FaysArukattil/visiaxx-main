@@ -2045,21 +2045,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     final rightAcuity = provider.visualAcuityRight?.snellenScore ?? 'N/A';
     final leftAcuity = provider.visualAcuityLeft?.snellenScore ?? 'N/A';
 
-    // Qualitative feedback logic
-    String insightText = "Your visual acuity has been assessed.";
-    IconData insightIcon = Icons.info_outline;
-    Color insightColor = AppColors.primary;
-
-    if (rightAcuity == '20/20' && leftAcuity == '20/20') {
-      insightText =
-          "Excellent clarity observed in both eyes. Your vision is within optimal range.";
-      insightIcon = Icons.verified_user_rounded;
-      insightColor = AppColors.success;
-    } else if (rightAcuity != 'N/A' && leftAcuity != 'N/A') {
-      insightText =
-          "Assessment complete. Please review the specific results for each eye below.";
-      insightIcon = Icons.analytics_rounded;
-    }
+    // Qualitative feedback logic has been integrated into individual cards.
 
     return Scaffold(
       backgroundColor: AppColors.testBackground,
@@ -2082,6 +2068,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   children: [
                     // Header Section
                     Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.success.withOpacity(0.08),
@@ -2117,55 +2104,25 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Professional Insight Card
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: insightColor.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: insightColor.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(insightIcon, color: insightColor, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              insightText,
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                     const SizedBox(height: 24),
 
-                    // Separate Eye Result Cards
+                    // Separate Eye Result Cards with Details
                     _buildIndividualSummaryCard(
                       'Right Eye',
                       rightAcuity,
                       AppColors.rightEye,
+                      correct:
+                          provider.visualAcuityRight?.correctResponses ?? 0,
+                      total: provider.visualAcuityRight?.totalResponses ?? 0,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     _buildIndividualSummaryCard(
                       'Left Eye',
                       leftAcuity,
                       AppColors.leftEye,
+                      correct: provider.visualAcuityLeft?.correctResponses ?? 0,
+                      total: provider.visualAcuityLeft?.totalResponses ?? 0,
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Statistics Row
-                    _buildVAStatsRow(provider),
                   ],
                 ),
               ),
@@ -2229,7 +2186,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
   }
 
-  Widget _buildIndividualSummaryCard(String eye, String score, Color color) {
+  Widget _buildIndividualSummaryCard(
+    String eye,
+    String score,
+    Color color, {
+    required int correct,
+    required int total,
+  }) {
     final status = _getShortStatus(score);
 
     return Container(
@@ -2246,61 +2209,95 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.remove_red_eye_rounded, color: color, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  eye,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: status == 'Optimal'
-                        ? AppColors.success
-                        : AppColors.warning,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: [
-              const Text(
-                'SNELLEN',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textTertiary,
-                  letterSpacing: 0.5,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.remove_red_eye_rounded,
+                  color: color,
+                  size: 24,
                 ),
               ),
-              Text(
-                score,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      eye,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      status,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: status == 'Optimal'
+                            ? AppColors.success
+                            : AppColors.warning,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'SNELLEN',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textTertiary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  Text(
+                    score,
+                    style: TextStyle(
+                      fontSize: score.contains('Worse') ? 13 : 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, thickness: 0.5),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStatRow(
+                'Correct',
+                '$correct',
+                Icons.check_circle_outline,
+                AppColors.success,
+              ),
+              _buildStatRow(
+                'Total',
+                '$total',
+                Icons.analytics_outlined,
+                AppColors.primary,
+              ),
+              _buildStatRow(
+                'Accuracy',
+                '${total > 0 ? (correct / total * 100).toStringAsFixed(0) : 0}%',
+                Icons.insights,
+                Colors.orange,
               ),
             ],
           ),
@@ -2309,30 +2306,32 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
   }
 
-  Widget _buildVAStatsRow(TestSessionProvider provider) {
-    final rightResult = provider.visualAcuityRight;
-    final leftResult = provider.visualAcuityLeft;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem(
-            'Correct',
-            '${(rightResult?.correctResponses ?? 0) + (leftResult?.correctResponses ?? 0)}',
-          ),
-          _buildStatItem(
-            'Total',
-            '${(rightResult?.totalResponses ?? 0) + (leftResult?.totalResponses ?? 0)}',
-          ),
-          _buildStatItem('Consistency', 'High'),
-        ],
-      ),
+  Widget _buildStatRow(String label, String value, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 9,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -2346,21 +2345,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     } catch (_) {
       return 'Normal';
     }
-  }
-
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 10, color: AppColors.textTertiary),
-        ),
-      ],
-    );
   }
 }
 
