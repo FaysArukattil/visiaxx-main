@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/widgets/radio_group.dart';
 import '../../../data/models/questionnaire_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -42,6 +41,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   String _dischargeColor = 'white';
   bool _dischargeRegular = false;
   final _dischargeStartController = TextEditingController();
+  bool _lightSensitivitySevere = false;
+  final _lightSensitivityDetailController = TextEditingController();
 
   @override
   void dispose() {
@@ -54,11 +55,46 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     _headacheDurationController.dispose();
     _screenTimeController.dispose();
     _dischargeStartController.dispose();
+    _lightSensitivityDetailController.dispose();
     super.dispose();
   }
 
+  bool _isStepValid() {
+    if (_currentStep == 0) {
+      if (_chiefComplaints.hasRedness && _rednessController.text.trim().isEmpty)
+        return false;
+      if (_chiefComplaints.hasWatering &&
+          _wateringDaysController.text.trim().isEmpty)
+        return false;
+      if (_chiefComplaints.hasItching &&
+          _itchingLocationController.text.trim().isEmpty)
+        return false;
+      if (_chiefComplaints.hasHeadache &&
+          (_headacheLocationController.text.trim().isEmpty ||
+              _headacheDurationController.text.trim().isEmpty))
+        return false;
+      if (_chiefComplaints.hasDryness &&
+          _screenTimeController.text.trim().isEmpty)
+        return false;
+      if (_chiefComplaints.hasStickyDischarge &&
+          _dischargeStartController.text.trim().isEmpty)
+        return false;
+      if (_chiefComplaints.hasLightSensitivity &&
+          _lightSensitivityDetailController.text.trim().isEmpty)
+        return false;
+      return true;
+    }
+    if (_currentStep == 2) {
+      if (_hasRecentSurgery && _surgeryDetailsController.text.trim().isEmpty)
+        return false;
+      return true;
+    }
+    return true; // Step 1 is always valid (systemic illness is optional)
+  }
+
   void _nextStep() {
-    if (_currentStep < 3) {
+    if (!_isStepValid()) return;
+    if (_currentStep < 2) {
       setState(() => _currentStep++);
     } else {
       _submitQuestionnaire();
@@ -128,6 +164,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       headacheFollowUp: headacheFollowUp,
       drynessFollowUp: drynessFollowUp,
       dischargeFollowUp: dischargeFollowUp,
+      lightSensitivityFollowUp: _chiefComplaints.hasLightSensitivity
+          ? LightSensitivityFollowUp(
+              isSevere: _lightSensitivitySevere,
+              details: _lightSensitivityDetailController.text,
+            )
+          : null,
     );
 
     final provider = context.read<TestSessionProvider>();
@@ -190,42 +232,23 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             icon: const Icon(Icons.close),
             onPressed: _showExitConfirmation,
           ),
+          centerTitle: true,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(80),
+            child: _buildEyeProgressIndicator(),
+          ),
         ),
         body: Column(
           children: [
-            // Progress indicator
-            LinearProgressIndicator(
-              value: (_currentStep + 1) / 4,
-              backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.primary,
-              ),
-            ),
-            // Step indicator
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (index) {
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: index <= _currentStep
-                          ? AppColors.primary
-                          : AppColors.border,
-                    ),
-                  );
-                }),
-              ),
-            ),
             // Content
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: _buildCurrentStep(),
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  child: _buildCurrentStep(),
+                ),
               ),
             ),
             // Navigation buttons
@@ -233,41 +256,73 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: AppColors.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
                   ),
                 ],
               ),
-              child: Row(
-                children: [
-                  if (_currentStep > 0)
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    if (_currentStep > 0)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _previousStep,
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.border),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Text(
+                              'Back',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (_currentStep > 0) const SizedBox(width: 16),
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: _previousStep,
-                        child: const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text('Back', style: TextStyle(fontSize: 13)),
+                      child: Opacity(
+                        opacity: _isStepValid() ? 1.0 : 0.5,
+                        child: ElevatedButton(
+                          onPressed: _isStepValid() ? _nextStep : null,
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                            backgroundColor: AppColors.primary,
+                            disabledBackgroundColor: AppColors.primary
+                                .withOpacity(0.3),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Text(
+                              _currentStep == 2 ? 'Start Test' : 'Next Step',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  if (_currentStep > 0) const SizedBox(width: 16),
-                  Expanded(
-                    flex: _currentStep == 0 ? 1 : 1,
-                    child: ElevatedButton(
-                      onPressed: _nextStep,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          _currentStep == 3 ? 'Continue' : 'Next',
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -281,10 +336,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       case 0:
         return _buildChiefComplaintsStep();
       case 1:
-        return _buildFollowUpQuestionsStep();
+        return _buildMedicalHistoryStep();
       case 2:
-        return _buildSystemicIllnessStep();
-      case 3:
         return _buildAdditionalQuestionsStep();
       default:
         return Container();
@@ -293,79 +346,310 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   Widget _buildChiefComplaintsStep() {
     return Column(
+      key: const ValueKey(0),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Chief Complaints',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        _buildStepHeader(
+          'Eye Symptoms',
+          'Select the symptoms you are experiencing. We will ask for more details for selected items.',
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Select all symptoms you are currently experiencing',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 24),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Redness',
-          subtitle: 'Red or bloodshot eyes',
-          icon: Icons.remove_red_eye,
+          subtitle: 'Eyes appearing bloodshot or irritated',
+          hint:
+              'Redness can be caused by allergies, fatigue, or dryness. If accompanied by pain, please consult a specialist immediately.',
+          icon: Icons.remove_red_eye_outlined,
           value: _chiefComplaints.hasRedness,
           onChanged: (v) => setState(() {
             _chiefComplaints = _chiefComplaints.copyWith(hasRedness: v);
           }),
+          followUp: _buildLabeledInput(
+            label: 'How long has redness been present?',
+            hint: 'e.g., 2 days, 1 week',
+            controller: _rednessController,
+          ),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Watering',
-          subtitle: 'Excessive tearing',
-          icon: Icons.water_drop,
+          subtitle: 'Excessive tearing or fluid',
+          hint:
+              'Excess tearing can be a reflex to dryness or a sign of irritation/inflammation.',
+          icon: Icons.water_drop_outlined,
           value: _chiefComplaints.hasWatering,
           onChanged: (v) => setState(() {
             _chiefComplaints = _chiefComplaints.copyWith(hasWatering: v);
           }),
+          followUp: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabeledInput(
+                label: 'How many days?',
+                hint: 'Number of days',
+                controller: _wateringDaysController,
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Pattern of watering:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildModernSelector<String>(
+                options: {
+                  'continuous': 'Continuous',
+                  'intermittent': 'Intermittent',
+                },
+                selectedValue: _wateringPattern,
+                onChanged: (v) => setState(() => _wateringPattern = v),
+              ),
+            ],
+          ),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Itching',
-          subtitle: 'Itchy or irritated eyes',
-          icon: Icons.warning_amber,
+          subtitle: 'Irritated or prickly feeling',
+          hint:
+              'Itching is often a symptom of allergic conjunctivitis. Avoid rubbing your eyes as it can worsen irritation.',
+          icon: Icons.front_hand_outlined,
           value: _chiefComplaints.hasItching,
           onChanged: (v) => setState(() {
             _chiefComplaints = _chiefComplaints.copyWith(hasItching: v);
           }),
+          followUp: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Both eyes affected?',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSlidableToggle(
+                      value: _itchingBothEyes,
+                      onChanged: (v) => setState(() => _itchingBothEyes = v),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildLabeledInput(
+                label: 'Where is the itching located?',
+                hint: 'e.g., corner of eye, eyelid',
+                controller: _itchingLocationController,
+              ),
+            ],
+          ),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Headache',
           subtitle: 'Pain around eyes or head',
-          icon: Icons.psychology,
+          hint:
+              'Persistent headaches can be related to eye strain or uncorrected vision. Documenting the location helps our assessment.',
+          icon: Icons.psychology_outlined,
           value: _chiefComplaints.hasHeadache,
           onChanged: (v) => setState(() {
             _chiefComplaints = _chiefComplaints.copyWith(hasHeadache: v);
           }),
+          followUp: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Use Column instead of Row for mobile responsiveness to avoid overflow
+              _buildLabeledInput(
+                label: 'Location',
+                hint: 'e.g., Forehead, temples',
+                controller: _headacheLocationController,
+              ),
+              const SizedBox(height: 12),
+              _buildLabeledInput(
+                label: 'Duration',
+                hint: 'e.g., 1 hour, constant',
+                controller: _headacheDurationController,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Type of Pain:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildModernSelector<String>(
+                options: {'throbbing': 'Throbbing', 'mild': 'Mild / Dull'},
+                selectedValue: _headachePainType,
+                onChanged: (v) => setState(() => _headachePainType = v),
+              ),
+            ],
+          ),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Dryness',
           subtitle: 'Dry or gritty feeling',
-          icon: Icons.wb_sunny,
+          hint:
+              'Dryness is common with extended screen use or in AC environments. It can make eyes feel gritty or like sand is present.',
+          icon: Icons.grain_outlined,
           value: _chiefComplaints.hasDryness,
           onChanged: (v) => setState(() {
             _chiefComplaints = _chiefComplaints.copyWith(hasDryness: v);
           }),
+          followUp: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'AC blowing on face?',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSlidableToggle(
+                      value: _acBlowingOnFace,
+                      onChanged: (v) => setState(() => _acBlowingOnFace = v),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildLabeledInput(
+                label: 'Daily screen time (hours)',
+                hint: 'e.g., 8',
+                controller: _screenTimeController,
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Sticky Discharge',
-          subtitle: 'Mucus or discharge from eyes',
-          icon: Icons.blur_on,
+          subtitle: 'Mucus or buildup around lids',
+          hint:
+              'Discharge can range from watery to thick/crusty. Green or yellow discharge may indicate a bacterial infection.',
+          icon: Icons.bubble_chart_outlined,
           value: _chiefComplaints.hasStickyDischarge,
           onChanged: (v) => setState(() {
             _chiefComplaints = _chiefComplaints.copyWith(hasStickyDischarge: v);
           }),
+          followUp: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Color of discharge:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildModernSelector<String>(
+                options: {
+                  'white': 'White',
+                  'green': 'Green',
+                  'yellow': 'Yellow',
+                },
+                selectedValue: _dischargeColor,
+                onChanged: (v) => setState(() => _dischargeColor = v),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Is it recurring?',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSlidableToggle(
+                      value: _dischargeRegular,
+                      onChanged: (v) => setState(() => _dischargeRegular = v),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildLabeledInput(
+                label: 'When did it start?',
+                hint: 'e.g., 3 days ago',
+                controller: _dischargeStartController,
+              ),
+            ],
+          ),
+        ),
+        _buildQuestionCard(
+          title: 'Light Sensitivity',
+          subtitle: 'Discomfort or pain from bright light',
+          hint:
+              'Photophobia can be caused by dry eyes, migraine, or inflammation. Documenting severity helps our assessment.',
+          icon: Icons.lightbulb_outline,
+          value: _chiefComplaints.hasLightSensitivity,
+          onChanged: (v) => setState(() {
+            _chiefComplaints = _chiefComplaints.copyWith(
+              hasLightSensitivity: v,
+            );
+          }),
+          followUp: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Is it severe?',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSlidableToggle(
+                      value: _lightSensitivitySevere,
+                      onChanged: (v) =>
+                          setState(() => _lightSensitivitySevere = v),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildLabeledInput(
+                label: 'When does it happen?',
+                hint: 'e.g., sunlight, bright lamps',
+                controller: _lightSensitivityDetailController,
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
-        const Divider(),
-        const SizedBox(height: 16),
-        _buildYesNoTile(
+        _buildSectionHeader('Other Eye History'),
+        _buildBooleanCard(
           title: 'Previous cataract operation?',
+          hint:
+              'A cataract is the clouding of the eye\'s lens. Surgery involves replacing it with an artificial Intraocular Lens (IOL).',
           value: _chiefComplaints.hasPreviousCataractOperation,
           onChanged: (v) => setState(() {
             _chiefComplaints = _chiefComplaints.copyWith(
@@ -373,8 +657,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             );
           }),
         ),
-        _buildYesNoTile(
+        _buildBooleanCard(
           title: 'Family history of glaucoma?',
+          hint:
+              'Glaucoma is a group of eye conditions that damage the optic nerve, often due to high eye pressure. It can be hereditary.',
           value: _chiefComplaints.hasFamilyGlaucomaHistory,
           onChanged: (v) => setState(() {
             _chiefComplaints = _chiefComplaints.copyWith(
@@ -386,281 +672,76 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  Widget _buildFollowUpQuestionsStep() {
-    final hasFollowUps =
-        _chiefComplaints.hasRedness ||
-        _chiefComplaints.hasWatering ||
-        _chiefComplaints.hasItching ||
-        _chiefComplaints.hasHeadache ||
-        _chiefComplaints.hasDryness ||
-        _chiefComplaints.hasStickyDischarge;
-
-    if (!hasFollowUps) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Icon(Icons.check_circle, size: 64, color: AppColors.success),
-          const SizedBox(height: 16),
-          Text(
-            'No follow-up questions needed',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You can proceed to the next step',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-        ],
-      );
-    }
-
+  Widget _buildMedicalHistoryStep() {
     return Column(
+      key: const ValueKey(1),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Tell us more',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        _buildStepHeader(
+          'Health Records',
+          'Please select any medical conditions you have. This helps us analyze eye-health correlations.',
         ),
-        const SizedBox(height: 24),
-        if (_chiefComplaints.hasRedness) ...[
-          _buildSectionTitle('About Redness'),
-          TextFormField(
-            controller: _rednessController,
-            decoration: const InputDecoration(
-              labelText: 'How long has redness been present?',
-              hintText: 'e.g., 2 days, 1 week',
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-        if (_chiefComplaints.hasWatering) ...[
-          _buildSectionTitle('About Watering'),
-          TextFormField(
-            controller: _wateringDaysController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'How many days?',
-              hintText: 'Number of days',
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text('Pattern:', style: TextStyle(color: AppColors.textSecondary)),
-          AppRadioGroup<String>(
-            groupValue: _wateringPattern,
-            onChanged: (v) => setState(() => _wateringPattern = v!),
-            child: Row(
-              children: [
-                Flexible(
-                  child: AppRadioListTile<String>(
-                    title: const Text(
-                      'Continuous',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    value: 'continuous',
-                  ),
-                ),
-                Flexible(
-                  child: AppRadioListTile<String>(
-                    title: const Text(
-                      'Intermittent',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    value: 'intermittent',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-        if (_chiefComplaints.hasItching) ...[
-          _buildSectionTitle('About Itching'),
-          SwitchListTile(
-            title: const Text('Both eyes affected?'),
-            value: _itchingBothEyes,
-            onChanged: (v) => setState(() => _itchingBothEyes = v),
-            contentPadding: EdgeInsets.zero,
-          ),
-          TextFormField(
-            controller: _itchingLocationController,
-            decoration: const InputDecoration(
-              labelText: 'Where is the itching located?',
-              hintText: 'e.g., corner of eye, eyelid',
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-        if (_chiefComplaints.hasHeadache) ...[
-          _buildSectionTitle('About Headache'),
-          TextFormField(
-            controller: _headacheLocationController,
-            decoration: const InputDecoration(
-              labelText: 'Location of headache',
-              hintText: 'e.g., forehead, temples, behind eyes',
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _headacheDurationController,
-            decoration: const InputDecoration(
-              labelText: 'How long does it last?',
-              hintText: 'e.g., 1 hour, all day',
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text('Pain type:', style: TextStyle(color: AppColors.textSecondary)),
-          AppRadioGroup<String>(
-            groupValue: _headachePainType,
-            onChanged: (v) => setState(() => _headachePainType = v!),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppRadioListTile<String>(
-                    title: const Text('Throbbing'),
-                    value: 'throbbing',
-                  ),
-                ),
-                Expanded(
-                  child: AppRadioListTile<String>(
-                    title: const Text('Mild/Dull'),
-                    value: 'mild',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-        if (_chiefComplaints.hasDryness) ...[
-          _buildSectionTitle('About Dryness'),
-          SwitchListTile(
-            title: const Text('Is AC blowing directly on your face?'),
-            value: _acBlowingOnFace,
-            onChanged: (v) => setState(() => _acBlowingOnFace = v),
-            contentPadding: EdgeInsets.zero,
-          ),
-          TextFormField(
-            controller: _screenTimeController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Daily screen time (hours)',
-              hintText: 'e.g., 8',
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-        if (_chiefComplaints.hasStickyDischarge) ...[
-          _buildSectionTitle('About Discharge'),
-          Text(
-            'Color of discharge:',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-          Wrap(
-            spacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('White'),
-                selected: _dischargeColor == 'white',
-                onSelected: (s) => setState(() => _dischargeColor = 'white'),
-              ),
-              ChoiceChip(
-                label: const Text('Green'),
-                selected: _dischargeColor == 'green',
-                onSelected: (s) => setState(() => _dischargeColor = 'green'),
-              ),
-              ChoiceChip(
-                label: const Text('Yellow'),
-                selected: _dischargeColor == 'yellow',
-                onSelected: (s) => setState(() => _dischargeColor = 'yellow'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            title: const Text('Is it regular/recurring?'),
-            value: _dischargeRegular,
-            onChanged: (v) => setState(() => _dischargeRegular = v),
-            contentPadding: EdgeInsets.zero,
-          ),
-          TextFormField(
-            controller: _dischargeStartController,
-            decoration: const InputDecoration(
-              labelText: 'When did it start?',
-              hintText: 'e.g., 3 days ago',
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSystemicIllnessStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Medical History',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Select any conditions you have been diagnosed with',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 24),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Hypertension',
           subtitle: 'High blood pressure',
-          icon: Icons.favorite,
+          hint:
+              'Hypertension (High BP) can damage the small blood vessels in the retina, leading to hypertensive retinopathy.',
+          icon: Icons.favorite_border_rounded,
           value: _systemicIllness.hasHypertension,
           onChanged: (v) => setState(() {
             _systemicIllness = _systemicIllness.copyWith(hasHypertension: v);
           }),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Diabetes',
-          subtitle: 'Type 1 or Type 2 diabetes',
-          icon: Icons.bloodtype,
+          subtitle: 'Type 1 or Type 2',
+          hint:
+              'Diabetes can cause Diabetic Retinopathy, affecting the light-sensitive tissue at the back of the eye.',
+          icon: Icons.water_drop_outlined,
           value: _systemicIllness.hasDiabetes,
           onChanged: (v) => setState(() {
             _systemicIllness = _systemicIllness.copyWith(hasDiabetes: v);
           }),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'COPD',
-          subtitle: 'Chronic obstructive pulmonary disease',
-          icon: Icons.air,
+          subtitle: 'Chronic lung disease',
+          hint:
+              'Chronic Obstructive Pulmonary Disease makes breathing difficult and can affect overall blood oxygenation.',
+          icon: Icons.air_rounded,
           value: _systemicIllness.hasCopd,
           onChanged: (v) => setState(() {
             _systemicIllness = _systemicIllness.copyWith(hasCopd: v);
           }),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Asthma',
           subtitle: 'Respiratory condition',
-          icon: Icons.air,
+          hint:
+              'A chronic condition that affects the airways. Some medications for asthma may have ocular side effects.',
+          icon: Icons.air_rounded,
           value: _systemicIllness.hasAsthma,
           onChanged: (v) => setState(() {
             _systemicIllness = _systemicIllness.copyWith(hasAsthma: v);
           }),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Migraine',
           subtitle: 'Recurring severe headaches',
-          icon: Icons.psychology_alt,
+          hint:
+              'Migraines can have visual symptoms (aura) such as flashing lights or temporary vision loss.',
+          icon: Icons.wb_twilight_rounded,
           value: _systemicIllness.hasMigraine,
           onChanged: (v) => setState(() {
             _systemicIllness = _systemicIllness.copyWith(hasMigraine: v);
           }),
         ),
-        _buildCheckboxTile(
+        _buildQuestionCard(
           title: 'Sinus',
-          subtitle: 'Sinus problems or sinusitis',
-          icon: Icons.face,
+          subtitle: 'Sinus problems or congestion',
+          hint:
+              'Sinus inflammation can cause pressure that feels like pain behind the eyes or in the orbital area.',
+          icon: Icons.face_rounded,
           value: _systemicIllness.hasSinus,
           onChanged: (v) => setState(() {
             _systemicIllness = _systemicIllness.copyWith(hasSinus: v);
@@ -672,60 +753,58 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   Widget _buildAdditionalQuestionsStep() {
     return Column(
+      key: const ValueKey(2),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Additional Information',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        _buildStepHeader(
+          'Final Details',
+          'Almost done! Please fill in these last few clinical details.',
         ),
-        const SizedBox(height: 24),
-        Text(
-          'Current Medications',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
+        _buildLabeledInput(
+          label: 'Are you currently on any medications?',
+          hint: 'e.g. Daily eye drops, BP medicine...',
           controller: _medicationsController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'List any medications you are currently taking...',
-            alignLabelWithHint: true,
-          ),
+          maxLines: 4,
         ),
         const SizedBox(height: 24),
-        _buildYesNoTile(
-          title: 'Any recent surgery?',
+        _buildBooleanCard(
+          title: 'Have you had any recent surgery?',
+          hint:
+              'Please mention any ocular or major systemic surgeries performed in the last 6 months.',
           value: _hasRecentSurgery,
           onChanged: (v) => setState(() => _hasRecentSurgery = v),
-        ),
-        if (_hasRecentSurgery) ...[
-          const SizedBox(height: 12),
-          TextFormField(
+          followUp: _buildLabeledInput(
+            label: 'Please specify the surgery details',
+            hint: 'Type of surgery, date, etc.',
             controller: _surgeryDetailsController,
-            maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Surgery Details',
-              hintText: 'Type of surgery and when...',
-            ),
+            maxLines: 3,
           ),
-        ],
+        ),
         const SizedBox(height: 32),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.info.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: AppColors.primary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.primary.withOpacity(0.1)),
           ),
-          child: Row(
+          child: const Row(
             children: [
-              const Icon(Icons.info_outline, color: AppColors.info),
-              const SizedBox(width: 12),
+              Icon(
+                Icons.verified_user_outlined,
+                color: AppColors.primary,
+                size: 28,
+              ),
+              SizedBox(width: 16),
               Expanded(
                 child: Text(
-                  'Your responses will help us provide better recommendations.',
-                  style: TextStyle(color: AppColors.info, fontSize: 13),
+                  'Your privacy is important. This information is shared only with your examining clinician.',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -735,96 +814,807 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildStepHeader(String title, String subtitle) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
-      ),
-    );
-  }
-
-  Widget _buildCheckboxTile({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: value
-            ? AppColors.primary.withValues(alpha: 0.05)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: value ? AppColors.primary : AppColors.border),
-      ),
-      child: CheckboxListTile(
-        value: value,
-        onChanged: (v) => onChanged(v ?? false),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-        secondary: Icon(
-          icon,
-          color: value ? AppColors.primary : AppColors.textSecondary,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        controlAffinity: ListTileControlAffinity.trailing,
-      ),
-    );
-  }
-
-  Widget _buildYesNoTile({
-    required String title,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(title)),
-          Row(
-            children: [
-              _buildYesNoButton('No', !value, () => onChanged(false)),
-              const SizedBox(width: 8),
-              _buildYesNoButton('Yes', value, () => onChanged(true)),
-            ],
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textPrimary,
+              letterSpacing: -1.0,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.textSecondary,
+              height: 1.5,
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildYesNoButton(String label, bool selected, VoidCallback onTap) {
+  Widget _buildQuestionCard({
+    required String title,
+    required String subtitle,
+    required String hint,
+    required IconData icon,
+    required bool value,
+    required Function(bool) onChanged,
+    Widget? followUp,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: value ? AppColors.primary : AppColors.border.withOpacity(0.35),
+          width: value ? 2 : 1,
+        ),
+        boxShadow: value
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                  spreadRadius: -2,
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Column(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => onChanged(!value),
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: value ? AppColors.primary : Colors.grey[200],
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: value
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Icon(
+                        icon,
+                        color: value ? Colors.white : AppColors.textSecondary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: value
+                                        ? AppColors.primary
+                                        : AppColors.textPrimary,
+                                    fontSize: 16,
+                                    letterSpacing: -0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              _buildHintButton(title, hint),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Transform.scale(
+                      scale: 1.15,
+                      child: Checkbox(
+                        value: value,
+                        onChanged: (v) => onChanged(v ?? false),
+                        activeColor: AppColors.primary,
+                        checkColor: Colors.white,
+                        side: BorderSide(
+                          color: value ? AppColors.primary : AppColors.border,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: value
+                      ? AppColors.primary.withOpacity(0.03)
+                      : AppColors.border.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.05),
+                  ),
+                ),
+                child: followUp ?? const SizedBox(),
+              ),
+            ),
+            crossFadeState: value && followUp != null
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernSelector<T>({
+    required Map<T, String> options,
+    required T selectedValue,
+    required Function(T) onChanged,
+  }) {
+    // For 2-3 options, display in a single row with equal width
+    if (options.length <= 3) {
+      return Row(
+        children: options.entries.map((entry) {
+          final isSelected = selectedValue == entry.key;
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: GestureDetector(
+                onTap: () => onChanged(entry.key),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : AppColors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.border.withOpacity(0.5),
+                      width: 1.5,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Center(
+                    child: Text(
+                      entry.value,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.textPrimary,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+
+    // For more than 3 options, use Wrap
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: options.entries.map((entry) {
+        final isSelected = selectedValue == entry.key;
+        return GestureDetector(
+          onTap: () => onChanged(entry.key),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary : AppColors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.border.withOpacity(0.5),
+                width: 1.5,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Text(
+              entry.value,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildBooleanCard({
+    required String title,
+    required String hint,
+    required bool value,
+    required Function(bool) onChanged,
+    Widget? followUp,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: value ? AppColors.primary : AppColors.border.withOpacity(0.35),
+          width: value ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: value
+                ? AppColors.primary.withOpacity(0.08)
+                : Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: value
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      _buildHintButton(title, hint),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _buildSlidableToggle(value: value, onChanged: onChanged),
+              ],
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.03),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.05),
+                  ),
+                ),
+                child: followUp ?? const SizedBox(),
+              ),
+            ),
+            crossFadeState: value && followUp != null
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHintButton(String title, String hint) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => _showPremiumHint(title, hint),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
+          color: AppColors.primary.withOpacity(0.08),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.question_mark_rounded,
+          size: 14,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  void _showPremiumHint(String title, String hint) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 20,
+              offset: Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppColors.border.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.lightbulb_outline,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              hint,
+              style: const TextStyle(
+                fontSize: 16,
+                color: AppColors.textPrimary,
+                height: 1.6,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Got it',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabeledInput({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? AppColors.white : AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          onChanged: (v) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary.withOpacity(0.5),
+            ),
+            filled: true,
+            fillColor: AppColors.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.border.withOpacity(0.3)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.border.withOpacity(0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 16,
+            ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEyeProgressIndicator() {
+    return Container(
+      padding: const EdgeInsets.only(bottom: 24, left: 32, right: 32),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(3, (index) {
+          final isCompleted = index < _currentStep;
+          final isActive = index == _currentStep;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Node
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                width: isActive ? 42 : 36,
+                height: isActive ? 42 : 36,
+                decoration: BoxDecoration(
+                  color: isActive || isCompleted
+                      ? AppColors.primary
+                      : AppColors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isActive || isCompleted
+                        ? AppColors.primary
+                        : AppColors.border.withOpacity(0.5),
+                    width: isActive ? 3 : 1,
+                  ),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Icon(
+                  index == 0
+                      ? Icons.visibility_rounded
+                      : (index == 1
+                            ? Icons.health_and_safety_rounded
+                            : Icons.checklist_rounded),
+                  color: isActive || isCompleted
+                      ? AppColors.white
+                      : AppColors.textSecondary.withOpacity(0.5),
+                  size: isActive ? 20 : 18,
+                ),
+              ),
+              // Line
+              if (index < 2)
+                Container(
+                  width: 40,
+                  height: 3,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    color: index < _currentStep
+                        ? AppColors.primary
+                        : AppColors.border.withOpacity(0.3),
+                  ),
+                ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildSlidableToggle({
+    required bool value,
+    required Function(bool) onChanged,
+    String leftLabel = 'No',
+    String rightLabel = 'Yes',
+  }) {
+    return _DraggableToggle(
+      value: value,
+      onChanged: onChanged,
+      leftLabel: leftLabel,
+      rightLabel: rightLabel,
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 5,
+            height: 20,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.4),
+                  blurRadius: 6,
+                  offset: const Offset(2, 0),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DraggableToggle extends StatefulWidget {
+  final bool value;
+  final Function(bool) onChanged;
+  final String leftLabel;
+  final String rightLabel;
+
+  const _DraggableToggle({
+    required this.value,
+    required this.onChanged,
+    required this.leftLabel,
+    required this.rightLabel,
+  });
+
+  @override
+  State<_DraggableToggle> createState() => _DraggableToggleState();
+}
+
+class _DraggableToggleState extends State<_DraggableToggle> {
+  double? _dragPosition;
+  bool _isDragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const double toggleWidth = 140;
+    const double thumbWidth = 70;
+    const double maxDragPosition = toggleWidth - thumbWidth - 8;
+
+    // Calculate thumb position
+    double thumbPosition;
+    if (_isDragging && _dragPosition != null) {
+      thumbPosition = _dragPosition!.clamp(0.0, maxDragPosition);
+    } else {
+      thumbPosition = widget.value ? maxDragPosition : 0;
+    }
+
+    return GestureDetector(
+      onHorizontalDragStart: (details) {
+        setState(() {
+          _isDragging = true;
+          // Start from the current actual position to avoid jumping
+          _dragPosition = widget.value ? maxDragPosition : 0;
+        });
+      },
+      onHorizontalDragUpdate: (details) {
+        setState(() {
+          _dragPosition = (_dragPosition ?? 0) + details.delta.dx;
+        });
+      },
+      onHorizontalDragEnd: (details) {
+        // Snap to the closest side
+        final shouldBeOn = thumbPosition > maxDragPosition / 2;
+        if (shouldBeOn != widget.value) {
+          widget.onChanged(shouldBeOn);
+        }
+        setState(() {
+          _isDragging = false;
+          _dragPosition = null;
+        });
+      },
+      onTap: () => widget.onChanged(!widget.value),
+      child: Container(
+        width: toggleWidth,
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppColors.border.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(
+          children: [
+            // Animated background slider
+            AnimatedPositioned(
+              duration: _isDragging
+                  ? Duration.zero
+                  : const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              left: thumbPosition + 4,
+              top: 4,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: thumbWidth,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(
+                        _isDragging ? 0.12 : 0.08,
+                      ),
+                      blurRadius: _isDragging ? 12 : 8,
+                      offset: Offset(0, _isDragging ? 3 : 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Labels
+            IgnorePointer(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        widget.leftLabel,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: thumbPosition < maxDragPosition / 2
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        widget.rightLabel,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: thumbPosition >= maxDragPosition / 2
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1787,8 +1787,9 @@ class PdfExportService {
 
     if (cc.hasRedness) {
       String detail = 'Redness';
-      if (cc.rednessFollowUp?.duration != null) {
-        detail += ' (${cc.rednessFollowUp!.duration})';
+      if (cc.rednessFollowUp?.duration != null &&
+          cc.rednessFollowUp!.duration.isNotEmpty) {
+        detail += ' (Duration: ${cc.rednessFollowUp!.duration})';
       }
       detailedComplaints.add(detail);
     }
@@ -1804,7 +1805,7 @@ class PdfExportService {
       String detail = 'Itching';
       if (cc.itchingFollowUp != null) {
         detail +=
-            ' (${cc.itchingFollowUp!.bothEyes ? 'Both' : 'Single'}, ${cc.itchingFollowUp!.location})';
+            ' (${cc.itchingFollowUp!.bothEyes ? 'Both Eyes' : 'Single Eye'}, ${cc.itchingFollowUp!.location})';
       }
       detailedComplaints.add(detail);
     }
@@ -1812,21 +1813,23 @@ class PdfExportService {
       String detail = 'Headache';
       if (cc.headacheFollowUp != null) {
         detail +=
-            ' (${cc.headacheFollowUp!.location}, ${cc.headacheFollowUp!.painType})';
+            ' (${cc.headacheFollowUp!.location}, ${cc.headacheFollowUp!.duration}, ${cc.headacheFollowUp!.painType})';
       }
       detailedComplaints.add(detail);
     }
     if (cc.hasDryness) {
       String detail = 'Dryness';
       if (cc.drynessFollowUp != null) {
-        detail += ' (${cc.drynessFollowUp!.screenTimeHours}h/d)';
+        detail +=
+            ' (${cc.drynessFollowUp!.screenTimeHours}h/d, ${cc.drynessFollowUp!.acBlowingOnFace ? 'AC on face' : 'No AC'})';
       }
       detailedComplaints.add(detail);
     }
     if (cc.hasStickyDischarge) {
       String detail = 'Sticky Discharge';
       if (cc.dischargeFollowUp != null) {
-        detail += ' (${cc.dischargeFollowUp!.color})';
+        detail +=
+            ' (${cc.dischargeFollowUp!.color}, ${cc.dischargeFollowUp!.isRegular ? 'Recurring' : 'One-time'}, Start: ${cc.dischargeFollowUp!.startDate})';
       }
       detailedComplaints.add(detail);
     }

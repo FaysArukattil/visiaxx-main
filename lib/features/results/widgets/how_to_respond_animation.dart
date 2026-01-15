@@ -99,7 +99,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.2),
+              color: AppColors.primary.withOpacity(0.2),
               width: 2,
             ),
           ),

@@ -71,6 +71,7 @@ class ChiefComplaints {
   final bool hasHeadache;
   final bool hasDryness;
   final bool hasStickyDischarge;
+  final bool hasLightSensitivity;
   final bool hasPreviousCataractOperation;
   final bool hasFamilyGlaucomaHistory;
 
@@ -81,6 +82,7 @@ class ChiefComplaints {
   final HeadacheFollowUp? headacheFollowUp;
   final DrynessFollowUp? drynessFollowUp;
   final DischargeFollowUp? dischargeFollowUp;
+  final LightSensitivityFollowUp? lightSensitivityFollowUp;
 
   ChiefComplaints({
     this.hasRedness = false,
@@ -91,12 +93,14 @@ class ChiefComplaints {
     this.hasStickyDischarge = false,
     this.hasPreviousCataractOperation = false,
     this.hasFamilyGlaucomaHistory = false,
+    this.hasLightSensitivity = false,
     this.rednessFollowUp,
     this.wateringFollowUp,
     this.itchingFollowUp,
     this.headacheFollowUp,
     this.drynessFollowUp,
     this.dischargeFollowUp,
+    this.lightSensitivityFollowUp,
   });
 
   factory ChiefComplaints.fromMap(Map<String, dynamic> data) {
@@ -107,6 +111,7 @@ class ChiefComplaints {
       hasHeadache: data['hasHeadache'] ?? false,
       hasDryness: data['hasDryness'] ?? false,
       hasStickyDischarge: data['hasStickyDischarge'] ?? false,
+      hasLightSensitivity: data['hasLightSensitivity'] ?? false,
       hasPreviousCataractOperation:
           data['hasPreviousCataractOperation'] ?? false,
       hasFamilyGlaucomaHistory: data['hasFamilyGlaucomaHistory'] ?? false,
@@ -128,6 +133,9 @@ class ChiefComplaints {
       dischargeFollowUp: data['dischargeFollowUp'] != null
           ? DischargeFollowUp.fromMap(data['dischargeFollowUp'])
           : null,
+      lightSensitivityFollowUp: data['lightSensitivityFollowUp'] != null
+          ? LightSensitivityFollowUp.fromMap(data['lightSensitivityFollowUp'])
+          : null,
     );
   }
 
@@ -139,6 +147,7 @@ class ChiefComplaints {
       'hasHeadache': hasHeadache,
       'hasDryness': hasDryness,
       'hasStickyDischarge': hasStickyDischarge,
+      'hasLightSensitivity': hasLightSensitivity,
       'hasPreviousCataractOperation': hasPreviousCataractOperation,
       'hasFamilyGlaucomaHistory': hasFamilyGlaucomaHistory,
       'rednessFollowUp': rednessFollowUp?.toMap(),
@@ -147,6 +156,7 @@ class ChiefComplaints {
       'headacheFollowUp': headacheFollowUp?.toMap(),
       'drynessFollowUp': drynessFollowUp?.toMap(),
       'dischargeFollowUp': dischargeFollowUp?.toMap(),
+      'lightSensitivityFollowUp': lightSensitivityFollowUp?.toMap(),
     };
   }
 
@@ -157,6 +167,7 @@ class ChiefComplaints {
     bool? hasHeadache,
     bool? hasDryness,
     bool? hasStickyDischarge,
+    bool? hasLightSensitivity,
     bool? hasPreviousCataractOperation,
     bool? hasFamilyGlaucomaHistory,
     RednesFollowUp? rednessFollowUp,
@@ -165,6 +176,7 @@ class ChiefComplaints {
     HeadacheFollowUp? headacheFollowUp,
     DrynessFollowUp? drynessFollowUp,
     DischargeFollowUp? dischargeFollowUp,
+    LightSensitivityFollowUp? lightSensitivityFollowUp,
   }) {
     return ChiefComplaints(
       hasRedness: hasRedness ?? this.hasRedness,
@@ -173,6 +185,7 @@ class ChiefComplaints {
       hasHeadache: hasHeadache ?? this.hasHeadache,
       hasDryness: hasDryness ?? this.hasDryness,
       hasStickyDischarge: hasStickyDischarge ?? this.hasStickyDischarge,
+      hasLightSensitivity: hasLightSensitivity ?? this.hasLightSensitivity,
       hasPreviousCataractOperation:
           hasPreviousCataractOperation ?? this.hasPreviousCataractOperation,
       hasFamilyGlaucomaHistory:
@@ -183,6 +196,8 @@ class ChiefComplaints {
       headacheFollowUp: headacheFollowUp ?? this.headacheFollowUp,
       drynessFollowUp: drynessFollowUp ?? this.drynessFollowUp,
       dischargeFollowUp: dischargeFollowUp ?? this.dischargeFollowUp,
+      lightSensitivityFollowUp:
+          lightSensitivityFollowUp ?? this.lightSensitivityFollowUp,
     );
   }
 }
@@ -304,6 +319,22 @@ class DischargeFollowUp {
     'isRegular': isRegular,
     'startDate': startDate,
   };
+}
+
+class LightSensitivityFollowUp {
+  final bool isSevere;
+  final String details;
+
+  LightSensitivityFollowUp({required this.isSevere, required this.details});
+
+  factory LightSensitivityFollowUp.fromMap(Map<String, dynamic> data) {
+    return LightSensitivityFollowUp(
+      isSevere: data['isSevere'] ?? false,
+      details: data['details'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() => {'isSevere': isSevere, 'details': details};
 }
 
 /// Systemic illness tracking
