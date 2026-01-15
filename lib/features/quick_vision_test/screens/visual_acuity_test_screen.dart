@@ -1540,31 +1540,22 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             ),
           ),
           const SizedBox(width: 8),
-          // Score indicator
+          // Score indicator (Squircle)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: ShapeDecoration(
               color: AppColors.success.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.check_circle_outline,
-                  size: 14,
-                  color: AppColors.success,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '$_totalCorrect/$_totalResponses',
-                  style: const TextStyle(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+            child: Text(
+              '$_totalCorrect/$_totalResponses',
+              style: const TextStyle(
+                color: AppColors.success,
+                fontWeight: FontWeight.w900,
+                fontSize: 11,
+              ),
             ),
           ),
           const Spacer(),
@@ -1781,7 +1772,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Container(
                 padding: const EdgeInsets.all(2), // Outer ring
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
                   border: Border.all(
                     color: AppColors.primary.withOpacity(0.2),
                     width: 2,
@@ -1790,22 +1780,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 child: Container(
                   width: 54,
                   height: 54,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: const BoxDecoration(color: AppColors.primary),
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'SCORE',
-                          style: TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white70,
-                          ),
-                        ),
                         Text(
                           level.snellen,
                           style: const TextStyle(
@@ -1973,7 +1952,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 direction: EDirection.left,
                 onPressed: () => _handleButtonResponse(EDirection.left),
               ),
-              const SizedBox(width: 32),
+              const SizedBox(width: 80),
               _DirectionButton(
                 direction: EDirection.right,
                 onPressed: () => _handleButtonResponse(EDirection.right),
@@ -1987,22 +1966,35 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             onPressed: () => _handleButtonResponse(EDirection.down),
           ),
           const SizedBox(height: 24),
-          // Blurry/Can't See Clearly button
+          // Blurry/Can't See Clearly button (Proper Button)
           SizedBox(
             width: double.infinity,
-            child: TextButton(
+            child: OutlinedButton.icon(
               onPressed: () => _handleButtonResponse(EDirection.blurry),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.textSecondary.withOpacity(0.6),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              icon: const Icon(
+                Icons.visibility_off_rounded,
+                size: 18,
+                color: AppColors.primary,
               ),
-              child: const Text(
-                "I CAN'T SEE CLEARLY",
+              label: const Text(
+                "BLURRY / CAN'T SEE CLEARLY",
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  letterSpacing: 0.5,
                 ),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                side: BorderSide(
+                  color: AppColors.primary.withOpacity(0.5),
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                backgroundColor: AppColors.primary.withOpacity(0.05),
               ),
             ),
           ),
