@@ -179,6 +179,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
+    _relaxationProgressController.stop(); // ✅ Stop smooth animation
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
     _autoNavigationTimer?.cancel(); // ✅ Added: Pause auto-navigation timer
@@ -1324,157 +1325,336 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildDistanceWarningOverlay() {
-    // ✅ Dynamic messages based on status
-    final pauseReason = DistanceHelper.getPauseReason(_distanceStatus, 100.0);
-    final instruction = DistanceHelper.getDetailedInstruction(100.0);
-    final rangeText = DistanceHelper.getAcceptableRangeText(100.0);
+    const targetDistance = 100.0;
+    final pauseReason = DistanceHelper.getPauseReason(
+      _distanceStatus,
+      targetDistance,
+    );
+    final instruction = DistanceHelper.getDetailedInstruction(targetDistance);
 
-    // ✅ Icon changes based on issue
-    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? Icons.face_retouching_off
-        : Icons.warning_rounded;
+    IconData icon;
+    Color iconColor;
 
-    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? AppColors.error
-        : AppColors.warning;
+    switch (_distanceStatus) {
+      case DistanceStatus.noFaceDetected:
+        icon = Icons.person_off_rounded;
+        iconColor = AppColors.error;
+        break;
+      case DistanceStatus.tooClose:
+        icon = Icons.zoom_out_rounded;
+        iconColor = AppColors.warning;
+        break;
+      case DistanceStatus.tooFar:
+        icon = Icons.zoom_in_rounded;
+        iconColor = AppColors.warning;
+        break;
+      default:
+        icon = Icons.warning_rounded;
+        iconColor = AppColors.warning;
+    }
 
-    return Container(
-      color: AppColors.overlayDark,
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          // 1. Full-Screen Glass Blur
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(color: AppColors.black.withOpacity(0.4)),
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 60, color: iconColor),
-              const SizedBox(height: 16),
-              Text(
-                pauseReason, // ✅ Dynamic title
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.error,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                instruction, // ✅ Dynamic instruction
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
 
-              // ✅ Only show distance if face is detected
-              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
-                Text(
-                  _currentDistance > 0
-                      ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                      : 'Searching...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+          // 2. High-Fidelity Content Card
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.all(32),
+                decoration: ShapeDecoration(
+                  color: AppColors.white.withOpacity(0.95),
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(48),
                   ),
+                  shadows: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  rangeText, // ✅ Dynamic range text
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ] else ...[
-                // ✅ Special message when no face
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Distance search active',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-
-              // ✅ Voice indicator (always show it's listening)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.success, width: 1),
-                ),
-                child: Row(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _SpeechWaveform(
-                      isListening:
-                          _continuousSpeech.shouldBeListening &&
-                          !_continuousSpeech.isPausedForTts,
-                      isTalking: _isSpeechActive,
-                      color: AppColors.success,
+                    // Ultra-Premium Layered Badge
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: iconColor.withOpacity(0.2),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: iconColor.withOpacity(0.15),
+                            blurRadius: 30,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: iconColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: iconColor.withOpacity(0.3),
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(icon, size: 36, color: iconColor),
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 32),
+
+                    // Refined Typography Hierarchy
                     Text(
-                      'Voice recognition active',
+                      pauseReason.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.8,
+                        height: 1.1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      instruction,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: AppColors.success,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        color: AppColors.textPrimary.withOpacity(0.6),
+                        height: 1.6,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // LIVE DISTANCE GAUGE (The "Wow" Factor)
+                    if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
+                      _buildPremiumDistanceGauge(targetDistance),
+                    ] else
+                      _buildSearchingIndicator(),
+
+                    const SizedBox(height: 40),
+
+                    // Actions
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          _skipManager.recordSkip(
+                            DistanceTestType.visualAcuity,
+                          );
+                          setState(() {
+                            _isTestPausedForDistance = false;
+                          });
+                          if (_showE) {
+                            _restartEDisplayTimer();
+                          } else if (_showRelaxation) {
+                            _restartRelaxationTimer();
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          side: BorderSide(
+                            color: AppColors.textSecondary.withOpacity(0.3),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Continue Anyway',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-              // Skip button
-              TextButton(
-                onPressed: () {
-                  _skipManager.recordSkip(DistanceTestType.visualAcuity);
-                  setState(() {
-                    _isTestPausedForDistance = false;
-                  });
+  Widget _buildPremiumDistanceGauge(double target) {
+    final isCorrect = DistanceHelper.isDistanceCorrect(_distanceStatus);
+    final isTooClose = _currentDistance < (target - 5) && _currentDistance > 0;
+    final isTooFar = _currentDistance > (target + 5);
+    final noFaceFound = _distanceStatus == DistanceStatus.noFaceDetected;
 
-                  _restartEDisplayTimer();
-                },
-                child: Text(
-                  'Continue Anyway',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ],
+    // Responsive scaling
+    final screenWidth = MediaQuery.of(context).size.width;
+    final valueFontSize = screenWidth * 0.12;
+    final labelFontSize = screenWidth * 0.045;
+
+    String statusLabel = 'OPTIMAL';
+    Color statusColor = AppColors.success;
+
+    if (noFaceFound) {
+      statusLabel = 'NO FACE DETECTED';
+      statusColor = AppColors.error;
+    } else if (isTooClose) {
+      statusLabel = 'TOO CLOSE';
+      statusColor = AppColors.warning;
+    } else if (isTooFar) {
+      statusLabel = 'TOO FAR';
+      statusColor = AppColors.warning;
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Responsive Status Label
+        Text(
+          statusLabel,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: labelFontSize,
+            fontWeight: FontWeight.w900,
+            color: statusColor,
+            letterSpacing: 2,
           ),
         ),
+        const SizedBox(height: 20),
+
+        // Responsive Distance Value
+        if (!noFaceFound)
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.08,
+              vertical: screenWidth * 0.03,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.08),
+              boxShadow: [
+                BoxShadow(
+                  color: statusColor.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+              border: Border.all(color: statusColor.withOpacity(0.2), width: 2),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _currentDistance.toStringAsFixed(0),
+                  style: TextStyle(
+                    fontSize: valueFontSize,
+                    fontWeight: FontWeight.w900,
+                    color: statusColor,
+                    letterSpacing: -1,
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.02),
+                Text(
+                  'CM',
+                  style: TextStyle(
+                    fontSize: labelFontSize * 1.5,
+                    fontWeight: FontWeight.w800,
+                    color: statusColor.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        const SizedBox(height: 32),
+
+        // Action Hint
+        _buildActionHint(isCorrect, isTooClose, isTooFar),
+      ],
+    );
+  }
+
+  Widget _buildActionHint(bool isCorrect, bool isTooClose, bool isTooFar) {
+    if (_distanceStatus == DistanceStatus.noFaceDetected) {
+      return const SizedBox.shrink();
+    }
+
+    final text = isCorrect
+        ? 'DISTANCE OPTIMAL'
+        : (isTooClose ? 'SLOWLY MOVE BACK' : 'PLEASE MOVE CLOSER');
+    final icon = isCorrect
+        ? Icons.check_circle_rounded
+        : (isTooClose ? Icons.arrow_back_rounded : Icons.arrow_forward_rounded);
+    final color = isCorrect ? AppColors.success : AppColors.warning;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: color,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchingIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          const EyeLoader(size: 40),
+          const SizedBox(height: 24),
+          Text(
+            'SEARCHING FOR FACE...',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.error.withOpacity(0.7),
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
       ),
     );
   }

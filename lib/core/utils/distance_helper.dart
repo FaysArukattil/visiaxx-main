@@ -106,6 +106,9 @@ class DistanceHelper {
   /// Get pause reason message
   /// Get pause reason message
   static String getPauseReason(DistanceStatus status, double targetDistance) {
+    if (status == DistanceStatus.noFaceDetected) {
+      return 'No Face Detected';
+    }
     if (status == DistanceStatus.tooClose) {
       return 'Too close to screen';
     } else if (status == DistanceStatus.tooFar) {
@@ -172,5 +175,13 @@ class DistanceHelper {
     }
 
     return false;
+  }
+
+  /// Check if distance is correct for feedback display
+  static bool isDistanceCorrect(DistanceStatus status) {
+    // Face is detected and not in tooClose state
+    return status == DistanceStatus.optimal ||
+        status == DistanceStatus.tooFar ||
+        status == DistanceStatus.faceDetectedNoDistance;
   }
 }

@@ -1018,107 +1018,334 @@ class _MobileRefractometryTestScreenState
     );
     final instruction = DistanceHelper.getDetailedInstruction(targetDistance);
 
-    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? Icons.face_retouching_off
-        : Icons.warning_rounded;
+    IconData icon;
+    Color iconColor;
 
-    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? AppColors.error
-        : AppColors.warning;
+    switch (_distanceStatus) {
+      case DistanceStatus.noFaceDetected:
+        icon = Icons.person_off_rounded;
+        iconColor = AppColors.error;
+        break;
+      case DistanceStatus.tooClose:
+        icon = Icons.zoom_out_rounded;
+        iconColor = AppColors.warning;
+        break;
+      case DistanceStatus.tooFar:
+        icon = Icons.zoom_in_rounded;
+        iconColor = AppColors.warning;
+        break;
+      default:
+        icon = Icons.warning_rounded;
+        iconColor = AppColors.warning;
+    }
 
-    return Container(
-      color: AppColors.black.withOpacity(0.8),
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(24),
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          // 1. Full-Screen Glass Blur
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(color: AppColors.black.withOpacity(0.4)),
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 60, color: iconColor),
-              const SizedBox(height: 16),
-              Text(
-                pauseReason,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+
+          // 2. High-Fidelity Content Card
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.all(32),
+                decoration: ShapeDecoration(
+                  color: AppColors.white.withOpacity(0.95),
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(48),
+                  ),
+                  shadows: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20),
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Ultra-Premium Layered Badge
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: iconColor.withOpacity(0.2),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: iconColor.withOpacity(0.15),
+                            blurRadius: 30,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: iconColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: iconColor.withOpacity(0.3),
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(icon, size: 36, color: iconColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Refined Typography Hierarchy
+                    Text(
+                      pauseReason.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.8,
+                        height: 1.1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      instruction,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppColors.textPrimary.withOpacity(0.6),
+                        height: 1.6,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // LIVE DISTANCE GAUGE (The "Wow" Factor)
+                    if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
+                      _buildPremiumDistanceGauge(targetDistance),
+                    ] else
+                      _buildSearchingIndicator(),
+
+                    const SizedBox(height: 40),
+
+                    // Actions
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          _skipManager.recordSkip(
+                            DistanceTestType.visualAcuity,
+                          );
+                          setState(() => _isTestPausedForDistance = false);
+                          if (_currentPhase == RefractPhase.test &&
+                              _waitingForResponse) {
+                            _startRoundTimer();
+                            _continuousSpeech.start();
+                          } else if (_currentPhase == RefractPhase.relaxation) {
+                            _startRelaxationTimer();
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          side: BorderSide(
+                            color: AppColors.textSecondary.withOpacity(0.3),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Continue Anyway',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                instruction,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
-                Text(
-                  _currentDistance > 0
-                      ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                      : 'Calculating distance...',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: iconColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Target: ${targetDistance.toStringAsFixed(0)}cm',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ] else
-                const Text(
-                  'Please face the camera',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.error,
-                  ),
-                ),
-              const SizedBox(height: 24),
-              TextButton(
-                onPressed: () {
-                  _skipManager.recordSkip(DistanceTestType.shortDistance);
-                  setState(() => _isTestPausedForDistance = false);
-                  if (_currentPhase == RefractPhase.test &&
-                      _waitingForResponse) {
-                    _startRoundTimer();
-                    _continuousSpeech.start();
-                  } else if (_currentPhase == RefractPhase.relaxation) {
-                    _startRelaxationTimer();
-                  }
-                },
-                child: const Text(
-                  'Continue Anyway',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumDistanceGauge(double target) {
+    final isCorrect = DistanceHelper.isDistanceCorrect(_distanceStatus);
+    final isTooClose = _currentDistance < (target - 5) && _currentDistance > 0;
+    final isTooFar = _currentDistance > (target + 5);
+    final noFaceFound = _distanceStatus == DistanceStatus.noFaceDetected;
+
+    // Responsive scaling
+    final screenWidth = MediaQuery.of(context).size.width;
+    final valueFontSize = screenWidth * 0.12;
+    final labelFontSize = screenWidth * 0.045;
+
+    String statusLabel = 'OPTIMAL';
+    Color statusColor = AppColors.success;
+
+    if (noFaceFound) {
+      statusLabel = 'NO FACE DETECTED';
+      statusColor = AppColors.error;
+    } else if (isTooClose) {
+      statusLabel = 'TOO CLOSE';
+      statusColor = AppColors.warning;
+    } else if (isTooFar) {
+      statusLabel = 'TOO FAR';
+      statusColor = AppColors.warning;
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Responsive Status Label
+        Text(
+          statusLabel,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: labelFontSize,
+            fontWeight: FontWeight.w900,
+            color: statusColor,
+            letterSpacing: 2,
           ),
         ),
+        const SizedBox(height: 20),
+
+        // Responsive Distance Value
+        if (!noFaceFound)
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.08,
+              vertical: screenWidth * 0.03,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.08),
+              boxShadow: [
+                BoxShadow(
+                  color: statusColor.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+              border: Border.all(color: statusColor.withOpacity(0.2), width: 2),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _currentDistance.toStringAsFixed(0),
+                  style: TextStyle(
+                    fontSize: valueFontSize,
+                    fontWeight: FontWeight.w900,
+                    color: statusColor,
+                    letterSpacing: -1,
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.02),
+                Text(
+                  'CM',
+                  style: TextStyle(
+                    fontSize: labelFontSize * 1.5,
+                    fontWeight: FontWeight.w800,
+                    color: statusColor.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        const SizedBox(height: 32),
+
+        // Action Hint
+        _buildActionHint(isCorrect, isTooClose, isTooFar),
+      ],
+    );
+  }
+
+  Widget _buildSearchingIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          const EyeLoader(size: 40),
+          const SizedBox(height: 24),
+          Text(
+            'SEARCHING FOR FACE...',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.error.withOpacity(0.7),
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionHint(bool isCorrect, bool isTooClose, bool isTooFar) {
+    if (_distanceStatus == DistanceStatus.noFaceDetected) {
+      return const SizedBox.shrink();
+    }
+
+    final text = isCorrect
+        ? 'DISTANCE OPTIMAL'
+        : (isTooClose ? 'SLOWLY MOVE BACK' : 'PLEASE MOVE CLOSER');
+    final icon = isCorrect
+        ? Icons.check_circle_rounded
+        : (isTooClose ? Icons.arrow_back_rounded : Icons.arrow_forward_rounded);
+    final color = isCorrect ? AppColors.success : AppColors.warning;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: color,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildMainContent() {
-    if (_isTestPausedForDistance) return _buildDistanceWarning();
-
     switch (_currentPhase) {
       case RefractPhase.instruction:
         return _currentEye == 'right'
@@ -1141,36 +1368,6 @@ class _MobileRefractometryTestScreenState
       case RefractPhase.complete:
         return const Center(child: EyeLoader(size: 80));
     }
-  }
-
-  Widget _buildDistanceWarning() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 80, color: AppColors.warning),
-          const SizedBox(height: 24),
-          const Text(
-            'Check Distance',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.warning,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Please hold the device at ${_isNearMode ? "40" : "100"} cm',
-            style: const TextStyle(fontSize: 18),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'Current Distance: ${_currentDistance.toStringAsFixed(1)} cm',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildRelaxationView() {
@@ -1588,8 +1785,13 @@ class _MobileRefractometryTestScreenState
   void _showPauseDialog({String reason = 'back button'}) {
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
+    _relaxationProgressController.stop(); // ✅ Stop smooth animation
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
+
+    setState(() {
+      _isTestPausedForDistance = true; // ✅ Sync with VA behavior
+    });
 
     showDialog(
       context: context,
