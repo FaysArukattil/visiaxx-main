@@ -145,7 +145,7 @@ class _AmslerGridInstructionsScreenState
                       'The Amsler Grid',
                       'This test checks for distortions, wavy lines, or blank spots in your central vision.',
                       AppColors.primary,
-                      animation: const AmslerLightRayAnimation(isCompact: true),
+                      animation: const AmslerPathwayAnimation(isCompact: true),
                     ),
                     _buildStep(
                       1,
@@ -471,7 +471,7 @@ class _EyeInstructionPainter extends CustomPainter {
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = color.withValues(alpha: 0.2)
+        ..color = color.withOpacity(0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -498,7 +498,7 @@ class _EyeInstructionPainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withValues(alpha: 0.6),
+        Paint()..color = Colors.white.withOpacity(0.6),
       );
 
       canvas.restore();

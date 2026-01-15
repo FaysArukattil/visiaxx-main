@@ -19,28 +19,28 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
   int _currentDirection = 0;
   final List<_DirectionDemo> _directions = [
     _DirectionDemo(
-      label: 'UPWARD',
+      label: 'RIGHT',
       rotation: 0,
-      voiceText: 'Say: "Upper" or "Upward"',
-      buttonPosition: _ButtonPosition.top,
+      voiceText: 'Say: "Right"',
+      buttonPosition: _ButtonPosition.right,
     ),
     _DirectionDemo(
       label: 'DOWNWARD',
-      rotation: 180,
+      rotation: 90,
       voiceText: 'Say: "Down" or "Downward"',
       buttonPosition: _ButtonPosition.bottom,
     ),
     _DirectionDemo(
       label: 'LEFT',
-      rotation: 270,
+      rotation: 180,
       voiceText: 'Say: "Left"',
       buttonPosition: _ButtonPosition.left,
     ),
     _DirectionDemo(
-      label: 'RIGHT',
-      rotation: 90,
-      voiceText: 'Say: "Right"',
-      buttonPosition: _ButtonPosition.right,
+      label: 'UPWARD',
+      rotation: 270,
+      voiceText: 'Say: "Upper" or "Upward"',
+      buttonPosition: _ButtonPosition.top,
     ),
     _DirectionDemo(
       label: 'BLURRY',
@@ -106,10 +106,10 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
-              final fadeIn = (_controller.value * 2).clamp(0.0, 1.0);
+              final fadeIn = (_controller.value * 2.5).clamp(0.0, 1.0);
               final buttonPress =
-                  (_controller.value > 0.4 && _controller.value < 0.7)
-                  ? ((_controller.value - 0.4) / 0.3).clamp(0.0, 1.0)
+                  (_controller.value > 0.5 && _controller.value < 0.8)
+                  ? ((_controller.value - 0.5) / 0.3).clamp(0.0, 1.0)
                   : 0.0;
 
               return Column(
@@ -296,41 +296,82 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
     double fadeIn,
   ) {
     final isActive = _directions[_currentDirection].buttonPosition == position;
-    final scale = isActive ? 1.0 - (pressProgress * 0.15) : 1.0;
+    final isPressed = isActive && pressProgress > 0.2;
+    final scale = isPressed ? 1.0 - (pressProgress * 0.15) : 1.0;
 
     return Opacity(
       opacity: fadeIn,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: size,
-        height: size,
-        child: Transform.scale(
-          scale: scale,
-          child: Container(
-            decoration: BoxDecoration(
-              color: isActive && pressProgress > 0
-                  ? AppColors.primary
-                  : AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: isActive && pressProgress > 0
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.4),
-                        blurRadius: 12,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: AppColors.black.withValues(alpha: 0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: size,
+            height: size,
+            child: Transform.scale(
+              scale: scale,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isPressed ? AppColors.primary : AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.primary,
+                    width: isPressed ? 0 : 2,
+                  ),
+                  boxShadow: isPressed
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: AppColors.black.withValues(alpha: 0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                ),
+                child: Icon(
+                  icon,
+                  color: isPressed ? AppColors.surface : AppColors.primary,
+                  size: size * 0.5,
+                ),
+              ),
             ),
-            child: Icon(icon, color: AppColors.surface, size: size * 0.5),
           ),
-        ),
+          if (isActive && pressProgress > 0.1)
+            Positioned(
+              right: -5,
+              bottom: -5,
+              child: Opacity(
+                opacity: (pressProgress * 2).clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(
+                    0,
+                    (1.0 - (pressProgress * 2).clamp(0.0, 1.0)) * 20,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black26, blurRadius: 4),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.touch_app,
+                      color: AppColors.warning,
+                      size: size * 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -338,79 +379,104 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
   Widget _buildBlurryButton(double pressProgress, bool isCompact) {
     final isActive =
         _directions[_currentDirection].buttonPosition == _ButtonPosition.blurry;
-    final scale = isActive ? 1.0 - (pressProgress * 0.1) : 1.0;
+    final isPressed = isActive && pressProgress > 0.2;
+    final scale = isPressed ? 1.0 - (pressProgress * 0.1) : 1.0;
 
-    return Transform.scale(
-      scale: scale,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: isCompact
-              ? 150.0
-              : 180.0, // Reduced width to prevent overflow
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive && pressProgress > 0
-              ? AppColors.warning
-              : AppColors.warning.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.warning, width: 2),
-          boxShadow: isActive && pressProgress > 0
-              ? [
-                  BoxShadow(
-                    color: AppColors.warning.withValues(alpha: 0.4),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.visibility_off,
-              size: isCompact ? 16 : 18,
-              color: isActive && pressProgress > 0
-                  ? AppColors.white
-                  : AppColors.warning,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Transform.scale(
+          scale: scale,
+          child: Container(
+            constraints: BoxConstraints(maxWidth: isCompact ? 150.0 : 180.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isPressed ? AppColors.warning : AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.warning, width: 2),
+              boxShadow: isPressed
+                  ? [
+                      BoxShadow(
+                        color: AppColors.warning.withValues(alpha: 0.4),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: AppColors.black.withValues(alpha: 0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
             ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                "Can't See Clearly",
-                style: TextStyle(
-                  fontSize: isCompact ? 12 : 14,
-                  fontWeight: FontWeight.w600,
-                  color: isActive && pressProgress > 0
-                      ? AppColors.surface
-                      : AppColors.warning,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.visibility_off,
+                  size: isCompact ? 16 : 18,
+                  color: isPressed ? AppColors.white : AppColors.warning,
                 ),
-                overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    "Can't See Clearly",
+                    style: TextStyle(
+                      fontSize: isCompact ? 12 : 14,
+                      fontWeight: FontWeight.w600,
+                      color: isPressed ? AppColors.surface : AppColors.warning,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isActive && pressProgress > 0.1)
+          Positioned(
+            right: -10,
+            bottom: -5,
+            child: Opacity(
+              opacity: (pressProgress * 2).clamp(0.0, 1.0),
+              child: Transform.translate(
+                offset: Offset(
+                  0,
+                  (1.0 - (pressProgress * 2).clamp(0.0, 1.0)) * 20,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: AppColors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: Colors.black26, blurRadius: 4),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.touch_app,
+                    color: AppColors.warning,
+                    size: isCompact ? 20 : 24,
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 
   IconData _getDirectionIcon() {
     switch (_currentDirection) {
-      case 0:
-        return Icons.arrow_upward;
-      case 1:
-        return Icons.arrow_downward;
-      case 2:
-        return Icons.arrow_back;
-      case 3:
+      case 0: // RIGHT
         return Icons.arrow_forward;
+      case 1: // DOWNWARD
+        return Icons.arrow_downward;
+      case 2: // LEFT
+        return Icons.arrow_back;
+      case 3: // UPWARD
+        return Icons.arrow_upward;
       default:
         return Icons.arrow_upward;
     }

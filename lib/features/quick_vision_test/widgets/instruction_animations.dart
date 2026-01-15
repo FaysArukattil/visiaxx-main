@@ -951,17 +951,17 @@ class _FadingTripletsAnimationState extends State<FadingTripletsAnimation>
   }
 }
 
-/// New animation for Amsler Grid showing light rays traveling to central vision
-class AmslerLightRayAnimation extends StatefulWidget {
+/// Animation Concept: "Visual Pathway Demonstration" for Amsler Grid
+/// Shows how light rays travel through the eye and hit the macula
+class AmslerPathwayAnimation extends StatefulWidget {
   final bool isCompact;
-  const AmslerLightRayAnimation({super.key, this.isCompact = false});
+  const AmslerPathwayAnimation({super.key, this.isCompact = false});
 
   @override
-  State<AmslerLightRayAnimation> createState() =>
-      _AmslerLightRayAnimationState();
+  State<AmslerPathwayAnimation> createState() => _AmslerPathwayAnimationState();
 }
 
-class _AmslerLightRayAnimationState extends State<AmslerLightRayAnimation>
+class _AmslerPathwayAnimationState extends State<AmslerPathwayAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -970,7 +970,7 @@ class _AmslerLightRayAnimationState extends State<AmslerLightRayAnimation>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 8), // 4s for each scene
     )..repeat();
   }
 
@@ -982,104 +982,352 @@ class _AmslerLightRayAnimationState extends State<AmslerLightRayAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 120 : 180;
+    double width = widget.isCompact ? 280 : 340;
+    double height = widget.isCompact ? 180 : 220;
+
     return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return CustomPaint(
-            size: Size(size, size),
-            painter: _AmslerLightRayPainter(
-              progress: _controller.value,
-              isCompact: widget.isCompact,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                width: 1,
+              ),
             ),
-          );
-        },
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: _AmslerPathwayPainter(
+                    progress: _controller.value,
+                    isCompact: widget.isCompact,
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final isNormal = _controller.value < 0.5;
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: (isNormal ? AppColors.success : AppColors.error)
+                      .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  isNormal
+                      ? "Normal Vision Pathway"
+                      : "Macular Distortion Pathway",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isNormal ? AppColors.success : AppColors.error,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
-class _AmslerLightRayPainter extends CustomPainter {
+class _AmslerPathwayPainter extends CustomPainter {
   final double progress;
   final bool isCompact;
 
-  _AmslerLightRayPainter({required this.progress, required this.isCompact});
+  _AmslerPathwayPainter({required this.progress, required this.isCompact});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    // Draw background grid (static)
-    final gridPaint = Paint()
-      ..color = AppColors.black.withValues(alpha: 0.1)
+    final bool isNormal = progress < 0.5;
+    final double sceneProgress = (progress < 0.5
+        ? progress * 2
+        : (progress - 0.5) * 2);
+
+    // Smooth transition factor for the "damage" area
+    final double damageAlpha = progress < 0.4
+        ? 0
+        : (progress < 0.6 ? (progress - 0.4) * 5 : 1.0);
+
+    final eyeCenter = Offset(size.width * 0.7, size.height * 0.5);
+    final sunPos = Offset(size.width * 0.15, size.height * 0.5);
+
+    final eyeRadius = size.height * 0.4;
+
+    // 1. Draw the Eye Cross-section
+    final eyePaint = Paint()
+      ..color = AppColors.border.withValues(alpha: 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    // Sclera/Main Eye Ball
+    canvas.drawCircle(eyeCenter, eyeRadius, eyePaint);
+
+    // Cornea (bulge at the front)
+    final corneaPath = Path();
+    corneaPath.addArc(
+      Rect.fromCircle(
+        center: eyeCenter - Offset(eyeRadius * 0.9, 0),
+        radius: eyeRadius * 0.3,
+      ),
+      -math.pi * 0.4,
+      math.pi * 0.8,
+    );
+    canvas.drawPath(corneaPath, eyePaint);
+
+    // Retina (back of the eye)
+    final retinaPath = Path();
+    retinaPath.addArc(
+      Rect.fromCircle(center: eyeCenter, radius: eyeRadius - 2),
+      -math.pi * 0.3,
+      math.pi * 0.6,
+    );
+    final retinaPaint = Paint()
+      ..color = AppColors.warning.withValues(alpha: 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0;
+    canvas.drawPath(retinaPath, retinaPaint);
+
+    // Macula Highlight (at the very back)
+    final maculaPaint = Paint()
+      ..color = Color.lerp(
+        Colors.orange,
+        Colors.red,
+        damageAlpha,
+      )!.withValues(alpha: 0.6)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(
+      eyeCenter + Offset(eyeRadius - 2, 0),
+      isCompact ? 10 : 15,
+      maculaPaint,
+    );
+
+    // If damaged, add some distortion pulses to the macula
+    if (damageAlpha > 0) {
+      final pulse = math.sin(progress * 20) * 2;
+      canvas.drawCircle(
+        eyeCenter + Offset(eyeRadius - 2, 0),
+        (isCompact ? 10 : 15) + pulse,
+        Paint()
+          ..color = Colors.red.withOpacity(0.3 * damageAlpha)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+
+    // 2. Draw the Sun (Source of Light)
+    _drawSunSource(canvas, sunPos, isCompact ? 30 : 40);
+
+    // 3. Draw Light Rays
+    _drawLightRays(canvas, sunPos, eyeCenter, eyeRadius, sceneProgress, isNormal);
+
+    // 4. Draw Perception Overlay (What the user sees)
+    _drawPerceptionOverlay(
+      canvas,
+      Offset(size.width * 0.7, size.height * 0.2),
+      isCompact ? 40 : 50,
+      isNormal,
+    );
+  }
+
+  void _drawSunSource(Canvas canvas, Offset pos, double radius) {
+    // Sun body
+    final sunPaint = Paint()
+      ..color = Colors.amber
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(pos, radius * 0.6, sunPaint);
+
+    // Sun rays
+    final rayPaint = Paint()
+      ..color = Colors.amber.withOpacity(0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    for (int i = 0; i < 8; i++) {
+      double angle = (i * math.pi * 2) / 8;
+      canvas.drawLine(
+        pos + Offset(math.cos(angle) * radius * 0.7, math.sin(angle) * radius * 0.7),
+        pos + Offset(math.cos(angle) * radius, math.sin(angle) * radius),
+        rayPaint,
+      );
+    }
+    
+    // Subtle glow
+    canvas.drawCircle(
+      pos, 
+      radius * 0.6, 
+      Paint()..color = Colors.amber.withOpacity(0.3)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
+    );
+  }
+
+  void _drawLightRays(
+    Canvas canvas,
+    Offset start,
+    Offset eyeCenter,
+    double eyeRadius,
+    double t,
+    bool isNormal,
+  ) {
+    final rayPaint = Paint()
+      ..color = isNormal
+          ? AppColors.info.withValues(alpha: 0.6)
+          : Colors.orange.withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final pupilPos = eyeCenter - Offset(eyeRadius, 0);
+    final retinaPos = eyeCenter + Offset(eyeRadius - 2, 0);
+
+    // Particles/Ray segments
+    for (int i = 0; i < 5; i++) {
+      final offset = (i - 2) * 10.0;
+      final rayStart = start + Offset(0, offset);
+      final rayRetina =
+          retinaPos +
+          Offset(
+            0,
+            isNormal ? offset * 0.3 : offset * 0.5 + math.sin(t * 10 + i) * 5,
+          );
+
+      // Calculate path with a slight bend at the pupil (lens effect)
+      final path = Path();
+      path.moveTo(rayStart.dx, rayStart.dy);
+      path.quadraticBezierTo(
+        pupilPos.dx,
+        pupilPos.dy + offset * 0.1,
+        rayRetina.dx,
+        rayRetina.dy,
+      );
+
+      // Animate dash
+      final p1 = path.computeMetrics().first;
+      final extract = p1.extractPath(
+        p1.length * t,
+        p1.length * (t + 0.1).clamp(0.0, 1.0),
+      );
+
+      canvas.drawPath(extract, rayPaint);
+
+      // If not normal, add some scattered rays
+      if (!isNormal && t > 0.6) {
+        canvas.drawLine(
+          rayRetina - Offset(10, 0),
+          rayRetina +
+              Offset(math.cos(i.toDouble()) * 10, math.sin(i.toDouble()) * 10),
+          Paint()
+            ..color = Colors.red.withValues(alpha: 0.4)
+            ..strokeWidth = 1,
+        );
+      }
+    }
+  }
+
+  void _drawPerceptionOverlay(
+    Canvas canvas,
+    Offset pos,
+    double size,
+    bool isNormal,
+  ) {
+    // Background for overlay
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: pos, width: size * 1.2, height: size * 1.2),
+        Radius.circular(8),
+      ),
+      Paint()
+        ..color = AppColors.white
+        ..style = PaintingStyle.fill
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+    );
+
+    final paint = Paint()
+      ..color = AppColors.black
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    int divisions = 8;
-    double step = size.width / divisions;
-    for (int i = 0; i <= divisions; i++) {
-      canvas.drawLine(
-        Offset(i * step, 0),
-        Offset(i * step, size.height),
-        gridPaint,
-      );
-      canvas.drawLine(
-        Offset(0, i * step),
-        Offset(size.width, i * step),
-        gridPaint,
+    final rect = Rect.fromCenter(center: pos, width: size, height: size);
+
+    if (isNormal) {
+      // Normal straight grid
+      int lines = 5;
+      double step = size / lines;
+      for (int i = 0; i <= lines; i++) {
+        canvas.drawLine(
+          Offset(rect.left + i * step, rect.top),
+          Offset(rect.left + i * step, rect.bottom),
+          paint,
+        );
+        canvas.drawLine(
+          Offset(rect.left, rect.top + i * step),
+          Offset(rect.right, rect.top + i * step),
+          paint,
+        );
+      }
+    } else {
+      // Distorted grid
+      int lines = 5;
+      double step = size / lines;
+      for (int i = 0; i <= lines; i++) {
+        final pathH = Path();
+        final pathV = Path();
+        pathH.moveTo(rect.left, rect.top + i * step);
+        pathV.moveTo(rect.left + i * step, rect.top);
+
+        for (int j = 1; j <= 10; j++) {
+          double tx = j / 10.0;
+          double dist = math.sin(tx * math.pi + progress * 5) * 3;
+          pathH.lineTo(rect.left + tx * size, rect.top + i * step + dist);
+          pathV.lineTo(rect.left + i * step + dist, rect.top + tx * size);
+        }
+        canvas.drawPath(pathH, paint..color = paint.color.withOpacity(0.7));
+        canvas.drawPath(pathV, paint..color = paint.color.withOpacity(0.7));
+      }
+
+      // Add a "blind spot" or scotoma
+      canvas.drawCircle(
+        pos + const Offset(5, -5),
+        size * 0.2,
+        Paint()
+          ..color = Colors.black87
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
       );
     }
 
-    // Draw rays
-    final rayPaint = Paint()
-      ..color = AppColors.black.withValues(alpha: 0.5)
-      ..strokeWidth = 2.0;
-
-    int rayCount = 12;
-    for (int i = 0; i < rayCount; i++) {
-      double angle = (2 * math.pi * i) / rayCount;
-      // Ray travels from outer circle to center
-      double startDist = size.width * 0.45;
-
-      // Calculate position based on progress
-      double currentDist = startDist * (1.0 - progress);
-
-      // Ray start/end (short segments traveling)
-      double rayLength = size.width * 0.1;
-      double rayStart = currentDist;
-      double rayEnd = (currentDist - rayLength).clamp(0, startDist);
-
-      canvas.drawLine(
-        center + Offset(math.cos(angle) * rayStart, math.sin(angle) * rayStart),
-        center + Offset(math.cos(angle) * rayEnd, math.sin(angle) * rayEnd),
-        rayPaint
-          ..color = AppColors.black.withValues(alpha: 0.6 * (1.0 - progress)),
-      );
-    }
-
-    // Central Dot
-    canvas.drawCircle(
-      center,
-      isCompact ? 4 : 6,
-      Paint()
-        ..color = AppColors.black
-        ..style = PaintingStyle.fill,
+    // Label for perception
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: "Vision",
+        style: TextStyle(
+          color: isNormal ? AppColors.success : AppColors.error,
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
     );
-
-    // Focus ring
-    canvas.drawCircle(
-      center,
-      (isCompact ? 10 : 15) * (1.0 + 0.2 * math.sin(progress * 2 * math.pi)),
-      Paint()
-        ..color = AppColors.black.withValues(
-          alpha: 0.2 * (1.0 - (progress % 1.0)),
-        )
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      pos - Offset(textPainter.width / 2, size * 0.5 + 10),
     );
   }
 
   @override
-  bool shouldRepaint(covariant _AmslerLightRayPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _AmslerPathwayPainter oldDelegate) => true;
 }
