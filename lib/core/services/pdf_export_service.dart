@@ -1407,89 +1407,102 @@ class PdfExportService {
         pw.Divider(color: PdfColors.grey200, thickness: 0.5),
         pw.SizedBox(height: 8),
         _buildSectionHeader('MOBILE REFRACTOMETRY'),
-        pw.SizedBox(height: 8),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(12),
-          decoration: pw.BoxDecoration(
-            color: PdfColors.white,
-            borderRadius: pw.BorderRadius.circular(8),
-            border: pw.Border.all(color: PdfColors.grey200, width: 1),
-          ),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.SizedBox(
-                    width: 8,
-                  ), // Replaced redundant header with a spacer
-                  if (refract.criticalAlert)
-                    _buildStatusChip('CRITICAL', PdfColors.red700),
-                ],
+        pw.SizedBox(height: 12),
+
+        // Critical Alert Card (Independent)
+        if (refract.criticalAlert) ...[
+          pw.Container(
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.red700,
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Center(
+              child: pw.Text(
+                'CRITICAL ALERT: SIGNIFICANT REFRACTIVE ERROR DETECTED',
+                style: pw.TextStyle(
+                  color: PdfColors.white,
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
-              pw.SizedBox(height: 16),
-
-              // Vertical Stacking of Eyes
-              if (refract.rightEye != null) ...[
-                _buildRefractionEyePdfBlock(
-                  'RIGHT EYE',
-                  refract.rightEye!,
-                  PdfColors.blue800,
-                ),
-                if (refract.leftEye != null)
-                  pw.Padding(
-                    padding: const pw.EdgeInsets.symmetric(vertical: 16),
-                    child: pw.Divider(height: 1, color: PdfColors.grey100),
-                  ),
-              ],
-              if (refract.leftEye != null) ...[
-                _buildRefractionEyePdfBlock(
-                  'LEFT EYE',
-                  refract.leftEye!,
-                  PdfColors.teal800,
-                ),
-              ],
-
-              if (refract.healthWarnings.isNotEmpty) ...[
-                pw.SizedBox(height: 16),
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(12),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColor.fromInt(0xFFFFEBEE),
-                    borderRadius: pw.BorderRadius.circular(6),
-                    border: pw.Border.all(color: PdfColors.red200, width: 0.5),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'CLINICAL OBSERVATIONS:',
-                        style: pw.TextStyle(
-                          fontSize: 8,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.red800,
-                        ),
-                      ),
-                      pw.SizedBox(height: 6),
-                      ...refract.healthWarnings.map(
-                        (warning) => pw.Bullet(
-                          text: warning,
-                          style: const pw.TextStyle(
-                            fontSize: 8,
-                            color: PdfColors.red700,
-                          ),
-                          bulletSize: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
-        ),
+          pw.SizedBox(height: 12),
+        ],
+
+        // Independent Eye Cards (Allows breaking between them)
+        if (refract.rightEye != null) ...[
+          _buildRefractionEyePdfCard(
+            'RIGHT EYE',
+            refract.rightEye!,
+            PdfColors.blue800,
+          ),
+          pw.SizedBox(height: 12),
+        ],
+
+        if (refract.leftEye != null) ...[
+          _buildRefractionEyePdfCard(
+            'LEFT EYE',
+            refract.leftEye!,
+            PdfColors.teal800,
+          ),
+          pw.SizedBox(height: 12),
+        ],
+
+        // Health Warnings Card (Independent)
+        if (refract.healthWarnings.isNotEmpty) ...[
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColor.fromInt(0xFFFFEBEE),
+              borderRadius: pw.BorderRadius.circular(6),
+              border: pw.Border.all(color: PdfColors.red200, width: 0.5),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'CLINICAL OBSERVATIONS:',
+                  style: pw.TextStyle(
+                    fontSize: 8,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.red800,
+                  ),
+                ),
+                pw.SizedBox(height: 6),
+                ...refract.healthWarnings.map(
+                  (warning) => pw.Bullet(
+                    text: warning,
+                    style: const pw.TextStyle(
+                      fontSize: 8,
+                      color: PdfColors.red700,
+                    ),
+                    bulletSize: 2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 12),
+        ],
       ],
+    );
+  }
+
+  pw.Widget _buildRefractionEyePdfCard(
+    String label,
+    MobileRefractometryEyeResult res,
+    PdfColor color,
+  ) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
+      ),
+      child: _buildRefractionEyePdfBlock(label, res, color),
     );
   }
 
@@ -1664,24 +1677,6 @@ class PdfExportService {
     );
   }
 
-  pw.Widget _buildStatusChip(String label, PdfColor color) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: pw.BoxDecoration(
-        color: color,
-        borderRadius: pw.BorderRadius.circular(4),
-      ),
-      child: pw.Text(
-        label,
-        style: pw.TextStyle(
-          fontSize: 7,
-          fontWeight: pw.FontWeight.bold,
-          color: PdfColors.white,
-        ),
-      ),
-    );
-  }
-
   String _getPelliRobsonInterpretation(double score) {
     if (score >= 1.65) return 'Normal (Good)';
     if (score >= 1.35) return 'Mild impairment';
@@ -1838,56 +1833,64 @@ class PdfExportService {
 
     final systemicConditions = q.systemicIllness.activeConditions;
 
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(12),
-        border: pw.Border.all(color: PdfColors.grey200, width: 1),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader('PATIENT MEDICAL HISTORY'),
-          pw.SizedBox(height: 16),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Divider(color: PdfColors.grey200, thickness: 0.5),
+        pw.SizedBox(height: 8),
+        _buildSectionHeader('PATIENT MEDICAL HISTORY'),
+        pw.SizedBox(height: 12),
 
-          _buildHistoryRow(
-            'Symptoms',
-            detailedComplaints.isEmpty
-                ? 'None reported'
-                : detailedComplaints.join('; '),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.white,
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
           ),
-          _buildHistoryRow(
-            'Systemic Conditions',
-            systemicConditions.isEmpty
-                ? 'No significant history'
-                : systemicConditions.join(', '),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              _buildHistoryRow(
+                'Symptoms',
+                detailedComplaints.isEmpty
+                    ? 'None reported'
+                    : detailedComplaints.join('; '),
+              ),
+              _buildHistoryRow(
+                'Systemic Conditions',
+                systemicConditions.isEmpty
+                    ? 'No significant history'
+                    : systemicConditions.join(', '),
+              ),
+
+              if (q.currentMedications != null &&
+                  q.currentMedications!.isNotEmpty)
+                _buildHistoryRow('Medications', q.currentMedications!),
+
+              if (q.hasRecentSurgery)
+                _buildHistoryRow(
+                  'Recent Surgery',
+                  q.surgeryDetails ?? 'Yes (Details not provided)',
+                ),
+
+              if (q.chiefComplaints.hasPreviousCataractOperation ||
+                  q.chiefComplaints.hasFamilyGlaucomaHistory)
+                _buildHistoryRow(
+                  'Ocular Hist.',
+                  [
+                    q.chiefComplaints.hasPreviousCataractOperation
+                        ? 'Cataract Operation'
+                        : null,
+                    q.chiefComplaints.hasFamilyGlaucomaHistory
+                        ? 'Family Glaucoma Hist.'
+                        : null,
+                  ].whereType<String>().join(', '),
+                ),
+            ],
           ),
-
-          if (q.currentMedications != null && q.currentMedications!.isNotEmpty)
-            _buildHistoryRow('Medications', q.currentMedications!),
-
-          if (q.hasRecentSurgery)
-            _buildHistoryRow(
-              'Recent Surgery',
-              q.surgeryDetails ?? 'Yes (Details not provided)',
-            ),
-
-          if (q.chiefComplaints.hasPreviousCataractOperation ||
-              q.chiefComplaints.hasFamilyGlaucomaHistory)
-            _buildHistoryRow(
-              'Ocular Hist.',
-              [
-                q.chiefComplaints.hasPreviousCataractOperation
-                    ? 'Cataract Operation'
-                    : null,
-                q.chiefComplaints.hasFamilyGlaucomaHistory
-                    ? 'Family Glaucoma Hist.'
-                    : null,
-              ].whereType<String>().join(', '),
-            ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -2072,46 +2075,31 @@ class PdfExportService {
   }
 
   pw.Widget _buildRefractionPrescriptionSection(TestResultModel result) {
-    debugPrint('[PDF] 🔍 Building prescription section...');
-    if (result.refractionPrescription == null) {
-      debugPrint('[PDF] ⚠️ No prescription data found');
-      return pw.SizedBox();
-    }
+    if (result.refractionPrescription == null) return pw.SizedBox();
     final prescription = result.refractionPrescription!;
-    debugPrint(
-      '[PDF] ✅ Prescription found - Practitioner: ${prescription.practitionerName}',
-    );
-    debugPrint('[PDF] 📋 Include in results: ${prescription.includeInResults}');
 
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(12),
-        border: pw.Border.all(color: PdfColors.grey200, width: 1),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(
-            'REFRACTION ASSESSMENT \u0026 PRESCRIPTION',
-            style: pw.TextStyle(
-              fontSize: 10,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromInt(0xFF1A237E), // Deep Blue
-            ),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Divider(color: PdfColors.grey200, thickness: 0.5),
+        pw.SizedBox(height: 8),
+        _buildSectionHeader('VERIFIED ASSESSMENT \u0026 PRESCRIPTION'),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          'Practitioner: ${prescription.practitionerName}',
+          style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+        ),
+        pw.SizedBox(height: 12),
+
+        // Verified Subjective Section (Independent Card)
+        pw.Container(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.white,
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
           ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            'Verified by Practitioner: ${prescription.practitionerName}',
-            style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
-          ),
-          pw.SizedBox(height: 16),
-
-          pw.SizedBox(height: 16),
-
-          // VERIFIED REFRACTION SECTION
-          pw.Column(
+          child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
@@ -2128,28 +2116,35 @@ class PdfExportService {
                 children: [
                   pw.Expanded(
                     child: _buildSubjectiveTable(
-                      'RIGHT EYE (VERIFIED)',
+                      'RIGHT EYE',
                       prescription.rightEyeSubjective,
-                      PdfColor.fromInt(0xFF1565C0), // Blue
+                      PdfColor.fromInt(0xFF1565C0),
                     ),
                   ),
-                  pw.SizedBox(width: 16),
+                  pw.SizedBox(width: 12),
                   pw.Expanded(
                     child: _buildSubjectiveTable(
-                      'LEFT EYE (VERIFIED)',
+                      'LEFT EYE',
                       prescription.leftEyeSubjective,
-                      PdfColor.fromInt(0xFF00695C), // Teal
+                      PdfColor.fromInt(0xFF00695C),
                     ),
                   ),
                 ],
               ),
             ],
           ),
+        ),
+        pw.SizedBox(height: 12),
 
-          pw.SizedBox(height: 24),
-
-          // FINAL PRESCRIPTION SECTION
-          pw.Column(
+        // Final Rx Section (Independent Card)
+        pw.Container(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.white,
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
+          ),
+          child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
@@ -2164,18 +2159,17 @@ class PdfExportService {
               _buildFinalRxTable(prescription.finalPrescription),
             ],
           ),
-
-          pw.SizedBox(height: 12),
-          pw.Text(
-            'The above prescription is based on subjective refraction and clinical assessment. Please consult your optometrist for fitting.',
-            style: pw.TextStyle(
-              fontSize: 7,
-              color: PdfColors.grey500,
-              fontStyle: pw.FontStyle.italic,
-            ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Note: The above values have been clinical verified for lens cutting and dispensing.',
+          style: pw.TextStyle(
+            fontSize: 7,
+            color: PdfColors.grey500,
+            fontStyle: pw.FontStyle.italic,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
