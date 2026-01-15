@@ -60,7 +60,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   // Auto-navigation
   Timer? _autoNavigationTimer;
-  int _autoNavigationCountdown = 3;
+  int _autoNavigationCountdown = 5;
   DateTime? _lastShouldPauseTime;
   // Questions
   bool? _allLinesStraight;
@@ -629,7 +629,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
       if (provider.isComprehensiveTest) {
         _ttsService.speak(
-          'Amsler grid test completed. Moving to Contrast Sensitivity Test.',
+          'Amsler grid test completed. Please review your results.',
         );
       } else {
         _ttsService.speak(
@@ -680,7 +680,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     _autoNavigationTimer?.cancel();
 
     setState(() {
-      _autoNavigationCountdown = 3;
+      _autoNavigationCountdown = 5;
     });
 
     _autoNavigationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -1143,158 +1143,203 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     final provider = context.read<TestSessionProvider>();
     final rightResult = provider.amslerGridRight;
     final leftResult = provider.amslerGridLeft;
+    final isRightNormal = rightResult?.isNormal ?? true;
+    final isLeftNormal = leftResult?.isNormal ?? true;
+
+    // Qualitative feedback logic
+    String insightText = "Your central vision has been assessed.";
+    IconData insightIcon = Icons.info_outline;
+    Color insightColor = AppColors.primary;
+
+    if (isRightNormal && isLeftNormal) {
+      insightText =
+          "Excellent! Central vision appears clear in both eyes with no distortions detected.";
+      insightIcon = Icons.verified_user_rounded;
+      insightColor = AppColors.success;
+    } else {
+      insightText =
+          "Distortions or blurry regions were detected. Please consult an eye care professional for a detailed evaluation.";
+      insightIcon = Icons.warning_amber_rounded;
+      insightColor = AppColors.warning;
+    }
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.testBackground,
       appBar: AppBar(
-        title: const Text('Test Summary'),
+        title: const Text('Amsler Grid Result'),
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.testBackground,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  size: 80,
-                  color: AppColors.success,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'Assessment Complete!',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Your Amsler Grid test results are ready to be reviewed.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
-
-              // Summary cards
-              _buildEyeSummaryCard(
-                'Right Eye Result',
-                rightResult,
-                AppColors.rightEye,
-              ),
-              const SizedBox(height: 16),
-              _buildEyeSummaryCard(
-                'Left Eye Result',
-                leftResult,
-                AppColors.leftEye,
-              ),
-              const SizedBox(height: 48),
-
-              // ✅ ADD: Auto-continue countdown indicator
-              Container(
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: 24,
+                  vertical: 24,
                 ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    width: 1.5,
+                child: Column(
+                  children: [
+                    // Header Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color:
+                            (isRightNormal && isLeftNormal
+                                    ? AppColors.success
+                                    : AppColors.warning)
+                                .withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color:
+                              (isRightNormal && isLeftNormal
+                                      ? AppColors.success
+                                      : AppColors.warning)
+                                  .withOpacity(0.15),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color:
+                                  (isRightNormal && isLeftNormal
+                                          ? AppColors.success
+                                          : AppColors.warning)
+                                      .withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isRightNormal && isLeftNormal
+                                  ? Icons.check_circle_rounded
+                                  : Icons.info_outline_rounded,
+                              size: 40,
+                              color: isRightNormal && isLeftNormal
+                                  ? AppColors.success
+                                  : AppColors.warning,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Amsler Grid Test Completed',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Professional Insight Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: insightColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: insightColor.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(insightIcon, color: insightColor, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              insightText,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Summary cards
+                    _buildEyeSummaryCard(
+                      'Right Eye',
+                      rightResult,
+                      AppColors.rightEye,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildEyeSummaryCard(
+                      'Left Eye',
+                      leftResult,
+                      AppColors.leftEye,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Sticky Bottom Button
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  _autoNavigationTimer?.cancel();
+                  _showContrastTransition();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
+                  elevation: 4,
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.primary,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$_autoNavigationCountdown',
-                          style: const TextStyle(
-                            color: AppColors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                    Text(
+                      provider.isComprehensiveTest
+                          ? 'Continue Test'
+                          : 'View Results',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Flexible(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       child: Text(
-                        provider.isComprehensiveTest
-                            ? 'Continuing in $_autoNavigationCountdown...'
-                            : 'Showing results in $_autoNavigationCountdown...',
-                        style: TextStyle(
-                          color: AppColors.primary,
+                        '${_autoNavigationCountdown}s',
+                        style: const TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.bold,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    _autoNavigationTimer?.cancel();
-                    _showContrastTransition();
-                  },
-                  icon: Icon(
-                    provider.isComprehensiveTest
-                        ? Icons.arrow_forward
-                        : Icons.analytics_outlined,
-                  ),
-                  label: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      provider.isComprehensiveTest
-                          ? 'Continue Now'
-                          : 'View Results Now',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: provider.isComprehensiveTest
-                        ? AppColors.primary
-                        : null,
-                    foregroundColor: provider.isComprehensiveTest
-                        ? AppColors.white
-                        : null,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1304,39 +1349,106 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     AmslerGridResult? result,
     Color color,
   ) {
-    final isNormal = result?.isNormal ?? true;
+    final bool isNormal = result?.isNormal ?? true;
+    final List<String> findings = [];
+
+    if (!isNormal) {
+      if (result?.hasDistortions == true) findings.add('Wavy Lines');
+      if (result?.hasBlurryAreas == true) findings.add('Blurry regions');
+      if (result?.hasMissingAreas == true) findings.add('Missing Areas');
+    }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(Icons.grid_on, color: color),
-          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(Icons.grid_on_rounded, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              eye,
-              style: TextStyle(fontWeight: FontWeight.bold, color: color),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eye,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (isNormal)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Normal',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: findings
+                        .map(
+                          (f) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              f,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.warning,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+              ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isNormal ? AppColors.success : AppColors.warning,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              isNormal ? 'Normal' : 'Review',
-              style: const TextStyle(
-                color: AppColors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
+          Icon(
+            isNormal ? Icons.verified_rounded : Icons.warning_rounded,
+            color: isNormal ? AppColors.success : AppColors.warning,
           ),
         ],
       ),

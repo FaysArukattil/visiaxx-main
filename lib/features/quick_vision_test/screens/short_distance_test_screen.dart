@@ -1422,90 +1422,306 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         : _results.map((r) => r.similarity).reduce((a, b) => a + b) /
               _results.length;
 
+    // Qualitative feedback logic
+    String insightText =
+        "Your reading fluidity and accuracy have been assessed.";
+    IconData insightIcon = Icons.info_outline;
+    Color insightColor = AppColors.primary;
+
+    if (avgSimilarity >= 90.0 && _correctCount >= 6) {
+      insightText =
+          "Excellent reading fluidity and match accuracy observed. Your near vision reading is optimal.";
+      insightIcon = Icons.verified_user_rounded;
+      insightColor = AppColors.success;
+    } else if (avgSimilarity < 70.0) {
+      insightText =
+          "Some hesitation or mismatch in reading detected. This may warrant a more detailed near-vision review.";
+      insightIcon = Icons.warning_amber_rounded;
+      insightColor = AppColors.warning;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.testBackground,
       appBar: AppBar(
-        title: const Text('Test Complete'),
+        title: const Text('Reading Test Result'),
         automaticallyImplyLeading: false,
+        backgroundColor: AppColors.testBackground,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.check_circle, size: 80, color: AppColors.success),
-            const SizedBox(height: 24),
-            const Text(
-              'Reading Test Complete!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: Column(
+                  children: [
+                    // Header Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color:
+                            (avgSimilarity >= 85.0
+                                    ? AppColors.success
+                                    : AppColors.warning)
+                                .withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color:
+                              (avgSimilarity >= 85.0
+                                      ? AppColors.success
+                                      : AppColors.warning)
+                                  .withOpacity(0.15),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color:
+                                  (avgSimilarity >= 85.0
+                                          ? AppColors.success
+                                          : AppColors.warning)
+                                      .withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              avgSimilarity >= 85.0
+                                  ? Icons.check_circle_rounded
+                                  : Icons.info_outline_rounded,
+                              size: 40,
+                              color: avgSimilarity >= 85.0
+                                  ? AppColors.success
+                                  : AppColors.warning,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Reading Test Completed',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-            // Results card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                    // Professional Insight Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: insightColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: insightColor.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(insightIcon, color: insightColor, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              insightText,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Results summary card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.1),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.black.withOpacity(0.05),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          _buildStatRow(
+                            'Sentences Mastered',
+                            '$_correctCount/7',
+                            AppColors.primary,
+                            status: _correctCount >= 6
+                                ? 'Optimal'
+                                : (_correctCount >= 4
+                                      ? 'Good'
+                                      : 'Needs Review'),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Divider(height: 1),
+                          ),
+                          _buildStatRow(
+                            'Average Match',
+                            '${avgSimilarity.toStringAsFixed(1)}%',
+                            AppColors.success,
+                            status: avgSimilarity >= 85.0
+                                ? 'High Accuracy'
+                                : 'Moderate',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
-                children: [
-                  _buildStatRow('Sentences', '$_correctCount/7'),
-                  const Divider(height: 24),
-                  _buildStatRow(
-                    'Average Match',
-                    '${avgSimilarity.toStringAsFixed(1)}%',
-                  ),
-                ],
-              ),
             ),
-            const SizedBox(height: 32),
+          ),
 
-            // Auto-continue countdown indicator
-            const Spacer(),
-
-            // Continue button (can click immediately or wait)
-            SizedBox(
+          // Sticky Bottom Button
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
                   _autoNavigationTimer?.cancel();
-                  Navigator.pushReplacementNamed(context, '/color-vision-test');
+                  _navigateToColorVision();
                 },
-                child: const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Continue Now'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Continue Test',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_secondsRemaining}s',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatRow(String label, String value) {
+  Widget _buildStatRow(
+    String label,
+    String value,
+    Color iconColor, {
+    String? status,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+        Expanded(
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  label.contains('Sentence')
+                      ? Icons.format_quote_rounded
+                      : Icons.analytics_rounded,
+                  size: 18,
+                  color: iconColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (status != null)
+                      Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              (status == 'Optimal' || status == 'High Accuracy')
+                              ? AppColors.success
+                              : AppColors.warning,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+        const SizedBox(width: 8),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
         ),
       ],

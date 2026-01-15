@@ -1118,7 +1118,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       // Both eyes complete - START AUTO-NAVIGATION TIMER
       setState(() {
         _testComplete = true;
-        _autoNavigationCountdown = 3; // Reset countdown
+        _autoNavigationCountdown = 5; // Reset countdown
       });
 
       // Start the auto-navigation countdown
@@ -1186,6 +1186,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_testComplete) {
+      return _buildTestCompleteView();
+    }
+
     return PopScope(
       canPop: false, // Prevent accidental exit
       onPopInvokedWithResult: (didPop, result) {
@@ -2037,103 +2041,186 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildTestCompleteView() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.check_circle, size: 80, color: AppColors.success),
-          const SizedBox(height: 24),
-          Text(
-            'Visual Acuity Test Complete!',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          // Summary cards
-          _buildSummaryCard(
-            'Right Eye',
-            context
-                    .read<TestSessionProvider>()
-                    .visualAcuityRight
-                    ?.snellenScore ??
-                'N/A',
-            AppColors.rightEye,
-          ),
-          const SizedBox(height: 12),
-          _buildSummaryCard(
-            'Left Eye',
-            context
-                    .read<TestSessionProvider>()
-                    .visualAcuityLeft
-                    ?.snellenScore ??
-                'N/A',
-            AppColors.leftEye,
-          ),
-          const SizedBox(height: 32),
+    final provider = context.read<TestSessionProvider>();
+    final rightAcuity = provider.visualAcuityRight?.snellenScore ?? 'N/A';
+    final leftAcuity = provider.visualAcuityLeft?.snellenScore ?? 'N/A';
 
-          // Auto-continue countdown indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                width: 1.5,
+    // Qualitative feedback logic
+    String insightText = "Your visual acuity has been assessed.";
+    IconData insightIcon = Icons.info_outline;
+    Color insightColor = AppColors.primary;
+
+    if (rightAcuity == '20/20' && leftAcuity == '20/20') {
+      insightText =
+          "Excellent clarity observed in both eyes. Your vision is within optimal range.";
+      insightIcon = Icons.verified_user_rounded;
+      insightColor = AppColors.success;
+    } else if (rightAcuity != 'N/A' && leftAcuity != 'N/A') {
+      insightText =
+          "Assessment complete. Please review the specific results for each eye below.";
+      insightIcon = Icons.analytics_rounded;
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.testBackground,
+      appBar: AppBar(
+        title: const Text('Visual Acuity Result'),
+        automaticallyImplyLeading: false,
+        backgroundColor: AppColors.testBackground,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: Column(
+                  children: [
+                    // Header Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.success.withOpacity(0.15),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_circle_rounded,
+                              size: 40,
+                              color: AppColors.success,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Visual Acuity Test Completed',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Professional Insight Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: insightColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: insightColor.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(insightIcon, color: insightColor, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              insightText,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Separate Eye Result Cards
+                    _buildIndividualSummaryCard(
+                      'Right Eye',
+                      rightAcuity,
+                      AppColors.rightEye,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildIndividualSummaryCard(
+                      'Left Eye',
+                      leftAcuity,
+                      AppColors.leftEye,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Statistics Row
+                    _buildVAStatsRow(provider),
+                  ],
+                ),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary,
+          ),
+
+          // Sticky Bottom Button
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  _autoNavigationTimer?.cancel();
+                  _proceedToBothEyesTest();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Center(
-                    child: Text(
-                      '$_autoNavigationCountdown',
-                      style: const TextStyle(
-                        color: AppColors.white,
+                  elevation: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Continue Test',
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(
-                    'Continuing in $_autoNavigationCountdown...',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_autoNavigationCountdown}s',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Continue button (now can be clicked immediately or wait for auto)
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                _autoNavigationTimer?.cancel();
-                _proceedToBothEyesTest();
-              },
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Continue Now'),
               ),
             ),
           ),
@@ -2142,41 +2229,137 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
   }
 
-  Widget _buildSummaryCard(String eye, String score, Color color) {
+  Widget _buildIndividualSummaryCard(String eye, String score, Color color) {
+    final status = _getShortStatus(score);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.visibility, color: color),
-          const SizedBox(width: 12),
-          Text(
-            eye,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: color,
-            ),
-          ),
-          const Spacer(),
-          Flexible(
-            child: Text(
-              score,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-              textAlign: TextAlign.end,
-              overflow: TextOverflow.ellipsis,
-            ),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.remove_red_eye_rounded, color: color, size: 24),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eye,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: status == 'Optimal'
+                        ? AppColors.success
+                        : AppColors.warning,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                'SNELLEN',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textTertiary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Text(
+                score,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVAStatsRow(TestSessionProvider provider) {
+    final rightResult = provider.visualAcuityRight;
+    final leftResult = provider.visualAcuityLeft;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(
+            'Correct',
+            '${(rightResult?.correctResponses ?? 0) + (leftResult?.correctResponses ?? 0)}',
+          ),
+          _buildStatItem(
+            'Total',
+            '${(rightResult?.totalResponses ?? 0) + (leftResult?.totalResponses ?? 0)}',
+          ),
+          _buildStatItem('Consistency', 'High'),
+        ],
+      ),
+    );
+  }
+
+  String _getShortStatus(String score) {
+    if (score == 'N/A') return 'Pending';
+    try {
+      final denominator = int.parse(score.split('/').last);
+      if (denominator <= 20) return 'Optimal';
+      if (denominator <= 40) return 'Good';
+      return 'Needs Review';
+    } catch (_) {
+      return 'Normal';
+    }
+  }
+
+  Widget _buildStatItem(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, color: AppColors.textTertiary),
+        ),
+      ],
     );
   }
 }

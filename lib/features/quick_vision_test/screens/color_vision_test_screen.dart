@@ -626,7 +626,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
     context.read<TestSessionProvider>().setColorVisionResult(result);
     _ttsService.speak(
-      'Color vision test complete. Redirecting to Amsler Grid test in 5 seconds.',
+      'Color vision test complete. Please review your results.',
     );
     widget.onComplete?.call(result);
 
@@ -1125,89 +1125,259 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   Widget _buildCompleteView() {
     final result = context.read<TestSessionProvider>().colorVision;
+    final isNormal = result?.isNormal == true;
+    final totalPlates = _testPlates.length;
+    final rightCorrect = result?.rightEye.correctAnswers ?? 0;
+    final leftCorrect = result?.leftEye.correctAnswers ?? 0;
+
+    // Qualitative feedback logic
+    String insightText = "Your color vision has been assessed.";
+    IconData insightIcon = Icons.info_outline;
+    Color insightColor = AppColors.primary;
+
+    if (isNormal && rightCorrect == totalPlates && leftCorrect == totalPlates) {
+      insightText =
+          "Perfect score! No color vision deficiencies detected in either eye.";
+      insightIcon = Icons.verified_user_rounded;
+      insightColor = AppColors.success;
+    } else if (!isNormal) {
+      insightText =
+          "Some indications of color vision deficiency were observed. Further clinical evaluation is recommended.";
+      insightIcon = Icons.warning_amber_rounded;
+      insightColor = AppColors.warning;
+    }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Test Complete')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              result?.isNormal == true ? Icons.check_circle : Icons.warning,
-              size: 80,
-              color: result?.isNormal == true
-                  ? AppColors.success
-                  : AppColors.warning,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Color Vision Test Complete!',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    result?.summaryText ?? 'Unknown',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+      backgroundColor: AppColors.testBackground,
+      appBar: AppBar(
+        title: const Text('Color Vision Result'),
+        automaticallyImplyLeading: false,
+        backgroundColor: AppColors.testBackground,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: Column(
+                  children: [
+                    // Header Section with Pulse Icon
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color:
+                            (isNormal ? AppColors.success : AppColors.warning)
+                                .withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color:
+                              (isNormal ? AppColors.success : AppColors.warning)
+                                  .withOpacity(0.15),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color:
+                                  (isNormal
+                                          ? AppColors.success
+                                          : AppColors.warning)
+                                      .withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isNormal
+                                  ? Icons.check_circle_rounded
+                                  : Icons.info_outline_rounded,
+                              size: 40,
+                              color: isNormal
+                                  ? AppColors.success
+                                  : AppColors.warning,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Color Vision Test Completed',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Right Eye: ${result?.rightEye.correctAnswers ?? 0}/${_testPlates.length}',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  Text(
-                    'Left Eye: ${result?.leftEye.correctAnswers ?? 0}/${_testPlates.length}',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+
+                    // Professional Insight Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: insightColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: insightColor.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(insightIcon, color: insightColor, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              insightText,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Results Summary Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.1),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.black.withOpacity(0.05),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total Score',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  '${rightCorrect + leftCorrect}/${totalPlates * 2}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Divider(height: 1),
+                          ),
+                          _buildDetailedScoreRow(
+                            'Right Eye',
+                            '$rightCorrect/$totalPlates correct',
+                            AppColors.rightEye,
+                            status: _getEyeStatus(rightCorrect, totalPlates),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildDetailedScoreRow(
+                            'Left Eye',
+                            '$leftCorrect/$totalPlates correct',
+                            AppColors.leftEye,
+                            status: _getEyeStatus(leftCorrect, totalPlates),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 32),
-            Text(
-              'Redirecting to Amsler Grid test in $_secondsRemaining seconds...',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
+          ),
+
+          // Sticky Bottom Button
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
                   _autoNavigationTimer?.cancel();
                   _proceedToAmslerTest();
                 },
-                child: const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Continue Now'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Continue Test',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_secondsRemaining}s',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1374,6 +1544,84 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildDetailedScoreRow(
+    String label,
+    String score,
+    Color color, {
+    String? status,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.remove_red_eye_rounded,
+                  size: 18,
+                  color: color,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (status != null)
+                      Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: status == 'Normal'
+                              ? AppColors.success
+                              : AppColors.warning,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            score,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getEyeStatus(int correct, int total) {
+    if (correct == total) return 'Normal';
+    if (correct >= total - 2) return 'Borderline';
+    return 'Attention Required';
   }
 }
 
