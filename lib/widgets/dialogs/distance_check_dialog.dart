@@ -27,7 +27,7 @@ class DistanceCheckDialog extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Card(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: AppColors.primary.withOpacity(0.05),
             child: const Padding(
               padding: EdgeInsets.all(12.0),
               child: Column(

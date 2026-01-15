@@ -292,7 +292,7 @@ class ProfileScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: AppColors.primary.withOpacity(0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -354,7 +354,7 @@ class ProfileScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withValues(alpha: 0.03),
+                color: AppColors.black.withOpacity(0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -420,7 +420,7 @@ class ProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: AppColors.error.withValues(alpha: 0.1)),
+            side: BorderSide(color: AppColors.error.withOpacity(0.1)),
           ),
         ),
         child: const Row(
@@ -597,7 +597,7 @@ class ProfileScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: AppColors.primary.withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -800,9 +800,9 @@ class ProfileScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: AppColors.primary.withOpacity(0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+            border: Border.all(color: AppColors.primary.withOpacity(0.1)),
           ),
           child: const Column(
             children: [
@@ -886,7 +886,7 @@ class _ExpertiseItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: AppColors.primary, size: 20),
@@ -978,7 +978,7 @@ class _AboutSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(

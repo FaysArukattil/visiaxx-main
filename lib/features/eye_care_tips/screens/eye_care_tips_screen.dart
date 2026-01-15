@@ -106,20 +106,20 @@ class EyeCareTipsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            category.color.withValues(alpha: 0.15),
-            category.color.withValues(alpha: 0.05),
+            category.color.withOpacity(0.15),
+            category.color.withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: category.color.withValues(alpha: 0.3),
+          color: category.color.withOpacity(0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: category.color.withValues(alpha: 0.1),
+            color: category.color.withOpacity(0.1),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -138,7 +138,7 @@ class EyeCareTipsScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: category.color.withValues(alpha: 0.2),
+                      color: category.color.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -160,7 +160,7 @@ class EyeCareTipsScreen extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: category.color.withValues(alpha: 0.2),
+                        color: category.color.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -202,7 +202,7 @@ class EyeCareTipsScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: category.color.withValues(alpha: 0.15),
+                  color: category.color.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(tip.icon, color: category.color, size: 24),
@@ -217,7 +217,7 @@ class EyeCareTipsScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: category.color.withValues(alpha: 0.9),
+                        color: category.color.withOpacity(0.9),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -242,8 +242,8 @@ class EyeCareTipsScreen extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  category.color.withValues(alpha: 0.6),
-                  category.color.withValues(alpha: 0.1),
+                  category.color.withOpacity(0.6),
+                  category.color.withOpacity(0.1),
                 ],
               ),
               borderRadius: BorderRadius.circular(2),

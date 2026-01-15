@@ -1199,10 +1199,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
         appBar: AppBar(
-          title: Text('Visual Acuity - ${_currentEye.toUpperCase()} Eye'),
-          backgroundColor: _currentEye == 'right'
-              ? AppColors.rightEye.withValues(alpha: 0.1)
-              : AppColors.leftEye.withValues(alpha: 0.1),
+          title: Text(
+            'Visual Acuity - ${_currentEye.toUpperCase()} Eye',
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          backgroundColor: AppColors.white,
+          elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: _showExitConfirmation,
@@ -1269,7 +1271,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withValues(alpha: 0.15),
+        color: indicatorColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: indicatorColor, width: 1.5),
       ),
@@ -1363,7 +1365,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
+                    color: AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1394,7 +1396,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
+                  color: AppColors.success.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.success, width: 1),
                 ),
@@ -1508,106 +1510,87 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   Widget _buildInfoBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+      ),
       child: Row(
         children: [
-          // Eye indicator
+          // Level indicator
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _currentEye == 'right'
-                  ? AppColors.rightEye.withValues(alpha: 0.1)
-                  : AppColors.leftEye.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'LEVEL ${_currentLevel + 1}/${TestConstants.visualAcuityLevels.length}',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w900,
+                fontSize: 11,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Score indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.visibility,
+                const Icon(
+                  Icons.check_circle_outline,
                   size: 14,
-                  color: _currentEye == 'right'
-                      ? AppColors.rightEye
-                      : AppColors.leftEye,
+                  color: AppColors.success,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 Text(
-                  _currentEye.toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: _currentEye == 'right'
-                        ? AppColors.rightEye
-                        : AppColors.leftEye,
+                  '$_totalCorrect/$_totalResponses',
+                  style: const TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          // Level indicator (repositioned to left)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              '${_currentEye[0].toUpperCase()}${_currentLevel + 1}/${TestConstants.visualAcuityLevels.length}',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Score indicator (pill style)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.success.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Text(
-              '$_totalCorrect/$_totalResponses',
-              style: TextStyle(
-                color: AppColors.success,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
           const Spacer(),
-          // Speech waveform (always visible, animates when listening)
+          // Speech waveform
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.success.withValues(alpha: 0.3),
-                width: 1,
-              ),
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 _SpeechWaveform(
-                  // ✅ Indicator should be active whenever mic is INTENDED to be on
                   isListening:
                       _continuousSpeech.shouldBeListening &&
                       !_continuousSpeech.isPausedForTts,
                   isTalking: _isSpeechActive,
-                  color: AppColors.success,
+                  color: AppColors.primary,
                 ),
-                const SizedBox(width: 6),
-                Icon(Icons.mic, size: 14, color: AppColors.success),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.mic_none_rounded,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
               ],
             ),
           ),
@@ -1627,7 +1610,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.black.withValues(alpha: 0.6),
+        color: AppColors.black.withOpacity(0.6),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -1643,10 +1626,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildMainContent() {
-    if (_testComplete) {
-      return _buildTestCompleteView();
-    }
-
     if (_eyeSwitchPending) {
       return _buildEyeSwitchView();
     }
@@ -1711,7 +1690,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               AppAssets.relaxationImage,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 child: const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1736,23 +1715,35 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             children: [
               Text(
                 'Relax and focus on the distance',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Container(
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary,
+                  color: AppColors.white,
+                  border: Border.all(color: AppColors.primary, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.2),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Text(
                     '$_relaxationCountdown',
                     style: const TextStyle(
-                      color: AppColors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
@@ -1773,67 +1764,102 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       children: [
         // Timer and Size indicator row - ALWAYS VISIBLE
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: AppColors.surface.withValues(alpha: 0.9),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.border.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // ✅ PROMINENT Size indicator on LEFT
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.all(2), // Outer ring
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary, width: 2),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.2),
+                    width: 2,
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.straighten, size: 20, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      level.snellen,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        letterSpacing: 1,
-                      ),
+                child: Container(
+                  width: 54,
+                  height: 54,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'SCORE',
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        Text(
+                          level.snellen,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
 
               // Timer on RIGHT
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Icon(
-                    Icons.timer,
-                    size: 20,
-                    color: _eDisplayCountdown <= 1
-                        ? AppColors.error
-                        : _isTestPausedForDistance
-                        ? AppColors.warning
-                        : AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
                   Text(
-                    _isTestPausedForDistance
-                        ? 'PAUSED'
-                        : '${_eDisplayCountdown}s',
+                    'TIME REMAINING',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: _eDisplayCountdown <= 1
-                          ? AppColors.error
-                          : _isTestPausedForDistance
-                          ? AppColors.warning
-                          : AppColors.primary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textSecondary.withOpacity(0.5),
+                      letterSpacing: 1,
                     ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        size: 16,
+                        color: _eDisplayCountdown <= 2
+                            ? AppColors.error
+                            : AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _isTestPausedForDistance
+                            ? 'PAUSED'
+                            : '${_eDisplayCountdown}s',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: _eDisplayCountdown <= 2
+                              ? AppColors.error
+                              : AppColors.primary,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1918,8 +1944,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   Widget _buildDirectionButtons() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1937,7 +1973,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 direction: EDirection.left,
                 onPressed: () => _handleButtonResponse(EDirection.left),
               ),
-              const SizedBox(width: 60),
+              const SizedBox(width: 32),
               _DirectionButton(
                 direction: EDirection.right,
                 onPressed: () => _handleButtonResponse(EDirection.right),
@@ -1950,23 +1986,22 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             direction: EDirection.down,
             onPressed: () => _handleButtonResponse(EDirection.down),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           // Blurry/Can't See Clearly button
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
+            child: TextButton(
               onPressed: () => _handleButtonResponse(EDirection.blurry),
-              icon: const Icon(Icons.visibility_off, size: 20),
-              label: const Text(
-                "Can't See Clearly / Blurry",
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary.withOpacity(0.6),
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.warning,
-                side: BorderSide(color: AppColors.warning, width: 2),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              child: const Text(
+                "I CAN'T SEE CLEARLY",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),
@@ -2371,16 +2406,26 @@ class _DirectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.primary,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          width: 70,
-          height: 70,
-          child: Icon(_icon, color: AppColors.white, size: 32),
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(20),
+          child: Center(child: Icon(_icon, color: AppColors.white, size: 28)),
         ),
       ),
     );
@@ -2438,7 +2483,7 @@ class _SpeechWaveformState extends State<_SpeechWaveform>
             height: 8,
             margin: const EdgeInsets.symmetric(horizontal: 1),
             decoration: BoxDecoration(
-              color: widget.color.withValues(alpha: 0.5),
+              color: widget.color.withOpacity(0.5),
               borderRadius: BorderRadius.circular(2),
             ),
           ),

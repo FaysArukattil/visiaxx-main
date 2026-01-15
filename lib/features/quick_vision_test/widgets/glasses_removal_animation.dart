@@ -64,7 +64,7 @@ class _RemoveGlassesAnimationState extends State<RemoveGlassesAnimation>
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.info.withValues(alpha: 0.2),
+          color: AppColors.info.withOpacity(0.2),
           width: 2,
         ),
       ),
@@ -81,7 +81,7 @@ class _RemoveGlassesAnimationState extends State<RemoveGlassesAnimation>
                     width: faceSize,
                     height: faceSize,
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.2),
+                      color: AppColors.warning.withOpacity(0.2),
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.warning, width: 3),
                     ),
@@ -196,7 +196,7 @@ class _GlassesPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final fillPaint = Paint()
-      ..color = AppColors.info.withValues(alpha: 0.2)
+      ..color = AppColors.info.withOpacity(0.2)
       ..style = PaintingStyle.fill;
 
     // Left lens

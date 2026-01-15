@@ -8,7 +8,6 @@ import 'dart:ui' as ui;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
-import '../../../core/widgets/eye_loader.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/services/tts_service.dart';
@@ -731,13 +730,12 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       appBar: AppBar(
         title: Text(
           'Amsler Grid - ${_currentEye.toUpperCase()} Eye',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: const TextStyle(fontWeight: FontWeight.w900),
         ),
-        backgroundColor: _currentEye == 'right'
-            ? AppColors.rightEye.withValues(alpha: 0.1)
-            : AppColors.leftEye.withValues(alpha: 0.1),
+        backgroundColor: AppColors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textPrimary),
+          icon: const Icon(Icons.close),
           onPressed: _showExitConfirmation,
         ),
         actions: [
@@ -758,7 +756,18 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       body: SafeArea(
         child: Stack(
           children: [
-            _buildContent(),
+            Column(
+              children: [
+                _buildInfoBar(),
+                Expanded(
+                  child: _eyeSwitchPending
+                      ? _buildEyeSwitchView()
+                      : (!_testingStarted
+                            ? const Center(child: CircularProgressIndicator())
+                            : _buildTestView()),
+                ),
+              ],
+            ),
             // Distance indicator
             if (!_showDistanceCalibration && !_testComplete)
               Positioned(
@@ -780,20 +789,80 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     );
   }
 
-  Widget _buildContent() {
-    if (_testComplete) {
-      return _buildCompleteView();
-    }
+  Widget _buildInfoBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Eye status
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.visibility_rounded,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'EYE: ${_currentEye.toUpperCase()}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-    if (_eyeSwitchPending) {
-      return _buildEyeSwitchView();
-    }
-
-    if (!_testingStarted) {
-      return const Center(child: EyeLoader(size: 80));
-    }
-
-    return _buildTestView();
+          // Marks count
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.edit_location_alt_outlined,
+                  size: 14,
+                  color: AppColors.success,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${(_currentEye == 'right' ? _rightEyePoints : _leftEyePoints).length} MARKS',
+                  style: const TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTestView() {
@@ -803,49 +872,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
     return Column(
       children: [
-        // Eye indicator
-        Container(
-          padding: const EdgeInsets.all(12),
-          color: _currentEye == 'right'
-              ? AppColors.rightEye.withValues(alpha: 0.1)
-              : AppColors.leftEye.withValues(alpha: 0.1),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.visibility,
-                    size: 18,
-                    color: _currentEye == 'right'
-                        ? AppColors.rightEye
-                        : AppColors.leftEye,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Testing ${_currentEye.toUpperCase()} eye',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: _currentEye == 'right'
-                          ? AppColors.rightEye
-                          : AppColors.leftEye,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Cover your ${_currentEye == 'right' ? 'LEFT' : 'RIGHT'} eye',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: _currentEye == 'right'
-                      ? AppColors.rightEye
-                      : AppColors.leftEye,
-                ),
-              ),
-            ],
-          ),
-        ),
+        // Marking mode selector
         // Marking mode selector
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -922,12 +949,17 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             ),
           ),
         ),
-        // Marks count
+        // Marks status
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Text(
-            '${currentPoints.length} area(s) marked',
-            style: TextStyle(color: AppColors.textSecondary),
+            '${currentPoints.length} AREA(S) MARKED',
+            style: const TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
           ),
         ),
         // Questions
@@ -1071,21 +1103,34 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   Widget _buildYesNoButton(String label, bool selected, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          color: selected ? AppColors.primary : AppColors.white,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
+            color: selected
+                ? AppColors.primary
+                : AppColors.border.withOpacity(0.5),
           ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
         ),
         child: Text(
-          label,
+          label.toUpperCase(),
           style: TextStyle(
             color: selected ? AppColors.white : AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            fontSize: 11,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -1443,7 +1488,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withValues(alpha: 0.15),
+        color: indicatorColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: indicatorColor, width: 1.5),
       ),
@@ -1480,7 +1525,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: AppColors.black.withValues(alpha: 0.85),
+      color: AppColors.black.withOpacity(0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1533,7 +1578,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
+                    color: AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1564,7 +1609,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
+                  color: AppColors.success.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.success, width: 1),
                 ),

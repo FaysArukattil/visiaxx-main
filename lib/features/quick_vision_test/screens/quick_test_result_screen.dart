@@ -378,7 +378,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         borderRadius: BorderRadius.circular(24), // ⚡ Now rounded
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withValues(alpha: 0.25),
+            color: primaryColor.withOpacity(0.25),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -392,10 +392,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             height: 96,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.white.withValues(alpha: 0.2),
+              color: AppColors.white.withOpacity(0.2),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withValues(alpha: 0.1),
+                  color: AppColors.black.withOpacity(0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -419,7 +419,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.white.withValues(alpha: 0.2),
+              color: AppColors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -481,7 +481,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.04), // ⚡ Neutal shadow
+            color: AppColors.black.withOpacity(0.04), // ⚡ Neutal shadow
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -494,9 +494,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(
-                    alpha: 0.1,
-                  ), // ⚡ Soft background
+                  color: AppColors.primary.withOpacity(0.1), // ⚡ Soft background
                   shape: BoxShape.circle,
                 ),
                 child: CircleAvatar(
@@ -545,7 +543,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: (isFamily ? AppColors.info : AppColors.primary)
-                      .withValues(alpha: 0.08),
+                      .withOpacity(0.08),
                   borderRadius: BorderRadius.circular(100), // ⚡ Pill shape
                 ),
                 child: Text(
@@ -567,7 +565,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Icon(
                 Icons.calendar_today_rounded,
                 size: 14,
-                color: AppColors.textSecondary.withValues(alpha: 0.6),
+                color: AppColors.textSecondary.withOpacity(0.6),
               ),
               const SizedBox(width: 8),
               Text(
@@ -601,7 +599,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.2),
+                  color: AppColors.primary.withOpacity(0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -637,12 +635,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
+            color: AppColors.primary.withOpacity(0.08),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.03),
+            color: AppColors.black.withOpacity(0.03),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -669,9 +667,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.divider.withValues(alpha: 0.1),
+                      AppColors.divider.withOpacity(0.1),
                       AppColors.divider,
-                      AppColors.divider.withValues(alpha: 0.1),
+                      AppColors.divider.withOpacity(0.1),
                     ],
                   ),
                 ),
@@ -852,7 +850,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
+          border: Border.all(color: AppColors.grey.withOpacity(0.1)),
         ),
         child: const Center(
           child: Text(
@@ -875,7 +873,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: AppColors.primary.withOpacity(0.05),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -901,9 +899,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.grey.withValues(alpha: 0.1),
-                      AppColors.grey.withValues(alpha: 0.3),
-                      AppColors.grey.withValues(alpha: 0.1),
+                      AppColors.grey.withOpacity(0.1),
+                      AppColors.grey.withOpacity(0.3),
+                      AppColors.grey.withOpacity(0.1),
                     ],
                   ),
                 ),
@@ -929,10 +927,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                color: const Color(0xFFF59E0B).withOpacity(0.08),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                  color: const Color(0xFFF59E0B).withOpacity(0.2),
                 ),
               ),
               child: Row(
@@ -1053,7 +1051,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey.withValues(alpha: 0.08),
+            color: AppColors.grey.withOpacity(0.08),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -1078,9 +1076,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.grey.withValues(alpha: 0.1),
-                      AppColors.grey.withValues(alpha: 0.3),
-                      AppColors.grey.withValues(alpha: 0.1),
+                      AppColors.grey.withOpacity(0.1),
+                      AppColors.grey.withOpacity(0.3),
+                      AppColors.grey.withOpacity(0.1),
                     ],
                   ),
                 ),
@@ -1102,10 +1100,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withValues(alpha: 0.05),
+                color: const Color(0xFFEF4444).withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  color: const Color(0xFFEF4444).withOpacity(0.1),
                 ),
               ),
               child: Column(
@@ -1210,7 +1208,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textTertiary.withValues(alpha: 0.08),
+            color: AppColors.textTertiary.withOpacity(0.08),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -1264,7 +1262,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.1),
+        color: AppColors.info.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -1362,7 +1360,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: categoryColor.withValues(alpha: 0.1),
+            color: categoryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(categoryIcon, color: categoryColor, size: 28),
@@ -1392,7 +1390,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: categoryColor.withValues(alpha: 0.1),
+            color: categoryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -1468,7 +1466,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: categoryColor.withValues(alpha: 0.1),
+                  color: categoryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -1568,8 +1566,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: isNormal
-                ? AppColors.success.withValues(alpha: 0.1)
-                : AppColors.warning.withValues(alpha: 0.1),
+                ? AppColors.success.withOpacity(0.1)
+                : AppColors.warning.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -1601,7 +1599,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: color.withValues(alpha: 0.3)),
+                      border: Border.all(color: color.withOpacity(0.3)),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: path != null && !path.startsWith('http')
@@ -1668,12 +1666,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: baseColor.withValues(alpha: 0.05),
+        color: baseColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: baseColor.withValues(alpha: 0.2), width: 1.5),
+        border: Border.all(color: baseColor.withOpacity(0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: baseColor.withValues(alpha: 0.05),
+            color: baseColor.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1687,7 +1685,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: baseColor.withValues(alpha: 0.1),
+                  color: baseColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: baseColor, size: 28),
@@ -1724,7 +1722,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.white.withValues(alpha: 0.5),
+              color: AppColors.white.withOpacity(0.5),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -1760,7 +1758,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                color: const Color(0xFF2563EB).withOpacity(0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -1859,7 +1857,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
+              side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
             ),
           ),
           child: Row(
@@ -1889,9 +1887,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
+        color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Material(
         color: AppColors.transparent,
@@ -2008,7 +2006,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
+          border: Border.all(color: AppColors.grey.withOpacity(0.1)),
         ),
         child: const Center(
           child: Text(
@@ -2031,7 +2029,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.05),
+            color: AppColors.success.withOpacity(0.05),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -2046,7 +2044,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: (isGood ? AppColors.success : AppColors.warning)
-                      .withValues(alpha: 0.1),
+                      .withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -2087,7 +2085,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.05),
+                  color: AppColors.primary.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -2106,7 +2104,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       'Match',
                       style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.primary.withValues(alpha: 0.7),
+                        color: AppColors.primary.withOpacity(0.7),
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                       ),
@@ -2125,7 +2123,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 height: 10,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: AppColors.border.withValues(alpha: 0.5),
+                  color: AppColors.border.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
@@ -2140,14 +2138,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          AppColors.success.withValues(alpha: 0.7),
+                          AppColors.success.withOpacity(0.7),
                           AppColors.success,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(5),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.success.withValues(alpha: 0.2),
+                          color: AppColors.success.withOpacity(0.2),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -2173,7 +2171,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Container(
                 width: 1,
                 height: 40,
-                color: AppColors.border.withValues(alpha: 0.1),
+                color: AppColors.border.withOpacity(0.1),
               ),
               Expanded(
                 child: _buildNewStatItem(
@@ -2195,7 +2193,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         Icon(
           icon,
           size: 18,
-          color: AppColors.textSecondary.withValues(alpha: 0.6),
+          color: AppColors.textSecondary.withOpacity(0.6),
         ),
         const SizedBox(height: 6),
         Text(
@@ -2241,7 +2239,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: AppColors.primary.withOpacity(0.08),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -2277,10 +2275,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.05),
+              color: AppColors.warning.withOpacity(0.05),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: AppColors.warning.withValues(alpha: 0.2),
+                color: AppColors.warning.withOpacity(0.2),
               ),
             ),
             child: Column(
@@ -2351,7 +2349,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -2376,7 +2374,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: AppColors.divider.withValues(alpha: 0.5),
+                  color: AppColors.divider.withOpacity(0.5),
                 ),
               ),
               child: Row(
@@ -2453,7 +2451,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           fullName,
           style: TextStyle(
             fontSize: 8,
-            color: AppColors.textSecondary.withValues(alpha: 0.5),
+            color: AppColors.textSecondary.withOpacity(0.5),
           ),
         ),
       ],
@@ -2530,14 +2528,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 (condition == 'Healthy Vision'
                         ? AppColors.success
                         : AppColors.primary)
-                    .withValues(alpha: 0.05),
+                    .withOpacity(0.05),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color:
                   (condition == 'Healthy Vision'
                           ? AppColors.success
                           : AppColors.primary)
-                      .withValues(alpha: 0.1),
+                      .withOpacity(0.1),
             ),
           ),
           child: Row(
@@ -2573,7 +2571,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       style: TextStyle(
                         color: condition == 'Healthy Vision'
                             ? AppColors.success
-                            : AppColors.primary.withValues(alpha: 0.7),
+                            : AppColors.primary.withOpacity(0.7),
                         fontSize: 9,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2609,7 +2607,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     child: Icon(
                       Icons.arrow_right_alt_rounded,
                       size: 16,
-                      color: color.withValues(alpha: 0.4),
+                      color: color.withOpacity(0.4),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -2652,13 +2650,13 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.1),
+            color: AppColors.success.withOpacity(0.1),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
         ],
         border: Border.all(
-          color: AppColors.success.withValues(alpha: 0.2),
+          color: AppColors.success.withOpacity(0.2),
           width: 2,
         ),
       ),
@@ -2671,7 +2669,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
+                  color: AppColors.success.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -2748,7 +2746,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 width: 1,
                 height: 80,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: AppColors.divider.withValues(alpha: 0.5),
+                color: AppColors.divider.withOpacity(0.5),
               ),
               Expanded(
                 child: _buildSimpleRefractionBlock(

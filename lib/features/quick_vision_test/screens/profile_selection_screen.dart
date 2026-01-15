@@ -325,14 +325,14 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.8)],
+            colors: [color, color.withOpacity(0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.3),
+              color: color.withOpacity(0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -343,7 +343,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.2),
+                color: AppColors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: AppColors.white, size: 36),
@@ -365,7 +365,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: AppColors.white.withValues(alpha: 0.9),
+                      color: AppColors.white.withOpacity(0.9),
                       fontSize: 14,
                     ),
                   ),
@@ -392,7 +392,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
+              backgroundColor: AppColors.secondary.withOpacity(0.1),
               radius: 28,
               child: Text(
                 member.firstName[0].toUpperCase(),
@@ -443,7 +443,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Form(
         key: _formKey,

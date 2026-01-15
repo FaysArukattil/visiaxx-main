@@ -167,7 +167,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: AppColors.primary.withOpacity(0.05),
               ),
             ),
           ),
@@ -179,7 +179,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.secondary.withValues(alpha: 0.05),
+                color: AppColors.secondary.withOpacity(0.05),
               ),
             ),
           ),
@@ -209,9 +209,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(
-                                      alpha: 0.3,
-                                    ),
+                                    color: AppColors.primary.withOpacity(0.3),
                                     blurRadius: 12,
                                     offset: const Offset(0, 6),
                                   ),
@@ -255,7 +253,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.black.withValues(alpha: 0.05),
+                              color: AppColors.black.withOpacity(0.05),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -268,12 +266,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: AppColors.info.withValues(alpha: 0.1),
+                                  color: AppColors.info.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: AppColors.info.withValues(
-                                      alpha: 0.2,
-                                    ),
+                                    color: AppColors.info.withOpacity(0.2),
                                   ),
                                 ),
                                 child: Column(
@@ -323,7 +319,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                 padding: const EdgeInsets.all(12),
                                 margin: const EdgeInsets.only(bottom: 20),
                                 decoration: BoxDecoration(
-                                  color: AppColors.error.withValues(alpha: 0.1),
+                                  color: AppColors.error.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -378,9 +374,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                     ? []
                                     : [
                                         BoxShadow(
-                                          color: AppColors.primary.withValues(
-                                            alpha: 0.25,
-                                          ),
+                                          color: AppColors.primary.withOpacity(0.25),
                                           blurRadius: 15,
                                           offset: const Offset(0, 8),
                                         ),

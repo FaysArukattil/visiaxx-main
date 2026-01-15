@@ -180,7 +180,7 @@ class _MobileRefractometryInstructionsScreenState
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: AppColors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -255,10 +255,10 @@ class _MobileRefractometryInstructionsScreenState
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          border: Border.all(color: AppColors.border.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
+              color: AppColors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -311,7 +311,7 @@ class _MobileRefractometryInstructionsScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
+            color: accentColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: accentColor, size: 24),

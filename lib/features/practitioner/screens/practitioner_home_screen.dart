@@ -129,7 +129,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.08),
+                      color: AppColors.black.withOpacity(0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -154,10 +154,10 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3),
+                    color: AppColors.primary.withOpacity(0.3),
                   ),
                 ),
                 child: Row(
@@ -241,14 +241,14 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppColors.primary.withValues(alpha: 0.1),
-              AppColors.primary.withValues(alpha: 0.05),
+              AppColors.primary.withOpacity(0.1),
+              AppColors.primary.withOpacity(0.05),
             ],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -291,15 +291,15 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.2),
+              color: AppColors.primary.withOpacity(0.2),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
@@ -318,7 +318,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.05),
+                      color: AppColors.primary.withOpacity(0.05),
                     ),
                   ),
                 ),
@@ -330,7 +330,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     height: 70,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.05),
+                      color: AppColors.primary.withOpacity(0.05),
                     ),
                   ),
                 ),
@@ -383,7 +383,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
               Text(
                 slide['supportText'] as String,
                 style: TextStyle(
-                  color: AppColors.primary.withValues(alpha: 0.8),
+                  color: AppColors.primary.withOpacity(0.8),
                   fontSize: 10,
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w500,
@@ -425,7 +425,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.2),
+            color: AppColors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -438,10 +438,10 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: AppColors.white.withValues(alpha: 0.2),
+              color: AppColors.white.withOpacity(0.2),
               child: Icon(
                 Icons.person,
-                color: AppColors.white.withValues(alpha: 0.6),
+                color: AppColors.white.withOpacity(0.6),
                 size: 28,
               ),
             );
@@ -480,7 +480,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.15),
+            color: AppColors.primary.withOpacity(0.15),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -625,7 +625,7 @@ class _ServiceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
+              color: AppColors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -638,7 +638,7 @@ class _ServiceCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: AppColors.primary, size: 26),
@@ -693,7 +693,7 @@ class _WideServiceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
+              color: AppColors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -705,7 +705,7 @@ class _WideServiceCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: AppColors.primary, size: 26),

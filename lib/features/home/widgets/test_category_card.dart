@@ -32,8 +32,8 @@ class TestCategoryCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             gradient: LinearGradient(
               colors: [
-                color.withValues(alpha: 0.1),
-                color.withValues(alpha: 0.05),
+                color.withOpacity(0.1),
+                color.withOpacity(0.05),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,

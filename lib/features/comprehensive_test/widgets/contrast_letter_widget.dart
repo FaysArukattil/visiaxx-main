@@ -19,7 +19,7 @@ class ContrastLetterWidget extends StatelessWidget {
       style: TextStyle(
         fontSize: 48,
         fontWeight: FontWeight.bold,
-        color: AppColors.black.withValues(alpha: contrastLevel.clamp(0.0, 1.0)),
+        color: AppColors.black.withOpacity(contrastLevel.clamp(0.0, 1.0)),
       ),
     );
   }

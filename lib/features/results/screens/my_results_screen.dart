@@ -453,7 +453,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
@@ -525,19 +525,19 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isComprehensive
-            ? AppColors.primary.withValues(alpha: 0.05)
+            ? AppColors.primary.withOpacity(0.05)
             : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: isComprehensive
             ? Border.all(
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: AppColors.primary.withOpacity(0.2),
                 width: 1.5,
               )
             : null,
         boxShadow: [
           BoxShadow(
             color: isComprehensive
-                ? AppColors.primary.withValues(alpha: 0.08)
+                ? AppColors.primary.withOpacity(0.08)
                 : AppColors.cardShadow,
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -552,7 +552,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                backgroundColor: AppColors.primary.withOpacity(0.1),
                 child: Text(
                   result.profileName.isNotEmpty ? result.profileName[0] : '?',
                   style: const TextStyle(
@@ -616,7 +616,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
+                  color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -637,10 +637,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: AppColors.primary.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   width: 1,
                 ),
               ),
@@ -717,7 +717,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 color: AppColors.primary,
                 tooltip: 'Share report',
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
                 ),
               ),
               const SizedBox(width: 8),
@@ -728,7 +728,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 color: AppColors.error,
                 tooltip: 'Delete result',
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.error.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.error.withOpacity(0.1),
                 ),
               ),
             ],
@@ -997,7 +997,7 @@ class _ResultDetailSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.info.withValues(alpha: 0.1),
+                color: AppColors.info.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(

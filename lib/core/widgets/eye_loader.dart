@@ -183,7 +183,7 @@ class _EyePainter extends CustomPainter {
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = color.withValues(alpha: 0.15)
+        ..color = color.withOpacity(0.15)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
@@ -213,7 +213,7 @@ class _EyePainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reactiveReflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = AppColors.white.withValues(alpha: 0.42),
+        Paint()..color = AppColors.white.withOpacity(0.42),
       );
 
       canvas.restore();

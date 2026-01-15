@@ -127,12 +127,12 @@ class _IndividualVisualAcuityResultScreenState
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.success.withValues(alpha: 0.1),
-            AppColors.success.withValues(alpha: 0.05),
+            AppColors.success.withOpacity(0.1),
+            AppColors.success.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.success.withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -187,10 +187,10 @@ class _IndividualVisualAcuityResultScreenState
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +200,7 @@ class _IndividualVisualAcuityResultScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
+                  color: color.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -289,9 +289,9 @@ class _IndividualVisualAcuityResultScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         children: [

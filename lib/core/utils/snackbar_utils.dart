@@ -215,15 +215,15 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: widget.backgroundColor.withValues(alpha: 0.95),
+                color: widget.backgroundColor.withOpacity(0.95),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppColors.white.withValues(alpha: 0.2),
+                  color: AppColors.white.withOpacity(0.2),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.15),
+                    color: AppColors.black.withOpacity(0.15),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -234,7 +234,7 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.white.withValues(alpha: 0.15),
+                      color: AppColors.white.withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(widget.icon, color: Colors.white, size: 22),

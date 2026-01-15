@@ -249,11 +249,11 @@ class _CoverRightEyeInstructionScreenState
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.5),
+                      color: AppColors.border.withOpacity(0.5),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.black.withValues(alpha: 0.05),
+                        color: AppColors.black.withOpacity(0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -276,8 +276,8 @@ class _CoverRightEyeInstructionScreenState
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    AppColors.primary.withValues(alpha: 0.1),
-                                    AppColors.primary.withValues(alpha: 0.2),
+                                    AppColors.primary.withOpacity(0.1),
+                                    AppColors.primary.withOpacity(0.2),
                                   ],
                                 ),
                               ),
@@ -309,9 +309,7 @@ class _CoverRightEyeInstructionScreenState
                                       width: 45,
                                       height: 55,
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary.withValues(
-                                          alpha: 0.8,
-                                        ),
+                                        color: AppColors.primary.withOpacity(0.8),
                                         borderRadius: const BorderRadius.only(
                                           topRight: Radius.circular(30),
                                           bottomRight: Radius.circular(30),
@@ -370,7 +368,7 @@ class _CoverRightEyeInstructionScreenState
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.5),
+                        color: AppColors.border.withOpacity(0.5),
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -429,7 +427,7 @@ class _CoverRightEyeInstructionScreenState
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: AppColors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -498,7 +496,7 @@ class _CoverRightEyeInstructionScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
+            color: accentColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: accentColor, size: 24),
@@ -667,7 +665,7 @@ class _EyeInstructionPainter extends CustomPainter {
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = color.withValues(alpha: 0.2)
+        ..color = color.withOpacity(0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -694,7 +692,7 @@ class _EyeInstructionPainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withValues(alpha: 0.6),
+        Paint()..color = Colors.white.withOpacity(0.6),
       );
 
       canvas.restore();

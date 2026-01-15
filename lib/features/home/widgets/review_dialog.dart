@@ -191,7 +191,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                         gradient: LinearGradient(
                           colors: [
                             AppColors.primary,
-                            AppColors.primary.withValues(alpha: 0.7),
+                            AppColors.primary.withOpacity(0.7),
                           ],
                         ),
                         shape: BoxShape.circle,
@@ -286,10 +286,10 @@ class _ReviewDialogState extends State<ReviewDialog> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.info.withValues(alpha: 0.1),
+                      color: AppColors.info.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: AppColors.info.withValues(alpha: 0.3),
+                        color: AppColors.info.withOpacity(0.3),
                       ),
                     ),
                     child: Row(

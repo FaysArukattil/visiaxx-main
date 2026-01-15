@@ -28,7 +28,7 @@ class IshiharaPlateViewer extends StatelessWidget {
         color: AppColors.white,
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.1),
+            color: AppColors.black.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -57,7 +57,7 @@ class IshiharaPlateViewer extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return Container(
-      color: AppColors.grey.withValues(alpha: 0.2),
+      color: AppColors.grey.withOpacity(0.2),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

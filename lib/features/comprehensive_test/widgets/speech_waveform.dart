@@ -71,9 +71,7 @@ class _SpeechWaveformState extends State<SpeechWaveform>
               width: 2.5,
               height: height,
               decoration: BoxDecoration(
-                color: widget.color.withValues(
-                  alpha: shouldAnimate ? 0.8 : 0.3,
-                ),
+                color: widget.color.withOpacity(shouldAnimate ? 0.8 : 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             );

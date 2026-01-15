@@ -164,9 +164,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                                       child: Icon(
                                         Icons.blur_on,
                                         size: eSize,
-                                        color: AppColors.grey.withValues(
-                                          alpha: 0.3,
-                                        ),
+                                        color: AppColors.grey.withOpacity(0.3),
                                       ),
                                     ),
                               SizedBox(width: widget.isCompact ? 40 : 50),
@@ -211,10 +209,10 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                         vertical: widget.isCompact ? 8 : 10,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.05),
+                        color: AppColors.primary.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: AppColors.primary.withOpacity(0.1),
                           width: 1,
                         ),
                       ),
@@ -321,14 +319,14 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                   boxShadow: isPressed
                       ? [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.4),
+                            color: AppColors.primary.withOpacity(0.4),
                             blurRadius: 12,
                             spreadRadius: 2,
                           ),
                         ]
                       : [
                           BoxShadow(
-                            color: AppColors.black.withValues(alpha: 0.05),
+                            color: AppColors.black.withOpacity(0.05),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -397,14 +395,14 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
               boxShadow: isPressed
                   ? [
                       BoxShadow(
-                        color: AppColors.warning.withValues(alpha: 0.4),
+                        color: AppColors.warning.withOpacity(0.4),
                         blurRadius: 12,
                         spreadRadius: 2,
                       ),
                     ]
                   : [
                       BoxShadow(
-                        color: AppColors.black.withValues(alpha: 0.05),
+                        color: AppColors.black.withOpacity(0.05),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),

@@ -177,7 +177,7 @@ class _AmslerGridInstructionsScreenState
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: AppColors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -253,7 +253,7 @@ class _AmslerGridInstructionsScreenState
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          border: Border.all(color: AppColors.border.withOpacity(0.5)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
         child: Column(
@@ -302,7 +302,7 @@ class _AmslerGridInstructionsScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
+            color: accentColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: accentColor, size: 24),

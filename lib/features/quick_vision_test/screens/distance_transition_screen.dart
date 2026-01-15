@@ -151,11 +151,11 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.5),
+                      color: AppColors.border.withOpacity(0.5),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.black.withValues(alpha: 0.05),
+                        color: AppColors.black.withOpacity(0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -175,7 +175,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.5),
+                        color: AppColors.border.withOpacity(0.5),
                       ),
                     ),
                     child: SingleChildScrollView(
@@ -185,7 +185,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
+                              color: AppColors.primary.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -228,9 +228,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.05,
-                                  ),
+                                  color: AppColors.primary.withOpacity(0.05),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -261,7 +259,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: AppColors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -275,9 +273,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.white,
-                      disabledBackgroundColor: AppColors.border.withValues(
-                        alpha: 0.5,
-                      ),
+                      disabledBackgroundColor: AppColors.border.withOpacity(0.5),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -331,7 +327,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
+            color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: color, size: 24),

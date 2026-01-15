@@ -195,7 +195,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: AppColors.primary.withOpacity(0.2),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -258,7 +258,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.04),
+                color: AppColors.primary.withOpacity(0.04),
               ),
             ),
           ),
@@ -270,7 +270,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.secondary.withValues(alpha: 0.04),
+                color: AppColors.secondary.withOpacity(0.04),
               ),
             ),
           ),
@@ -308,7 +308,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.black.withValues(alpha: 0.04),
+                            color: AppColors.black.withOpacity(0.04),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -322,7 +322,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppColors.error.withValues(alpha: 0.1),
+                                color: AppColors.error.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -552,9 +552,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.2,
-                                  ),
+                                  color: AppColors.primary.withOpacity(0.2),
                                   blurRadius: 15,
                                   offset: const Offset(0, 8),
                                 ),
@@ -643,7 +641,7 @@ class _RoleCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.05)
+              ? AppColors.primary.withOpacity(0.05)
               : AppColors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(

@@ -62,7 +62,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   // Voice recognition
   bool _isListening = false;
-  bool _isSpeechActive = false; // New: for waveform responsiveness
+  bool _isSpeechActive = false; // Restored: for waveform responsiveness
   Timer? _speechActiveTimer; // New: for debouncing responsiveness
   String? _recognizedText;
   Timer? _listeningTimer;
@@ -834,8 +834,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.testBackground,
       appBar: AppBar(
-        title: const Text('Reading Test'),
-        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+        title: const Text(
+          'Reading Test',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+        ),
+        backgroundColor: AppColors.white,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: _showExitConfirmation,
@@ -846,7 +850,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           children: [
             Column(
               children: [
-                _buildProgressBar(),
+                _buildInfoBar(),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -896,7 +900,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: AppColors.black.withValues(alpha: 0.85),
+      color: AppColors.black.withOpacity(0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -952,7 +956,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
+                    color: AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -983,7 +987,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
+                  color: AppColors.success.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.success, width: 1),
                 ),
@@ -1029,51 +1033,99 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     );
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildInfoBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+      ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Screen ${_currentScreen + 1}/${TestConstants.shortDistanceSentences.length}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const Spacer(),
-          Text(
-            '$_correctCount/${_results.length} correct',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-          const SizedBox(width: 8),
-          // Speech waveform (always visible, animates when listening)
+          // Screen progress
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.success.withValues(alpha: 0.3),
-                width: 1,
-              ),
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  height: 32, // ✅ Fixed height to prevent jitter
-                  child: Center(
-                    child: _SpeechWaveform(
-                      isListening: _isListening,
-                      isTalking: _isSpeechActive,
-                      color: AppColors.success,
-                    ),
+                const Icon(
+                  Icons.grid_view_rounded,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'SCREEN ${_currentScreen + 1}/${TestConstants.shortDistanceSentences.length}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(width: 6),
-                Icon(Icons.mic, size: 14, color: AppColors.success),
               ],
             ),
           ),
+
+          // Accuracy/Results tracker
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  size: 14,
+                  color: AppColors.success,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'ACCURACY: ${(_lastSimilarity * 100).toInt()}%',
+                  style: const TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ✅ Voice indicator
+          if (_isListening)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.success.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.success.withOpacity(0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _SpeechWaveform(
+                    isListening: _isListening,
+                    isTalking: _isSpeechActive,
+                    color: AppColors.success,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -1107,9 +1159,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                     vertical: hasKeyboard ? 8 : 10,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.15),
+                    color: AppColors.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary, width: 2),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.2),
+                      width: 1.5,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1325,7 +1380,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.black.withValues(alpha: 0.6),
+        color: AppColors.black.withOpacity(0.6),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -1344,8 +1399,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       color: _lastResultCorrect
-          ? AppColors.success.withValues(alpha: 0.1)
-          : AppColors.error.withValues(alpha: 0.1),
+          ? AppColors.success.withOpacity(0.1)
+          : AppColors.error.withOpacity(0.1),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -1394,7 +1449,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withValues(alpha: 0.15),
+        color: indicatorColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: indicatorColor, width: 1.5),
       ),
@@ -1745,7 +1800,7 @@ class _SpeechWaveform extends StatefulWidget {
 
   const _SpeechWaveform({
     required this.isListening,
-    this.isTalking = false, // NEW
+    this.isTalking = false,
     required this.color,
   });
 
@@ -1799,9 +1854,7 @@ class _SpeechWaveformState extends State<_SpeechWaveform>
               width: 2.5,
               height: height,
               decoration: BoxDecoration(
-                color: widget.color.withValues(
-                  alpha: shouldAnimate ? 0.8 : 0.3,
-                ),
+                color: widget.color.withOpacity(shouldAnimate ? 0.8 : 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             );

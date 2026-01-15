@@ -42,14 +42,11 @@ class _LightingAnimationState extends State<LightingAnimation>
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.warning.withValues(
-                alpha: 0.1 + (_controller.value * 0.1),
+              color: AppColors.warning.withOpacity(0.1 + (_controller.value * 0.1),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.warning.withValues(
-                    alpha: 0.2 * _controller.value,
-                  ),
+                  color: AppColors.warning.withOpacity(0.2 * _controller.value),
                   blurRadius:
                       (widget.isCompact ? 15 : 20) + (20 * _controller.value),
                   spreadRadius:
@@ -60,8 +57,7 @@ class _LightingAnimationState extends State<LightingAnimation>
             child: Icon(
               Icons.wb_sunny_rounded,
               size: widget.isCompact ? 50 : 80,
-              color: AppColors.warning.withValues(
-                alpha: 0.8 + (_controller.value * 0.2),
+              color: AppColors.warning.withOpacity(0.8 + (_controller.value * 0.2),
               ),
             ),
           );
@@ -235,8 +231,7 @@ class _IshiharaPainter extends CustomPainter {
           ? AppColors.success
           : (i % 3 == 1 ? AppColors.error : AppColors.warning);
 
-      paint.color = color.withValues(
-        alpha: 0.5 + (0.5 * math.sin(progress * math.pi + i)),
+      paint.color = color.withOpacity(0.5 + (0.5 * math.sin(progress * math.pi + i)),
       );
 
       final radius =
@@ -309,9 +304,7 @@ class _StayFocusedAnimationState extends State<StayFocusedAnimation>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: widget.color.withValues(
-                      alpha: 1 - _controller.value,
-                    ),
+                    color: widget.color.withOpacity(1 - _controller.value),
                     width: (widget.isCompact ? 2 : 3) + (5 * _controller.value),
                   ),
                 ),
@@ -385,7 +378,7 @@ class _AmslerIntroAnimationState extends State<AmslerIntroAnimation>
                       bottom: 0,
                       child: Container(
                         width: 1,
-                        color: AppColors.black.withValues(alpha: 0.3),
+                        color: AppColors.black.withOpacity(0.3),
                       ),
                     ),
                     Positioned(
@@ -394,7 +387,7 @@ class _AmslerIntroAnimationState extends State<AmslerIntroAnimation>
                       right: 0,
                       child: Container(
                         height: 1,
-                        color: AppColors.black.withValues(alpha: 0.3),
+                        color: AppColors.black.withOpacity(0.3),
                       ),
                     ),
                   ],
@@ -465,7 +458,7 @@ class _AlignmentAnimationState extends State<AlignmentAnimation>
                 height: size,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.5),
+                    color: AppColors.success.withOpacity(0.5),
                   ),
                   shape: BoxShape.circle,
                 ),
@@ -698,7 +691,7 @@ class _SteadyReadingPainter extends CustomPainter {
     canvas.drawCircle(eyeCenter, 5, paint..style = PaintingStyle.fill);
 
     final bracketPaint = Paint()
-      ..color = AppColors.success.withValues(alpha: 0.6 * pulse)
+      ..color = AppColors.success.withOpacity(0.6 * pulse)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
       ..strokeCap = StrokeCap.round;
@@ -835,10 +828,10 @@ class _ReadingTripletsAnimationState extends State<ReadingTripletsAnimation>
                   width: 220,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.15),
+                    color: AppColors.primary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.5),
+                      color: AppColors.primary.withOpacity(0.5),
                       width: 2,
                     ),
                   ),
@@ -996,7 +989,7 @@ class _AmslerPathwayAnimationState extends State<AmslerPathwayAnimation>
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 width: 1,
               ),
             ),
@@ -1024,7 +1017,7 @@ class _AmslerPathwayAnimationState extends State<AmslerPathwayAnimation>
                 ),
                 decoration: BoxDecoration(
                   color: (isNormal ? AppColors.success : AppColors.error)
-                      .withValues(alpha: 0.1),
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -1071,7 +1064,7 @@ class _AmslerPathwayPainter extends CustomPainter {
 
     // 1. Draw the Eye Cross-section
     final eyePaint = Paint()
-      ..color = AppColors.border.withValues(alpha: 0.5)
+      ..color = AppColors.border.withOpacity(0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
@@ -1098,7 +1091,7 @@ class _AmslerPathwayPainter extends CustomPainter {
       math.pi * 0.6,
     );
     final retinaPaint = Paint()
-      ..color = AppColors.warning.withValues(alpha: 0.2)
+      ..color = AppColors.warning.withOpacity(0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0;
     canvas.drawPath(retinaPath, retinaPaint);
@@ -1109,7 +1102,7 @@ class _AmslerPathwayPainter extends CustomPainter {
         Colors.orange,
         Colors.red,
         damageAlpha,
-      )!.withValues(alpha: 0.6)
+      )!.withOpacity(0.6)
       ..style = PaintingStyle.fill;
 
     canvas.drawCircle(
@@ -1186,8 +1179,8 @@ class _AmslerPathwayPainter extends CustomPainter {
   ) {
     final rayPaint = Paint()
       ..color = isNormal
-          ? AppColors.info.withValues(alpha: 0.6)
-          : Colors.orange.withValues(alpha: 0.6)
+          ? AppColors.info.withOpacity(0.6)
+          : Colors.orange.withOpacity(0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
@@ -1231,7 +1224,7 @@ class _AmslerPathwayPainter extends CustomPainter {
           rayRetina +
               Offset(math.cos(i.toDouble()) * 10, math.sin(i.toDouble()) * 10),
           Paint()
-            ..color = Colors.red.withValues(alpha: 0.4)
+            ..color = Colors.red.withOpacity(0.4)
             ..strokeWidth = 1,
         );
       }

@@ -101,7 +101,7 @@ class _ColorVisionResponseAnimationState
                   shape: BoxShape.circle,
                   color: AppColors.background,
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.5),
+                    color: AppColors.primary.withOpacity(0.5),
                     width: 2,
                   ),
                 ),
@@ -111,7 +111,7 @@ class _ColorVisionResponseAnimationState
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary.withValues(alpha: 0.6),
+                      color: AppColors.primary.withOpacity(0.6),
                     ),
                   ),
                 ),
@@ -145,9 +145,7 @@ class _ColorVisionResponseAnimationState
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.4,
-                                  ),
+                                  color: AppColors.primary.withOpacity(0.4),
                                   blurRadius: 8,
                                   spreadRadius: 1,
                                 ),

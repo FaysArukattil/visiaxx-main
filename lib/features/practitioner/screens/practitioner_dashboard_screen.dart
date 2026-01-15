@@ -274,7 +274,7 @@ class _PractitionerDashboardScreenState
           border: Border.all(
             color: result.isReviewed
                 ? AppColors.border
-                : statusColor.withValues(alpha: 0.5),
+                : statusColor.withOpacity(0.5),
             width: result.isReviewed ? 1 : 2,
           ),
           boxShadow: [
@@ -294,7 +294,7 @@ class _PractitionerDashboardScreenState
                 // Patient avatar
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: statusColor.withValues(alpha: 0.1),
+                  backgroundColor: statusColor.withOpacity(0.1),
                   child: Text(
                     result.patientName
                         .split(' ')
@@ -362,7 +362,7 @@ class _PractitionerDashboardScreenState
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
+                    color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -410,7 +410,7 @@ class _PractitionerDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.1),
+                  color: AppColors.warning.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -440,7 +440,7 @@ class _PractitionerDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.info.withValues(alpha: 0.1),
+                  color: AppColors.info.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -622,7 +622,7 @@ class _PatientDetailSheetState extends State<_PatientDetailSheet> {
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundColor: statusColor.withValues(alpha: 0.1),
+                  backgroundColor: statusColor.withOpacity(0.1),
                   child: Text(
                     widget.result.patientName
                         .split(' ')

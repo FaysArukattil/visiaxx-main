@@ -335,7 +335,7 @@ class _PractitionerProfileSelectionScreenState
           gradient: LinearGradient(
             colors: [
               AppColors.primary,
-              AppColors.primary.withValues(alpha: 0.8),
+              AppColors.primary.withOpacity(0.8),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -343,7 +343,7 @@ class _PractitionerProfileSelectionScreenState
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
+              color: AppColors.primary.withOpacity(0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -354,7 +354,7 @@ class _PractitionerProfileSelectionScreenState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.2),
+                color: AppColors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(
@@ -380,7 +380,7 @@ class _PractitionerProfileSelectionScreenState
                   Text(
                     'Register a new patient for vision testing',
                     style: TextStyle(
-                      color: AppColors.white.withValues(alpha: 0.9),
+                      color: AppColors.white.withOpacity(0.9),
                       fontSize: 14,
                     ),
                   ),
@@ -407,7 +407,7 @@ class _PractitionerProfileSelectionScreenState
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
+              backgroundColor: AppColors.secondary.withOpacity(0.1),
               radius: 28,
               child: Text(
                 patient.firstName[0].toUpperCase(),
@@ -458,7 +458,7 @@ class _PractitionerProfileSelectionScreenState
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Form(
         key: _formKey,

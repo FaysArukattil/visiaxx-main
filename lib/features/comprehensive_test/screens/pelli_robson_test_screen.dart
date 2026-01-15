@@ -918,102 +918,21 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         appBar: AppBar(
           backgroundColor: AppColors.white,
           elevation: 0,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Contrast Test - ${_currentMode == 'short' ? '40cm' : '1m'}',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                ),
-              ),
-              Text(
-                '${_currentEye.toUpperCase()} EYE',
-                style: TextStyle(
-                  color: _currentEye == 'right'
-                      ? AppColors.rightEye
-                      : AppColors.leftEye,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          title: Text(
+            'Contrast Test - ${_currentMode == 'short' ? '40cm' : '1m'}',
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: const Icon(Icons.close),
             onPressed: _showExitConfirmation,
           ),
-          actions: [
-            // ✅ NEW: Mic waveform indicator (like short distance test)
-            if (_isTestActive)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.success.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        height: 24,
-                        child: Center(
-                          child: SpeechWaveform(
-                            isListening: _isListening,
-                            isTalking: _isSpeechActive,
-                            color: AppColors.success,
-                            size: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.mic, size: 14, color: AppColors.success),
-                    ],
-                  ),
-                ),
-              ),
-            // Progress indicator
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Center(
-                child: Text(
-                  'Screen ${_currentScreenIndex + 1}/${PelliRobsonScoring.totalScreens}',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
         body: SafeArea(
           child: Stack(
             children: [
               Column(
                 children: [
-                  // Progress bar
-                  LinearProgressIndicator(
-                    value:
-                        (_currentScreenIndex + 1) /
-                        PelliRobsonScoring.totalScreens,
-                    backgroundColor: AppColors.border,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
-                    ),
-                  ),
-
+                  _buildInfoBar(),
                   // Triplets display
                   Expanded(child: _buildTripletsDisplay()),
 
@@ -1157,17 +1076,12 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isCurrent
-            ? AppColors.primary.withValues(
-                alpha: 0.15,
-              ) // Explicit primary for current triplet
-            : AppColors.transparent, // No background for next or other triplets
-        borderRadius: BorderRadius.circular(12),
+            ? AppColors.primary.withOpacity(0.12) // Slightly more subtle
+            : AppColors.transparent,
+        borderRadius: BorderRadius.circular(16),
         border: isCurrent
-            ? Border.all(
-                color: AppColors.primary, // Explicit primary border
-                width: 3, // Thicker border to make it more prominent
-              )
-            : null, // No border for next or other triplets
+            ? Border.all(color: AppColors.primary, width: 2.5)
+            : null,
       ),
       child: Opacity(
         opacity: rowOpacity,
@@ -1248,7 +1162,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withValues(alpha: 0.15),
+        color: indicatorColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: indicatorColor, width: 1.5),
       ),
@@ -1286,7 +1200,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: AppColors.black.withValues(alpha: 0.85),
+      color: AppColors.black.withOpacity(0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1341,7 +1255,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
+                    color: AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1371,9 +1285,12 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
+                  color: AppColors.success.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.success, width: 1),
+                  border: Border.all(
+                    color: AppColors.success.withOpacity(0.3),
+                    width: 1,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1402,6 +1319,82 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Eye/Mode indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.visibility_rounded,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'EYE: ${_currentEye.toUpperCase()}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Screen indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.info.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.grid_view_rounded,
+                  size: 14,
+                  color: AppColors.info,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'SCREEN ${_currentScreenIndex + 1}/${PelliRobsonScoring.totalScreens}',
+                  style: const TextStyle(
+                    color: AppColors.info,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

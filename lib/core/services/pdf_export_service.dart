@@ -1643,8 +1643,7 @@ class PdfExportService {
               height: 25,
               decoration: pw.BoxDecoration(
                 color:
-                    color, // Removed .withValues as it is not supported for PdfColor
-                borderRadius: pw.BorderRadius.circular(2),
+                    color, // Removed .withOpacity(2),
               ),
             ),
             pw.SizedBox(width: 8),

@@ -879,8 +879,8 @@ class _MobileRefractometryTestScreenState
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: _currentEye == 'right'
-                  ? AppColors.rightEye.withValues(alpha: 0.1)
-                  : AppColors.leftEye.withValues(alpha: 0.1),
+                  ? AppColors.rightEye.withOpacity(0.1)
+                  : AppColors.leftEye.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -912,7 +912,7 @@ class _MobileRefractometryTestScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -929,10 +929,10 @@ class _MobileRefractometryTestScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
+              color: AppColors.success.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.success.withValues(alpha: 0.3),
+                color: AppColors.success.withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -950,10 +950,10 @@ class _MobileRefractometryTestScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
+              color: AppColors.success.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.success.withValues(alpha: 0.3),
+                color: AppColors.success.withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -994,7 +994,7 @@ class _MobileRefractometryTestScreenState
         : AppColors.warning;
 
     return Container(
-      color: AppColors.black.withValues(alpha: 0.8),
+      color: AppColors.black.withOpacity(0.8),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1165,7 +1165,7 @@ class _MobileRefractometryTestScreenState
                 AppAssets.relaxationImage,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   child: const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1239,7 +1239,7 @@ class _MobileRefractometryTestScreenState
         // Timer and Distance indicator row - MATCHES VA
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: AppColors.surface.withValues(alpha: 0.9),
+          color: AppColors.surface.withOpacity(0.9),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1250,7 +1250,7 @@ class _MobileRefractometryTestScreenState
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: AppColors.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.primary, width: 2),
                 ),
@@ -1281,7 +1281,7 @@ class _MobileRefractometryTestScreenState
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.primary.withValues(alpha: 0.7),
+                            color: AppColors.primary.withOpacity(0.7),
                           ),
                         ),
                       ],
@@ -1358,7 +1358,7 @@ class _MobileRefractometryTestScreenState
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.black.withValues(alpha: 0.6),
+                color: AppColors.black.withOpacity(0.6),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -1446,7 +1446,7 @@ class _MobileRefractometryTestScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: indicatorColor.withValues(alpha: 0.15),
+        color: indicatorColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: indicatorColor, width: 1.5),
       ),
@@ -1611,7 +1611,7 @@ class _SpeechWaveformState extends State<_SpeechWaveform>
             height: 8,
             margin: const EdgeInsets.symmetric(horizontal: 1),
             decoration: BoxDecoration(
-              color: widget.color.withValues(alpha: 0.5),
+              color: widget.color.withOpacity(0.5),
               borderRadius: BorderRadius.circular(2),
             ),
           ),

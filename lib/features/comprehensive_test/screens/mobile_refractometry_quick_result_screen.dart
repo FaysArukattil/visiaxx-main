@@ -390,7 +390,7 @@ class _MobileRefractometryQuickResultScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -481,7 +481,7 @@ class _MobileRefractometryQuickResultScreenState
             subLabel,
             style: TextStyle(
               fontSize: 9,
-              color: AppColors.textSecondary.withValues(alpha: 0.6),
+              color: AppColors.textSecondary.withOpacity(0.6),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -528,9 +528,9 @@ class _MobileRefractometryQuickResultScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.05),
+        color: AppColors.warning.withOpacity(0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.warning.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,7 +610,7 @@ class _MobileRefractometryQuickResultScreenState
                   ? [AppColors.border, AppColors.border]
                   : [
                       AppColors.primary,
-                      AppColors.primary.withValues(alpha: 0.8),
+                      AppColors.primary.withOpacity(0.8),
                     ],
             ),
             borderRadius: BorderRadius.circular(16),
@@ -618,7 +618,7 @@ class _MobileRefractometryQuickResultScreenState
                 ? []
                 : [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: AppColors.primary.withOpacity(0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -719,9 +719,9 @@ class _MobileRefractometryQuickResultScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.info.withValues(alpha: 0.1),
+            color: AppColors.info.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+            border: Border.all(color: AppColors.info.withOpacity(0.3)),
           ),
           child: Row(
             children: [
@@ -753,7 +753,7 @@ class _MobileRefractometryQuickResultScreenState
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -761,7 +761,7 @@ class _MobileRefractometryQuickResultScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -847,14 +847,14 @@ class _MobileRefractometryQuickResultScreenState
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: AppColors.primary.withOpacity(0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -1036,12 +1036,12 @@ class _MobileRefractometryQuickResultScreenState
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: _includeInResults
-                ? AppColors.warning.withValues(alpha: 0.1)
+                ? AppColors.warning.withOpacity(0.1)
                 : AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _includeInResults
-                  ? AppColors.warning.withValues(alpha: 0.2)
+                  ? AppColors.warning.withOpacity(0.2)
                   : AppColors.border,
             ),
           ),

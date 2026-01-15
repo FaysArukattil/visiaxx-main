@@ -327,13 +327,13 @@ class AppTheme {
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: AppColors.textTertiary.withValues(alpha: 0.3),
+          color: AppColors.textTertiary.withOpacity(0.3),
         ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: AppColors.textTertiary.withValues(alpha: 0.3),
+          color: AppColors.textTertiary.withOpacity(0.3),
         ),
       ),
       focusedBorder: OutlineInputBorder(

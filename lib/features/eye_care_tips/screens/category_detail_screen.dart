@@ -42,7 +42,7 @@ class CategoryDetailScreen extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: [
                       category.color,
-                      category.color.withValues(alpha: 0.8),
+                      category.color.withOpacity(0.8),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -59,7 +59,7 @@ class CategoryDetailScreen extends StatelessWidget {
                         height: 150,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.textOnPrimary.withValues(alpha: 0.1),
+                          color: AppColors.textOnPrimary.withOpacity(0.1),
                         ),
                       ),
                     ),
@@ -71,7 +71,7 @@ class CategoryDetailScreen extends StatelessWidget {
                         height: 100,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.textOnPrimary.withValues(alpha: 0.1),
+                          color: AppColors.textOnPrimary.withOpacity(0.1),
                         ),
                       ),
                     ),
@@ -81,7 +81,7 @@ class CategoryDetailScreen extends StatelessWidget {
                         margin: const EdgeInsets.only(top: 30),
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: AppColors.textOnPrimary.withValues(alpha: 0.2),
+                          color: AppColors.textOnPrimary.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
                         child: Text(
@@ -102,10 +102,10 @@ class CategoryDetailScreen extends StatelessWidget {
               margin: const EdgeInsets.fromLTRB(20, 20, 20, 12),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: category.color.withValues(alpha: 0.1),
+                color: category.color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: category.color.withValues(alpha: 0.3),
+                  color: category.color.withOpacity(0.3),
                 ),
               ),
               child: Row(
