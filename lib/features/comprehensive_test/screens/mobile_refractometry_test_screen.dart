@@ -1053,30 +1053,30 @@ class _MobileRefractometryTestScreenState
           // 2. High-Fidelity Content Card
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 40),
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.all(32),
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(24),
                 decoration: ShapeDecoration(
                   color: AppColors.white.withOpacity(0.95),
                   shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(48),
+                    borderRadius: BorderRadius.circular(32),
                   ),
                   shadows: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 40,
-                      offset: const Offset(0, 20),
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Ultra-Premium Layered Badge
+                    // Premium Badge
                     Container(
-                      width: 90,
-                      height: 90,
+                      width: 70,
+                      height: 70,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
@@ -1085,55 +1085,55 @@ class _MobileRefractometryTestScreenState
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: iconColor.withOpacity(0.15),
-                            blurRadius: 30,
-                            spreadRadius: 5,
+                            color: iconColor.withOpacity(0.12),
+                            blurRadius: 20,
+                            spreadRadius: 3,
                           ),
                         ],
                       ),
                       child: Center(
                         child: Container(
-                          width: 70,
-                          height: 70,
+                          width: 54,
+                          height: 54,
                           decoration: BoxDecoration(
                             color: iconColor.withOpacity(0.1),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: iconColor.withOpacity(0.3),
-                              width: 2,
+                              width: 1.5,
                             ),
                           ),
-                          child: Icon(icon, size: 36, color: iconColor),
+                          child: Icon(icon, size: 28, color: iconColor),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
 
-                    // Refined Typography Hierarchy
+                    // Typography
                     Text(
                       pauseReason.toUpperCase(),
                       style: const TextStyle(
-                        fontSize: 26,
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
                         color: AppColors.textPrimary,
-                        letterSpacing: -0.8,
+                        letterSpacing: -0.5,
                         height: 1.1,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(
                       instruction,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         color: AppColors.textPrimary.withOpacity(0.6),
-                        height: 1.6,
+                        height: 1.5,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
+                        letterSpacing: 0.1,
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
 
                     // LIVE DISTANCE GAUGE (The "Wow" Factor)
                     if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
