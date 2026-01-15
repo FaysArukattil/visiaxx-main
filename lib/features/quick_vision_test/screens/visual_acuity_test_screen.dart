@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -37,7 +38,7 @@ class VisualAcuityTestScreen extends StatefulWidget {
 }
 
 class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
   final DistanceDetectionService _distanceService = DistanceDetectionService();
@@ -62,6 +63,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Timer? _eDisplayTimer;
   Timer? _relaxationTimer;
   int _relaxationCountdown = 10;
+  late AnimationController
+  _relaxationProgressController; // ✅ NEW: Smooth animation
   DateTime? _eDisplayStartTime;
   int _eDisplayCountdown = TestConstants
       .eDisplayDurationSeconds; // 7 seconds per E as per user requirement
@@ -109,6 +112,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // ✅ FIX: Initialize synchronously to prevent LateInitializationError
     _continuousSpeech = ContinuousSpeechManager(_speechService);
 
+    // ✅ Initialize relaxation animation controller
+    _relaxationProgressController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: TestConstants.relaxationDurationSeconds),
+    );
+
+    _relaxationProgressController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted && _showRelaxation) {
+        _showTumblingE();
+      }
+    });
+
     _initServices();
   }
 
@@ -136,6 +151,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     // Stop speech recognition
     _continuousSpeech.stop();
+
+    // Pause relaxation animation if active
+    if (_showRelaxation) {
+      _relaxationProgressController.stop();
+    }
 
     setState(() {
       _isTestPausedForDistance = true;
@@ -651,6 +671,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   void _restartRelaxationTimer() {
     _relaxationTimer?.cancel();
+
+    if (_isTestPausedForDistance) {
+      _relaxationProgressController.stop();
+      return;
+    }
+
+    // Start/Resume smooth animation
+    _relaxationProgressController.forward();
+
     _relaxationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -658,19 +687,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
 
       // ✅ CRITICAL FIX: If paused for distance, do not decrement countdown
-      if (_isTestPausedForDistance) return;
+      if (_isTestPausedForDistance) {
+        _relaxationProgressController.stop();
+        return;
+      }
 
       setState(() {
         _relaxationCountdown--;
       });
 
-      if (_relaxationCountdown == 3) {
-        debugPrint('[VisualAcuity] 3s remaining in relaxation...');
-      }
-
       if (_relaxationCountdown <= 0) {
         timer.cancel();
-        _showTumblingE();
+        // Animation status listener will call _showTumblingE
       }
     });
   }
@@ -764,6 +792,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eDisplayStartTime = null; // ✅ Reset timing guard for next E
     _ttsService.speak(TtsService.relaxationInstruction);
 
+    _relaxationProgressController.reset();
     _restartRelaxationTimer();
   }
 
@@ -1170,6 +1199,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   @override
   void dispose() {
+    _relaxationProgressController.dispose();
     _speechEraserTimer?.cancel();
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
@@ -1675,9 +1705,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildRelaxationView() {
-    final double progress =
-        _relaxationCountdown / TestConstants.relaxationDurationSeconds;
-
     return Container(
       color: AppColors.testBackground,
       width: double.infinity,
@@ -1691,7 +1718,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             clipBehavior: Clip.none,
             alignment: Alignment.bottomCenter,
             children: [
-              // Image Card
+              // Image Card (Maximized)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 height: MediaQuery.of(context).size.height * 0.60,
@@ -1703,7 +1730,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   ),
                   shadows: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.08),
+                      color: AppColors.primary.withOpacity(0.12),
                       blurRadius: 40,
                       offset: const Offset(0, 20),
                     ),
@@ -1717,68 +1744,93 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                     color: AppColors.primary.withOpacity(0.05),
                     child: const Icon(
                       Icons.landscape,
-                      size: 80,
+                      size: 100,
                       color: AppColors.primary,
                     ),
                   ),
                 ),
               ),
 
-              // Floating Integrated Timer
+              // Glassmorphism Smooth Timer
               Positioned(
-                bottom: -28, // Half of timer height to overlap perfectly
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+                bottom: -45, // Half of timer height (90/2)
+                child: AnimatedBuilder(
+                  animation: _relaxationProgressController,
+                  builder: (context, child) {
+                    return Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 25,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 3,
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            AppColors.primary,
+                      child: ClipOval(
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.white.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 80,
+                                  height: 80,
+                                  child: CircularProgressIndicator(
+                                    value: _relaxationProgressController.value,
+                                    strokeWidth: 4,
+                                    backgroundColor: AppColors.primary
+                                        .withOpacity(0.1),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          AppColors.primary,
+                                        ),
+                                  ),
+                                ),
+                                Text(
+                                  '$_relaxationCountdown',
+                                  style: const TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.primary,
+                                    fontFamily: 'Inter',
+                                    letterSpacing: -1,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                      Text(
-                        '$_relaxationCountdown',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primary,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 56), // Increased to account for overlap
+          const SizedBox(
+            height: 60,
+          ), // Adjusted spacing for large overlapping timer
           // Standardized Instruction Text
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               'Relax and focus on the distance',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,

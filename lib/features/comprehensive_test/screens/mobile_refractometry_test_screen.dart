@@ -38,7 +38,7 @@ class MobileRefractometryTestScreen extends StatefulWidget {
 
 class _MobileRefractometryTestScreenState
     extends State<MobileRefractometryTestScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   // Services
   final TtsService _ttsService = TtsService();
   final SpeechService _speechService = SpeechService();
@@ -70,6 +70,8 @@ class _MobileRefractometryTestScreenState
   // Relaxation
   int _relaxationCountdown = TestConstants.mobileRefractometryRelaxationSeconds;
   Timer? _relaxationTimer;
+  late AnimationController
+  _relaxationProgressController; // ✅ NEW: Smooth animation
 
   // Distance monitoring
   double _currentDistance = 0;
@@ -92,6 +94,23 @@ class _MobileRefractometryTestScreenState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _continuousSpeech = ContinuousSpeechManager(_speechService);
+
+    // ✅ Initialize relaxation animation controller
+    _relaxationProgressController = AnimationController(
+      vsync: this,
+      duration: Duration(
+        seconds: TestConstants.mobileRefractometryRelaxationSeconds,
+      ),
+    );
+
+    _relaxationProgressController.addStatusListener((status) {
+      if (status == AnimationStatus.completed &&
+          mounted &&
+          _currentPhase == RefractPhase.relaxation) {
+        _startRound();
+      }
+    });
+
     _initServices();
   }
 
@@ -123,6 +142,7 @@ class _MobileRefractometryTestScreenState
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _relaxationProgressController.dispose();
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
     _speechActiveTimer?.cancel();
@@ -311,36 +331,49 @@ class _MobileRefractometryTestScreenState
   }
 
   void _startRelaxation() {
-    // ✅ Stop mic during relaxation (matches VA)
+    debugPrint('[MobileRefract] Starting relaxation phase');
     _continuousSpeech.stop();
     _continuousSpeech.clearAccumulated();
 
     setState(() {
       _currentPhase = RefractPhase.relaxation;
-      _relaxationCountdown = TestConstants.relaxationDurationSeconds;
+      _relaxationCountdown = TestConstants.mobileRefractometryRelaxationSeconds;
       _lastDetectedSpeech = null;
       _isSpeechActive = false;
     });
 
     _ttsService.speak(TtsService.relaxationInstruction);
+    _relaxationProgressController.reset();
     _startRelaxationTimer();
   }
 
   void _startRelaxationTimer() {
     _relaxationTimer?.cancel();
+
+    if (_isTestPausedForDistance) {
+      _relaxationProgressController.stop();
+      return;
+    }
+
+    // Start/Resume smooth animation
+    _relaxationProgressController.forward();
+
     _relaxationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
 
-      if (_isTestPausedForDistance) return; // Don't decrement if paused
+      if (_isTestPausedForDistance) {
+        _relaxationProgressController.stop();
+        return;
+      }
 
       setState(() => _relaxationCountdown--);
 
       if (_relaxationCountdown <= 0) {
         timer.cancel();
-        _startRound(); // Check completion and distance before generating E
+        // Phase transition handled by animation status listener
       }
     });
   }
@@ -1141,10 +1174,6 @@ class _MobileRefractometryTestScreenState
   }
 
   Widget _buildRelaxationView() {
-    final double progress =
-        _relaxationCountdown /
-        TestConstants.mobileRefractometryRelaxationSeconds;
-
     return Container(
       color: AppColors.testBackground,
       width: double.infinity,
@@ -1153,7 +1182,7 @@ class _MobileRefractometryTestScreenState
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Spacer(flex: 2),
-          // Hero Card with Image and Overlapping Timer
+          // Hero Card with Image and Overlapping Timer (Maximized)
           Stack(
             clipBehavior: Clip.none,
             alignment: Alignment.bottomCenter,
@@ -1170,7 +1199,7 @@ class _MobileRefractometryTestScreenState
                   ),
                   shadows: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.08),
+                      color: AppColors.primary.withOpacity(0.12),
                       blurRadius: 40,
                       offset: const Offset(0, 20),
                     ),
@@ -1184,68 +1213,93 @@ class _MobileRefractometryTestScreenState
                     color: AppColors.primary.withOpacity(0.05),
                     child: const Icon(
                       Icons.landscape,
-                      size: 80,
+                      size: 100,
                       color: AppColors.primary,
                     ),
                   ),
                 ),
               ),
 
-              // Floating Integrated Timer
+              // Glassmorphism Smooth Timer
               Positioned(
-                bottom: -28, // Half of timer height to overlap perfectly
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+                bottom: -45, // Half of timer height (90/2)
+                child: AnimatedBuilder(
+                  animation: _relaxationProgressController,
+                  builder: (context, child) {
+                    return Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 25,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 3,
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            AppColors.primary,
+                      child: ClipOval(
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.white.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 80,
+                                  height: 80,
+                                  child: CircularProgressIndicator(
+                                    value: _relaxationProgressController.value,
+                                    strokeWidth: 4,
+                                    backgroundColor: AppColors.primary
+                                        .withOpacity(0.1),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          AppColors.primary,
+                                        ),
+                                  ),
+                                ),
+                                Text(
+                                  '$_relaxationCountdown',
+                                  style: const TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.primary,
+                                    fontFamily: 'Inter',
+                                    letterSpacing: -1,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                      Text(
-                        '$_relaxationCountdown',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primary,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 56), // Increased to account for overlap
+          const SizedBox(
+            height: 60,
+          ), // Adjusted spacing for large overlapping timer
           // Standardized Instruction Text
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               'Relax and focus on the distance',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
