@@ -1770,31 +1770,22 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             children: [
               // ✅ PROMINENT Size indicator on LEFT
               Container(
-                padding: const EdgeInsets.all(2), // Outer ring
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.2),
-                    width: 2,
+                width: 60,
+                height: 40,
+                decoration: ShapeDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: Container(
-                  width: 54,
-                  height: 54,
-                  decoration: const BoxDecoration(color: AppColors.primary),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          level.snellen,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ],
+                child: Center(
+                  child: Text(
+                    level.snellen,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primary,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ),
