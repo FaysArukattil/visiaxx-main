@@ -1525,9 +1525,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           // Level indicator
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: AppColors.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              shadows: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               'LEVEL ${_currentLevel + 1}/${TestConstants.visualAcuityLevels.length}',
@@ -1546,8 +1555,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             decoration: ShapeDecoration(
               color: AppColors.success.withOpacity(0.08),
               shape: ContinuousRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(12),
               ),
+              shadows: [
+                BoxShadow(
+                  color: AppColors.success.withOpacity(0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               '$_totalCorrect/$_totalResponses',
@@ -1770,19 +1786,26 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             children: [
               // ✅ PROMINENT Size indicator on LEFT
               Container(
-                width: 60,
-                height: 40,
+                width: 64,
+                height: 44,
                 decoration: ShapeDecoration(
                   color: AppColors.primary.withOpacity(0.08),
                   shape: ContinuousRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
+                  shadows: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Text(
                     level.snellen,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.w900,
                       color: AppColors.primary,
                       letterSpacing: -0.5,
@@ -1997,27 +2020,63 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Widget _buildResultFeedback() {
     final lastResponse = _responses.isNotEmpty ? _responses.last : null;
     final isCorrect = lastResponse?.isCorrect ?? false;
+    final color = isCorrect ? AppColors.success : AppColors.error;
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isCorrect ? Icons.check_circle : Icons.cancel,
-            size: 100,
-            color: isCorrect ? AppColors.success : AppColors.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isCorrect ? 'Correct!' : 'Incorrect',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: isCorrect ? AppColors.success : AppColors.error,
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 300),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: color.withOpacity(0.08 * value),
+          child: Center(
+            child: Opacity(
+              opacity: value,
+              child: Transform.scale(
+                scale: 0.8 + (0.2 * value),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: ShapeDecoration(
+                        color: color,
+                        shape: ContinuousRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        shadows: [
+                          BoxShadow(
+                            color: color.withOpacity(0.3),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        isCorrect ? Icons.check_rounded : Icons.close_rounded,
+                        size: 80,
+                        color: AppColors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      isCorrect ? 'CORRECT' : 'INCORRECT',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
