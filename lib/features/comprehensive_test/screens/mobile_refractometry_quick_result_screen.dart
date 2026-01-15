@@ -259,18 +259,18 @@ class _MobileRefractometryQuickResultScreenState
         title: const Text('Refractometry Result'),
         backgroundColor: AppColors.testBackground,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Column(
                 children: [
                   _buildStatusHeader(overallStatus),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   if (result.rightEye != null)
                     _buildEyeCard(
                       'Right Eye',
@@ -278,24 +278,24 @@ class _MobileRefractometryQuickResultScreenState
                       AppColors.rightEye,
                     ),
                   if (result.leftEye != null) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _buildEyeCard(
                       'Left Eye',
                       result.leftEye!,
                       AppColors.leftEye,
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   _buildClinicalInsights(result),
                   // Show prescription to ALL users if it exists and is included in results
                   if (_prescription != null &&
                       _prescription!.includeInResults) ...[
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     _userRole == UserRole.examiner
                         ? _buildPractitionerPrescriptionSection(result)
                         : _buildReadOnlyPrescriptionSection(result),
                   ],
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -314,26 +314,20 @@ class _MobileRefractometryQuickResultScreenState
     final Color color = statusInfo['color'];
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.15)),
+        color: color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.12)),
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(statusInfo['icon'], color: color, size: 40),
-          ),
-          const SizedBox(height: 12),
+          Icon(statusInfo['icon'], color: color, size: 32),
+          const SizedBox(height: 8),
           Text(
             statusInfo['label'],
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            style: const TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
@@ -343,7 +337,7 @@ class _MobileRefractometryQuickResultScreenState
             'Refraction Screening Complete',
             style: TextStyle(
               color: color.withOpacity(0.8),
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -358,16 +352,16 @@ class _MobileRefractometryQuickResultScreenState
     Color accentColor,
   ) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: accentColor.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -381,11 +375,11 @@ class _MobileRefractometryQuickResultScreenState
               _buildAccuracyBadge(res.accuracy, accentColor),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _buildRefractionGrid(res),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           const Divider(height: 1),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           _buildInterpretation(res, accentColor),
         ],
       ),
@@ -476,7 +470,7 @@ class _MobileRefractometryQuickResultScreenState
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),

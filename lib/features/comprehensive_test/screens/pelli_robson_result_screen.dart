@@ -143,6 +143,11 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
       return const Scaffold(body: Center(child: Text('No results found')));
     }
 
+    final isPositive =
+        result.overallCategory == 'Normal' ||
+        result.overallCategory == 'Excellent';
+    final statusColor = isPositive ? AppColors.success : AppColors.warning;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -155,134 +160,112 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
           title: const Text('Contrast Sensitivity Result'),
           backgroundColor: AppColors.testBackground,
           elevation: 0,
+          centerTitle: true,
           automaticallyImplyLeading: false,
         ),
         body: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(), // Minimal scroll if any
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 24,
+                    horizontal: 20,
+                    vertical: 10,
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header Section
+                      // Header Section (Ultra Compact)
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 20,
+                        ),
                         decoration: BoxDecoration(
-                          color:
-                              (result.overallCategory == 'Normal' ||
-                                          result.overallCategory == 'Excellent'
-                                      ? AppColors.success
-                                      : AppColors.warning)
-                                  .withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(20),
+                          color: statusColor.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color:
-                                (result.overallCategory == 'Normal' ||
-                                            result.overallCategory ==
-                                                'Excellent'
-                                        ? AppColors.success
-                                        : AppColors.warning)
-                                    .withOpacity(0.15),
+                            color: statusColor.withOpacity(0.12),
                           ),
                         ),
                         child: Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color:
-                                    (result.overallCategory == 'Normal' ||
-                                                result.overallCategory ==
-                                                    'Excellent'
-                                            ? AppColors.success
-                                            : AppColors.warning)
-                                        .withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                (result.overallCategory == 'Normal' ||
-                                        result.overallCategory == 'Excellent'
-                                    ? Icons.check_circle_rounded
-                                    : Icons.info_outline_rounded),
-                                size: 40,
-                                color:
-                                    (result.overallCategory == 'Normal' ||
-                                        result.overallCategory == 'Excellent'
-                                    ? AppColors.success
-                                    : AppColors.warning),
-                              ),
+                            Icon(
+                              isPositive
+                                  ? Icons.check_circle_rounded
+                                  : Icons.info_outline_rounded,
+                              size: 32,
+                              color: statusColor,
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             Text(
-                              'Contrast Sensitivity Test Completed',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                              textAlign: TextAlign.center,
+                              'Test Completed',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                             Text(
                               result.overallCategory,
                               style: TextStyle(
                                 fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color:
-                                    (result.overallCategory == 'Normal' ||
-                                        result.overallCategory == 'Excellent'
-                                    ? AppColors.success
-                                    : AppColors.warning),
+                                fontWeight: FontWeight.w700,
+                                color: statusColor,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
-                      // Right Eye
-                      if (result.rightEye != null) ...[
-                        _buildEyeTitle('Right Eye'),
-                        const SizedBox(height: 8),
-                        if (result.rightEye!.shortDistance != null)
-                          _buildDistanceResultCard(
-                            'Near Vision (40cm)',
-                            result.rightEye!.shortDistance!,
-                            Icons.short_text,
-                          ),
-                        const SizedBox(height: 12),
-                        if (result.rightEye!.longDistance != null)
-                          _buildDistanceResultCard(
-                            'Distance Vision (1m)',
-                            result.rightEye!.longDistance!,
-                            Icons.visibility,
-                          ),
-                        const SizedBox(height: 20),
-                      ],
+                      // Eye Results Grid
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (result.rightEye != null)
+                            Expanded(
+                              child: _buildCompactEyeColumn(
+                                'Right Eye',
+                                result.rightEye!,
+                              ),
+                            ),
+                          if (result.leftEye != null) ...[
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildCompactEyeColumn(
+                                'Left Eye',
+                                result.leftEye!,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
 
-                      // Left Eye
-                      if (result.leftEye != null) ...[
-                        _buildEyeTitle('Left Eye'),
-                        const SizedBox(height: 8),
-                        if (result.leftEye!.shortDistance != null)
-                          _buildDistanceResultCard(
-                            'Near Vision (40cm)',
-                            result.leftEye!.shortDistance!,
-                            Icons.short_text,
+                      const SizedBox(height: 16),
+                      // Summary Insight
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.border.withOpacity(0.5),
                           ),
-                        const SizedBox(height: 12),
-                        if (result.leftEye!.longDistance != null)
-                          _buildDistanceResultCard(
-                            'Distance Vision (1m)',
-                            result.leftEye!.longDistance!,
-                            Icons.visibility,
+                        ),
+                        child: Text(
+                          result.userSummary,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            height: 1.5,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
                           ),
-                      ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -309,13 +292,13 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
-                        'Continue to Refractometry',
+                        'Continue Test',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -344,84 +327,98 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
     );
   }
 
+  Widget _buildCompactEyeColumn(String title, PelliRobsonEyeResult eye) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildEyeTitle(title),
+        const SizedBox(height: 6),
+        if (eye.shortDistance != null)
+          _buildCompactMetricCard(
+            'Near (40cm)',
+            eye.shortDistance!,
+            Icons.short_text_rounded,
+          ),
+        if (eye.longDistance != null) ...[
+          const SizedBox(height: 6),
+          _buildCompactMetricCard(
+            'Distance (1m)',
+            eye.longDistance!,
+            Icons.visibility_rounded,
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildEyeTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: AppColors.primary,
-        ),
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: AppColors.primary,
       ),
     );
   }
 
-  Widget _buildDistanceResultCard(
-    String title,
-    PelliRobsonSingleResult result,
+  Widget _buildCompactMetricCard(
+    String label,
+    PelliRobsonSingleResult metric,
     IconData icon,
   ) {
+    final color = _getCategoryColor(metric.category);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 8,
+            color: AppColors.black.withOpacity(0.02),
+            blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppColors.primary),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
+          Row(
+            children: [
+              Icon(icon, size: 14, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
                   style: const TextStyle(
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    color: AppColors.textTertiary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${result.adjustedScore.toStringAsFixed(2)} log CS',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${metric.adjustedScore.toStringAsFixed(2)} log CS',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getCategoryColor(result.category).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              result.category,
-              style: TextStyle(
-                color: _getCategoryColor(result.category),
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
+          const SizedBox(height: 2),
+          Text(
+            metric.category,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
           ),
         ],
