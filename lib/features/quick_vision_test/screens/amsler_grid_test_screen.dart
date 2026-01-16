@@ -1,4 +1,5 @@
 ﻿import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -380,6 +381,39 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     });
   }
 
+  void _onPanStartRestricted(DragStartDetails details, double gridSize) {
+    final RenderBox? renderBox =
+        _gridKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final localPosition = renderBox.globalToLocal(details.globalPosition);
+
+    // Check if touch is within grid bounds
+    if (_isWithinGridBounds(localPosition, gridSize)) {
+      _addDistortionPoint(localPosition, isStrokeStart: true);
+    }
+  }
+
+  void _onPanUpdateRestricted(DragUpdateDetails details, double gridSize) {
+    final RenderBox? renderBox =
+        _gridKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final localPosition = renderBox.globalToLocal(details.globalPosition);
+
+    // Check if touch is within grid bounds
+    if (_isWithinGridBounds(localPosition, gridSize)) {
+      _addDistortionPoint(localPosition, isStrokeStart: false);
+    }
+  }
+
+  bool _isWithinGridBounds(Offset position, double gridSize) {
+    return position.dx >= 0 &&
+        position.dx <= gridSize &&
+        position.dy >= 0 &&
+        position.dy <= gridSize;
+  }
+
   void _undoLastPoint() {
     setState(() {
       if (_currentEye == 'right' && _rightEyePoints.isNotEmpty) {
@@ -659,20 +693,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           icon: const Icon(Icons.close),
           onPressed: _showExitConfirmation,
         ),
-        actions: [
-          if (_testingStarted && !_eyeSwitchPending && !_testComplete)
-            IconButton(
-              icon: const Icon(Icons.undo, color: AppColors.textPrimary),
-              onPressed: _undoLastPoint,
-              tooltip: 'Undo last mark',
-            ),
-          if (_testingStarted && !_eyeSwitchPending && !_testComplete)
-            IconButton(
-              icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
-              onPressed: _clearPoints,
-              tooltip: 'Reset marks',
-            ),
-        ],
       ),
       body: SafeArea(
         child: Stack(
@@ -690,20 +710,17 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               ],
             ),
             // Distance indicator
-            if (!_showDistanceCalibration && !_testComplete)
-              Positioned(
-                right: 12,
-                bottom: 12,
-                child: _buildDistanceIndicator(),
-              ),
-            // Distance warning overlay - only show when explicitly paused
-            // âœ… FIX: Don't show overlay when pause dialog is active
-            if (_isTestPausedForDistance &&
-                !_isPausedForExit &&
-                _testingStarted &&
-                !_testComplete &&
-                !_eyeSwitchPending)
-              _buildDistanceWarningOverlay(),
+
+            // Undo and Delete buttons (bottom-right corner)
+            if (_testingStarted && !_eyeSwitchPending && !_testComplete)
+              // Distance warning overlay - only show when explicitly paused
+              // âœ… FIX: Don't show overlay when pause dialog is active
+              if (_isTestPausedForDistance &&
+                  !_isPausedForExit &&
+                  _testingStarted &&
+                  !_testComplete &&
+                  !_eyeSwitchPending)
+                _buildDistanceWarningOverlay(),
           ],
         ),
       ),
@@ -725,60 +742,175 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Eye status
+          // Eye indicator
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                width: 1,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.visibility_rounded,
-                  size: 14,
+                  size: 16,
                   color: AppColors.primary,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Text(
-                  'EYE: ${_currentEye.toUpperCase()}',
+                  '${_currentEye.toUpperCase()} Eye',
                   style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w900,
-                    fontSize: 11,
-                    letterSpacing: 0.5,
+                    fontSize: 13,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ],
             ),
           ),
+          // Distance indicator (acuity-style)
+          if (!_showDistanceCalibration && !_testComplete)
+            _buildAcuityStyleDistanceIndicator(),
+        ],
+      ),
+    );
+  }
 
-          // Marks count
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.edit_location_alt_outlined,
-                  size: 14,
-                  color: AppColors.success,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${(_currentEye == 'right' ? _rightEyePoints : _leftEyePoints).length} MARKS',
-                  style: const TextStyle(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 11,
-                  ),
-                ),
+  Widget _buildAcuityStyleDistanceIndicator() {
+    final indicatorColor = DistanceHelper.getDistanceColor(
+      _currentDistance,
+      40.0,
+      testType: 'amsler_grid',
+    );
+
+    final distanceText = _currentDistance > 0
+        ? '${_currentDistance.toStringAsFixed(0)}cm'
+        : 'Searching...';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.white.withValues(alpha: 0.15),
+                AppColors.white.withValues(alpha: 0.05),
               ],
+            ),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: indicatorColor.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: indicatorColor.withValues(alpha: 0.1),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Pulse-like status circle
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: indicatorColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: indicatorColor.withValues(alpha: 0.6),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DISTANCE',
+                    style: TextStyle(
+                      fontSize: 8,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w900,
+                      color: indicatorColor.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  Text(
+                    distanceText,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: indicatorColor,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactDistanceIndicator() {
+    final indicatorColor = DistanceHelper.getDistanceColor(
+      _currentDistance,
+      40.0,
+      testType: 'amsler_grid',
+    );
+
+    final distanceText = _currentDistance > 0
+        ? '${_currentDistance.toStringAsFixed(0)}cm'
+        : '...';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: indicatorColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: indicatorColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: indicatorColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            distanceText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: indicatorColor,
             ),
           ),
         ],
@@ -793,60 +925,61 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
     return Column(
       children: [
-        // Marking mode selector
-        // Marking mode selector
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: AppColors.surface,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Mark: ',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(width: 8),
-              _buildModeChip('distortion', 'Wavy', Icons.waves),
-              const SizedBox(width: 8),
-              _buildModeChip('missing', 'Missing', Icons.visibility_off),
-              const SizedBox(width: 8),
-              _buildModeChip('blurry', 'Blurry', Icons.blur_on),
-            ],
-          ),
-        ),
-        // Grid with tap detection
+        // MASSIVE Grid - takes maximum space
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final gridSize = constraints.maxWidth < constraints.maxHeight
-                    ? constraints.maxWidth
-                    : constraints.maxHeight;
+                // Calculate maximum grid size (98% of available space for HUGE grid)
+                final maxSize =
+                    min(constraints.maxWidth, constraints.maxHeight) * 0.98;
 
                 return Center(
-                  child: GestureDetector(
-                    onPanStart: _onPanStart,
-                    onPanUpdate: _onPanUpdate,
-                    child: Container(
+                  child: Container(
+                    width: maxSize,
+                    height: maxSize,
+                    decoration: BoxDecoration(
                       color: AppColors.white,
-                      child: RepaintBoundary(
-                        key: _gridKey,
-                        child: SizedBox(
-                          width: gridSize,
-                          height: gridSize,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                        BoxShadow(
+                          color: AppColors.black.withValues(alpha: 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: GestureDetector(
+                        onPanStart: (details) =>
+                            _onPanStartRestricted(details, maxSize),
+                        onPanUpdate: (details) =>
+                            _onPanUpdateRestricted(details, maxSize),
+                        child: RepaintBoundary(
+                          key: _gridKey,
                           child: Stack(
                             children: [
                               // Grid image
-                              Image.asset(
-                                AppAssets.amslerGrid,
-                                width: gridSize,
-                                height: gridSize,
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    _buildFallbackGrid(),
+                              Positioned.fill(
+                                child: Image.asset(
+                                  AppAssets.amslerGrid,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      _buildFallbackGrid(),
+                                ),
                               ),
-                              // Custom Painter for strokes
+                              // Drawing overlay
                               Positioned.fill(
                                 child: CustomPaint(
                                   painter: AmslerGridPainter(
@@ -870,23 +1003,22 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             ),
           ),
         ),
-        // Marks status
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          child: Text(
-            '${currentPoints.length} AREA(S) MARKED',
-            style: const TextStyle(
-              color: AppColors.textTertiary,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
-        // Questions
+
+        // Questions section
         Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.all(16),
-          color: AppColors.surface,
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Column(
             children: [
               _buildQuestionRow(
@@ -894,13 +1026,13 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 _allLinesStraight,
                 (v) => setState(() => _allLinesStraight = v),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               _buildQuestionRow(
                 'Any missing or dark areas?',
                 _hasMissingAreas,
                 (v) => setState(() => _hasMissingAreas = v),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               _buildQuestionRow(
                 'Any wavy or distorted lines?',
                 _hasDistortions,
@@ -909,45 +1041,163 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             ],
           ),
         ),
-        // Action buttons
+
+        // Mode Selector + Action Buttons in same row
         Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _clearPoints,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'Clear Marks',
-                      maxLines: 1,
-                      textAlign: TextAlign.center,
-                    ),
+              // Mode Selector Row
+              // Mode Selector Row
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    width: 1.5,
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  onPressed: _completeCurrentEye,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(
-                      _currentEye == 'right'
-                          ? 'Next: Left Eye'
-                          : 'Complete Test',
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildModeChip('distortion', 'Wavy', Icons.waves),
                     ),
-                  ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildModeChip(
+                        'missing',
+                        'Missing',
+                        Icons.visibility_off,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildModeChip('blurry', 'Blurry', Icons.blur_on),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(height: 12),
+              // Action Buttons Row - Undo, Delete, Continue
+              Row(
+                children: [
+                  // Undo Button
+                  SizedBox(
+                    width: 52,
+                    height: 52,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _undoLastPoint,
+                        borderRadius: BorderRadius.circular(14),
+                        splashColor: AppColors.primary.withValues(alpha: 0.2),
+                        highlightColor: AppColors.primary.withValues(
+                          alpha: 0.1,
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.undo_rounded,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Delete Button
+                  SizedBox(
+                    width: 52,
+                    height: 52,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _clearPoints,
+                        borderRadius: BorderRadius.circular(14),
+                        splashColor: AppColors.error.withValues(alpha: 0.2),
+                        highlightColor: AppColors.error.withValues(alpha: 0.1),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.error.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: AppColors.error,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Continue Button
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _completeCurrentEye,
+                          borderRadius: BorderRadius.circular(14),
+                          splashColor: AppColors.white.withValues(alpha: 0.2),
+                          highlightColor: AppColors.white.withValues(
+                            alpha: 0.1,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _currentEye == 'right'
+                                        ? 'Continue'
+                                        : 'Complete Test',
+                                    style: const TextStyle(
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Action Buttons Row
             ],
           ),
         ),
@@ -957,33 +1207,62 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   Widget _buildModeChip(String mode, String label, IconData icon) {
     final isSelected = _markingMode == mode;
-    return GestureDetector(
-      onTap: () => setState(() => _markingMode = mode),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? _getPointColor(mode) : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _getPointColor(mode)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isSelected ? AppColors.white : _getPointColor(mode),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: isSelected ? AppColors.white : _getPointColor(mode),
-                fontWeight: FontWeight.w500,
+    final color = _getPointColor(mode);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => setState(() => _markingMode = mode),
+        borderRadius: BorderRadius.circular(10),
+        splashColor: color.withValues(alpha: 0.2),
+        highlightColor: color.withValues(alpha: 0.1),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            gradient: isSelected
+                ? LinearGradient(
+                    colors: [color, color.withValues(alpha: 0.85)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: isSelected ? null : AppColors.surface.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(10),
+            border: isSelected
+                ? null
+                : Border.all(color: color.withValues(alpha: 0.2), width: 1),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: isSelected ? AppColors.white : color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isSelected ? AppColors.white : color,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1022,36 +1301,51 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   Widget _buildYesNoButton(String label, bool selected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected
-                ? AppColors.primary
-                : AppColors.border.withValues(alpha: 0.5),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: AppColors.primary.withValues(alpha: 0.2),
+        highlightColor: AppColors.primary.withValues(alpha: 0.1),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: selected
+                ? const LinearGradient(
+                    colors: [AppColors.primary, AppColors.primary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: selected ? null : AppColors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary
+                  : AppColors.border.withValues(alpha: 0.3),
+              width: selected ? 1.5 : 1,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : [],
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [],
-        ),
-        child: Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            color: selected ? AppColors.white : AppColors.textSecondary,
-            fontWeight: FontWeight.w900,
-            fontSize: 11,
-            letterSpacing: 0.5,
+          child: Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: selected ? AppColors.white : AppColors.textSecondary,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
       ),

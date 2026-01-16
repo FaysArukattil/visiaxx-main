@@ -312,4 +312,3 @@ class _TestExitConfirmationDialogState
     );
   }
 }
-
