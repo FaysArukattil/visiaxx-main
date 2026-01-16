@@ -874,22 +874,22 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   Widget _buildTestView() {
     return Column(
       children: [
+        // Fixed image section (non-scrollable)
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              children: [
-                if (_currentPlateIndex < _testPlates.length)
-                  IshiharaPlateViewer(
-                    plateNumber: _testPlates[_currentPlateIndex].plateNumber,
-                    imagePath: _testPlates[_currentPlateIndex].svgPath,
-                    size: MediaQuery.of(context).size.width - 40,
-                  ),
-                const SizedBox(height: 16),
-              ],
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: _currentPlateIndex < _testPlates.length
+                  ? IshiharaPlateViewer(
+                      plateNumber: _testPlates[_currentPlateIndex].plateNumber,
+                      imagePath: _testPlates[_currentPlateIndex].svgPath,
+                      size: MediaQuery.of(context).size.width - 40,
+                    )
+                  : const SizedBox.shrink(),
             ),
           ),
         ),
+        // Scrollable options section
         _buildOptionButtons(),
       ],
     );
