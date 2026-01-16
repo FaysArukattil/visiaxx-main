@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/core/constants/ishihara_plate_data.dart';
+import 'package:visiaxx/core/widgets/distance_warning_overlay.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/color_vision_cover_eye_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
@@ -777,8 +778,22 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             ),
             Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
             // âœ… FIX: Don't show overlay when pause dialog is active
-            if (_isTestPausedForDistance && !_isPausedForExit)
-              _buildDistanceWarningOverlay(),
+            DistanceWarningOverlay(
+              isVisible: _isTestPausedForDistance && !_isPausedForExit,
+              status: _distanceStatus,
+              currentDistance: _currentDistance,
+              targetDistance: 40.0,
+              onSkip: () {
+                _distanceAutoSkipTimer?.cancel();
+                _skipManager.recordSkip(DistanceTestType.colorVision);
+                setState(() {
+                  _isTestPausedForDistance = false;
+                  _lastShouldPauseTime = null;
+                });
+                _ttsService.speak('Resuming test');
+                _restartPlateTimer();
+              },
+            ),
           ],
         ),
       ),
@@ -889,95 +904,61 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         ? _currentOptions
         : _getOptionsForPlate(plate);
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      alignment: WrapAlignment.center,
-      children: List.generate(options.length, (index) {
-        final option = options[index];
-        final isSelected = _selectedOptionIndex == index;
-
-        return SizedBox(
-          width: (MediaQuery.of(context).size.width - 64) / 2,
-          height: 60,
-          child: ElevatedButton(
-            onPressed: () {
-              _submitAnswer(option, index);
-            },
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.zero,
-              backgroundColor: AppColors.transparent,
-              shadowColor: AppColors.transparent,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Builder(
-              builder: (context) {
-                final isCorrect = _checkAnswer(option, plate);
-                final isWrong = isSelected && !isCorrect;
-
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isSelected && !isCorrect
-                        ? AppColors.error.withValues(alpha: 0.2)
-                        : isSelected && isCorrect
-                        ? AppColors.success.withValues(alpha: 0.2)
-                        : isSelected
-                        ? AppColors.primary.withValues(alpha: 0.2)
-                        : AppColors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected
-                          ? (isCorrect
-                                ? AppColors.success
-                                : (isWrong
-                                      ? AppColors.error
-                                      : AppColors.primary))
-                          : AppColors.primary.withValues(alpha: 0.3),
-                      width: isSelected ? 3 : 2,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color:
-                                  (isCorrect
-                                          ? AppColors.success
-                                          : (isWrong
-                                                ? AppColors.error
-                                                : AppColors.primary))
-                                      .withValues(alpha: 0.4),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Center(
-                    child: Text(
-                      option,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected
-                            ? (isCorrect
-                                  ? AppColors.success
-                                  : (isWrong
-                                        ? AppColors.error
-                                        : AppColors.primary))
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                );
-              },
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Title
+          Text(
+            'Select the number you see',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.3,
             ),
           ),
-        );
-      }),
+          const SizedBox(height: 20),
+
+          // Options Grid (2x2)
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.5,
+            ),
+            itemCount: options.length,
+            itemBuilder: (context, index) {
+              final option = options[index];
+              final isSelected = _selectedOptionIndex == index;
+              final isCorrect = _checkAnswer(option, plate);
+              final showResult = isSelected;
+
+              return _PremiumOptionButton(
+                option: option,
+                isSelected: isSelected,
+                showResult: showResult,
+                isCorrect: isCorrect,
+                onTap: () => _submitAnswer(option, index),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -1308,122 +1289,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     );
   }
 
-  Widget _buildDistanceWarningOverlay() {
-    // âœ… Dynamic messages based on status
-    final instruction = DistanceHelper.getDetailedInstruction(40.0);
-    final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
-
-    // âœ… Icon changes based on issue
-    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? Icons.face_retouching_off
-        : Icons.warning_rounded;
-
-    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? AppColors.error
-        : AppColors.warning;
-
-    return Container(
-      color: AppColors.black.withValues(alpha: 0.85),
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 60, color: iconColor),
-              const SizedBox(height: 16),
-              Text(
-                'Searching for face...',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.error,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                instruction,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
-
-              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
-                Text(
-                  'Current: ${_currentDistance.toStringAsFixed(0)}cm',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Target: $rangeText',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ] else ...[
-                // âœ… Special message when no face
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Distance search active',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 24),
-
-              ElevatedButton(
-                onPressed: () {
-                  _distanceAutoSkipTimer?.cancel();
-                  _skipManager.recordSkip(DistanceTestType.colorVision);
-                  setState(() {
-                    _isTestPausedForDistance = false;
-                    _lastShouldPauseTime = null;
-                  });
-
-                  _ttsService.speak('Resuming test');
-                  _restartPlateTimer();
-                },
-                child: const Text('Continue Anyway'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildIndividualEyeCard(
     String eye,
     ColorVisionEyeResult? eyeResult,
@@ -1546,4 +1411,154 @@ enum TestPhase {
   leftEyeInstruction,
   leftEyeTest,
   complete,
+}
+
+/// Premium option button for color vision test
+class _PremiumOptionButton extends StatefulWidget {
+  final String option;
+  final bool isSelected;
+  final bool showResult;
+  final bool isCorrect;
+  final VoidCallback onTap;
+
+  const _PremiumOptionButton({
+    required this.option,
+    required this.isSelected,
+    required this.showResult,
+    required this.isCorrect,
+    required this.onTap,
+  });
+
+  @override
+  State<_PremiumOptionButton> createState() => _PremiumOptionButtonState();
+}
+
+class _PremiumOptionButtonState extends State<_PremiumOptionButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Color get _backgroundColor {
+    if (!widget.isSelected) return AppColors.white;
+    if (!widget.showResult) return AppColors.primary.withValues(alpha: 0.1);
+    return widget.isCorrect
+        ? AppColors.success.withValues(alpha: 0.15)
+        : AppColors.error.withValues(alpha: 0.15);
+  }
+
+  Color get _borderColor {
+    if (!widget.isSelected) return AppColors.border.withValues(alpha: 0.3);
+    if (!widget.showResult) return AppColors.primary;
+    return widget.isCorrect ? AppColors.success : AppColors.error;
+  }
+
+  Color get _textColor {
+    if (!widget.isSelected) return AppColors.textPrimary;
+    if (!widget.showResult) return AppColors.primary;
+    return widget.isCorrect ? AppColors.success : AppColors.error;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _borderColor,
+              width: widget.isSelected ? 2.5 : 1.5,
+            ),
+            boxShadow: [
+              if (widget.isSelected)
+                BoxShadow(
+                  color: _borderColor.withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 4),
+                ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Main content
+              Center(
+                child: Text(
+                  widget.option,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: _textColor,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+
+              // Result icon (top-right corner)
+              if (widget.showResult)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: widget.isCorrect
+                          ? AppColors.success
+                          : AppColors.error,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              (widget.isCorrect
+                                      ? AppColors.success
+                                      : AppColors.error)
+                                  .withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      widget.isCorrect
+                          ? Icons.check_rounded
+                          : Icons.close_rounded,
+                      color: AppColors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
