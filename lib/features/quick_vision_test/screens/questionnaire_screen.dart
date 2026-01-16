@@ -16,7 +16,9 @@ class QuestionnaireScreen extends StatefulWidget {
 class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     with WidgetsBindingObserver {
   final TestPauseHandler _pauseHandler = TestPauseHandler();
+  final ScrollController _scrollController = ScrollController();
   int _currentStep = 0;
+  bool _isMovingForward = true;
 
   // Chief complaints
   ChiefComplaints _chiefComplaints = ChiefComplaints();
@@ -76,6 +78,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _scrollController.dispose();
     _pauseHandler.dispose();
     _medicationsController.dispose();
     _surgeryDetailsController.dispose();
@@ -126,7 +129,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
   void _nextStep() {
     if (!_isStepValid()) return;
     if (_currentStep < 2) {
-      setState(() => _currentStep++);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+      setState(() {
+        _isMovingForward = true;
+        _currentStep++;
+      });
     } else {
       _submitQuestionnaire();
     }
@@ -134,7 +145,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
 
   void _previousStep() {
     if (_currentStep > 0) {
-      setState(() => _currentStep--);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+      setState(() {
+        _isMovingForward = false;
+        _currentStep--;
+      });
     }
   }
 
@@ -254,18 +273,24 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             // Content
             Expanded(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   transitionBuilder:
                       (Widget child, Animation<double> animation) {
-                        final isNext =
-                            (child.key as ValueKey).value >= _currentStep;
+                        final isEntering =
+                            (child.key as ValueKey).value == _currentStep;
+                        final direction = _isMovingForward ? 1.0 : -1.0;
+
                         return SlideTransition(
                           position:
                               Tween<Offset>(
-                                begin: Offset(isNext ? 1.0 : -1.0, 0.0),
+                                begin: Offset(
+                                  isEntering ? direction : -direction,
+                                  0.0,
+                                ),
                                 end: Offset.zero,
                               ).animate(
                                 CurvedAnimation(

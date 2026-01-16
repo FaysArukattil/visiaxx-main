@@ -9,6 +9,7 @@ import 'package:visiaxx/core/utils/fuzzy_matcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/test_feedback_overlay.dart';
 import '../../../core/services/speech_service.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/services/distance_detection_service.dart';
@@ -773,14 +774,20 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
               children: [
                 _buildInfoBar(),
                 Expanded(
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: _showSentence
-                        ? _buildSentenceView()
-                        : const Center(child: EyeLoader(size: 80)),
-                  ),
+                  child: _showResult
+                      ? TestFeedbackOverlay(
+                          isCorrect: _lastResultCorrect,
+                          label: _lastResultCorrect
+                              ? 'MATCH: ${(_lastSimilarity * 100).toInt()}%'
+                              : 'TRY AGAIN',
+                        )
+                      : SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: _showSentence
+                              ? _buildSentenceView()
+                              : const Center(child: EyeLoader(size: 80)),
+                        ),
                 ),
-                if (_showResult) _buildResultFeedback(),
               ],
             ),
 
@@ -1312,46 +1319,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           fontWeight: FontWeight.bold,
         ),
         textAlign: TextAlign.center,
-      ),
-    );
-  }
-
-  Widget _buildResultFeedback() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      color: _lastResultCorrect
-          ? AppColors.success.withOpacity(0.1)
-          : AppColors.error.withOpacity(0.1),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _lastResultCorrect ? Icons.check_circle : Icons.cancel,
-            color: _lastResultCorrect ? AppColors.success : AppColors.error,
-            size: 32,
-          ),
-          const SizedBox(width: 12),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _lastResultCorrect ? 'Correct!' : 'Not quite right',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: _lastResultCorrect
-                      ? AppColors.success
-                      : AppColors.error,
-                ),
-              ),
-              Text(
-                'Match: ${_lastSimilarity.toStringAsFixed(1)}%',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

@@ -25,6 +25,7 @@ import 'cover_right_eye_instruction_screen.dart';
 import 'cover_left_eye_instruction_screen.dart';
 import '../../../core/services/distance_skip_manager.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/test_feedback_overlay.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
@@ -984,8 +985,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Clear timing guard to prevent reuse
     _eDisplayStartTime = null;
 
-    // Show result briefly - REDUCED for "instant" feel
-    Future.delayed(const Duration(milliseconds: 400), () {
+    // Show result briefly - Increased for better visibility as a "screen"
+    Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       _evaluateAndContinue();
     });
@@ -1184,10 +1185,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               if (_useDistanceMonitoring && !_showDistanceCalibration)
                 Positioned(
                   right: 12,
-                  bottom: (_showE && _waitingForResponse)
+                  bottom: (_showE && _waitingForResponse) || _testComplete
                       ? 120
-                      : (_showRelaxation || _testComplete)
-                      ? 40 // Increased from 12 to 40 to avoid overlap
                       : 12,
                   child: _buildDistanceIndicator(),
                 ),
@@ -1866,137 +1865,144 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       color: AppColors.testBackground,
       width: double.infinity,
       height: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Spacer(flex: 2),
-          // Hero Card with Image and Overlapping Timer
-          Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.bottomCenter,
-            children: [
-              // Image Card (Maximized)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                height: MediaQuery.of(context).size.height * 0.60,
-                width: double.infinity,
-                decoration: ShapeDecoration(
-                  color: AppColors.white,
-                  shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  shadows: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.12),
-                      blurRadius: 40,
-                      offset: const Offset(0, 20),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 60),
+            // Hero Card with Image and Overlapping Timer
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.bottomCenter,
+              children: [
+                // Image Card (Maximized)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  height:
+                      MediaQuery.of(context).size.height *
+                      0.50, // Reduced from 0.60
+                  width: double.infinity,
+                  decoration: ShapeDecoration(
+                    color: AppColors.white,
+                    shape: ContinuousRectangleBorder(
+                      borderRadius: BorderRadius.circular(32),
                     ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Image.asset(
-                  AppAssets.relaxationImage,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: AppColors.primary.withOpacity(0.05),
-                    child: const Icon(
-                      Icons.landscape,
-                      size: 100,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Glassmorphism Smooth Timer
-              Positioned(
-                bottom: -45, // Half of timer height (90/2)
-                child: AnimatedBuilder(
-                  animation: _relaxationProgressController,
-                  builder: (context, child) {
-                    return Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 25,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                    shadows: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.12),
+                        blurRadius: 40,
+                        offset: const Offset(0, 20),
                       ),
-                      child: ClipOval(
-                        child: BackdropFilter(
-                          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.white.withOpacity(0.3),
-                                width: 1.5,
-                              ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.asset(
+                    AppAssets.relaxationImage,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: AppColors.primary.withOpacity(0.05),
+                      child: const Icon(
+                        Icons.landscape,
+                        size: 100,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Glassmorphism Smooth Timer
+                Positioned(
+                  bottom: -45, // Half of timer height (90/2)
+                  child: AnimatedBuilder(
+                    animation: _relaxationProgressController,
+                    builder: (context, child) {
+                      return Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: AppColors.white.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 25,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 8),
                             ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 80,
-                                  height: 80,
-                                  child: CircularProgressIndicator(
-                                    value: _relaxationProgressController.value,
-                                    strokeWidth: 4,
-                                    backgroundColor: AppColors.primary
-                                        .withOpacity(0.1),
-                                    valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                          AppColors.primary,
-                                        ),
-                                  ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.white.withOpacity(0.3),
+                                  width: 1.5,
                                 ),
-                                Text(
-                                  '$_relaxationCountdown',
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.primary,
-                                    fontFamily: 'Inter',
-                                    letterSpacing: -1,
+                              ),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 80,
+                                    height: 80,
+                                    child: CircularProgressIndicator(
+                                      value:
+                                          _relaxationProgressController.value,
+                                      strokeWidth: 4,
+                                      backgroundColor: AppColors.primary
+                                          .withOpacity(0.1),
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                            AppColors.primary,
+                                          ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  Text(
+                                    '$_relaxationCountdown',
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.primary,
+                                      fontFamily: 'Inter',
+                                      letterSpacing: -1,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(
+              height: 60,
+            ), // Adjusted spacing for large overlapping timer
+            // Standardized Instruction Text
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Relax and focus on the distance',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(
-            height: 60,
-          ), // Adjusted spacing for large overlapping timer
-          // Standardized Instruction Text
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'Relax and focus on the distance',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
             ),
-          ),
 
-          const Spacer(flex: 3),
-        ],
+            const SizedBox(height: 120),
+          ],
+        ),
       ),
     );
   }
@@ -2258,64 +2264,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   Widget _buildResultFeedback() {
     final lastResponse = _responses.isNotEmpty ? _responses.last : null;
-    final isCorrect = lastResponse?.isCorrect ?? false;
-    final color = isCorrect ? AppColors.success : AppColors.error;
-
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 300),
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) {
-        return Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: color.withOpacity(0.08 * value),
-          child: Center(
-            child: Opacity(
-              opacity: value,
-              child: Transform.scale(
-                scale: 0.8 + (0.2 * value),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(32),
-                      decoration: ShapeDecoration(
-                        color: color,
-                        shape: ContinuousRectangleBorder(
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                        shadows: [
-                          BoxShadow(
-                            color: color.withOpacity(0.3),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        isCorrect ? Icons.check_rounded : Icons.close_rounded,
-                        size: 80,
-                        color: AppColors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      isCorrect ? 'CORRECT' : 'INCORRECT',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: color,
-                        letterSpacing: 4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return TestFeedbackOverlay(
+      isCorrect: lastResponse?.isCorrect ?? false,
+      isBlurry: lastResponse?.wasBlurry ?? false,
+      label: lastResponse?.wasBlurry == true ? 'BLURRY' : null,
     );
   }
 
