@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -1074,32 +1075,85 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       target,
     );
 
-    // ✅ Show distance always (even if face lost temporarily)
     final distanceText = _currentDistance > 0
         ? '${_currentDistance.toStringAsFixed(0)}cm'
         : 'Searching...';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: indicatorColor, width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.straighten, size: 14, color: indicatorColor),
-          const SizedBox(width: 4),
-          Text(
-            distanceText,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: indicatorColor,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.white.withOpacity(0.15),
+                AppColors.white.withOpacity(0.05),
+              ],
             ),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: indicatorColor.withOpacity(0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: indicatorColor.withOpacity(0.1),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Pulse-like status circle
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: indicatorColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: indicatorColor.withOpacity(0.6),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DISTANCE',
+                    style: TextStyle(
+                      fontSize: 8,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w900,
+                      color: indicatorColor.withOpacity(0.8),
+                    ),
+                  ),
+                  Text(
+                    distanceText,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: indicatorColor,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
