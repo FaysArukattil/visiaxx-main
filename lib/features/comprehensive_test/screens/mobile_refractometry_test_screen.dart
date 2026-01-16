@@ -887,7 +887,7 @@ class _MobileRefractometryTestScreenState
                   !_isTestPausedForDistance)
                 Positioned(
                   right: 12,
-                  bottom: _waitingForResponse ? 120 : 12,
+                  bottom: _waitingForResponse ? 120 : 55,
                   child: _buildDistanceIndicator(),
                 ),
             ],
@@ -1380,7 +1380,7 @@ class _MobileRefractometryTestScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 60),
+            const SizedBox(height: 20),
             // Hero Card with Image and Overlapping Timer (Maximized)
             Stack(
               clipBehavior: Clip.none,
@@ -1389,9 +1389,7 @@ class _MobileRefractometryTestScreenState
                 // Image Card
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
-                  height:
-                      MediaQuery.of(context).size.height *
-                      0.50, // Reduced from 0.60
+                  height: MediaQuery.of(context).size.height * 0.65,
                   width: double.infinity,
                   decoration: ShapeDecoration(
                     color: AppColors.white,
@@ -1509,7 +1507,7 @@ class _MobileRefractometryTestScreenState
               ),
             ),
 
-            const SizedBox(height: 120),
+            const SizedBox(height: 100),
           ],
         ),
       ),

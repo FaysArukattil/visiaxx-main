@@ -1187,7 +1187,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   right: 12,
                   bottom: (_showE && _waitingForResponse) || _testComplete
                       ? 120
-                      : 12,
+                      : 55, // Final fine-tuning to 55 for perfect clearance
                   child: _buildDistanceIndicator(),
                 ),
 
@@ -1871,7 +1871,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(height: 60),
+            const SizedBox(height: 20),
             // Hero Card with Image and Overlapping Timer
             Stack(
               clipBehavior: Clip.none,
@@ -1880,9 +1880,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 // Image Card (Maximized)
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
-                  height:
-                      MediaQuery.of(context).size.height *
-                      0.50, // Reduced from 0.60
+                  height: MediaQuery.of(context).size.height * 0.65,
                   width: double.infinity,
                   decoration: ShapeDecoration(
                     color: AppColors.white,
@@ -2000,7 +1998,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               ),
             ),
 
-            const SizedBox(height: 120),
+            const SizedBox(height: 100),
           ],
         ),
       ),
