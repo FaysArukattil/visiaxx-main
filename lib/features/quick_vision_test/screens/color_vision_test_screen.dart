@@ -768,6 +768,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         ),
       ),
       body: SafeArea(
+        bottom: false, // Allow options to extend to bottom
         child: Stack(
           children: [
             Column(
@@ -777,7 +778,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               ],
             ),
             Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
-            // âœ… FIX: Don't show overlay when pause dialog is active
+            // ✅ FIX: Don't show overlay when pause dialog is active
             DistanceWarningOverlay(
               isVisible: _isTestPausedForDistance && !_isPausedForExit,
               status: _distanceStatus,
@@ -875,21 +876,21 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       children: [
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
               children: [
                 if (_currentPlateIndex < _testPlates.length)
                   IshiharaPlateViewer(
                     plateNumber: _testPlates[_currentPlateIndex].plateNumber,
                     imagePath: _testPlates[_currentPlateIndex].svgPath,
-                    size: MediaQuery.of(context).size.width - 48,
+                    size: MediaQuery.of(context).size.width - 40,
                   ),
-                const SizedBox(height: 32),
-                _buildOptionButtons(),
+                const SizedBox(height: 16),
               ],
             ),
           ),
         ),
+        _buildOptionButtons(),
       ],
     );
   }
@@ -905,58 +906,109 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         : _getOptionsForPlate(plate);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.background.withValues(alpha: 0.5),
+            AppColors.white,
+          ],
+        ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
+            spreadRadius: 0,
           ),
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Title
-          Text(
-            'Select the number you see',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.3,
+          // Drag Handle
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AppColors.border.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(2),
             ),
+          ),
+
+          // Title with Icon
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.touch_app_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  'Select the number you see',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    letterSpacing: 0.2,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
 
-          // Options Grid (2x2)
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
-            ),
-            itemCount: options.length,
-            itemBuilder: (context, index) {
-              final option = options[index];
-              final isSelected = _selectedOptionIndex == index;
-              final isCorrect = _checkAnswer(option, plate);
-              final showResult = isSelected;
+          // Premium Options Grid with optimized dimensions
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              final spacing = 12.0;
+              final buttonWidth = (availableWidth - spacing) / 2;
+              final buttonHeight =
+                  buttonWidth * 0.7; // 1:0.7 ratio for better proportions
 
-              return _PremiumOptionButton(
-                option: option,
-                isSelected: isSelected,
-                showResult: showResult,
-                isCorrect: isCorrect,
-                onTap: () => _submitAnswer(option, index),
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: List.generate(options.length, (index) {
+                  final option = options[index];
+                  final isSelected = _selectedOptionIndex == index;
+                  final isCorrect = _checkAnswer(option, plate);
+                  final showResult = isSelected;
+
+                  return SizedBox(
+                    width: buttonWidth,
+                    height: buttonHeight,
+                    child: _PremiumOptionButton(
+                      option: option,
+                      isSelected: isSelected,
+                      showResult: showResult,
+                      isCorrect: isCorrect,
+                      onTap: () => _submitAnswer(option, index),
+                    ),
+                  );
+                }),
               );
             },
           ),
+
+          const SizedBox(height: 4),
         ],
       ),
     );
@@ -1414,6 +1466,7 @@ enum TestPhase {
 }
 
 /// Premium option button for color vision test
+/// Premium option button for color vision test
 class _PremiumOptionButton extends StatefulWidget {
   final String option;
   final bool isSelected;
@@ -1437,18 +1490,19 @@ class _PremiumOptionButtonState extends State<_PremiumOptionButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 200),
       vsync: this,
     );
     _scaleAnimation = Tween<double>(
       begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -1457,102 +1511,172 @@ class _PremiumOptionButtonState extends State<_PremiumOptionButton>
     super.dispose();
   }
 
+  Color get _primaryColor {
+    if (!widget.isSelected) return AppColors.primary;
+    if (!widget.showResult) return AppColors.primary;
+    return widget.isCorrect ? AppColors.success : AppColors.error;
+  }
+
   Color get _backgroundColor {
-    if (!widget.isSelected) return AppColors.white;
-    if (!widget.showResult) return AppColors.primary.withValues(alpha: 0.1);
+    if (!widget.isSelected) {
+      return _isPressed
+          ? AppColors.primary.withValues(alpha: 0.05)
+          : AppColors.white;
+    }
+    if (!widget.showResult) {
+      return AppColors.primary.withValues(alpha: 0.12);
+    }
     return widget.isCorrect
-        ? AppColors.success.withValues(alpha: 0.15)
-        : AppColors.error.withValues(alpha: 0.15);
-  }
-
-  Color get _borderColor {
-    if (!widget.isSelected) return AppColors.border.withValues(alpha: 0.3);
-    if (!widget.showResult) return AppColors.primary;
-    return widget.isCorrect ? AppColors.success : AppColors.error;
-  }
-
-  Color get _textColor {
-    if (!widget.isSelected) return AppColors.textPrimary;
-    if (!widget.showResult) return AppColors.primary;
-    return widget.isCorrect ? AppColors.success : AppColors.error;
+        ? AppColors.success.withValues(alpha: 0.12)
+        : AppColors.error.withValues(alpha: 0.12);
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
+      onTapDown: (_) {
+        setState(() => _isPressed = true);
+        _controller.forward();
+      },
       onTapUp: (_) {
+        setState(() => _isPressed = false);
         _controller.reverse();
         widget.onTap();
       },
-      onTapCancel: () => _controller.reverse(),
+      onTapCancel: () {
+        setState(() => _isPressed = false);
+        _controller.reverse();
+      },
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             color: _backgroundColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: _borderColor,
-              width: widget.isSelected ? 2.5 : 1.5,
+              color: _primaryColor,
+              width: widget.isSelected ? 3.0 : 2.0,
             ),
             boxShadow: [
-              if (widget.isSelected)
-                BoxShadow(
-                  color: _borderColor.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 4),
+              // Outer glow
+              BoxShadow(
+                color: _primaryColor.withValues(
+                  alpha: widget.isSelected ? 0.3 : 0.15,
                 ),
+                blurRadius: widget.isSelected ? 16 : 8,
+                spreadRadius: widget.isSelected ? 1 : 0,
+                offset: const Offset(0, 4),
+              ),
+              // Inner shadow for depth
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.9),
+                blurRadius: 1,
+                offset: const Offset(0, -1),
+              ),
             ],
           ),
           child: Stack(
             children: [
+              // Shimmer effect for selected state
+              if (widget.isSelected && !widget.showResult)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(19),
+                    child: CustomPaint(
+                      painter: _ShimmerPainter(
+                        color: _primaryColor.withValues(alpha: 0.1),
+                      ),
+                    ),
+                  ),
+                ),
+
               // Main content
               Center(
-                child: Text(
-                  widget.option,
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 300),
                   style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: _textColor,
-                    letterSpacing: -0.5,
+                    fontSize: widget.option.toLowerCase() == 'nothing'
+                        ? 30
+                        : 36,
+                    fontWeight: FontWeight.w900,
+                    color: _primaryColor,
+                    letterSpacing: widget.option.toLowerCase() == 'nothing'
+                        ? 0.5
+                        : -0.5,
+                    height: 1.0,
+                    shadows: widget.isSelected
+                        ? [
+                            Shadow(
+                              color: _primaryColor.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                            ),
+                          ]
+                        : [],
                   ),
+                  child: Text(widget.option),
                 ),
               ),
 
-              // Result icon (top-right corner)
+              // Result badge (top-right corner)
               if (widget.showResult)
                 Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: widget.isCorrect
-                          ? AppColors.success
-                          : AppColors.error,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              (widget.isCorrect
-                                      ? AppColors.success
-                                      : AppColors.error)
-                                  .withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          spreadRadius: 1,
+                  top: 6,
+                  right: 6,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.elasticOut,
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: value,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: _primaryColor,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: _primaryColor.withValues(alpha: 0.4),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            widget.isCorrect
+                                ? Icons.check_rounded
+                                : Icons.close_rounded,
+                            color: AppColors.white,
+                            size: 18,
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Icon(
-                      widget.isCorrect
-                          ? Icons.check_rounded
-                          : Icons.close_rounded,
-                      color: AppColors.white,
-                      size: 16,
-                    ),
+                      );
+                    },
+                  ),
+                ),
+
+              // Selection indicator (pulsing ring)
+              if (widget.isSelected && !widget.showResult)
+                Positioned.fill(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 1000),
+                    curve: Curves.easeInOut,
+                    builder: (context, value, child) {
+                      return CustomPaint(
+                        painter: _PulseRingPainter(
+                          color: _primaryColor,
+                          progress: value,
+                        ),
+                      );
+                    },
+                    onEnd: () {
+                      if (mounted && widget.isSelected && !widget.showResult) {
+                        setState(() {}); // Restart animation
+                      }
+                    },
                   ),
                 ),
             ],
@@ -1561,4 +1685,54 @@ class _PremiumOptionButtonState extends State<_PremiumOptionButton>
       ),
     );
   }
+}
+
+/// Shimmer effect painter for selected state
+class _ShimmerPainter extends CustomPainter {
+  final Color color;
+
+  _ShimmerPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [color.withValues(alpha: 0), color, color.withValues(alpha: 0)],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Pulsing ring painter for selection indicator
+class _PulseRingPainter extends CustomPainter {
+  final Color color;
+  final double progress;
+
+  _PulseRingPainter({required this.color, required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = size.width / 2;
+    final radius = maxRadius * progress;
+    final opacity = (1.0 - progress) * 0.3;
+
+    final paint = Paint()
+      ..color = color.withValues(alpha: opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    canvas.drawCircle(center, radius, paint);
+  }
+
+  @override
+  bool shouldRepaint(_PulseRingPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
