@@ -878,7 +878,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         Expanded(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
               child: _currentPlateIndex < _testPlates.length
                   ? IshiharaPlateViewer(
                       plateNumber: _testPlates[_currentPlateIndex].plateNumber,
@@ -907,7 +907,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 44),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -934,7 +934,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           Container(
             width: 40,
             height: 4,
-            margin: const EdgeInsets.only(bottom: 16),
+            margin: const EdgeInsets.only(bottom: 0),
             decoration: BoxDecoration(
               color: AppColors.border.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(2),
