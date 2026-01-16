@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
 /// Direction selector widget for Tumbling E test
@@ -32,7 +32,7 @@ class DirectionSelector extends StatelessWidget {
     return ElevatedButton(
       onPressed: () => onDirectionSelected(rotation),
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary.withOpacity(0.2),
+        backgroundColor: AppColors.primary.withValues(alpha: 0.2),
         foregroundColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         minimumSize: const Size(100, 50),
@@ -44,3 +44,4 @@ class DirectionSelector extends StatelessWidget {
     );
   }
 }
+

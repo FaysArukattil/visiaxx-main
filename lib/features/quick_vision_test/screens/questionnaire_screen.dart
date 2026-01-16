@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/questionnaire_model.dart';
@@ -57,10 +57,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     _pauseHandler.initialize(
       context: context,
       onPause: () {
-        debugPrint('[Questionnaire] ⏸️ Paused');
+        debugPrint('[Questionnaire] â¸ï¸ Paused');
       },
       onResume: () {
-        debugPrint('[Questionnaire] ▶️ Resumed');
+        debugPrint('[Questionnaire] â–¶ï¸ Resumed');
       },
       getTestName: () => 'Questionnaire',
     );
@@ -95,32 +95,41 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
 
   bool _isStepValid() {
     if (_currentStep == 0) {
-      if (_chiefComplaints.hasRedness && _rednessController.text.trim().isEmpty)
+      if (_chiefComplaints.hasRedness &&
+          _rednessController.text.trim().isEmpty) {
         return false;
+      }
       if (_chiefComplaints.hasWatering &&
-          _wateringDaysController.text.trim().isEmpty)
+          _wateringDaysController.text.trim().isEmpty) {
         return false;
+      }
       if (_chiefComplaints.hasItching &&
-          _itchingLocationController.text.trim().isEmpty)
+          _itchingLocationController.text.trim().isEmpty) {
         return false;
+      }
       if (_chiefComplaints.hasHeadache &&
           (_headacheLocationController.text.trim().isEmpty ||
-              _headacheDurationController.text.trim().isEmpty))
+              _headacheDurationController.text.trim().isEmpty)) {
         return false;
+      }
       if (_chiefComplaints.hasDryness &&
-          _screenTimeController.text.trim().isEmpty)
+          _screenTimeController.text.trim().isEmpty) {
         return false;
+      }
       if (_chiefComplaints.hasStickyDischarge &&
-          _dischargeStartController.text.trim().isEmpty)
+          _dischargeStartController.text.trim().isEmpty) {
         return false;
+      }
       if (_chiefComplaints.hasLightSensitivity &&
-          _lightSensitivityDetailController.text.trim().isEmpty)
+          _lightSensitivityDetailController.text.trim().isEmpty) {
         return false;
+      }
       return true;
     }
     if (_currentStep == 2) {
-      if (_hasRecentSurgery && _surgeryDetailsController.text.trim().isEmpty)
+      if (_hasRecentSurgery && _surgeryDetailsController.text.trim().isEmpty) {
         return false;
+      }
       return true;
     }
     return true; // Step 1 is always valid (systemic illness is optional)
@@ -328,7 +337,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
@@ -372,7 +381,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                             elevation: 0,
                             backgroundColor: AppColors.primary,
                             disabledBackgroundColor: AppColors.primary
-                                .withOpacity(0.3),
+                                .withValues(alpha: 0.3),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -851,9 +860,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.05),
+            color: AppColors.primary.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
           ),
           child: const Row(
             children: [
@@ -928,26 +937,28 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         color: AppColors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: value ? AppColors.primary : AppColors.border.withOpacity(0.35),
+          color: value
+              ? AppColors.primary
+              : AppColors.border.withValues(alpha: 0.35),
           width: value ? 2 : 1,
         ),
         boxShadow: value
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                   spreadRadius: -2,
                 ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
+                  color: Colors.black.withValues(alpha: 0.02),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -973,7 +984,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                         boxShadow: value
                             ? [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.3),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1053,11 +1066,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: value
-                      ? AppColors.primary.withOpacity(0.03)
-                      : AppColors.border.withOpacity(0.1),
+                      ? AppColors.primary.withValues(alpha: 0.03)
+                      : AppColors.border.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.05),
+                    color: AppColors.primary.withValues(alpha: 0.05),
                   ),
                 ),
                 child: followUp ?? const SizedBox(),
@@ -1097,13 +1110,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                     border: Border.all(
                       color: isSelected
                           ? AppColors.primary
-                          : AppColors.border.withOpacity(0.5),
+                          : AppColors.border.withValues(alpha: 0.5),
                       width: 1.5,
                     ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.2),
+                              color: AppColors.primary.withValues(alpha: 0.2),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -1149,13 +1162,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               border: Border.all(
                 color: isSelected
                     ? AppColors.primary
-                    : AppColors.border.withOpacity(0.5),
+                    : AppColors.border.withValues(alpha: 0.5),
                 width: 1.5,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.2),
+                        color: AppColors.primary.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -1190,14 +1203,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         color: AppColors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: value ? AppColors.primary : AppColors.border.withOpacity(0.35),
+          color: value
+              ? AppColors.primary
+              : AppColors.border.withValues(alpha: 0.35),
           width: value ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: value
-                ? AppColors.primary.withOpacity(0.08)
-                : Colors.black.withOpacity(0.03),
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -1242,10 +1257,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.03),
+                  color: AppColors.primary.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.05),
+                    color: AppColors.primary.withValues(alpha: 0.05),
                   ),
                 ),
                 child: followUp ?? const SizedBox(),
@@ -1267,7 +1282,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.08),
+          color: AppColors.primary.withValues(alpha: 0.08),
           shape: BoxShape.circle,
         ),
         child: const Icon(
@@ -1306,7 +1321,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 width: 40,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: AppColors.border.withOpacity(0.5),
+                  color: AppColors.border.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -1317,7 +1332,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -1405,17 +1420,21 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             hintText: hint,
             hintStyle: TextStyle(
               fontSize: 13,
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
             filled: true,
             fillColor: AppColors.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border.withOpacity(0.3)),
+              borderSide: BorderSide(
+                color: AppColors.border.withValues(alpha: 0.3),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.border.withOpacity(0.3)),
+              borderSide: BorderSide(
+                color: AppColors.border.withValues(alpha: 0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1455,13 +1474,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                   border: Border.all(
                     color: isActive || isCompleted
                         ? AppColors.primary
-                        : AppColors.border.withOpacity(0.5),
+                        : AppColors.border.withValues(alpha: 0.5),
                     width: isActive ? 3 : 1,
                   ),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 10,
                             spreadRadius: 1,
                           ),
@@ -1476,7 +1495,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                             : Icons.checklist_rounded),
                   color: isActive || isCompleted
                       ? AppColors.white
-                      : AppColors.textSecondary.withOpacity(0.5),
+                      : AppColors.textSecondary.withValues(alpha: 0.5),
                   size: isActive ? 20 : 18,
                 ),
               ),
@@ -1490,7 +1509,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                     borderRadius: BorderRadius.circular(2),
                     color: index < _currentStep
                         ? AppColors.primary
-                        : AppColors.border.withOpacity(0.3),
+                        : AppColors.border.withValues(alpha: 0.3),
                   ),
                 ),
             ],
@@ -1527,7 +1546,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.4),
+                  color: AppColors.primary.withValues(alpha: 0.4),
                   blurRadius: 6,
                   offset: const Offset(2, 0),
                 ),
@@ -1614,7 +1633,7 @@ class _DraggableToggleState extends State<_DraggableToggle> {
         width: toggleWidth,
         height: 48,
         decoration: BoxDecoration(
-          color: AppColors.border.withOpacity(0.15),
+          color: AppColors.border.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Stack(
@@ -1636,8 +1655,8 @@ class _DraggableToggleState extends State<_DraggableToggle> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(
-                        _isDragging ? 0.12 : 0.08,
+                      color: Colors.black.withValues(
+                        alpha: _isDragging ? 0.12 : 0.08,
                       ),
                       blurRadius: _isDragging ? 12 : 8,
                       offset: Offset(0, _isDragging ? 3 : 2),

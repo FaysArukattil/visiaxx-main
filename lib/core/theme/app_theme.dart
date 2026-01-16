@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 
@@ -327,13 +327,13 @@ class AppTheme {
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: AppColors.textTertiary.withOpacity(0.3),
+          color: AppColors.textTertiary.withValues(alpha: 0.3),
         ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: AppColors.textTertiary.withOpacity(0.3),
+          color: AppColors.textTertiary.withValues(alpha: 0.3),
         ),
       ),
       focusedBorder: OutlineInputBorder(
@@ -376,3 +376,4 @@ class AppTheme {
     );
   }
 }
+

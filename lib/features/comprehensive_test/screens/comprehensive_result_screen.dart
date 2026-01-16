@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -266,16 +266,16 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Text(status.emoji, style: const TextStyle(fontSize: 24)),
@@ -289,7 +289,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                   'Overall Status',
                   style: TextStyle(
                     fontSize: 14,
-                    color: color.withOpacity(0.8),
+                    color: color.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -314,7 +314,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.border.withOpacity(0.5)),
+        side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -348,7 +348,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
+                      color: AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
@@ -373,7 +373,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                   Container(
                     width: 1,
                     height: 60,
-                    color: AppColors.border.withOpacity(0.5),
+                    color: AppColors.border.withValues(alpha: 0.5),
                     margin: const EdgeInsets.symmetric(horizontal: 12),
                   ),
                 if (result.leftEye != null)
@@ -401,7 +401,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
         const SizedBox(height: 4),
         _buildRefractionValue('SPH', res.sphere),
         _buildRefractionValue('CYL', res.cylinder),
-        _buildRefractionValue('AXIS', '${res.axis}°'),
+        _buildRefractionValue('AXIS', '${res.axis}Â°'),
         if (double.tryParse(res.addPower) != null &&
             double.parse(res.addPower) > 0)
           _buildRefractionValue('ADD', '+${res.addPower}'),
@@ -452,9 +452,9 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.1)),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,7 +571,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.border.withOpacity(0.5)),
+        side: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -600,7 +600,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -663,9 +663,9 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.success.withOpacity(0.3), width: 1.5),
+        side: BorderSide(color: AppColors.success.withValues(alpha: 0.3), width: 1.5),
       ),
-      color: AppColors.success.withOpacity(0.02),
+      color: AppColors.success.withValues(alpha: 0.02),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -725,7 +725,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                   width: 1,
                   height: 60,
                   margin: const EdgeInsets.symmetric(horizontal: 12),
-                  color: AppColors.border.withOpacity(0.5),
+                  color: AppColors.border.withValues(alpha: 0.5),
                 ),
                 Expanded(
                   child: _buildSmallRxDetail(
@@ -747,7 +747,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -761,7 +761,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
           children: [
             TableRow(
               decoration: BoxDecoration(
-                color: AppColors.divider.withOpacity(0.3),
+                color: AppColors.divider.withValues(alpha: 0.3),
               ),
               children: [
                 _buildRxTableCell('EYE', isHeader: true),
@@ -827,7 +827,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
         const SizedBox(height: 4),
         _buildRxValueLabel('SPH', data.sph),
         _buildRxValueLabel('CYL', data.cyl),
-        _buildRxValueLabel('AXIS', '${data.axis}°'),
+        _buildRxValueLabel('AXIS', '${data.axis}Â°'),
         _buildRxValueLabel('VN', data.vn),
       ],
     );
@@ -855,3 +855,4 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
     );
   }
 }
+

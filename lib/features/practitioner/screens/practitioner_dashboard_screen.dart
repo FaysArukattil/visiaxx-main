@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/snackbar_utils.dart';
@@ -274,7 +274,7 @@ class _PractitionerDashboardScreenState
           border: Border.all(
             color: result.isReviewed
                 ? AppColors.border
-                : statusColor.withOpacity(0.5),
+                : statusColor.withValues(alpha: 0.5),
             width: result.isReviewed ? 1 : 2,
           ),
           boxShadow: [
@@ -294,7 +294,7 @@ class _PractitionerDashboardScreenState
                 // Patient avatar
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: statusColor.withOpacity(0.1),
+                  backgroundColor: statusColor.withValues(alpha: 0.1),
                   child: Text(
                     result.patientName
                         .split(' ')
@@ -346,7 +346,7 @@ class _PractitionerDashboardScreenState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${result.patientAge} years • ${_formatDate(result.date)}',
+                        '${result.patientAge} years â€¢ ${_formatDate(result.date)}',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
@@ -362,7 +362,7 @@ class _PractitionerDashboardScreenState
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -410,7 +410,7 @@ class _PractitionerDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: AppColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -440,7 +440,7 @@ class _PractitionerDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.info.withOpacity(0.1),
+                  color: AppColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -622,7 +622,7 @@ class _PatientDetailSheetState extends State<_PatientDetailSheet> {
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundColor: statusColor.withOpacity(0.1),
+                  backgroundColor: statusColor.withValues(alpha: 0.1),
                   child: Text(
                     widget.result.patientName
                         .split(' ')
@@ -678,7 +678,7 @@ class _PatientDetailSheetState extends State<_PatientDetailSheet> {
             const SizedBox(height: 24),
             // Test date
             Text(
-              'Test Date: ${DateFormat('MMMM dd, yyyy • h:mm a').format(widget.result.date)}',
+              'Test Date: ${DateFormat('MMMM dd, yyyy â€¢ h:mm a').format(widget.result.date)}',
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
@@ -807,3 +807,4 @@ class _PatientResult {
     required this.notes,
   });
 }
+

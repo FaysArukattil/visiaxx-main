@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_screen.dart';
@@ -33,7 +33,7 @@ class BothEyesOpenInstructionScreen extends StatefulWidget {
     this.startButtonText = 'Start Reading Exercise',
     this.instructionTitle = 'Reading Response',
     this.instructionDescription =
-        'Read the text displayed on screen:\n• Speak clearly and completely\n• Maintain a steady reading pace',
+        'Read the text displayed on screen:\nâ€¢ Speak clearly and completely\nâ€¢ Maintain a steady reading pace',
     this.instructionIcon = Icons.record_voice_over_rounded,
     this.onContinue,
   });
@@ -276,11 +276,11 @@ class _BothEyesOpenInstructionScreenState
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: AppColors.border.withOpacity(0.5),
+                      color: AppColors.border.withValues(alpha: 0.5),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.black.withOpacity(0.05),
+                        color: AppColors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -303,8 +303,8 @@ class _BothEyesOpenInstructionScreenState
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    AppColors.primary.withOpacity(0.1),
-                                    AppColors.primary.withOpacity(0.2),
+                                    AppColors.primary.withValues(alpha: 0.1),
+                                    AppColors.primary.withValues(alpha: 0.2),
                                   ],
                                 ),
                               ),
@@ -385,7 +385,7 @@ class _BothEyesOpenInstructionScreenState
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: AppColors.border.withOpacity(0.5),
+                        color: AppColors.border.withValues(alpha: 0.5),
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -444,7 +444,7 @@ class _BothEyesOpenInstructionScreenState
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.05),
+                      color: AppColors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -523,7 +523,7 @@ class _BothEyesOpenInstructionScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.1),
+            color: accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: accentColor, size: 24),
@@ -692,7 +692,7 @@ class _EyeInstructionPainter extends CustomPainter {
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = color.withOpacity(0.2)
+        ..color = color.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -719,7 +719,7 @@ class _EyeInstructionPainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withOpacity(0.6),
+        Paint()..color = Colors.white.withValues(alpha: 0.6),
       );
 
       canvas.restore();
@@ -730,3 +730,4 @@ class _EyeInstructionPainter extends CustomPainter {
   bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
+

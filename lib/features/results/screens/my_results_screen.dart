@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/providers/network_connectivity_provider.dart';
@@ -55,7 +55,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
     // 1. Try to load from CACHE ONLY for immediate display
     try {
-      debugPrint('[MyResults] ⚡ Fetching from CACHE first...');
+      debugPrint('[MyResults] âš¡ Fetching from CACHE first...');
       final cachedResults = await _testResultService.getTestResults(
         user.uid,
         source: Source.cache,
@@ -67,16 +67,16 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           _isLoading = false; // Show cached data right away
         });
         debugPrint(
-          '[MyResults] ⚡ Showing ${cachedResults.length} cached results',
+          '[MyResults] âš¡ Showing ${cachedResults.length} cached results',
         );
       }
     } catch (e) {
-      debugPrint('[MyResults] ⚡ Initial cache fetch failed: $e');
+      debugPrint('[MyResults] âš¡ Initial cache fetch failed: $e');
     }
 
     // 2. Refresh from server (or cache+server)
     try {
-      debugPrint('[MyResults] 🔄 Refreshing from server...');
+      debugPrint('[MyResults] ðŸ”„ Refreshing from server...');
 
       // If we still don't have results, show loading
       if (_results.isEmpty) {
@@ -107,7 +107,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       // Load results from service (which handles local/remote)
       final results = await _testResultService.getTestResults(user.uid);
       debugPrint(
-        '[MyResults] ✅ Server refresh complete: ${results.length} results',
+        '[MyResults] âœ… Server refresh complete: ${results.length} results',
       );
 
       // Sort by date descending
@@ -120,7 +120,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         });
       }
     } catch (e) {
-      debugPrint('[MyResults] ❌ ERROR loading results: $e');
+      debugPrint('[MyResults] âŒ ERROR loading results: $e');
 
       if (mounted) {
         setState(() {
@@ -453,7 +453,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
@@ -525,19 +525,19 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isComprehensive
-            ? AppColors.primary.withOpacity(0.05)
+            ? AppColors.primary.withValues(alpha: 0.05)
             : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: isComprehensive
             ? Border.all(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 width: 1.5,
               )
             : null,
         boxShadow: [
           BoxShadow(
             color: isComprehensive
-                ? AppColors.primary.withOpacity(0.08)
+                ? AppColors.primary.withValues(alpha: 0.08)
                 : AppColors.cardShadow,
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -552,7 +552,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Text(
                   result.profileName.isNotEmpty ? result.profileName[0] : '?',
                   style: const TextStyle(
@@ -578,7 +578,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                     ),
                     Text(
                       DateFormat(
-                        'MMM dd, yyyy • h:mm a',
+                        'MMM dd, yyyy â€¢ h:mm a',
                       ).format(result.timestamp),
                       style: const TextStyle(
                         fontSize: 12,
@@ -616,7 +616,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -637,10 +637,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -717,7 +717,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 color: AppColors.primary,
                 tooltip: 'Share report',
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 ),
               ),
               const SizedBox(width: 8),
@@ -728,7 +728,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 color: AppColors.error,
                 tooltip: 'Delete result',
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.error.withOpacity(0.1),
+                  backgroundColor: AppColors.error.withValues(alpha: 0.1),
                 ),
               ),
             ],
@@ -816,7 +816,7 @@ class _ResultDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              DateFormat('MMMM dd, yyyy • h:mm a').format(result.timestamp),
+              DateFormat('MMMM dd, yyyy â€¢ h:mm a').format(result.timestamp),
               style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
@@ -833,7 +833,7 @@ class _ResultDetailSheet extends StatelessWidget {
               ),
             ]),
 
-            // 🆕 Short Distance (Reading Test)
+            // ðŸ†• Short Distance (Reading Test)
             if (result.shortDistance != null)
               _buildSection('Reading Test (Near Vision)', [
                 _buildDetailRow(
@@ -974,12 +974,12 @@ class _ResultDetailSheet extends StatelessWidget {
                   if (ref.rightEye != null)
                     _buildDetailRow(
                       'Right Eye',
-                      'SPH: ${ref.rightEye!.sphere}, CYL: ${ref.rightEye!.cylinder}, AX: ${ref.rightEye!.axis}°',
+                      'SPH: ${ref.rightEye!.sphere}, CYL: ${ref.rightEye!.cylinder}, AX: ${ref.rightEye!.axis}Â°',
                     ),
                   if (ref.leftEye != null)
                     _buildDetailRow(
                       'Left Eye',
-                      'SPH: ${ref.leftEye!.sphere}, CYL: ${ref.leftEye!.cylinder}, AX: ${ref.leftEye!.axis}°',
+                      'SPH: ${ref.leftEye!.sphere}, CYL: ${ref.leftEye!.cylinder}, AX: ${ref.leftEye!.axis}Â°',
                     ),
                   _buildDetailRow(
                     'Status',
@@ -997,7 +997,7 @@ class _ResultDetailSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.info.withOpacity(0.1),
+                color: AppColors.info.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -1130,3 +1130,4 @@ class _ResultDetailSheet extends StatelessWidget {
     ]);
   }
 }
+

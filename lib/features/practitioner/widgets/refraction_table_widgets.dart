@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/refraction_prescription_model.dart';
@@ -199,7 +199,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(11),
                 topRight: Radius.circular(11),
@@ -433,7 +433,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
     final isEdited = _edited[fieldName] ?? false;
     final backgroundColor = isEdited
         ? AppColors.white
-        : Colors.yellow.withOpacity(0.1);
+        : Colors.yellow.withValues(alpha: 0.1);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -502,7 +502,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                       ),
                       border: InputBorder.none,
                       hintText: isDiopter
-                          ? '±0.00'
+                          ? 'Â±0.00'
                           : isAxis
                           ? '0-180'
                           : isVA
@@ -510,7 +510,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                           : '',
                       hintStyle: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary.withOpacity(0.5),
+                        color: AppColors.textSecondary.withValues(alpha: 0.5),
                       ),
                     ),
                   ),
@@ -536,7 +536,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
 
   Widget _buildTweakButton(IconData icon, VoidCallback onPressed) {
     return Material(
-      color: AppColors.primary.withOpacity(0.1),
+      color: AppColors.primary.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(6),
       child: InkWell(
         onTap: onPressed,
@@ -563,7 +563,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
     final isEdited = _edited[fieldName] ?? false;
     final backgroundColor = isEdited
         ? AppColors.white
-        : Colors.yellow.withOpacity(0.1);
+        : Colors.yellow.withValues(alpha: 0.1);
 
     return Container(
       color: backgroundColor,
@@ -605,7 +605,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                     ),
                     border: InputBorder.none,
                     hintText: isDiopter
-                        ? '±0.'
+                        ? 'Â±0.'
                         : isAxis
                         ? '0'
                         : isVisualAcuity
@@ -613,7 +613,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                         : '',
                     hintStyle: TextStyle(
                       fontSize: 10,
-                      color: AppColors.textSecondary.withOpacity(0.5),
+                      color: AppColors.textSecondary.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
@@ -660,7 +660,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
       child: Container(
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Icon(icon, size: 12, color: AppColors.primary),
@@ -949,7 +949,7 @@ class _FinalPrescriptionTableWidgetState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(11),
                 topRight: Radius.circular(11),
@@ -1168,7 +1168,7 @@ class _FinalPrescriptionTableWidgetState
     final isEdited = _edited[fieldName] ?? false;
     final backgroundColor = isEdited
         ? AppColors.white
-        : Colors.yellow.withOpacity(0.1);
+        : Colors.yellow.withValues(alpha: 0.1);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1235,7 +1235,7 @@ class _FinalPrescriptionTableWidgetState
                   ),
                   border: InputBorder.none,
                   hintText: isDiopter
-                      ? '±0.00'
+                      ? 'Â±0.00'
                       : isAxis
                       ? '0'
                       : isVA
@@ -1243,7 +1243,7 @@ class _FinalPrescriptionTableWidgetState
                       : '',
                   hintStyle: TextStyle(
                     fontSize: 10,
-                    color: AppColors.textSecondary.withOpacity(0.5),
+                    color: AppColors.textSecondary.withValues(alpha: 0.5),
                   ),
                 ),
               ),
@@ -1274,7 +1274,7 @@ class _FinalPrescriptionTableWidgetState
         height: 24,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Icon(icon, size: 14, color: AppColors.primary),
@@ -1282,3 +1282,4 @@ class _FinalPrescriptionTableWidgetState
     );
   }
 }
+

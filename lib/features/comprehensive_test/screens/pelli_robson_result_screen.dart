@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -138,10 +138,10 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                           horizontal: 20,
                         ),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.06),
+                          color: statusColor.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: statusColor.withOpacity(0.12),
+                            color: statusColor.withValues(alpha: 0.12),
                           ),
                         ),
                         child: Column(
@@ -207,7 +207,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                           color: AppColors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.border.withOpacity(0.5),
+                            color: AppColors.border.withValues(alpha: 0.5),
                           ),
                         ),
                         child: Text(
@@ -260,7 +260,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.white.withOpacity(0.2),
+                          color: AppColors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -328,10 +328,10 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border.withOpacity(0.3)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.02),
+            color: AppColors.black.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -394,3 +394,4 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
     }
   }
 }
+

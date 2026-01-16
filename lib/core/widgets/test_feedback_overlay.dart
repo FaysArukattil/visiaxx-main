@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
 class TestFeedbackOverlay extends StatelessWidget {
@@ -64,14 +64,14 @@ class TestFeedbackOverlay extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: color.withOpacity(0.4 * value),
+                              color: color.withValues(alpha: 0.4 * value),
                               blurRadius: 30,
                               spreadRadius: 2,
                               offset: const Offset(0, 10),
                             ),
                           ],
                           border: Border.all(
-                            color: color.withOpacity(0.3 * value),
+                            color: color.withValues(alpha: 0.3 * value),
                             width: 4,
                           ),
                         ),
@@ -97,7 +97,7 @@ class TestFeedbackOverlay extends StatelessWidget {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.3 * value),
+                          color: color.withValues(alpha: 0.3 * value),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -112,3 +112,4 @@ class TestFeedbackOverlay extends StatelessWidget {
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
 import '../../../core/constants/app_colors.dart';
@@ -112,7 +112,7 @@ class _SpeechLogViewerScreenState extends State {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   child: Row(
                     children: [
                       const Icon(
@@ -144,7 +144,7 @@ class _SpeechLogViewerScreenState extends State {
                               Icon(
                                 Icons.description_outlined,
                                 size: 64,
-                                color: AppColors.textSecondary.withOpacity(0.5),
+                                color: AppColors.textSecondary.withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -183,3 +183,4 @@ class _SpeechLogViewerScreenState extends State {
     );
   }
 }
+

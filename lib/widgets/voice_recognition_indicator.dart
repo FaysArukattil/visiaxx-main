@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:async';
 import '../core/constants/app_colors.dart';
 import '../core/widgets/eye_loader.dart';
@@ -105,7 +105,7 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceDark.withOpacity(0.9),
+            color: AppColors.surfaceDark.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -130,7 +130,7 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
                       widget.isListening ? Icons.mic : Icons.mic_none,
                       color: widget.isListening
                           ? AppColors.primary
-                          : AppColors.textOnDark.withOpacity(0.7),
+                          : AppColors.textOnDark.withValues(alpha: 0.7),
                       size: 20,
                     ),
                   );
@@ -175,7 +175,7 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
           Text(
             'Listening...',
             style: TextStyle(
-              color: AppColors.textOnDark.withOpacity(0.7),
+              color: AppColors.textOnDark.withValues(alpha: 0.7),
               fontSize: 14,
               fontStyle: FontStyle.italic,
             ),
@@ -193,3 +193,4 @@ class _VoiceRecognitionIndicatorState extends State<VoiceRecognitionIndicator>
     }
   }
 }
+

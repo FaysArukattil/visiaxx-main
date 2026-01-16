@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:async';
 import 'dart:math' as math;
@@ -29,7 +29,7 @@ class CoverLeftEyeInstructionScreen extends StatefulWidget {
     this.startButtonText = 'Start Right Eye Test',
     this.instructionTitle = 'Voice Commands',
     this.instructionDescription =
-        'Indicate the direction clearly:\n• UP, DOWN, LEFT, or RIGHT\n• Say BLURRY if you cannot see clearly',
+        'Indicate the direction clearly:\nâ€¢ UP, DOWN, LEFT, or RIGHT\nâ€¢ Say BLURRY if you cannot see clearly',
     this.instructionIcon = Icons.mic,
     this.onContinue,
   });
@@ -236,11 +236,11 @@ class _CoverLeftEyeInstructionScreenState
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: AppColors.border.withOpacity(0.5),
+                      color: AppColors.border.withValues(alpha: 0.5),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.black.withOpacity(0.05),
+                        color: AppColors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -261,8 +261,8 @@ class _CoverLeftEyeInstructionScreenState
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    AppColors.primary.withOpacity(0.1),
-                                    AppColors.primary.withOpacity(0.2),
+                                    AppColors.primary.withValues(alpha: 0.1),
+                                    AppColors.primary.withValues(alpha: 0.2),
                                   ],
                                 ),
                               ),
@@ -292,7 +292,7 @@ class _CoverLeftEyeInstructionScreenState
                                       width: 45,
                                       height: 55,
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary.withOpacity(0.8),
+                                        color: AppColors.primary.withValues(alpha: 0.8),
                                         borderRadius: const BorderRadius.only(
                                           topLeft: Radius.circular(30),
                                           bottomLeft: Radius.circular(30),
@@ -351,7 +351,7 @@ class _CoverLeftEyeInstructionScreenState
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: AppColors.border.withOpacity(0.5),
+                        color: AppColors.border.withValues(alpha: 0.5),
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -410,7 +410,7 @@ class _CoverLeftEyeInstructionScreenState
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.05),
+                      color: AppColors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -479,7 +479,7 @@ class _CoverLeftEyeInstructionScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.1),
+            color: accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: accentColor, size: 24),
@@ -648,7 +648,7 @@ class _EyeInstructionPainter extends CustomPainter {
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = color.withOpacity(0.2)
+        ..color = color.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -675,7 +675,7 @@ class _EyeInstructionPainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withOpacity(0.6),
+        Paint()..color = Colors.white.withValues(alpha: 0.6),
       );
 
       canvas.restore();
@@ -686,3 +686,4 @@ class _EyeInstructionPainter extends CustomPainter {
   bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
+

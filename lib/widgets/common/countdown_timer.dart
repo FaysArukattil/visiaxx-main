@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:async';
 
 /// Countdown timer widget for test timing
@@ -79,7 +79,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -117,3 +117,4 @@ class _CountdownTimerState extends State<CountdownTimer> {
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 import 'package:pdf/pdf.dart';
@@ -33,20 +33,20 @@ class PdfExportService {
       final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
 
       // Generate PDF
-      debugPrint('[PdfExportService] 📄 Generating PDF...');
+      debugPrint('[PdfExportService] ðŸ“„ Generating PDF...');
       final pdf = await _buildPdfDocument(result);
       final pdfBytes = await pdf.save();
       debugPrint(
-        '[PdfExportService] ✅ PDF generated (${pdfBytes.length} bytes)',
+        '[PdfExportService] âœ… PDF generated (${pdfBytes.length} bytes)',
       );
 
       // Save to Downloads folder
       final savedPath = await _saveToDownloads(pdfBytes, filename);
-      debugPrint('[PdfExportService] ✅ PDF saved to: $savedPath');
+      debugPrint('[PdfExportService] âœ… PDF saved to: $savedPath');
 
       return savedPath;
     } catch (e) {
-      debugPrint('[PdfExportService] ❌ Error generating PDF: $e');
+      debugPrint('[PdfExportService] âŒ Error generating PDF: $e');
 
       // Fallback: Save to app documents directory
       try {
@@ -65,7 +65,7 @@ class PdfExportService {
         final pdf = await _buildPdfDocument(result);
         await file.writeAsBytes(await pdf.save());
 
-        debugPrint('[PdfExportService] ✅ PDF saved to fallback: $fallbackPath');
+        debugPrint('[PdfExportService] âœ… PDF saved to fallback: $fallbackPath');
         return fallbackPath;
       } catch (fallbackError) {
         throw Exception(
@@ -85,7 +85,7 @@ class PdfExportService {
 
         if (status.isDenied) {
           debugPrint(
-            '[PdfExportService] ⚠️ Permission denied, trying app directory',
+            '[PdfExportService] âš ï¸ Permission denied, trying app directory',
           );
           return await _saveToAppDirectory(bytes, filename);
         }
@@ -96,7 +96,7 @@ class PdfExportService {
         if (await downloadsDir.exists()) {
           final file = File('${downloadsDir.path}/$filename');
           await file.writeAsBytes(bytes);
-          debugPrint('[PdfExportService] ✅ Saved to Downloads: ${file.path}');
+          debugPrint('[PdfExportService] âœ… Saved to Downloads: ${file.path}');
           return file.path;
         } else {
           // Try alternate path
@@ -104,14 +104,14 @@ class PdfExportService {
           if (await altDownloadsDir.exists()) {
             final file = File('${altDownloadsDir.path}/$filename');
             await file.writeAsBytes(bytes);
-            debugPrint('[PdfExportService] ✅ Saved to Downloads: ${file.path}');
+            debugPrint('[PdfExportService] âœ… Saved to Downloads: ${file.path}');
             return file.path;
           }
         }
 
         // Fallback to external storage
         debugPrint(
-          '[PdfExportService] ⚠️ Downloads folder not found, using external storage',
+          '[PdfExportService] âš ï¸ Downloads folder not found, using external storage',
         );
         final externalDir = await getExternalStorageDirectory();
         if (externalDir != null) {
@@ -122,14 +122,14 @@ class PdfExportService {
           }
           final file = File('${downloadsPath.path}/$filename');
           await file.writeAsBytes(bytes);
-          debugPrint('[PdfExportService] ✅ Saved to: ${file.path}');
+          debugPrint('[PdfExportService] âœ… Saved to: ${file.path}');
           return file.path;
         }
 
         // Last resort
         return await _saveToAppDirectory(bytes, filename);
       } catch (e) {
-        debugPrint('[PdfExportService] ❌ Android save failed: $e');
+        debugPrint('[PdfExportService] âŒ Android save failed: $e');
         return await _saveToAppDirectory(bytes, filename);
       }
     } else if (Platform.isIOS) {
@@ -146,7 +146,7 @@ class PdfExportService {
     final appDir = await getApplicationDocumentsDirectory();
     final file = File('${appDir.path}/$filename');
     await file.writeAsBytes(bytes);
-    debugPrint('[PdfExportService] ✅ Saved to app directory: ${file.path}');
+    debugPrint('[PdfExportService] âœ… Saved to app directory: ${file.path}');
     return file.path;
   }
 
@@ -1624,7 +1624,7 @@ class PdfExportService {
               children: [
                 _buildTableCell(res.sphere),
                 _buildTableCell(res.cylinder),
-                _buildTableCell('${res.axis}°'),
+                _buildTableCell('${res.axis}Â°'),
                 if (double.tryParse(res.addPower) != null &&
                     double.parse(res.addPower) > 0)
                   _buildTableCell('+${res.addPower}'),
@@ -1643,7 +1643,7 @@ class PdfExportService {
               height: 25,
               decoration: pw.BoxDecoration(
                 color:
-                    color, // Removed .withOpacity(2),
+                    color, // Removed .withValues(alpha: 2),
               ),
             ),
             pw.SizedBox(width: 8),
@@ -2002,13 +2002,13 @@ class PdfExportService {
           final response = await http.get(Uri.parse(localPath));
           if (response.statusCode == 200) {
             debugPrint(
-              '[PdfExportService] ✅ Downloaded ${response.bodyBytes.length} bytes',
+              '[PdfExportService] âœ… Downloaded ${response.bodyBytes.length} bytes',
             );
             return response.bodyBytes;
           }
         } catch (e) {
           debugPrint(
-            '[PdfExportService] ❌ Error fetching URL from localPath: $e',
+            '[PdfExportService] âŒ Error fetching URL from localPath: $e',
           );
         }
       } else {
@@ -2018,16 +2018,16 @@ class PdfExportService {
           if (await file.exists()) {
             final bytes = await file.readAsBytes();
             debugPrint(
-              '[PdfExportService] ✅ Read ${bytes.length} bytes from local file',
+              '[PdfExportService] âœ… Read ${bytes.length} bytes from local file',
             );
             return bytes;
           } else {
             debugPrint(
-              '[PdfExportService] ⚠️ Local file does not exist: $localPath',
+              '[PdfExportService] âš ï¸ Local file does not exist: $localPath',
             );
           }
         } catch (e) {
-          debugPrint('[PdfExportService] ❌ Error reading local file: $e');
+          debugPrint('[PdfExportService] âŒ Error reading local file: $e');
         }
       }
     }
@@ -2042,7 +2042,7 @@ class PdfExportService {
         if (response.statusCode == 200) {
           final bytes = response.bodyBytes;
           debugPrint(
-            '[PdfExportService] ✅ Downloaded ${bytes.length} bytes from remote',
+            '[PdfExportService] âœ… Downloaded ${bytes.length} bytes from remote',
           );
 
           // HEALING: If we fetched from remote but localPath was missing/invalid,
@@ -2058,21 +2058,21 @@ class PdfExportService {
               }
               await file.writeAsBytes(bytes);
               debugPrint(
-                '[PdfExportService] 🩹 Healed local file at: $localPath',
+                '[PdfExportService] ðŸ©¹ Healed local file at: $localPath',
               );
             } catch (e) {
-              debugPrint('[PdfExportService] ⚠️ Failed to heal local file: $e');
+              debugPrint('[PdfExportService] âš ï¸ Failed to heal local file: $e');
             }
           }
 
           return bytes;
         }
       } catch (e) {
-        debugPrint('[PdfExportService] ❌ Error fetching remote image: $e');
+        debugPrint('[PdfExportService] âŒ Error fetching remote image: $e');
       }
     }
 
-    debugPrint('[PdfExportService] ⚠️ No image bytes available');
+    debugPrint('[PdfExportService] âš ï¸ No image bytes available');
     return null;
   }
 
@@ -2289,3 +2289,4 @@ class PdfExportService {
     );
   }
 }
+

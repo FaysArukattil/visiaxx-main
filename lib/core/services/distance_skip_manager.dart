@@ -132,4 +132,5 @@ class DistanceTestType {
   static const String colorVision = 'color_vision';
   static const String amslerGrid = 'amsler_grid';
   static const String pelliRobson = 'pelli_robson';
+  static const String mobileRefractometry = 'mobile_refractometry';
 }

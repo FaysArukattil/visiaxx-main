@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:async';
 import 'dart:math' as math;
@@ -239,11 +239,11 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: AppColors.border.withOpacity(0.5),
+                      color: AppColors.border.withValues(alpha: 0.5),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.black.withOpacity(0.05),
+                        color: AppColors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -266,8 +266,8 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    AppColors.primary.withOpacity(0.1),
-                                    AppColors.primary.withOpacity(0.2),
+                                    AppColors.primary.withValues(alpha: 0.1),
+                                    AppColors.primary.withValues(alpha: 0.2),
                                   ],
                                 ),
                               ),
@@ -307,7 +307,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                       width: 45,
                                       height: 55,
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary.withOpacity(0.8),
+                                        color: AppColors.primary.withValues(alpha: 0.8),
                                         borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(
                                             isLeft ? 30 : 10,
@@ -373,7 +373,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: AppColors.border.withOpacity(0.5),
+                        color: AppColors.border.withValues(alpha: 0.5),
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -432,7 +432,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                   color: AppColors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.05),
+                      color: AppColors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -501,7 +501,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.1),
+            color: accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: accentColor, size: 24),
@@ -578,11 +578,11 @@ class __AnimatedProfessionalEyeState extends State<_AnimatedProfessionalEye>
               progress: _controller.value,
               color: widget.isActive
                   ? const Color(0xFF4A90E2)
-                  : Colors.grey.withOpacity(0.3),
+                  : Colors.grey.withValues(alpha: 0.3),
               scleraColor: Colors.white,
               pupilColor: widget.isActive
                   ? Colors.black
-                  : Colors.grey.withOpacity(0.5),
+                  : Colors.grey.withValues(alpha: 0.5),
             ),
           );
         },
@@ -675,7 +675,7 @@ class _EyeInstructionPainter extends CustomPainter {
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = color.withOpacity(0.2)
+        ..color = color.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
@@ -702,7 +702,7 @@ class _EyeInstructionPainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withOpacity(0.6),
+        Paint()..color = Colors.white.withValues(alpha: 0.6),
       );
 
       canvas.restore();
@@ -713,3 +713,4 @@ class _EyeInstructionPainter extends CustomPainter {
   bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
+

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -52,7 +52,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   bool _isTestPausedForDistance = false;
   bool _isPausedForExit =
-      false; // ✅ Prevent distance warning during pause dialog
+      false; // âœ… Prevent distance warning during pause dialog
 
   // Distortion tracking
   final List<DistortionPoint> _rightEyePoints = [];
@@ -158,7 +158,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   void _showCoverEyeInstruction(String eyeToCover) {
-    // ✅ FIX: Stop distance monitoring before showing cover eye instruction
+    // âœ… FIX: Stop distance monitoring before showing cover eye instruction
     _distanceService.stopMonitoring();
 
     Navigator.of(context).push(
@@ -167,7 +167,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           eyeToCover: eyeToCover,
           onContinue: () {
             Navigator.of(context).pop();
-            // ✅ FIX: Resume monitoring AFTER user confirms they've covered their eye
+            // âœ… FIX: Resume monitoring AFTER user confirms they've covered their eye
             _startContinuousDistanceMonitoring();
 
             if (eyeToCover == 'left') {
@@ -202,10 +202,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    // ✅ FIX: Don't process distance updates while pause dialog is showing
+    // âœ… FIX: Don't process distance updates while pause dialog is showing
     if (_isPausedForExit) return;
 
-    // ✅ SIMPLIFIED: Only check if distance is too close
+    // âœ… SIMPLIFIED: Only check if distance is too close
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
       status,
@@ -215,15 +215,19 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
+      // âœ… FIX: Synchronize pause state when distance becomes good
+      if (!shouldPause && _isTestPausedForDistance) {
+        _resumeTestAfterDistance();
+      }
     });
 
-    // ✅ Only trigger pause/resume during active testing
+    // âœ… Only trigger pause/resume during active testing
     if (_testingStarted && !_testComplete && !_eyeSwitchPending) {
       if (shouldPause && !_isTestPausedForDistance) {
         _lastShouldPauseTime ??= DateTime.now();
         final timeSinceFirst = DateTime.now().difference(_lastShouldPauseTime!);
 
-        // ✅ Only show overlay after 1.5 seconds of continuous issue
+        // âœ… Only show overlay after 1.5 seconds of continuous issue
         if (timeSinceFirst >= const Duration(milliseconds: 1500)) {
           _skipManager.canShowDistanceWarning(DistanceTestType.amslerGrid).then(
             (canShow) {
@@ -256,7 +260,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     // Pause services while dialog is shown
     _distanceService.stopMonitoring();
     _ttsService.stop();
-    _autoNavigationTimer?.cancel(); // ✅ Pause auto-navigation timer
+    _autoNavigationTimer?.cancel(); // âœ… Pause auto-navigation timer
 
     setState(() {
       _isPausedForExit = true;
@@ -296,7 +300,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         _isPausedForExit = false;
         _isTestPausedForDistance = false;
       });
-      _startAutoNavigationTimer(); // ✅ Resume auto-navigation
+      _startAutoNavigationTimer(); // âœ… Resume auto-navigation
       return;
     }
 
@@ -399,31 +403,31 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   Future<String?> _captureGridImage() async {
     try {
       debugPrint('========================================');
-      debugPrint('🖼️ CAPTURING AMSLER GRID IMAGE');
+      debugPrint('ðŸ–¼ï¸ CAPTURING AMSLER GRID IMAGE');
       debugPrint('========================================');
 
       final boundary =
           _gridKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
 
       if (boundary == null) {
-        debugPrint('❌ Boundary is NULL - cannot capture image');
+        debugPrint('âŒ Boundary is NULL - cannot capture image');
         return null;
       }
 
-      debugPrint('✅ Boundary found, capturing image...');
+      debugPrint('âœ… Boundary found, capturing image...');
 
       final image = await boundary.toImage(
         pixelRatio: 2.5,
       ); // Increased quality
-      debugPrint('✅ Image captured: ${image.width}x${image.height}');
+      debugPrint('âœ… Image captured: ${image.width}x${image.height}');
 
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
-        debugPrint('❌ ByteData is NULL - conversion failed');
+        debugPrint('âŒ ByteData is NULL - conversion failed');
         return null;
       }
 
-      debugPrint('✅ ByteData created: ${byteData.lengthInBytes} bytes');
+      debugPrint('âœ… ByteData created: ${byteData.lengthInBytes} bytes');
 
       final bytes = byteData.buffer.asUint8List();
       final directory = await getApplicationDocumentsDirectory();
@@ -431,7 +435,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           'amsler_${_currentEye}_${DateTime.now().millisecondsSinceEpoch}.png';
       final filePath = '${directory.path}/$fileName';
 
-      debugPrint('📁 Saving to: $filePath');
+      debugPrint('ðŸ“ Saving to: $filePath');
 
       final file = File(filePath);
       await file.writeAsBytes(bytes);
@@ -441,7 +445,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       final fileSize = exists ? await file.length() : 0;
 
       debugPrint('========================================');
-      debugPrint('✅ IMAGE SAVED SUCCESSFULLY');
+      debugPrint('âœ… IMAGE SAVED SUCCESSFULLY');
       debugPrint('   Path: $filePath');
       debugPrint('   Exists: $exists');
       debugPrint('   Size: $fileSize bytes');
@@ -451,7 +455,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       return filePath;
     } catch (e, stackTrace) {
       debugPrint('========================================');
-      debugPrint('❌ ERROR CAPTURING AMSLER IMAGE');
+      debugPrint('âŒ ERROR CAPTURING AMSLER IMAGE');
       debugPrint('   Error: $e');
       debugPrint('   StackTrace: $stackTrace');
       debugPrint('========================================');
@@ -461,22 +465,22 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   Future<void> _completeCurrentEye() async {
     debugPrint('========================================');
-    debugPrint('📊 COMPLETING EYE TEST: $_currentEye');
+    debugPrint('ðŸ“Š COMPLETING EYE TEST: $_currentEye');
     debugPrint('========================================');
 
     // Capture the grid image before saving
     String? imagePath;
     try {
-      debugPrint('🖼️ Starting image capture...');
+      debugPrint('ðŸ–¼ï¸ Starting image capture...');
       imagePath = await _captureGridImage();
 
       if (imagePath != null) {
-        debugPrint('✅ Image captured successfully: $imagePath');
+        debugPrint('âœ… Image captured successfully: $imagePath');
       } else {
-        debugPrint('⚠️ Image capture returned NULL');
+        debugPrint('âš ï¸ Image capture returned NULL');
       }
     } catch (e) {
-      debugPrint('❌ Error capturing grid image: $e');
+      debugPrint('âŒ Error capturing grid image: $e');
     }
 
     // Save result for current eye
@@ -507,7 +511,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       description = 'Patient reported: ${issues.join(', ')}';
     }
 
-    debugPrint('📋 Creating AmslerGridResult:');
+    debugPrint('ðŸ“‹ Creating AmslerGridResult:');
     debugPrint('   Eye: $_currentEye');
     debugPrint('   Image Path: $imagePath');
     debugPrint('   Has Distortions: $hasDistortions');
@@ -528,10 +532,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     );
 
     if (!mounted) return;
-    debugPrint('💾 Saving result to TestSessionProvider...');
+    debugPrint('ðŸ’¾ Saving result to TestSessionProvider...');
     final provider = context.read<TestSessionProvider>();
     provider.setAmslerGridResult(result);
-    debugPrint('✅ Result saved to provider');
+    debugPrint('âœ… Result saved to provider');
     debugPrint('========================================');
 
     if (_currentEye == 'right') {
@@ -693,7 +697,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 child: _buildDistanceIndicator(),
               ),
             // Distance warning overlay - only show when explicitly paused
-            // ✅ FIX: Don't show overlay when pause dialog is active
+            // âœ… FIX: Don't show overlay when pause dialog is active
             if (_isTestPausedForDistance &&
                 !_isPausedForExit &&
                 _testingStarted &&
@@ -713,7 +717,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         color: AppColors.white,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withOpacity(0.5),
+            color: AppColors.border.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -725,7 +729,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -754,7 +758,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.08),
+              color: AppColors.success.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1029,12 +1033,12 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           border: Border.all(
             color: selected
                 ? AppColors.primary
-                : AppColors.border.withOpacity(0.5),
+                : AppColors.border.withValues(alpha: 0.5),
           ),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1137,12 +1141,12 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                       decoration: BoxDecoration(
                         color:
                             (isNormal ? AppColors.success : AppColors.warning)
-                                .withOpacity(0.08),
+                                .withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color:
                               (isNormal ? AppColors.success : AppColors.warning)
-                                  .withOpacity(0.15),
+                                  .withValues(alpha: 0.15),
                         ),
                       ),
                       child: Column(
@@ -1154,7 +1158,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                                   (isNormal
                                           ? AppColors.success
                                           : AppColors.warning)
-                                      .withOpacity(0.1),
+                                      .withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -1238,7 +1242,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.2),
+                        color: AppColors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1296,10 +1300,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.08),
+            color: color.withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1313,7 +1317,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(Icons.grid_on_rounded, color: color, size: 24),
@@ -1369,7 +1373,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: severityColor.withOpacity(0.1),
+                        color: severityColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -1412,18 +1416,18 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withOpacity(0.15),
-                AppColors.white.withOpacity(0.05),
+                AppColors.white.withValues(alpha: 0.15),
+                AppColors.white.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: indicatorColor.withOpacity(0.3),
+              color: indicatorColor.withValues(alpha: 0.3),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: indicatorColor.withOpacity(0.1),
+                color: indicatorColor.withValues(alpha: 0.1),
                 blurRadius: 12,
                 spreadRadius: 2,
               ),
@@ -1441,7 +1445,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: indicatorColor.withOpacity(0.6),
+                      color: indicatorColor.withValues(alpha: 0.6),
                       blurRadius: 6,
                       spreadRadius: 1,
                     ),
@@ -1459,7 +1463,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                       fontSize: 8,
                       letterSpacing: 1.2,
                       fontWeight: FontWeight.w900,
-                      color: indicatorColor.withOpacity(0.8),
+                      color: indicatorColor.withValues(alpha: 0.8),
                     ),
                   ),
                   Text(
@@ -1481,11 +1485,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   Widget _buildDistanceWarningOverlay() {
-    // ✅ Dynamic messages based on status
+    // âœ… Dynamic messages based on status
     final instruction = DistanceHelper.getDetailedInstruction(40.0);
     final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
 
-    // ✅ Icon changes based on issue
+    // âœ… Icon changes based on issue
     final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
         ? Icons.face_retouching_off
         : Icons.warning_rounded;
@@ -1495,7 +1499,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: AppColors.black.withOpacity(0.85),
+      color: AppColors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1544,11 +1548,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   ),
                 ),
               ] else ...[
-                // ✅ Special message when no face
+                // âœ… Special message when no face
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1579,7 +1583,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.success, width: 1),
                 ),

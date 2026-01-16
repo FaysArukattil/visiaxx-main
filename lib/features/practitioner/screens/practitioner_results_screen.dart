@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -64,7 +64,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
 
     // 1. Try to load from CACHE ONLY for immediate display
     try {
-      debugPrint('[PractitionerResults] ⚡ Fetching from CACHE first...');
+      debugPrint('[PractitionerResults] âš¡ Fetching from CACHE first...');
       final cachedResults = await _resultService.getTestResults(
         user.uid,
         source: Source.cache,
@@ -76,16 +76,16 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
           _isLoading = false; // Show cached data right away
         });
         debugPrint(
-          '[PractitionerResults] ⚡ Showing ${cachedResults.length} cached results',
+          '[PractitionerResults] âš¡ Showing ${cachedResults.length} cached results',
         );
       }
     } catch (e) {
-      debugPrint('[PractitionerResults] ⚡ Initial cache fetch failed: $e');
+      debugPrint('[PractitionerResults] âš¡ Initial cache fetch failed: $e');
     }
 
     // 2. Full refresh from server
     try {
-      debugPrint('[PractitionerResults] 🔄 Refreshing from server...');
+      debugPrint('[PractitionerResults] ðŸ”„ Refreshing from server...');
 
       // If we still don't have results, show loading
       if (_allResults.isEmpty) {
@@ -97,7 +97,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
 
       final results = await _resultService.getTestResults(user.uid);
       debugPrint(
-        '[PractitionerResults] ✅ Server refresh complete: ${results.length} results',
+        '[PractitionerResults] âœ… Server refresh complete: ${results.length} results',
       );
 
       if (mounted) {
@@ -108,7 +108,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
         });
       }
     } catch (e) {
-      debugPrint('[PractitionerResults] ❌ Error loading results: $e');
+      debugPrint('[PractitionerResults] âŒ Error loading results: $e');
       if (mounted) {
         setState(() {
           // Only show error if we have NO results at all
@@ -287,7 +287,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(
@@ -353,8 +353,8 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: dateLabel == 'Today'
-                      ? AppColors.primary.withOpacity(0.1)
-                      : AppColors.secondary.withOpacity(0.1),
+                      ? AppColors.primary.withValues(alpha: 0.1)
+                      : AppColors.secondary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -422,20 +422,20 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isComprehensive
-            ? AppColors.primary.withOpacity(0.05)
+            ? AppColors.primary.withValues(alpha: 0.05)
             : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: isComprehensive
             ? Border.all(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 width: 1.5,
               )
             : null,
         boxShadow: [
           BoxShadow(
             color: isComprehensive
-                ? AppColors.primary.withOpacity(0.08)
-                : AppColors.black.withOpacity(0.05),
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : AppColors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -449,7 +449,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Text(
                   result.profileName.isNotEmpty ? result.profileName[0] : '?',
                   style: const TextStyle(
@@ -475,7 +475,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                     ),
                     Text(
                       DateFormat(
-                        'MMM dd, yyyy • h:mm a',
+                        'MMM dd, yyyy â€¢ h:mm a',
                       ).format(result.timestamp),
                       style: const TextStyle(
                         fontSize: 12,
@@ -513,7 +513,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -534,10 +534,10 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -614,7 +614,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                 color: AppColors.primary,
                 tooltip: 'Share report',
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 ),
               ),
               const SizedBox(width: 8),
@@ -625,7 +625,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                 color: AppColors.error,
                 tooltip: 'Delete result',
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.error.withOpacity(0.1),
+                  backgroundColor: AppColors.error.withValues(alpha: 0.1),
                 ),
               ),
             ],
@@ -826,7 +826,7 @@ class _ResultDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              DateFormat('MMMM dd, yyyy • h:mm a').format(result.timestamp),
+              DateFormat('MMMM dd, yyyy â€¢ h:mm a').format(result.timestamp),
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
@@ -946,7 +946,7 @@ class _ResultDetailSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.info.withOpacity(0.1),
+                color: AppColors.info.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -1076,3 +1076,4 @@ class _ResultDetailSheet extends StatelessWidget {
     ]);
   }
 }
+

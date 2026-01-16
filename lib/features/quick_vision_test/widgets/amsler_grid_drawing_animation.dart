@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
 
@@ -110,7 +110,7 @@ class _AmslerGridDrawingAnimationState extends State<AmslerGridDrawingAnimation>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -136,7 +136,7 @@ class _MockAmslerGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.grey.withOpacity(0.3)
+      ..color = AppColors.grey.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -228,7 +228,7 @@ class _AnimationPainter extends CustomPainter {
         }
         // Draw a cloud-like shape for missing area
         final missingFillPaint = Paint()
-          ..color = AppColors.primary.withOpacity(0.2);
+          ..color = AppColors.primary.withValues(alpha: 0.2);
         canvas.drawCircle(
           const Offset(145, 150),
           subProgress * 15,
@@ -262,7 +262,7 @@ class _AnimationPainter extends CustomPainter {
         }
         // Draw a blur-like shape
         final blurryFillPaint = Paint()
-          ..color = AppColors.warning.withOpacity(0.2);
+          ..color = AppColors.warning.withValues(alpha: 0.2);
         canvas.drawCircle(
           const Offset(55, 140),
           subProgress * 18,
@@ -344,3 +344,4 @@ class _AnimationPainter extends CustomPainter {
   bool shouldRepaint(covariant _AnimationPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
+

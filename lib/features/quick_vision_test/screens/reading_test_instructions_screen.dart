@@ -1,61 +1,48 @@
 ﻿import 'package:flutter/material.dart';
-import '../../quick_vision_test/widgets/instruction_animations.dart';
+import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../widgets/instruction_animations.dart';
 
-/// Pelli-Robson Contrast Sensitivity Test Instructions Screen
-class PelliRobsonInstructionsScreen extends StatefulWidget {
-  final String testMode; // 'short' (40cm) or 'long' (1m)
-  final VoidCallback onContinue;
+class ReadingTestInstructionsScreen extends StatefulWidget {
+  final VoidCallback? onContinue;
 
-  const PelliRobsonInstructionsScreen({
-    super.key,
-    required this.testMode,
-    required this.onContinue,
-  });
+  const ReadingTestInstructionsScreen({super.key, this.onContinue});
 
   @override
-  State<PelliRobsonInstructionsScreen> createState() =>
-      _PelliRobsonInstructionsScreenState();
+  State<ReadingTestInstructionsScreen> createState() =>
+      _ReadingTestInstructionsScreenState();
 }
 
-class _PelliRobsonInstructionsScreenState
-    extends State<PelliRobsonInstructionsScreen> {
+class _ReadingTestInstructionsScreenState
+    extends State<ReadingTestInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 5;
+  final int _totalPages = 3;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
-    'Maximum Brightness',
-    'Contrast Sensitivity',
-    'Test Distance',
-    'Reading Triplets',
-    'Declining Contrast',
+    'Optimal Position',
+    'Read Aloud',
+    'Typing Option',
   ];
 
-  late final List<String> _ttsMessages;
+  final List<String> _ttsMessages = [
+    'Hold the device at a normal reading distance, about 40 centimeters from your eyes.',
+    'A sentence will appear on the screen. Read it aloud clearly and completely.',
+    'If you prefer, you can also type the sentence using the on-screen keyboard.',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _ttsMessages = [
-      'Please increase your screen brightness to maximum for accurate results. This test measures subtle differences in contrast.',
-      'This test measures how well you can distinguish objects from their background. It is crucial for driving, reading, and seeing in low light.',
-      widget.testMode == 'short'
-          ? 'Hold the device about 40 centimeters away from your face.'
-          : 'Place the device exactly 1 meter away from your face.',
-      'You will see groups of 3 letters. Only read the letters inside the blue box aloud from left to right.',
-      'The letters will become fainter and harder to see. Read as many as you can. If you cannot see any, say "nothing" or "skip".',
-    ];
     _initializeTts();
   }
 
   Future<void> _initializeTts() async {
     await _ttsService.initialize();
-    // Small delay to ensure service is ready for first load auto-play
     await Future.delayed(const Duration(milliseconds: 500));
     _playCurrentStepTts();
   }
@@ -78,7 +65,11 @@ class _PelliRobsonInstructionsScreenState
 
   void _handleContinue() {
     _ttsService.stop();
-    widget.onContinue();
+    if (widget.onContinue != null) {
+      widget.onContinue!();
+    } else {
+      Navigator.pushReplacementNamed(context, '/short-distance-test');
+    }
   }
 
   @override
@@ -90,6 +81,7 @@ class _PelliRobsonInstructionsScreenState
 
   void _showExitConfirmation() {
     _ttsService.stop();
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -122,7 +114,7 @@ class _PelliRobsonInstructionsScreenState
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Contrast Test Instructions'),
+          title: const Text('Reading Test Instructions'),
           backgroundColor: AppColors.white,
           elevation: 0,
           centerTitle: true,
@@ -134,7 +126,6 @@ class _PelliRobsonInstructionsScreenState
         body: SafeArea(
           child: Column(
             children: [
-              // PageView Content
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -146,53 +137,39 @@ class _PelliRobsonInstructionsScreenState
                   children: [
                     _buildStep(
                       0,
-                      Icons.brightness_high_rounded,
-                      'Brightness Check',
-                      'Turn your screen brightness to maximum for the most accurate contrast measurements.',
-                      AppColors.warning,
-                      animation: const LightingAnimation(isCompact: true),
+                      Icons.visibility_rounded,
+                      'Optimal Position',
+                      'Hold the device at about 40cm (arm\'s length) from your eyes. Keep both eyes open.',
+                      AppColors.primary,
+                      animation: const SteadyReadingAnimation(isCompact: true),
                     ),
                     _buildStep(
                       1,
-                      Icons.palette_rounded,
-                      'What is Contrast?',
-                      'Contrast sensitivity is your eye\'s ability to distinguish an object from its background.',
-                      AppColors.primary,
-                      animation: const AlignmentAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      2,
-                      Icons.straighten_rounded,
-                      'Perfect Distance',
-                      widget.testMode == 'short'
-                          ? 'Hold the device about 40 centimeters (arm\'s length) away from your eyes.'
-                          : 'Sit exactly 1 meter away from the screen for the long-distance test.',
-                      AppColors.success,
-                      animation: const DistanceAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      3,
                       Icons.record_voice_over_rounded,
-                      'Reading Triplets',
-                      'You will see several triplets. Read whichever three letters are inside the blue box.',
-                      AppColors.info,
-                      animation: const ReadingTripletsAnimation(
+                      'Read Aloud',
+                      'Read the text displayed on the screen clearly into the microphone.',
+                      AppColors.success,
+                      animation: const StayFocusedAnimation(
                         isCompact: true,
+                        color: AppColors.success,
                       ),
                     ),
                     _buildStep(
-                      4,
-                      Icons.gradient_rounded,
-                      'Declining Contrast',
-                      'The letters will become fainter and harder to see. Read as many as possible until they are no longer visible.',
-                      AppColors.error,
-                      animation: const FadingTripletsAnimation(isCompact: true),
+                      2,
+                      Icons.keyboard_rounded,
+                      'Typing Option',
+                      'If voice input is not working, you can type the sentence and tap Enter to submit.',
+                      AppColors.warning,
+                      animation: const StayFocusedAnimation(
+                        isCompact: true,
+                        color: AppColors.warning,
+                      ),
                     ),
                   ],
                 ),
               ),
 
-              // Bottom Navigation Section
+              // Dot Indicator & Button
               Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
@@ -208,7 +185,6 @@ class _PelliRobsonInstructionsScreenState
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Dot Indicator
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
@@ -243,7 +219,7 @@ class _PelliRobsonInstructionsScreenState
                         child: Text(
                           _currentPage < _totalPages - 1
                               ? 'Next'
-                              : 'Start Test',
+                              : 'Start Reading Test',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -277,7 +253,7 @@ class _PelliRobsonInstructionsScreenState
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -294,13 +270,37 @@ class _PelliRobsonInstructionsScreenState
             Text(
               _stepTitles[index],
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 12),
-            _buildModernInstructionItem(icon, title, description, color),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: color, size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    description,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 15,
+                      height: 1.5,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             if (animation != null) ...[
               const Spacer(),
               Center(child: animation),
@@ -309,53 +309,6 @@ class _PelliRobsonInstructionsScreenState
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildModernInstructionItem(
-    IconData icon,
-    String title,
-    String description,
-    Color accentColor,
-  ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(icon, color: accentColor, size: 24),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                  height: 1.4,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -57,7 +57,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   bool _isTestPausedForDistance = false;
   bool _isPausedForExit =
-      false; // ✅ Prevent distance warning during pause dialog
+      false; // âœ… Prevent distance warning during pause dialog
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   DateTime? _lastShouldPauseTime;
@@ -138,7 +138,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    // ✅ FIX: Don't process distance updates while pause dialog is showing
+    // âœ… FIX: Don't process distance updates while pause dialog is showing
     if (_isPausedForExit) return;
 
     // Use appropriate test type for distance checking
@@ -156,6 +156,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
+      // âœ… FIX: Reset state when distance becomes good
+      if (!shouldPause && _isTestPausedForDistance) {
+        _resumeTestAfterDistance();
+      }
     });
 
     if (_isTestActive) {
@@ -187,7 +191,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     setState(() {
       _isTestPausedForDistance = true;
     });
-    // ✅ FIX: Actually stop speech and timers to pause test
+    // âœ… FIX: Actually stop speech and timers to pause test
     _continuousSpeech.stop();
     _autoAdvanceTimer?.cancel();
     _silenceTimer?.cancel();
@@ -213,7 +217,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   }
 
   void _showCalibrationScreen() {
-    // ✅ FIX: Stop background monitoring before starting calibration to avoid black screen
+    // âœ… FIX: Stop background monitoring before starting calibration to avoid black screen
     _distanceService.stopMonitoring();
     _ttsService.stop();
 
@@ -323,14 +327,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // ✅ FIX: Handle both paused and inactive states
+    // âœ… FIX: Handle both paused and inactive states
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       if (_isTestActive) {
         _pauseTest();
       }
     } else if (state == AppLifecycleState.resumed) {
-      // ✅ FIX: Only show pause dialog if test is active and we were paused
+      // âœ… FIX: Only show pause dialog if test is active and we were paused
       if (!mounted) return;
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted && _isTestActive && _isPausedForExit) {
@@ -343,7 +347,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _pauseTest() {
     _silenceTimer?.cancel();
     _autoAdvanceTimer?.cancel();
-    // ✅ FIX: Stop continuous speech manager (not just speechService)
+    // âœ… FIX: Stop continuous speech manager (not just speechService)
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
     _ttsService.stop();
@@ -386,7 +390,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _startTest() {
     _fuzzyMatcher.reset();
 
-    // ✅ FIX: Stop background monitoring during "Cover Eye" instructions
+    // âœ… FIX: Stop background monitoring during "Cover Eye" instructions
     _distanceService.stopMonitoring();
 
     Widget instructionScreen;
@@ -413,7 +417,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         instructionIcon: Icons.record_voice_over,
         onContinue: () {
           Navigator.of(context).pop();
-          // ✅ FIX: Resume monitoring AFTER user confirms they've covered eye
+          // âœ… FIX: Resume monitoring AFTER user confirms they've covered eye
           _actuallyStartTest();
         },
       );
@@ -432,7 +436,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         instructionIcon: Icons.record_voice_over,
         onContinue: () {
           Navigator.of(context).pop();
-          // ✅ FIX: Resume monitoring AFTER user confirms they've covered eye
+          // âœ… FIX: Resume monitoring AFTER user confirms they've covered eye
           _actuallyStartTest();
         },
       );
@@ -779,12 +783,12 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _ttsService.stop();
     _fuzzyMatcher.reset();
 
-    // ✅ FIX: Preserve the current mode (short or long) - only restart in that mode
+    // âœ… FIX: Preserve the current mode (short or long) - only restart in that mode
     final preservedMode = _currentMode;
 
     setState(() {
       _currentEye = 'right';
-      _currentMode = preservedMode; // ✅ Keep the current distance mode
+      _currentMode = preservedMode; // âœ… Keep the current distance mode
       _currentScreenIndex = 0;
       _currentTripletIndex = 0;
       _isTestActive = false;
@@ -792,10 +796,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _isSpeechActive = false;
       _showingInstructions = false;
       _showDistanceCalibration = true;
-      _mainInstructionsShown = true; // ✅ Skip general instructions on restart
+      _mainInstructionsShown = true; // âœ… Skip general instructions on restart
       _isTestPausedForDistance = false;
       _isPausedForExit = false;
-      // ✅ Only clear responses for the current mode
+      // âœ… Only clear responses for the current mode
       if (preservedMode == 'short') {
         _shortResponses.forEach((_, list) => list.clear());
       } else {
@@ -872,7 +876,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               Positioned(right: 16, top: 16, child: _buildDistanceIndicator()),
 
               // Distance warning overlay
-              // ✅ FIX: Don't show when exit/pause dialog is active
+              // âœ… FIX: Don't show when exit/pause dialog is active
               if (_isTestPausedForDistance && !_isPausedForExit)
                 _buildDistanceWarningOverlay(),
             ],
@@ -882,7 +886,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 
-  /// ✅ NEW: Visible / Not Visible buttons for tap-based input
+  /// âœ… NEW: Visible / Not Visible buttons for tap-based input
   Widget _buildVisibleButtons() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -953,7 +957,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             final triplet = entry.value;
             final isCurrent = index == _currentTripletIndex;
             final isCompleted = index < _currentTripletIndex;
-            // ✅ FIX: Show next triplet with actual opacity (preview)
+            // âœ… FIX: Show next triplet with actual opacity (preview)
             final isNext = index == _currentTripletIndex + 1;
 
             return Padding(
@@ -979,7 +983,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     bool isCompleted, {
     bool isNext = false,
   }) {
-    // ✅ FIX: Next triplet shows actual opacity (preview)
+    // âœ… FIX: Next triplet shows actual opacity (preview)
     // Current: full opacity, Completed: dimmed, Next: actual opacity preview, Others: hidden
     double rowOpacity;
     if (isCurrent) {
@@ -997,7 +1001,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isCurrent
-            ? AppColors.primary.withOpacity(0.12) // Slightly more subtle
+            ? AppColors.primary.withValues(alpha: 0.12) // Slightly more subtle
             : AppColors.transparent,
         borderRadius: BorderRadius.circular(16),
         border: isCurrent
@@ -1090,18 +1094,18 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withOpacity(0.15),
-                AppColors.white.withOpacity(0.05),
+                AppColors.white.withValues(alpha: 0.15),
+                AppColors.white.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: indicatorColor.withOpacity(0.3),
+              color: indicatorColor.withValues(alpha: 0.3),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: indicatorColor.withOpacity(0.1),
+                color: indicatorColor.withValues(alpha: 0.1),
                 blurRadius: 12,
                 spreadRadius: 2,
               ),
@@ -1119,7 +1123,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: indicatorColor.withOpacity(0.6),
+                      color: indicatorColor.withValues(alpha: 0.6),
                       blurRadius: 6,
                       spreadRadius: 1,
                     ),
@@ -1137,7 +1141,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                       fontSize: 8,
                       letterSpacing: 1.2,
                       fontWeight: FontWeight.w900,
-                      color: indicatorColor.withOpacity(0.8),
+                      color: indicatorColor.withValues(alpha: 0.8),
                     ),
                   ),
                   Text(
@@ -1160,11 +1164,11 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   Widget _buildDistanceWarningOverlay() {
     final target = _currentMode == 'short' ? 40.0 : 100.0;
-    // ✅ Dynamic messages based on status
+    // âœ… Dynamic messages based on status
     final instruction = DistanceHelper.getDetailedInstruction(target);
     final rangeText = DistanceHelper.getAcceptableRangeText(target);
 
-    // ✅ Icon changes based on issue
+    // âœ… Icon changes based on issue
     final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
         ? Icons.face_retouching_off
         : Icons.warning_rounded;
@@ -1174,7 +1178,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: AppColors.black.withOpacity(0.85),
+      color: AppColors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1225,11 +1229,11 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   ),
                 ),
               ] else ...[
-                // ✅ Special message when no face
+                // âœ… Special message when no face
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1259,10 +1263,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.success.withOpacity(0.3),
+                    color: AppColors.success.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -1304,7 +1308,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         color: AppColors.white,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withOpacity(0.5),
+            color: AppColors.border.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -1316,7 +1320,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1345,7 +1349,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.info.withOpacity(0.08),
+              color: AppColors.info.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(

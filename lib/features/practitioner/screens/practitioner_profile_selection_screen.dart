@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
@@ -141,7 +141,7 @@ class _PractitionerProfileSelectionScreenState
           patient: newPatient,
         );
 
-        debugPrint('[PractitionerProfile] ✅ Patient saved with ID: $savedId');
+        debugPrint('[PractitionerProfile] âœ… Patient saved with ID: $savedId');
 
         // Update local list with Firebase ID
         final savedPatient = newPatient.copyWith(id: savedId);
@@ -160,10 +160,10 @@ class _PractitionerProfileSelectionScreenState
         if (!mounted) return;
         SnackbarUtils.showSuccess(
           context,
-          '✅ ${savedPatient.fullName} added successfully',
+          'âœ… ${savedPatient.fullName} added successfully',
         );
       } catch (e) {
-        debugPrint('[PractitionerProfile] ❌ Error saving patient: $e');
+        debugPrint('[PractitionerProfile] âŒ Error saving patient: $e');
 
         // Close loading dialog
         if (mounted) Navigator.pop(context);
@@ -335,7 +335,7 @@ class _PractitionerProfileSelectionScreenState
           gradient: LinearGradient(
             colors: [
               AppColors.primary,
-              AppColors.primary.withOpacity(0.8),
+              AppColors.primary.withValues(alpha: 0.8),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -343,7 +343,7 @@ class _PractitionerProfileSelectionScreenState
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -354,7 +354,7 @@ class _PractitionerProfileSelectionScreenState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.white.withOpacity(0.2),
+                color: AppColors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(
@@ -380,7 +380,7 @@ class _PractitionerProfileSelectionScreenState
                   Text(
                     'Register a new patient for vision testing',
                     style: TextStyle(
-                      color: AppColors.white.withOpacity(0.9),
+                      color: AppColors.white.withValues(alpha: 0.9),
                       fontSize: 14,
                     ),
                   ),
@@ -407,7 +407,7 @@ class _PractitionerProfileSelectionScreenState
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.secondary.withOpacity(0.1),
+              backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
               radius: 28,
               child: Text(
                 patient.firstName[0].toUpperCase(),
@@ -432,7 +432,7 @@ class _PractitionerProfileSelectionScreenState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${patient.age} years • ${patient.sex}${patient.phone != null ? ' • ${patient.phone}' : ''}',
+                    '${patient.age} years â€¢ ${patient.sex}${patient.phone != null ? ' â€¢ ${patient.phone}' : ''}',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -458,7 +458,7 @@ class _PractitionerProfileSelectionScreenState
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Form(
         key: _formKey,
@@ -580,3 +580,4 @@ class _PractitionerProfileSelectionScreenState
     );
   }
 }
+

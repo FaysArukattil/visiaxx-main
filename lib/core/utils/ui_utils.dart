@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
 class UIUtils {
@@ -27,7 +27,7 @@ class UIUtils {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withOpacity(0.1),
+                  color: AppColors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -56,7 +56,7 @@ class UIUtils {
                   'Please wait...',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary.withOpacity(0.7),
+                    color: AppColors.textSecondary.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -72,3 +72,4 @@ class UIUtils {
     Navigator.of(context, rootNavigator: true).pop();
   }
 }
+

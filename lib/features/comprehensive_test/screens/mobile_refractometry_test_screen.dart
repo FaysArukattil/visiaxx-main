@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -12,6 +12,7 @@ import '../../../core/services/speech_service.dart';
 import '../../../core/services/continuous_speech_manager.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/distance_warning_overlay.dart';
 import '../../../core/utils/distance_helper.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/widgets/test_feedback_overlay.dart';
@@ -72,11 +73,13 @@ class _MobileRefractometryTestScreenState
   int _relaxationCountdown = TestConstants.mobileRefractometryRelaxationSeconds;
   Timer? _relaxationTimer;
   late AnimationController
-  _relaxationProgressController; // ✅ NEW: Smooth animation
+  _relaxationProgressController; // âœ… NEW: Smooth animation
 
   // Distance monitoring
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
+  bool _isDistanceOk = true;
+  final bool _isCalibrationActive = false;
   bool _isTestPausedForDistance = false;
   DateTime? _lastShouldPauseTime;
   static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
@@ -96,7 +99,7 @@ class _MobileRefractometryTestScreenState
     WidgetsBinding.instance.addObserver(this);
     _continuousSpeech = ContinuousSpeechManager(_speechService);
 
-    // ✅ Initialize relaxation animation controller
+    // âœ… Initialize relaxation animation controller
     _relaxationProgressController = AnimationController(
       vsync: this,
       duration: Duration(
@@ -279,6 +282,11 @@ class _MobileRefractometryTestScreenState
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
+      // âœ… FIX: Only set _isDistanceOk to true here.
+      // It is set to false only in _pauseTestForDistance after cooldown check.
+      if (!shouldPause) {
+        _isDistanceOk = true;
+      }
     });
 
     if (shouldPause) {
@@ -292,7 +300,11 @@ class _MobileRefractometryTestScreenState
         if (_currentPhase == RefractPhase.test ||
             _currentPhase == RefractPhase.relaxation) {
           _skipManager
-              .canShowDistanceWarning(DistanceTestType.shortDistance)
+              .canShowDistanceWarning(
+                _isNearMode
+                    ? DistanceTestType.shortDistance
+                    : DistanceTestType.mobileRefractometry,
+              )
               .then((canShow) {
                 if (mounted && canShow) {
                   _pauseTestForDistance();
@@ -309,7 +321,10 @@ class _MobileRefractometryTestScreenState
   }
 
   void _pauseTestForDistance() {
-    setState(() => _isTestPausedForDistance = true);
+    setState(() {
+      _isTestPausedForDistance = true;
+      _isDistanceOk = false; // Mark distance as not OK when paused
+    });
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
     _continuousSpeech.stop();
@@ -374,7 +389,10 @@ class _MobileRefractometryTestScreenState
 
       if (_relaxationCountdown <= 0) {
         timer.cancel();
-        // Phase transition handled by animation status listener
+        // âœ… FALLBACK: Transition phase if animation listener fails
+        if (_currentPhase == RefractPhase.relaxation) {
+          _startRound();
+        }
       }
     });
   }
@@ -442,7 +460,7 @@ class _MobileRefractometryTestScreenState
   }
 
   void _generateNewRound() {
-    // ✅ Clear state before generating new E (mic already stopped in relaxation)
+    // âœ… Clear state before generating new E (mic already stopped in relaxation)
     _lastDetectedSpeech = null;
     _isSpeechActive = false;
     _eDisplayStartTime = null;
@@ -464,7 +482,7 @@ class _MobileRefractometryTestScreenState
       _isSpeechActive = false;
     });
 
-    // ✅ MATCHES VA: Small delay then start mic
+    // âœ… MATCHES VA: Small delay then start mic
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) return;
       _eDisplayStartTime = DateTime.now();
@@ -486,7 +504,7 @@ class _MobileRefractometryTestScreenState
 
       if (_remainingSeconds <= 0) {
         timer.cancel();
-        // ✅ MATCHES VA: Rotate E at same size instead of scoring as incorrect
+        // âœ… MATCHES VA: Rotate E at same size instead of scoring as incorrect
         _generateNewRound();
       }
     });
@@ -560,7 +578,7 @@ class _MobileRefractometryTestScreenState
     _waitingForResponse = false;
     _roundTimer?.cancel();
 
-    // ✅ ULTRA-CRITICAL: STOP MICROPHONE IMMEDIATELY to prevent carryover
+    // âœ… ULTRA-CRITICAL: STOP MICROPHONE IMMEDIATELY to prevent carryover
     _continuousSpeech.stop();
     _continuousSpeech.clearAccumulated();
     _speechEraserTimer?.cancel();
@@ -569,7 +587,7 @@ class _MobileRefractometryTestScreenState
     final correct = response == _currentDirection;
     final isCantSee = response == EDirection.blurry;
 
-    // ✅ TTS Feedback - MATCHES VA EXACTLY
+    // âœ… TTS Feedback - MATCHES VA EXACTLY
     if (correct) {
       _ttsService.speakCorrect(response?.label ?? 'None');
     } else if (isCantSee) {
@@ -621,14 +639,14 @@ class _MobileRefractometryTestScreenState
       _isSpeechActive = false;
     });
 
-    // ✅ MATCHES VA: 800ms result display, then relaxation
+    // âœ… MATCHES VA: 800ms result display, then relaxation
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       setState(() {
         _showResult = false;
         _currentRound++;
       });
-      // ✅ Start relaxation BEFORE next E (matches VA flow)
+      // âœ… Start relaxation BEFORE next E (matches VA flow)
       _startRelaxation();
     });
   }
@@ -880,11 +898,28 @@ class _MobileRefractometryTestScreenState
                     _buildDirectionButtons(),
                 ],
               ),
-              if (_isTestPausedForDistance) _buildDistanceWarningOverlay(),
+              // âœ… UNIVERSAL Distance warning overlay
+              DistanceWarningOverlay(
+                isVisible:
+                    _isDistanceOk == false &&
+                    _waitingForResponse &&
+                    !_isCalibrationActive,
+                status: _distanceStatus,
+                currentDistance: _currentDistance,
+                targetDistance: _isNearMode ? 40.0 : 100.0,
+                onSkip: () {
+                  _skipManager.recordSkip(
+                    _isNearMode
+                        ? DistanceTestType.shortDistance
+                        : DistanceTestType.mobileRefractometry,
+                  );
+                  setState(() => _isDistanceOk = true);
+                },
+              ),
               // Distance indicator (bottom right corner) - MATCHES VA
               if ((_currentPhase == RefractPhase.test ||
                       _currentPhase == RefractPhase.relaxation) &&
-                  !_isTestPausedForDistance)
+                  !_isDistanceOk) // Changed from !_isTestPausedForDistance to !_isDistanceOk
                 Positioned(
                   right: 12,
                   bottom: _waitingForResponse ? 120 : 55,
@@ -914,8 +949,8 @@ class _MobileRefractometryTestScreenState
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: _currentEye == 'right'
-                  ? AppColors.rightEye.withOpacity(0.1)
-                  : AppColors.leftEye.withOpacity(0.1),
+                  ? AppColors.rightEye.withValues(alpha: 0.1)
+                  : AppColors.leftEye.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -947,7 +982,7 @@ class _MobileRefractometryTestScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -964,10 +999,10 @@ class _MobileRefractometryTestScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.success.withOpacity(0.3),
+                color: AppColors.success.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -985,10 +1020,10 @@ class _MobileRefractometryTestScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.success.withOpacity(0.3),
+                color: AppColors.success.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -1005,339 +1040,6 @@ class _MobileRefractometryTestScreenState
                 const SizedBox(width: 6),
                 const Icon(Icons.mic, size: 14, color: AppColors.success),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDistanceWarningOverlay() {
-    final targetDistance = _isNearMode ? 40.0 : 100.0;
-    final pauseReason = DistanceHelper.getPauseReason(
-      _distanceStatus,
-      targetDistance,
-    );
-    final instruction = DistanceHelper.getDetailedInstruction(targetDistance);
-
-    IconData icon;
-    Color iconColor;
-
-    switch (_distanceStatus) {
-      case DistanceStatus.noFaceDetected:
-        icon = Icons.person_off_rounded;
-        iconColor = AppColors.error;
-        break;
-      case DistanceStatus.tooClose:
-        icon = Icons.zoom_out_rounded;
-        iconColor = AppColors.warning;
-        break;
-      case DistanceStatus.tooFar:
-        icon = Icons.zoom_in_rounded;
-        iconColor = AppColors.warning;
-        break;
-      default:
-        icon = Icons.warning_rounded;
-        iconColor = AppColors.warning;
-    }
-
-    return SizedBox.expand(
-      child: Stack(
-        children: [
-          // 1. Full-Screen Glass Blur
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: Container(color: AppColors.black.withOpacity(0.4)),
-            ),
-          ),
-
-          // 2. High-Fidelity Content Card
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(24),
-                decoration: ShapeDecoration(
-                  color: AppColors.white.withOpacity(0.95),
-                  shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  shadows: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 30,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Premium Badge
-                    Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: iconColor.withOpacity(0.2),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: iconColor.withOpacity(0.12),
-                            blurRadius: 20,
-                            spreadRadius: 3,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 54,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            color: iconColor.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: iconColor.withOpacity(0.3),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Icon(icon, size: 28, color: iconColor),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Typography
-                    Text(
-                      pauseReason.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                        height: 1.1,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      instruction,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textPrimary.withOpacity(0.6),
-                        height: 1.5,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // LIVE DISTANCE GAUGE (The "Wow" Factor)
-                    if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
-                      _buildPremiumDistanceGauge(targetDistance),
-                    ] else
-                      _buildSearchingIndicator(),
-
-                    const SizedBox(height: 40),
-
-                    // Actions
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          _skipManager.recordSkip(
-                            DistanceTestType.visualAcuity,
-                          );
-                          setState(() => _isTestPausedForDistance = false);
-                          if (_currentPhase == RefractPhase.test &&
-                              _waitingForResponse) {
-                            _startRoundTimer();
-                            _continuousSpeech.start();
-                          } else if (_currentPhase == RefractPhase.relaxation) {
-                            _startRelaxationTimer();
-                          }
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
-                          side: BorderSide(
-                            color: AppColors.textSecondary.withOpacity(0.3),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          'Continue Anyway',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPremiumDistanceGauge(double target) {
-    final isCorrect = DistanceHelper.isDistanceCorrect(_distanceStatus);
-    final isTooClose = _currentDistance < (target - 5) && _currentDistance > 0;
-    final isTooFar = _currentDistance > (target + 5);
-    final noFaceFound = _distanceStatus == DistanceStatus.noFaceDetected;
-
-    // Responsive scaling
-    final screenWidth = MediaQuery.of(context).size.width;
-    final valueFontSize = screenWidth * 0.12;
-    final labelFontSize = screenWidth * 0.045;
-
-    String statusLabel = 'OPTIMAL';
-    Color statusColor = AppColors.success;
-
-    if (noFaceFound) {
-      statusLabel = 'NO FACE DETECTED';
-      statusColor = AppColors.error;
-    } else if (isTooClose) {
-      statusLabel = 'TOO CLOSE';
-      statusColor = AppColors.warning;
-    } else if (isTooFar) {
-      statusLabel = 'TOO FAR';
-      statusColor = AppColors.warning;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: statusColor.withOpacity(0.5), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Responsive Status Label
-          Text(
-            statusLabel,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: labelFontSize,
-              fontWeight: FontWeight.w900,
-              color: statusColor,
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Responsive Distance Value
-          if (!noFaceFound)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _currentDistance.toStringAsFixed(0),
-                  style: TextStyle(
-                    fontSize: valueFontSize,
-                    fontWeight: FontWeight.w900,
-                    color: statusColor,
-                    letterSpacing: -1,
-                  ),
-                ),
-                SizedBox(width: screenWidth * 0.02),
-                Text(
-                  'CM',
-                  style: TextStyle(
-                    fontSize: labelFontSize * 1.5,
-                    fontWeight: FontWeight.w800,
-                    color: statusColor.withOpacity(0.7),
-                  ),
-                ),
-              ],
-            ),
-
-          const SizedBox(height: 24),
-
-          // Action Hint
-          _buildActionHint(isCorrect, isTooClose, isTooFar),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchingIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Column(
-        children: [
-          const EyeLoader(size: 40),
-          const SizedBox(height: 24),
-          Text(
-            'SEARCHING FOR FACE...',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: AppColors.error.withOpacity(0.7),
-              letterSpacing: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionHint(bool isCorrect, bool isTooClose, bool isTooFar) {
-    if (_distanceStatus == DistanceStatus.noFaceDetected) {
-      return const SizedBox.shrink();
-    }
-
-    final text = isCorrect
-        ? 'DISTANCE OPTIMAL'
-        : (isTooClose ? 'SLOWLY MOVE BACK' : 'PLEASE MOVE CLOSER');
-    final icon = isCorrect
-        ? Icons.check_circle_rounded
-        : (isTooClose ? Icons.arrow_back_rounded : Icons.arrow_forward_rounded);
-    final color = isCorrect ? AppColors.success : AppColors.warning;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.15), width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              text,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                color: color,
-                letterSpacing: 0.5,
-              ),
             ),
           ),
         ],
@@ -1398,7 +1100,7 @@ class _MobileRefractometryTestScreenState
                     ),
                     shadows: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.12),
+                        color: AppColors.primary.withValues(alpha: 0.12),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),
@@ -1409,7 +1111,7 @@ class _MobileRefractometryTestScreenState
                     AppAssets.relaxationImage,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.primary.withOpacity(0.05),
+                      color: AppColors.primary.withValues(alpha: 0.05),
                       child: const Icon(
                         Icons.landscape,
                         size: 100,
@@ -1429,11 +1131,11 @@ class _MobileRefractometryTestScreenState
                         width: 90,
                         height: 90,
                         decoration: BoxDecoration(
-                          color: AppColors.white.withOpacity(0.15),
+                          color: AppColors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 25,
                               spreadRadius: 2,
                               offset: const Offset(0, 8),
@@ -1447,7 +1149,7 @@ class _MobileRefractometryTestScreenState
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.white.withOpacity(0.3),
+                                  color: AppColors.white.withValues(alpha: 0.3),
                                   width: 1.5,
                                 ),
                               ),
@@ -1462,7 +1164,7 @@ class _MobileRefractometryTestScreenState
                                           _relaxationProgressController.value,
                                       strokeWidth: 4,
                                       backgroundColor: AppColors.primary
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       valueColor:
                                           const AlwaysStoppedAnimation<Color>(
                                             AppColors.primary,
@@ -1528,7 +1230,7 @@ class _MobileRefractometryTestScreenState
         // Timer and Distance indicator row - MATCHES VA
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: AppColors.surface.withOpacity(0.9),
+          color: AppColors.surface.withValues(alpha: 0.9),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1539,7 +1241,7 @@ class _MobileRefractometryTestScreenState
                   vertical: 8,
                 ),
                 decoration: ShapeDecoration(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   shape: ContinuousRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                     side: const BorderSide(color: AppColors.primary, width: 2),
@@ -1572,7 +1274,7 @@ class _MobileRefractometryTestScreenState
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.primary.withOpacity(0.7),
+                            color: AppColors.primary.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -1645,7 +1347,7 @@ class _MobileRefractometryTestScreenState
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.black.withOpacity(0.6),
+                color: AppColors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -1741,18 +1443,18 @@ class _MobileRefractometryTestScreenState
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withOpacity(0.15),
-                AppColors.white.withOpacity(0.05),
+                AppColors.white.withValues(alpha: 0.15),
+                AppColors.white.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: indicatorColor.withOpacity(0.3),
+              color: indicatorColor.withValues(alpha: 0.3),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: indicatorColor.withOpacity(0.1),
+                color: indicatorColor.withValues(alpha: 0.1),
                 blurRadius: 12,
                 spreadRadius: 2,
               ),
@@ -1770,7 +1472,7 @@ class _MobileRefractometryTestScreenState
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: indicatorColor.withOpacity(0.6),
+                      color: indicatorColor.withValues(alpha: 0.6),
                       blurRadius: 6,
                       spreadRadius: 1,
                     ),
@@ -1788,7 +1490,7 @@ class _MobileRefractometryTestScreenState
                       fontSize: 8,
                       letterSpacing: 1.2,
                       fontWeight: FontWeight.w900,
-                      color: indicatorColor.withOpacity(0.8),
+                      color: indicatorColor.withValues(alpha: 0.8),
                     ),
                   ),
                   Text(
@@ -1839,12 +1541,12 @@ class _MobileRefractometryTestScreenState
   void _showPauseDialog({String reason = 'back button'}) {
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
-    _relaxationProgressController.stop(); // ✅ Stop smooth animation
+    _relaxationProgressController.stop(); // âœ… Stop smooth animation
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
 
     setState(() {
-      _isTestPausedForDistance = true; // ✅ Sync with VA behavior
+      _isTestPausedForDistance = true; // âœ… Sync with VA behavior
     });
 
     showDialog(
@@ -1957,7 +1659,7 @@ class _SpeechWaveformState extends State<_SpeechWaveform>
             height: 8,
             margin: const EdgeInsets.symmetric(horizontal: 1),
             decoration: BoxDecoration(
-              color: widget.color.withOpacity(0.5),
+              color: widget.color.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(2),
             ),
           ),

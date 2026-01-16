@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,15 +59,13 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   List<String> _currentOptions = []; // Current plate options
   bool _isTestPausedForDistance = false;
   bool _isPausedForExit =
-      false; // ✅ Prevent distance warning during pause dialog
-  Timer? _autoNavigationTimer; // ✅ Added timer for cancellable navigation
-  bool _userDismissedDistanceWarning = false;
+      false; // âœ… Prevent distance warning during pause dialog
+  Timer? _autoNavigationTimer; // âœ… Added timer for cancellable navigation
   final bool _isNavigatingToNextTest = false;
   int _secondsRemaining = 5;
   DateTime? _lastShouldPauseTime;
   static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
   Timer? _distanceAutoSkipTimer;
-  Timer? _distanceWarningReenableTimer;
 
   // Timer
   Timer? _plateTimer;
@@ -117,7 +115,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     // Pause services while dialog is shown
     _distanceService.stopMonitoring();
     _ttsService.stop();
-    _autoNavigationTimer?.cancel(); // ✅ Pause auto-navigation timer
+    _autoNavigationTimer?.cancel(); // âœ… Pause auto-navigation timer
 
     setState(() {
       _isPausedForExit = true;
@@ -158,7 +156,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       });
       // Restart the 5-second timer
       _autoNavigationTimer?.cancel();
-      _startAutoNavigationTimer(); // ✅ Resume auto-navigation
+      _startAutoNavigationTimer(); // âœ… Resume auto-navigation
       return;
     }
 
@@ -267,7 +265,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _showRightEyeInstruction() {
-    // ✅ FIX: Stop monitoring before cover eye instruction
+    // âœ… FIX: Stop monitoring before cover eye instruction
     _distanceService.stopMonitoring();
 
     Navigator.of(context).push(
@@ -283,7 +281,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               _currentPlateIndex = 0;
             });
 
-            // ✅ FIX: Resume monitoring AFTER user confirms they've covered eye
+            // âœ… FIX: Resume monitoring AFTER user confirms they've covered eye
             _startContinuousDistanceMonitoring();
             _startEyeTest();
           },
@@ -293,7 +291,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _showLeftEyeInstruction() {
-    // ✅ FIX: Stop monitoring before cover eye instruction
+    // âœ… FIX: Stop monitoring before cover eye instruction
     _distanceService.stopMonitoring();
 
     Navigator.of(context).push(
@@ -309,7 +307,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               _currentPlateIndex = 0;
             });
 
-            // ✅ FIX: Resume monitoring AFTER user confirms they've covered eye
+            // âœ… FIX: Resume monitoring AFTER user confirms they've covered eye
             _startContinuousDistanceMonitoring();
             _startEyeTest();
           },
@@ -331,7 +329,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    // ✅ FIX: Don't process distance updates while pause dialog is showing
+    // âœ… FIX: Don't process distance updates while pause dialog is showing
     if (_isPausedForExit) return;
 
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
@@ -353,8 +351,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         );
 
         if (durationSinceFirstIssue >= _distancePauseDebounce &&
-            !_isTestPausedForDistance &&
-            !_userDismissedDistanceWarning) {
+            !_isTestPausedForDistance) {
           _skipManager
               .canShowDistanceWarning(DistanceTestType.colorVision)
               .then((canShow) {
@@ -390,6 +387,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   void _forceSkipDistanceCheck() {
     _distanceAutoSkipTimer?.cancel();
+    _skipManager.recordSkip(
+      DistanceTestType.colorVision,
+    ); // âœ… PERSIST: Record skip
     setState(() => _isTestPausedForDistance = false);
     _ttsService.speak('Resuming test');
     _restartPlateTimer();
@@ -718,7 +718,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void dispose() {
     _plateTimer?.cancel();
     _distanceAutoSkipTimer?.cancel();
-    _distanceWarningReenableTimer?.cancel();
     _autoNavigationTimer?.cancel(); // Cancel auto-navigation timer
     _distanceService.dispose();
     _ttsService.dispose();
@@ -777,7 +776,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               ],
             ),
             Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
-            // ✅ FIX: Don't show overlay when pause dialog is active
+            // âœ… FIX: Don't show overlay when pause dialog is active
             if (_isTestPausedForDistance && !_isPausedForExit)
               _buildDistanceWarningOverlay(),
           ],
@@ -793,7 +792,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         color: AppColors.white,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withOpacity(0.5),
+            color: AppColors.border.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -805,7 +804,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -824,8 +823,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _timeRemaining <= 3
-                  ? AppColors.error.withOpacity(0.08)
-                  : AppColors.primary.withOpacity(0.08),
+                  ? AppColors.error.withValues(alpha: 0.08)
+                  : AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -924,11 +923,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isSelected && !isCorrect
-                        ? AppColors.error.withOpacity(0.2)
+                        ? AppColors.error.withValues(alpha: 0.2)
                         : isSelected && isCorrect
-                        ? AppColors.success.withOpacity(0.2)
+                        ? AppColors.success.withValues(alpha: 0.2)
                         : isSelected
-                        ? AppColors.primary.withOpacity(0.2)
+                        ? AppColors.primary.withValues(alpha: 0.2)
                         : AppColors.transparent,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
@@ -938,7 +937,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                                 : (isWrong
                                       ? AppColors.error
                                       : AppColors.primary))
-                          : AppColors.primary.withOpacity(0.3),
+                          : AppColors.primary.withValues(alpha: 0.3),
                       width: isSelected ? 3 : 2,
                     ),
                     boxShadow: isSelected
@@ -950,7 +949,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                                           : (isWrong
                                                 ? AppColors.error
                                                 : AppColors.primary))
-                                      .withOpacity(0.4),
+                                      .withValues(alpha: 0.4),
                               blurRadius: 10,
                               spreadRadius: 2,
                             ),
@@ -1099,12 +1098,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                       decoration: BoxDecoration(
                         color:
                             (isNormal ? AppColors.success : AppColors.warning)
-                                .withOpacity(0.08),
+                                .withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color:
                               (isNormal ? AppColors.success : AppColors.warning)
-                                  .withOpacity(0.15),
+                                  .withValues(alpha: 0.15),
                         ),
                       ),
                       child: Column(
@@ -1116,7 +1115,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                                   (isNormal
                                           ? AppColors.success
                                           : AppColors.warning)
-                                      .withOpacity(0.1),
+                                      .withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -1198,7 +1197,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.2),
+                        color: AppColors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1241,18 +1240,18 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withOpacity(0.15),
-                AppColors.white.withOpacity(0.05),
+                AppColors.white.withValues(alpha: 0.15),
+                AppColors.white.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: indicatorColor.withOpacity(0.3),
+              color: indicatorColor.withValues(alpha: 0.3),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: indicatorColor.withOpacity(0.1),
+                color: indicatorColor.withValues(alpha: 0.1),
                 blurRadius: 12,
                 spreadRadius: 2,
               ),
@@ -1270,7 +1269,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: indicatorColor.withOpacity(0.6),
+                      color: indicatorColor.withValues(alpha: 0.6),
                       blurRadius: 6,
                       spreadRadius: 1,
                     ),
@@ -1288,7 +1287,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                       fontSize: 8,
                       letterSpacing: 1.2,
                       fontWeight: FontWeight.w900,
-                      color: indicatorColor.withOpacity(0.8),
+                      color: indicatorColor.withValues(alpha: 0.8),
                     ),
                   ),
                   Text(
@@ -1310,11 +1309,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   Widget _buildDistanceWarningOverlay() {
-    // ✅ Dynamic messages based on status
+    // âœ… Dynamic messages based on status
     final instruction = DistanceHelper.getDetailedInstruction(40.0);
     final rangeText = DistanceHelper.getAcceptableRangeText(40.0);
 
-    // ✅ Icon changes based on issue
+    // âœ… Icon changes based on issue
     final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
         ? Icons.face_retouching_off
         : Icons.warning_rounded;
@@ -1324,7 +1323,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         : AppColors.warning;
 
     return Container(
-      color: AppColors.black.withOpacity(0.85),
+      color: AppColors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -1373,11 +1372,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   ),
                 ),
               ] else ...[
-                // ✅ Special message when no face
+                // âœ… Special message when no face
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1410,19 +1409,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   _skipManager.recordSkip(DistanceTestType.colorVision);
                   setState(() {
                     _isTestPausedForDistance = false;
-                    _userDismissedDistanceWarning = true;
                     _lastShouldPauseTime = null;
                   });
-
-                  _distanceWarningReenableTimer?.cancel();
-                  _distanceWarningReenableTimer = Timer(
-                    const Duration(seconds: 30),
-                    () {
-                      if (mounted) {
-                        setState(() => _userDismissedDistanceWarning = false);
-                      }
-                    },
-                  );
 
                   _ttsService.speak('Resuming test');
                   _restartPlateTimer();
@@ -1452,10 +1440,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.15), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.08),
+            color: color.withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1469,7 +1457,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -1509,7 +1497,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 ),
                 decoration: BoxDecoration(
                   color: (isNormal ? AppColors.success : AppColors.warning)
-                      .withOpacity(0.1),
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

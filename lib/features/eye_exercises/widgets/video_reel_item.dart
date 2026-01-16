@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/exercise_video_model.dart';
@@ -39,7 +39,7 @@ class _VideoReelItemState extends State<VideoReelItem>
   }
 
   Future<void> _initializeController() async {
-    debugPrint('🎬 Initializing video: ${widget.video.id}');
+    debugPrint('ðŸŽ¬ Initializing video: ${widget.video.id}');
     if (widget.video.isAssetVideo) {
       _controller = VideoPlayerController.asset(widget.video.videoPath);
     } else {
@@ -54,9 +54,9 @@ class _VideoReelItemState extends State<VideoReelItem>
       _controller.addListener(_videoListener);
       if (mounted) {
         setState(() => _isInitialized = true);
-        debugPrint('✅ Video initialized: ${widget.video.id}');
+        debugPrint('âœ… Video initialized: ${widget.video.id}');
         if (widget.isActive && !_isManuallyPaused) {
-          debugPrint('▶️ Auto-playing active video: ${widget.video.id}');
+          debugPrint('â–¶ï¸ Auto-playing active video: ${widget.video.id}');
           _controller.play();
 
           // Verify playback started (some devices need a small kick)
@@ -65,14 +65,14 @@ class _VideoReelItemState extends State<VideoReelItem>
                 !_controller.value.isPlaying &&
                 widget.isActive &&
                 !_isManuallyPaused) {
-              debugPrint('⚠️ Initial autoplay failed, retrying...');
+              debugPrint('âš ï¸ Initial autoplay failed, retrying...');
               _controller.play();
             }
           });
         }
       }
     } catch (e) {
-      debugPrint('❌ Error initializing video ${widget.video.id}: $e');
+      debugPrint('âŒ Error initializing video ${widget.video.id}: $e');
     }
   }
 
@@ -82,11 +82,11 @@ class _VideoReelItemState extends State<VideoReelItem>
     if (_isInitialized) {
       if (widget.isActive && !oldWidget.isActive) {
         if (!_isManuallyPaused) {
-          debugPrint('▶️ Resuming active video: ${widget.video.id}');
+          debugPrint('â–¶ï¸ Resuming active video: ${widget.video.id}');
           _controller.play();
         }
       } else if (!widget.isActive && oldWidget.isActive) {
-        debugPrint('⏸ Pausing inactive video: ${widget.video.id}');
+        debugPrint('â¸ Pausing inactive video: ${widget.video.id}');
         _controller.pause();
       }
     }
@@ -96,7 +96,7 @@ class _VideoReelItemState extends State<VideoReelItem>
     if (_isInitialized &&
         _controller.value.position >= _controller.value.duration &&
         !_controller.value.isPlaying) {
-      debugPrint('🏁 Video finished: ${widget.video.id}');
+      debugPrint('ðŸ Video finished: ${widget.video.id}');
       widget.onVideoEnd?.call();
 
       if (widget.isActive && !_isManuallyPaused) {
@@ -118,11 +118,11 @@ class _VideoReelItemState extends State<VideoReelItem>
     if (!_isInitialized) return;
 
     if (_controller.value.isPlaying) {
-      debugPrint('⏸ User pausing video: ${widget.video.id}');
+      debugPrint('â¸ User pausing video: ${widget.video.id}');
       await _controller.pause();
       _isManuallyPaused = true;
     } else {
-      debugPrint('▶️ User resuming video: ${widget.video.id}');
+      debugPrint('â–¶ï¸ User resuming video: ${widget.video.id}');
       await _controller.play();
       _isManuallyPaused = false;
 
@@ -130,7 +130,7 @@ class _VideoReelItemState extends State<VideoReelItem>
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted && !_controller.value.isPlaying && !_isManuallyPaused) {
           debugPrint(
-            '⚠️ Playback failed to start, retrying...: ${widget.video.id}',
+            'âš ï¸ Playback failed to start, retrying...: ${widget.video.id}',
           );
           _controller.play();
         }
@@ -188,8 +188,8 @@ class _VideoReelItemState extends State<VideoReelItem>
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    AppColors.black.withOpacity(0.7),
-                    AppColors.black.withOpacity(0.3),
+                    AppColors.black.withValues(alpha: 0.7),
+                    AppColors.black.withValues(alpha: 0.3),
                     AppColors.transparent,
                   ],
                 ),
@@ -235,7 +235,7 @@ class _VideoReelItemState extends State<VideoReelItem>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.8),
+                    color: AppColors.error.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
@@ -270,7 +270,7 @@ class _VideoReelItemState extends State<VideoReelItem>
                   Text(
                     widget.video.description!,
                     style: TextStyle(
-                      color: AppColors.white.withOpacity(0.85),
+                      color: AppColors.white.withValues(alpha: 0.85),
                       fontSize: 15,
                       height: 1.4,
                       shadows: [
@@ -293,3 +293,4 @@ class _VideoReelItemState extends State<VideoReelItem>
     );
   }
 }
+

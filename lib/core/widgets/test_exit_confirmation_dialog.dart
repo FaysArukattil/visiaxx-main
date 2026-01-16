@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import '../constants/app_colors.dart';
 import '../services/data_cleanup_service.dart';
@@ -51,7 +51,7 @@ class _TestExitConfirmationDialogState
         Positioned.fill(
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(color: Colors.black.withOpacity(0.4)),
+            child: Container(color: Colors.black.withValues(alpha: 0.4)),
           ),
         ),
         Center(
@@ -78,13 +78,13 @@ class _TestExitConfirmationDialogState
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(28),
       decoration: ShapeDecoration(
-        color: AppColors.white.withOpacity(0.98),
+        color: AppColors.white.withValues(alpha: 0.98),
         shape: ContinuousRectangleBorder(
           borderRadius: BorderRadius.circular(40),
         ),
         shadows: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
@@ -100,10 +100,10 @@ class _TestExitConfirmationDialogState
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),
@@ -130,7 +130,7 @@ class _TestExitConfirmationDialogState
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
-                color: AppColors.textPrimary.withOpacity(0.6),
+                color: AppColors.textPrimary.withValues(alpha: 0.6),
                 height: 1.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -164,7 +164,7 @@ class _TestExitConfirmationDialogState
                   label: const Text('Restart Test'),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: AppColors.warning.withOpacity(0.3),
+                      color: AppColors.warning.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     foregroundColor: AppColors.warning,
@@ -204,13 +204,13 @@ class _TestExitConfirmationDialogState
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(28),
       decoration: ShapeDecoration(
-        color: AppColors.white.withOpacity(0.98),
+        color: AppColors.white.withValues(alpha: 0.98),
         shape: ContinuousRectangleBorder(
           borderRadius: BorderRadius.circular(40),
         ),
         shadows: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
@@ -226,7 +226,7 @@ class _TestExitConfirmationDialogState
               height: 56,
               decoration: BoxDecoration(
                 color: (isExit ? AppColors.error : AppColors.warning)
-                    .withOpacity(0.1),
+                    .withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -251,7 +251,7 @@ class _TestExitConfirmationDialogState
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textPrimary.withOpacity(0.6),
+                color: AppColors.textPrimary.withValues(alpha: 0.6),
                 height: 1.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -312,3 +312,4 @@ class _TestExitConfirmationDialogState
     );
   }
 }
+

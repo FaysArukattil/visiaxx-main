@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/network_connectivity_provider.dart';
@@ -52,7 +52,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
       // Queue the operation
       connectivity.queueOperation(() async {
         debugPrint(
-          '[ReviewDialog] 🔄 Processing queued feedback submission...',
+          '[ReviewDialog] ðŸ”„ Processing queued feedback submission...',
         );
         await _submitReviewLogic();
       });
@@ -112,11 +112,11 @@ class _ReviewDialogState extends State<ReviewDialog> {
     final success = await _reviewService.submitReview(review);
 
     if (success) {
-      debugPrint('[ReviewDialog] ✅ Review submitted successfully');
+      debugPrint('[ReviewDialog] âœ… Review submitted successfully');
       // If we are currently in the dialog (not a queued op), we pop it.
       // But _submitReview already handles popping for live submissions.
     } else {
-      debugPrint('[ReviewDialog] ❌ Failed to submit review');
+      debugPrint('[ReviewDialog] âŒ Failed to submit review');
     }
   }
 
@@ -191,7 +191,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                         gradient: LinearGradient(
                           colors: [
                             AppColors.primary,
-                            AppColors.primary.withOpacity(0.7),
+                            AppColors.primary.withValues(alpha: 0.7),
                           ],
                         ),
                         shape: BoxShape.circle,
@@ -286,10 +286,10 @@ class _ReviewDialogState extends State<ReviewDialog> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.info.withOpacity(0.1),
+                      color: AppColors.info.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: AppColors.info.withOpacity(0.3),
+                        color: AppColors.info.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -375,3 +375,4 @@ class _ReviewDialogState extends State<ReviewDialog> {
     );
   }
 }
+

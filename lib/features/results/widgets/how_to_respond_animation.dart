@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:math';
 import '../../../core/constants/app_colors.dart';
 
@@ -99,7 +99,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               width: 2,
             ),
           ),
@@ -164,7 +164,7 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                                       child: Icon(
                                         Icons.blur_on,
                                         size: eSize,
-                                        color: AppColors.grey.withOpacity(0.3),
+                                        color: AppColors.grey.withValues(alpha: 0.3),
                                       ),
                                     ),
                               SizedBox(width: widget.isCompact ? 40 : 50),
@@ -209,10 +209,10 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                         vertical: widget.isCompact ? 8 : 10,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.05),
+                        color: AppColors.primary.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           width: 1,
                         ),
                       ),
@@ -319,14 +319,14 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
                   boxShadow: isPressed
                       ? [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.4),
+                            color: AppColors.primary.withValues(alpha: 0.4),
                             blurRadius: 12,
                             spreadRadius: 2,
                           ),
                         ]
                       : [
                           BoxShadow(
-                            color: AppColors.black.withOpacity(0.05),
+                            color: AppColors.black.withValues(alpha: 0.05),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -395,14 +395,14 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
               boxShadow: isPressed
                   ? [
                       BoxShadow(
-                        color: AppColors.warning.withOpacity(0.4),
+                        color: AppColors.warning.withValues(alpha: 0.4),
                         blurRadius: 12,
                         spreadRadius: 2,
                       ),
                     ]
                   : [
                       BoxShadow(
-                        color: AppColors.black.withOpacity(0.05),
+                        color: AppColors.black.withValues(alpha: 0.05),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -496,3 +496,4 @@ class _DirectionDemo {
     required this.buttonPosition,
   });
 }
+

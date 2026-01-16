@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 
 /// Distance check dialog to ensure proper viewing distance
@@ -27,7 +27,7 @@ class DistanceCheckDialog extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Card(
-            color: AppColors.primary.withOpacity(0.05),
+            color: AppColors.primary.withValues(alpha: 0.05),
             child: const Padding(
               padding: EdgeInsets.all(12.0),
               child: Column(
@@ -38,10 +38,10 @@ class DistanceCheckDialog extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
-                  Text('• Sit comfortably with your back straight'),
-                  Text('• Keep the screen at eye level'),
-                  Text('• Ensure good lighting in the room'),
-                  Text('• Remove any glare from the screen'),
+                  Text('â€¢ Sit comfortably with your back straight'),
+                  Text('â€¢ Keep the screen at eye level'),
+                  Text('â€¢ Ensure good lighting in the room'),
+                  Text('â€¢ Remove any glare from the screen'),
                 ],
               ),
             ),
@@ -74,3 +74,4 @@ class DistanceCheckDialog extends StatelessWidget {
     );
   }
 }
+

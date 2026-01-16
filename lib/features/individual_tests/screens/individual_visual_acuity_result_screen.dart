@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/individual_test_result_model.dart';
 import '../../../data/models/visiual_acuity_result.dart';
@@ -157,12 +157,12 @@ class _IndividualVisualAcuityResultScreenState
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.success.withOpacity(0.1),
-            AppColors.success.withOpacity(0.05),
+            AppColors.success.withValues(alpha: 0.1),
+            AppColors.success.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withOpacity(0.3)),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -217,10 +217,10 @@ class _IndividualVisualAcuityResultScreenState
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+          colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,7 +230,7 @@ class _IndividualVisualAcuityResultScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -319,9 +319,9 @@ class _IndividualVisualAcuityResultScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -401,7 +401,7 @@ class _IndividualVisualAcuityResultScreenState
           icon: const Icon(Icons.home_rounded),
           label: const Text('Back to Home'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.grey.withOpacity(0.1),
+            backgroundColor: AppColors.grey.withValues(alpha: 0.1),
             foregroundColor: AppColors.primary,
             minimumSize: const Size(double.infinity, 54),
             shape: RoundedRectangleBorder(
@@ -413,3 +413,4 @@ class _IndividualVisualAcuityResultScreenState
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/exercise_videos.dart';
@@ -25,7 +25,7 @@ class YouTubePopupDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.4),
+              color: AppColors.black.withValues(alpha: 0.4),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -54,7 +54,7 @@ class YouTubePopupDialog extends StatelessWidget {
                   width: 90,
                   height: 90,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF0000).withOpacity(0.1),
+                    color: const Color(0xFFFF0000).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -70,7 +70,7 @@ class YouTubePopupDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.black.withOpacity(0.12),
+                              color: AppColors.black.withValues(alpha: 0.12),
                               blurRadius: 4,
                             ),
                           ],
@@ -174,3 +174,4 @@ class YouTubePopupDialog extends StatelessWidget {
     );
   }
 }
+

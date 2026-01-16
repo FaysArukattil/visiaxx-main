@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
@@ -105,7 +105,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           const Duration(seconds: 1),
           onTimeout: () {
             debugPrint(
-              '[ProfileSelection] ⚡ Profile fetch timed out, using fallback',
+              '[ProfileSelection] âš¡ Profile fetch timed out, using fallback',
             );
             return null;
           },
@@ -167,7 +167,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             .saveFamilyMember(userId: user.uid, member: newMember)
             .timeout(const Duration(seconds: 5));
 
-        debugPrint('[ProfileSelection] ✅ Member saved with ID: $savedId');
+        debugPrint('[ProfileSelection] âœ… Member saved with ID: $savedId');
 
         if (mounted) Navigator.pop(context); // Close loader
 
@@ -187,7 +187,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           );
         }
       } catch (e) {
-        debugPrint('[ProfileSelection] ⚠️ Save timed out or errored: $e');
+        debugPrint('[ProfileSelection] âš ï¸ Save timed out or errored: $e');
 
         if (mounted) Navigator.pop(context); // Close loader
 
@@ -325,14 +325,14 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color, color.withOpacity(0.8)],
+            colors: [color, color.withValues(alpha: 0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: color.withValues(alpha: 0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -343,7 +343,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.white.withOpacity(0.2),
+                color: AppColors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: AppColors.white, size: 36),
@@ -365,7 +365,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: AppColors.white.withOpacity(0.9),
+                      color: AppColors.white.withValues(alpha: 0.9),
                       fontSize: 14,
                     ),
                   ),
@@ -392,7 +392,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.secondary.withOpacity(0.1),
+              backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
               radius: 28,
               child: Text(
                 member.firstName[0].toUpperCase(),
@@ -417,7 +417,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${member.relationship} • ${member.age} years • ${member.sex}',
+                    '${member.relationship} â€¢ ${member.age} years â€¢ ${member.sex}',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -443,7 +443,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Form(
         key: _formKey,
@@ -535,3 +535,4 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     );
   }
 }
+

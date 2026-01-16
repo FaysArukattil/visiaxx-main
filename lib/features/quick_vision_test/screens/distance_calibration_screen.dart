@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
@@ -15,7 +15,7 @@ class DistanceCalibrationScreen extends StatefulWidget {
   /// Target distance in cm (default 40cm for near vision test)
   final double targetDistanceCm;
 
-  /// Tolerance in cm (default ±5cm)
+  /// Tolerance in cm (default Â±5cm)
   final double toleranceCm;
 
   /// Callback when calibration is complete and distance is verified
@@ -62,20 +62,20 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
   void initState() {
     super.initState();
 
-    // ✅ CRITICAL FIX: Initialize with widget parameters
+    // âœ… CRITICAL FIX: Initialize with widget parameters
     _distanceService = DistanceDetectionService(
       targetDistanceCm: widget.targetDistanceCm,
       toleranceCm: widget.toleranceCm,
     );
 
-    debugPrint('═══════════════════════════════════');
-    debugPrint('🎯 CALIBRATION INITIALIZED:');
+    debugPrint('â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•');
+    debugPrint('ðŸŽ¯ CALIBRATION INITIALIZED:');
     debugPrint('   Target Distance: ${widget.targetDistanceCm}cm');
-    debugPrint('   Tolerance: ±${widget.toleranceCm}cm');
+    debugPrint('   Tolerance: Â±${widget.toleranceCm}cm');
     debugPrint(
       '   Acceptable Range: ${widget.targetDistanceCm - widget.toleranceCm}cm - ${widget.targetDistanceCm + widget.toleranceCm}cm',
     );
-    debugPrint('═══════════════════════════════════');
+    debugPrint('â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•');
 
     _initializeCamera();
   }
@@ -94,7 +94,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
       _distanceService.onDistanceUpdate = _handleDistanceUpdate;
       _distanceService.onError = _handleError;
 
-      debugPrint('[DistanceCalibration] 🔥 Initializing camera...');
+      debugPrint('[DistanceCalibration] ðŸ”¥ Initializing camera...');
 
       // Initialize camera with retry logic
       int retries = 0;
@@ -107,7 +107,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           if (_cameraController != null &&
               _cameraController!.value.isInitialized) {
             debugPrint(
-              '[DistanceCalibration] ✅ Camera initialized successfully',
+              '[DistanceCalibration] âœ… Camera initialized successfully',
             );
             break;
           }
@@ -115,13 +115,13 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           retries++;
           if (retries < maxRetries) {
             debugPrint(
-              '[DistanceCalibration] ⚠️ Retry $retries/$maxRetries...',
+              '[DistanceCalibration] âš ï¸ Retry $retries/$maxRetries...',
             );
             await Future.delayed(Duration(milliseconds: 500 * retries));
           }
         } catch (e) {
           debugPrint(
-            '[DistanceCalibration] ❌ Camera init attempt $retries failed: $e',
+            '[DistanceCalibration] âŒ Camera init attempt $retries failed: $e',
           );
           retries++;
           if (retries < maxRetries) {
@@ -149,7 +149,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         if (mounted) setState(() {});
       });
 
-      // ✅ DEBUG: Log camera details
+      // âœ… DEBUG: Log camera details
       debugPrint('=== CAMERA DEBUG INFO ===');
       debugPrint(
         'Camera initialized: ${_cameraController!.value.isInitialized}',
@@ -192,7 +192,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         'Look at the camera and I will guide you.',
       );
     } catch (e) {
-      debugPrint('[DistanceCalibration] ❌ Fatal error: $e');
+      debugPrint('[DistanceCalibration] âŒ Fatal error: $e');
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -218,7 +218,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           // Vibrate to indicate success
           HapticFeedback.mediumImpact();
 
-          // ✅ AUTO-CONTINUE: Automatically proceed after 1 second
+          // âœ… AUTO-CONTINUE: Automatically proceed after 1 second
           if (!_hasAutoNavigated) {
             _hasAutoNavigated = true;
             Future.delayed(const Duration(seconds: 1), () {
@@ -369,7 +369,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           Text(
             'Initializing Camera...',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.8),
+              color: AppColors.white.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
@@ -403,7 +403,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               _errorMessage ??
                   'Unable to access the camera for distance measurement.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.white.withOpacity(0.7)),
+              style: TextStyle(color: AppColors.white.withValues(alpha: 0.7)),
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
@@ -429,8 +429,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // ✅ FIX: Camera preview with proper error handling and fallback
-        // ✅ ENHANCED: Better camera preview rendering
+        // âœ… FIX: Camera preview with proper error handling and fallback
+        // âœ… ENHANCED: Better camera preview rendering
         if (_cameraController != null && _cameraController!.value.isInitialized)
           Positioned.fill(
             child: OverflowBox(
@@ -446,14 +446,14 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
             ),
           )
         else
-          // ✅ ENHANCED: Better loading state
+          // âœ… ENHANCED: Better loading state
           Container(
             color: AppColors.black87, // Dark but not pure black
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ✅ Add animated loading indicator
+                  // âœ… Add animated loading indicator
                   const EyeLoader(size: 60),
                   const SizedBox(height: 20),
                   Text(
@@ -499,7 +499,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppColors.black.withOpacity(0.7),
+                  AppColors.black.withValues(alpha: 0.7),
                   AppColors.transparent,
                 ],
               ),
@@ -519,7 +519,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  AppColors.black.withOpacity(0.85),
+                  AppColors.black.withValues(alpha: 0.85),
                   AppColors.transparent,
                 ],
               ),
@@ -535,7 +535,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
             constraints: const BoxConstraints(maxWidth: 280, maxHeight: 350),
             decoration: BoxDecoration(
               border: Border.all(
-                color: _getStatusColor().withOpacity(0.6),
+                color: _getStatusColor().withValues(alpha: 0.6),
                 width: 3,
               ),
               borderRadius: BorderRadius.circular(140),
@@ -603,7 +603,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.black.withOpacity(0.5),
+        color: AppColors.black.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -620,9 +620,9 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Target: ${widget.targetDistanceCm.toInt()} cm (±${widget.toleranceCm.toInt()} cm)',
+            'Target: ${widget.targetDistanceCm.toInt()} cm (Â±${widget.toleranceCm.toInt()} cm)',
             style: TextStyle(
-              color: AppColors.white.withOpacity(0.6),
+              color: AppColors.white.withValues(alpha: 0.6),
               fontSize: 14,
             ),
           ),
@@ -638,7 +638,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
-        color: _getStatusColor().withOpacity(0.2),
+        color: _getStatusColor().withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: _getStatusColor(), width: 2),
       ),
@@ -674,7 +674,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               ? 'Hold still...'
               : 'Adjust your position',
           style: TextStyle(
-            color: AppColors.white.withOpacity(0.8),
+            color: AppColors.white.withValues(alpha: 0.8),
             fontSize: 14,
           ),
         ),
@@ -683,7 +683,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           width: 200,
           height: 6,
           decoration: BoxDecoration(
-            color: AppColors.white.withOpacity(0.2),
+            color: AppColors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(3),
           ),
           child: FractionallySizedBox(
@@ -745,7 +745,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
             onPressed: _onSkipPressed,
             child: Text(
               'Skip Distance Calibration',
-              style: TextStyle(color: AppColors.white.withOpacity(0.7)),
+              style: TextStyle(color: AppColors.white.withValues(alpha: 0.7)),
             ),
           ),
         ],
@@ -806,3 +806,4 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     }
   }
 }
+

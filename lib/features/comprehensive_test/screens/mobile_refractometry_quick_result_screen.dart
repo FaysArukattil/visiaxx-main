@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -345,9 +345,9 @@ class _MobileRefractometryQuickResultScreenState
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.12)),
+        border: Border.all(color: color.withValues(alpha: 0.12)),
       ),
       child: Column(
         children: [
@@ -365,7 +365,7 @@ class _MobileRefractometryQuickResultScreenState
           Text(
             'Refraction Screening Complete',
             style: TextStyle(
-              color: color.withOpacity(0.8),
+              color: color.withValues(alpha: 0.8),
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -385,10 +385,10 @@ class _MobileRefractometryQuickResultScreenState
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border.withOpacity(0.3)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withOpacity(0.05),
+            color: accentColor.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -419,7 +419,7 @@ class _MobileRefractometryQuickResultScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -472,7 +472,7 @@ class _MobileRefractometryQuickResultScreenState
       children: [
         _buildValueItem('SPHERE', res.sphere, 'Distance'),
         _buildValueItem('CYLINDER', res.cylinder, 'Focus'),
-        _buildValueItem('AXIS', '${res.axis}°', 'Angle'),
+        _buildValueItem('AXIS', '${res.axis}Â°', 'Angle'),
         if (double.tryParse(res.addPower) != null &&
             double.parse(res.addPower) > 0)
           _buildValueItem('READING', '+${res.addPower}', 'Add Power'),
@@ -510,7 +510,7 @@ class _MobileRefractometryQuickResultScreenState
             subLabel,
             style: TextStyle(
               fontSize: 9,
-              color: AppColors.textSecondary.withOpacity(0.6),
+              color: AppColors.textSecondary.withValues(alpha: 0.6),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -557,9 +557,9 @@ class _MobileRefractometryQuickResultScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.05),
+        color: AppColors.warning.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.warning.withOpacity(0.2)),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,14 +637,14 @@ class _MobileRefractometryQuickResultScreenState
             gradient: LinearGradient(
               colors: isBlocked
                   ? [AppColors.border, AppColors.border]
-                  : [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                  : [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
             ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: isBlocked
                 ? []
                 : [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -734,7 +734,7 @@ class _MobileRefractometryQuickResultScreenState
           icon: const Icon(Icons.home_rounded),
           label: const Text('Back to Home'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.grey.withOpacity(0.1),
+            backgroundColor: AppColors.grey.withValues(alpha: 0.1),
             foregroundColor: AppColors.primary,
             minimumSize: const Size(double.infinity, 54),
             shape: RoundedRectangleBorder(
@@ -811,9 +811,9 @@ class _MobileRefractometryQuickResultScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.info.withOpacity(0.1),
+            color: AppColors.info.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.info.withOpacity(0.3)),
+            border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -845,7 +845,7 @@ class _MobileRefractometryQuickResultScreenState
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -853,7 +853,7 @@ class _MobileRefractometryQuickResultScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -939,14 +939,14 @@ class _MobileRefractometryQuickResultScreenState
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -1128,12 +1128,12 @@ class _MobileRefractometryQuickResultScreenState
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: _includeInResults
-                ? AppColors.warning.withOpacity(0.1)
+                ? AppColors.warning.withValues(alpha: 0.1)
                 : AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _includeInResults
-                  ? AppColors.warning.withOpacity(0.2)
+                  ? AppColors.warning.withValues(alpha: 0.2)
                   : AppColors.border,
             ),
           ),
@@ -1298,3 +1298,4 @@ class _MobileRefractometryQuickResultScreenState
     };
   }
 }
+

@@ -1,0 +1,101 @@
+﻿
+warning - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:8:8 - Unused import: 
+'package:visiaxx/core/utils/navigation_utils.dart'. 
+Try removing the import directive. - unused_import
+warning - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:46:8 - The value of the 
+field '_isCalibrationActive' isn't used. Try 
+removing the field, or using it. - unused_field
+warning - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:47:8 - The value of the 
+field '_isTestPausedForDistance' isn't used. Try 
+removing the field, or using it. - unused_field
+warning - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:48:13 - The value of the 
+field '_lastShouldPauseTime' isn't used. Try 
+removing the field, or using it. - unused_field
+warning - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:49:25 - The value of the 
+field '_distancePauseDebounce' isn't used. Try 
+removing the field, or using it. - unused_field
+warning - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:65:8 - The value of the 
+field '_isSpeechActive' isn't used. Try removing 
+the field, or using it. - unused_field
+   info - features\comprehensive_test\screens\mobile
+_refractometry_test_screen.dart:82:8 - The private 
+field _isCalibrationActive could be 'final'. Try 
+making the field 'final'. - prefer_final_fields
+   info - features\quick_vision_test\screens\questio
+nnaire_screen.dart:99:9 - Statements in an if 
+should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\questio
+nnaire_screen.dart:102:9 - Statements in an if 
+should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\questio
+nnaire_screen.dart:105:9 - Statements in an if 
+should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\questio
+nnaire_screen.dart:109:9 - Statements in an if 
+should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\questio
+nnaire_screen.dart:112:9 - Statements in an if 
+should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\questio
+nnaire_screen.dart:115:9 - Statements in an if 
+should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\questio
+nnaire_screen.dart:118:9 - Statements in an if 
+should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\questio
+nnaire_screen.dart:123:9 - Statements in an if 
+should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:3:8 - The import of 
+'package:flutter/services.dart' is unnecessary 
+because all of the used elements are also provided 
+by the import of 'package:flutter/material.dart'. 
+Try removing the import directive. - 
+unnecessary_import
+   info - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:46:8 - The private field 
+_isCalibrationActive could be 'final'. Try making 
+the field 'final'. - prefer_final_fields
+   info - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:47:8 - The private field 
+_isTestPausedForDistance could be 'final'. Try 
+making the field 'final'. - prefer_final_fields
+   info - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:379:7 - Statements in an 
+if should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:381:7 - Statements in an 
+if should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+   info - features\quick_vision_test\screens\short_d
+istance_test_screen.dart:383:7 - Statements in an 
+if should be enclosed in a block. Try wrapping the 
+statement in a block. - 
+curly_braces_in_flow_control_structures
+
+

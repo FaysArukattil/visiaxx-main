@@ -36,6 +36,7 @@ import '/core/utils/app_logger.dart';
 import 'features/quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
 import 'features/quick_vision_test/screens/cover_right_eye_instruction_screen.dart';
 import 'features/quick_vision_test/screens/both_eyes_open_instruction_screen.dart';
+import 'features/quick_vision_test/screens/reading_test_instructions_screen.dart';
 import 'features/quick_vision_test/screens/short_distance_test_screen.dart';
 import 'features/comprehensive_test/screens/pelli_robson_test_screen.dart';
 import 'features/comprehensive_test/screens/comprehensive_intro_screen.dart';
@@ -225,6 +226,8 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/both-eyes-open-instruction': (context) =>
               const BothEyesOpenInstructionScreen(),
           '/short-distance-test': (context) => const ShortDistanceTestScreen(),
+          '/reading-test-instructions': (context) =>
+              const ReadingTestInstructionsScreen(),
           '/comprehensive-test': (context) => const ComprehensiveIntroScreen(),
           '/pelli-robson-test': (context) => const PelliRobsonTestScreen(),
           '/eye-exercises': (context) => const EyeExerciseReelsScreen(),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
@@ -70,11 +70,11 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
 
   String get _locationIcon {
     if (widget.filePath.contains('/Download')) {
-      return '📥';
+      return 'ðŸ“¥';
     } else if (widget.filePath.contains('/Documents')) {
-      return '📄';
+      return 'ðŸ“„';
     } else {
-      return '📱';
+      return 'ðŸ“±';
     }
   }
 
@@ -195,7 +195,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.1),
+              color: AppColors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -211,7 +211,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Stack(
@@ -223,7 +223,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.success.withOpacity(0.3),
+                          color: AppColors.success.withValues(alpha: 0.3),
                           width: 2,
                         ),
                       ),
@@ -286,7 +286,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.1),
+                          color: AppColors.error.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -332,7 +332,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -378,10 +378,10 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
+                  color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: AppColors.error.withOpacity(0.3),
+                    color: AppColors.error.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -451,7 +451,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
                     label: Text(_isOpening ? 'Opening...' : 'Open'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isAnyActionInProgress
-                          ? AppColors.primary.withOpacity(0.5)
+                          ? AppColors.primary.withValues(alpha: 0.5)
                           : AppColors.primary,
                       foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -541,3 +541,4 @@ Future<void> showDownloadSuccessDialog({
         DownloadSuccessDialog(filePath: filePath, fileName: name),
   );
 }
+

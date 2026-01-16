@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/eye_care_tip_model.dart';
 import '../../../core/constants/app_colors.dart';
 
@@ -29,7 +29,7 @@ class EyeCareTipCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.05),
+              color: AppColors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -43,7 +43,7 @@ class EyeCareTipCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(tip.icon, color: color, size: 24),
@@ -80,3 +80,4 @@ class EyeCareTipCard extends StatelessWidget {
     );
   }
 }
+

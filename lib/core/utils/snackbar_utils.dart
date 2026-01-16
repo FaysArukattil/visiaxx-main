@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:visiaxx/main.dart';
 import '../constants/app_colors.dart';
@@ -120,7 +120,7 @@ class SnackbarUtils {
     }
 
     if (overlay == null) {
-      debugPrint('[SnackbarUtils] ❌ Could not find Overlay to show snackbar.');
+      debugPrint('[SnackbarUtils] âŒ Could not find Overlay to show snackbar.');
       return;
     }
 
@@ -215,15 +215,15 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: widget.backgroundColor.withOpacity(0.95),
+                color: widget.backgroundColor.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppColors.white.withOpacity(0.2),
+                  color: AppColors.white.withValues(alpha: 0.2),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.15),
+                    color: AppColors.black.withValues(alpha: 0.15),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -234,7 +234,7 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.white.withOpacity(0.15),
+                      color: AppColors.white.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(widget.icon, color: Colors.white, size: 22),
@@ -260,3 +260,4 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
     );
   }
 }
+

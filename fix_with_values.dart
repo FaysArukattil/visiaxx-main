@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
+
 void main() {
   final dir = Directory('lib');
   if (!dir.existsSync()) {
-    print('Directory lib not found');
+    debugPrint('Directory lib not found');
     return;
   }
 
@@ -30,9 +32,9 @@ void main() {
           int parenEnd = -1;
           int balance = 0;
           for (int i = parenStart; i < newContent.length; i++) {
-            if (newContent[i] == '(')
+            if (newContent[i] == '(') {
               balance++;
-            else if (newContent[i] == ')') {
+            } else if (newContent[i] == ')') {
               balance--;
               if (balance == 0) {
                 parenEnd = i;
@@ -70,7 +72,7 @@ void main() {
 
         if (newContent != content) {
           file.writeAsStringSync(newContent);
-          print('Updated: ${file.path}');
+          debugPrint('Updated: ${file.path}');
         }
       }
     }
