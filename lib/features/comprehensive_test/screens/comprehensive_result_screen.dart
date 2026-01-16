@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../data/models/visiual_acuity_result.dart';
@@ -41,7 +42,31 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        _navigateHome();
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => TestExitConfirmationDialog(
+            onContinue: () {
+              // Just close the dialog
+            },
+            onRestart: () {
+              // For comprehensive results, "Restart" could mean restarting the whole process
+              // or just the last test. Usually, going back to comprehensive-test is safer.
+              provider.reset();
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/comprehensive-test',
+                (route) => false,
+              );
+            },
+            onExit: () async {
+              await _navigateHome();
+              if (mounted) {
+                provider.reset();
+              }
+            },
+          ),
+        );
       },
       child: Scaffold(
         backgroundColor: AppColors.background,

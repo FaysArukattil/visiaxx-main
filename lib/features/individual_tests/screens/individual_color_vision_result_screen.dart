@@ -6,6 +6,7 @@ import '../../../core/services/individual_test_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 class IndividualColorVisionResultScreen extends StatefulWidget {
   final ColorVisionResult result;
@@ -65,7 +66,29 @@ class _IndividualColorVisionResultScreenState
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => TestExitConfirmationDialog(
+            onContinue: () {
+              // Just close the dialog
+            },
+            onRestart: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/color-vision-test',
+                (route) => false,
+              );
+            },
+            onExit: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+          ),
+        );
       },
       child: Scaffold(
         appBar: AppBar(

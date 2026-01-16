@@ -1214,42 +1214,40 @@ class _MobileRefractometryTestScreenState
       statusColor = AppColors.warning;
     }
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Responsive Status Label
-        Text(
-          statusLabel,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: labelFontSize,
-            fontWeight: FontWeight.w900,
-            color: statusColor,
-            letterSpacing: 2,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: statusColor.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-        ),
-        const SizedBox(height: 20),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Responsive Status Label
+          Text(
+            statusLabel,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: labelFontSize,
+              fontWeight: FontWeight.w900,
+              color: statusColor,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 16),
 
-        // Responsive Distance Value
-        if (!noFaceFound)
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.08,
-              vertical: screenWidth * 0.03,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(screenWidth * 0.08),
-              boxShadow: [
-                BoxShadow(
-                  color: statusColor.withOpacity(0.15),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-              border: Border.all(color: statusColor.withOpacity(0.2), width: 2),
-            ),
-            child: Row(
+          // Responsive Distance Value
+          if (!noFaceFound)
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
@@ -1267,18 +1265,18 @@ class _MobileRefractometryTestScreenState
                   style: TextStyle(
                     fontSize: labelFontSize * 1.5,
                     fontWeight: FontWeight.w800,
-                    color: statusColor.withOpacity(0.5),
+                    color: statusColor.withOpacity(0.7),
                   ),
                 ),
               ],
             ),
-          ),
 
-        const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
-        // Action Hint
-        _buildActionHint(isCorrect, isTooClose, isTooFar),
-      ],
+          // Action Hint
+          _buildActionHint(isCorrect, isTooClose, isTooFar),
+        ],
+      ),
     );
   }
 
@@ -1730,27 +1728,43 @@ class _MobileRefractometryTestScreenState
         ? '${_currentDistance.toStringAsFixed(0)}cm'
         : 'Searching...';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: indicatorColor, width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.straighten, size: 14, color: indicatorColor),
-          const SizedBox(width: 4),
-          Text(
-            distanceText,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: indicatorColor,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: indicatorColor.withOpacity(0.5),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.straighten, size: 14, color: indicatorColor),
+              const SizedBox(width: 4),
+              Text(
+                distanceText,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: indicatorColor,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

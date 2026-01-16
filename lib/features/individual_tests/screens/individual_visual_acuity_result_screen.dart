@@ -6,6 +6,7 @@ import '../../../core/services/individual_test_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 class IndividualVisualAcuityResultScreen extends StatefulWidget {
   final VisualAcuityResult rightEye;
@@ -79,7 +80,29 @@ class _IndividualVisualAcuityResultScreenState
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => TestExitConfirmationDialog(
+            onContinue: () {
+              // Just close the dialog
+            },
+            onRestart: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/visual-acuity-test',
+                (route) => false,
+              );
+            },
+            onExit: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+          ),
+        );
       },
       child: Scaffold(
         appBar: AppBar(
@@ -322,16 +345,17 @@ class _IndividualVisualAcuityResultScreenState
   Widget _buildActionButtons() {
     return Column(
       children: [
+        // Continue / Start Full Eye Exam (Primary action)
         ElevatedButton.icon(
           onPressed: () {
             Navigator.pushNamedAndRemoveUntil(
               context,
-              '/home',
+              '/comprehensive-test',
               (route) => false,
             );
           },
-          icon: const Icon(Icons.home),
-          label: const Text('Back to Home'),
+          icon: const Icon(Icons.assessment_rounded),
+          label: const Text('Start Full Eye Exam'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: AppColors.white,
@@ -342,20 +366,44 @@ class _IndividualVisualAcuityResultScreenState
           ),
         ),
         const SizedBox(height: 12),
+
+        // Restart Current Test
         OutlinedButton.icon(
           onPressed: () {
             Navigator.pushNamedAndRemoveUntil(
               context,
-              '/comprehensive-test',
+              '/visual-acuity-test',
               (route) => false,
             );
           },
-          icon: const Icon(Icons.assessment_rounded),
-          label: const Text('Start Full Eye Exam'),
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Restart Test'),
           style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.warning,
+            minimumSize: const Size(double.infinity, 54),
+            side: const BorderSide(color: AppColors.warning, width: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Exit to Home
+        ElevatedButton.icon(
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/home',
+              (route) => false,
+            );
+          },
+          icon: const Icon(Icons.home_rounded),
+          label: const Text('Back to Home'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.grey.withOpacity(0.1),
             foregroundColor: AppColors.primary,
             minimumSize: const Size(double.infinity, 54),
-            side: const BorderSide(color: AppColors.primary, width: 2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

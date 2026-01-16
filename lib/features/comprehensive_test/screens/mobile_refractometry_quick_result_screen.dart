@@ -9,6 +9,7 @@ import '../../../data/providers/test_session_provider.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/refraction_prescription_service.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../data/models/user_model.dart';
 import '../../practitioner/widgets/refraction_table_widgets.dart';
 
@@ -257,7 +258,25 @@ class _MobileRefractometryQuickResultScreenState
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        NavigationUtils.navigateHome(context);
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => TestExitConfirmationDialog(
+            onContinue: () {
+              // Just close the dialog
+            },
+            onRestart: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/mobile-refractometry-test',
+                (route) => false,
+              );
+            },
+            onExit: () {
+              NavigationUtils.navigateHome(context);
+            },
+          ),
+        );
       },
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
@@ -654,6 +673,72 @@ class _MobileRefractometryQuickResultScreenState
                 fontWeight: FontWeight.bold,
                 color: isBlocked ? AppColors.textSecondary : AppColors.white,
               ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Start Full Eye Exam (Continue action)
+        ElevatedButton.icon(
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/comprehensive-test',
+              (route) => false,
+            );
+          },
+          icon: const Icon(Icons.assessment_rounded),
+          label: const Text('Start Full Eye Exam'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.white,
+            minimumSize: const Size(double.infinity, 54),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Restart Current Test
+        OutlinedButton.icon(
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/mobile-refractometry-test',
+              (route) => false,
+            );
+          },
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Restart Test'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.warning,
+            minimumSize: const Size(double.infinity, 54),
+            side: const BorderSide(color: AppColors.warning, width: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Back to Home
+        ElevatedButton.icon(
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/home',
+              (route) => false,
+            );
+          },
+          icon: const Icon(Icons.home_rounded),
+          label: const Text('Back to Home'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.grey.withOpacity(0.1),
+            foregroundColor: AppColors.primary,
+            minimumSize: const Size(double.infinity, 54),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ),

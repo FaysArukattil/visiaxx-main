@@ -25,6 +25,7 @@ import 'cover_right_eye_instruction_screen.dart';
 import 'cover_left_eye_instruction_screen.dart';
 import '../../../core/services/distance_skip_manager.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
 /// Implements Visiaxx specification for 1-meter testing
@@ -192,97 +193,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(
-              Icons.pause_circle_outline,
-              color: AppColors.primary,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Test Paused',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              reason == 'minimized'
-                  ? 'The test was paused because the app was minimized.'
-                  : 'What would you like to do?',
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Continue Test - Primary action
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _resumeTestFromDialog();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Continue Test',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Restart Current Test
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _restartCurrentTest();
-                },
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.warning),
-                  foregroundColor: AppColors.warning,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Restart Current Test',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Exit Test
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(dialogContext);
-                  await NavigationUtils.navigateHome(context);
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: const Text(
-                  'Exit and Lose Progress',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-        ],
+      builder: (dialogContext) => TestExitConfirmationDialog(
+        onContinue: () {
+          _resumeTestFromDialog();
+        },
+        onRestart: () {
+          _restartCurrentTest();
+        },
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
+        },
       ),
     ).then((_) {
       if (mounted && _isPausedForExit) {
@@ -1299,27 +1219,43 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         ? '${_currentDistance.toStringAsFixed(0)}cm'
         : 'Searching...';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: indicatorColor, width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.straighten, size: 14, color: indicatorColor),
-          const SizedBox(width: 4),
-          Text(
-            distanceText,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: indicatorColor,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: indicatorColor.withOpacity(0.5),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.straighten, size: 14, color: indicatorColor),
+              const SizedBox(width: 4),
+              Text(
+                distanceText,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: indicatorColor,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1528,42 +1464,40 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       statusColor = AppColors.warning;
     }
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Responsive Status Label
-        Text(
-          statusLabel,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: labelFontSize,
-            fontWeight: FontWeight.w900,
-            color: statusColor,
-            letterSpacing: 2,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: statusColor.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-        ),
-        const SizedBox(height: 20),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Responsive Status Label
+          Text(
+            statusLabel,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: labelFontSize,
+              fontWeight: FontWeight.w900,
+              color: statusColor,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 16),
 
-        // Responsive Distance Value
-        if (!noFaceFound)
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.08,
-              vertical: screenWidth * 0.03,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(screenWidth * 0.08),
-              boxShadow: [
-                BoxShadow(
-                  color: statusColor.withOpacity(0.15),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-              border: Border.all(color: statusColor.withOpacity(0.2), width: 2),
-            ),
-            child: Row(
+          // Responsive Distance Value
+          if (!noFaceFound)
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
@@ -1581,18 +1515,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   style: TextStyle(
                     fontSize: labelFontSize * 1.5,
                     fontWeight: FontWeight.w800,
-                    color: statusColor.withOpacity(0.5),
+                    color: statusColor.withOpacity(0.7),
                   ),
                 ),
               ],
             ),
-          ),
 
-        const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
-        // Action Hint
-        _buildActionHint(isCorrect, isTooClose, isTooFar),
-      ],
+          // Action Hint
+          _buildActionHint(isCorrect, isTooClose, isTooFar),
+        ],
+      ),
     );
   }
 

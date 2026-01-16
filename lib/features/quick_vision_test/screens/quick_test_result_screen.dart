@@ -14,6 +14,7 @@ import 'package:visiaxx/core/services/pdf_export_service.dart';
 import 'package:visiaxx/core/utils/ui_utils.dart';
 import 'package:visiaxx/core/utils/snackbar_utils.dart';
 import 'package:visiaxx/core/utils/navigation_utils.dart';
+import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
 import 'package:visiaxx/core/widgets/download_success_dialog.dart';
 import 'package:visiaxx/data/models/test_result_model.dart';
 import 'package:visiaxx/data/providers/test_session_provider.dart';
@@ -224,8 +225,29 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         if (isHistorical) {
           Navigator.pop(context);
         } else {
-          // Navigate away FIRST, then reset provider to avoid showing null data
-          _navigateHome().then((_) => provider.reset());
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) => TestExitConfirmationDialog(
+              onContinue: () {
+                // Just close the dialog
+              },
+              onRestart: () {
+                provider.reset();
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/quick-test',
+                  (route) => false,
+                );
+              },
+              onExit: () async {
+                await _navigateHome();
+                if (mounted) {
+                  provider.reset();
+                }
+              },
+            ),
+          );
         }
       },
       child: Scaffold(
@@ -494,7 +516,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1), // ⚡ Soft background
+                  color: AppColors.primary.withOpacity(
+                    0.1,
+                  ), // ⚡ Soft background
                   shape: BoxShape.circle,
                 ),
                 child: CircleAvatar(
@@ -1742,8 +1766,6 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildActionButtons(TestSessionProvider provider) {
-    final isHistorical = widget.historicalResult != null;
-
     return Column(
       children: [
         // Primary action - Download PDF
@@ -1788,12 +1810,57 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
 
-        // Secondary actions - Shared and Logs
+        // Start Full Eye Exam (Continue action)
+        ElevatedButton.icon(
+          onPressed: () {
+            provider.reset();
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/comprehensive-test',
+              (route) => false,
+            );
+          },
+          icon: const Icon(Icons.assessment_rounded),
+          label: const Text('Start Full Eye Exam'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.white,
+            minimumSize: const Size(double.infinity, 54),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Restart Current Test
+        OutlinedButton.icon(
+          onPressed: () {
+            provider.reset();
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/quick-test',
+              (route) => false,
+            );
+          },
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Restart Test'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.warning,
+            minimumSize: const Size(double.infinity, 54),
+            side: const BorderSide(color: AppColors.warning, width: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Sharing Row
         Row(
           children: [
-            // Share button
             Expanded(
               child: _buildSecondaryButton(
                 onPressed: _isGeneratingPdf
@@ -1808,71 +1875,38 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       },
                 icon: Icons.ios_share_rounded,
                 label: 'Share',
-                color: AppColors.primary, // Indigo
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(width: 12),
-
-            // History button
-            if (!isHistorical) ...[
-              Expanded(
-                child: _buildSecondaryButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/my-results');
-                  },
-                  icon: Icons.history_rounded,
-                  label: 'History',
-                  color: AppColors.secondary, // Violet
-                ),
-              ),
-              const SizedBox(width: 12),
-            ],
-
-            // Logs button
             Expanded(
               child: _buildSecondaryButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/speech-logs');
+                  Navigator.pushNamed(context, '/my-results');
                 },
-                icon: Icons.terminal_rounded,
-                label: 'Logs',
-                color: AppColors.textTertiary, // Slate
+                icon: Icons.history_rounded,
+                label: 'History',
+                color: AppColors.secondary,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 12),
 
-        // Retake test
-        TextButton(
+        // Back to Home
+        ElevatedButton.icon(
           onPressed: () {
-            provider.reset();
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/quick-test',
-              (route) => false,
-            );
+            _navigateHome().then((_) => provider.reset());
           },
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          icon: const Icon(Icons.home_rounded),
+          label: const Text('Back to Home'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.grey.withOpacity(0.1),
+            foregroundColor: AppColors.primary,
+            minimumSize: const Size(double.infinity, 54),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.refresh_rounded, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                isHistorical ? 'Start New Test' : 'Retake Full Test',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
           ),
         ),
       ],
@@ -2190,11 +2224,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Widget _buildNewStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(
-          icon,
-          size: 18,
-          color: AppColors.textSecondary.withOpacity(0.6),
-        ),
+        Icon(icon, size: 18, color: AppColors.textSecondary.withOpacity(0.6)),
         const SizedBox(height: 6),
         Text(
           value,
@@ -2277,9 +2307,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             decoration: BoxDecoration(
               color: AppColors.warning.withOpacity(0.05),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: AppColors.warning.withOpacity(0.2),
-              ),
+              border: Border.all(color: AppColors.warning.withOpacity(0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2373,9 +2401,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.divider.withOpacity(0.5),
-                ),
+                border: Border.all(color: AppColors.divider.withOpacity(0.5)),
               ),
               child: Row(
                 children: [
@@ -2655,10 +2681,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             offset: const Offset(0, 12),
           ),
         ],
-        border: Border.all(
-          color: AppColors.success.withOpacity(0.2),
-          width: 2,
-        ),
+        border: Border.all(color: AppColors.success.withOpacity(0.2), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

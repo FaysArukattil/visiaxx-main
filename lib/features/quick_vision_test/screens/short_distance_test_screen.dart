@@ -14,6 +14,7 @@ import '../../../core/services/distance_detection_service.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/short_distance_result.dart';
 import '../../../core/services/distance_skip_manager.dart';
+import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/utils/navigation_utils.dart';
 
 /// Short distance reading test - both eyes open, 40cm distance
@@ -223,97 +224,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(
-              Icons.pause_circle_outline,
-              color: AppColors.primary,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Test Paused',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              reason == 'minimized'
-                  ? 'The test was paused because the app was minimized.'
-                  : 'What would you like to do?',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Continue Test - Primary action
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _resumeTestFromDialog();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Continue Test',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Restart Current Test
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _restartCurrentTest();
-                },
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.warning),
-                  foregroundColor: AppColors.warning,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Restart Current Test',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Exit Test
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(dialogContext);
-                  await NavigationUtils.navigateHome(context);
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: const Text(
-                  'Exit and Lose Progress',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-        ],
+      builder: (dialogContext) => TestExitConfirmationDialog(
+        onContinue: () {
+          _resumeTestFromDialog();
+        },
+        onRestart: () {
+          _restartCurrentTest();
+        },
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
+        },
       ),
     ).then((_) {
       if (mounted && _isPausedForExit) {

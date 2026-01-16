@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../data/models/pelli_robson_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 class PelliRobsonResultScreen extends StatefulWidget {
   const PelliRobsonResultScreen({super.key});
@@ -54,66 +55,20 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(
-              Icons.pause_circle_outline,
-              color: AppColors.primary,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Test Paused',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: const Text(
-          'What would you like to do?',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _resumeFromDialog();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Continue to Mobile Refractometry',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(dialogContext);
-                  await NavigationUtils.navigateHome(context);
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: const Text(
-                  'Exit and Lose Progress',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-        ],
+      builder: (dialogContext) => TestExitConfirmationDialog(
+        onContinue: () {
+          _resumeFromDialog();
+        },
+        onRestart: () {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/pelli-robson-test',
+            (route) => false,
+          );
+        },
+        onExit: () async {
+          await NavigationUtils.navigateHome(context);
+        },
       ),
     ).then((_) {
       if (mounted && _isPausedForExit) {
