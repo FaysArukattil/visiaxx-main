@@ -357,13 +357,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     _ttsService.speakEyeInstruction(_currentEye);
   }
 
-  void _onPanStart(DragStartDetails details) {
-    _addDistortionPoint(details.localPosition, isStrokeStart: true);
-  }
 
-  void _onPanUpdate(DragUpdateDetails details) {
-    _addDistortionPoint(details.localPosition, isStrokeStart: false);
-  }
 
   void _addDistortionPoint(Offset position, {bool isStrokeStart = false}) {
     final point = DistortionPoint(
@@ -883,51 +877,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     );
   }
 
-  Widget _buildCompactDistanceIndicator() {
-    final indicatorColor = DistanceHelper.getDistanceColor(
-      _currentDistance,
-      40.0,
-      testType: 'amsler_grid',
-    );
-
-    final distanceText = _currentDistance > 0
-        ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : '...';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: indicatorColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: indicatorColor.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: indicatorColor,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            distanceText,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: indicatorColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildTestView() {
     final currentPoints = _currentEye == 'right'
@@ -1110,56 +1059,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   const SizedBox(width: 12),
                   // Continue Button (keep existing code)
                   Expanded(
-                    child: SizedBox(
-                      height: 52,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: _completeCurrentEye,
-                          borderRadius: BorderRadius.circular(14),
-                          splashColor: AppColors.white.withValues(alpha: 0.3),
-                          highlightColor: AppColors.white.withValues(
-                            alpha: 0.15,
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.primary, Color(0xFF005FCC)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _currentEye == 'right'
-                                        ? 'Continue'
-                                        : 'Complete Test',
-                                    style: const TextStyle(
-                                      color: AppColors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 15,
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    child: _ContinueButton(
+                      label: _currentEye == 'right'
+                          ? 'Continue'
+                          : 'Complete Test',
+                      onTap: _completeCurrentEye,
                     ),
                   ),
                 ],
@@ -1180,13 +1084,16 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => setState(() => _markingMode = mode),
+        onTap: () {
+          HapticFeedback.mediumImpact(); // ✅ Instant haptic feedback
+          setState(() => _markingMode = mode);
+        },
         borderRadius: BorderRadius.circular(10),
-        splashColor: color.withValues(alpha: 0.3),
-        highlightColor: color.withValues(alpha: 0.15),
+        splashColor: color.withValues(alpha: 0.4),
+        highlightColor: color.withValues(alpha: 0.2),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOutCubicEmphasized, // ✅ Premium curve
+          duration: const Duration(milliseconds: 200), // ✅ Reduced from 300ms
+          curve: Curves.easeOutCubic, // ✅ Faster, more responsive curve
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             gradient: isSelected
@@ -1222,8 +1129,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             children: [
               AnimatedScale(
                 scale: isSelected ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOutCubicEmphasized,
+                duration: const Duration(milliseconds: 200), // ✅ Reduced
+                curve: Curves.easeOutCubic, // ✅ Faster curve
                 child: Icon(
                   icon,
                   size: 16,
@@ -1233,8 +1140,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               const SizedBox(width: 6),
               Flexible(
                 child: AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOutCubicEmphasized,
+                  duration: const Duration(milliseconds: 200), // ✅ Reduced
+                  curve: Curves.easeOutCubic,
                   style: TextStyle(
                     fontSize: 11,
                     color: isSelected ? AppColors.white : color,
@@ -1259,39 +1166,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }) {
     return Tooltip(
       message: tooltip,
-      child: SizedBox(
-        width: 52,
-        height: 52,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            splashColor: color.withValues(alpha: 0.3),
-            highlightColor: color.withValues(alpha: 0.15),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOutCubicEmphasized,
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: color.withValues(alpha: 0.3),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Center(child: Icon(icon, color: color, size: 22)),
-            ),
-          ),
-        ),
-      ),
+      child: _ActionButton(icon: icon, onTap: onTap, color: color),
     );
   }
 
@@ -1331,13 +1206,16 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact(); // ✅ Instant haptic
+          onTap();
+        },
         borderRadius: BorderRadius.circular(12),
-        splashColor: AppColors.primary.withValues(alpha: 0.3),
-        highlightColor: AppColors.primary.withValues(alpha: 0.15),
+        splashColor: AppColors.primary.withValues(alpha: 0.4),
+        highlightColor: AppColors.primary.withValues(alpha: 0.2),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOutCubicEmphasized,
+          duration: const Duration(milliseconds: 150), // ✅ Faster (was 300ms)
+          curve: Curves.easeOut, // ✅ More responsive curve
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
           decoration: BoxDecoration(
             gradient: selected
@@ -1366,8 +1244,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 : [],
           ),
           child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOutCubicEmphasized,
+            duration: const Duration(milliseconds: 150), // ✅ Faster
+            curve: Curves.easeOut,
             style: TextStyle(
               color: selected ? AppColors.white : AppColors.textSecondary,
               fontWeight: FontWeight.w800,
@@ -1717,95 +1595,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     );
   }
 
-  Widget _buildDistanceIndicator() {
-    final indicatorColor = DistanceHelper.getDistanceColor(
-      _currentDistance,
-      40.0,
-      testType: 'amsler_grid',
-    );
-
-    final distanceText = _currentDistance > 0
-        ? '${_currentDistance.toStringAsFixed(0)}cm'
-        : 'Searching...';
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.white.withValues(alpha: 0.15),
-                AppColors.white.withValues(alpha: 0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: indicatorColor.withValues(alpha: 0.3),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: indicatorColor.withValues(alpha: 0.1),
-                blurRadius: 12,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Pulse-like status circle
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: indicatorColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: indicatorColor.withValues(alpha: 0.6),
-                      blurRadius: 6,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'DISTANCE',
-                    style: TextStyle(
-                      fontSize: 8,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w900,
-                      color: indicatorColor.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  Text(
-                    distanceText,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: indicatorColor,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _AmslerGridPainter extends CustomPainter {
@@ -1909,4 +1698,222 @@ class AmslerGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant AmslerGridPainter oldDelegate) => true;
+}
+
+/// Stateful button with press animation and haptic feedback
+class _ActionButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color color;
+
+  const _ActionButton({
+    required this.icon,
+    required this.onTap,
+    required this.color,
+  });
+
+  @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.92,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _controller.forward();
+    HapticFeedback.mediumImpact(); // ✅ Instant haptic
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+    widget.onTap();
+  }
+
+  void _handleTapCancel() {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100), // ✅ Fast response
+          curve: Curves.easeOut,
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: _isPressed
+                ? widget.color.withValues(alpha: 0.12) // ✅ Fill on press
+                : AppColors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _isPressed
+                  ? widget.color.withValues(alpha: 0.5)
+                  : widget.color.withValues(alpha: 0.3),
+              width: _isPressed ? 2.0 : 1.5,
+            ),
+            boxShadow: _isPressed
+                ? [] // ✅ No shadow when pressed
+                : [
+                    BoxShadow(
+                      color: widget.color.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Center(
+            child: AnimatedScale(
+              scale: _isPressed ? 0.85 : 1.0, // ✅ Icon scales down
+              duration: const Duration(milliseconds: 100),
+              curve: Curves.easeOut,
+              child: Icon(widget.icon, color: widget.color, size: 22),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Stateful Continue button with premium press animation
+class _ContinueButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _ContinueButton({required this.label, required this.onTap});
+
+  @override
+  State<_ContinueButton> createState() => _ContinueButtonState();
+}
+
+class _ContinueButtonState extends State<_ContinueButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _controller.forward();
+    HapticFeedback.mediumImpact();
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+    widget.onTap();
+  }
+
+  void _handleTapCancel() {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+          height: 52,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: _isPressed
+                  ? [
+                      const Color(0xFF005FCC),
+                      const Color(0xFF004A99),
+                    ] // ✅ Darker when pressed
+                  : [AppColors.primary, const Color(0xFF005FCC)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: _isPressed
+                ? [] // ✅ No shadow when pressed
+                : [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+          ),
+          child: Center(
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                color: AppColors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                letterSpacing: 0.3,
+                shadows: _isPressed
+                    ? null
+                    : [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 2,
+                        ),
+                      ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
