@@ -76,9 +76,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   int _readingCountdown = 35;
   Timer? _readingCountdownTimer;
 
-  Timer? _autoNavigationTimer;
-  bool _isNavigatingToNextTest = false;
-
   @override
   void initState() {
     super.initState();
@@ -92,7 +89,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     WidgetsBinding.instance.removeObserver(this);
     _readingCountdownTimer?.cancel();
     _listeningTimer?.cancel();
-    _autoNavigationTimer?.cancel();
     _speechService.dispose();
     _ttsService.dispose();
     _distanceService.stopMonitoring();
@@ -447,23 +443,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     final provider = context.read<TestSessionProvider>();
     provider.setShortDistanceResult(result);
 
-    _navigateToColorVision();
-  }
-
-  void _navigateToColorVision() {
-    if (_isNavigatingToNextTest) return;
-    _isNavigatingToNextTest = true;
-
-    final provider = Provider.of<TestSessionProvider>(context, listen: false);
-
-    // If this is an individual test, go to results
-    if (provider.isIndividualTest) {
-      Navigator.pushReplacementNamed(context, '/quick-test-result');
-      return;
+    // Navigate to intermediate result screen
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/short-distance-quick-result');
     }
-
-    // Otherwise continue to color vision test
-    Navigator.pushReplacementNamed(context, '/color-vision-test');
   }
 
   @override

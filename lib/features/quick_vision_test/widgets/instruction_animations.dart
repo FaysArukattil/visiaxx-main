@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
 
@@ -199,7 +199,7 @@ class _IshiharaIntroAnimationState extends State<IshiharaIntroAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 100 : 150;
+    double size = widget.isCompact ? 180 : 250;
     return Center(
       child: AnimatedBuilder(
         animation: _controller,
@@ -1381,7 +1381,6 @@ class _ReadAloudAnimationState extends State<ReadAloudAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 100 : 150;
     return Center(
       child: AnimatedBuilder(
         animation: _controller,
@@ -1487,7 +1486,6 @@ class _KeyboardTypingAnimationState extends State<KeyboardTypingAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 100 : 150;
     return Center(
       child: AnimatedBuilder(
         animation: _controller,
