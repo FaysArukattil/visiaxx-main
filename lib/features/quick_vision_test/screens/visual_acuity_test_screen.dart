@@ -1231,14 +1231,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               DistanceWarningOverlay(
                 isVisible:
                     _isDistanceOk == false &&
-                    _waitingForResponse &&
+                    (_waitingForResponse || _showRelaxation) &&
                     !_isCalibrationActive,
                 status: _distanceStatus,
                 currentDistance: _currentDistance,
                 targetDistance: 100.0,
                 onSkip: () {
                   _skipManager.recordSkip(DistanceTestType.visualAcuity);
-                  setState(() => _isDistanceOk = true);
+                  _resumeTestAfterDistance();
                 },
               ),
             ],

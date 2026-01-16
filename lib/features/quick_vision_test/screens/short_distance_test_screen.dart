@@ -16,6 +16,7 @@ import '../../../data/models/short_distance_result.dart';
 import '../../../core/services/distance_skip_manager.dart';
 import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/widgets/distance_warning_overlay.dart';
+import 'dart:math' as math;
 
 /// Short distance reading test - both eyes open, 40cm distance
 class ShortDistanceTestScreen extends StatefulWidget {
@@ -48,7 +49,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   final List<SentenceResponse> _results = [];
 
   // Display states
-  bool _showSentence = false;
   bool _waitingForResponse = false;
   bool _showResult = false;
   bool _testComplete = false;
@@ -56,6 +56,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   // Voice recognition
   bool _isListening = false;
+  bool _isSpeechActive = false;
   Timer? _speechActiveTimer;
   String? _recognizedText;
   Timer? _listeningTimer;
@@ -76,7 +77,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   Timer? _autoNavigationTimer;
   bool _isNavigatingToNextTest = false;
-  int _secondsRemaining = 5;
 
   @override
   void initState() {
@@ -115,6 +115,21 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   Future<void> _initServices() async {
     await _ttsService.initialize();
     await _speechService.initialize();
+
+    _ttsService.onSpeakingStateChanged = (isSpeaking) {
+      if (!mounted) return;
+      if (isSpeaking) {
+        if (_isListening) {
+          _speechService.stopListening();
+        }
+      } else if (_waitingForResponse &&
+          !_showResult &&
+          !_testComplete &&
+          !_isPausedForExit) {
+        _startListening();
+      }
+    };
+
     _showNextSentence();
   }
 
@@ -169,7 +184,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         },
         onExit: () {
           _distanceService.stopMonitoring();
-          Navigator.of(context).pop(); // Exit screen
+          Navigator.of(context).pop();
         },
       ),
     );
@@ -180,7 +195,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       _currentScreen = 0;
       _correctCount = 0;
       _results.clear();
-      _showSentence = false;
       _waitingForResponse = false;
       _showResult = false;
       _testComplete = false;
@@ -195,7 +209,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     }
 
     setState(() {
-      _showSentence = true;
       _waitingForResponse = true;
       _showResult = false;
       _recognizedText = null;
@@ -205,6 +218,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     });
 
     _startReadingCountdown();
+
+    String textToSpeak =
+        'Level ${_currentScreen + 1}. Please read the sentence aloud.';
+    _ttsService.speak(textToSpeak);
   }
 
   void _startReadingCountdown() {
@@ -231,7 +248,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     if (!_waitingForResponse) {
       return;
     }
-    _processSentence(''); // Treat as skip/incorrect
+    _processSentence('');
   }
 
   void _startListening() async {
@@ -252,13 +269,22 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       };
       _speechService.onSpeechDetected = (text) {
         if (mounted) {
-          setState(() => _recognizedText = text);
+          setState(() {
+            _recognizedText = text;
+            _isSpeechActive = true;
+          });
+
+          _speechActiveTimer?.cancel();
+          _speechActiveTimer = Timer(const Duration(milliseconds: 500), () {
+            if (mounted) setState(() => _isSpeechActive = false);
+          });
         }
       };
       _speechService.onError = (error) {
         if (mounted) {
           setState(() {
             _isListening = false;
+            _isSpeechActive = false;
             _recognizedText = 'Speech Error: $error';
           });
         }
@@ -266,7 +292,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
       await _speechService.startListening();
 
-      // Timeout if nothing recognized for a while
       _listeningTimer?.cancel();
       _listeningTimer = Timer(const Duration(seconds: 15), () {
         if (_isListening && mounted) {
@@ -281,18 +306,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     if (!mounted || !_waitingForResponse) {
       return;
     }
-
-    setState(() {
-      _recognizedText = text;
-    });
-
-    // Reset speech active indicator after delay
-    _speechActiveTimer?.cancel();
-    _speechActiveTimer = Timer(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {});
-      }
-    });
 
     if (isFinal && text.trim().isNotEmpty) {
       _processSentence(text);
@@ -309,7 +322,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
     final sentence = TestConstants.shortDistanceSentences[_currentScreen];
 
-    // Handle "blurry" or "can't see"
     bool isBlurry =
         userSaid.toLowerCase().contains('blurry') ||
         userSaid.toLowerCase().contains("can't read") ||
@@ -372,7 +384,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       _lastResultCorrect = isCorrect;
     });
 
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 1000), () {
       if (!mounted) {
         return;
       }
@@ -384,8 +396,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   void _completeTest() {
     setState(() {
       _testComplete = true;
-      _showSentence = false;
-      _secondsRemaining = 5;
     });
 
     String bestAcuity = '6/60';
@@ -415,7 +425,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       totalSentences: TestConstants.shortDistanceSentences.length,
       averageSimilarity: avgSimilarity,
       bestAcuity: bestAcuity,
-      durationSeconds: 0, // Mock for now
+      durationSeconds: 0,
       responses: _results,
       status: status,
     );
@@ -423,28 +433,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     final provider = context.read<TestSessionProvider>();
     provider.setShortDistanceResult(result);
 
-    _startAutoNavigationTimer();
-  }
-
-  void _startAutoNavigationTimer() {
-    _autoNavigationTimer?.cancel();
-    setState(() => _secondsRemaining = 5);
-    _autoNavigationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        if (_secondsRemaining > 0) {
-          _secondsRemaining--;
-        } else {
-          timer.cancel();
-          if (!_isNavigatingToNextTest) {
-            _navigateToColorVision();
-          }
-        }
-      });
-    });
+    _navigateToColorVision();
   }
 
   void _navigateToColorVision() {
@@ -471,40 +460,44 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       child: Scaffold(
         backgroundColor: AppColors.white,
         body: SafeArea(
-          child: Stack(
+          child: Column(
             children: [
-              Column(
-                children: [
-                  _buildTopBar(),
-                  Expanded(
-                    child: Center(
-                      child: _showSentence
-                          ? _buildSentenceView()
-                          : const EyeLoader(),
+              _buildTopBar(),
+              Expanded(
+                child: Stack(
+                  children: [
+                    SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 40),
+                          _buildSentenceView(),
+                          const SizedBox(height: 40),
+                          _buildControls(),
+                          const SizedBox(height: 100),
+                        ],
+                      ),
                     ),
-                  ),
-                  _buildControls(),
-                ],
-              ),
-
-              // âœ… UNIVERSAL Distance warning overlay
-              DistanceWarningOverlay(
-                isVisible: !_isDistanceOk && _waitingForResponse,
-                status: _distanceStatus,
-                currentDistance: _currentDistance,
-                targetDistance: 40.0,
-                onSkip: () {
-                  _skipManager.recordSkip(DistanceTestType.shortDistance);
-                  setState(() => _isDistanceOk = true);
-                },
-              ),
-
-              // Feedback Overlay
-              if (_showResult)
-                TestFeedbackOverlay(
-                  isCorrect: _lastResultCorrect,
-                  label: _lastResultCorrect ? 'EXCELLENT' : 'NOT CLEAR',
+                    DistanceWarningOverlay(
+                      isVisible: !_isDistanceOk && _waitingForResponse,
+                      status: _distanceStatus,
+                      currentDistance: _currentDistance,
+                      targetDistance: 40.0,
+                      onSkip: () {
+                        _skipManager.recordSkip(DistanceTestType.shortDistance);
+                        setState(() => _isDistanceOk = true);
+                      },
+                    ),
+                    if (_showResult)
+                      Positioned.fill(
+                        child: TestFeedbackOverlay(
+                          isCorrect: _lastResultCorrect,
+                          label: _lastResultCorrect ? 'EXCELLENT' : 'NOT CLEAR',
+                        ),
+                      ),
+                  ],
                 ),
+              ),
             ],
           ),
         ),
@@ -514,77 +507,78 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   Widget _buildTopBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: _showExitConfirmation,
           ),
-          // Grouped Chips
+          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(32),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: ShapeDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'LEVEL ${_currentScreen + 1}/${TestConstants.shortDistanceSentences.length}',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w900,
+                fontSize: 11,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: ShapeDecoration(
+              color:
+                  (_readingCountdown < 10 ? AppColors.error : AppColors.primary)
+                      .withValues(alpha: 0.08),
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _buildChip(
-                  icon: Icons.timer_outlined,
-                  label: '${_readingCountdown}s',
+                Icon(
+                  Icons.timer_outlined,
+                  size: 14,
                   color: _readingCountdown < 10
                       ? AppColors.error
                       : AppColors.primary,
                 ),
                 const SizedBox(width: 4),
-                _buildChip(
-                  icon: Icons.auto_graph,
-                  label:
-                      '${_currentScreen + 1}/${TestConstants.shortDistanceSentences.length}',
-                  color: AppColors.textSecondary,
+                Text(
+                  '${_readingCountdown}s',
+                  style: TextStyle(
+                    color: _readingCountdown < 10
+                        ? AppColors.error
+                        : AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
           ),
+          const Spacer(),
           _buildDistanceMiniIndicator(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
         ],
       ),
     );
@@ -638,30 +632,78 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: sentence.fontSize,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
               height: 1.4,
               letterSpacing: 0.2,
             ),
           ),
-          if (_recognizedText != null) ...[
+          const SizedBox(height: 24),
+          Text(
+            'Read the sentence aloud or type below',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (_isListening ||
+              (_recognizedText != null &&
+                  _recognizedText != 'Listening...')) ...[
             const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.black.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                _recognizedText!,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                  fontStyle: FontStyle.italic,
+            if (_isListening &&
+                (_recognizedText == null || _recognizedText == 'Listening...'))
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _SpeechWaveform(
+                      isListening: _isListening,
+                      isTalking: _isSpeechActive,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Listening...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+            if (_recognizedText != null && _recognizedText != 'Listening...')
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.black.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  _recognizedText!,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
           ],
         ],
       ),
@@ -700,14 +742,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildLargeActionButton(
-                icon: Icons.mic_rounded,
-                label: _isListening ? 'LISTENING' : 'VOICE',
-                isActive: _isListening,
-                color: AppColors.primary,
-                onTap: _startListening,
-              ),
-              const SizedBox(width: 16),
-              _buildLargeActionButton(
                 icon: Icons.keyboard_rounded,
                 label: 'KEYBOARD',
                 isActive: _showKeyboard,
@@ -716,6 +750,14 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                   setState(() => _showKeyboard = !_showKeyboard);
                   if (_showKeyboard) _inputFocusNode.requestFocus();
                 },
+              ),
+              const SizedBox(width: 16),
+              _buildLargeActionButton(
+                icon: Icons.mic_rounded,
+                label: _isListening ? 'LISTENING' : 'VOICE',
+                isActive: _isListening,
+                color: AppColors.primary,
+                onTap: _startListening,
               ),
               const SizedBox(width: 16),
               _buildLargeActionButton(
@@ -744,25 +786,28 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        width: 100,
+        height: 80,
         decoration: BoxDecoration(
           color: isActive ? color : color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isActive ? color : color.withValues(alpha: 0.2),
+            width: 2,
           ),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: isActive ? AppColors.white : color),
+            Icon(icon, color: isActive ? AppColors.white : color, size: 28),
             const SizedBox(height: 8),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: FontWeight.w900,
                 color: isActive ? AppColors.white : color,
+                letterSpacing: 0.5,
               ),
             ),
           ],
@@ -772,54 +817,90 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   }
 
   Widget _buildTestCompleteView() {
-    return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const EyeLoader(color: AppColors.white, size: 80),
-            const SizedBox(height: 32),
-            const Text(
-              'READING TEST COMPLETE',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                color: AppColors.white,
-                letterSpacing: 1,
-              ),
+    return const Scaffold(
+      backgroundColor: AppColors.white,
+      body: Center(child: EyeLoader(size: 80)),
+    );
+  }
+}
+
+class _SpeechWaveform extends StatefulWidget {
+  final bool isListening;
+  final bool isTalking;
+  final Color color;
+
+  const _SpeechWaveform({
+    required this.isListening,
+    required this.isTalking,
+    required this.color,
+  });
+
+  @override
+  State<_SpeechWaveform> createState() => _SpeechWaveformState();
+}
+
+class _SpeechWaveformState extends State<_SpeechWaveform>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shouldAnimate = widget.isListening || widget.isTalking;
+
+    if (!shouldAnimate) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(
+          3,
+          (i) => Container(
+            width: 3,
+            height: 8,
+            margin: const EdgeInsets.symmetric(horizontal: 1),
+            decoration: BoxDecoration(
+              color: widget.color.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(2),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Navigating in ${_secondsRemaining}s...',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.white.withValues(alpha: 0.8),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 48),
-            ElevatedButton(
-              onPressed: _navigateToColorVision,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.white,
-                foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 20,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: const Text(
-                'CONTINUE NOW',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) {
+            final phase = (index * 0.3) + _controller.value;
+            final height =
+                4.0 + (10.0 * (0.5 + 0.5 * math.sin(phase * 2 * math.pi)));
+            return Container(
+              width: 3,
+              height: height,
+              margin: const EdgeInsets.symmetric(horizontal: 1),
+              decoration: BoxDecoration(
+                color: widget.color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

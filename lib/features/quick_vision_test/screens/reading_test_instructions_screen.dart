@@ -149,10 +149,7 @@ class _ReadingTestInstructionsScreenState
                       'Read Aloud',
                       'Read the text displayed on the screen clearly into the microphone.',
                       AppColors.success,
-                      animation: const StayFocusedAnimation(
-                        isCompact: true,
-                        color: AppColors.success,
-                      ),
+                      animation: const ReadAloudAnimation(isCompact: true),
                     ),
                     _buildStep(
                       2,
@@ -160,10 +157,7 @@ class _ReadingTestInstructionsScreenState
                       'Typing Option',
                       'If voice input is not working, you can type the sentence and tap Enter to submit.',
                       AppColors.warning,
-                      animation: const StayFocusedAnimation(
-                        isCompact: true,
-                        color: AppColors.warning,
-                      ),
+                      animation: const KeyboardTypingAnimation(isCompact: true),
                     ),
                   ],
                 ),
@@ -312,4 +306,3 @@ class _ReadingTestInstructionsScreenState
     );
   }
 }
-

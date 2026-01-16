@@ -332,7 +332,11 @@ class _MobileRefractometryTestScreenState
   }
 
   void _resumeTestAfterDistance() {
-    setState(() => _isTestPausedForDistance = false);
+    setState(() {
+      _isTestPausedForDistance = false;
+      _isDistanceOk = true;
+      _lastShouldPauseTime = null;
+    });
 
     // No need to restart distance monitoring as it's already running!
     // Re-initialization (via _startContinuousDistanceMonitoring) causes "Searching..." stall.
@@ -902,7 +906,8 @@ class _MobileRefractometryTestScreenState
               DistanceWarningOverlay(
                 isVisible:
                     _isDistanceOk == false &&
-                    _waitingForResponse &&
+                    (_waitingForResponse ||
+                        _currentPhase == RefractPhase.relaxation) &&
                     !_isCalibrationActive,
                 status: _distanceStatus,
                 currentDistance: _currentDistance,
@@ -913,7 +918,7 @@ class _MobileRefractometryTestScreenState
                         ? DistanceTestType.shortDistance
                         : DistanceTestType.mobileRefractometry,
                   );
-                  setState(() => _isDistanceOk = true);
+                  _resumeTestAfterDistance();
                 },
               ),
               // Distance indicator (bottom right corner) - MATCHES VA

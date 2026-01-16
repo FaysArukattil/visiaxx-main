@@ -42,11 +42,14 @@ class _LightingAnimationState extends State<LightingAnimation>
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.warning.withValues(alpha: 0.1 + (_controller.value * 0.1),
+              color: AppColors.warning.withValues(
+                alpha: 0.1 + (_controller.value * 0.1),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.warning.withValues(alpha: 0.2 * _controller.value),
+                  color: AppColors.warning.withValues(
+                    alpha: 0.2 * _controller.value,
+                  ),
                   blurRadius:
                       (widget.isCompact ? 15 : 20) + (20 * _controller.value),
                   spreadRadius:
@@ -57,7 +60,8 @@ class _LightingAnimationState extends State<LightingAnimation>
             child: Icon(
               Icons.wb_sunny_rounded,
               size: widget.isCompact ? 50 : 80,
-              color: AppColors.warning.withValues(alpha: 0.8 + (_controller.value * 0.2),
+              color: AppColors.warning.withValues(
+                alpha: 0.8 + (_controller.value * 0.2),
               ),
             ),
           );
@@ -231,7 +235,8 @@ class _IshiharaPainter extends CustomPainter {
           ? AppColors.success
           : (i % 3 == 1 ? AppColors.error : AppColors.warning);
 
-      paint.color = color.withValues(alpha: 0.5 + (0.5 * math.sin(progress * math.pi + i)),
+      paint.color = color.withValues(
+        alpha: 0.5 + (0.5 * math.sin(progress * math.pi + i)),
       );
 
       final radius =
@@ -304,7 +309,9 @@ class _StayFocusedAnimationState extends State<StayFocusedAnimation>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: widget.color.withValues(alpha: 1 - _controller.value),
+                    color: widget.color.withValues(
+                      alpha: 1 - _controller.value,
+                    ),
                     width: (widget.isCompact ? 2 : 3) + (5 * _controller.value),
                   ),
                 ),
@@ -1128,7 +1135,14 @@ class _AmslerPathwayPainter extends CustomPainter {
     _drawSunSource(canvas, sunPos, isCompact ? 30 : 40);
 
     // 3. Draw Light Rays
-    _drawLightRays(canvas, sunPos, eyeCenter, eyeRadius, sceneProgress, isNormal);
+    _drawLightRays(
+      canvas,
+      sunPos,
+      eyeCenter,
+      eyeRadius,
+      sceneProgress,
+      isNormal,
+    );
 
     // 4. Draw Perception Overlay (What the user sees)
     _drawPerceptionOverlay(
@@ -1155,17 +1169,23 @@ class _AmslerPathwayPainter extends CustomPainter {
     for (int i = 0; i < 8; i++) {
       double angle = (i * math.pi * 2) / 8;
       canvas.drawLine(
-        pos + Offset(math.cos(angle) * radius * 0.7, math.sin(angle) * radius * 0.7),
+        pos +
+            Offset(
+              math.cos(angle) * radius * 0.7,
+              math.sin(angle) * radius * 0.7,
+            ),
         pos + Offset(math.cos(angle) * radius, math.sin(angle) * radius),
         rayPaint,
       );
     }
-    
+
     // Subtle glow
     canvas.drawCircle(
-      pos, 
-      radius * 0.6, 
-      Paint()..color = Colors.amber.withValues(alpha: 0.3)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
+      pos,
+      radius * 0.6,
+      Paint()
+        ..color = Colors.amber.withValues(alpha: 0.3)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
     );
   }
 
@@ -1288,8 +1308,14 @@ class _AmslerPathwayPainter extends CustomPainter {
           pathH.lineTo(rect.left + tx * size, rect.top + i * step + dist);
           pathV.lineTo(rect.left + i * step + dist, rect.top + tx * size);
         }
-        canvas.drawPath(pathH, paint..color = paint.color.withValues(alpha: 0.7));
-        canvas.drawPath(pathV, paint..color = paint.color.withValues(alpha: 0.7));
+        canvas.drawPath(
+          pathH,
+          paint..color = paint.color.withValues(alpha: 0.7),
+        );
+        canvas.drawPath(
+          pathV,
+          paint..color = paint.color.withValues(alpha: 0.7),
+        );
       }
 
       // Add a "blind spot" or scotoma
@@ -1325,3 +1351,231 @@ class _AmslerPathwayPainter extends CustomPainter {
   bool shouldRepaint(covariant _AmslerPathwayPainter oldDelegate) => true;
 }
 
+/// Animation showing reading aloud into the microphone
+class ReadAloudAnimation extends StatefulWidget {
+  final bool isCompact;
+  const ReadAloudAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<ReadAloudAnimation> createState() => _ReadAloudAnimationState();
+}
+
+class _ReadAloudAnimationState extends State<ReadAloudAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double size = widget.isCompact ? 100 : 150;
+    return Center(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Text Box with "Reading" content
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  'Reading this aloud...',
+                  style: TextStyle(
+                    fontSize: widget.isCompact ? 14 : 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Mic and Waves
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.mic_rounded,
+                    size: widget.isCompact ? 30 : 40,
+                    color: AppColors.success,
+                  ),
+                  const SizedBox(width: 8),
+                  Row(
+                    children: List.generate(3, (index) {
+                      final waveProgress =
+                          (index * 0.2 + _controller.value) % 1.0;
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        width: 4,
+                        height: 8 + (12 * math.sin(waveProgress * math.pi)),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(
+                            alpha:
+                                0.4 + (0.6 * math.sin(waveProgress * math.pi)),
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Animation showing keyboard typing
+class KeyboardTypingAnimation extends StatefulWidget {
+  final bool isCompact;
+  const KeyboardTypingAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<KeyboardTypingAnimation> createState() =>
+      _KeyboardTypingAnimationState();
+}
+
+class _KeyboardTypingAnimationState extends State<KeyboardTypingAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final String _typedText = 'Typing some text...';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double size = widget.isCompact ? 100 : 150;
+    return Center(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          int charsToShow = (_controller.value * _typedText.length).toInt();
+          String displayText = _typedText.substring(0, charsToShow);
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Text Field simulation
+              Container(
+                width: 200,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primary, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      displayText,
+                      style: TextStyle(
+                        fontSize: widget.isCompact ? 12 : 14,
+                        color: AppColors.textPrimary,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    if (_controller.value % 0.5 < 0.25)
+                      Container(width: 2, height: 14, color: AppColors.primary),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Keyboard simulation
+              Container(
+                width: 180,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: List.generate(
+                    3,
+                    (row) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(row == 2 ? 6 : 7, (col) {
+                          // Highlight a random key in sync with typing
+                          bool isHot =
+                              (charsToShow > 0 &&
+                              (row * 7 + col) == (charsToShow * 7) % 20);
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: isHot
+                                  ? AppColors.primary
+                                  : AppColors.white,
+                              borderRadius: BorderRadius.circular(4),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.black.withValues(
+                                    alpha: 0.05,
+                                  ),
+                                  blurRadius: 1,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
