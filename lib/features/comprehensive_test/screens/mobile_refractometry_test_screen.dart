@@ -172,9 +172,9 @@ class _MobileRefractometryTestScreenState
   }
 
   void _handleAppResumed() {
-    if (!mounted || _currentPhase == RefractPhase.complete) return;
+    if (!mounted || _currentPhase == RefractPhase.calibration) return;
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted && _currentPhase != RefractPhase.complete) {
+      if (mounted && _currentPhase != RefractPhase.calibration) {
         _showPauseDialog(reason: 'minimized');
       }
     });
@@ -881,11 +881,16 @@ class _MobileRefractometryTestScreenState
               ),
               if (_isTestPausedForDistance) _buildDistanceWarningOverlay(),
               // Distance indicator (bottom right corner) - MATCHES VA
-              if (_currentPhase == RefractPhase.test &&
+              if ((_currentPhase == RefractPhase.test ||
+                      _currentPhase == RefractPhase.relaxation) &&
                   !_isTestPausedForDistance)
                 Positioned(
                   right: 12,
-                  bottom: _waitingForResponse ? 120 : 12,
+                  bottom: _waitingForResponse
+                      ? 120
+                      : (_currentPhase == RefractPhase.relaxation)
+                      ? 40 // Increased from 12 to 40 to avoid overlap
+                      : 12,
                   child: _buildDistanceIndicator(),
                 ),
             ],

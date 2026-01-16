@@ -83,10 +83,12 @@ class TestPauseHandler {
   }
 
   /// Show the standardized pause dialog
-  void showPauseDialog() {
+  void showPauseDialog({String? reason}) {
     if (_context == null) return;
 
     final testName = _getTestName?.call() ?? 'Test';
+    final description =
+        reason ?? 'The test was paused because the app was minimized.';
 
     showDialog(
       context: _context!,
@@ -140,7 +142,7 @@ class TestPauseHandler {
 
               // Description
               Text(
-                'The test was paused because the app was minimized.',
+                description,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,

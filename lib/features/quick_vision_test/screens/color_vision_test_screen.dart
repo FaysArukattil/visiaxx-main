@@ -104,9 +104,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _handleAppResumed() {
-    if (!mounted || _phase == TestPhase.complete) return;
+    if (!mounted || _phase == TestPhase.calibration) return;
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted && _phase != TestPhase.complete) {
+      if (mounted && _phase != TestPhase.calibration) {
         _showPauseDialog(reason: 'minimized');
       }
     });

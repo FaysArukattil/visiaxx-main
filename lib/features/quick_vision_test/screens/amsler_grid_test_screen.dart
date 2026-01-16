@@ -97,9 +97,9 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   void _handleAppResumed() {
-    if (!mounted || _testComplete) return;
+    if (!mounted || _showDistanceCalibration) return;
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted && !_testComplete && _testingStarted) {
+      if (mounted && !_showDistanceCalibration && _testingStarted) {
         _showPauseDialog(reason: 'minimized');
       }
     });

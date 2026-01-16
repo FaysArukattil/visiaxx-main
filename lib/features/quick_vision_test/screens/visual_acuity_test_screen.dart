@@ -164,11 +164,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _handleAppResumed() {
-    if (!mounted || _testComplete || _showDistanceCalibration) return;
+    if (!mounted || _showDistanceCalibration) return;
 
     // Show unified pause dialog
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted && !_testComplete && !_showDistanceCalibration) {
+      if (mounted && !_showDistanceCalibration) {
+        // If test is complete, we still show the pause dialog to be safe
+        // but maybe with a different reason or just standard minimized.
         _showPauseDialog(reason: 'minimized');
       }
     });
@@ -1182,7 +1184,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               if (_useDistanceMonitoring && !_showDistanceCalibration)
                 Positioned(
                   right: 12,
-                  bottom: _showE && _waitingForResponse ? 120 : 12,
+                  bottom: (_showE && _waitingForResponse)
+                      ? 120
+                      : (_showRelaxation || _testComplete)
+                      ? 40 // Increased from 12 to 40 to avoid overlap
+                      : 12,
                   child: _buildDistanceIndicator(),
                 ),
 

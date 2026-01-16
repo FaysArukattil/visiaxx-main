@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/questionnaire_model.dart';
 import '../../../data/providers/test_session_provider.dart';
-import '../../../core/utils/navigation_utils.dart';
+import '../../../core/services/test_pause_handler.dart';
 
 /// Pre-test questionnaire with dynamic follow-up questions
 class QuestionnaireScreen extends StatefulWidget {
@@ -13,7 +13,9 @@ class QuestionnaireScreen extends StatefulWidget {
   State<QuestionnaireScreen> createState() => _QuestionnaireScreenState();
 }
 
-class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
+class _QuestionnaireScreenState extends State<QuestionnaireScreen>
+    with WidgetsBindingObserver {
+  final TestPauseHandler _pauseHandler = TestPauseHandler();
   int _currentStep = 0;
 
   // Chief complaints
@@ -45,7 +47,36 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   final _lightSensitivityDetailController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    // Initialize pause handler
+    _pauseHandler.initialize(
+      context: context,
+      onPause: () {
+        debugPrint('[Questionnaire] ⏸️ Paused');
+      },
+      onResume: () {
+        debugPrint('[Questionnaire] ▶️ Resumed');
+      },
+      getTestName: () => 'Questionnaire',
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _pauseHandler.handleAppPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      _pauseHandler.handleAppResumed();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pauseHandler.dispose();
     _medicationsController.dispose();
     _surgeryDetailsController.dispose();
     _rednessController.dispose();
@@ -192,28 +223,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   }
 
   void _showExitConfirmation() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit Test?'),
-        content: const Text(
-          'Your progress will be lost. What would you like to do?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Continue Test'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              await NavigationUtils.navigateHome(context);
-            },
-            child: const Text('Exit', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
+    _pauseHandler.showPauseDialog(
+      reason: 'Are you sure you want to exit the questionnaire?',
     );
   }
 
@@ -246,7 +257,38 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        final isNext =
+                            (child.key as ValueKey).value >= _currentStep;
+                        return SlideTransition(
+                          position:
+                              Tween<Offset>(
+                                begin: Offset(isNext ? 1.0 : -1.0, 0.0),
+                                end: Offset.zero,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeInOut,
+                                ),
+                              ),
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                  layoutBuilder:
+                      (Widget? currentChild, List<Widget> previousChildren) {
+                        return Stack(
+                          alignment: Alignment.topCenter,
+                          children: <Widget>[
+                            ...previousChildren,
+                            if (currentChild != null) currentChild,
+                          ],
+                        );
+                      },
                   child: _buildCurrentStep(),
                 ),
               ),
