@@ -1,4 +1,5 @@
 ﻿import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:visiaxx/core/utils/app_logger.dart';
@@ -252,8 +253,21 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   }
 
   void _startListening() async {
-    if (_isListening || _isPausedForExit || !_isDistanceOk) {
+    if (_isPausedForExit || !_isDistanceOk) {
       return;
+    }
+
+    // If already listening, restart the session
+    if (_isListening) {
+      _speechService.stopListening();
+      _listeningTimer?.cancel();
+      setState(() {
+        _isListening = false;
+        _isSpeechActive = false;
+        _recognizedText = null;
+      });
+      // Small delay before restarting
+      await Future.delayed(const Duration(milliseconds: 100));
     }
 
     final available = await _speechService.initialize();
@@ -437,14 +451,19 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   }
 
   void _navigateToColorVision() {
-    if (_isNavigatingToNextTest || !mounted) return;
-    final provider = context.read<TestSessionProvider>();
-    setState(() => _isNavigatingToNextTest = true);
+    if (_isNavigatingToNextTest) return;
+    _isNavigatingToNextTest = true;
+
+    final provider = Provider.of<TestSessionProvider>(context, listen: false);
+
+    // If this is an individual test, go to results
     if (provider.isIndividualTest) {
       Navigator.pushReplacementNamed(context, '/quick-test-result');
-    } else {
-      Navigator.pushReplacementNamed(context, '/color-vision-test');
+      return;
     }
+
+    // Otherwise continue to color vision test
+    Navigator.pushReplacementNamed(context, '/color-vision-test');
   }
 
   @override
@@ -460,44 +479,53 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       child: Scaffold(
         backgroundColor: AppColors.white,
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              _buildTopBar(),
-              Expanded(
-                child: Stack(
-                  children: [
-                    SingleChildScrollView(
+              Column(
+                children: [
+                  _buildTopBar(),
+                  Expanded(
+                    child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 40),
-                          _buildSentenceView(),
-                          const SizedBox(height: 40),
-                          _buildControls(),
-                          const SizedBox(height: 100),
-                        ],
-                      ),
-                    ),
-                    DistanceWarningOverlay(
-                      isVisible: !_isDistanceOk && _waitingForResponse,
-                      status: _distanceStatus,
-                      currentDistance: _currentDistance,
-                      targetDistance: 40.0,
-                      onSkip: () {
-                        _skipManager.recordSkip(DistanceTestType.shortDistance);
-                        setState(() => _isDistanceOk = true);
-                      },
-                    ),
-                    if (_showResult)
-                      Positioned.fill(
-                        child: TestFeedbackOverlay(
-                          isCorrect: _lastResultCorrect,
-                          label: _lastResultCorrect ? 'EXCELLENT' : 'NOT CLEAR',
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 140),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 40),
+                            _buildSentenceView(),
+                            const SizedBox(height: 40),
+                          ],
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                  ),
+                ],
               ),
+              // Fixed bottom controls
+              Positioned(left: 0, right: 0, bottom: 0, child: _buildControls()),
+              // Distance indicator positioned over top bar
+              Positioned(
+                top: 12,
+                right: 16,
+                child: _buildDistanceMiniIndicator(),
+              ),
+              DistanceWarningOverlay(
+                isVisible: !_isDistanceOk && _waitingForResponse,
+                status: _distanceStatus,
+                currentDistance: _currentDistance,
+                targetDistance: 40.0,
+                onSkip: () {
+                  _skipManager.recordSkip(DistanceTestType.shortDistance);
+                  setState(() => _isDistanceOk = true);
+                },
+              ),
+              if (_showResult)
+                Positioned.fill(
+                  child: TestFeedbackOverlay(
+                    isCorrect: _lastResultCorrect,
+                    label: _lastResultCorrect ? 'EXCELLENT' : 'NOT CLEAR',
+                  ),
+                ),
             ],
           ),
         ),
@@ -578,38 +606,96 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
             ),
           ),
           const Spacer(),
-          _buildDistanceMiniIndicator(),
         ],
       ),
     );
   }
 
   Widget _buildDistanceMiniIndicator() {
-    final color = DistanceHelper.getDistanceColor(_currentDistance, 40.0);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${_currentDistance.toStringAsFixed(0)}cm',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              color: color,
+    final indicatorColor = DistanceHelper.getDistanceColor(
+      _currentDistance,
+      40.0,
+      testType: 'short_distance',
+    );
+    final distanceText = _currentDistance > 0
+        ? '${_currentDistance.toStringAsFixed(0)}cm'
+        : 'Searching...';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.white.withValues(alpha: 0.15),
+                AppColors.white.withValues(alpha: 0.05),
+              ],
             ),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: indicatorColor.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: indicatorColor.withValues(alpha: 0.1),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Pulse-like status circle
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: indicatorColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: indicatorColor.withValues(alpha: 0.6),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DISTANCE',
+                    style: TextStyle(
+                      fontSize: 8,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w900,
+                      color: indicatorColor.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  Text(
+                    distanceText,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: indicatorColor,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -712,7 +798,17 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   Widget _buildControls() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
         children: [
           if (_showKeyboard)
@@ -741,31 +837,37 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLargeActionButton(
-                icon: Icons.keyboard_rounded,
-                label: 'KEYBOARD',
-                isActive: _showKeyboard,
-                color: AppColors.textSecondary,
-                onTap: () {
-                  setState(() => _showKeyboard = !_showKeyboard);
-                  if (_showKeyboard) _inputFocusNode.requestFocus();
-                },
+              Flexible(
+                child: _buildLargeActionButton(
+                  icon: Icons.keyboard_rounded,
+                  label: 'KEYBOARD',
+                  isActive: _showKeyboard,
+                  color: AppColors.textSecondary,
+                  onTap: () {
+                    setState(() => _showKeyboard = !_showKeyboard);
+                    if (_showKeyboard) _inputFocusNode.requestFocus();
+                  },
+                ),
               ),
-              const SizedBox(width: 16),
-              _buildLargeActionButton(
-                icon: Icons.mic_rounded,
-                label: _isListening ? 'LISTENING' : 'VOICE',
-                isActive: _isListening,
-                color: AppColors.primary,
-                onTap: _startListening,
+              const SizedBox(width: 12),
+              Flexible(
+                child: _buildLargeActionButton(
+                  icon: Icons.mic_rounded,
+                  label: _isListening ? 'LISTENING' : 'VOICE',
+                  isActive: _isListening,
+                  color: AppColors.primary,
+                  onTap: _startListening,
+                ),
               ),
-              const SizedBox(width: 16),
-              _buildLargeActionButton(
-                icon: Icons.visibility_off_rounded,
-                label: 'BLURRY',
-                isActive: false,
-                color: AppColors.warning,
-                onTap: () => _processSentence('blurry'),
+              const SizedBox(width: 12),
+              Flexible(
+                child: _buildLargeActionButton(
+                  icon: Icons.visibility_off_rounded,
+                  label: 'BLURRY',
+                  isActive: false,
+                  color: AppColors.warning,
+                  onTap: () => _processSentence('blurry'),
+                ),
               ),
             ],
           ),
@@ -786,7 +888,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 100,
+        constraints: const BoxConstraints(minWidth: 90, maxWidth: 120),
         height: 80,
         decoration: BoxDecoration(
           color: isActive ? color : color.withValues(alpha: 0.1),

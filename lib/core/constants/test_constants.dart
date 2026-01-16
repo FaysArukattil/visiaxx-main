@@ -164,12 +164,12 @@ class TestConstants {
   static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(
       sentence: 'Clear vision',
-      fontSize: 65.0, // ✅ Snellen-accurate for 40cm and fits on one row
+      fontSize: 72.0, // ✅ Snellen-accurate for 40cm and fits on one row
       snellen: '6/60',
     ),
     ShortDistanceSentence(
       sentence: 'I can read this text',
-      fontSize: 72.0,
+      fontSize: 65.0,
       snellen: '6/36',
     ),
     ShortDistanceSentence(
