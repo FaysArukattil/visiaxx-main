@@ -160,6 +160,7 @@ class _MobileRefractometryTestScreenState
         // Skip general instructions, go straight to setup
         _isInstructionComplete = true;
         _instructionShown = true;
+        _isTransitioning = true;
         _startDistanceCalibration(TestConstants.mobileRefractometryDistanceCm);
       } else {
         // Standard flow: Start instructions first
@@ -227,6 +228,7 @@ class _MobileRefractometryTestScreenState
   }
 
   void _onInstructionComplete() {
+    _isTransitioning = false;
     _isInstructionComplete = true;
     _instructionShown = true;
     _startDistanceCalibration(TestConstants.mobileRefractometryDistanceCm);
@@ -281,6 +283,7 @@ class _MobileRefractometryTestScreenState
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
 
+    _isTransitioning = true;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => DistanceCalibrationScreen(
@@ -289,6 +292,7 @@ class _MobileRefractometryTestScreenState
           minDistanceCm: targetCm >= 100 ? 60.0 : 35.0,
           maxDistanceCm: 300.0, // Treat as 100+ or 40+
           onCalibrationComplete: () {
+            _isTransitioning = false;
             Navigator.of(context).pop();
             _onCalibrationComplete();
           },
@@ -995,27 +999,20 @@ class _MobileRefractometryTestScreenState
   Widget _buildMainContent() {
     switch (_currentPhase) {
       case RefractPhase.instruction:
-        return _currentEye == 'right'
-            ? CoverLeftEyeInstructionScreen(
-                title: 'Mobile Refractometry',
-                onContinue: _onInstructionComplete,
-              )
-            : CoverRightEyeInstructionScreen(
-                title: 'Mobile Refractometry',
-                onContinue: () => _startDistanceCalibration(
-                  TestConstants.mobileRefractometryDistanceCm,
-                ),
-              );
       case RefractPhase.calibration:
-        return Center(
+        return const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const EyeLoader(size: 80),
-              const SizedBox(height: 24),
+              EyeLoader(size: 80),
+              SizedBox(height: 24),
               Text(
-                'Opening Distance Calibration...',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                'Initializing Test...',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),

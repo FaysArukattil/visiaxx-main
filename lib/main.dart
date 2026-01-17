@@ -237,8 +237,14 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/eye-exercises': (context) => const EyeExerciseReelsScreen(),
           '/eye-care-tips': (context) => const EyeCareTipsScreen(),
           '/settings': (context) => const SettingsScreen(),
-          '/mobile-refractometry-test': (context) =>
-              const MobileRefractometryTestScreen(),
+          '/mobile-refractometry-test': (context) {
+            final args =
+                ModalRoute.of(context)?.settings.arguments
+                    as Map<String, dynamic>?;
+            return MobileRefractometryTestScreen(
+              showInitialInstructions: args?['showInitialInstructions'] ?? true,
+            );
+          },
           '/comprehensive-result': (context) =>
               const ComprehensiveResultScreen(),
           '/mobile-refractometry-result': (context) =>

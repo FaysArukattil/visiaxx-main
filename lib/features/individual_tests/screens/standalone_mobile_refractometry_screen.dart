@@ -32,7 +32,7 @@ class StandaloneMobileRefractometryScreen extends StatelessWidget {
         Navigator.pushReplacementNamed(
           context,
           '/mobile-refractometry-test',
-          arguments: {'showInstructions': false},
+          arguments: {'showInitialInstructions': false},
         );
       },
     );
