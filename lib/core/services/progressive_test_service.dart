@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/models/progressive_test_session_model.dart';
@@ -33,10 +33,10 @@ class ProgressiveTestService {
           .doc(sessionId)
           .set(session.toFirestore());
 
-      debugPrint('[ProgressiveTestService] ✅ Created session: $sessionId');
+      debugPrint('[ProgressiveTestService] … Created session: $sessionId');
       return sessionId;
     } catch (e) {
-      debugPrint('[ProgressiveTestService] ❌ Error creating session: $e');
+      debugPrint('[ProgressiveTestService] Œ Error creating session: $e');
       rethrow;
     }
   }
@@ -49,7 +49,7 @@ class ProgressiveTestService {
     required Map<String, dynamic> testData,
   }) async {
     try {
-      debugPrint('[ProgressiveTestService] 💾 Saving progress: $testType');
+      debugPrint('[ProgressiveTestService] ’¾ Saving progress: $testType');
 
       final sessionRef = _firestore
           .collection('users')
@@ -81,9 +81,9 @@ class ProgressiveTestService {
         });
       });
 
-      debugPrint('[ProgressiveTestService] ✅ Progress saved for: $testType');
+      debugPrint('[ProgressiveTestService] … Progress saved for: $testType');
     } catch (e) {
-      debugPrint('[ProgressiveTestService] ❌ Error saving progress: $e');
+      debugPrint('[ProgressiveTestService] Œ Error saving progress: $e');
       rethrow;
     }
   }
@@ -108,17 +108,17 @@ class ProgressiveTestService {
 
       // Check if session is expired
       if (session.isExpired) {
-        debugPrint('[ProgressiveTestService] ⏰ Session expired, cleaning up');
+        debugPrint('[ProgressiveTestService] ° Session expired, cleaning up');
         await _markSessionComplete(userId, session.sessionId);
         return null;
       }
 
       debugPrint(
-        '[ProgressiveTestService] ✅ Found incomplete session: ${session.sessionId}',
+        '[ProgressiveTestService] … Found incomplete session: ${session.sessionId}',
       );
       return session;
     } catch (e) {
-      debugPrint('[ProgressiveTestService] ❌ Error fetching session: $e');
+      debugPrint('[ProgressiveTestService] Œ Error fetching session: $e');
       return null;
     }
   }
@@ -142,10 +142,10 @@ class ProgressiveTestService {
           });
 
       debugPrint(
-        '[ProgressiveTestService] ✅ Session marked complete: $sessionId',
+        '[ProgressiveTestService] … Session marked complete: $sessionId',
       );
     } catch (e) {
-      debugPrint('[ProgressiveTestService] ❌ Error completing session: $e');
+      debugPrint('[ProgressiveTestService] Œ Error completing session: $e');
     }
   }
 
@@ -160,7 +160,7 @@ class ProgressiveTestService {
           .update({'isComplete': true});
     } catch (e) {
       debugPrint(
-        '[ProgressiveTestService] ❌ Error marking session complete: $e',
+        '[ProgressiveTestService] Œ Error marking session complete: $e',
       );
     }
   }
@@ -175,9 +175,9 @@ class ProgressiveTestService {
           .doc(sessionId)
           .delete();
 
-      debugPrint('[ProgressiveTestService] ✅ Session deleted: $sessionId');
+      debugPrint('[ProgressiveTestService] … Session deleted: $sessionId');
     } catch (e) {
-      debugPrint('[ProgressiveTestService] ❌ Error deleting session: $e');
+      debugPrint('[ProgressiveTestService] Œ Error deleting session: $e');
     }
   }
 
@@ -195,8 +195,9 @@ class ProgressiveTestService {
           .map((doc) => ProgressiveTestSession.fromFirestore(doc))
           .toList();
     } catch (e) {
-      debugPrint('[ProgressiveTestService] ❌ Error fetching all sessions: $e');
+      debugPrint('[ProgressiveTestService] Œ Error fetching all sessions: $e');
       return [];
     }
   }
 }
+

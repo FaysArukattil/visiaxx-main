@@ -60,8 +60,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   List<String> _currentOptions = []; // Current plate options
   bool _isTestPausedForDistance = false;
   bool _isPausedForExit =
-      false; // âœ… Prevent distance warning during pause dialog
-  Timer? _autoNavigationTimer; // âœ… Added timer for cancellable navigation
+      false; // … Prevent distance warning during pause dialog
+  Timer? _autoNavigationTimer; // … Added timer for cancellable navigation
   final bool _isNavigatingToNextTest = false;
   int _secondsRemaining = 5;
   DateTime? _lastShouldPauseTime;
@@ -116,7 +116,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     // Pause services while dialog is shown
     _distanceService.stopMonitoring();
     _ttsService.stop();
-    _autoNavigationTimer?.cancel(); // âœ… Pause auto-navigation timer
+    _autoNavigationTimer?.cancel(); // … Pause auto-navigation timer
 
     setState(() {
       _isPausedForExit = true;
@@ -157,7 +157,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       });
       // Restart the 5-second timer
       _autoNavigationTimer?.cancel();
-      _startAutoNavigationTimer(); // âœ… Resume auto-navigation
+      _startAutoNavigationTimer(); // … Resume auto-navigation
       return;
     }
 
@@ -266,7 +266,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _showRightEyeInstruction() {
-    // âœ… FIX: Stop monitoring before cover eye instruction
+    // … FIX: Stop monitoring before cover eye instruction
     _distanceService.stopMonitoring();
 
     Navigator.of(context).push(
@@ -282,7 +282,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               _currentPlateIndex = 0;
             });
 
-            // âœ… FIX: Resume monitoring AFTER user confirms they've covered eye
+            // … FIX: Resume monitoring AFTER user confirms they've covered eye
             _startContinuousDistanceMonitoring();
             _startEyeTest();
           },
@@ -292,7 +292,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _showLeftEyeInstruction() {
-    // âœ… FIX: Stop monitoring before cover eye instruction
+    // … FIX: Stop monitoring before cover eye instruction
     _distanceService.stopMonitoring();
 
     Navigator.of(context).push(
@@ -308,7 +308,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               _currentPlateIndex = 0;
             });
 
-            // âœ… FIX: Resume monitoring AFTER user confirms they've covered eye
+            // … FIX: Resume monitoring AFTER user confirms they've covered eye
             _startContinuousDistanceMonitoring();
             _startEyeTest();
           },
@@ -330,7 +330,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    // âœ… FIX: Don't process distance updates while pause dialog is showing
+    // … FIX: Don't process distance updates while pause dialog is showing
     if (_isPausedForExit) return;
 
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
@@ -390,7 +390,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     _distanceAutoSkipTimer?.cancel();
     _skipManager.recordSkip(
       DistanceTestType.colorVision,
-    ); // âœ… PERSIST: Record skip
+    ); // … PERSIST: Record skip
     setState(() => _isTestPausedForDistance = false);
     _ttsService.speak('Resuming test');
     _restartPlateTimer();
@@ -1736,3 +1736,4 @@ class _PulseRingPainter extends CustomPainter {
   bool shouldRepaint(_PulseRingPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
+

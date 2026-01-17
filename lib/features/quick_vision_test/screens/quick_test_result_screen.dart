@@ -2442,7 +2442,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               children: [
                 _buildValueCell('SPH', res.sphere, 'Sphere'),
                 _buildValueCell('CYL', res.cylinder, 'Cylinder'),
-                _buildValueCell('AXIS', '${res.axis}Â°', 'Axis'),
+                _buildValueCell('AXIS', '${res.axis}°', 'Axis'),
                 if (double.tryParse(res.addPower) != null &&
                     double.parse(res.addPower) > 0)
                   _buildValueCell('ADD', '+${res.addPower}', 'Reading')
@@ -2937,7 +2937,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         const SizedBox(height: 8),
         _buildRxDetailRow('SPH', data.sph),
         _buildRxDetailRow('CYL', data.cyl),
-        _buildRxDetailRow('AXIS', '${data.axis}Â°'),
+        _buildRxDetailRow('AXIS', '${data.axis}°'),
         _buildRxDetailRow('VN', data.vn),
       ],
     );
@@ -2993,3 +2993,4 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         provider.amslerGridLeft != null;
   }
 }
+

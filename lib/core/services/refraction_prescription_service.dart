@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/models/mobile_refractometry_result.dart';
@@ -116,7 +116,7 @@ class RefractionPrescriptionService {
   ) async {
     try {
       debugPrint(
-        '[RefractionService] 💾 Saving prescription for test: $testResultId',
+        '[RefractionService] ’¾ Saving prescription for test: $testResultId',
       );
 
       // Get user's identity string for collection path
@@ -141,9 +141,9 @@ class RefractionPrescriptionService {
           .doc('prescription')
           .set(prescription.toFirestore());
 
-      debugPrint('[RefractionService] ✅ Prescription saved successfully');
+      debugPrint('[RefractionService] … Prescription saved successfully');
     } catch (e) {
-      debugPrint('[RefractionService] ❌ Error saving prescription: $e');
+      debugPrint('[RefractionService] Œ Error saving prescription: $e');
       rethrow;
     }
   }
@@ -155,7 +155,7 @@ class RefractionPrescriptionService {
   ) async {
     try {
       debugPrint(
-        '[RefractionService] 📖 Fetching prescription for test: $testResultId',
+        '[RefractionService] “– Fetching prescription for test: $testResultId',
       );
 
       // Get user's identity string
@@ -165,7 +165,7 @@ class RefractionPrescriptionService {
           .get();
 
       if (!userDoc.exists) {
-        debugPrint('[RefractionService] ⚠️ User not found in lookup');
+        debugPrint('[RefractionService]  ï¸ User not found in lookup');
         return null;
       }
 
@@ -182,7 +182,7 @@ class RefractionPrescriptionService {
           .get();
 
       if (!prescriptionDoc.exists) {
-        debugPrint('[RefractionService] ℹ️ No prescription found');
+        debugPrint('[RefractionService] „¹ï¸ No prescription found');
         return null;
       }
 
@@ -190,10 +190,10 @@ class RefractionPrescriptionService {
         prescriptionDoc.data()!,
       );
 
-      debugPrint('[RefractionService] ✅ Prescription retrieved');
+      debugPrint('[RefractionService] … Prescription retrieved');
       return prescription;
     } catch (e) {
-      debugPrint('[RefractionService] ❌ Error fetching prescription: $e');
+      debugPrint('[RefractionService] Œ Error fetching prescription: $e');
       return null;
     }
   }
@@ -270,3 +270,4 @@ class RefractionPrescriptionService {
     );
   }
 }
+

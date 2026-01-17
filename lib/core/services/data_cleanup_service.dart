@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -24,7 +24,7 @@ class DataCleanupService {
   /// Perform comprehensive cleanup of all app data
   /// Call this on logout or session conflict
   static Future<void> cleanupAllData(BuildContext context) async {
-    debugPrint('[DataCleanup] 🧹 Starting comprehensive data cleanup...');
+    debugPrint('[DataCleanup] §¹ Starting comprehensive data cleanup...');
 
     try {
       // 0. Remove session from Firebase RTDB (DO THIS FIRST while IDs still exist)
@@ -32,9 +32,9 @@ class DataCleanupService {
         final sessionMonitor = SessionMonitorService();
         await sessionMonitor.removeSession();
         sessionMonitor.stopMonitoring();
-        debugPrint('[DataCleanup] ✅ Session removed from Firebase');
+        debugPrint('[DataCleanup] … Session removed from Firebase');
       } catch (e) {
-        debugPrint('[DataCleanup] ⚠️ Failed to remove session: $e');
+        debugPrint('[DataCleanup]  ï¸ Failed to remove session: $e');
       }
 
       // 1. Reset all providers
@@ -50,9 +50,9 @@ class DataCleanupService {
       // 4. Sign out from Firebase (if not already signed out)
       await _signOutFirebase();
 
-      debugPrint('[DataCleanup] ✅ Cleanup completed successfully');
+      debugPrint('[DataCleanup] … Cleanup completed successfully');
     } catch (e) {
-      debugPrint('[DataCleanup] ❌ Error during cleanup: $e');
+      debugPrint('[DataCleanup] Œ Error during cleanup: $e');
       // Still try to sign out even if other cleanup fails
       await _signOutFirebase();
     }
@@ -72,9 +72,9 @@ class DataCleanupService {
           listen: false,
         );
         testSessionProvider.reset();
-        debugPrint('[DataCleanup] ✅ TestSessionProvider reset');
+        debugPrint('[DataCleanup] … TestSessionProvider reset');
       } catch (e) {
-        debugPrint('[DataCleanup] ❌ Failed to reset TestSessionProvider: $e');
+        debugPrint('[DataCleanup] Œ Failed to reset TestSessionProvider: $e');
       }
 
       // Reset EyeExerciseProvider
@@ -84,12 +84,12 @@ class DataCleanupService {
           listen: false,
         );
         eyeExerciseProvider.resetState();
-        debugPrint('[DataCleanup] ✅ EyeExerciseProvider reset');
+        debugPrint('[DataCleanup] … EyeExerciseProvider reset');
       } catch (e) {
-        debugPrint('[DataCleanup] ❌ Failed to reset EyeExerciseProvider: $e');
+        debugPrint('[DataCleanup] Œ Failed to reset EyeExerciseProvider: $e');
       }
     } catch (e) {
-      debugPrint('[DataCleanup] ❌ Error resetting providers: $e');
+      debugPrint('[DataCleanup] Œ Error resetting providers: $e');
     }
   }
 
@@ -109,9 +109,9 @@ class DataCleanupService {
         }
       }
 
-      debugPrint('[DataCleanup] ✅ Cleared $clearedCount preference keys');
+      debugPrint('[DataCleanup] … Cleared $clearedCount preference keys');
     } catch (e) {
-      debugPrint('[DataCleanup] ❌ Failed to clear local storage: $e');
+      debugPrint('[DataCleanup] Œ Failed to clear local storage: $e');
     }
   }
 
@@ -121,9 +121,9 @@ class DataCleanupService {
 
     try {
       await _secureStorage.deleteAll();
-      debugPrint('[DataCleanup] ✅ Secure storage cleared');
+      debugPrint('[DataCleanup] … Secure storage cleared');
     } catch (e) {
-      debugPrint('[DataCleanup] ❌ Failed to clear secure storage: $e');
+      debugPrint('[DataCleanup] Œ Failed to clear secure storage: $e');
     }
   }
 
@@ -132,10 +132,10 @@ class DataCleanupService {
     try {
       if (FirebaseAuth.instance.currentUser != null) {
         await FirebaseAuth.instance.signOut();
-        debugPrint('[DataCleanup] ✅ Firebase sign out complete');
+        debugPrint('[DataCleanup] … Firebase sign out complete');
       }
     } catch (e) {
-      debugPrint('[DataCleanup] ❌ Failed to sign out from Firebase: $e');
+      debugPrint('[DataCleanup] Œ Failed to sign out from Firebase: $e');
     }
   }
 
@@ -163,9 +163,9 @@ class DataCleanupService {
       );
       testSessionProvider.reset();
 
-      debugPrint('[DataCleanup] ✅ Test data cleanup complete');
+      debugPrint('[DataCleanup] … Test data cleanup complete');
     } catch (e) {
-      debugPrint('[DataCleanup] ❌ Failed to cleanup test data: $e');
+      debugPrint('[DataCleanup] Œ Failed to cleanup test data: $e');
     }
   }
 
@@ -199,12 +199,13 @@ class DataCleanupService {
           testSessionProvider.resetPelliRobson();
           break;
         default:
-          debugPrint('[DataCleanup] ⚠️ Unknown test type: $testType');
+          debugPrint('[DataCleanup]  ï¸ Unknown test type: $testType');
       }
 
-      debugPrint('[DataCleanup] ✅ $testType test data cleared');
+      debugPrint('[DataCleanup] … $testType test data cleared');
     } catch (e) {
-      debugPrint('[DataCleanup] ❌ Failed to clear $testType test data: $e');
+      debugPrint('[DataCleanup] Œ Failed to clear $testType test data: $e');
     }
   }
 }
+

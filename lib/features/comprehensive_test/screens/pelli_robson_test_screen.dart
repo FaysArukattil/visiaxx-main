@@ -58,7 +58,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   bool _isTestPausedForDistance = false;
   bool _isPausedForExit =
-      false; // âœ… Prevent distance warning during pause dialog
+      false; // … Prevent distance warning during pause dialog
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   DateTime? _lastShouldPauseTime;
@@ -139,7 +139,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    // âœ… FIX: Don't process distance updates while pause dialog is showing
+    // … FIX: Don't process distance updates while pause dialog is showing
     if (_isPausedForExit) return;
 
     // Use appropriate test type for distance checking
@@ -157,7 +157,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
-      // âœ… FIX: Reset state when distance becomes good
+      // … FIX: Reset state when distance becomes good
       if (!shouldPause && _isTestPausedForDistance) {
         _resumeTestAfterDistance();
       }
@@ -192,7 +192,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     setState(() {
       _isTestPausedForDistance = true;
     });
-    // âœ… FIX: Actually stop speech and timers to pause test
+    // … FIX: Actually stop speech and timers to pause test
     _continuousSpeech.stop();
     _autoAdvanceTimer?.cancel();
     _silenceTimer?.cancel();
@@ -218,7 +218,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   }
 
   void _showCalibrationScreen() {
-    // âœ… FIX: Stop background monitoring before starting calibration to avoid black screen
+    // … FIX: Stop background monitoring before starting calibration to avoid black screen
     _distanceService.stopMonitoring();
     _ttsService.stop();
 
@@ -328,14 +328,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // âœ… FIX: Handle both paused and inactive states
+    // … FIX: Handle both paused and inactive states
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       if (_isTestActive) {
         _pauseTest();
       }
     } else if (state == AppLifecycleState.resumed) {
-      // âœ… FIX: Only show pause dialog if test is active and we were paused
+      // … FIX: Only show pause dialog if test is active and we were paused
       if (!mounted) return;
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted && _isTestActive && _isPausedForExit) {
@@ -348,7 +348,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _pauseTest() {
     _silenceTimer?.cancel();
     _autoAdvanceTimer?.cancel();
-    // âœ… FIX: Stop continuous speech manager (not just speechService)
+    // … FIX: Stop continuous speech manager (not just speechService)
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
     _ttsService.stop();
@@ -391,7 +391,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _startTest() {
     _fuzzyMatcher.reset();
 
-    // âœ… FIX: Stop background monitoring during "Cover Eye" instructions
+    // … FIX: Stop background monitoring during "Cover Eye" instructions
     _distanceService.stopMonitoring();
 
     Widget instructionScreen;
@@ -418,7 +418,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         instructionIcon: Icons.record_voice_over,
         onContinue: () {
           Navigator.of(context).pop();
-          // âœ… FIX: Resume monitoring AFTER user confirms they've covered eye
+          // … FIX: Resume monitoring AFTER user confirms they've covered eye
           _actuallyStartTest();
         },
       );
@@ -437,7 +437,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         instructionIcon: Icons.record_voice_over,
         onContinue: () {
           Navigator.of(context).pop();
-          // âœ… FIX: Resume monitoring AFTER user confirms they've covered eye
+          // … FIX: Resume monitoring AFTER user confirms they've covered eye
           _actuallyStartTest();
         },
       );
@@ -784,12 +784,12 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _ttsService.stop();
     _fuzzyMatcher.reset();
 
-    // âœ… FIX: Preserve the current mode (short or long) - only restart in that mode
+    // … FIX: Preserve the current mode (short or long) - only restart in that mode
     final preservedMode = _currentMode;
 
     setState(() {
       _currentEye = 'right';
-      _currentMode = preservedMode; // âœ… Keep the current distance mode
+      _currentMode = preservedMode; // … Keep the current distance mode
       _currentScreenIndex = 0;
       _currentTripletIndex = 0;
       _isTestActive = false;
@@ -797,10 +797,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _isSpeechActive = false;
       _showingInstructions = false;
       _showDistanceCalibration = true;
-      _mainInstructionsShown = true; // âœ… Skip general instructions on restart
+      _mainInstructionsShown = true; // … Skip general instructions on restart
       _isTestPausedForDistance = false;
       _isPausedForExit = false;
-      // âœ… Only clear responses for the current mode
+      // … Only clear responses for the current mode
       if (preservedMode == 'short') {
         _shortResponses.forEach((_, list) => list.clear());
       } else {
@@ -1004,7 +1004,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     bool isCompleted, {
     bool isNext = false,
   }) {
-    // âœ… FIX: Next triplet shows actual opacity (preview)
+    // … FIX: Next triplet shows actual opacity (preview)
     // Current: full opacity, Completed: dimmed, Next: actual opacity preview, Others: hidden
     double rowOpacity;
     if (isCurrent) {
@@ -1338,3 +1338,4 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 }
+

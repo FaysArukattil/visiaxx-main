@@ -1,10 +1,10 @@
-// ignore_for_file: unused_field
+﻿// ignore_for_file: unused_field
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'speech_service.dart';
 
-/// 🎤 FIXED Continuous Speech Manager
+/// Ž¤ FIXED Continuous Speech Manager
 ///
 /// Key fixes:
 /// - Proper TTS pause/resume handling
@@ -38,38 +38,38 @@ class ContinuousSpeechManager {
 
   ContinuousSpeechManager(this._speechService) {
     _setupCallbacks();
-    debugPrint('[ContinuousSpeech] 🎤 Manager created, callbacks set up');
+    debugPrint('[ContinuousSpeech] Ž¤ Manager created, callbacks set up');
   }
 
   void _setupCallbacks() {
-    debugPrint('[ContinuousSpeech] 🔧 Setting up callbacks...');
+    debugPrint('[ContinuousSpeech] ”§ Setting up callbacks...');
 
     _speechService.onResult = (result) {
-      debugPrint('[ContinuousSpeech] 📝 onResult called: "$result"');
+      debugPrint('[ContinuousSpeech] “ onResult called: "$result"');
       _handleResult(result);
     };
 
     _speechService.onSpeechDetected = (speech) {
-      debugPrint('[ContinuousSpeech] 🎤 onSpeechDetected called: "$speech"');
+      debugPrint('[ContinuousSpeech] Ž¤ onSpeechDetected called: "$speech"');
       _handleSpeechDetected(speech);
     };
 
     _speechService.onListeningStarted = () {
-      debugPrint('[ContinuousSpeech] ✅ onListeningStarted called');
+      debugPrint('[ContinuousSpeech] … onListeningStarted called');
       _handleListeningStarted();
     };
 
     _speechService.onListeningStopped = () {
-      debugPrint('[ContinuousSpeech] ⏸️ onListeningStopped called');
+      debugPrint('[ContinuousSpeech] ¸ï¸ onListeningStopped called');
       _handleListeningStopped();
     };
 
     _speechService.onError = (error) {
-      debugPrint('[ContinuousSpeech] ⚠️ onError called: $error');
+      debugPrint('[ContinuousSpeech]  ï¸ onError called: $error');
       _handleError(error);
     };
 
-    debugPrint('[ContinuousSpeech] ✅ Callbacks configured');
+    debugPrint('[ContinuousSpeech] … Callbacks configured');
   }
 
   /// Start continuous listening
@@ -79,19 +79,19 @@ class ContinuousSpeechManager {
     double minConfidence = 0.05,
   }) async {
     debugPrint(
-      '[ContinuousSpeech] 🚀 Starting continuous speech (paused: $_isPausedForTts)',
+      '[ContinuousSpeech] š€ Starting continuous speech (paused: $_isPausedForTts)',
     );
 
     _shouldBeListening = true;
     _restartAttempts = 0;
     _allDetectedSpeech.clear();
     _lastRecognizedValue = null;
-    _speechService.clearBuffer(); // ✅ Fixed: Clear underlying service too
+    _speechService.clearBuffer(); // … Fixed: Clear underlying service too
 
     // Don't start if paused for TTS
     if (_isPausedForTts) {
       debugPrint(
-        '[ContinuousSpeech] ⏸️ Paused for TTS, will start when resumed',
+        '[ContinuousSpeech] ¸ï¸ Paused for TTS, will start when resumed',
       );
       return;
     }
@@ -111,14 +111,14 @@ class ContinuousSpeechManager {
     // Don't start if we shouldn't be listening or paused for TTS
     if (!_shouldBeListening || _isPausedForTts) {
       debugPrint(
-        '[ContinuousSpeech] ⏸️ Skipping start (shouldListen: $_shouldBeListening, pausedForTts: $_isPausedForTts)',
+        '[ContinuousSpeech] ¸ï¸ Skipping start (shouldListen: $_shouldBeListening, pausedForTts: $_isPausedForTts)',
       );
       return;
     }
 
     try {
       debugPrint(
-        '[ContinuousSpeech] 🎤 Starting speech service (attempt ${_restartAttempts + 1})',
+        '[ContinuousSpeech] Ž¤ Starting speech service (attempt ${_restartAttempts + 1})',
       );
 
       await _speechService.startListening(
@@ -131,19 +131,19 @@ class ContinuousSpeechManager {
       _isActive = true;
       _restartAttempts = 0;
 
-      // 🎤 LOG RECOGNITION MODE
+      // Ž¤ LOG RECOGNITION MODE
       final isOffline = _speechService.isAvailable; // Approximate check
       debugPrint(
-        '[ContinuousSpeech] ✅ Started (Probable mode: ${isOffline ? "Offline-Ready" : "Cloud"})',
+        '[ContinuousSpeech] … Started (Probable mode: ${isOffline ? "Offline-Ready" : "Cloud"})',
       );
     } catch (e) {
-      debugPrint('[ContinuousSpeech] ❌ Error starting speech: $e');
+      debugPrint('[ContinuousSpeech] Œ Error starting speech: $e');
       _scheduleRestart();
     }
   }
 
   void _handleResult(String result) {
-    debugPrint('[ContinuousSpeech] 📝 Final result received: "$result"');
+    debugPrint('[ContinuousSpeech] “ Final result received: "$result"');
 
     _lastRecognizedValue = result;
     _lastRecognitionTime = DateTime.now();
@@ -154,15 +154,15 @@ class ContinuousSpeechManager {
 
     // Call the callback
     if (onFinalResult != null) {
-      debugPrint('[ContinuousSpeech] 🔥 Calling onFinalResult callback');
+      debugPrint('[ContinuousSpeech] ”¥ Calling onFinalResult callback');
       onFinalResult!(result);
     } else {
-      debugPrint('[ContinuousSpeech] ⚠️ WARNING: onFinalResult is NULL!');
+      debugPrint('[ContinuousSpeech]  ï¸ WARNING: onFinalResult is NULL!');
     }
   }
 
   void _handleSpeechDetected(String speech) {
-    debugPrint('[ContinuousSpeech] 🎤 Speech detected: "$speech"');
+    debugPrint('[ContinuousSpeech] Ž¤ Speech detected: "$speech"');
 
     _lastRecognitionTime = DateTime.now();
 
@@ -172,21 +172,21 @@ class ContinuousSpeechManager {
 
     // Call the callback
     if (onSpeechDetected != null) {
-      debugPrint('[ContinuousSpeech] 🔥 Calling onSpeechDetected callback');
+      debugPrint('[ContinuousSpeech] ”¥ Calling onSpeechDetected callback');
       onSpeechDetected!(speech);
     } else {
-      debugPrint('[ContinuousSpeech] ⚠️ WARNING: onSpeechDetected is NULL!');
+      debugPrint('[ContinuousSpeech]  ï¸ WARNING: onSpeechDetected is NULL!');
     }
   }
 
   void _handleListeningStarted() {
-    debugPrint('[ContinuousSpeech] ✅ Listening started');
+    debugPrint('[ContinuousSpeech] … Listening started');
     _isActive = true;
     onListeningStateChanged?.call(true);
   }
 
   void _handleListeningStopped() {
-    debugPrint('[ContinuousSpeech] ⏸️ Listening stopped');
+    debugPrint('[ContinuousSpeech] ¸ï¸ Listening stopped');
     _isActive = false;
     onListeningStateChanged?.call(false);
 
@@ -197,17 +197,17 @@ class ContinuousSpeechManager {
     if (_shouldBeListening &&
         !_isPausedForTts &&
         _restartAttempts < _maxRestartAttempts) {
-      debugPrint('[ContinuousSpeech] 🔄 Scheduling auto-restart...');
+      debugPrint('[ContinuousSpeech] ”„ Scheduling auto-restart...');
       _scheduleRestart();
     } else {
       debugPrint(
-        '[ContinuousSpeech] ⏹️ Not restarting (should: $_shouldBeListening, tts: $_isPausedForTts, attempts: $_restartAttempts)',
+        '[ContinuousSpeech] ¹ï¸ Not restarting (should: $_shouldBeListening, tts: $_isPausedForTts, attempts: $_restartAttempts)',
       );
     }
   }
 
   void _handleError(String error) {
-    debugPrint('[ContinuousSpeech] ⚠️ Error: $error');
+    debugPrint('[ContinuousSpeech]  ï¸ Error: $error');
     _isActive = false;
 
     // Try to restart on error (if not paused for TTS)
@@ -219,14 +219,14 @@ class ContinuousSpeechManager {
   void _scheduleRestart() {
     if (!_shouldBeListening || _isPausedForTts) {
       debugPrint(
-        '[ContinuousSpeech] ⏹️ Not scheduling restart (should: $_shouldBeListening, tts: $_isPausedForTts)',
+        '[ContinuousSpeech] ¹ï¸ Not scheduling restart (should: $_shouldBeListening, tts: $_isPausedForTts)',
       );
       return;
     }
 
     if (_restartAttempts >= _maxRestartAttempts) {
       debugPrint(
-        '[ContinuousSpeech] ❌ Max restart attempts reached ($_maxRestartAttempts)',
+        '[ContinuousSpeech] Œ Max restart attempts reached ($_maxRestartAttempts)',
       );
       return;
     }
@@ -248,7 +248,7 @@ class ContinuousSpeechManager {
     if (_rapidFailureCount > 3) {
       delayMs = 8000; // Increased to 8 second cooldown
       debugPrint(
-        '[ContinuousSpeech] 🛑 CRITICAL RESTART LOOP. Cooling down for 8s to prevent UI freeze.',
+        '[ContinuousSpeech] ›‘ CRITICAL RESTART LOOP. Cooling down for 8s to prevent UI freeze.',
       );
       _rapidFailureCount = 0;
     } else {
@@ -259,25 +259,25 @@ class ContinuousSpeechManager {
     _restartAttempts++;
 
     debugPrint(
-      '[ContinuousSpeech] ⏰ Scheduling restart in ${delayMs}ms (attempts: $_restartAttempts, rapid: $_rapidFailureCount)',
+      '[ContinuousSpeech] ° Scheduling restart in ${delayMs}ms (attempts: $_restartAttempts, rapid: $_rapidFailureCount)',
     );
 
     _restartTimer = Timer(Duration(milliseconds: delayMs), () async {
       if (_shouldBeListening && !_isPausedForTts) {
-        debugPrint('[ContinuousSpeech] 🔄 Executing restart...');
+        debugPrint('[ContinuousSpeech] ”„ Executing restart...');
         await _startListening();
       }
     });
   }
 
-  /// ⭐ KEY FIX: Pause for TTS - stops mic from picking up TTS audio
+  /// ­ KEY FIX: Pause for TTS - stops mic from picking up TTS audio
   Future<void> pauseForTts() async {
     if (_isPausedForTts) {
-      debugPrint('[ContinuousSpeech] ⚠️ Already paused for TTS');
+      debugPrint('[ContinuousSpeech]  ï¸ Already paused for TTS');
       return;
     }
 
-    debugPrint('[ContinuousSpeech] 🔇 PAUSING FOR TTS');
+    debugPrint('[ContinuousSpeech] ”‡ PAUSING FOR TTS');
     _isPausedForTts = true;
 
     // Cancel any pending restarts
@@ -286,18 +286,18 @@ class ContinuousSpeechManager {
     // Stop the speech service immediately
     if (_isActive || _speechService.isListening) {
       await _speechService.stopListening();
-      debugPrint('[ContinuousSpeech] 🛑 Speech service stopped for TTS');
+      debugPrint('[ContinuousSpeech] ›‘ Speech service stopped for TTS');
     }
   }
 
-  /// ⭐ KEY FIX: Resume after TTS - restarts listening
+  /// ­ KEY FIX: Resume after TTS - restarts listening
   Future<void> resumeAfterTts() async {
     if (!_isPausedForTts) {
-      debugPrint('[ContinuousSpeech] ⚠️ Not paused for TTS');
+      debugPrint('[ContinuousSpeech]  ï¸ Not paused for TTS');
       return;
     }
 
-    debugPrint('[ContinuousSpeech] 🔊 RESUMING AFTER TTS');
+    debugPrint('[ContinuousSpeech] ”Š RESUMING AFTER TTS');
     _isPausedForTts = false;
     _restartAttempts = 0; // Reset attempts
 
@@ -306,14 +306,14 @@ class ContinuousSpeechManager {
       // Small delay to ensure TTS is fully done
       await Future.delayed(const Duration(milliseconds: 500));
 
-      debugPrint('[ContinuousSpeech] 🔄 Restarting speech after TTS...');
+      debugPrint('[ContinuousSpeech] ”„ Restarting speech after TTS...');
       await _startListening();
     }
   }
 
   /// Stop continuous listening
   Future<void> stop() async {
-    debugPrint('[ContinuousSpeech] 🛑 Stopping continuous speech recognition');
+    debugPrint('[ContinuousSpeech] ›‘ Stopping continuous speech recognition');
 
     _shouldBeListening = false;
     _isActive = false;
@@ -322,7 +322,7 @@ class ContinuousSpeechManager {
     _restartTimer?.cancel();
 
     await _speechService.stopListening();
-    _speechService.clearBuffer(); // ✅ Fixed: Clear underlying service too
+    _speechService.clearBuffer(); // … Fixed: Clear underlying service too
 
     onListeningStateChanged?.call(false);
   }
@@ -337,7 +337,7 @@ class ContinuousSpeechManager {
   void clearAccumulated() {
     _allDetectedSpeech.clear();
     _lastRecognizedValue = null;
-    _speechService.clearBuffer(); // ✅ Fixed: Clear underlying service too
+    _speechService.clearBuffer(); // … Fixed: Clear underlying service too
   }
 
   /// Check if currently active
@@ -351,9 +351,10 @@ class ContinuousSpeechManager {
 
   /// Dispose resources
   void dispose() {
-    debugPrint('[ContinuousSpeech] 🗑️ Disposing...');
+    debugPrint('[ContinuousSpeech] —‘ï¸ Disposing...');
     _restartTimer?.cancel();
     _shouldBeListening = false;
     _isPausedForTts = false;
   }
 }
+

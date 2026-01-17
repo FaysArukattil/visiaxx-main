@@ -472,7 +472,7 @@ class _MobileRefractometryQuickResultScreenState
       children: [
         _buildValueItem('SPHERE', res.sphere, 'Distance'),
         _buildValueItem('CYLINDER', res.cylinder, 'Focus'),
-        _buildValueItem('AXIS', '${res.axis}Â°', 'Angle'),
+        _buildValueItem('AXIS', '${res.axis}°', 'Angle'),
         if (double.tryParse(res.addPower) != null &&
             double.parse(res.addPower) > 0)
           _buildValueItem('READING', '+${res.addPower}', 'Add Power'),
@@ -1298,4 +1298,5 @@ class _MobileRefractometryQuickResultScreenState
     };
   }
 }
+
 

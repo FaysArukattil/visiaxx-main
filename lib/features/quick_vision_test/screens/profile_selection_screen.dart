@@ -105,7 +105,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           const Duration(seconds: 1),
           onTimeout: () {
             debugPrint(
-              '[ProfileSelection] âš¡ Profile fetch timed out, using fallback',
+              '[ProfileSelection] Lightning Profile fetch timed out, using fallback',
             );
             return null;
           },
@@ -167,7 +167,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             .saveFamilyMember(userId: user.uid, member: newMember)
             .timeout(const Duration(seconds: 5));
 
-        debugPrint('[ProfileSelection] âœ… Member saved with ID: $savedId');
+        debugPrint('[ProfileSelection] Member saved with ID: $savedId');
 
         if (mounted) Navigator.pop(context); // Close loader
 
@@ -187,7 +187,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           );
         }
       } catch (e) {
-        debugPrint('[ProfileSelection] âš ï¸ Save timed out or errored: $e');
+        debugPrint('[ProfileSelection] Warning: Save timed out or errored: $e');
 
         if (mounted) Navigator.pop(context); // Close loader
 
@@ -417,7 +417,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${member.relationship} â€¢ ${member.age} years â€¢ ${member.sex}',
+                    '${member.relationship} • ${member.age} years • ${member.sex}',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -535,4 +535,3 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     );
   }
 }
-

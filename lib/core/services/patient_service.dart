@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:visiaxx/core/services/auth_service.dart';
 import '../../data/models/patient_model.dart';
@@ -33,10 +33,10 @@ class PatientService {
           .map((doc) => PatientModel.fromFirestore(doc))
           .toList();
 
-      debugPrint('[PatientService] ✅ Loaded ${patients.length} patients');
+      debugPrint('[PatientService] … Loaded ${patients.length} patients');
       return patients;
     } catch (e) {
-      debugPrint('[PatientService] ❌ Error loading patients: $e');
+      debugPrint('[PatientService] Œ Error loading patients: $e');
       rethrow;
     }
   }
@@ -53,7 +53,7 @@ class PatientService {
       if (!doc.exists) return null;
       return PatientModel.fromFirestore(doc);
     } catch (e) {
-      debugPrint('[PatientService] ❌ Error getting patient: $e');
+      debugPrint('[PatientService] Œ Error getting patient: $e');
       rethrow;
     }
   }
@@ -73,10 +73,10 @@ class PatientService {
       final identity = patient.identityString;
 
       await collectionRef.doc(identity).set(patient.toFirestore());
-      debugPrint('[PatientService] ✅ Saved patient with ID: $identity');
+      debugPrint('[PatientService] … Saved patient with ID: $identity');
       return identity;
     } catch (e) {
-      debugPrint('[PatientService] ❌ Error saving patient: $e');
+      debugPrint('[PatientService] Œ Error saving patient: $e');
       rethrow;
     }
   }
@@ -89,9 +89,9 @@ class PatientService {
 
       await _firestore.collection(path).doc(patientId).delete();
 
-      debugPrint('[PatientService] ✅ Deleted patient: $patientId');
+      debugPrint('[PatientService] … Deleted patient: $patientId');
     } catch (e) {
-      debugPrint('[PatientService] ❌ Error deleting patient: $e');
+      debugPrint('[PatientService] Œ Error deleting patient: $e');
       rethrow;
     }
   }
@@ -110,8 +110,9 @@ class PatientService {
             (patient.lastName?.toLowerCase().contains(lowerQuery) ?? false);
       }).toList();
     } catch (e) {
-      debugPrint('[PatientService] ❌ Error searching patients: $e');
+      debugPrint('[PatientService] Œ Error searching patients: $e');
       rethrow;
     }
   }
 }
+

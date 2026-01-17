@@ -430,14 +430,14 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   Future<String?> _captureGridImage() async {
     try {
       debugPrint('========================================');
-      debugPrint('ðŸ–¼ï¸ CAPTURING AMSLER GRID IMAGE');
+      debugPrint('–¼ï¸ CAPTURING AMSLER GRID IMAGE');
       debugPrint('========================================');
 
       final boundary =
           _gridKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
 
       if (boundary == null) {
-        debugPrint('âŒ Boundary is NULL - cannot capture image');
+        debugPrint('Œ Boundary is NULL - cannot capture image');
         return null;
       }
 
@@ -450,7 +450,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
-        debugPrint('âŒ ByteData is NULL - conversion failed');
+        debugPrint('Œ ByteData is NULL - conversion failed');
         return null;
       }
 
@@ -1913,3 +1913,4 @@ class _ContinueButtonState extends State<_ContinueButton>
     );
   }
 }
+

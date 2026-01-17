@@ -826,7 +826,7 @@ class _ResultDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              DateFormat('MMMM dd, yyyy â€¢ h:mm a').format(result.timestamp),
+              DateFormat('MMMM dd, yyyy €¢ h:mm a').format(result.timestamp),
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
@@ -1076,3 +1076,4 @@ class _ResultDetailSheet extends StatelessWidget {
     ]);
   }
 }
+

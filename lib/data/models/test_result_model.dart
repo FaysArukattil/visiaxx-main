@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
 import 'questionnaire_model.dart';
 import 'visiual_acuity_result.dart';
@@ -10,9 +10,9 @@ import 'refraction_prescription_model.dart';
 
 /// Test result status
 enum TestStatus {
-  normal('Normal', '✅'),
-  review('Review Recommended', '⚠️'),
-  urgent('Urgent Consultation', '🚨');
+  normal('Normal', '…'),
+  review('Review Recommended', ' ï¸'),
+  urgent('Urgent Consultation', 'š¨');
 
   final String label;
   final String emoji;
@@ -376,3 +376,4 @@ class PractitionerNotes {
     };
   }
 }
+

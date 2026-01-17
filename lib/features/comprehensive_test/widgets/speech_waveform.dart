@@ -1,7 +1,7 @@
 ﻿import 'dart:math';
 import 'package:flutter/material.dart';
 
-/// âœ… GLOBAL Reusable Speech Waveform Animation
+/// … GLOBAL Reusable Speech Waveform Animation
 /// Shows animated bars when listening or talking
 class SpeechWaveform extends StatefulWidget {
   final bool isListening;
@@ -55,7 +55,7 @@ class _SpeechWaveformState extends State<SpeechWaveform>
                 ? widget.size * 1.3
                 : widget.size * 0.85;
 
-            // âœ… Animate IF listening OR talking
+            // … Animate IF listening OR talking
             final bool shouldAnimate = widget.isListening || widget.isTalking;
 
             final double height = shouldAnimate
@@ -81,4 +81,5 @@ class _SpeechWaveformState extends State<SpeechWaveform>
     );
   }
 }
+
 

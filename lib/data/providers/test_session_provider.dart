@@ -1,4 +1,4 @@
-// ignore_for_file: unused_local_variable
+﻿// ignore_for_file: unused_local_variable
 
 import 'package:flutter/material.dart';
 import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
@@ -135,7 +135,7 @@ class TestSessionProvider extends ChangeNotifier {
     _currentEye = 'right';
     _currentTestId = DateTime.now().millisecondsSinceEpoch.toString();
     debugPrint(
-      '🏁 [TestSessionProvider] Started new test session with ID: $_currentTestId',
+      ' [TestSessionProvider] Started new test session with ID: $_currentTestId',
     );
     notifyListeners();
   }
@@ -159,7 +159,7 @@ class TestSessionProvider extends ChangeNotifier {
     _isIndividualTest = true;
     _individualTestType = testType;
     startTest();
-    debugPrint('🎯 [TestSessionProvider] Started individual test: $testType');
+    debugPrint('Ž¯ [TestSessionProvider] Started individual test: $testType');
   }
 
   /// Switch to testing the other eye
@@ -198,7 +198,7 @@ class TestSessionProvider extends ChangeNotifier {
     _shortDistance = result;
     notifyListeners();
     debugPrint(
-      '✅ [TestSessionProvider] Short distance result saved: ${result.toMap()}',
+      '… [TestSessionProvider] Short distance result saved: ${result.toMap()}',
     );
   }
 
@@ -207,7 +207,7 @@ class TestSessionProvider extends ChangeNotifier {
     _pelliRobson = result;
     notifyListeners();
     debugPrint(
-      '✅ [TestSessionProvider] Pelli-Robson result saved: ${result.overallCategory}',
+      '… [TestSessionProvider] Pelli-Robson result saved: ${result.overallCategory}',
     );
   }
 
@@ -262,7 +262,7 @@ class TestSessionProvider extends ChangeNotifier {
     if (_currentTestId == null) {
       _currentTestId = DateTime.now().millisecondsSinceEpoch.toString();
       debugPrint(
-        '🆕 [TestSessionProvider] Generated new session ID: $_currentTestId',
+        '†• [TestSessionProvider] Generated new session ID: $_currentTestId',
       );
     }
 
@@ -294,7 +294,7 @@ class TestSessionProvider extends ChangeNotifier {
       recommendation: getRecommendation(),
     );
     debugPrint(
-      '✅ [TestSessionProvider] Built test result with ID: $uniqueId, pelli-robson: ${result.pelliRobson != null}',
+      '… [TestSessionProvider] Built test result with ID: $uniqueId, pelli-robson: ${result.pelliRobson != null}',
     );
     return result;
   }
@@ -374,7 +374,7 @@ class TestSessionProvider extends ChangeNotifier {
     _mobileRefractometry = result;
     notifyListeners();
     debugPrint(
-      '✅ [TestSessionProvider] Mobile Refractometry result saved for ${result.rightEye != null ? "right" : ""}${result.leftEye != null ? " left" : ""} eye',
+      '… [TestSessionProvider] Mobile Refractometry result saved for ${result.rightEye != null ? "right" : ""}${result.leftEye != null ? " left" : ""} eye',
     );
   }
 
@@ -386,6 +386,7 @@ class TestSessionProvider extends ChangeNotifier {
   void setRefractionPrescription(RefractionPrescriptionModel prescription) {
     _refractionPrescription = prescription;
     notifyListeners();
-    debugPrint('✅ [TestSessionProvider] Refraction prescription saved.');
+    debugPrint('… [TestSessionProvider] Refraction prescription saved.');
   }
 }
+

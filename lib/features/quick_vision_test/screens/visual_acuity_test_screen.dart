@@ -66,7 +66,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Timer? _relaxationTimer;
   int _relaxationCountdown = 10;
   late AnimationController
-  _relaxationProgressController; // âœ… NEW: Smooth animation
+  _relaxationProgressController; // … NEW: Smooth animation
   DateTime? _eDisplayStartTime;
   int _eDisplayCountdown = TestConstants
       .eDisplayDurationSeconds; // 7 seconds per E as per user requirement
@@ -106,17 +106,17 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   bool _isPausedForExit = false;
   bool _isNavigatingToNextTest = false;
 
-  Timer? _speechEraserTimer; // âœ… Timer to clear recognized text
+  Timer? _speechEraserTimer; // … Timer to clear recognized text
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // âœ… FIX: Initialize synchronously to prevent LateInitializationError
+    // … FIX: Initialize synchronously to prevent LateInitializationError
     _continuousSpeech = ContinuousSpeechManager(_speechService);
 
-    // âœ… Initialize relaxation animation controller
+    // … Initialize relaxation animation controller
     _relaxationProgressController = AnimationController(
       vsync: this,
       duration: Duration(seconds: TestConstants.relaxationDurationSeconds),
@@ -186,10 +186,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
-    _relaxationProgressController.stop(); // âœ… Stop smooth animation
+    _relaxationProgressController.stop(); // … Stop smooth animation
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
-    _autoNavigationTimer?.cancel(); // âœ… Added: Pause auto-navigation timer
+    _autoNavigationTimer?.cancel(); // … Added: Pause auto-navigation timer
 
     setState(() {
       _isPausedForExit = true;
@@ -229,11 +229,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         _isDistanceOk = true; // Reset distance status
         _lastShouldPauseTime = null;
       });
-      _startAutoNavigationTimer(); // âœ… Resume auto-navigation
+      _startAutoNavigationTimer(); // … Resume auto-navigation
       return;
     }
 
-    debugPrint('[VisualAcuity] ðŸ”„ Resuming test from dialog');
+    debugPrint('[VisualAcuity] ”„ Resuming test from dialog');
 
     // Clear pause flags
     setState(() {
@@ -248,7 +248,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     // Resume based on current test phase
     if (_showE && _waitingForResponse) {
-      debugPrint('[VisualAcuity] ðŸ”„ Resuming E display phase');
+      debugPrint('[VisualAcuity] ”„ Resuming E display phase');
       // Resume speech recognition
       if (!_continuousSpeech.isActive) {
         _continuousSpeech.start(
@@ -259,7 +259,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
       _restartEDisplayTimer();
     } else if (_showRelaxation) {
-      debugPrint('[VisualAcuity] ðŸ”„ Resuming relaxation phase');
+      debugPrint('[VisualAcuity] ”„ Resuming relaxation phase');
       // Resume mic if already below 3s
       if (_relaxationCountdown <= 3 && !_continuousSpeech.isActive) {
         _continuousSpeech.start(
@@ -297,7 +297,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _pixelsPerMm = _pixelsPerMm.clamp(5.0, 10.0);
 
     debugPrint(
-      'ðŸ”¥ [VisualAcuity] ðŸ“ PixelsPerMm calculated: $_pixelsPerMm '
+      '”¥ [VisualAcuity] “ PixelsPerMm calculated: $_pixelsPerMm '
       '(Screen Width: $screenWidth, DPR: $devicePixelRatio)',
     );
   }
@@ -312,7 +312,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _continuousSpeech.onListeningStateChanged = (isListening) {
       if (mounted) setState(() => _isListening = isListening);
     };
-    // ðŸ”¥ ULTRA-RELIABLE: Pause speech when TTS is speaking to prevent self-recognition
+    // ”¥ ULTRA-RELIABLE: Pause speech when TTS is speaking to prevent self-recognition
     _ttsService.onSpeakingStateChanged = (isSpeaking) {
       if (isSpeaking) {
         _continuousSpeech.pauseForTts();
@@ -324,7 +324,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Mic start will be handled by relaxation timer (at 3 seconds remaining)
     // as per user requirement to avoid interference.
 
-    // ðŸ”¥ KEY FIX: Check if we should start with left eye
+    // ”¥ KEY FIX: Check if we should start with left eye
     if (!mounted) return;
     final provider = context.read<TestSessionProvider>();
 
@@ -332,14 +332,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         (provider.currentEye == 'left' && provider.visualAcuityRight != null)) {
       // We're starting/resuming left eye - NO calibration needed
       debugPrint(
-        'ðŸ”¥ [VisualAcuity] Starting LEFT EYE test - skipping calibration',
+        '”¥ [VisualAcuity] Starting LEFT EYE test - skipping calibration',
       );
       _showDistanceCalibration = false;
       _isCalibrationActive = false; // Mark calibration as not active
       _currentEye = 'left';
       provider.switchEye();
 
-      // ðŸ”¥ KEY: Resume continuous distance monitoring without recalibration
+      // ”¥ KEY: Resume continuous distance monitoring without recalibration
       await _startContinuousDistanceMonitoring();
 
       // Start test immediately
@@ -349,7 +349,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     // First time (right eye) - show calibration
     debugPrint(
-      'ðŸ”¥ [VisualAcuity] Starting RIGHT EYE test - showing calibration',
+      '”¥ [VisualAcuity] Starting RIGHT EYE test - showing calibration',
     );
     if (_useDistanceMonitoring && _showDistanceCalibration) {
       // Wait for build to complete, then show calibration screen
@@ -388,15 +388,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _handleSpeechDetected(String partialResult) {
-    debugPrint('[VisualAcuity] ðŸŽ¤ Speech detected: "$partialResult"');
+    debugPrint('[VisualAcuity] Ž¤ Speech detected: "$partialResult"');
     if (mounted) {
       setState(() {
         _lastDetectedSpeech = partialResult;
         _isSpeechActive = true;
       });
 
-      // âœ… RAPID RESPONSE: If we match a direction even in partial speech, trigger now!
-      // âœ… GUARD: Results arriving within ~800ms of rotation are ignored (likely from relaxation)
+      // … RAPID RESPONSE: If we match a direction even in partial speech, trigger now!
+      // … GUARD: Results arriving within ~800ms of rotation are ignored (likely from relaxation)
       if (_showE && _waitingForResponse) {
         if (_eDisplayStartTime != null) {
           final sinceRotation = DateTime.now().difference(_eDisplayStartTime!);
@@ -408,7 +408,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         final direction = SpeechService.parseDirection(partialResult);
         if (direction != null) {
           debugPrint(
-            '[VisualAcuity] âš¡ Rapid recognition from partial speech: $direction',
+            '[VisualAcuity] ¡ Rapid recognition from partial speech: $direction',
           );
           _recordResponse(direction, source: 'partial_speech');
           return;
@@ -431,13 +431,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         }
       }
 
-      // âœ… Make waveform responsive for 500ms
+      // … Make waveform responsive for 500ms
       _speechActiveTimer?.cancel();
       _speechActiveTimer = Timer(const Duration(milliseconds: 500), () {
         if (mounted) setState(() => _isSpeechActive = false);
       });
 
-      // âœ… Auto-erase recognized text after 2.5 seconds
+      // … Auto-erase recognized text after 2.5 seconds
       _speechEraserTimer?.cancel();
       _speechEraserTimer = Timer(const Duration(milliseconds: 2500), () {
         if (mounted) {
@@ -457,7 +457,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Start continuous distance monitoring after calibration
     _startContinuousDistanceMonitoring();
 
-    // âœ… FIX: Show cover eye instruction AFTER calibration for right eye
+    // … FIX: Show cover eye instruction AFTER calibration for right eye
     if (_currentEye == 'right') {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -478,22 +478,22 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Future<void> _startContinuousDistanceMonitoring() async {
     if (!_useDistanceMonitoring) return;
 
-    debugPrint('ðŸ”¥ [DistanceMonitor] Starting/Resuming distance monitoring');
+    debugPrint('”¥ [DistanceMonitor] Starting/Resuming distance monitoring');
 
     // Set up distance update callback
     _distanceService.onDistanceUpdate = _handleDistanceUpdate;
     _distanceService.onError = (msg) => debugPrint('[DistanceMonitor] $msg');
 
-    // âœ… FIX: Always ensure camera is initialized/re-initialized
+    // … FIX: Always ensure camera is initialized/re-initialized
     // This prevents "stale" camera handles after returning from calibration screen or restarts
-    debugPrint('ðŸ”¥ [DistanceMonitor] Initializing/Ensuring camera');
+    debugPrint('”¥ [DistanceMonitor] Initializing/Ensuring camera');
     await _distanceService.initializeCamera();
 
     if (!_distanceService.isMonitoring) {
-      debugPrint('ðŸ”¥ [DistanceMonitor] Starting monitoring');
+      debugPrint('”¥ [DistanceMonitor] Starting monitoring');
       await _distanceService.startMonitoring();
     } else {
-      debugPrint('ðŸ”¥ [DistanceMonitor] Monitoring already active');
+      debugPrint('”¥ [DistanceMonitor] Monitoring already active');
     }
   }
 
@@ -505,7 +505,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    // âœ… FIX: Don't process distance updates while pause dialog is showing
+    // … FIX: Don't process distance updates while pause dialog is showing
     if (_isPausedForExit) return;
 
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
@@ -517,14 +517,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
-      // âœ… FIX: Only set _isDistanceOk to true here.
+      // … FIX: Only set _isDistanceOk to true here.
       // It is set to false only in _pauseTestForDistance after cooldown check.
       if (!shouldPause) {
         _isDistanceOk = true;
       }
     });
 
-    // âœ… AUTO PAUSE/RESUME logic with DEBOUNCING
+    // … AUTO PAUSE/RESUME logic with DEBOUNCING
     // ALWAYS check if we should pause, regardless of _showE, but only apply pause if we are in a state where it matters
     if (shouldPause) {
       _lastShouldPauseTime ??= DateTime.now();
@@ -564,7 +564,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eCountdownTimer?.cancel();
     _eDisplayTimer?.cancel();
 
-    // ðŸ”¥ NO verbal "Test Paused" here - visual overlay is sufficient
+    // ”¥ NO verbal "Test Paused" here - visual overlay is sufficient
     // This allows the user's voice to be heard even if they are slightly too close
     HapticFeedback.mediumImpact();
   }
@@ -596,10 +596,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
       _restartEDisplayTimer();
     } else if (_showRelaxation) {
-      // âœ… RESUME MIC: If we were already below 3s when distance was corrected
+      // … RESUME MIC: If we were already below 3s when distance was corrected
       if (_relaxationCountdown <= 3 && !_continuousSpeech.isActive) {
         debugPrint(
-          '[VisualAcuity] ðŸŽ¤ Resuming mic (already below 3s in relaxation)',
+          '[VisualAcuity] Ž¤ Resuming mic (already below 3s in relaxation)',
         );
         _continuousSpeech.start(
           listenDuration: const Duration(minutes: 10),
@@ -629,7 +629,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         return;
       }
 
-      // âœ… CRITICAL FIX: If paused for distance, do not decrement countdown
+      // … CRITICAL FIX: If paused for distance, do not decrement countdown
       if (_isTestPausedForDistance) {
         _relaxationProgressController.stop();
         return;
@@ -641,7 +641,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
       if (_relaxationCountdown <= 0) {
         timer.cancel();
-        // âœ… FALLBACK: Transition phase if animation listener fails
+        // … FALLBACK: Transition phase if animation listener fails
         if (_showRelaxation) {
           _showTumblingE();
         }
@@ -657,7 +657,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       return;
     }
 
-    // âœ… Ensure mic is active when resuming E phase
+    // … Ensure mic is active when resuming E phase
     if (!_continuousSpeech.isActive) {
       _continuousSpeech.start(
         listenDuration: const Duration(minutes: 10),
@@ -704,14 +704,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   void _startEyeTest() {
     if (!mounted || _testComplete || _showE || _showRelaxation) {
       debugPrint(
-        '[VisualAcuity] âš ï¸ _startEyeTest IGNORED: Test already in progress',
+        '[VisualAcuity]  ï¸ _startEyeTest IGNORED: Test already in progress',
       );
       return;
     }
 
-    debugPrint(
-      'ðŸ”¥ [VisualAcuity] _startEyeTest called for eye: $_currentEye',
-    );
+    debugPrint('”¥ [VisualAcuity] _startEyeTest called for eye: $_currentEye');
     setState(() {
       _isTestPausedForDistance = false;
       _isDistanceOk = true; // Reset distance status
@@ -722,7 +720,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     Future.delayed(const Duration(seconds: 4), () {
       if (mounted) {
         debugPrint(
-          'ðŸ”¥ [VisualAcuity] Delay finished, calling _startRelaxation',
+          '”¥ [VisualAcuity] Delay finished, calling _startRelaxation',
         );
         _startRelaxation();
       }
@@ -731,23 +729,22 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   void _startRelaxation() {
     debugPrint(
-      'ðŸ”¥ [VisualAcuity] _startRelaxation starting (Duration: ${TestConstants.relaxationDurationSeconds}s)',
+      '[VisualAcuity] _startRelaxation starting (Duration: ${TestConstants.relaxationDurationSeconds}s)',
     );
-    // âœ… Stop mic when relaxation starts
+    // Stop mic when relaxation starts
     _continuousSpeech.stop();
 
     setState(() {
       _showRelaxation = true;
       _showE = false;
-      _showResult =
-          false; // âœ… Ensure result screen from prev trial is cleared
+      _showResult = false; // … Ensure result screen from prev trial is cleared
       _isTestPausedForDistance =
           false; // Reset to ensure no accidental carry-over
       _isDistanceOk = true; // Reset distance status
       _relaxationCountdown = TestConstants.relaxationDurationSeconds;
     });
 
-    _eDisplayStartTime = null; // âœ… Reset timing guard for next E
+    _eDisplayStartTime = null; // … Reset timing guard for next E
     _ttsService.speak(TtsService.relaxationInstruction);
 
     _relaxationProgressController.reset();
@@ -758,16 +755,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     if (!mounted) return;
 
     debugPrint(
-      'ðŸ”¥ [VisualAcuity] _showTumblingE called (Current Level: $_currentLevel)',
+      '”¥ [VisualAcuity] _showTumblingE called (Current Level: $_currentLevel)',
     );
-    // âœ… NEW: Clear ANY stale speech before rotation to prevent "leakage" from last E
+    // … NEW: Clear ANY stale speech before rotation to prevent "leakage" from last E
     _continuousSpeech.clearAccumulated();
 
-    // âœ… Explicitly reset display state
+    // … Explicitly reset display state
     _eDisplayCountdown = TestConstants.eDisplayDurationSeconds;
     _eDisplayStartTime = DateTime.now();
 
-    // âœ… Cancel ANY existing timers for this eye/trial
+    // … Cancel ANY existing timers for this eye/trial
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
@@ -783,11 +780,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     final newDirection = directions[_random.nextInt(directions.length)];
 
     debugPrint(
-      'ðŸ”¥ [VisualAcuity] DIRECTION ROTATION: $_currentDirection -> $newDirection',
+      '”¥ [VisualAcuity] DIRECTION ROTATION: $_currentDirection -> $newDirection',
     );
     _currentDirection = newDirection;
 
-    // âœ… Reset preview when NEW E starts
+    // … Reset preview when NEW E starts
     _lastDetectedSpeech = null;
 
     setState(() {
@@ -797,25 +794,25 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _waitingForResponse = true;
       _lastDetectedSpeech = null;
       _eDisplayStartTime =
-          DateTime.now(); // âœ… Re-capture precisely after setState triggers
+          DateTime.now(); // … Re-capture precisely after setState triggers
 
       debugPrint(
-        'ðŸ”¥ [VisualAcuity] ðŸŽ¯ Displaying E: Size=${TestConstants.visualAcuityLevels[_currentLevel].sizeMm}mm '
+        '”¥ [VisualAcuity] Ž¯ Displaying E: Size=${TestConstants.visualAcuityLevels[_currentLevel].sizeMm}mm '
         '(Index: $_currentLevel)',
       );
     });
 
-    // âœ… Start mic ONLY AFTER E is shown and state is updated
+    // … Start mic ONLY AFTER E is shown and state is updated
     _continuousSpeech.start(
       listenDuration: const Duration(minutes: 10),
       minConfidence: 0.15,
       bufferMs: 1000,
     );
 
-    // âœ… FALLBACK: If mic isn't active at the moment E appears, force a start
+    // … FALLBACK: If mic isn't active at the moment E appears, force a start
     if (!_continuousSpeech.isActive) {
       debugPrint(
-        '[VisualAcuity] ðŸŽ¤ Fallback: Mic not active at E start, starting now',
+        '[VisualAcuity] Ž¤ Fallback: Mic not active at E start, starting now',
       );
       _continuousSpeech.start(
         listenDuration: const Duration(minutes: 10),
@@ -824,10 +821,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       );
     }
 
-    // âœ… CRITICAL FIX: If already paused due to distance, do not start interaction timers yet
+    // … CRITICAL FIX: If already paused due to distance, do not start interaction timers yet
     if (_isTestPausedForDistance) {
       debugPrint(
-        '[VisualAcuity] ðŸ›‘ Postponing timers: test is currently paused for distance',
+        '[VisualAcuity] ›‘ Postponing timers: test is currently paused for distance',
       );
       return;
     }
@@ -871,24 +868,24 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   void _handleVoiceResponse(String recognized) {
     debugPrint(
-      '[VisualAcuity] ðŸ”¥ðŸ”¥ðŸ”¥ _handleVoiceResponse called with: "$recognized"',
+      '[VisualAcuity] ”¥”¥”¥ _handleVoiceResponse called with: "$recognized"',
     );
 
     // Only process if the E is currently displayed and we are waiting for a response
     if (!mounted || !_showE || !_waitingForResponse) {
       debugPrint(
-        '[VisualAcuity] âš ï¸ Not in E display phase or not waiting for response - ignoring voice input',
+        '[VisualAcuity]  ï¸ Not in E display phase or not waiting for response - ignoring voice input',
       );
       return;
     }
 
-    // âœ… NEW: Strict timing guard - ignore speech that arrived too quickly after rotation
+    // … NEW: Strict timing guard - ignore speech that arrived too quickly after rotation
     // Results arriving within ~1500ms of rotation are likely for the PREVIOUS orientation
     if (_eDisplayStartTime != null) {
       final sinceRotation = DateTime.now().difference(_eDisplayStartTime!);
       if (sinceRotation < const Duration(milliseconds: 1500)) {
         debugPrint(
-          '[VisualAcuity] â³ Ignoring final result: arrived too fast after rotation (${sinceRotation.inMilliseconds}ms)',
+          '[VisualAcuity] ³ Ignoring final result: arrived too fast after rotation (${sinceRotation.inMilliseconds}ms)',
         );
         return;
       }
@@ -916,7 +913,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     for (var keyword in blurryKeywords) {
       if (normalized.contains(keyword)) {
-        debugPrint('[VisualAcuity] ðŸ“ Recognized "blurry" keyword');
+        debugPrint('[VisualAcuity] “ Recognized "blurry" keyword');
         _recordResponse(
           'blurry',
           source: 'voice_blurry_keyword',
@@ -926,18 +923,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     }
 
     // If not blurry, try to match a direction
-    debugPrint('[VisualAcuity] ðŸ” Parsing direction from: "$recognized"');
+    debugPrint('[VisualAcuity] ” Parsing direction from: "$recognized"');
     final direction = SpeechService.parseDirection(normalized);
-    debugPrint('[VisualAcuity] ðŸ“ Parsed direction: $direction');
+    debugPrint('[VisualAcuity] “ Parsed direction: $direction');
 
     if (direction != null) {
-      debugPrint('[VisualAcuity] âœ… Recording direction: $direction');
-      // âœ… Update preview IMMEDIATELY so user sees what was recognized
+      debugPrint('[VisualAcuity] … Recording direction: $direction');
+      // … Update preview IMMEDIATELY so user sees what was recognized
       if (mounted) setState(() => _lastDetectedSpeech = recognized);
       _recordResponse(direction, source: 'voice_final');
       return;
     } else {
-      debugPrint('[VisualAcuity] âŒ Direction is NULL - not recording');
+      debugPrint('[VisualAcuity] Œ Direction is NULL - not recording');
     }
   }
 
@@ -948,22 +945,22 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   void _recordResponse(String? userResponse, {String source = 'unknown'}) {
     debugPrint(
-      '[VisualAcuity] ðŸ“ _recordResponse called from $source with: $userResponse',
+      '[VisualAcuity] “ _recordResponse called from $source with: $userResponse',
     );
     if (!_waitingForResponse) {
       debugPrint(
-        '[VisualAcuity] âš ï¸ _recordResponse IGNORED: Already recorded',
+        '[VisualAcuity]  ï¸ _recordResponse IGNORED: Already recorded',
       );
       return;
     }
 
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
-    // âœ… Keep listening continuously - just clear buffers when E changes
+    // … Keep listening continuously - just clear buffers when E changes
     _continuousSpeech.clearAccumulated();
-    // âŒ DO NOT clear _lastDetectedSpeech here - let it persist for result screen
+    // Œ DO NOT clear _lastDetectedSpeech here - let it persist for result screen
 
-    // âœ… HANDLE NO RESPONSE: Rotate E in SAME size and try again
+    // … HANDLE NO RESPONSE: Rotate E in SAME size and try again
     if (userResponse == null) {
       debugPrint(
         '[VisualAcuity] Timeout - Rotating E (staying at level $_currentLevel)',
@@ -1032,11 +1029,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   // Helper counter for incorrect responses
   int _incorrectCounterAtLevel = 0;
 
-  // âœ… FIXED METHOD: Test exactly 7 plates (one per level)
+  // … FIXED METHOD: Test exactly 7 plates (one per level)
   void _evaluateAndContinue() {
     setState(() => _showResult = false);
 
-    // âœ… ALWAYS move to next level after any response (correct or incorrect)
+    // … ALWAYS move to next level after any response (correct or incorrect)
     // As per user requirement: "once i get one size once should n't ask again in the same size"
     _currentLevel++;
     _correctAtLevel = 0;
@@ -1044,16 +1041,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _incorrectCounterAtLevel = 0;
 
     if (_currentLevel >= TestConstants.visualAcuityLevels.length) {
-      debugPrint('âœ… [VisualAcuity] Finished all levels');
+      debugPrint('… [VisualAcuity] Finished all levels');
       _completeEyeTest();
     } else {
-      debugPrint('âœ… [VisualAcuity] Moving to next level: $_currentLevel');
+      debugPrint('… [VisualAcuity] Moving to next level: $_currentLevel');
       _startRelaxation();
     }
   }
 
   void _completeEyeTest() {
-    // âœ… NEW SCORING LOGIC: Find the BEST (smallest) font size correctly identified
+    // … NEW SCORING LOGIC: Find the BEST (smallest) font size correctly identified
     int bestLevelIndex = -1;
     for (var response in _responses) {
       if (response.isCorrect) {
@@ -1387,7 +1384,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _showDistanceCalibration = true;
     });
 
-    // âœ… FIX: Explicitly show calibration screen after state reset
+    // … FIX: Explicitly show calibration screen after state reset
     // Wait for setState to complete, then show calibration
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _showDistanceCalibration) {
@@ -2373,7 +2370,7 @@ class _DirectionButton extends StatelessWidget {
   }
 }
 
-// âœ… NEW Waveform animation for microphone
+// … NEW Waveform animation for microphone
 class _SpeechWaveform extends StatefulWidget {
   final bool isListening;
   final bool isTalking;
@@ -2410,7 +2407,7 @@ class _SpeechWaveformState extends State<_SpeechWaveform>
 
   @override
   Widget build(BuildContext context) {
-    // âœ… Animate when either listening OR actively talking
+    // … Animate when either listening OR actively talking
     final shouldAnimate = widget.isListening || widget.isTalking;
 
     if (!shouldAnimate) {

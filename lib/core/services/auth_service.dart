@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/user_model.dart';
@@ -228,7 +228,7 @@ class AuthService {
   /// Validate the practitioner access code against Firestore
   Future<bool> validatePractitionerCode(String code) async {
     try {
-      debugPrint('[AuthService] 🔍 Validating practitioner code: "$code"');
+      debugPrint('[AuthService] ” Validating practitioner code: "$code"');
       final doc = await _firestore
           .collection('AppSettings')
           .doc('PractitionerAccess')
@@ -236,25 +236,25 @@ class AuthService {
 
       if (doc.exists && doc.data() != null) {
         final storedCode = doc.data()!['accessCode'] as String?;
-        debugPrint('[AuthService] 📄 Found stored code: "$storedCode"');
+        debugPrint('[AuthService] “„ Found stored code: "$storedCode"');
 
         if (storedCode == null) {
-          debugPrint('[AuthService] ⚠️ storedCode is null in Firestore');
+          debugPrint('[AuthService]  ï¸ storedCode is null in Firestore');
           return false;
         }
 
         // Use trim() on both sides to avoid accidental space issues
         final bool isValid = storedCode.trim() == code.trim();
-        debugPrint('[AuthService] ⚖️ Validation result: $isValid');
+        debugPrint('[AuthService] –ï¸ Validation result: $isValid');
         return isValid;
       } else {
         debugPrint(
-          '[AuthService] ❌ PractitionerAccess document does not exist in AppSettings collection',
+          '[AuthService] Œ PractitionerAccess document does not exist in AppSettings collection',
         );
         return false;
       }
     } catch (e) {
-      debugPrint('[AuthService] ❌ validatePractitionerCode error: $e');
+      debugPrint('[AuthService] Œ validatePractitionerCode error: $e');
       return false;
     }
   }
@@ -265,7 +265,7 @@ class AuthService {
       // 1. Check local cache FIRST (Fastest)
       final cachedUser = await LocalStorageService().getUserProfile();
       if (cachedUser != null && cachedUser.id == uid) {
-        debugPrint('[AuthService] ⚡ Returning cached user data');
+        debugPrint('[AuthService] ¡ Returning cached user data');
         // Still try to refresh in background or later, but return immediately for UI
         _refreshUserDataInBackground(uid);
         return cachedUser;
@@ -276,7 +276,7 @@ class AuthService {
           .collection('all_users_lookup')
           .doc(uid)
           .get(const GetOptions(source: Source.serverAndCache))
-          .timeout(const Duration(seconds: 2)); // ⚡ FAST TIMEOUT
+          .timeout(const Duration(seconds: 2)); // ¡ FAST TIMEOUT
       if (!lookupDoc.exists || lookupDoc.data() == null) {
         // Check legacy 'users' collection as fallback
         final legacyDoc = await _firestore.collection('users').doc(uid).get();
@@ -294,7 +294,7 @@ class AuthService {
           .collection(collection)
           .doc(identityString)
           .get(const GetOptions(source: Source.serverAndCache))
-          .timeout(const Duration(seconds: 2)); // ⚡ FAST TIMEOUT
+          .timeout(const Duration(seconds: 2)); // ¡ FAST TIMEOUT
       if (doc.exists && doc.data() != null) {
         final user = UserModel.fromMap(doc.data()!, doc.id);
         // Save to cache
@@ -351,9 +351,9 @@ class AuthService {
       await sessionMonitor.removeSession();
       sessionMonitor.stopMonitoring();
 
-      debugPrint('[AuthService] ✅ Session removed, signing out...');
+      debugPrint('[AuthService] … Session removed, signing out...');
     } catch (e) {
-      debugPrint('[AuthService] ⚠️ Error removing session: $e');
+      debugPrint('[AuthService]  ï¸ Error removing session: $e');
     }
 
     // Clear local cache
@@ -444,12 +444,12 @@ class AuthService {
         // 6. Delete auth account
         await user.delete();
 
-        debugPrint('[AuthService] ✅ Account and data deleted successfully');
+        debugPrint('[AuthService] … Account and data deleted successfully');
         return AuthResult.success(message: 'Account deleted');
       }
       return AuthResult.failure(message: 'No user logged in');
     } catch (e) {
-      debugPrint('[AuthService] ❌ Delete account ERROR: $e');
+      debugPrint('[AuthService] Œ Delete account ERROR: $e');
       return AuthResult.failure(message: 'Failed to delete account');
     }
   }
@@ -512,3 +512,4 @@ class AuthResult {
     return AuthResult._(isSuccess: false, message: message);
   }
 }
+

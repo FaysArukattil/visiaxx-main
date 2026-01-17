@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/models/individual_test_result_model.dart';
 
@@ -10,7 +10,7 @@ class IndividualTestService {
   Future<String> saveIndividualTest(IndividualTestResult result) async {
     try {
       debugPrint(
-        '[IndividualTestService] 💾 Saving individual test: ${result.testType}',
+        '[IndividualTestService] ’¾ Saving individual test: ${result.testType}',
       );
 
       final docRef = await _firestore
@@ -19,10 +19,10 @@ class IndividualTestService {
           .collection('individualTests')
           .add(result.toFirestore());
 
-      debugPrint('[IndividualTestService] ✅ Saved with ID: ${docRef.id}');
+      debugPrint('[IndividualTestService] … Saved with ID: ${docRef.id}');
       return docRef.id;
     } catch (e) {
-      debugPrint('[IndividualTestService] ❌ Error saving test: $e');
+      debugPrint('[IndividualTestService] Œ Error saving test: $e');
       rethrow;
     }
   }
@@ -33,7 +33,7 @@ class IndividualTestService {
   ) async {
     try {
       debugPrint(
-        '[IndividualTestService] 📥 Fetching individual tests for user: $userId',
+        '[IndividualTestService] “¥ Fetching individual tests for user: $userId',
       );
 
       final snapshot = await _firestore
@@ -48,10 +48,10 @@ class IndividualTestService {
           .map((doc) => IndividualTestResult.fromFirestore(doc))
           .toList();
 
-      debugPrint('[IndividualTestService] ✅ Fetched ${tests.length} tests');
+      debugPrint('[IndividualTestService] … Fetched ${tests.length} tests');
       return tests;
     } catch (e) {
-      debugPrint('[IndividualTestService] ❌ Error fetching tests: $e');
+      debugPrint('[IndividualTestService] Œ Error fetching tests: $e');
       return [];
     }
   }
@@ -66,9 +66,9 @@ class IndividualTestService {
           .doc(testId)
           .update({'pdfUrl': pdfUrl});
 
-      debugPrint('[IndividualTestService] ✅ Updated PDF URL for test: $testId');
+      debugPrint('[IndividualTestService] … Updated PDF URL for test: $testId');
     } catch (e) {
-      debugPrint('[IndividualTestService] ❌ Error updating PDF URL: $e');
+      debugPrint('[IndividualTestService] Œ Error updating PDF URL: $e');
     }
   }
 
@@ -82,9 +82,9 @@ class IndividualTestService {
           .doc(testId)
           .update({'awsUrl': awsUrl});
 
-      debugPrint('[IndividualTestService] ✅ Updated AWS URL for test: $testId');
+      debugPrint('[IndividualTestService] … Updated AWS URL for test: $testId');
     } catch (e) {
-      debugPrint('[IndividualTestService] ❌ Error updating AWS URL: $e');
+      debugPrint('[IndividualTestService] Œ Error updating AWS URL: $e');
     }
   }
 
@@ -98,9 +98,9 @@ class IndividualTestService {
           .doc(testId)
           .update({'isHidden': true});
 
-      debugPrint('[IndividualTestService] ✅ Hidden test: $testId');
+      debugPrint('[IndividualTestService] … Hidden test: $testId');
     } catch (e) {
-      debugPrint('[IndividualTestService] ❌ Error hiding test: $e');
+      debugPrint('[IndividualTestService] Œ Error hiding test: $e');
     }
   }
 
@@ -116,8 +116,9 @@ class IndividualTestService {
 
       return counts;
     } catch (e) {
-      debugPrint('[IndividualTestService] ❌ Error counting tests: $e');
+      debugPrint('[IndividualTestService] Œ Error counting tests: $e');
       return {};
     }
   }
 }
+

@@ -141,7 +141,7 @@ class _PractitionerProfileSelectionScreenState
           patient: newPatient,
         );
 
-        debugPrint('[PractitionerProfile] âœ… Patient saved with ID: $savedId');
+        debugPrint('[PractitionerProfile] … Patient saved with ID: $savedId');
 
         // Update local list with Firebase ID
         final savedPatient = newPatient.copyWith(id: savedId);
@@ -160,10 +160,10 @@ class _PractitionerProfileSelectionScreenState
         if (!mounted) return;
         SnackbarUtils.showSuccess(
           context,
-          'âœ… ${savedPatient.fullName} added successfully',
+          '… ${savedPatient.fullName} added successfully',
         );
       } catch (e) {
-        debugPrint('[PractitionerProfile] âŒ Error saving patient: $e');
+        debugPrint('[PractitionerProfile] Œ Error saving patient: $e');
 
         // Close loading dialog
         if (mounted) Navigator.pop(context);
@@ -432,7 +432,7 @@ class _PractitionerProfileSelectionScreenState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${patient.age} years â€¢ ${patient.sex}${patient.phone != null ? ' â€¢ ${patient.phone}' : ''}',
+                    '${patient.age} years €¢ ${patient.sex}${patient.phone != null ? ' €¢ ${patient.phone}' : ''}',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -580,4 +580,5 @@ class _PractitionerProfileSelectionScreenState
     );
   }
 }
+
 

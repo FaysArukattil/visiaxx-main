@@ -1,4 +1,4 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+﻿import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -41,9 +41,9 @@ class NotificationService {
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
       _initialized = true;
-      debugPrint('✅ NotificationService initialized');
+      debugPrint('… NotificationService initialized');
     } catch (e) {
-      debugPrint('❌ NotificationService initialization failed: $e');
+      debugPrint('Œ NotificationService initialization failed: $e');
     }
   }
 
@@ -68,7 +68,7 @@ class NotificationService {
   /// Show a test notification
   Future<void> showTestNotification() async {
     if (!await areNotificationsEnabled()) {
-      debugPrint('⚠️ Notifications not enabled');
+      debugPrint(' ï¸ Notifications not enabled');
       return;
     }
 
@@ -100,9 +100,9 @@ class NotificationService {
         details,
         payload: 'test_notification',
       );
-      debugPrint('✅ Test notification sent');
+      debugPrint('… Test notification sent');
     } catch (e) {
-      debugPrint('❌ Failed to show notification: $e');
+      debugPrint('Œ Failed to show notification: $e');
     }
   }
 
@@ -151,9 +151,9 @@ class NotificationService {
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
-      debugPrint('✅ Reminder scheduled for $scheduledDate');
+      debugPrint('… Reminder scheduled for $scheduledDate');
     } catch (e) {
-      debugPrint('❌ Failed to schedule reminder: $e');
+      debugPrint('Œ Failed to schedule reminder: $e');
     }
   }
 
@@ -167,3 +167,4 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 }
+

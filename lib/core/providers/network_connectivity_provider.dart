@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
@@ -59,7 +59,7 @@ class NetworkConnectivityProvider extends ChangeNotifier {
     // Track if we just came back online
     if (!wasOnline && _isOnline) {
       _wasOffline = true;
-      debugPrint('[NetworkConnectivity] ✅ Back online: $result');
+      debugPrint('[NetworkConnectivity] … Back online: $result');
       _processPendingOperations();
 
       // Reset the flag after a short delay
@@ -68,7 +68,7 @@ class NetworkConnectivityProvider extends ChangeNotifier {
         notifyListeners();
       });
     } else if (wasOnline && !_isOnline) {
-      debugPrint('[NetworkConnectivity] ⚠️ Went offline');
+      debugPrint('[NetworkConnectivity]  ï¸ Went offline');
     }
 
     debugPrint(
@@ -81,13 +81,13 @@ class NetworkConnectivityProvider extends ChangeNotifier {
   void queueOperation(Function operation) {
     if (_isOnline) {
       debugPrint(
-        '[NetworkConnectivity] ⚡ Already online, executing operation immediately',
+        '[NetworkConnectivity] ¡ Already online, executing operation immediately',
       );
       _executeOperation(operation);
     } else {
       _pendingOperations.add(operation);
       debugPrint(
-        '[NetworkConnectivity] 📥 Queued operation. Total pending: ${_pendingOperations.length}',
+        '[NetworkConnectivity] “¥ Queued operation. Total pending: ${_pendingOperations.length}',
       );
     }
   }
@@ -100,7 +100,7 @@ class NetworkConnectivityProvider extends ChangeNotifier {
         operation();
       }
     } catch (e) {
-      debugPrint('[NetworkConnectivity] ❌ Error executing operation: $e');
+      debugPrint('[NetworkConnectivity] Œ Error executing operation: $e');
     }
   }
 
@@ -144,3 +144,4 @@ class NetworkConnectivityProvider extends ChangeNotifier {
     super.dispose();
   }
 }
+

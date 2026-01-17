@@ -38,10 +38,10 @@ class DistanceCheckDialog extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
-                  Text('â€¢ Sit comfortably with your back straight'),
-                  Text('â€¢ Keep the screen at eye level'),
-                  Text('â€¢ Ensure good lighting in the room'),
-                  Text('â€¢ Remove any glare from the screen'),
+                  Text('€¢ Sit comfortably with your back straight'),
+                  Text('€¢ Keep the screen at eye level'),
+                  Text('€¢ Ensure good lighting in the room'),
+                  Text('€¢ Remove any glare from the screen'),
                 ],
               ),
             ),
@@ -74,4 +74,5 @@ class DistanceCheckDialog extends StatelessWidget {
     );
   }
 }
+
 

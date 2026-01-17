@@ -1,4 +1,4 @@
-/// Pelli-Robson Speech Recognition Fuzzy Matcher
+﻿/// Pelli-Robson Speech Recognition Fuzzy Matcher
 /// Handles phonetic alternatives and adaptive learning for reliable letter recognition
 library;
 
@@ -60,7 +60,7 @@ class PelliRobsonFuzzyMatcher {
       }
     }
 
-    // 4. Check Levenshtein distance (≤ 2 is acceptable for longer words)
+    // 4. Check Levenshtein distance (‰¤ 2 is acceptable for longer words)
     if (normalized.length > 1 && target.length > 1) {
       final distance = _levenshteinDistance(normalized, target);
       if (distance <= 2) return true;
@@ -166,5 +166,6 @@ class PelliRobsonFuzzyMatcher {
 
   /// Get debug info about current learned patterns
   String get debugInfo =>
-      'Learned patterns: ${learnedPatterns.entries.map((e) => '${e.key}→${e.value}').join(', ')}';
+      'Learned patterns: ${learnedPatterns.entries.map((e) => '${e.key}†’${e.value}').join(', ')}';
 }
+

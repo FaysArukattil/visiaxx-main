@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:visiaxx/core/services/aws_s3_storage_service.dart';
 import 'package:visiaxx/core/services/auth_service.dart';
@@ -80,10 +80,10 @@ class TestResultService {
         pdfFile: pdfFile,
       );
 
-      debugPrint('[TestResultService] ✅ Initial save successful: $customDocId');
+      debugPrint('[TestResultService] … Initial save successful: $customDocId');
       return customDocId;
     } catch (e) {
-      debugPrint('[TestResultService] ❌ Save ERROR: $e');
+      debugPrint('[TestResultService] Œ Save ERROR: $e');
       // If organized save fails, try quick fallback to UID path
       try {
         await _firestore
@@ -108,14 +108,14 @@ class TestResultService {
   }) async {
     try {
       debugPrint(
-        '[TestResultService] ☁️ Starting background AWS uploads for ID: $customDocId',
+        '[TestResultService] ˜ï¸ Starting background AWS uploads for ID: $customDocId',
       );
 
       // 0. Wait for AWS credentials to be ready (up to 10 seconds)
       int retryCount = 0;
       while (!_awsStorageService.isAvailable && retryCount < 10) {
         debugPrint(
-          '[TestResultService] ⏳ Waiting for AWS credentials... (Attempt ${retryCount + 1})',
+          '[TestResultService] ³ Waiting for AWS credentials... (Attempt ${retryCount + 1})',
         );
         await Future.delayed(const Duration(seconds: 1));
         retryCount++;
@@ -123,7 +123,7 @@ class TestResultService {
 
       if (!_awsStorageService.isAvailable) {
         debugPrint(
-          '[TestResultService] ❌ AWS S3 not available after waiting. Aborting sync.',
+          '[TestResultService] Œ AWS S3 not available after waiting. Aborting sync.',
         );
         return;
       }
@@ -151,7 +151,7 @@ class TestResultService {
       if (pdfFile != null && await pdfFile.exists()) {
         final fileSize = await pdfFile.length();
         debugPrint(
-          '[TestResultService] 📤 Uploading PDF: ${pdfFile.path} ($fileSize bytes)',
+          '[TestResultService] “¤ Uploading PDF: ${pdfFile.path} ($fileSize bytes)',
         );
 
         final pdfUrl = await _awsStorageService.uploadPdfReport(
@@ -165,19 +165,19 @@ class TestResultService {
         );
 
         if (pdfUrl != null) {
-          debugPrint('[TestResultService] ✅ PDF uploaded: $pdfUrl');
+          debugPrint('[TestResultService] … PDF uploaded: $pdfUrl');
           updatedResult = updatedResult.copyWith(pdfUrl: pdfUrl);
         } else {
-          debugPrint('[TestResultService] ❌ PDF upload FAILED (returned null)');
+          debugPrint('[TestResultService] Œ PDF upload FAILED (returned null)');
         }
       } else {
         debugPrint(
-          '[TestResultService] ⚠️ PDF missing or empty: ${pdfFile?.path}',
+          '[TestResultService]  ï¸ PDF missing or empty: ${pdfFile?.path}',
         );
       }
 
       // 3. Update Firestore with new AWS URLs
-      debugPrint('[TestResultService] 🔄 Updating Firestore with AWS URLs...');
+      debugPrint('[TestResultService] ”„ Updating Firestore with AWS URLs...');
       await _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
@@ -186,10 +186,10 @@ class TestResultService {
           .update(updatedResult.toFirestore());
 
       debugPrint(
-        '[TestResultService] ✅ Background AWS sync COMPLETE for $customDocId',
+        '[TestResultService] … Background AWS sync COMPLETE for $customDocId',
       );
     } catch (e) {
-      debugPrint('[TestResultService] ❌ Background AWS sync ERROR: $e');
+      debugPrint('[TestResultService] Œ Background AWS sync ERROR: $e');
     }
   }
 
@@ -202,7 +202,7 @@ class TestResultService {
   }) async {
     try {
       debugPrint(
-        '[TestResultService] 💾 Saving result OFFLINE for user: $userId',
+        '[TestResultService] ’¾ Saving result OFFLINE for user: $userId',
       );
 
       // 1. Generate ID and save to Firestore (local cache)
@@ -234,15 +234,15 @@ class TestResultService {
             .set(result.toFirestore());
       }
 
-      debugPrint('[TestResultService] ✅ Saved to local queue: $customDocId');
+      debugPrint('[TestResultService] … Saved to local queue: $customDocId');
 
       // 2. Queue AWS Sync (This survives screen disposal)
       debugPrint(
-        '[TestResultService] 📥 Queuing background sync for $customDocId',
+        '[TestResultService] “¥ Queuing background sync for $customDocId',
       );
       connectivity.queueOperation(() async {
         debugPrint(
-          '[TestResultService] 🔄 Executing queued AWS sync for $customDocId',
+          '[TestResultService] ”„ Executing queued AWS sync for $customDocId',
         );
         await performBackgroundAWSUploads(
           userId: userId,
@@ -257,7 +257,7 @@ class TestResultService {
 
       return customDocId;
     } catch (e) {
-      debugPrint('[TestResultService] ❌ Offline Save ERROR: $e');
+      debugPrint('[TestResultService] Œ Offline Save ERROR: $e');
       throw Exception('Failed to save result offline: $e');
     }
   }
@@ -268,7 +268,7 @@ class TestResultService {
       return _awsStorageService.isAvailable &&
           await _awsStorageService.testConnection();
     } catch (e) {
-      debugPrint('[TestResultService] ❌ AWS Connection Check Failed: $e');
+      debugPrint('[TestResultService] Œ AWS Connection Check Failed: $e');
       return false;
     }
   }
@@ -283,13 +283,13 @@ class TestResultService {
     String? memberId,
   }) async {
     debugPrint(
-      '[TestResultService] 📤 Checking for images to upload for $testId...',
+      '[TestResultService] “¤ Checking for images to upload for $testId...',
     );
 
     // Check if AWS is available
     final bool awsAvailable = _awsStorageService.isAvailable;
     if (!awsAvailable) {
-      debugPrint('[TestResultService] ⚠️ AWS not available, skipping uploads');
+      debugPrint('[TestResultService]  ï¸ AWS not available, skipping uploads');
       return result;
     }
 
@@ -302,7 +302,7 @@ class TestResultService {
 
       if (await file.exists()) {
         debugPrint(
-          '[TestResultService] 📤 Uploading right eye image to AWS...',
+          '[TestResultService] “¤ Uploading right eye image to AWS...',
         );
 
         final awsUrl = await _awsStorageService.uploadAmslerGridImage(
@@ -332,7 +332,7 @@ class TestResultService {
       final file = File(localPath);
 
       if (await file.exists()) {
-        debugPrint('[TestResultService] 📤 Uploading left eye image to AWS...');
+        debugPrint('[TestResultService] “¤ Uploading left eye image to AWS...');
 
         final awsUrl = await _awsStorageService.uploadAmslerGridImage(
           userId: userId,
@@ -375,7 +375,7 @@ class TestResultService {
 
       if (prescription != null) {
         debugPrint(
-          '[TestResultService] ✅ Loaded prescription for result: ${result.id}',
+          '[TestResultService] … Loaded prescription for result: ${result.id}',
         );
         return result.copyWith(refractionPrescription: prescription);
       }
@@ -383,7 +383,7 @@ class TestResultService {
       return result;
     } catch (e) {
       debugPrint(
-        '[TestResultService] ⚠️ Error loading prescription for ${result.id}: $e',
+        '[TestResultService]  ï¸ Error loading prescription for ${result.id}: $e',
       );
       return result; // Return result without prescription if loading fails
     }
@@ -415,7 +415,7 @@ class TestResultService {
               .timeout(Duration(seconds: timeoutSecs));
         } catch (e) {
           debugPrint(
-            '[TestResultService] ⚡ Fetch failed/timed out for $docId, trying CACHE: $e',
+            '[TestResultService] ¡ Fetch failed/timed out for $docId, trying CACHE: $e',
           );
           try {
             // Fallback: Fetch strictly from local cache (fast)
@@ -427,7 +427,7 @@ class TestResultService {
                 .get(const GetOptions(source: Source.cache));
           } catch (cacheError) {
             debugPrint(
-              '[TestResultService] ❌ Cache fetch also failed: $cacheError',
+              '[TestResultService] Œ Cache fetch also failed: $cacheError',
             );
             rethrow; // Final failure
           }
@@ -465,7 +465,7 @@ class TestResultService {
             results.add(result);
             processedDocIds.add(doc.id);
           } catch (e) {
-            debugPrint('[TestResultService] ❌ Error parsing ${doc.id}: $e');
+            debugPrint('[TestResultService] Œ Error parsing ${doc.id}: $e');
           }
         }
       }
@@ -487,7 +487,7 @@ class TestResultService {
 
         if (members.isNotEmpty) {
           debugPrint(
-            '[TestResultService] 👨‍👩‍👧‍👦 Fetching results for ${members.length} family members...',
+            '[TestResultService] ‘¨€‘©€‘§€‘¦ Fetching results for ${members.length} family members...',
           );
           final List<Future<QuerySnapshot>> memberFetches = [];
           for (final member in members) {
@@ -526,7 +526,7 @@ class TestResultService {
         }
       } catch (e) {
         debugPrint(
-          '[TestResultService] ⚠️ Error fetching family member results: $e',
+          '[TestResultService]  ï¸ Error fetching family member results: $e',
         );
       }
 
@@ -534,11 +534,11 @@ class TestResultService {
       results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       debugPrint(
-        '[TestResultService] ✅ Successfully loaded ${results.length} results (Identified: ${identitySnapshot.docs.length}, UID-fallback: ${uidSnapshot?.docs.length ?? 0})',
+        '[TestResultService] … Successfully loaded ${results.length} results (Identified: ${identitySnapshot.docs.length}, UID-fallback: ${uidSnapshot?.docs.length ?? 0})',
       );
       return results;
     } catch (e) {
-      debugPrint('[TestResultService] ❌ Get ERROR: $e');
+      debugPrint('[TestResultService] Œ Get ERROR: $e');
       throw Exception('Failed to get test results: $e');
     }
   }
@@ -679,9 +679,9 @@ class TestResultService {
         'hiddenResultIds': FieldValue.arrayUnion([resultId]),
       });
 
-      debugPrint('[TestResultService] ✅ Result $resultId added to hidden list');
+      debugPrint('[TestResultService] … Result $resultId added to hidden list');
     } catch (e) {
-      debugPrint('[TestResultService] ❌ Soft delete ERROR: $e');
+      debugPrint('[TestResultService] Œ Soft delete ERROR: $e');
       throw Exception('Failed to hide test result: $e');
     }
   }
@@ -811,3 +811,4 @@ class TestResultService {
     }
   }
 }
+

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
@@ -28,9 +28,9 @@ class AppLogger {
       );
 
       _isInitialized = true;
-      debugPrint('[AppLogger] ✅ Initialized. Log file: ${_logFile!.path}');
+      debugPrint('[AppLogger] … Initialized. Log file: ${_logFile!.path}');
     } catch (e) {
-      debugPrint('[AppLogger] ❌ Initialization failed: $e');
+      debugPrint('[AppLogger] Œ Initialization failed: $e');
     }
   }
 
@@ -127,3 +127,4 @@ class FileOutput extends LogOutput {
     }
   }
 }
+

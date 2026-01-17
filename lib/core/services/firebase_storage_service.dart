@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -27,25 +27,25 @@ class FirebaseStorageService {
       return downloadUrl;
     } on SocketException {
       debugPrint(
-        '[FirebaseStorageService] ❌ Network error: No internet connection',
+        '[FirebaseStorageService] Œ Network error: No internet connection',
       );
       return null;
     } on FirebaseException catch (e) {
       if (e.code == 'network-request-failed') {
-        debugPrint('[FirebaseStorageService] ❌ Network error: ${e.message}');
+        debugPrint('[FirebaseStorageService] Œ Network error: ${e.message}');
       } else if (e.toString().contains('billing') ||
           e.toString().contains('quota')) {
         debugPrint(
-          '[FirebaseStorageService] ⚠️ Firebase Storage quota exceeded or billing required. Working in offline mode.',
+          '[FirebaseStorageService]  ï¸ Firebase Storage quota exceeded or billing required. Working in offline mode.',
         );
       } else {
         debugPrint(
-          '[FirebaseStorageService] ❌ Firebase error: ${e.code} - ${e.message}',
+          '[FirebaseStorageService] Œ Firebase error: ${e.code} - ${e.message}',
         );
       }
       return null;
     } catch (e) {
-      debugPrint('[FirebaseStorageService] ❌ Error uploading image: $e');
+      debugPrint('[FirebaseStorageService] Œ Error uploading image: $e');
       return null;
     }
   }
@@ -83,22 +83,22 @@ class FirebaseStorageService {
       return tempFile;
     } on SocketException {
       debugPrint(
-        '[FirebaseStorageService] ❌ Network error downloading image: No internet connection',
+        '[FirebaseStorageService] Œ Network error downloading image: No internet connection',
       );
       return null;
     } on FirebaseException catch (e) {
       if (e.code == 'network-request-failed') {
         debugPrint(
-          '[FirebaseStorageService] ❌ Network error downloading: ${e.message}',
+          '[FirebaseStorageService] Œ Network error downloading: ${e.message}',
         );
       } else {
         debugPrint(
-          '[FirebaseStorageService] ❌ Firebase error downloading: ${e.code}',
+          '[FirebaseStorageService] Œ Firebase error downloading: ${e.code}',
         );
       }
       return null;
     } catch (e) {
-      debugPrint('[FirebaseStorageService] ❌ Error downloading image: $e');
+      debugPrint('[FirebaseStorageService] Œ Error downloading image: $e');
       return null;
     }
   }
@@ -143,3 +143,4 @@ class FirebaseStorageService {
     }
   }
 }
+

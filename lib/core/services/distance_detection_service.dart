@@ -1,4 +1,4 @@
-// File: lib/core/services/distance_detection_service.dart
+﻿// File: lib/core/services/distance_detection_service.dart
 
 import 'dart:async';
 import 'dart:io';
@@ -56,7 +56,7 @@ class DistanceDetectionService {
   int _consecutiveErrors = 0;
   static const int _maxConsecutiveErrors = 10;
 
-  // ✅ New: Face-width fallback for when eyes are covered
+  // … New: Face-width fallback for when eyes are covered
   double _calibratedFaceWidthRatio = 1.0;
   bool _isFaceWidthCalibrated = false;
   static const double _averageFaceWidthCm = 14.3; // Average human face width
@@ -97,7 +97,7 @@ class DistanceDetectionService {
   /// Initialize camera for face detection
   Future<CameraController?> initializeCamera() async {
     try {
-      // ✅ FIX: Properly dispose old controller if it exists
+      // … FIX: Properly dispose old controller if it exists
       if (_cameraController != null) {
         debugPrint(
           '[DistanceService] Disposing old camera controller before re-init',
@@ -134,19 +134,19 @@ class DistanceDetectionService {
 
       debugPrint('[DistanceService] Camera initialized');
 
-      // ✅ DEBUG: Comprehensive camera diagnostics
-      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      debugPrint('🎥 CAMERA DIAGNOSTICS');
-      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      debugPrint('✓ Initialized: ${_cameraController!.value.isInitialized}');
-      debugPrint('✓ Preview Size: ${_cameraController!.value.previewSize}');
-      debugPrint('✓ Aspect Ratio: ${_cameraController!.value.aspectRatio}');
-      debugPrint('✓ Streaming: ${_cameraController!.value.isStreamingImages}');
-      debugPrint('✓ Recording: ${_cameraController!.value.isRecordingVideo}');
+      // … DEBUG: Comprehensive camera diagnostics
+      debugPrint('”””””””””””””””””””””””””””');
+      debugPrint('Ž¥ CAMERA DIAGNOSTICS');
+      debugPrint('”””””””””””””””””””””””””””');
+      debugPrint('“ Initialized: ${_cameraController!.value.isInitialized}');
+      debugPrint('“ Preview Size: ${_cameraController!.value.previewSize}');
+      debugPrint('“ Aspect Ratio: ${_cameraController!.value.aspectRatio}');
+      debugPrint('“ Streaming: ${_cameraController!.value.isStreamingImages}');
+      debugPrint('“ Recording: ${_cameraController!.value.isRecordingVideo}');
       if (_cameraController!.value.errorDescription != null) {
-        debugPrint('❌ Error: ${_cameraController!.value.errorDescription}');
+        debugPrint('Œ Error: ${_cameraController!.value.errorDescription}');
       }
-      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('”””””””””””””””””””””””””””');
 
       return _cameraController;
     } catch (e) {
@@ -199,7 +199,7 @@ class DistanceDetectionService {
       final faces = await _faceDetector.processImage(inputImage);
 
       if (faces.isEmpty) {
-        // ✅ User requested: show distance even if face temporarily lost
+        // … User requested: show distance even if face temporarily lost
         if (_lastKnownGoodDistance > 0) {
           _updateDistance(
             _lastKnownGoodDistance,
@@ -240,7 +240,7 @@ class DistanceDetectionService {
               '[DistanceService] Face detected but landmarks missing - using cached distance: $_lastKnownGoodDistance cm',
             );
 
-            // ✅ IMPROVED: Sync smoothed distance to cached value to prevent JUMPING
+            // … IMPROVED: Sync smoothed distance to cached value to prevent JUMPING
             _smoothedDistance = _lastKnownGoodDistance;
 
             _updateDistance(
@@ -296,7 +296,7 @@ class DistanceDetectionService {
           const double focalLengthPixels = 600.0;
           final distanceCm = (_averageIPDCm * focalLengthPixels) / pixelIPD;
 
-          // ✅ Calibrate face-width method against this accurate IPD distance
+          // … Calibrate face-width method against this accurate IPD distance
           if (faceWidth > 0 && distanceCm > 10 && distanceCm < 300) {
             _calibrateFaceWidth(distanceCm, faceWidth);
           }
@@ -322,7 +322,7 @@ class DistanceDetectionService {
     }
   }
 
-  /// ✅ NEW: Calculate distance based on face width (fallback)
+  /// … NEW: Calculate distance based on face width (fallback)
   double _calculateDistanceFromFaceWidth(double faceWidthPixels) {
     if (faceWidthPixels <= 0) return -1.0;
 
@@ -339,7 +339,7 @@ class DistanceDetectionService {
     return rawDistance;
   }
 
-  /// ✅ NEW: Calibrate the face-width method relative to the IPD method
+  /// … NEW: Calibrate the face-width method relative to the IPD method
   void _calibrateFaceWidth(double ipdDistance, double faceWidthPixels) {
     if (ipdDistance <= 0 || faceWidthPixels <= 0) return;
 
@@ -441,3 +441,4 @@ class DistanceDetectionService {
     await _faceDetector.close();
   }
 }
+

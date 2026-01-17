@@ -1,9 +1,9 @@
-import 'package:flutter/widgets.dart';
+﻿import 'package:flutter/widgets.dart';
 
 /// Test configuration constants for vision tests
 ///
 /// Visual Acuity sizing follows the Visiaxx specification for 1-meter testing:
-/// ✅ CORRECTED FONT SIZES based on web research and real Snellen charts
+/// … CORRECTED FONT SIZES based on web research and real Snellen charts
 class TestConstants {
   TestConstants._();
 
@@ -26,10 +26,10 @@ class TestConstants {
   static const double amslerGridTargetCm = 40.0; // 40cm
   static const double amslerGridToleranceCm = 5.0; // ±5cm
 
-  // ✅ FIXED: Corrected E sizes for 1-meter testing
-  // Research shows: At 1m, 6/6 ≈ 8.7mm, 6/60 ≈ 87mm
-  // Flutter fontSize ≈ physical height in logical pixels
-  // Assuming ~160 DPI screen: 1mm ≈ 6.3 logical pixels
+  // … FIXED: Corrected E sizes for 1-meter testing
+  // Research shows: At 1m, 6/6 ‰ˆ 8.7mm, 6/60 ‰ˆ 87mm
+  // Flutter fontSize ‰ˆ physical height in logical pixels
+  // Assuming ~160 DPI screen: 1mm ‰ˆ 6.3 logical pixels
   static const List<VisualAcuityLevel> visualAcuityLevels = [
     VisualAcuityLevel(
       sizeMm: 87.0,
@@ -160,11 +160,11 @@ class TestConstants {
     return 3.00;
   }
 
-  // ✅ FIXED: Updated short distance font sizes to match visual acuity
+  // … FIXED: Updated short distance font sizes to match visual acuity
   static const List<ShortDistanceSentence> shortDistanceSentences = [
     ShortDistanceSentence(
       sentence: 'Clear vision',
-      fontSize: 72.0, // ✅ Snellen-accurate for 40cm and fits on one row
+      fontSize: 72.0, // … Snellen-accurate for 40cm and fits on one row
       snellen: '6/60',
     ),
     ShortDistanceSentence(
@@ -183,7 +183,7 @@ class TestConstants {
       snellen: '6/18',
     ),
     ShortDistanceSentence(
-      sentence: 'look at the light', // ✅ Changed as requested
+      sentence: 'look at the light', // … Changed as requested
       fontSize: 24.0,
       snellen: '6/12',
     ),
@@ -193,18 +193,18 @@ class TestConstants {
       snellen: '6/9',
     ),
     ShortDistanceSentence(
-      sentence: 'Beauty of life', // ✅ Shortened as requested
+      sentence: 'Beauty of life', // … Shortened as requested
       fontSize: 12.0,
       snellen: '6/6',
     ),
   ];
 
   void printFontSizes() {
-    debugPrint('=== ✅ CORRECTED FONT SIZE VERIFICATION ===');
+    debugPrint('=== … CORRECTED FONT SIZE VERIFICATION ===');
     for (int i = 0; i < visualAcuityLevels.length; i++) {
       final level = visualAcuityLevels[i];
       debugPrint(
-        'Plate ${i + 1}: ${level.snellen} → ${level.flutterFontSize}sp (${level.sizeMm}mm)',
+        'Plate ${i + 1}: ${level.snellen} †’ ${level.flutterFontSize}sp (${level.sizeMm}mm)',
       );
     }
     debugPrint('=========================================');
@@ -279,3 +279,4 @@ class ShortDistanceSentence {
     required this.snellen,
   });
 }
+

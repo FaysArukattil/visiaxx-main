@@ -33,7 +33,7 @@ class BothEyesOpenInstructionScreen extends StatefulWidget {
     this.startButtonText = 'Start Reading Exercise',
     this.instructionTitle = 'Reading Response',
     this.instructionDescription =
-        'Read the text displayed on screen:\nâ€¢ Speak clearly and completely\nâ€¢ Maintain a steady reading pace',
+        'Read the text displayed on screen:\n€¢ Speak clearly and completely\n€¢ Maintain a steady reading pace',
     this.instructionIcon = Icons.record_voice_over_rounded,
     this.onContinue,
   });
@@ -730,4 +730,5 @@ class _EyeInstructionPainter extends CustomPainter {
   bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
+
 

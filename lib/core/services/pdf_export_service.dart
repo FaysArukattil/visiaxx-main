@@ -46,7 +46,7 @@ class PdfExportService {
 
       return savedPath;
     } catch (e) {
-      debugPrint('[PdfExportService] âŒ Error generating PDF: $e');
+      debugPrint('[PdfExportService] Œ Error generating PDF: $e');
 
       // Fallback: Save to app documents directory
       try {
@@ -85,7 +85,7 @@ class PdfExportService {
 
         if (status.isDenied) {
           debugPrint(
-            '[PdfExportService] âš ï¸ Permission denied, trying app directory',
+            '[PdfExportService]  ï¸ Permission denied, trying app directory',
           );
           return await _saveToAppDirectory(bytes, filename);
         }
@@ -111,7 +111,7 @@ class PdfExportService {
 
         // Fallback to external storage
         debugPrint(
-          '[PdfExportService] âš ï¸ Downloads folder not found, using external storage',
+          '[PdfExportService]  ï¸ Downloads folder not found, using external storage',
         );
         final externalDir = await getExternalStorageDirectory();
         if (externalDir != null) {
@@ -129,7 +129,7 @@ class PdfExportService {
         // Last resort
         return await _saveToAppDirectory(bytes, filename);
       } catch (e) {
-        debugPrint('[PdfExportService] âŒ Android save failed: $e');
+        debugPrint('[PdfExportService] Œ Android save failed: $e');
         return await _saveToAppDirectory(bytes, filename);
       }
     } else if (Platform.isIOS) {
@@ -1624,7 +1624,7 @@ class PdfExportService {
               children: [
                 _buildTableCell(res.sphere),
                 _buildTableCell(res.cylinder),
-                _buildTableCell('${res.axis}Â°'),
+                _buildTableCell('${res.axis}°'),
                 if (double.tryParse(res.addPower) != null &&
                     double.parse(res.addPower) > 0)
                   _buildTableCell('+${res.addPower}'),
@@ -2007,7 +2007,7 @@ class PdfExportService {
           }
         } catch (e) {
           debugPrint(
-            '[PdfExportService] âŒ Error fetching URL from localPath: $e',
+            '[PdfExportService] Œ Error fetching URL from localPath: $e',
           );
         }
       } else {
@@ -2022,11 +2022,11 @@ class PdfExportService {
             return bytes;
           } else {
             debugPrint(
-              '[PdfExportService] âš ï¸ Local file does not exist: $localPath',
+              '[PdfExportService]  ï¸ Local file does not exist: $localPath',
             );
           }
         } catch (e) {
-          debugPrint('[PdfExportService] âŒ Error reading local file: $e');
+          debugPrint('[PdfExportService] Œ Error reading local file: $e');
         }
       }
     }
@@ -2057,11 +2057,11 @@ class PdfExportService {
               }
               await file.writeAsBytes(bytes);
               debugPrint(
-                '[PdfExportService] ðŸ©¹ Healed local file at: $localPath',
+                '[PdfExportService] ©¹ Healed local file at: $localPath',
               );
             } catch (e) {
               debugPrint(
-                '[PdfExportService] âš ï¸ Failed to heal local file: $e',
+                '[PdfExportService]  ï¸ Failed to heal local file: $e',
               );
             }
           }
@@ -2069,11 +2069,11 @@ class PdfExportService {
           return bytes;
         }
       } catch (e) {
-        debugPrint('[PdfExportService] âŒ Error fetching remote image: $e');
+        debugPrint('[PdfExportService] Œ Error fetching remote image: $e');
       }
     }
 
-    debugPrint('[PdfExportService] âš ï¸ No image bytes available');
+    debugPrint('[PdfExportService]  ï¸ No image bytes available');
     return null;
   }
 
@@ -2290,3 +2290,4 @@ class PdfExportService {
     );
   }
 }
+

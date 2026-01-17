@@ -1,4 +1,4 @@
-// ignore_for_file: unused_local_variable
+﻿// ignore_for_file: unused_local_variable
 
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
@@ -30,7 +30,7 @@ class DistanceHelper {
     double tolerance = 5.0,
     String? testType,
   }) {
-    // ✅ FIX: No face detected
+    // … FIX: No face detected
     if (currentDistance <= 0) return AppColors.error;
 
     // Use test-specific floor if type is provided
@@ -38,7 +38,7 @@ class DistanceHelper {
         ? getMinimumDistanceForTest(testType)
         : (targetDistance - tolerance);
 
-    // ✅ FIX: Only show error if TOO CLOSE (below minimum)
+    // … FIX: Only show error if TOO CLOSE (below minimum)
     // Being further away is SAFE - show green
     if (currentDistance < minDistance) {
       return AppColors.error; // Too close
@@ -91,7 +91,7 @@ class DistanceHelper {
   /// Returns true for optimal, faceDetectedNoDistance, tooClose, tooFar
   /// Returns false only for noFaceDetected
   static bool isFaceDetected(DistanceStatus status) {
-    // ✅ FIX: Face is detected in all states except noFaceDetected
+    // … FIX: Face is detected in all states except noFaceDetected
     return status != DistanceStatus.noFaceDetected;
   }
 
@@ -145,11 +145,11 @@ class DistanceHelper {
   static double getMinimumDistanceForTest(String testType) {
     switch (testType) {
       case 'visual_acuity':
-        return 80.0; // ✅ User requested floor at 80cm for 1m test
+        return 80.0; // … User requested floor at 80cm for 1m test
       case 'short_distance':
       case 'amsler_grid':
       case 'color_vision':
-        return 35.0; // ✅ User requested floor at 35cm for 40cm test
+        return 35.0; // … User requested floor at 35cm for 40cm test
       default:
         return 35.0;
     }
@@ -166,7 +166,7 @@ class DistanceHelper {
     DistanceStatus status,
     String testType,
   ) {
-    // ✅ Pause if no face detected (currentDistance <= 0)
+    // … Pause if no face detected (currentDistance <= 0)
     // OR if too close (below minimum)
     final minDistance = getMinimumDistanceForTest(testType);
 
@@ -185,3 +185,4 @@ class DistanceHelper {
         status == DistanceStatus.faceDetectedNoDistance;
   }
 }
+

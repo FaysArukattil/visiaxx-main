@@ -346,7 +346,7 @@ class _PractitionerDashboardScreenState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${result.patientAge} years â€¢ ${_formatDate(result.date)}',
+                        '${result.patientAge} years €¢ ${_formatDate(result.date)}',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
@@ -678,7 +678,7 @@ class _PatientDetailSheetState extends State<_PatientDetailSheet> {
             const SizedBox(height: 24),
             // Test date
             Text(
-              'Test Date: ${DateFormat('MMMM dd, yyyy â€¢ h:mm a').format(widget.result.date)}',
+              'Test Date: ${DateFormat('MMMM dd, yyyy €¢ h:mm a').format(widget.result.date)}',
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
@@ -807,4 +807,5 @@ class _PatientResult {
     required this.notes,
   });
 }
+
 

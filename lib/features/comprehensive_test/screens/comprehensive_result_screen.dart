@@ -401,7 +401,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
         const SizedBox(height: 4),
         _buildRefractionValue('SPH', res.sphere),
         _buildRefractionValue('CYL', res.cylinder),
-        _buildRefractionValue('AXIS', '${res.axis}Â°'),
+        _buildRefractionValue('AXIS', '${res.axis}°'),
         if (double.tryParse(res.addPower) != null &&
             double.parse(res.addPower) > 0)
           _buildRefractionValue('ADD', '+${res.addPower}'),
@@ -827,7 +827,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
         const SizedBox(height: 4),
         _buildRxValueLabel('SPH', data.sph),
         _buildRxValueLabel('CYL', data.cyl),
-        _buildRxValueLabel('AXIS', '${data.axis}Â°'),
+        _buildRxValueLabel('AXIS', '${data.axis}°'),
         _buildRxValueLabel('VN', data.vn),
       ],
     );
@@ -855,4 +855,5 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
     );
   }
 }
+
 

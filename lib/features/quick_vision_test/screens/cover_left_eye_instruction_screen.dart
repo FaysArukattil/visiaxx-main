@@ -29,7 +29,7 @@ class CoverLeftEyeInstructionScreen extends StatefulWidget {
     this.startButtonText = 'Start Right Eye Test',
     this.instructionTitle = 'Voice Commands',
     this.instructionDescription =
-        'Indicate the direction clearly:\nâ€¢ UP, DOWN, LEFT, or RIGHT\nâ€¢ Say BLURRY if you cannot see clearly',
+        'Indicate the direction clearly:\n• UP, DOWN, LEFT, or RIGHT\n• Say BLURRY if you cannot see clearly',
     this.instructionIcon = Icons.mic,
     this.onContinue,
   });
@@ -292,7 +292,9 @@ class _CoverLeftEyeInstructionScreenState
                                       width: 45,
                                       height: 55,
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary.withValues(alpha: 0.8),
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.8,
+                                        ),
                                         borderRadius: const BorderRadius.only(
                                           topLeft: Radius.circular(30),
                                           bottomLeft: Radius.circular(30),
@@ -686,4 +688,3 @@ class _EyeInstructionPainter extends CustomPainter {
   bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
-

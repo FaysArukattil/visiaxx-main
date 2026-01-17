@@ -1,4 +1,4 @@
-import 'package:firebase_remote_config/firebase_remote_config.dart';
+﻿import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'local_storage_service.dart';
 
@@ -24,7 +24,7 @@ class AWSCredentials {
     if (_initialized) return true;
 
     try {
-      debugPrint('[AWS Credentials] 🔄 Initializing Firebase Remote Config...');
+      debugPrint('[AWS Credentials] ”„ Initializing Firebase Remote Config...');
 
       _remoteConfig = FirebaseRemoteConfig.instance;
 
@@ -58,7 +58,7 @@ class AWSCredentials {
 
       // If Remote Config empty, try loading from local cache
       if (_accessKeyId.isEmpty) {
-        debugPrint('[AWS Credentials] ⚠️ Remote keys empty, trying cache...');
+        debugPrint('[AWS Credentials]  ï¸ Remote keys empty, trying cache...');
         final cached = await LocalStorageService().getAWSCredentials();
         if (cached != null) {
           _accessKeyId = cached['aws_access_key_id'] ?? '';
@@ -78,19 +78,19 @@ class AWSCredentials {
 
       _initialized = true;
 
-      debugPrint('[AWS Credentials] ✅ Initialized successfully');
+      debugPrint('[AWS Credentials] … Initialized successfully');
       debugPrint('[AWS Credentials] Bucket: $_bucketName');
       debugPrint('[AWS Credentials] Region: $_region');
       debugPrint(
-        '[AWS Credentials] Access Key: ${_accessKeyId.isNotEmpty ? "✓ Loaded" : "✗ Missing"}',
+        '[AWS Credentials] Access Key: ${_accessKeyId.isNotEmpty ? "“ Loaded" : "— Missing"}',
       );
       debugPrint(
-        '[AWS Credentials] Secret Key: ${_secretAccessKey.isNotEmpty ? "✓ Loaded" : "✗ Missing"}',
+        '[AWS Credentials] Secret Key: ${_secretAccessKey.isNotEmpty ? "“ Loaded" : "— Missing"}',
       );
 
       return true;
     } catch (e) {
-      debugPrint('[AWS Credentials] ❌ Initialization failed: $e');
+      debugPrint('[AWS Credentials] Œ Initialization failed: $e');
       _initialized = false;
       return false;
     }
@@ -100,7 +100,7 @@ class AWSCredentials {
   static String get accessKeyId {
     if (!_initialized) {
       debugPrint(
-        '[AWS Credentials] ⚠️ Not initialized! Call initialize() first',
+        '[AWS Credentials]  ï¸ Not initialized! Call initialize() first',
       );
     }
     return _accessKeyId;
@@ -110,7 +110,7 @@ class AWSCredentials {
   static String get secretAccessKey {
     if (!_initialized) {
       debugPrint(
-        '[AWS Credentials] ⚠️ Not initialized! Call initialize() first',
+        '[AWS Credentials]  ï¸ Not initialized! Call initialize() first',
       );
     }
     return _secretAccessKey;
@@ -120,7 +120,7 @@ class AWSCredentials {
   static String get bucketName {
     if (!_initialized) {
       debugPrint(
-        '[AWS Credentials] ⚠️ Not initialized! Call initialize() first',
+        '[AWS Credentials]  ï¸ Not initialized! Call initialize() first',
       );
     }
     return _bucketName.isNotEmpty ? _bucketName : 'visiaxx-test-results';
@@ -130,7 +130,7 @@ class AWSCredentials {
   static String get region {
     if (!_initialized) {
       debugPrint(
-        '[AWS Credentials] ⚠️ Not initialized! Call initialize() first',
+        '[AWS Credentials]  ï¸ Not initialized! Call initialize() first',
       );
     }
     return _region.isNotEmpty ? _region : 'ap-south-1';
@@ -158,7 +158,7 @@ class AWSCredentials {
   /// Refresh credentials from Firebase (useful if values change)
   static Future<bool> refresh() async {
     try {
-      debugPrint('[AWS Credentials] 🔄 Refreshing credentials...');
+      debugPrint('[AWS Credentials] ”„ Refreshing credentials...');
 
       if (_remoteConfig == null) {
         return await initialize();
@@ -171,25 +171,25 @@ class AWSCredentials {
       _bucketName = _remoteConfig!.getString('aws_bucket_name');
       _region = _remoteConfig!.getString('aws_region');
 
-      debugPrint('[AWS Credentials] ✅ Refreshed successfully');
+      debugPrint('[AWS Credentials] … Refreshed successfully');
       return true;
     } catch (e) {
-      debugPrint('[AWS Credentials] ❌ Refresh failed: $e');
+      debugPrint('[AWS Credentials] Œ Refresh failed: $e');
       return false;
     }
   }
 }
 
-/// 🔐 SECURITY BENEFITS:
+/// ” SECURITY BENEFITS:
 /// 
-/// ✅ Credentials stored in Firebase, not in app code
-/// ✅ Can update credentials without rebuilding app
-/// ✅ No risk of exposing keys in Git/GitHub
-/// ✅ Works with Firebase security rules
-/// ✅ Automatic caching (1 hour) to reduce API calls
-/// ✅ Graceful fallback if Firebase is unavailable
+/// … Credentials stored in Firebase, not in app code
+/// … Can update credentials without rebuilding app
+/// … No risk of exposing keys in Git/GitHub
+/// … Works with Firebase security rules
+/// … Automatic caching (1 hour) to reduce API calls
+/// … Graceful fallback if Firebase is unavailable
 /// 
 /// USAGE:
 /// 1. Call AWSCredentials.initialize() in main.dart before runApp()
 /// 2. All services automatically use the loaded credentials
-/// 3. Update credentials in Firebase Console → Remote Config → Publish
+/// 3. Update credentials in Firebase Console †’ Remote Config †’ Publish

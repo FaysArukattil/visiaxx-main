@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:minio/minio.dart';
@@ -14,9 +14,9 @@ class AWSS3StorageService {
     _initializeClient(); // Attempt to initialize if not already
     final configured = AWSCredentials.isConfigured;
     if (!configured) {
-      debugPrint('[AWS S3] ⚠️ isAvailable: FALSE (Credentials not configured)');
+      debugPrint('[AWS S3]  ï¸ isAvailable: FALSE (Credentials not configured)');
     }
-    // Removed: if (_client == null) { debugPrint('[AWS S3] ❌ isAvailable: FALSE (Client is NULL)'); }
+    // Removed: if (_client == null) { debugPrint('[AWS S3] Œ isAvailable: FALSE (Client is NULL)'); }
     return _client != null && configured;
   }
 
@@ -26,12 +26,12 @@ class AWSS3StorageService {
     if (_client != null) return;
 
     if (!AWSCredentials.isConfigured) {
-      debugPrint('[AWS S3] 🔄 Waiting for credentials to initialize Minio...');
+      debugPrint('[AWS S3] ”„ Waiting for credentials to initialize Minio...');
       return;
     }
 
     try {
-      debugPrint('[AWS S3] ⚙️ Configuring Minio with credentials...');
+      debugPrint('[AWS S3] ™ï¸ Configuring Minio with credentials...');
       _client = Minio(
         endPoint: 's3.${AWSCredentials.region}.amazonaws.com',
         accessKey: AWSCredentials.accessKeyId,
@@ -39,9 +39,9 @@ class AWSS3StorageService {
         useSSL: true,
         region: AWSCredentials.region,
       );
-      debugPrint('[AWS S3] ✅ Minio client initialized');
+      debugPrint('[AWS S3] … Minio client initialized');
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Minio initialization error: $e');
+      debugPrint('[AWS S3] Œ Minio initialization error: $e');
       _client = null;
     }
   }
@@ -75,13 +75,13 @@ class AWSS3StorageService {
       final objectName = '$basePath/$dateStr/$testCategory/reports/$fileName';
       final bucket = AWSCredentials.bucketName;
 
-      debugPrint('[AWS S3] 📄 PDF UPLOAD START:');
+      debugPrint('[AWS S3] “„ PDF UPLOAD START:');
       debugPrint('   Bucket: $bucket');
       debugPrint('   Path: $objectName');
       debugPrint('   File: ${pdfFile.path}');
 
       if (!await pdfFile.exists()) {
-        debugPrint('[AWS S3] ❌ ERROR: PDF File does not exist at path');
+        debugPrint('[AWS S3] Œ ERROR: PDF File does not exist at path');
         return null;
       }
 
@@ -90,7 +90,7 @@ class AWSS3StorageService {
       debugPrint('   Size: ${bytes.length} bytes');
 
       if (bytes.isEmpty) {
-        debugPrint('[AWS S3] ❌ ERROR: PDF File is empty');
+        debugPrint('[AWS S3] Œ ERROR: PDF File is empty');
         return null;
       }
 
@@ -115,20 +115,20 @@ class AWSS3StorageService {
       // Generate public URL
       final url = await getPresignedUrl(objectName);
 
-      debugPrint('[AWS S3] ✅ PDF UPLOAD SUCCESS: $url');
+      debugPrint('[AWS S3] … PDF UPLOAD SUCCESS: $url');
       return url;
     } on SocketException {
-      debugPrint('[AWS S3] ❌ Network error: No internet connection');
+      debugPrint('[AWS S3] Œ Network error: No internet connection');
       return null;
     } on TimeoutException {
-      debugPrint('[AWS S3] ❌ Network timeout during PDF upload');
+      debugPrint('[AWS S3] Œ Network timeout during PDF upload');
       return null;
     } catch (e) {
       if (e.toString().toLowerCase().contains('network') ||
           e.toString().toLowerCase().contains('connection')) {
-        debugPrint('[AWS S3] ❌ Network-related error during PDF upload: $e');
+        debugPrint('[AWS S3] Œ Network-related error during PDF upload: $e');
       } else {
-        debugPrint('[AWS S3] ❌ PDF Upload failed: $e');
+        debugPrint('[AWS S3] Œ PDF Upload failed: $e');
       }
       return null;
     }
@@ -164,13 +164,13 @@ class AWSS3StorageService {
       final objectName = '$basePath/$dateStr/$testCategory/images/$fileName';
       final bucket = AWSCredentials.bucketName;
 
-      debugPrint('[AWS S3] 🖼️ IMAGE UPLOAD START:');
+      debugPrint('[AWS S3] –¼ï¸ IMAGE UPLOAD START:');
       debugPrint('   Bucket: $bucket');
       debugPrint('   Path: $objectName');
       debugPrint('   File: ${imageFile.path}');
 
       if (!await imageFile.exists()) {
-        debugPrint('[AWS S3] ❌ ERROR: Image file missing');
+        debugPrint('[AWS S3] Œ ERROR: Image file missing');
         return null;
       }
 
@@ -179,7 +179,7 @@ class AWSS3StorageService {
       debugPrint('   Size: ${bytes.length} bytes');
 
       if (bytes.isEmpty) {
-        debugPrint('[AWS S3] ❌ ERROR: Image file is empty');
+        debugPrint('[AWS S3] Œ ERROR: Image file is empty');
         return null;
       }
 
@@ -205,20 +205,20 @@ class AWSS3StorageService {
       // Generate public URL (with presigned URL for private buckets)
       final url = await getPresignedUrl(objectName);
 
-      debugPrint('[AWS S3] ✅ IMAGE UPLOAD SUCCESS: $url');
+      debugPrint('[AWS S3] … IMAGE UPLOAD SUCCESS: $url');
       return url;
     } on SocketException {
-      debugPrint('[AWS S3] ❌ Network error: No internet connection');
+      debugPrint('[AWS S3] Œ Network error: No internet connection');
       return null;
     } on TimeoutException {
-      debugPrint('[AWS S3] ❌ Network timeout during image upload');
+      debugPrint('[AWS S3] Œ Network timeout during image upload');
       return null;
     } catch (e) {
       if (e.toString().toLowerCase().contains('network') ||
           e.toString().toLowerCase().contains('connection')) {
-        debugPrint('[AWS S3] ❌ Network-related error during image upload: $e');
+        debugPrint('[AWS S3] Œ Network-related error during image upload: $e');
       } else {
-        debugPrint('[AWS S3] ❌ Upload failed: $e');
+        debugPrint('[AWS S3] Œ Upload failed: $e');
       }
       return null;
     }
@@ -262,10 +262,10 @@ class AWSS3StorageService {
 
       final url = await getPresignedUrl(objectName);
 
-      debugPrint('[AWS S3] ✅ Upload successful: $url');
+      debugPrint('[AWS S3] … Upload successful: $url');
       return url;
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Upload failed: $e');
+      debugPrint('[AWS S3] Œ Upload failed: $e');
       return null;
     }
   }
@@ -303,20 +303,20 @@ class AWSS3StorageService {
       final allBytes = bytes.expand((x) => x).toList();
       await localFile.writeAsBytes(allBytes);
 
-      debugPrint('[AWS S3] ✅ Download successful: ${localFile.path}');
+      debugPrint('[AWS S3] … Download successful: ${localFile.path}');
       return localFile;
     } on SocketException {
-      debugPrint('[AWS S3] ❌ Network error: No internet connection');
+      debugPrint('[AWS S3] Œ Network error: No internet connection');
       return null;
     } on TimeoutException {
-      debugPrint('[AWS S3] ❌ Network timeout during download');
+      debugPrint('[AWS S3] Œ Network timeout during download');
       return null;
     } catch (e) {
       if (e.toString().toLowerCase().contains('network') ||
           e.toString().toLowerCase().contains('connection')) {
-        debugPrint('[AWS S3] ❌ Network-related error during download: $e');
+        debugPrint('[AWS S3] Œ Network-related error during download: $e');
       } else {
-        debugPrint('[AWS S3] ❌ Download failed: $e');
+        debugPrint('[AWS S3] Œ Download failed: $e');
       }
       return null;
     }
@@ -336,7 +336,7 @@ class AWSS3StorageService {
       );
       return url;
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Failed to generate presigned URL: $e');
+      debugPrint('[AWS S3] Œ Failed to generate presigned URL: $e');
       // Fallback to direct URL (works only if bucket is public)
       return '${AWSCredentials.bucketUrl}/$objectName';
     }
@@ -348,10 +348,10 @@ class AWSS3StorageService {
 
     try {
       await _client!.removeObject(AWSCredentials.bucketName, objectName);
-      debugPrint('[AWS S3] ✅ Deleted: $objectName');
+      debugPrint('[AWS S3] … Deleted: $objectName');
       return true;
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Delete failed: $e');
+      debugPrint('[AWS S3] Œ Delete failed: $e');
       return false;
     }
   }
@@ -385,10 +385,10 @@ class AWSS3StorageService {
         }
       }
 
-      debugPrint('[AWS S3] ✅ Deleted all images for test: $testId');
+      debugPrint('[AWS S3] … Deleted all images for test: $testId');
       return true;
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Batch delete failed: $e');
+      debugPrint('[AWS S3] Œ Batch delete failed: $e');
       return false;
     }
   }
@@ -421,7 +421,7 @@ class AWSS3StorageService {
       });
       return metadata.isEmpty ? null : metadata;
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Failed to get metadata: $e');
+      debugPrint('[AWS S3] Œ Failed to get metadata: $e');
       return null;
     }
   }
@@ -434,11 +434,12 @@ class AWSS3StorageService {
       await _client!
           .bucketExists(AWSCredentials.bucketName)
           .timeout(const Duration(seconds: 5));
-      debugPrint('[AWS S3] ✅ Connection test successful');
+      debugPrint('[AWS S3] … Connection test successful');
       return true;
     } catch (e) {
-      debugPrint('[AWS S3] ❌ Connection test failed: $e');
+      debugPrint('[AWS S3] Œ Connection test failed: $e');
       return false;
     }
   }
 }
+

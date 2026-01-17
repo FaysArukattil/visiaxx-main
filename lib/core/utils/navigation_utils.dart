@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../../data/models/user_model.dart';
 
 class NavigationUtils {
   static Future<void> navigateHome(BuildContext context) async {
-    // ⚡ ADDED TIMEOUT to prevent hang during exit if network is flaky
+    // ¡ ADDED TIMEOUT to prevent hang during exit if network is flaky
     final role = await AuthService().getCurrentUserRole().timeout(
       const Duration(seconds: 1),
       onTimeout: () => UserRole.user, // Default to normal user home
@@ -23,3 +23,4 @@ class NavigationUtils {
     return role == UserRole.examiner ? '/practitioner-home' : '/home';
   }
 }
+

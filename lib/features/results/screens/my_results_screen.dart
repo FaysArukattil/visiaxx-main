@@ -816,7 +816,7 @@ class _ResultDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              DateFormat('MMMM dd, yyyy â€¢ h:mm a').format(result.timestamp),
+              DateFormat('MMMM dd, yyyy €¢ h:mm a').format(result.timestamp),
               style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
@@ -833,7 +833,7 @@ class _ResultDetailSheet extends StatelessWidget {
               ),
             ]),
 
-            // ðŸ†• Short Distance (Reading Test)
+            // †• Short Distance (Reading Test)
             if (result.shortDistance != null)
               _buildSection('Reading Test (Near Vision)', [
                 _buildDetailRow(
@@ -974,12 +974,12 @@ class _ResultDetailSheet extends StatelessWidget {
                   if (ref.rightEye != null)
                     _buildDetailRow(
                       'Right Eye',
-                      'SPH: ${ref.rightEye!.sphere}, CYL: ${ref.rightEye!.cylinder}, AX: ${ref.rightEye!.axis}Â°',
+                      'SPH: ${ref.rightEye!.sphere}, CYL: ${ref.rightEye!.cylinder}, AX: ${ref.rightEye!.axis}°',
                     ),
                   if (ref.leftEye != null)
                     _buildDetailRow(
                       'Left Eye',
-                      'SPH: ${ref.leftEye!.sphere}, CYL: ${ref.leftEye!.cylinder}, AX: ${ref.leftEye!.axis}Â°',
+                      'SPH: ${ref.leftEye!.sphere}, CYL: ${ref.leftEye!.cylinder}, AX: ${ref.leftEye!.axis}°',
                     ),
                   _buildDetailRow(
                     'Status',
@@ -1130,3 +1130,4 @@ class _ResultDetailSheet extends StatelessWidget {
     ]);
   }
 }
+

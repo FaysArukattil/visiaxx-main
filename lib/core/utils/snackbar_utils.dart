@@ -120,7 +120,7 @@ class SnackbarUtils {
     }
 
     if (overlay == null) {
-      debugPrint('[SnackbarUtils] âŒ Could not find Overlay to show snackbar.');
+      debugPrint('[SnackbarUtils] Œ Could not find Overlay to show snackbar.');
       return;
     }
 
@@ -260,4 +260,5 @@ class _SnackbarWidgetState extends State<_SnackbarWidget>
     );
   }
 }
+
 

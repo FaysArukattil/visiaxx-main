@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'dart:async';
@@ -77,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
         const Duration(seconds: 5),
         onTimeout: () {
           debugPrint(
-            '[SplashScreen] ⏱️ Auth check timed out. Navigating to Login.',
+            '[SplashScreen] ±ï¸ Auth check timed out. Navigating to Login.',
           );
           if (mounted) {
             Navigator.pushReplacementNamed(context, '/login');
@@ -86,7 +86,7 @@ class _SplashScreenState extends State<SplashScreen>
       );
     } catch (e) {
       debugPrint(
-        '[SplashScreen] ❌ Error during auth check: $e. Navigating to Login.',
+        '[SplashScreen] Œ Error during auth check: $e. Navigating to Login.',
       );
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/login');
@@ -107,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
               .getUserData(userId)
               .timeout(const Duration(seconds: 3));
         } catch (e) {
-          debugPrint('[SplashScreen] ⚠️ Failed to fetch user data: $e');
+          debugPrint('[SplashScreen]  ï¸ Failed to fetch user data: $e');
           // Fallthrough to login if we can't get user data
         }
 
@@ -122,7 +122,7 @@ class _SplashScreenState extends State<SplashScreen>
 
             if (checkResult.exists && !checkResult.isOurSession) {
               debugPrint(
-                '[SplashScreen] 🚨 Session stolen by another device. Forcing logout.',
+                '[SplashScreen] š¨ Session stolen by another device. Forcing logout.',
               );
 
               sessionService.markKickedOut();
@@ -174,7 +174,7 @@ class _SplashScreenState extends State<SplashScreen>
             if (!mounted) return;
             sessionService.startMonitoring(user.identityString, context);
           } catch (e) {
-            debugPrint('[SplashScreen] ⚠️ Session check error: $e');
+            debugPrint('[SplashScreen]  ï¸ Session check error: $e');
             // If we can't check session due to network, but user data was fetched,
             // we could potentially proceed or go to login.
             // Given the user request, let's go to login to be safe.
@@ -285,3 +285,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+

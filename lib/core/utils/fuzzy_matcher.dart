@@ -1,4 +1,4 @@
-import 'package:string_similarity/string_similarity.dart';
+﻿import 'package:string_similarity/string_similarity.dart';
 
 class FuzzyMatcher {
   /// Match two strings with similarity threshold
@@ -30,7 +30,7 @@ class FuzzyMatcher {
         .trim();
   }
 
-  /// ✅ NEW: Check if speech contains most/all important words of the target
+  /// … NEW: Check if speech contains most/all important words of the target
   /// Useful for "Short Distance Reading" where users say extra words.
   static bool containsKeywords(
     String target,
@@ -53,7 +53,7 @@ class FuzzyMatcher {
         for (final aWord in actualWords) {
           double similarity = aWord.similarityTo(tWord);
 
-          // ✅ SPECIAL CASE: "green" & "grass" often misheard
+          // … SPECIAL CASE: "green" & "grass" often misheard
           if (tWord == 'green') {
             final greenVariants = [
               'grin',
@@ -122,3 +122,4 @@ class MatchResult {
         'Passed: $passed (threshold: $threshold%)';
   }
 }
+

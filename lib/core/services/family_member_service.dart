@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:visiaxx/core/services/auth_service.dart';
 import 'package:visiaxx/core/services/local_storage_service.dart';
@@ -26,7 +26,7 @@ class FamilyMemberService {
   }
 
   /// Save a family member to Firebase
-  /// ✅ ENHANCED: Returns the document ID and ensures proper error handling
+  /// … ENHANCED: Returns the document ID and ensures proper error handling
   Future<String> saveFamilyMember({
     required String userId,
     required FamilyMemberModel member,
@@ -40,17 +40,17 @@ class FamilyMemberService {
 
       await _firestore.collection(path).doc(identity).set(member.toFirestore());
 
-      debugPrint('[FamilyMemberService] ✅ Saved with ID: $identity');
+      debugPrint('[FamilyMemberService] … Saved with ID: $identity');
       return identity;
     } catch (e, stackTrace) {
-      debugPrint('[FamilyMemberService] ❌ Save ERROR: $e');
+      debugPrint('[FamilyMemberService] Œ Save ERROR: $e');
       debugPrint('[FamilyMemberService] Stack trace: $stackTrace');
       throw Exception('Failed to save family member: $e');
     }
   }
 
   /// Get all family members for a user
-  /// ✅ ENHANCED: Better error handling and real-time updates option
+  /// … ENHANCED: Better error handling and real-time updates option
   Future<List<FamilyMemberModel>> getFamilyMembers(String userId) async {
     try {
       debugPrint('[FamilyMemberService] Getting members for user: $userId');
@@ -72,20 +72,20 @@ class FamilyMemberService {
             '[FamilyMemberService] Loaded: ${member.firstName} (${doc.id})',
           );
         } catch (e) {
-          debugPrint('[FamilyMemberService] ❌ Error parsing ${doc.id}: $e');
+          debugPrint('[FamilyMemberService] Œ Error parsing ${doc.id}: $e');
         }
       }
 
-      debugPrint('[FamilyMemberService] ✅ Loaded ${members.length} members');
+      debugPrint('[FamilyMemberService] … Loaded ${members.length} members');
       return members;
     } catch (e, stackTrace) {
-      debugPrint('[FamilyMemberService] ❌ Get ERROR: $e');
+      debugPrint('[FamilyMemberService] Œ Get ERROR: $e');
       debugPrint('[FamilyMemberService] Stack trace: $stackTrace');
       throw Exception('Failed to get family members: $e');
     }
   }
 
-  /// ✅ NEW: Stream for real-time updates of family members
+  /// … NEW: Stream for real-time updates of family members
   Stream<List<FamilyMemberModel>> getFamilyMembersStream(String userId) {
     return Stream.fromFuture(_familyMembersPath(userId)).asyncExpand((path) {
       return _firestore
@@ -99,7 +99,7 @@ class FamilyMemberService {
                 members.add(FamilyMemberModel.fromFirestore(doc));
               } catch (e) {
                 debugPrint(
-                  '[FamilyMemberService] ❌ Error parsing ${doc.id}: $e',
+                  '[FamilyMemberService] Œ Error parsing ${doc.id}: $e',
                 );
               }
             }
@@ -116,9 +116,9 @@ class FamilyMemberService {
 
       await _firestore.collection(path).doc(memberId).delete();
 
-      debugPrint('[FamilyMemberService] ✅ Deleted member: $memberId');
+      debugPrint('[FamilyMemberService] … Deleted member: $memberId');
     } catch (e, stackTrace) {
-      debugPrint('[FamilyMemberService] ❌ Delete ERROR: $e');
+      debugPrint('[FamilyMemberService] Œ Delete ERROR: $e');
       debugPrint('[FamilyMemberService] Stack trace: $stackTrace');
       throw Exception('Failed to delete family member: $e');
     }
@@ -139,15 +139,15 @@ class FamilyMemberService {
           .doc(memberId)
           .update(member.toFirestore());
 
-      debugPrint('[FamilyMemberService] ✅ Updated member: $memberId');
+      debugPrint('[FamilyMemberService] … Updated member: $memberId');
     } catch (e, stackTrace) {
-      debugPrint('[FamilyMemberService] ❌ Update ERROR: $e');
+      debugPrint('[FamilyMemberService] Œ Update ERROR: $e');
       debugPrint('[FamilyMemberService] Stack trace: $stackTrace');
       throw Exception('Failed to update family member: $e');
     }
   }
 
-  /// ✅ NEW: Check if a user has any family members
+  /// … NEW: Check if a user has any family members
   Future<bool> hasFamilyMembers(String userId) async {
     try {
       final path = await _familyMembersPath(userId);
@@ -155,12 +155,12 @@ class FamilyMemberService {
 
       return snapshot.docs.isNotEmpty;
     } catch (e) {
-      debugPrint('[FamilyMemberService] ❌ Check ERROR: $e');
+      debugPrint('[FamilyMemberService] Œ Check ERROR: $e');
       return false;
     }
   }
 
-  /// ✅ NEW: Get a single family member by ID
+  /// … NEW: Get a single family member by ID
   Future<FamilyMemberModel?> getFamilyMember(
     String userId,
     String memberId,
@@ -175,8 +175,9 @@ class FamilyMemberService {
 
       return FamilyMemberModel.fromFirestore(doc);
     } catch (e) {
-      debugPrint('[FamilyMemberService] ❌ Get single member ERROR: $e');
+      debugPrint('[FamilyMemberService] Œ Get single member ERROR: $e');
       return null;
     }
   }
 }
+

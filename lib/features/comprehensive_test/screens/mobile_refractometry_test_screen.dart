@@ -73,7 +73,7 @@ class _MobileRefractometryTestScreenState
   int _relaxationCountdown = TestConstants.mobileRefractometryRelaxationSeconds;
   Timer? _relaxationTimer;
   late AnimationController
-  _relaxationProgressController; // âœ… NEW: Smooth animation
+  _relaxationProgressController; // … NEW: Smooth animation
 
   // Distance monitoring
   double _currentDistance = 0;
@@ -99,7 +99,7 @@ class _MobileRefractometryTestScreenState
     WidgetsBinding.instance.addObserver(this);
     _continuousSpeech = ContinuousSpeechManager(_speechService);
 
-    // âœ… Initialize relaxation animation controller
+    // Initialize relaxation animation controller
     _relaxationProgressController = AnimationController(
       vsync: this,
       duration: Duration(
@@ -282,7 +282,7 @@ class _MobileRefractometryTestScreenState
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
-      // âœ… FIX: Only set _isDistanceOk to true here.
+      // … FIX: Only set _isDistanceOk to true here.
       // It is set to false only in _pauseTestForDistance after cooldown check.
       if (!shouldPause) {
         _isDistanceOk = true;
@@ -393,7 +393,7 @@ class _MobileRefractometryTestScreenState
 
       if (_relaxationCountdown <= 0) {
         timer.cancel();
-        // âœ… FALLBACK: Transition phase if animation listener fails
+        // … FALLBACK: Transition phase if animation listener fails
         if (_currentPhase == RefractPhase.relaxation) {
           _startRound();
         }
@@ -1641,12 +1641,12 @@ class _MobileRefractometryTestScreenState
   void _showPauseDialog({String reason = 'back button'}) {
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
-    _relaxationProgressController.stop(); // âœ… Stop smooth animation
+    _relaxationProgressController.stop(); // … Stop smooth animation
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
 
     setState(() {
-      _isTestPausedForDistance = true; // âœ… Sync with VA behavior
+      _isTestPausedForDistance = true; // … Sync with VA behavior
     });
 
     showDialog(

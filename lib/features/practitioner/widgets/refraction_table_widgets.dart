@@ -502,7 +502,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                       ),
                       border: InputBorder.none,
                       hintText: isDiopter
-                          ? 'Â±0.00'
+                          ? '±0.00'
                           : isAxis
                           ? '0-180'
                           : isVA
@@ -605,7 +605,7 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                     ),
                     border: InputBorder.none,
                     hintText: isDiopter
-                        ? 'Â±0.'
+                        ? '±0.'
                         : isAxis
                         ? '0'
                         : isVisualAcuity
@@ -1235,7 +1235,7 @@ class _FinalPrescriptionTableWidgetState
                   ),
                   border: InputBorder.none,
                   hintText: isDiopter
-                      ? 'Â±0.00'
+                      ? '±0.00'
                       : isAxis
                       ? '0'
                       : isVA
@@ -1282,4 +1282,5 @@ class _FinalPrescriptionTableWidgetState
     );
   }
 }
+
 

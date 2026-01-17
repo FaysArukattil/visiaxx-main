@@ -717,7 +717,7 @@ class ProfileScreen extends StatelessWidget {
         _AboutSection(
           title: 'Our Vision',
           content:
-              'We envision a world where eye care is universally accessible through AI, tele-optometry, and digital screening â€” promoting proactive vision health for all.',
+              'We envision a world where eye care is universally accessible through AI, tele-optometry, and digital screening €” promoting proactive vision health for all.',
         ),
         SizedBox(height: 24),
         _AboutSection(
@@ -1003,4 +1003,5 @@ class _AboutSection extends StatelessWidget {
     );
   }
 }
+
 

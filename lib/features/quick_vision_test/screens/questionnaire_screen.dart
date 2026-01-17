@@ -57,10 +57,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     _pauseHandler.initialize(
       context: context,
       onPause: () {
-        debugPrint('[Questionnaire] â¸ï¸ Paused');
+        debugPrint('[Questionnaire] ¸ï¸ Paused');
       },
       onResume: () {
-        debugPrint('[Questionnaire] â–¶ï¸ Resumed');
+        debugPrint('[Questionnaire] –¶ï¸ Resumed');
       },
       getTestName: () => 'Questionnaire',
     );
@@ -1706,3 +1706,4 @@ class _DraggableToggleState extends State<_DraggableToggle> {
     );
   }
 }
+

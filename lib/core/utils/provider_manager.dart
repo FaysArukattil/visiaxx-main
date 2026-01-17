@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/providers/test_session_provider.dart';
 import '../../data/providers/eye_exercise_provider.dart';
@@ -12,7 +12,7 @@ class ProviderManager {
     debugPrint('[ProviderManager] Resetting all providers...');
 
     if (!context.mounted) {
-      debugPrint('[ProviderManager] ⚠️ Context not mounted, skipping reset');
+      debugPrint('[ProviderManager]  ï¸ Context not mounted, skipping reset');
       return;
     }
 
@@ -22,7 +22,7 @@ class ProviderManager {
     // Reset EyeExerciseProvider
     _resetEyeExerciseProvider(context);
 
-    debugPrint('[ProviderManager] ✅ All providers reset complete');
+    debugPrint('[ProviderManager] … All providers reset complete');
   }
 
   /// Reset TestSessionProvider
@@ -30,9 +30,9 @@ class ProviderManager {
     try {
       final provider = Provider.of<TestSessionProvider>(context, listen: false);
       provider.reset();
-      debugPrint('[ProviderManager] ✅ TestSessionProvider reset');
+      debugPrint('[ProviderManager] … TestSessionProvider reset');
     } catch (e) {
-      debugPrint('[ProviderManager] ❌ Failed to reset TestSessionProvider: $e');
+      debugPrint('[ProviderManager] Œ Failed to reset TestSessionProvider: $e');
     }
   }
 
@@ -41,9 +41,9 @@ class ProviderManager {
     try {
       final provider = Provider.of<EyeExerciseProvider>(context, listen: false);
       provider.resetState();
-      debugPrint('[ProviderManager] ✅ EyeExerciseProvider reset');
+      debugPrint('[ProviderManager] … EyeExerciseProvider reset');
     } catch (e) {
-      debugPrint('[ProviderManager] ❌ Failed to reset EyeExerciseProvider: $e');
+      debugPrint('[ProviderManager] Œ Failed to reset EyeExerciseProvider: $e');
     }
   }
 
@@ -70,7 +70,7 @@ class ProviderManager {
 
       return testSessionClean && eyeExerciseClean;
     } catch (e) {
-      debugPrint('[ProviderManager] ❌ Error checking provider state: $e');
+      debugPrint('[ProviderManager] Œ Error checking provider state: $e');
       return false;
     }
   }
@@ -104,7 +104,8 @@ class ProviderManager {
       debugPrint('    - currentIndex: ${eyeExercise.currentIndex}');
       debugPrint('    - videosCount: ${eyeExercise.videos.length}');
     } catch (e) {
-      debugPrint('[ProviderManager] ❌ Error logging provider states: $e');
+      debugPrint('[ProviderManager] Œ Error logging provider states: $e');
     }
   }
 }
+

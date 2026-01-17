@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import '../constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
@@ -146,11 +146,11 @@ class SessionMonitorService with WidgetsBindingObserver {
       _currentUserId = userId;
 
       debugPrint(
-        '[SessionMonitor] ✅ Session created: $sessionId under $identityString',
+        '[SessionMonitor] … Session created: $sessionId under $identityString',
       );
       return SessionCreationResult(sessionId: sessionId);
     } catch (e) {
-      debugPrint('[SessionMonitor] ❌ Failed to create session: $e');
+      debugPrint('[SessionMonitor] Œ Failed to create session: $e');
       return SessionCreationResult(error: 'Failed to create session: $e');
     }
   }
@@ -203,7 +203,7 @@ class SessionMonitorService with WidgetsBindingObserver {
         sessionData: sessionData,
       );
     } catch (e) {
-      debugPrint('[SessionMonitor] ❌ Failed to check session: $e');
+      debugPrint('[SessionMonitor] Œ Failed to check session: $e');
       return SessionCheckResult(exists: false, error: e.toString());
     }
   }
@@ -216,7 +216,7 @@ class SessionMonitorService with WidgetsBindingObserver {
       return;
     }
 
-    debugPrint('[SessionMonitor] 🔄 Monitoring session for: $identityString');
+    debugPrint('[SessionMonitor] ”„ Monitoring session for: $identityString');
     _isMonitoring = true;
 
     final sessionRef = _database.ref('active_sessions/$identityString');
@@ -228,7 +228,7 @@ class SessionMonitorService with WidgetsBindingObserver {
         }
       },
       onError: (error) {
-        debugPrint('[SessionMonitor] ❌ Stream error: $error');
+        debugPrint('[SessionMonitor] Œ Stream error: $error');
       },
     );
 
@@ -251,7 +251,7 @@ class SessionMonitorService with WidgetsBindingObserver {
     ) {
       final isConnected = event.snapshot.value == true;
       if (isConnected && _isMonitoring) {
-        debugPrint('[SessionMonitor] 🌐 Connection restored, re-verifying...');
+        debugPrint('[SessionMonitor] Œ Connection restored, re-verifying...');
         _verifyCurrentSession();
       }
     });
@@ -278,20 +278,20 @@ class SessionMonitorService with WidgetsBindingObserver {
 
       if (_currentSessionId == null) {
         // No local session ID, this shouldn't happen
-        debugPrint('[SessionMonitor] ⚠️ No local session ID found');
+        debugPrint('[SessionMonitor]  ï¸ No local session ID found');
         return;
       }
 
       if (sessionData.sessionId != _currentSessionId) {
         // Different device logged in!
         debugPrint(
-          '[SessionMonitor] ⚠️ Session conflict detected! Remote: ${sessionData.sessionId}, Local: $_currentSessionId',
+          '[SessionMonitor]  ï¸ Session conflict detected! Remote: ${sessionData.sessionId}, Local: $_currentSessionId',
         );
         if (!context.mounted) return;
         await _handleSessionConflict(context, sessionData);
       }
     } catch (e) {
-      debugPrint('[SessionMonitor] ❌ Error handling session change: $e');
+      debugPrint('[SessionMonitor] Œ Error handling session change: $e');
     }
   }
 
@@ -300,7 +300,7 @@ class SessionMonitorService with WidgetsBindingObserver {
     BuildContext context,
     SessionData remoteSession,
   ) async {
-    debugPrint('[SessionMonitor] 🚨 Handling session conflict...');
+    debugPrint('[SessionMonitor] š¨ Handling session conflict...');
 
     // Stop monitoring first to prevent loops
     stopMonitoring();
@@ -437,7 +437,7 @@ class SessionMonitorService with WidgetsBindingObserver {
 
       await _clearLocalSession();
     } catch (e) {
-      debugPrint('[SessionMonitor] ❌ Failed to remove session: $e');
+      debugPrint('[SessionMonitor] Œ Failed to remove session: $e');
       await _clearLocalSession();
     }
   }
@@ -450,7 +450,7 @@ class SessionMonitorService with WidgetsBindingObserver {
       _currentSessionId = null;
       _currentUserId = null;
     } catch (e) {
-      debugPrint('[SessionMonitor] ❌ Failed to clear local session: $e');
+      debugPrint('[SessionMonitor] Œ Failed to clear local session: $e');
     }
   }
 
@@ -481,7 +481,7 @@ class SessionMonitorService with WidgetsBindingObserver {
 
     final result = await checkExistingSession(identity);
     if (result.exists && !result.isOurSession) {
-      debugPrint('[SessionMonitor] 🚨 Resume conflict detected!');
+      debugPrint('[SessionMonitor] š¨ Resume conflict detected!');
       if (_currentContext != null) {
         _handleSessionConflict(_currentContext!, result.sessionData!);
       }
@@ -494,14 +494,14 @@ class SessionMonitorService with WidgetsBindingObserver {
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       updateLastActive();
     });
-    debugPrint('[SessionMonitor] ❤️ Heartbeat started (30s)');
+    debugPrint('[SessionMonitor] ¤ï¸ Heartbeat started (30s)');
   }
 
   /// Stop heartbeat
   void _stopHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
-    debugPrint('[SessionMonitor] 💔 Heartbeat stopped');
+    debugPrint('[SessionMonitor] ’” Heartbeat stopped');
   }
 
   /// Manually flag that this device was kicked out (used by SplashScreen)
@@ -509,7 +509,7 @@ class SessionMonitorService with WidgetsBindingObserver {
     _wasKickedOut = true;
     _currentSessionId = null;
     _currentUserId = null;
-    debugPrint('[SessionMonitor] 🚩 Manually marked as kicked out');
+    debugPrint('[SessionMonitor] š© Manually marked as kicked out');
   }
 
   /// Update last active timestamp
@@ -527,7 +527,7 @@ class SessionMonitorService with WidgetsBindingObserver {
         final remoteSessionId = data['sessionId'] as String?;
 
         if (remoteSessionId != _currentSessionId) {
-          debugPrint('[SessionMonitor] 🚨 Heartbeat detected conflict!');
+          debugPrint('[SessionMonitor] š¨ Heartbeat detected conflict!');
           if (_currentContext != null) {
             final sessionData = SessionData.fromMap(data);
             _handleSessionConflict(_currentContext!, sessionData);
@@ -547,7 +547,7 @@ class SessionMonitorService with WidgetsBindingObserver {
         'isOnline': true,
       });
     } catch (e) {
-      debugPrint('[SessionMonitor] ❌ Failed to update activity: $e');
+      debugPrint('[SessionMonitor] Œ Failed to update activity: $e');
     }
   }
 
@@ -589,3 +589,4 @@ class SessionCreationResult {
 
   SessionCreationResult({this.sessionId, this.error});
 }
+

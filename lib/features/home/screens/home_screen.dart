@@ -812,7 +812,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '6 tests available â€¢ Tap to explore',
+                      '6 tests available €¢ Tap to explore',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
@@ -892,3 +892,4 @@ class _ServiceCard extends StatelessWidget {
     );
   }
 }
+

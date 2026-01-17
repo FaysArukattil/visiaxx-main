@@ -1,10 +1,10 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 
-/// ✅ FIXED Speech Recognition Service
+/// … FIXED Speech Recognition Service
 /// Key fixes:
 /// - Better TTS pause handling
 /// - Simplified buffer system
@@ -35,16 +35,16 @@ class SpeechService {
   Future<bool> _requestMicrophonePermission() async {
     try {
       var status = await Permission.microphone.status;
-      debugPrint('[SpeechService] 🎤 Microphone permission status: $status');
+      debugPrint('[SpeechService] Ž¤ Microphone permission status: $status');
 
       if (status.isDenied) {
         status = await Permission.microphone.request();
-        debugPrint('[SpeechService] 🎤 Permission request result: $status');
+        debugPrint('[SpeechService] Ž¤ Permission request result: $status');
       }
 
       if (status.isPermanentlyDenied) {
         debugPrint(
-          '[SpeechService] ❌ Microphone permission permanently denied',
+          '[SpeechService] Œ Microphone permission permanently denied',
         );
         onError?.call(
           'Microphone permission is permanently denied. Please enable it in Settings.',
@@ -54,7 +54,7 @@ class SpeechService {
 
       return status.isGranted;
     } catch (e) {
-      debugPrint('[SpeechService] ⚠️ Permission check error: $e');
+      debugPrint('[SpeechService]  ï¸ Permission check error: $e');
       return true;
     }
   }
@@ -62,28 +62,28 @@ class SpeechService {
   /// Initialize speech recognition
   Future<bool> initialize() async {
     if (_isInitialized) {
-      debugPrint('[SpeechService] ✅ Already initialized');
+      debugPrint('[SpeechService] … Already initialized');
       return true;
     }
 
     try {
       final hasPermission = await _requestMicrophonePermission();
       if (!hasPermission) {
-        debugPrint('[SpeechService] ❌ No microphone permission');
+        debugPrint('[SpeechService] Œ No microphone permission');
         return false;
       }
 
-      debugPrint('[SpeechService] 🔄 Initializing speech recognition...');
+      debugPrint('[SpeechService] ”„ Initializing speech recognition...');
 
       _isInitialized = await _speechToText.initialize(
         onError: (error) {
-          debugPrint('[SpeechService] ❌ Speech error: ${error.errorMsg}');
+          debugPrint('[SpeechService] Œ Speech error: ${error.errorMsg}');
           _isListening = false;
 
-          // ⭐ If the language isn't available, we don't want to spam retries
+          // ­ If the language isn't available, we don't want to spam retries
           if (error.errorMsg == 'error_language_unavailable') {
             debugPrint(
-              '[SpeechService] 🛑 Ignoring language error to prevent restart loop',
+              '[SpeechService] ›‘ Ignoring language error to prevent restart loop',
             );
             return;
           }
@@ -97,7 +97,7 @@ class SpeechService {
           }
         },
         onStatus: (status) {
-          debugPrint('[SpeechService] 📊 Status changed: $status');
+          debugPrint('[SpeechService] “Š Status changed: $status');
           if (status == 'done' || status == 'notListening') {
             _isListening = false;
             if (onListeningStopped != null) {
@@ -108,30 +108,30 @@ class SpeechService {
             if (onListeningStarted != null) {
               onListeningStarted!();
             }
-            debugPrint('[SpeechService] ✅ Listening started successfully');
+            debugPrint('[SpeechService] … Listening started successfully');
           }
         },
         debugLogging: kDebugMode,
       );
 
       debugPrint(
-        '[SpeechService] ${_isInitialized ? "✅" : "❌"} Initialization result: $_isInitialized',
+        '[SpeechService] ${_isInitialized ? "…" : "Œ"} Initialization result: $_isInitialized',
       );
 
       if (_isInitialized) {
-        // ✅ Enforced: Offline mode requested as primary
+        // … Enforced: Offline mode requested as primary
         _hasOnDeviceRecognition = true;
         debugPrint(
-          '[SpeechService] 🛠️ Offline mode enforced as primary method',
+          '[SpeechService] › ï¸ Offline mode enforced as primary method',
         );
       } else {
-        debugPrint('[SpeechService] ❌ _speechToText.initialize returned false');
+        debugPrint('[SpeechService] Œ _speechToText.initialize returned false');
         onError?.call('Speech recognition not available on this device');
       }
 
       return _isInitialized;
     } catch (e) {
-      debugPrint('[SpeechService] ❌ Initialization exception: $e');
+      debugPrint('[SpeechService] Œ Initialization exception: $e');
       onError?.call('Failed to initialize speech: $e');
       return false;
     }
@@ -144,16 +144,16 @@ class SpeechService {
     int bufferMs = 1500,
     double minConfidence = 0.1,
   }) async {
-    debugPrint('[SpeechService] 🎤 startListening called');
+    debugPrint('[SpeechService] Ž¤ startListening called');
 
     if (!_isInitialized) {
       debugPrint(
-        '[SpeechService] ⚠️ Not initialized, attempting to initialize...',
+        '[SpeechService]  ï¸ Not initialized, attempting to initialize...',
       );
       final success = await initialize();
       if (!success) {
         debugPrint(
-          '[SpeechService] ❌ Initialization failed, cannot start listening',
+          '[SpeechService] Œ Initialization failed, cannot start listening',
         );
         onError?.call('Speech recognition not available');
         return;
@@ -162,7 +162,7 @@ class SpeechService {
 
     // Stop if already listening
     if (_isListening) {
-      debugPrint('[SpeechService] ⚠️ Already listening, stopping first...');
+      debugPrint('[SpeechService]  ï¸ Already listening, stopping first...');
       await stopListening();
       await Future.delayed(const Duration(milliseconds: 300));
     }
@@ -171,16 +171,16 @@ class SpeechService {
     _lastConfidence = 0.0;
     _bufferTimer?.cancel();
 
-    debugPrint('[SpeechService] 🎤 Starting to listen...');
+    debugPrint('[SpeechService] Ž¤ Starting to listen...');
 
     try {
-      // ⭐ OPTIMIZATION: Use NULL for localeId to let the system choose its best default English
+      // ­ OPTIMIZATION: Use NULL for localeId to let the system choose its best default English
       // This fixes the "error_language_unavailable" on devices that don't have "en-US" specifically.
-      // ✅ MANDATORY: Use on-device recognition (offline) as primary
+      // … MANDATORY: Use on-device recognition (offline) as primary
       final useOnDevice = _hasOnDeviceRecognition;
 
       debugPrint(
-        '[SpeechService] 🎧 Mode: ENFORCED ON-DEVICE (Offline), Locale: System Default',
+        '[SpeechService] Ž§ Mode: ENFORCED ON-DEVICE (Offline), Locale: System Default',
       );
 
       await _speechToText.listen(
@@ -196,12 +196,12 @@ class SpeechService {
           listenMode: ListenMode.confirmation,
           onDevice: useOnDevice,
         ),
-        localeId: null, // ⚡ Use system default
+        localeId: null, // ¡ Use system default
       );
 
-      debugPrint('[SpeechService] ✅ Listen started successfully');
+      debugPrint('[SpeechService] … Listen started successfully');
     } catch (e) {
-      debugPrint('[SpeechService] ❌ Error starting listen: $e');
+      debugPrint('[SpeechService] Œ Error starting listen: $e');
       _isListening = false;
       onListeningStopped?.call();
       onError?.call('Failed to start listening: $e');
@@ -218,7 +218,7 @@ class SpeechService {
     final confidence = result.confidence;
 
     debugPrint(
-      '[SpeechService] 🎤 Recognized: "$recognized" (confidence: ${(confidence * 100).toStringAsFixed(0)}%, final: ${result.finalResult})',
+      '[SpeechService] Ž¤ Recognized: "$recognized" (confidence: ${(confidence * 100).toStringAsFixed(0)}%, final: ${result.finalResult})',
     );
 
     if (recognized.isNotEmpty) {
@@ -233,9 +233,9 @@ class SpeechService {
 
       // Accept even LOW confidence results
       if (confidence >= minConfidence) {
-        debugPrint('[SpeechService] ✅ Accepted (confidence OK)');
+        debugPrint('[SpeechService] … Accepted (confidence OK)');
       } else {
-        debugPrint('[SpeechService] ⚠️ Low confidence but stored anyway');
+        debugPrint('[SpeechService]  ï¸ Low confidence but stored anyway');
       }
 
       // Reset buffer timer
@@ -244,7 +244,7 @@ class SpeechService {
       if (result.finalResult) {
         // Final result
         if (_lastRecognizedValue != null) {
-          debugPrint('[SpeechService] ✅ FINAL result: "$_lastRecognizedValue"');
+          debugPrint('[SpeechService] … FINAL result: "$_lastRecognizedValue"');
           if (onResult != null) {
             onResult!(_lastRecognizedValue!);
           }
@@ -254,7 +254,7 @@ class SpeechService {
         _bufferTimer = Timer(Duration(milliseconds: bufferMs), () {
           if (_lastRecognizedValue != null && _isListening) {
             debugPrint(
-              '[SpeechService] ⏱️ Buffer timeout - using value: "$_lastRecognizedValue"',
+              '[SpeechService] ±ï¸ Buffer timeout - using value: "$_lastRecognizedValue"',
             );
             if (onResult != null) {
               onResult!(_lastRecognizedValue!);
@@ -281,16 +281,16 @@ class SpeechService {
       await _speechToText.stop();
       _isListening = false;
       onListeningStopped?.call();
-      debugPrint('[SpeechService] 🛑 Stopped listening');
+      debugPrint('[SpeechService] ›‘ Stopped listening');
     }
   }
 
-  /// ✅ NEW: Clear internal buffers manually
+  /// … NEW: Clear internal buffers manually
   void clearBuffer() {
     _lastRecognizedValue = null;
     _lastConfidence = 0.0;
     _bufferTimer?.cancel();
-    debugPrint('[SpeechService] 🧹 Buffers cleared');
+    debugPrint('[SpeechService] §¹ Buffers cleared');
   }
 
   /// Cancel listening completely
@@ -302,7 +302,7 @@ class SpeechService {
     _lastRecognizedValue = null;
     _lastConfidence = 0.0;
     onListeningStopped?.call();
-    debugPrint('[SpeechService] ❌ Cancelled listening');
+    debugPrint('[SpeechService] Œ Cancelled listening');
   }
 
   /// Finalize with last value
@@ -311,7 +311,7 @@ class SpeechService {
     final value = _lastRecognizedValue;
     _lastRecognizedValue = null;
     _lastConfidence = 0.0;
-    debugPrint('[SpeechService] 📊 Finalized with value: "$value"');
+    debugPrint('[SpeechService] “Š Finalized with value: "$value"');
     return value;
   }
 
@@ -323,9 +323,9 @@ class SpeechService {
 
   static String? parseDirection(String speech) {
     final s = speech.toLowerCase().trim();
-    debugPrint('[SpeechService] 🔍 parseDirection input: "$s"');
+    debugPrint('[SpeechService] ” parseDirection input: "$s"');
 
-    // ✅ NEW: Find the LAST occurrence of any valid direction to handle "right right" or "up down"
+    // … NEW: Find the LAST occurrence of any valid direction to handle "right right" or "up down"
     String? lastMatch;
     int lastIndex = -1;
 
@@ -410,20 +410,20 @@ class SpeechService {
 
     if (lastMatch != null) {
       debugPrint(
-        '[SpeechService] ✅ Matched (Last): "$lastMatch" (at index $lastIndex)',
+        '[SpeechService] … Matched (Last): "$lastMatch" (at index $lastIndex)',
       );
       return lastMatch;
     }
 
-    debugPrint('[SpeechService] ❌ parseDirection: NO MATCH for "$s"');
+    debugPrint('[SpeechService] Œ parseDirection: NO MATCH for "$s"');
     return null;
   }
 
   static String? parseNumber(String speech) {
     final s = speech.toLowerCase().trim();
-    debugPrint('[SpeechService] 🔍 parseNumber input: "$s"');
+    debugPrint('[SpeechService] ” parseNumber input: "$s"');
 
-    // ✅ NEW: Find the LAST occurrence of any valid number/variant
+    // … NEW: Find the LAST occurrence of any valid number/variant
     String? lastMatch;
     int lastIndex = -1;
 
@@ -473,11 +473,11 @@ class SpeechService {
     }
 
     if (lastMatch != null) {
-      debugPrint('[SpeechService] ✅ Matched number (Last): "$lastMatch"');
+      debugPrint('[SpeechService] … Matched number (Last): "$lastMatch"');
       return lastMatch;
     }
 
-    debugPrint('[SpeechService] ❌ parseNumber: NO MATCH for "$s"');
+    debugPrint('[SpeechService] Œ parseNumber: NO MATCH for "$s"');
     return null;
   }
 
@@ -519,3 +519,4 @@ class SpeechService {
     _speechToText.cancel();
   }
 }
+
