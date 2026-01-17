@@ -1,4 +1,4 @@
-﻿import 'package:flutter/widgets.dart';
+﻿import 'package:flutter/material.dart';
 
 /// Test configuration constants for vision tests
 ///
@@ -133,7 +133,8 @@ class TestConstants {
   static const int mobileRefractometryMaxRounds = 24;
   static const double mobileRefractometryDistanceCm = 100.0;
   static const double mobileRefractometryNearCm = 40.0;
-  static const double mobileRefractometryToleranceCm = 8.0;
+  static const double mobileRefractometryToleranceCm =
+      40.0; // ±40cm (optimal ~60cm)
   static const int mobileRefractometryRelaxationSeconds = 6;
   static const int mobileRefractometryTimePerRoundSeconds = 5;
 
@@ -144,6 +145,50 @@ class TestConstants {
   static const double blurIncrementOnCorrect = 0.3;
   static const double blurDecrementOnWrong = 0.5;
   static const double blurDecrementOnCantSee = 0.75;
+
+  // Mobile Refractometry E Size Levels (font size → Snellen score)
+  static const List<MobileRefractometryLevel> mobileRefractometryLevels = [
+    MobileRefractometryLevel(
+      fontSize: 150.0,
+      snellen: '6/60',
+      description: 'Legal blindness threshold',
+    ),
+    MobileRefractometryLevel(
+      fontSize: 120.0,
+      snellen: '6/48',
+      description: 'Severe visual impairment',
+    ),
+    MobileRefractometryLevel(
+      fontSize: 100.0,
+      snellen: '6/36',
+      description: 'Moderate impairment',
+    ),
+    MobileRefractometryLevel(
+      fontSize: 80.0,
+      snellen: '6/24',
+      description: 'Mild impairment',
+    ),
+    MobileRefractometryLevel(
+      fontSize: 70.0,
+      snellen: '6/18',
+      description: 'Borderline',
+    ),
+    MobileRefractometryLevel(
+      fontSize: 60.0,
+      snellen: '6/12',
+      description: 'Driving minimum',
+    ),
+    MobileRefractometryLevel(
+      fontSize: 50.0,
+      snellen: '6/9',
+      description: 'Good vision',
+    ),
+    MobileRefractometryLevel(
+      fontSize: 40.0,
+      snellen: '6/6',
+      description: 'Normal vision',
+    ),
+  ];
 
   /// Calculate ADD power for presbyopia based on age
   static double calculateAddPower(int age) {
@@ -208,6 +253,501 @@ class TestConstants {
       );
     }
     debugPrint('=========================================');
+  }
+
+  // ADD THESE TO YOUR EXISTING TestConstants CLASS
+  // Location: lib/core/constants/test_constants.dart
+  // Add at the end of the TestConstants class, before the closing brace
+
+  // ═══════════════════════════════════════════════════════════
+  // AGE-BASED TEST PROTOCOLS (24 ROUNDS EACH)
+  // ═══════════════════════════════════════════════════════════
+
+  /// Test protocol for young patients (< 40 years)
+  /// Focus: Distance refractive error only - 24 rounds total
+  /// Each size shown 3 times for reliability (8 sizes × 3 cycles)
+  static List<TestRound> getYoungPatientProtocol() {
+    return [
+      // First cycle (Rounds 1-8)
+      TestRound(
+        fontSize: 150.0,
+        testType: TestType.distance,
+        difficulty: '6/60 - Very Easy',
+      ),
+      TestRound(
+        fontSize: 120.0,
+        testType: TestType.distance,
+        difficulty: '6/48 - Easy',
+      ),
+      TestRound(
+        fontSize: 100.0,
+        testType: TestType.distance,
+        difficulty: '6/36 - Moderate',
+      ),
+      TestRound(
+        fontSize: 80.0,
+        testType: TestType.distance,
+        difficulty: '6/24 - Medium',
+      ),
+      TestRound(
+        fontSize: 70.0,
+        testType: TestType.distance,
+        difficulty: '6/18 - Medium',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.distance,
+        difficulty: '6/12 - Challenging',
+      ),
+      TestRound(
+        fontSize: 50.0,
+        testType: TestType.distance,
+        difficulty: '6/9 - Difficult',
+      ),
+      TestRound(
+        fontSize: 40.0,
+        testType: TestType.distance,
+        difficulty: '6/6 - Very Difficult',
+      ),
+
+      // Second cycle (Rounds 9-16)
+      TestRound(
+        fontSize: 150.0,
+        testType: TestType.distance,
+        difficulty: '6/60 - Very Easy',
+      ),
+      TestRound(
+        fontSize: 120.0,
+        testType: TestType.distance,
+        difficulty: '6/48 - Easy',
+      ),
+      TestRound(
+        fontSize: 100.0,
+        testType: TestType.distance,
+        difficulty: '6/36 - Moderate',
+      ),
+      TestRound(
+        fontSize: 80.0,
+        testType: TestType.distance,
+        difficulty: '6/24 - Medium',
+      ),
+      TestRound(
+        fontSize: 70.0,
+        testType: TestType.distance,
+        difficulty: '6/18 - Medium',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.distance,
+        difficulty: '6/12 - Challenging',
+      ),
+      TestRound(
+        fontSize: 50.0,
+        testType: TestType.distance,
+        difficulty: '6/9 - Difficult',
+      ),
+      TestRound(
+        fontSize: 40.0,
+        testType: TestType.distance,
+        difficulty: '6/6 - Very Difficult',
+      ),
+
+      // Third cycle (Rounds 17-24)
+      TestRound(
+        fontSize: 150.0,
+        testType: TestType.distance,
+        difficulty: '6/60 - Very Easy',
+      ),
+      TestRound(
+        fontSize: 120.0,
+        testType: TestType.distance,
+        difficulty: '6/48 - Easy',
+      ),
+      TestRound(
+        fontSize: 100.0,
+        testType: TestType.distance,
+        difficulty: '6/36 - Moderate',
+      ),
+      TestRound(
+        fontSize: 80.0,
+        testType: TestType.distance,
+        difficulty: '6/24 - Medium',
+      ),
+      TestRound(
+        fontSize: 70.0,
+        testType: TestType.distance,
+        difficulty: '6/18 - Medium',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.distance,
+        difficulty: '6/12 - Challenging',
+      ),
+      TestRound(
+        fontSize: 50.0,
+        testType: TestType.distance,
+        difficulty: '6/9 - Difficult',
+      ),
+      TestRound(
+        fontSize: 40.0,
+        testType: TestType.distance,
+        difficulty: '6/6 - Very Difficult',
+      ),
+    ];
+  }
+
+  /// Test protocol for early presbyopes (40-49 years)
+  /// Distance + Near testing - 24 rounds total
+  static List<TestRound> getEarlyPresbyopeProtocol() {
+    return [
+      // Distance vision assessment (Rounds 1-8)
+      TestRound(
+        fontSize: 150.0,
+        testType: TestType.distance,
+        difficulty: '6/60',
+      ),
+      TestRound(
+        fontSize: 120.0,
+        testType: TestType.distance,
+        difficulty: '6/48',
+      ),
+      TestRound(
+        fontSize: 100.0,
+        testType: TestType.distance,
+        difficulty: '6/36',
+      ),
+      TestRound(
+        fontSize: 80.0,
+        testType: TestType.distance,
+        difficulty: '6/24',
+      ),
+      TestRound(
+        fontSize: 70.0,
+        testType: TestType.distance,
+        difficulty: '6/18',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.distance,
+        difficulty: '6/12',
+      ),
+      TestRound(fontSize: 50.0, testType: TestType.distance, difficulty: '6/9'),
+      TestRound(fontSize: 40.0, testType: TestType.distance, difficulty: '6/6'),
+
+      // Near vision assessment (Rounds 9-16)
+      TestRound(
+        fontSize: 70.0,
+        testType: TestType.near,
+        difficulty: 'N10 - Large Print',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.near,
+        difficulty: 'N8 - Headlines',
+      ),
+      TestRound(
+        fontSize: 50.0,
+        testType: TestType.near,
+        difficulty: 'N6 - Newspaper',
+      ),
+      TestRound(
+        fontSize: 45.0,
+        testType: TestType.near,
+        difficulty: 'N5 - Magazine',
+      ),
+      TestRound(
+        fontSize: 35.0,
+        testType: TestType.near,
+        difficulty: 'N4 - Fine Print',
+      ),
+      TestRound(
+        fontSize: 28.0,
+        testType: TestType.near,
+        difficulty: 'N3 - Labels',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.near,
+        difficulty: 'N8 - Recheck',
+      ),
+      TestRound(
+        fontSize: 50.0,
+        testType: TestType.near,
+        difficulty: 'N6 - Recheck',
+      ),
+
+      // Mixed verification (Rounds 17-24)
+      TestRound(
+        fontSize: 100.0,
+        testType: TestType.distance,
+        difficulty: '6/36',
+      ),
+      TestRound(
+        fontSize: 80.0,
+        testType: TestType.distance,
+        difficulty: '6/24',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.distance,
+        difficulty: '6/12',
+      ),
+      TestRound(fontSize: 50.0, testType: TestType.distance, difficulty: '6/9'),
+      TestRound(fontSize: 60.0, testType: TestType.near, difficulty: 'N8'),
+      TestRound(fontSize: 50.0, testType: TestType.near, difficulty: 'N6'),
+      TestRound(fontSize: 45.0, testType: TestType.near, difficulty: 'N5'),
+      TestRound(fontSize: 35.0, testType: TestType.near, difficulty: 'N4'),
+    ];
+  }
+
+  /// Test protocol for moderate presbyopes (50-59 years)
+  /// More emphasis on near vision - 24 rounds total
+  static List<TestRound> getModeratePresbyopeProtocol() {
+    return [
+      // Distance (Rounds 1-6)
+      TestRound(
+        fontSize: 150.0,
+        testType: TestType.distance,
+        difficulty: '6/60',
+      ),
+      TestRound(
+        fontSize: 100.0,
+        testType: TestType.distance,
+        difficulty: '6/36',
+      ),
+      TestRound(
+        fontSize: 80.0,
+        testType: TestType.distance,
+        difficulty: '6/24',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.distance,
+        difficulty: '6/12',
+      ),
+      TestRound(fontSize: 50.0, testType: TestType.distance, difficulty: '6/9'),
+      TestRound(fontSize: 40.0, testType: TestType.distance, difficulty: '6/6'),
+
+      // Near (Rounds 7-18) - MORE emphasis
+      TestRound(fontSize: 70.0, testType: TestType.near, difficulty: 'N10'),
+      TestRound(fontSize: 60.0, testType: TestType.near, difficulty: 'N8'),
+      TestRound(fontSize: 50.0, testType: TestType.near, difficulty: 'N6'),
+      TestRound(fontSize: 45.0, testType: TestType.near, difficulty: 'N5'),
+      TestRound(fontSize: 35.0, testType: TestType.near, difficulty: 'N4'),
+      TestRound(fontSize: 28.0, testType: TestType.near, difficulty: 'N3'),
+      TestRound(
+        fontSize: 70.0,
+        testType: TestType.near,
+        difficulty: 'N10 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.near,
+        difficulty: 'N8 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 50.0,
+        testType: TestType.near,
+        difficulty: 'N6 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 45.0,
+        testType: TestType.near,
+        difficulty: 'N5 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 35.0,
+        testType: TestType.near,
+        difficulty: 'N4 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 28.0,
+        testType: TestType.near,
+        difficulty: 'N3 - Cycle 2',
+      ),
+
+      // Mixed (Rounds 19-24)
+      TestRound(
+        fontSize: 100.0,
+        testType: TestType.distance,
+        difficulty: '6/36',
+      ),
+      TestRound(fontSize: 60.0, testType: TestType.near, difficulty: 'N8'),
+      TestRound(
+        fontSize: 80.0,
+        testType: TestType.distance,
+        difficulty: '6/24',
+      ),
+      TestRound(fontSize: 50.0, testType: TestType.near, difficulty: 'N6'),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.distance,
+        difficulty: '6/12',
+      ),
+      TestRound(fontSize: 45.0, testType: TestType.near, difficulty: 'N5'),
+    ];
+  }
+
+  /// Test protocol for advanced presbyopes (60+ years)
+  /// Maximum emphasis on near vision - 24 rounds total
+  static List<TestRound> getAdvancedPresbyopeProtocol() {
+    return [
+      // Distance (Rounds 1-4)
+      TestRound(
+        fontSize: 120.0,
+        testType: TestType.distance,
+        difficulty: '6/48',
+      ),
+      TestRound(
+        fontSize: 100.0,
+        testType: TestType.distance,
+        difficulty: '6/36',
+      ),
+      TestRound(
+        fontSize: 80.0,
+        testType: TestType.distance,
+        difficulty: '6/24',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.distance,
+        difficulty: '6/12',
+      ),
+
+      // Near (Rounds 5-20) - MAXIMUM emphasis
+      TestRound(fontSize: 70.0, testType: TestType.near, difficulty: 'N10'),
+      TestRound(fontSize: 60.0, testType: TestType.near, difficulty: 'N8'),
+      TestRound(fontSize: 50.0, testType: TestType.near, difficulty: 'N6'),
+      TestRound(fontSize: 45.0, testType: TestType.near, difficulty: 'N5'),
+      TestRound(fontSize: 35.0, testType: TestType.near, difficulty: 'N4'),
+      TestRound(fontSize: 28.0, testType: TestType.near, difficulty: 'N3'),
+      TestRound(
+        fontSize: 70.0,
+        testType: TestType.near,
+        difficulty: 'N10 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.near,
+        difficulty: 'N8 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 50.0,
+        testType: TestType.near,
+        difficulty: 'N6 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 45.0,
+        testType: TestType.near,
+        difficulty: 'N5 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 35.0,
+        testType: TestType.near,
+        difficulty: 'N4 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 28.0,
+        testType: TestType.near,
+        difficulty: 'N3 - Cycle 2',
+      ),
+      TestRound(
+        fontSize: 60.0,
+        testType: TestType.near,
+        difficulty: 'N8 - Cycle 3',
+      ),
+      TestRound(
+        fontSize: 50.0,
+        testType: TestType.near,
+        difficulty: 'N6 - Cycle 3',
+      ),
+      TestRound(
+        fontSize: 45.0,
+        testType: TestType.near,
+        difficulty: 'N5 - Cycle 3',
+      ),
+      TestRound(
+        fontSize: 35.0,
+        testType: TestType.near,
+        difficulty: 'N4 - Cycle 3',
+      ),
+
+      // Mixed (Rounds 21-24)
+      TestRound(
+        fontSize: 100.0,
+        testType: TestType.distance,
+        difficulty: '6/36',
+      ),
+      TestRound(fontSize: 60.0, testType: TestType.near, difficulty: 'N8'),
+      TestRound(
+        fontSize: 80.0,
+        testType: TestType.distance,
+        difficulty: '6/24',
+      ),
+      TestRound(fontSize: 50.0, testType: TestType.near, difficulty: 'N6'),
+    ];
+  }
+
+  /// Get test round configuration based on round number and patient age
+  static TestRound getTestRoundConfiguration(int round, int? patientAge) {
+    List<TestRound> protocol;
+
+    if (patientAge == null || patientAge < 40) {
+      protocol = getYoungPatientProtocol();
+    } else if (patientAge >= 40 && patientAge < 50) {
+      protocol = getEarlyPresbyopeProtocol();
+    } else if (patientAge >= 50 && patientAge < 60) {
+      protocol = getModeratePresbyopeProtocol();
+    } else {
+      protocol = getAdvancedPresbyopeProtocol();
+    }
+
+    // Use modulo to cycle through protocol if round exceeds length
+    int index = (round - 1) % protocol.length;
+    return protocol[index];
+  }
+}
+
+// ADD THESE CLASSES AT THE END OF test_constants.dart
+// After the TestConstants class closes, add these:
+
+/// Test type for mobile refractometry
+enum TestType {
+  distance, // Distance vision (100cm simulation)
+  near, // Near vision (40cm simulation)
+}
+
+/// Represents a single test round configuration
+class TestRound {
+  final double fontSize;
+  final TestType testType;
+  final String difficulty;
+
+  const TestRound({
+    required this.fontSize,
+    required this.testType,
+    required this.difficulty,
+  });
+
+  /// Get color coding for UI
+  Color getTypeColor() {
+    return testType == TestType.distance
+        ? const Color(0xFF2196F3) // Blue for distance
+        : const Color(0xFFFF9800); // Orange for near
+  }
+
+  /// Get icon for test type
+  IconData getTypeIcon() {
+    return testType == TestType.distance
+        ? Icons.remove_red_eye
+        : Icons.menu_book;
+  }
+
+  /// Get display label
+  String getTypeLabel() {
+    return testType == TestType.distance
+        ? 'DISTANCE VISION'
+        : 'NEAR VISION (Reading)';
   }
 }
 
@@ -280,3 +820,15 @@ class ShortDistanceSentence {
   });
 }
 
+/// Represents a Mobile Refractometry E size level with Snellen notation
+class MobileRefractometryLevel {
+  final double fontSize;
+  final String snellen;
+  final String description;
+
+  const MobileRefractometryLevel({
+    required this.fontSize,
+    required this.snellen,
+    required this.description,
+  });
+}

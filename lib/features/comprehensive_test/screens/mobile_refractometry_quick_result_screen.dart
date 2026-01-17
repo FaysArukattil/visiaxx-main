@@ -36,11 +36,22 @@ class _MobileRefractometryQuickResultScreenState
   bool _leftEyeVerified = false;
   bool _finalVerified = false;
   Timer? _saveTimer;
+  int _patientAge = 30; // Default age, updated from provider
 
   @override
   void initState() {
     super.initState();
+    _initializeAge();
     _checkUserRole();
+  }
+
+  void _initializeAge() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<TestSessionProvider>();
+      setState(() {
+        _patientAge = provider.profileAge ?? 30;
+      });
+    });
   }
 
   Future<void> _checkUserRole() async {
@@ -315,6 +326,12 @@ class _MobileRefractometryQuickResultScreenState
                     ],
                     const SizedBox(height: 16),
                     _buildClinicalInsights(result),
+                    // Lens recommendations based on age
+                    const SizedBox(height: 16),
+                    _buildLensRecommendation(),
+                    // Professional consultation advice
+                    const SizedBox(height: 16),
+                    _buildProfessionalAdvice(),
                     // Show prescription to ALL users if it exists and is included in results
                     if (_prescription != null &&
                         _prescription!.includeInResults) ...[
@@ -467,14 +484,18 @@ class _MobileRefractometryQuickResultScreenState
   }
 
   Widget _buildRefractionGrid(MobileRefractometryEyeResult res) {
+    final showAdd =
+        _patientAge >= 40 &&
+        double.tryParse(res.addPower) != null &&
+        double.parse(res.addPower) > 0;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _buildValueItem('SPHERE', res.sphere, 'Distance'),
         _buildValueItem('CYLINDER', res.cylinder, 'Focus'),
         _buildValueItem('AXIS', '${res.axis}°', 'Angle'),
-        if (double.tryParse(res.addPower) != null &&
-            double.parse(res.addPower) > 0)
+        if (showAdd)
           _buildValueItem('READING', '+${res.addPower}', 'Add Power'),
       ],
     );
@@ -593,6 +614,238 @@ class _MobileRefractometryQuickResultScreenState
     );
   }
 
+  /// Builds lens recommendation based on patient age
+  Widget _buildLensRecommendation() {
+    final bool isPresbyopic = _patientAge >= 40;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.08),
+            AppColors.primary.withValues(alpha: 0.03),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.visibility_outlined,
+                color: AppColors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Lens Recommendation',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (isPresbyopic) ...[
+            // 40+ years: Progressive or Bifocal
+            _buildLensOption(
+              icon: Icons.gradient_rounded,
+              title: 'Progressive Lenses',
+              subtitle: 'Recommended - seamless vision at all distances',
+              isRecommended: true,
+            ),
+            const SizedBox(height: 12),
+            _buildLensOption(
+              icon: Icons.view_agenda_rounded,
+              title: 'Bifocal Lenses',
+              subtitle: 'Alternative if progressive lenses are not convenient',
+              isRecommended: false,
+            ),
+          ] else ...[
+            // Under 40: Single Vision
+            _buildLensOption(
+              icon: Icons.lens_rounded,
+              title: 'Single Vision Lenses',
+              subtitle: 'Optimal for your age group',
+              isRecommended: true,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLensOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isRecommended,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isRecommended
+            ? AppColors.success.withValues(alpha: 0.08)
+            : AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isRecommended
+              ? AppColors.success.withValues(alpha: 0.3)
+              : AppColors.border.withValues(alpha: 0.3),
+          width: isRecommended ? 1.5 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isRecommended
+                  ? AppColors.success.withValues(alpha: 0.15)
+                  : AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: isRecommended ? AppColors.success : AppColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (isRecommended) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.success,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'ADVISABLE',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds professional consultation advice section
+  Widget _buildProfessionalAdvice() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.info.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.info.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.medical_services_rounded,
+                color: AppColors.info,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Professional Consultation',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _buildAdviceItem(
+            icon: Icons.storefront_rounded,
+            text: 'Please refer to an optician for glasses',
+          ),
+          const SizedBox(height: 10),
+          _buildAdviceItem(
+            icon: Icons.health_and_safety_rounded,
+            text:
+                'Consult an eye doctor or optometrist for a more detailed eye checkup',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdviceItem({required IconData icon, required String text}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.info),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textPrimary,
+              height: 1.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildActionButtons(
     BuildContext context,
     MobileRefractometryResult result,
@@ -637,7 +890,10 @@ class _MobileRefractometryQuickResultScreenState
             gradient: LinearGradient(
               colors: isBlocked
                   ? [AppColors.border, AppColors.border]
-                  : [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
+                  : [
+                      AppColors.primary,
+                      AppColors.primary.withValues(alpha: 0.8),
+                    ],
             ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: isBlocked
@@ -1298,5 +1554,3 @@ class _MobileRefractometryQuickResultScreenState
     };
   }
 }
-
-

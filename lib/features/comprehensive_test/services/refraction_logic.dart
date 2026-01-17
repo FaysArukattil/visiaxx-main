@@ -1,3 +1,5 @@
+/// Legacy wrapper for refraction calculations
+/// Most logic now handled by AdvancedRefractionService
 class RefractionLogic {
   /// Map visual threshold (blur level) to Sphere power (SPH)
   static double calculateSphereFromThreshold(double threshold) {
@@ -13,7 +15,7 @@ class RefractionLogic {
     if (threshold >= 2.0) return -2.50;
     if (threshold >= 1.5) return -3.00;
     if (threshold >= 1.0) return -4.00;
-    return -6.00; // High error
+    return -6.00;
   }
 
   /// Calculate Latent Hyperopia adjustment for young patients

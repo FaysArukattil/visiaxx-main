@@ -7,6 +7,7 @@ import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../results/widgets/how_to_respond_animation.dart';
 import '../../quick_vision_test/widgets/instruction_animations.dart';
 import '../../quick_vision_test/widgets/glasses_removal_animation.dart';
+import '../widgets/blur_awareness_animation.dart';
 
 class MobileRefractometryInstructionsScreen extends StatefulWidget {
   final VoidCallback? onContinue;
@@ -22,13 +23,14 @@ class _MobileRefractometryInstructionsScreenState
     extends State<MobileRefractometryInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 4;
+  final int _totalPages = 5;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
     'No Eyewear',
     'Lighting Check',
     'Dual Distance Focus',
+    'Blur Awareness',
     'How to Respond',
   ];
 
@@ -36,6 +38,7 @@ class _MobileRefractometryInstructionsScreenState
     'Please remove your glasses or contact lenses for this test.',
     'First, find a quiet, well-lit room for the best results.',
     'This test checks your vision at two distances: arm\'s length and closer.',
+    'During the test, the E may become smaller and blurry. If you can barely make it out, say blurry or select Can\'t See.',
     'Speak the direction of the letter "E". If it looks blurry, just say "blurry".',
   ];
 
@@ -165,6 +168,14 @@ class _MobileRefractometryInstructionsScreenState
                     ),
                     _buildStep(
                       3,
+                      Icons.blur_on_rounded,
+                      'Blur Awareness',
+                      'During the test, the E may become smaller and blurry. If you can barely make it out, say "Blurry" or select "Can\'t See".',
+                      AppColors.warning,
+                      animation: const BlurAwarenessAnimation(isCompact: true),
+                    ),
+                    _buildStep(
+                      4,
                       Icons.mic_rounded,
                       'Voice & Blurry',
                       'Say the direction clearly. If the letter "E" is out of focus, say "Blurry".',
@@ -346,4 +357,3 @@ class _MobileRefractometryInstructionsScreenState
     );
   }
 }
-
