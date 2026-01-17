@@ -134,7 +134,7 @@ class TestConstants {
   static const double mobileRefractometryDistanceCm = 100.0;
   static const double mobileRefractometryNearCm = 40.0;
   static const double mobileRefractometryToleranceCm = 8.0;
-  static const int mobileRefractometryRelaxationSeconds = 10;
+  static const int mobileRefractometryRelaxationSeconds = 6;
   static const int mobileRefractometryTimePerRoundSeconds = 5;
 
   // Blur level constants for adaptive difficulty
