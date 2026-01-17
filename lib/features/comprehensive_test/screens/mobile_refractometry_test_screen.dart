@@ -92,7 +92,6 @@ class _MobileRefractometryTestScreenState
   // Distance monitoring
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
-  bool _isInstructionComplete = false;
   bool _isDistanceOk = true;
   final bool _isCalibrationActive = false;
   bool _isTestPausedForDistance = false;
@@ -158,7 +157,6 @@ class _MobileRefractometryTestScreenState
       // START FLOW LOGIC
       if (!widget.showInitialInstructions) {
         // Skip general instructions, go straight to setup
-        _isInstructionComplete = true;
         _instructionShown = true;
         _isTransitioning = true;
         _startDistanceCalibration(TestConstants.mobileRefractometryDistanceCm);
@@ -229,7 +227,6 @@ class _MobileRefractometryTestScreenState
 
   void _onInstructionComplete() {
     _isTransitioning = false;
-    _isInstructionComplete = true;
     _instructionShown = true;
     _startDistanceCalibration(TestConstants.mobileRefractometryDistanceCm);
   }
