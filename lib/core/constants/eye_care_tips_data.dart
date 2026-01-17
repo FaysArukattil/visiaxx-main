@@ -607,42 +607,42 @@ class EyeCareTipsData {
     EyeCareTipCategory(
       id: 'screen',
       title: 'Screen & Digital Eye Care',
-      emoji: '‘ï¸',
+      emoji: '📱',
       color: const Color(0xFF6C63FF),
       tips: screenTips,
     ),
     EyeCareTipCategory(
       id: 'daily',
       title: 'Daily Eye Care Habits',
-      emoji: '§˜',
+      emoji: '✨',
       color: const Color(0xFF4CAF50),
       tips: dailyTips,
     ),
     EyeCareTipCategory(
       id: 'nutrition',
       title: 'Nutrition & Eye Health',
-      emoji: '¥—',
+      emoji: '🥗',
       color: const Color(0xFFFF9800),
       tips: nutritionTips,
     ),
     EyeCareTipCategory(
       id: 'protection',
       title: 'Eye Protection & Safety',
-      emoji: '›¡ï¸',
+      emoji: '🛡️',
       color: const Color(0xFFF44336),
       tips: protectionTips,
     ),
     EyeCareTipCategory(
       id: 'glasses',
       title: 'Glasses & Contact Lens Care',
-      emoji: '‘“',
+      emoji: '👓',
       color: const Color(0xFF2196F3),
       tips: glassesTips,
     ),
     EyeCareTipCategory(
       id: 'medical',
       title: 'Medical & Preventive Eye Care',
-      emoji: '©º',
+      emoji: '🩺',
       color: const Color(0xFF9C27B0),
       tips: medicalTips,
     ),
@@ -668,4 +668,3 @@ class EyeCareTipsData {
     return allTips[tipIndex];
   }
 }
-

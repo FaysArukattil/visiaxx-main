@@ -154,7 +154,7 @@ class ContinuousSpeechManager {
 
     // Call the callback
     if (onFinalResult != null) {
-      debugPrint('[ContinuousSpeech] ”¥ Calling onFinalResult callback');
+      debugPrint('[ContinuousSpeech] ✅ Calling onFinalResult callback');
       onFinalResult!(result);
     } else {
       debugPrint('[ContinuousSpeech]  ï¸ WARNING: onFinalResult is NULL!');
@@ -172,7 +172,7 @@ class ContinuousSpeechManager {
 
     // Call the callback
     if (onSpeechDetected != null) {
-      debugPrint('[ContinuousSpeech] ”¥ Calling onSpeechDetected callback');
+      debugPrint('[ContinuousSpeech] ✅ Calling onSpeechDetected callback');
       onSpeechDetected!(speech);
     } else {
       debugPrint('[ContinuousSpeech]  ï¸ WARNING: onSpeechDetected is NULL!');
@@ -357,4 +357,3 @@ class ContinuousSpeechManager {
     _isPausedForTts = false;
   }
 }
-
