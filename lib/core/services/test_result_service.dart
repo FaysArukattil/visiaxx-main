@@ -65,6 +65,16 @@ class TestResultService {
             .doc(result.profileId)
             .collection('tests')
             .doc(customDocId);
+      } else if (result.profileType == 'patient' &&
+          result.profileId.isNotEmpty) {
+        // Save under Practitioner's patient path
+        testDocRef = _firestore
+            .collection('Practitioners')
+            .doc(identity)
+            .collection('patients')
+            .doc(result.profileId)
+            .collection('tests')
+            .doc(customDocId);
       }
 
       await testDocRef.set(result.toFirestore());
@@ -168,7 +178,9 @@ class TestResultService {
           debugPrint('[TestResultService] … PDF uploaded: $pdfUrl');
           updatedResult = updatedResult.copyWith(pdfUrl: pdfUrl);
         } else {
-          debugPrint('[TestResultService] Œ PDF upload FAILED (returned null)');
+          debugPrint(
+            '[TestResultService] Œ PDF upload FAILED (returned null)',
+          );
         }
       } else {
         debugPrint(
@@ -178,12 +190,32 @@ class TestResultService {
 
       // 3. Update Firestore with new AWS URLs
       debugPrint('[TestResultService] ”„ Updating Firestore with AWS URLs...');
-      await _firestore
+      var updateDocRef = _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
           .collection('tests')
-          .doc(customDocId)
-          .update(updatedResult.toFirestore());
+          .doc(customDocId);
+
+      if (result.profileType == 'family' && result.profileId.isNotEmpty) {
+        updateDocRef = _firestore
+            .collection(_identifiedResultsCollection)
+            .doc(identity)
+            .collection('members')
+            .doc(result.profileId)
+            .collection('tests')
+            .doc(customDocId);
+      } else if (result.profileType == 'patient' &&
+          result.profileId.isNotEmpty) {
+        updateDocRef = _firestore
+            .collection('Practitioners')
+            .doc(identity)
+            .collection('patients')
+            .doc(result.profileId)
+            .collection('tests')
+            .doc(customDocId);
+      }
+
+      await updateDocRef.update(updatedResult.toFirestore());
 
       debugPrint(
         '[TestResultService] … Background AWS sync COMPLETE for $customDocId',
@@ -218,14 +250,34 @@ class TestResultService {
       final identity = userModel?.identityString ?? userId;
       final roleCol = userModel?.roleCollection ?? 'Patients';
 
-      await _firestore
+      var offlineDocRef = _firestore
           .collection(_identifiedResultsCollection)
           .doc(identity)
           .collection('tests')
-          .doc(customDocId)
-          .set(result.toFirestore());
+          .doc(customDocId);
 
-      if (identity != userId) {
+      if (result.profileType == 'family' && result.profileId.isNotEmpty) {
+        offlineDocRef = _firestore
+            .collection(_identifiedResultsCollection)
+            .doc(identity)
+            .collection('members')
+            .doc(result.profileId)
+            .collection('tests')
+            .doc(customDocId);
+      } else if (result.profileType == 'patient' &&
+          result.profileId.isNotEmpty) {
+        offlineDocRef = _firestore
+            .collection('Practitioners')
+            .doc(identity)
+            .collection('patients')
+            .doc(result.profileId)
+            .collection('tests')
+            .doc(customDocId);
+      }
+
+      await offlineDocRef.set(result.toFirestore());
+
+      if (identity != userId && result.profileType != 'patient') {
         await _firestore
             .collection(_identifiedResultsCollection)
             .doc(userId)
@@ -289,7 +341,9 @@ class TestResultService {
     // Check if AWS is available
     final bool awsAvailable = _awsStorageService.isAvailable;
     if (!awsAvailable) {
-      debugPrint('[TestResultService]  ï¸ AWS not available, skipping uploads');
+      debugPrint(
+        '[TestResultService]  ï¸ AWS not available, skipping uploads',
+      );
       return result;
     }
 
@@ -811,4 +865,3 @@ class TestResultService {
     }
   }
 }
-

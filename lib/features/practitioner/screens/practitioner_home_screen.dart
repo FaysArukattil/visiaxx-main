@@ -106,6 +106,10 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     const SizedBox(height: 16),
                     _buildServicesGrid(),
                     const SizedBox(height: 32),
+                    _buildSectionTitle('Individual Tests'),
+                    const SizedBox(height: 16),
+                    _buildIndividualTestsGrid(),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
@@ -598,6 +602,91 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
       ),
     );
   }
+
+  Widget _buildIndividualTestsGrid() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _IndividualTestCard(
+                  icon: Icons.visibility_outlined,
+                  title: 'Visual Acuity',
+                  color: AppColors.primary,
+                  onTap: () => _navigateToPatientSelection('visual_acuity'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _IndividualTestCard(
+                  icon: Icons.palette_outlined,
+                  title: 'Color Vision',
+                  color: const Color(0xFFE91E63),
+                  onTap: () => _navigateToPatientSelection('color_vision'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _IndividualTestCard(
+                  icon: Icons.grid_4x4_outlined,
+                  title: 'Amsler Grid',
+                  color: const Color(0xFF00BCD4),
+                  onTap: () => _navigateToPatientSelection('amsler_grid'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _IndividualTestCard(
+                  icon: Icons.menu_book_outlined,
+                  title: 'Reading Test',
+                  color: const Color(0xFF4CAF50),
+                  onTap: () => _navigateToPatientSelection('reading_test'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _IndividualTestCard(
+                  icon: Icons.contrast_outlined,
+                  title: 'Contrast',
+                  color: const Color(0xFFFF9800),
+                  onTap: () =>
+                      _navigateToPatientSelection('contrast_sensitivity'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _IndividualTestCard(
+                  icon: Icons.remove_red_eye_rounded,
+                  title: 'Refractometry',
+                  color: const Color(0xFF9C27B0),
+                  onTap: () =>
+                      _navigateToPatientSelection('mobile_refractometry'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToPatientSelection(String testType) {
+    Navigator.pushNamed(
+      context,
+      '/practitioner-profile-selection',
+      arguments: {'testType': testType},
+    );
+  }
 }
 
 class _ServiceCard extends StatelessWidget {
@@ -738,6 +827,68 @@ class _WideServiceCard extends StatelessWidget {
               Icons.arrow_forward_ios,
               color: AppColors.textTertiary,
               size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IndividualTestCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _IndividualTestCard({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 100,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

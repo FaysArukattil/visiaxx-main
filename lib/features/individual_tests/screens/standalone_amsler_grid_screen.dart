@@ -13,11 +13,18 @@ class StandaloneAmslerGridScreen extends StatelessWidget {
     final authService = AuthService();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final user = await authService.getUserData(authService.currentUserId!);
-      if (user != null) {
-        provider.selectSelfProfile(user.id, user.fullName, user.age, user.sex);
-        provider.startIndividualTest('amsler_grid');
+      if (provider.profileId.isEmpty) {
+        final user = await authService.getUserData(authService.currentUserId!);
+        if (user != null) {
+          provider.selectSelfProfile(
+            user.id,
+            user.fullName,
+            user.age,
+            user.sex,
+          );
+        }
       }
+      provider.startIndividualTest('amsler_grid');
     });
 
     return const AmslerGridInstructionsScreen();

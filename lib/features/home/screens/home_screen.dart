@@ -216,20 +216,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 16),
                         _buildServicesGrid(),
                         const SizedBox(height: 32),
-                        _buildSectionTitle('Individual Tests'),
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Text(
-                            'Take tests individually with instant results',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildIndividualTestsGrid(),
+                        const SizedBox(height: 32),
+
                         const SizedBox(height: 32),
                       ],
                     ),
@@ -756,82 +744,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  Widget _buildIndividualTestsGrid() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GestureDetector(
-        onTap: () => Navigator.pushNamed(context, '/individual-tests'),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.primary.withValues(alpha: 0.1),
-                AppColors.primary.withValues(alpha: 0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.grid_view_rounded,
-                  color: AppColors.primary,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'View All Individual Tests',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '6 tests available €¢ Tap to explore',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: AppColors.primary,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _ServiceCard extends StatelessWidget {
@@ -892,4 +804,3 @@ class _ServiceCard extends StatelessWidget {
     );
   }
 }
-

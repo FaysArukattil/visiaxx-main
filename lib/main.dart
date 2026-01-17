@@ -216,6 +216,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
                     as Map<String, dynamic>?;
             return PractitionerProfileSelectionScreen(
               isComprehensive: args?['comprehensive'] ?? false,
+              testType: args?['testType'],
             );
           },
           '/practitioner-results': (context) =>
@@ -260,4 +261,3 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
     );
   }
 }
-

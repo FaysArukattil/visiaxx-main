@@ -13,10 +13,12 @@ import '../../../data/providers/test_session_provider.dart';
 /// No relationship field for patients
 class PractitionerProfileSelectionScreen extends StatefulWidget {
   final bool isComprehensive;
+  final String? testType;
 
   const PractitionerProfileSelectionScreen({
     super.key,
     this.isComprehensive = false,
+    this.testType,
   });
 
   @override
@@ -88,13 +90,42 @@ class _PractitionerProfileSelectionScreenState
     // Use patient as a family member equivalent for test session
     provider.selectPatientProfile(patient);
 
-    if (widget.isComprehensive) {
+    if (widget.testType != null) {
+      // Individual test flow
+      provider.startIndividualTest(widget.testType!);
+
+      // Determine standalone route
+      String route;
+      switch (widget.testType) {
+        case 'visual_acuity':
+          route = '/visual-acuity-standalone';
+          break;
+        case 'color_vision':
+          route = '/color-vision-standalone';
+          break;
+        case 'amsler_grid':
+          route = '/amsler-grid-standalone';
+          break;
+        case 'reading_test':
+          route = '/reading-test-standalone';
+          break;
+        case 'contrast_sensitivity':
+          route = '/contrast-sensitivity-standalone';
+          break;
+        case 'mobile_refractometry':
+          route = '/mobile-refractometry-standalone';
+          break;
+        default:
+          route = '/home'; // Safeguard
+      }
+      Navigator.pushReplacementNamed(context, route);
+    } else if (widget.isComprehensive) {
       provider.startComprehensiveTest();
+      Navigator.pushNamed(context, '/questionnaire');
     } else {
       provider.startTest();
+      Navigator.pushNamed(context, '/questionnaire');
     }
-
-    Navigator.pushNamed(context, '/questionnaire');
   }
 
   Future<void> _addPatient() async {
@@ -580,5 +611,3 @@ class _PractitionerProfileSelectionScreenState
     );
   }
 }
-
-

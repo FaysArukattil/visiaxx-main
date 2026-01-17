@@ -13,13 +13,20 @@ class StandaloneVisualAcuityScreen extends StatelessWidget {
     final provider = Provider.of<TestSessionProvider>(context, listen: false);
     final authService = AuthService();
 
-    // Initialize individual test mode
+    // Initialize individual test mode - only if profile not already set (e.g., by practitioner)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final user = await authService.getUserData(authService.currentUserId!);
-      if (user != null) {
-        provider.selectSelfProfile(user.id, user.fullName, user.age, user.sex);
-        provider.startIndividualTest('visual_acuity');
+      if (provider.profileId.isEmpty) {
+        final user = await authService.getUserData(authService.currentUserId!);
+        if (user != null) {
+          provider.selectSelfProfile(
+            user.id,
+            user.fullName,
+            user.age,
+            user.sex,
+          );
+        }
       }
+      provider.startIndividualTest('visual_acuity');
     });
 
     // Navigate to the standard test flow - it will automatically stop after VA
