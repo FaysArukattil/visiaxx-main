@@ -876,12 +876,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                 ],
               ),
 
-              // Distance indicator - Repositioned to bottom to avoid overlap
+              // Distance indicator - Repositioned to top-right overlapping info bar
               Positioned(
-                right: 16,
-                bottom: _currentMode == 'short'
-                    ? 160
-                    : 150, // Above control buttons, adjusted by user request
+                right: 8,
+                top: 8, // Overlapping the InfoBar area
                 child: _buildDistanceIndicator(),
               ),
 
@@ -1265,7 +1263,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   Widget _buildInfoBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.white,
         border: Border(
@@ -1276,59 +1274,60 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          // Eye/Mode indicator
+          // Screen indicator (Leftmost)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.visibility_rounded,
-                  size: 14,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'EYE: ${_currentEye.toUpperCase()}',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 11,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Screen indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: AppColors.info.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.grid_view_rounded,
-                  size: 14,
+                  size: 13,
                   color: AppColors.info,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
                   'SCREEN ${_currentScreenIndex + 1}/${PelliRobsonScoring.totalScreens}',
                   style: const TextStyle(
                     color: AppColors.info,
                     fontWeight: FontWeight.w900,
-                    fontSize: 11,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Eye/Mode indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.visibility_rounded,
+                  size: 13,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'EYE: ${_currentEye.toUpperCase()}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 0.4,
                   ),
                 ),
               ],
