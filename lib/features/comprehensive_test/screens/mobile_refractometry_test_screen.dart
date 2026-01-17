@@ -526,6 +526,8 @@ class _MobileRefractometryTestScreenState
     _lastDetectedSpeech = null;
     _isSpeechActive = false;
     _eDisplayStartTime = null;
+    _continuousSpeech
+        .clearAccumulated(); // Explicitly clear buffer for new round
 
     // Generate random direction (different from last)
     final directions = [
@@ -573,6 +575,18 @@ class _MobileRefractometryTestScreenState
 
   void _handleVoiceResponse(String finalResult) {
     if (_currentPhase != RefractPhase.test || !_waitingForResponse) return;
+
+    // Reject final results arriving too fast after E display (prevent leakage from previous E)
+    if (_eDisplayStartTime != null) {
+      final sinceStart = DateTime.now().difference(_eDisplayStartTime!);
+      if (sinceStart < const Duration(milliseconds: 1500)) {
+        debugPrint(
+          '[MobileRefract] Ignoring final voice result: arrived too fast after rotation (${sinceStart.inMilliseconds}ms)',
+        );
+        return;
+      }
+    }
+
     final direction = SpeechService.parseDirection(finalResult);
     if (direction != null) {
       _handleResponse(EDirection.fromString(direction));
@@ -640,9 +654,13 @@ class _MobileRefractometryTestScreenState
     _roundTimer?.cancel();
 
     _continuousSpeech.stop();
-    _continuousSpeech.clearAccumulated();
+    _continuousSpeech.clearAccumulated(); // Clear immediately after response
     _speechEraserTimer?.cancel();
     _speechActiveTimer?.cancel();
+    setState(() {
+      _lastDetectedSpeech = null;
+      _isSpeechActive = false;
+    });
 
     final correct = response == _currentDirection;
     final isCantSee = response == EDirection.blurry;
@@ -767,6 +785,8 @@ class _MobileRefractometryTestScreenState
 
   void _calculateResults() {
     _isTransitioning = false;
+    _continuousSpeech.stop();
+    _continuousSpeech.clearAccumulated(); // Clean up before result screen
     setState(() => _currentPhase = RefractPhase.complete);
 
     final rightResults = _processEyeData(_rightEyeResponses);
