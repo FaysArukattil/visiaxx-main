@@ -74,14 +74,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
       // DEBUG: Check if prescription is in the result
       debugPrint(
-        '[QuickTestResult] ðŸ” Prescription in result: ${result.refractionPrescription != null}',
+        '[QuickTestResult] 🔍 Prescription in result: ${result.refractionPrescription != null}',
       );
       if (result.refractionPrescription != null) {
         debugPrint(
-          '[QuickTestResult] ðŸ“‹ Prescription includeInResults: ${result.refractionPrescription!.includeInResults}',
+          '[QuickTestResult] 📋 Prescription includeInResults: ${result.refractionPrescription!.includeInResults}',
         );
         debugPrint(
-          '[QuickTestResult] ðŸ‘¨â€âš•ï¸ Practitioner: ${result.refractionPrescription!.practitionerName}',
+          '[QuickTestResult] 👨‍⚕️ Practitioner: ${result.refractionPrescription!.practitionerName}',
         );
       }
 
@@ -99,7 +99,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
       if (!connectivity.isOnline) {
         debugPrint(
-          '[QuickTestResult] ðŸ“¶ Device is OFFLINE. Saving locally and queuing sync...',
+          '[QuickTestResult] 📶 Device is OFFLINE. Saving locally and queuing sync...',
         );
 
         // Save offline using the service which handles queuing internally
@@ -133,7 +133,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       );
 
       debugPrint(
-        '[QuickTestResult] âœ… Result saved successfully with ID: $resultId',
+        '[QuickTestResult] ✅ Result saved successfully with ID: $resultId',
       );
 
       if (mounted) {
@@ -150,7 +150,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         await _checkAndShowReviewDialog();
       }
     } catch (e) {
-      debugPrint('[QuickTestResult] âŒ ERROR saving results: $e');
+      debugPrint('[QuickTestResult] ❌ ERROR saving results: $e');
 
       if (mounted) {
         // Show error message
@@ -348,9 +348,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
                     // Action buttons
                     _buildDisclaimer(),
-                    const SizedBox(height: 32), // âš¡ Spacing after disclaimer
+                    const SizedBox(height: 32), // ⚡ Spacing after disclaimer
                     _buildActionButtons(provider),
-                    const SizedBox(height: 80), // âš¡ Fixes bottom overflow
+                    const SizedBox(height: 80), // ⚡ Fixes bottom overflow
                   ],
                 ),
               ),
@@ -397,7 +397,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           end: Alignment.bottomRight,
           colors: [primaryColor, secondaryColor],
         ),
-        borderRadius: BorderRadius.circular(24), // âš¡ Now rounded
+        borderRadius: BorderRadius.circular(24), // ⚡ Now rounded
         boxShadow: [
           BoxShadow(
             color: primaryColor.withValues(alpha: 0.25),
@@ -451,7 +451,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    DateFormat('MMM dd, yyyy â€¢ h:mm a').format(timestamp),
+                    DateFormat('MMM dd, yyyy • h:mm a').format(timestamp),
                     style: TextStyle(
                       color: textColor,
                       fontSize: 14,
@@ -482,7 +482,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           ? (provider.profileName.isEmpty ? 'User' : provider.profileName)
           : widget.historicalResult!.profileName;
       testDate = DateFormat(
-        'MMM dd, yyyy â€¢ h:mm a',
+        'MMM dd, yyyy • h:mm a',
       ).format(widget.historicalResult!.timestamp);
       isFamily = widget.historicalResult!.profileType == 'family';
     } else {
@@ -492,18 +492,18 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           (provider.profileName.isEmpty ? 'User' : provider.profileName);
       age = familyMember?.age;
       sex = familyMember?.sex;
-      testDate = DateFormat('MMM dd, yyyy â€¢ h:mm a').format(DateTime.now());
+      testDate = DateFormat('MMM dd, yyyy • h:mm a').format(DateTime.now());
       isFamily = familyMember != null;
     }
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.white, // âš¡ Pure white
+        color: AppColors.white, // ⚡ Pure white
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.04), // âš¡ Neutal shadow
+            color: AppColors.black.withValues(alpha: 0.04), // ⚡ Neutal shadow
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -516,7 +516,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1,), // âš¡ Soft background
+                  color: AppColors.primary.withValues(
+                    alpha: 0.1,
+                  ), // ⚡ Soft background
                   shape: BoxShape.circle,
                 ),
                 child: CircleAvatar(
@@ -526,8 +528,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     name.isNotEmpty ? name[0].toUpperCase() : 'U',
                     style: const TextStyle(
                       fontSize: 24,
-                      fontWeight: FontWeight.w900, // âš¡ Stronger weight
-                      color: AppColors.primary, // âš¡ Use primary color
+                      fontWeight: FontWeight.w900, // ⚡ Stronger weight
+                      color: AppColors.primary, // ⚡ Use primary color
                     ),
                   ),
                 ),
@@ -549,7 +551,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                         [
                           if (age != null) '$age years',
                           if (sex != null) sex,
-                        ].join(' â€¢ '),
+                        ].join(' • '),
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
@@ -566,7 +568,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 decoration: BoxDecoration(
                   color: (isFamily ? AppColors.info : AppColors.primary)
                       .withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(100), // âš¡ Pill shape
+                  borderRadius: BorderRadius.circular(100), // ⚡ Pill shape
                 ),
                 child: Text(
                   isFamily ? 'Family Member' : 'Primary Account',
@@ -2222,7 +2224,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Widget _buildNewStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, size: 18, color: AppColors.textSecondary.withValues(alpha: 0.6)),
+        Icon(
+          icon,
+          size: 18,
+          color: AppColors.textSecondary.withValues(alpha: 0.6),
+        ),
         const SizedBox(height: 6),
         Text(
           value,
@@ -2305,7 +2311,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
+              border: Border.all(
+                color: AppColors.warning.withValues(alpha: 0.2),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2399,7 +2407,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: AppColors.divider.withValues(alpha: 0.5),
+                ),
               ),
               child: Row(
                 children: [
@@ -2679,7 +2689,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             offset: const Offset(0, 12),
           ),
         ],
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.2), width: 2),
+        border: Border.all(
+          color: AppColors.success.withValues(alpha: 0.2),
+          width: 2,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2980,5 +2993,3 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         provider.amslerGridLeft != null;
   }
 }
-
-

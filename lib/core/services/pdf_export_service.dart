@@ -33,16 +33,16 @@ class PdfExportService {
       final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
 
       // Generate PDF
-      debugPrint('[PdfExportService] ðŸ“„ Generating PDF...');
+      debugPrint('[PdfExportService] 📄 Generating PDF...');
       final pdf = await _buildPdfDocument(result);
       final pdfBytes = await pdf.save();
       debugPrint(
-        '[PdfExportService] âœ… PDF generated (${pdfBytes.length} bytes)',
+        '[PdfExportService] ✅ PDF generated (${pdfBytes.length} bytes)',
       );
 
       // Save to Downloads folder
       final savedPath = await _saveToDownloads(pdfBytes, filename);
-      debugPrint('[PdfExportService] âœ… PDF saved to: $savedPath');
+      debugPrint('[PdfExportService] ✅ PDF saved to: $savedPath');
 
       return savedPath;
     } catch (e) {
@@ -65,7 +65,7 @@ class PdfExportService {
         final pdf = await _buildPdfDocument(result);
         await file.writeAsBytes(await pdf.save());
 
-        debugPrint('[PdfExportService] âœ… PDF saved to fallback: $fallbackPath');
+        debugPrint('[PdfExportService] ✅ PDF saved to fallback: $fallbackPath');
         return fallbackPath;
       } catch (fallbackError) {
         throw Exception(
@@ -96,7 +96,7 @@ class PdfExportService {
         if (await downloadsDir.exists()) {
           final file = File('${downloadsDir.path}/$filename');
           await file.writeAsBytes(bytes);
-          debugPrint('[PdfExportService] âœ… Saved to Downloads: ${file.path}');
+          debugPrint('[PdfExportService] ✅ Saved to Downloads: ${file.path}');
           return file.path;
         } else {
           // Try alternate path
@@ -104,7 +104,7 @@ class PdfExportService {
           if (await altDownloadsDir.exists()) {
             final file = File('${altDownloadsDir.path}/$filename');
             await file.writeAsBytes(bytes);
-            debugPrint('[PdfExportService] âœ… Saved to Downloads: ${file.path}');
+            debugPrint('[PdfExportService] ✅ Saved to Downloads: ${file.path}');
             return file.path;
           }
         }
@@ -122,7 +122,7 @@ class PdfExportService {
           }
           final file = File('${downloadsPath.path}/$filename');
           await file.writeAsBytes(bytes);
-          debugPrint('[PdfExportService] âœ… Saved to: ${file.path}');
+          debugPrint('[PdfExportService] ✅ Saved to: ${file.path}');
           return file.path;
         }
 
@@ -146,7 +146,7 @@ class PdfExportService {
     final appDir = await getApplicationDocumentsDirectory();
     final file = File('${appDir.path}/$filename');
     await file.writeAsBytes(bytes);
-    debugPrint('[PdfExportService] âœ… Saved to app directory: ${file.path}');
+    debugPrint('[PdfExportService] ✅ Saved to app directory: ${file.path}');
     return file.path;
   }
 
@@ -1642,8 +1642,7 @@ class PdfExportService {
               width: 3,
               height: 25,
               decoration: pw.BoxDecoration(
-                color:
-                    color, // Removed .withValues(alpha: 2),
+                color: color, // Removed .withValues(alpha: 2),
               ),
             ),
             pw.SizedBox(width: 8),
@@ -2002,7 +2001,7 @@ class PdfExportService {
           final response = await http.get(Uri.parse(localPath));
           if (response.statusCode == 200) {
             debugPrint(
-              '[PdfExportService] âœ… Downloaded ${response.bodyBytes.length} bytes',
+              '[PdfExportService] ✅ Downloaded ${response.bodyBytes.length} bytes',
             );
             return response.bodyBytes;
           }
@@ -2018,7 +2017,7 @@ class PdfExportService {
           if (await file.exists()) {
             final bytes = await file.readAsBytes();
             debugPrint(
-              '[PdfExportService] âœ… Read ${bytes.length} bytes from local file',
+              '[PdfExportService] ✅ Read ${bytes.length} bytes from local file',
             );
             return bytes;
           } else {
@@ -2042,7 +2041,7 @@ class PdfExportService {
         if (response.statusCode == 200) {
           final bytes = response.bodyBytes;
           debugPrint(
-            '[PdfExportService] âœ… Downloaded ${bytes.length} bytes from remote',
+            '[PdfExportService] ✅ Downloaded ${bytes.length} bytes from remote',
           );
 
           // HEALING: If we fetched from remote but localPath was missing/invalid,
@@ -2061,7 +2060,9 @@ class PdfExportService {
                 '[PdfExportService] ðŸ©¹ Healed local file at: $localPath',
               );
             } catch (e) {
-              debugPrint('[PdfExportService] âš ï¸ Failed to heal local file: $e');
+              debugPrint(
+                '[PdfExportService] âš ï¸ Failed to heal local file: $e',
+              );
             }
           }
 
@@ -2289,4 +2290,3 @@ class PdfExportService {
     );
   }
 }
-

@@ -52,7 +52,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
       // Queue the operation
       connectivity.queueOperation(() async {
         debugPrint(
-          '[ReviewDialog] ðŸ”„ Processing queued feedback submission...',
+          '[ReviewDialog] 🔄 Processing queued feedback submission...',
         );
         await _submitReviewLogic();
       });
@@ -112,11 +112,11 @@ class _ReviewDialogState extends State<ReviewDialog> {
     final success = await _reviewService.submitReview(review);
 
     if (success) {
-      debugPrint('[ReviewDialog] âœ… Review submitted successfully');
+      debugPrint('[ReviewDialog] ✅ Review submitted successfully');
       // If we are currently in the dialog (not a queued op), we pop it.
       // But _submitReview already handles popping for live submissions.
     } else {
-      debugPrint('[ReviewDialog] âŒ Failed to submit review');
+      debugPrint('[ReviewDialog] ❌ Failed to submit review');
     }
   }
 
@@ -375,4 +375,3 @@ class _ReviewDialogState extends State<ReviewDialog> {
     );
   }
 }
-

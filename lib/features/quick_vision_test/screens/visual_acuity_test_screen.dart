@@ -1710,7 +1710,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Widget _buildEView() {
     final level = TestConstants.visualAcuityLevels[_currentLevel];
     final eSize = level
-        .flutterFontSize; // âœ… REVERTED to use fixed flutterFontSize as requested
+        .flutterFontSize; // ✅ REVERTED to use fixed flutterFontSize as requested
 
     return Column(
       children: [
@@ -1729,7 +1729,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // âœ… PROMINENT Size indicator on LEFT
+              // ✅ PROMINENT Size indicator on LEFT
               Container(
                 width: 72,
                 height: 44,
@@ -1810,7 +1810,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           child: Center(
             child: Transform.rotate(
               angle: _currentDirection.rotationDegrees * pi / 180,
-              // âœ… FIX: Force antialiasing and proper rendering
+              // ✅ FIX: Force antialiasing and proper rendering
               filterQuality: FilterQuality.high,
               child: Text(
                 'E',
@@ -1822,7 +1822,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   letterSpacing: 0,
                   height: 1.0,
                 ),
-                // âœ… Add text scaling to ensure crisp rendering
+                // ✅ Add text scaling to ensure crisp rendering
                 textScaler: TextScaler.noScaling,
               ),
             ),
@@ -1975,7 +1975,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Navigate to instruction screen - only once
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_eyeSwitchPending && mounted) {
-        // âœ… FIX: Stop monitoring before showing cover eye instruction
+        // ✅ FIX: Stop monitoring before showing cover eye instruction
         _distanceService.stopMonitoring();
 
         // Mark as handled immediately

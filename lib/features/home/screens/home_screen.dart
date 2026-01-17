@@ -25,16 +25,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Map<String, String>> _languages = [
     {'code': 'en', 'name': 'English', 'native': 'English'},
-    {'code': 'hi', 'name': 'Hindi', 'native': 'à¤¹à¤¿à¤¨à¥à¤¦à¥€'},
-    {'code': 'mr', 'name': 'Marathi', 'native': 'à¤®à¤°à¤¾à¤ à¥€'},
-    {'code': 'ml', 'name': 'Malayalam', 'native': 'à´®à´²à´¯à´¾à´³à´‚'},
-    {'code': 'ta', 'name': 'Tamil', 'native': 'à®¤à®®à®¿à®´à¯'},
-    {'code': 'te', 'name': 'Telugu', 'native': 'à°¤à±†à°²à±à°—à±'},
-    {'code': 'kn', 'name': 'Kannada', 'native': 'à²•à²¨à³à²¨à²¡'},
-    {'code': 'bn', 'name': 'Bengali', 'native': 'à¦¬à¦¾à¦‚à¦²à¦¾'},
-    {'code': 'gu', 'name': 'Gujarati', 'native': 'àª—à«àªœàª°àª¾àª¤à«€'},
-    {'code': 'pa', 'name': 'Punjabi', 'native': 'à¨ªà©°à¨œà¨¾à¨¬à©€'},
-    {'code': 'or', 'name': 'Odia', 'native': 'à¬“à¬¡à¬¼à¬¿à¬†'},
+    {'code': 'hi', 'name': 'Hindi', 'native': 'हिन्दी'},
+    {'code': 'mr', 'name': 'Marathi', 'native': 'मराठी'},
+    {'code': 'ml', 'name': 'Malayalam', 'native': 'മലയാളം'},
+    {'code': 'ta', 'name': 'Tamil', 'native': 'தமிழ்'},
+    {'code': 'te', 'name': 'Telugu', 'native': 'తెలుగు'},
+    {'code': 'kn', 'name': 'Kannada', 'native': 'ಕನ್ನಡ'},
+    {'code': 'bn', 'name': 'Bengali', 'native': 'বাংলা'},
+    {'code': 'gu', 'name': 'Gujarati', 'native': 'ગુજરાતી'},
+    {'code': 'pa', 'name': 'Punjabi', 'native': 'ਪੰਜਾਬੀ'},
+    {'code': 'or', 'name': 'Odia', 'native': 'ଓଡ଼ିଆ'},
   ];
 
   final List<Map<String, dynamic>> _carouselSlides = [
@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
-      debugPrint('[HomeScreen] âŒ Error loading user data: $e');
+      debugPrint('[HomeScreen] ❌ Error loading user data: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -361,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Hello, ${_user?.firstName ?? 'User'} ðŸ‘‹',
+            'Hello, ${_user?.firstName ?? 'User'} 👋',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -892,4 +892,3 @@ class _ServiceCard extends StatelessWidget {
     );
   }
 }
-

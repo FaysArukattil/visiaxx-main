@@ -78,7 +78,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
         if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
-      debugPrint('[PractitionerHomeScreen] âŒ Error loading user data: $e');
+      debugPrint('[PractitionerHomeScreen] ❌ Error loading user data: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -215,7 +215,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Hello, $_userName ðŸ‘‹',
+            'Hello, $_userName 👋',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -745,4 +745,3 @@ class _WideServiceCard extends StatelessWidget {
     );
   }
 }
-

@@ -53,11 +53,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
 
     debugPrint(
-      '[RegistrationScreen] ðŸš€ Attempting registration for role: $_selectedRole',
+      '[RegistrationScreen] 🚀 Attempting registration for role: $_selectedRole',
     );
     if (_selectedRole == UserRole.examiner) {
       debugPrint(
-        '[RegistrationScreen] ðŸ”‘ Access code entered: "${_practitionerCodeController.text}"',
+        '[RegistrationScreen] 🔑 Access code entered: "${_practitionerCodeController.text}"',
       );
     }
 
@@ -552,7 +552,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.2),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   blurRadius: 15,
                                   offset: const Offset(0, 8),
                                 ),
@@ -671,4 +673,3 @@ class _RoleCard extends StatelessWidget {
     );
   }
 }
-

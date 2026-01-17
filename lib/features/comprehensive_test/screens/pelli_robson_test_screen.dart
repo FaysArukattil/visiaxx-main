@@ -23,6 +23,7 @@ import '../../../data/models/pelli_robson_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import 'pelli_robson_instructions_screen.dart';
 import '../../quick_vision_test/screens/distance_transition_screen.dart';
+import '../../../core/widgets/distance_warning_overlay.dart';
 
 /// Pelli-Robson Contrast Sensitivity Test Screen
 /// Clinical-grade test with 8 screens of decreasing contrast triplets
@@ -861,24 +862,41 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   // Triplets display
                   Expanded(child: _buildTripletsDisplay()),
 
+                  // Recognized text banner (Reading test style)
+                  _buildRecognizedTextIndicator(),
+
                   // Visible / Not Visible buttons
                   if (_isTestActive && !_isTestPausedForDistance)
                     _buildVisibleButtons(),
 
-                  // Speech indicator
+                  // Integrated Speech indicator
                   _buildSpeechIndicator(),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                 ],
               ),
 
-              // Distance indicator
-              Positioned(right: 16, top: 16, child: _buildDistanceIndicator()),
+              // Distance indicator - Repositioned to bottom to avoid overlap
+              Positioned(
+                right: 16,
+                bottom: _currentMode == 'short'
+                    ? 160
+                    : 150, // Above control buttons, adjusted by user request
+                child: _buildDistanceIndicator(),
+              ),
 
               // Distance warning overlay
-              // âœ… FIX: Don't show when exit/pause dialog is active
-              if (_isTestPausedForDistance && !_isPausedForExit)
-                _buildDistanceWarningOverlay(),
+              // ✅ Standardized: Using the universal DistanceWarningOverlay
+              DistanceWarningOverlay(
+                isVisible: _isTestPausedForDistance && !_isPausedForExit,
+                status: _distanceStatus,
+                currentDistance: _currentDistance,
+                targetDistance: _currentMode == 'short' ? 40.0 : 100.0,
+                onSkip: () {
+                  _skipManager.recordSkip(DistanceTestType.pelliRobson);
+                  _resumeTestAfterDistance();
+                },
+              ),
             ],
           ),
         ),
@@ -886,7 +904,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 
-  /// âœ… NEW: Visible / Not Visible buttons for tap-based input
+  /// ✅ NEW: Visible / Not Visible buttons for tap-based input
   Widget _buildVisibleButtons() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -909,9 +927,11 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
                 foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                elevation: 0,
+                shadowColor: AppColors.transparent,
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
             ),
@@ -926,11 +946,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               icon: const Icon(Icons.visibility_off, size: 20),
               label: const Text('Not Visible'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
-                side: BorderSide(color: AppColors.border),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                foregroundColor: AppColors.textPrimary,
+                side: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.8),
+                  width: 1.5,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
             ),
@@ -957,7 +980,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             final triplet = entry.value;
             final isCurrent = index == _currentTripletIndex;
             final isCompleted = index < _currentTripletIndex;
-            // âœ… FIX: Show next triplet with actual opacity (preview)
+            // ✅ FIX: Show next triplet with actual opacity (preview)
             final isNext = index == _currentTripletIndex + 1;
 
             return Padding(
@@ -1034,40 +1057,118 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   Widget _buildSpeechIndicator() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      child: Column(
-        children: [
-          // Waveform
-          SizedBox(
-            height: 60,
-            child: SpeechWaveform(
-              isListening: _isListening,
-              isTalking: _isSpeechActive,
-              color: _speechDetected ? AppColors.success : AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: _buildVoiceActionButton(
+        icon: _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+        label: _isListening ? 'LISTENING' : 'VOICE',
+        isActive: _isListening,
+        color: AppColors.primary,
+        onTap: () {
+          if (_isListening) {
+            _continuousSpeech.stop();
+            // Small delay then restart to ensure a fresh session
+            Future.delayed(const Duration(milliseconds: 200), () {
+              if (mounted && _isTestActive) _startListeningForTriplet();
+            });
+          } else {
+            _startListeningForTriplet();
+          }
+        },
+      ),
+    );
+  }
 
-          // Recognized text
-          if (_recognizedText.isNotEmpty)
+  /// Premium action button for voice control with integrated waveform
+  Widget _buildVoiceActionButton({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: double.infinity,
+        height: 64,
+        decoration: BoxDecoration(
+          color: isActive ? color : color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isActive ? color : color.withValues(alpha: 0.2),
+            width: 2.0,
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isActive)
+              SpeechWaveform(
+                isListening: _isListening,
+                isTalking: _isSpeechActive,
+                color: AppColors.white,
+              )
+            else
+              Icon(icon, color: color, size: 24),
+            const SizedBox(width: 12),
             Text(
-              'Heard: $_recognizedText',
+              label,
               style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          else if (_isListening)
-            Text(
-              'Listening...',
-              style: TextStyle(
-                color: AppColors.primary,
                 fontSize: 14,
-                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.bold,
+                color: isActive ? AppColors.white : color,
+                letterSpacing: 0.5,
               ),
             ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Optimized recognized text display (Matches reading test requirement for visibility)
+  Widget _buildRecognizedTextIndicator() {
+    final bool hasRecognized = _recognizedText.isNotEmpty;
+
+    if (!hasRecognized && !_isListening) {
+      return const SizedBox(height: 40);
+    }
+
+    return AnimatedOpacity(
+      opacity: (hasRecognized || _isListening) ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.black.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+        ),
+        child: Text(
+          hasRecognized ? _recognizedText : 'Listening...',
+          style: TextStyle(
+            fontSize: 18,
+            color: hasRecognized
+                ? AppColors.textPrimary
+                : AppColors.primary.withValues(alpha: 0.7),
+            fontWeight: FontWeight.bold,
+            fontStyle: hasRecognized ? FontStyle.normal : FontStyle.italic,
+          ),
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }
@@ -1154,145 +1255,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                     ),
                   ),
                 ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDistanceWarningOverlay() {
-    final target = _currentMode == 'short' ? 40.0 : 100.0;
-    // âœ… Dynamic messages based on status
-    final instruction = DistanceHelper.getDetailedInstruction(target);
-    final rangeText = DistanceHelper.getAcceptableRangeText(target);
-
-    // âœ… Icon changes based on issue
-    final icon = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? Icons.face_retouching_off
-        : Icons.warning_rounded;
-
-    final iconColor = !DistanceHelper.isFaceDetected(_distanceStatus)
-        ? AppColors.error
-        : AppColors.warning;
-
-    return Container(
-      color: AppColors.black.withValues(alpha: 0.85),
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 60, color: iconColor),
-              const SizedBox(height: 16),
-              Text(
-                'Searching for face...',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.error,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                instruction,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
-
-              if (DistanceHelper.isFaceDetected(_distanceStatus)) ...[
-                Text(
-                  _currentDistance > 0
-                      ? 'Current: ${_currentDistance.toStringAsFixed(0)}cm'
-                      : 'Searching...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Target: $rangeText',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ] else ...[
-                // âœ… Special message when no face
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Distance search active',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 20),
-
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.mic, color: AppColors.success, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Voice recognition active',
-                      style: TextStyle(
-                        color: AppColors.success,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  _skipManager.recordSkip(DistanceTestType.pelliRobson);
-                  _resumeTestAfterDistance();
-                },
-                child: const Text('Continue Anyway'),
               ),
             ],
           ),

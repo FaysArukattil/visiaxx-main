@@ -39,7 +39,7 @@ class _VideoReelItemState extends State<VideoReelItem>
   }
 
   Future<void> _initializeController() async {
-    debugPrint('ðŸŽ¬ Initializing video: ${widget.video.id}');
+    debugPrint('🎬 Initializing video: ${widget.video.id}');
     if (widget.video.isAssetVideo) {
       _controller = VideoPlayerController.asset(widget.video.videoPath);
     } else {
@@ -54,9 +54,9 @@ class _VideoReelItemState extends State<VideoReelItem>
       _controller.addListener(_videoListener);
       if (mounted) {
         setState(() => _isInitialized = true);
-        debugPrint('âœ… Video initialized: ${widget.video.id}');
+        debugPrint('✅ Video initialized: ${widget.video.id}');
         if (widget.isActive && !_isManuallyPaused) {
-          debugPrint('â–¶ï¸ Auto-playing active video: ${widget.video.id}');
+          debugPrint('▶️ Auto-playing active video: ${widget.video.id}');
           _controller.play();
 
           // Verify playback started (some devices need a small kick)
@@ -65,14 +65,14 @@ class _VideoReelItemState extends State<VideoReelItem>
                 !_controller.value.isPlaying &&
                 widget.isActive &&
                 !_isManuallyPaused) {
-              debugPrint('âš ï¸ Initial autoplay failed, retrying...');
+              debugPrint('⚠️ Initial autoplay failed, retrying...');
               _controller.play();
             }
           });
         }
       }
     } catch (e) {
-      debugPrint('âŒ Error initializing video ${widget.video.id}: $e');
+      debugPrint('❌ Error initializing video ${widget.video.id}: $e');
     }
   }
 
@@ -82,11 +82,11 @@ class _VideoReelItemState extends State<VideoReelItem>
     if (_isInitialized) {
       if (widget.isActive && !oldWidget.isActive) {
         if (!_isManuallyPaused) {
-          debugPrint('â–¶ï¸ Resuming active video: ${widget.video.id}');
+          debugPrint('▶️ Resuming active video: ${widget.video.id}');
           _controller.play();
         }
       } else if (!widget.isActive && oldWidget.isActive) {
-        debugPrint('â¸ Pausing inactive video: ${widget.video.id}');
+        debugPrint('⏸ Pausing inactive video: ${widget.video.id}');
         _controller.pause();
       }
     }
@@ -96,7 +96,7 @@ class _VideoReelItemState extends State<VideoReelItem>
     if (_isInitialized &&
         _controller.value.position >= _controller.value.duration &&
         !_controller.value.isPlaying) {
-      debugPrint('ðŸ Video finished: ${widget.video.id}');
+      debugPrint('🏁 Video finished: ${widget.video.id}');
       widget.onVideoEnd?.call();
 
       if (widget.isActive && !_isManuallyPaused) {
@@ -118,11 +118,11 @@ class _VideoReelItemState extends State<VideoReelItem>
     if (!_isInitialized) return;
 
     if (_controller.value.isPlaying) {
-      debugPrint('â¸ User pausing video: ${widget.video.id}');
+      debugPrint('⏸ User pausing video: ${widget.video.id}');
       await _controller.pause();
       _isManuallyPaused = true;
     } else {
-      debugPrint('â–¶ï¸ User resuming video: ${widget.video.id}');
+      debugPrint('▶️ User resuming video: ${widget.video.id}');
       await _controller.play();
       _isManuallyPaused = false;
 
@@ -130,7 +130,7 @@ class _VideoReelItemState extends State<VideoReelItem>
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted && !_controller.value.isPlaying && !_isManuallyPaused) {
           debugPrint(
-            'âš ï¸ Playback failed to start, retrying...: ${widget.video.id}',
+            '⚠️ Playback failed to start, retrying...: ${widget.video.id}',
           );
           _controller.play();
         }
@@ -293,4 +293,3 @@ class _VideoReelItemState extends State<VideoReelItem>
     );
   }
 }
-

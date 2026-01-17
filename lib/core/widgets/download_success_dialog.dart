@@ -70,11 +70,11 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
 
   String get _locationIcon {
     if (widget.filePath.contains('/Download')) {
-      return 'ðŸ“¥';
+      return '📥';
     } else if (widget.filePath.contains('/Documents')) {
-      return 'ðŸ“„';
+      return '📄';
     } else {
-      return 'ðŸ“±';
+      return '📱';
     }
   }
 
@@ -541,4 +541,3 @@ Future<void> showDownloadSuccessDialog({
         DownloadSuccessDialog(filePath: filePath, fileName: name),
   );
 }
-

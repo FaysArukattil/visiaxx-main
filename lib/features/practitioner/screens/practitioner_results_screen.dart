@@ -64,7 +64,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
 
     // 1. Try to load from CACHE ONLY for immediate display
     try {
-      debugPrint('[PractitionerResults] âš¡ Fetching from CACHE first...');
+      debugPrint('[PractitionerResults] ⚡ Fetching from CACHE first...');
       final cachedResults = await _resultService.getTestResults(
         user.uid,
         source: Source.cache,
@@ -76,16 +76,16 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
           _isLoading = false; // Show cached data right away
         });
         debugPrint(
-          '[PractitionerResults] âš¡ Showing ${cachedResults.length} cached results',
+          '[PractitionerResults] ⚡ Showing ${cachedResults.length} cached results',
         );
       }
     } catch (e) {
-      debugPrint('[PractitionerResults] âš¡ Initial cache fetch failed: $e');
+      debugPrint('[PractitionerResults] ⚡ Initial cache fetch failed: $e');
     }
 
     // 2. Full refresh from server
     try {
-      debugPrint('[PractitionerResults] ðŸ”„ Refreshing from server...');
+      debugPrint('[PractitionerResults] 🔄 Refreshing from server...');
 
       // If we still don't have results, show loading
       if (_allResults.isEmpty) {
@@ -97,7 +97,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
 
       final results = await _resultService.getTestResults(user.uid);
       debugPrint(
-        '[PractitionerResults] âœ… Server refresh complete: ${results.length} results',
+        '[PractitionerResults] ✅ Server refresh complete: ${results.length} results',
       );
 
       if (mounted) {
@@ -108,7 +108,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
         });
       }
     } catch (e) {
-      debugPrint('[PractitionerResults] âŒ Error loading results: $e');
+      debugPrint('[PractitionerResults] ❌ Error loading results: $e');
       if (mounted) {
         setState(() {
           // Only show error if we have NO results at all
@@ -475,7 +475,7 @@ class _PractitionerResultsScreenState extends State<PractitionerResultsScreen> {
                     ),
                     Text(
                       DateFormat(
-                        'MMM dd, yyyy â€¢ h:mm a',
+                        'MMM dd, yyyy • h:mm a',
                       ).format(result.timestamp),
                       style: const TextStyle(
                         fontSize: 12,
@@ -1076,4 +1076,3 @@ class _ResultDetailSheet extends StatelessWidget {
     ]);
   }
 }
-

@@ -54,7 +54,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   bool _isTestPausedForDistance = false;
   bool _isPausedForExit =
-      false; // âœ… Prevent distance warning during pause dialog
+      false; // ✅ Prevent distance warning during pause dialog
 
   // Distortion tracking
   final List<DistortionPoint> _rightEyePoints = [];
@@ -160,7 +160,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   void _showCoverEyeInstruction(String eyeToCover) {
-    // âœ… FIX: Stop distance monitoring before showing cover eye instruction
+    // ✅ FIX: Stop distance monitoring before showing cover eye instruction
     _distanceService.stopMonitoring();
 
     Navigator.of(context).push(
@@ -169,7 +169,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           eyeToCover: eyeToCover,
           onContinue: () {
             Navigator.of(context).pop();
-            // âœ… FIX: Resume monitoring AFTER user confirms they've covered their eye
+            // ✅ FIX: Resume monitoring AFTER user confirms they've covered their eye
             _startContinuousDistanceMonitoring();
 
             if (eyeToCover == 'left') {
@@ -204,10 +204,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    // âœ… FIX: Don't process distance updates while pause dialog is showing
+    // ✅ FIX: Don't process distance updates while pause dialog is showing
     if (_isPausedForExit) return;
 
-    // âœ… SIMPLIFIED: Only check if distance is too close
+    // ✅ SIMPLIFIED: Only check if distance is too close
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
       status,
@@ -217,19 +217,19 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
-      // âœ… FIX: Synchronize pause state when distance becomes good
+      // ✅ FIX: Synchronize pause state when distance becomes good
       if (!shouldPause && _isTestPausedForDistance) {
         _resumeTestAfterDistance();
       }
     });
 
-    // âœ… Only trigger pause/resume during active testing
+    // ✅ Only trigger pause/resume during active testing
     if (_testingStarted && !_testComplete && !_eyeSwitchPending) {
       if (shouldPause && !_isTestPausedForDistance) {
         _lastShouldPauseTime ??= DateTime.now();
         final timeSinceFirst = DateTime.now().difference(_lastShouldPauseTime!);
 
-        // âœ… Only show overlay after 1.5 seconds of continuous issue
+        // ✅ Only show overlay after 1.5 seconds of continuous issue
         if (timeSinceFirst >= const Duration(milliseconds: 1500)) {
           _skipManager.canShowDistanceWarning(DistanceTestType.amslerGrid).then(
             (canShow) {
@@ -262,7 +262,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     // Pause services while dialog is shown
     _distanceService.stopMonitoring();
     _ttsService.stop();
-    _autoNavigationTimer?.cancel(); // âœ… Pause auto-navigation timer
+    _autoNavigationTimer?.cancel(); // ✅ Pause auto-navigation timer
 
     setState(() {
       _isPausedForExit = true;
@@ -302,7 +302,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         _isPausedForExit = false;
         _isTestPausedForDistance = false;
       });
-      _startAutoNavigationTimer(); // âœ… Resume auto-navigation
+      _startAutoNavigationTimer(); // ✅ Resume auto-navigation
       return;
     }
 
@@ -356,8 +356,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     });
     _ttsService.speakEyeInstruction(_currentEye);
   }
-
-
 
   void _addDistortionPoint(Offset position, {bool isStrokeStart = false}) {
     final point = DistortionPoint(
@@ -443,12 +441,12 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         return null;
       }
 
-      debugPrint('âœ… Boundary found, capturing image...');
+      debugPrint('✅ Boundary found, capturing image...');
 
       final image = await boundary.toImage(
         pixelRatio: 2.5,
       ); // Increased quality
-      debugPrint('âœ… Image captured: ${image.width}x${image.height}');
+      debugPrint('✅ Image captured: ${image.width}x${image.height}');
 
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
@@ -456,7 +454,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         return null;
       }
 
-      debugPrint('âœ… ByteData created: ${byteData.lengthInBytes} bytes');
+      debugPrint('✅ ByteData created: ${byteData.lengthInBytes} bytes');
 
       final bytes = byteData.buffer.asUint8List();
       final directory = await getApplicationDocumentsDirectory();
@@ -464,7 +462,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           'amsler_${_currentEye}_${DateTime.now().millisecondsSinceEpoch}.png';
       final filePath = '${directory.path}/$fileName';
 
-      debugPrint('ðŸ“ Saving to: $filePath');
+      debugPrint('📂 Saving to: $filePath');
 
       final file = File(filePath);
       await file.writeAsBytes(bytes);
@@ -474,7 +472,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       final fileSize = exists ? await file.length() : 0;
 
       debugPrint('========================================');
-      debugPrint('âœ… IMAGE SAVED SUCCESSFULLY');
+      debugPrint('✅ IMAGE SAVED SUCCESSFULLY');
       debugPrint('   Path: $filePath');
       debugPrint('   Exists: $exists');
       debugPrint('   Size: $fileSize bytes');
@@ -484,7 +482,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       return filePath;
     } catch (e, stackTrace) {
       debugPrint('========================================');
-      debugPrint('âŒ ERROR CAPTURING AMSLER IMAGE');
+      debugPrint('❌ ERROR CAPTURING AMSLER IMAGE');
       debugPrint('   Error: $e');
       debugPrint('   StackTrace: $stackTrace');
       debugPrint('========================================');
@@ -494,22 +492,22 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   Future<void> _completeCurrentEye() async {
     debugPrint('========================================');
-    debugPrint('ðŸ“Š COMPLETING EYE TEST: $_currentEye');
+    debugPrint('📊 COMPLETING EYE TEST: $_currentEye');
     debugPrint('========================================');
 
     // Capture the grid image before saving
     String? imagePath;
     try {
-      debugPrint('ðŸ–¼ï¸ Starting image capture...');
+      debugPrint('📸 Starting image capture...');
       imagePath = await _captureGridImage();
 
       if (imagePath != null) {
-        debugPrint('âœ… Image captured successfully: $imagePath');
+        debugPrint('✅ Image captured successfully: $imagePath');
       } else {
-        debugPrint('âš ï¸ Image capture returned NULL');
+        debugPrint('⚠️ Image capture returned NULL');
       }
     } catch (e) {
-      debugPrint('âŒ Error capturing grid image: $e');
+      debugPrint('❌ Error capturing grid image: $e');
     }
 
     // Save result for current eye
@@ -540,7 +538,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       description = 'Patient reported: ${issues.join(', ')}';
     }
 
-    debugPrint('ðŸ“‹ Creating AmslerGridResult:');
+    debugPrint('📋 Creating AmslerGridResult:');
     debugPrint('   Eye: $_currentEye');
     debugPrint('   Image Path: $imagePath');
     debugPrint('   Has Distortions: $hasDistortions');
@@ -561,10 +559,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     );
 
     if (!mounted) return;
-    debugPrint('ðŸ’¾ Saving result to TestSessionProvider...');
+    debugPrint('💾 Saving result to TestSessionProvider...');
     final provider = context.read<TestSessionProvider>();
     provider.setAmslerGridResult(result);
-    debugPrint('âœ… Result saved to provider');
+    debugPrint('✅ Result saved to provider');
     debugPrint('========================================');
 
     if (_currentEye == 'right') {
@@ -709,7 +707,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             // Undo and Delete buttons (bottom-right corner)
             if (_testingStarted && !_eyeSwitchPending && !_testComplete)
               // Distance warning overlay - only show when explicitly paused
-              // âœ… FIX: Don't show overlay when pause dialog is active
+              // ✅ FIX: Don't show overlay when pause dialog is active
               // NEW CODE (PASTE THIS):
               DistanceWarningOverlay(
                 isVisible:
@@ -876,7 +874,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       ),
     );
   }
-
 
   Widget _buildTestView() {
     final currentPoints = _currentEye == 'right'
@@ -1594,7 +1591,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       ),
     );
   }
-
 }
 
 class _AmslerGridPainter extends CustomPainter {

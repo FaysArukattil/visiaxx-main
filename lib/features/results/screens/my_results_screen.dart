@@ -55,7 +55,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
     // 1. Try to load from CACHE ONLY for immediate display
     try {
-      debugPrint('[MyResults] âš¡ Fetching from CACHE first...');
+      debugPrint('[MyResults] ⚡ Fetching from CACHE first...');
       final cachedResults = await _testResultService.getTestResults(
         user.uid,
         source: Source.cache,
@@ -67,16 +67,16 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           _isLoading = false; // Show cached data right away
         });
         debugPrint(
-          '[MyResults] âš¡ Showing ${cachedResults.length} cached results',
+          '[MyResults] ⚡ Showing ${cachedResults.length} cached results',
         );
       }
     } catch (e) {
-      debugPrint('[MyResults] âš¡ Initial cache fetch failed: $e');
+      debugPrint('[MyResults] ⚡ Initial cache fetch failed: $e');
     }
 
     // 2. Refresh from server (or cache+server)
     try {
-      debugPrint('[MyResults] ðŸ”„ Refreshing from server...');
+      debugPrint('[MyResults] 🔄 Refreshing from server...');
 
       // If we still don't have results, show loading
       if (_results.isEmpty) {
@@ -107,7 +107,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       // Load results from service (which handles local/remote)
       final results = await _testResultService.getTestResults(user.uid);
       debugPrint(
-        '[MyResults] âœ… Server refresh complete: ${results.length} results',
+        '[MyResults] ✅ Server refresh complete: ${results.length} results',
       );
 
       // Sort by date descending
@@ -120,7 +120,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         });
       }
     } catch (e) {
-      debugPrint('[MyResults] âŒ ERROR loading results: $e');
+      debugPrint('[MyResults] ❌ ERROR loading results: $e');
 
       if (mounted) {
         setState(() {
@@ -578,7 +578,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                     ),
                     Text(
                       DateFormat(
-                        'MMM dd, yyyy â€¢ h:mm a',
+                        'MMM dd, yyyy • h:mm a',
                       ).format(result.timestamp),
                       style: const TextStyle(
                         fontSize: 12,
@@ -1130,4 +1130,3 @@ class _ResultDetailSheet extends StatelessWidget {
     ]);
   }
 }
-
