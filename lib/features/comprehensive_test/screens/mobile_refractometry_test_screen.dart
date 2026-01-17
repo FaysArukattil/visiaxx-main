@@ -262,6 +262,8 @@ class _MobileRefractometryTestScreenState
         builder: (context) => DistanceCalibrationScreen(
           targetDistanceCm: targetCm,
           toleranceCm: TestConstants.mobileRefractometryToleranceCm,
+          minDistanceCm: targetCm >= 100 ? 60.0 : 35.0,
+          maxDistanceCm: 300.0, // Treat as 100+ or 40+
           onCalibrationComplete: () {
             Navigator.of(context).pop();
             _onCalibrationComplete();
@@ -925,6 +927,9 @@ class _MobileRefractometryTestScreenState
                 status: _distanceStatus,
                 currentDistance: _currentDistance,
                 targetDistance: _isNearMode ? 40.0 : 100.0,
+                testType: _isNearMode
+                    ? 'refraction_near'
+                    : 'refraction_distance',
                 onSkip: () {
                   _skipManager.recordSkip(
                     _isNearMode
@@ -1518,7 +1523,7 @@ class _MobileRefractometryTestScreenState
     final indicatorColor = DistanceHelper.getDistanceColor(
       _currentDistance,
       target,
-      testType: _isNearMode ? 'short_distance' : 'visual_acuity',
+      testType: _isNearMode ? 'refraction_near' : 'refraction_distance',
     );
 
     final distanceText = _currentDistance > 0

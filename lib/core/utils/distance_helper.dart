@@ -38,8 +38,9 @@ class DistanceHelper {
         ? getMinimumDistanceForTest(testType)
         : (targetDistance - tolerance);
 
-    // … FIX: Only show error if TOO CLOSE (below minimum)
-    // Being further away is SAFE - show green
+    // FIX: Only show error if TOO CLOSE (below minimum)
+    // For refraction distance (60-100+), anything above 60 is green.
+    // For refraction near (35+), anything above 35 is green.
     if (currentDistance < minDistance) {
       return AppColors.error; // Too close
     } else {
@@ -144,12 +145,16 @@ class DistanceHelper {
   /// Get minimum acceptable distance for test type (LENIENT FLOOR)
   static double getMinimumDistanceForTest(String testType) {
     switch (testType) {
+      case 'refraction_distance':
+        return 60.0; // User requested 60-100+ range
+      case 'refraction_near':
+        return 35.0; // User requested 35+ for near
       case 'visual_acuity':
-        return 80.0; // … User requested floor at 80cm for 1m test
+        return 80.0; // User requested floor at 80cm for 1m test
       case 'short_distance':
       case 'amsler_grid':
       case 'color_vision':
-        return 35.0; // … User requested floor at 35cm for 40cm test
+        return 35.0; // User requested floor at 35cm for 40cm test
       default:
         return 35.0;
     }
@@ -185,4 +190,3 @@ class DistanceHelper {
         status == DistanceStatus.faceDetectedNoDistance;
   }
 }
-

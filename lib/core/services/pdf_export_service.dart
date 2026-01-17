@@ -1437,6 +1437,7 @@ class PdfExportService {
             'RIGHT EYE',
             refract.rightEye!,
             PdfColors.blue800,
+            result.profileAge,
           ),
           pw.SizedBox(height: 12),
         ],
@@ -1446,6 +1447,7 @@ class PdfExportService {
             'LEFT EYE',
             refract.leftEye!,
             PdfColors.teal800,
+            result.profileAge,
           ),
           pw.SizedBox(height: 12),
         ],
@@ -1494,6 +1496,7 @@ class PdfExportService {
     String label,
     MobileRefractometryEyeResult res,
     PdfColor color,
+    int? age,
   ) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
@@ -1502,7 +1505,7 @@ class PdfExportService {
         borderRadius: pw.BorderRadius.circular(8),
         border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
       ),
-      child: _buildRefractionEyePdfBlock(label, res, color),
+      child: _buildRefractionEyePdfBlock(label, res, color, age),
     );
   }
 
@@ -1510,6 +1513,7 @@ class PdfExportService {
     String label,
     MobileRefractometryEyeResult res,
     PdfColor color,
+    int? age,
   ) {
     // Replicate interpretation logic from UI
     final sph = double.tryParse(res.sphere) ?? 0.0;
@@ -1615,7 +1619,9 @@ class PdfExportService {
                 _buildTableCell('SPH', isHeader: true),
                 _buildTableCell('CYL', isHeader: true),
                 _buildTableCell('AXIS', isHeader: true),
-                if (double.tryParse(res.addPower) != null &&
+                if (age != null &&
+                    age >= 40 &&
+                    double.tryParse(res.addPower) != null &&
                     double.parse(res.addPower) > 0)
                   _buildTableCell('ADD', isHeader: true),
               ],
@@ -1625,9 +1631,15 @@ class PdfExportService {
                 _buildTableCell(res.sphere),
                 _buildTableCell(res.cylinder),
                 _buildTableCell('${res.axis}°'),
-                if (double.tryParse(res.addPower) != null &&
+                if (age != null &&
+                    age >= 40 &&
+                    double.tryParse(res.addPower) != null &&
                     double.parse(res.addPower) > 0)
-                  _buildTableCell('+${res.addPower}'),
+                  _buildTableCell(
+                    res.addPower.startsWith('+')
+                        ? res.addPower
+                        : '+${res.addPower}',
+                  ),
               ],
             ),
           ],
@@ -2290,4 +2302,3 @@ class PdfExportService {
     );
   }
 }
-

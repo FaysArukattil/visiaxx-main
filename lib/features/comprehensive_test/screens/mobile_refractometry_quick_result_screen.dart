@@ -496,7 +496,11 @@ class _MobileRefractometryQuickResultScreenState
         _buildValueItem('CYLINDER', res.cylinder, 'Focus'),
         _buildValueItem('AXIS', '${res.axis}°', 'Angle'),
         if (showAdd)
-          _buildValueItem('READING', '+${res.addPower}', 'Add Power'),
+          _buildValueItem(
+            'READING',
+            res.addPower.startsWith('+') ? res.addPower : '+${res.addPower}',
+            'Add Power',
+          ),
       ],
     );
   }
@@ -728,12 +732,15 @@ class _MobileRefractometryQuickResultScreenState
               children: [
                 Row(
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (isRecommended) ...[
@@ -929,72 +936,6 @@ class _MobileRefractometryQuickResultScreenState
                 fontWeight: FontWeight.bold,
                 color: isBlocked ? AppColors.textSecondary : AppColors.white,
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Start Full Eye Exam (Continue action)
-        ElevatedButton.icon(
-          onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/comprehensive-test',
-              (route) => false,
-            );
-          },
-          icon: const Icon(Icons.assessment_rounded),
-          label: const Text('Start Full Eye Exam'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.white,
-            minimumSize: const Size(double.infinity, 54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Restart Current Test
-        OutlinedButton.icon(
-          onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/mobile-refractometry-test',
-              (route) => false,
-            );
-          },
-          icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Restart Test'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.warning,
-            minimumSize: const Size(double.infinity, 54),
-            side: const BorderSide(color: AppColors.warning, width: 2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Back to Home
-        ElevatedButton.icon(
-          onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/home',
-              (route) => false,
-            );
-          },
-          icon: const Icon(Icons.home_rounded),
-          label: const Text('Back to Home'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.grey.withValues(alpha: 0.1),
-            foregroundColor: AppColors.primary,
-            minimumSize: const Size(double.infinity, 54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ),

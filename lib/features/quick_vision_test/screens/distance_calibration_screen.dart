@@ -24,10 +24,15 @@ class DistanceCalibrationScreen extends StatefulWidget {
   /// Optional callback when user skips calibration
   final VoidCallback? onSkip;
 
+  final double? minDistanceCm;
+  final double? maxDistanceCm;
+
   const DistanceCalibrationScreen({
     super.key,
     this.targetDistanceCm = 40.0,
     this.toleranceCm = 5.0,
+    this.minDistanceCm,
+    this.maxDistanceCm,
     required this.onCalibrationComplete,
     this.onSkip,
   });
@@ -66,6 +71,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     _distanceService = DistanceDetectionService(
       targetDistanceCm: widget.targetDistanceCm,
       toleranceCm: widget.toleranceCm,
+      minDistanceCm: widget.minDistanceCm,
+      maxDistanceCm: widget.maxDistanceCm,
     );
 
     debugPrint('═════════════════════════════════════');
@@ -73,7 +80,10 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     debugPrint('   Target Distance: ${widget.targetDistanceCm}cm');
     debugPrint('   Tolerance: ±${widget.toleranceCm}cm');
     debugPrint(
-      '   Acceptable Range: ${widget.targetDistanceCm - widget.toleranceCm}cm - ${widget.targetDistanceCm + widget.toleranceCm}cm',
+      '   Min Boundary: ${widget.minDistanceCm ?? (widget.targetDistanceCm - widget.toleranceCm)}cm',
+    );
+    debugPrint(
+      '   Max Boundary: ${widget.maxDistanceCm ?? (widget.targetDistanceCm + widget.toleranceCm)}cm',
     );
     debugPrint('═════════════════════════════════════');
 
@@ -620,7 +630,9 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Target: ${widget.targetDistanceCm.toInt()} cm (±${widget.toleranceCm.toInt()} cm)',
+            (widget.minDistanceCm != null || widget.maxDistanceCm != null)
+                ? 'Target Range: ${(widget.minDistanceCm ?? (widget.targetDistanceCm - widget.toleranceCm)).toInt()}-${(widget.maxDistanceCm ?? (widget.targetDistanceCm + widget.toleranceCm)).toInt()} cm'
+                : 'Target: ${widget.targetDistanceCm.toInt()} cm (±${widget.toleranceCm.toInt()} cm)',
             style: TextStyle(
               color: AppColors.white.withValues(alpha: 0.6),
               fontSize: 14,

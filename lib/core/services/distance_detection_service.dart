@@ -41,6 +41,8 @@ class DistanceDetectionService {
   // Instance-specific distance parameters (can be customized per test)
   final double targetDistanceCm;
   final double toleranceCm;
+  final double? minDistanceCm;
+  final double? maxDistanceCm;
 
   // Smoothing for stable readings
   double _smoothedDistance = 0.0;
@@ -64,6 +66,8 @@ class DistanceDetectionService {
   DistanceDetectionService({
     this.targetDistanceCm = _defaultTargetDistanceCm,
     this.toleranceCm = _defaultToleranceCm,
+    this.minDistanceCm,
+    this.maxDistanceCm,
   }) : _faceDetector = FaceDetector(
          options: FaceDetectorOptions(
            enableContours: false,
@@ -371,9 +375,9 @@ class DistanceDetectionService {
   DistanceStatus _getDistanceStatus(double distanceCm) {
     if (distanceCm <= 0) return DistanceStatus.noFaceDetected;
 
-    // Calculate acceptable range based on tolerance
-    final minDistance = targetDistanceCm - toleranceCm;
-    final maxDistance = targetDistanceCm + toleranceCm;
+    // Use explicit bounds if provided, otherwise fallback to target +/- tolerance
+    final minDistance = minDistanceCm ?? (targetDistanceCm - toleranceCm);
+    final maxDistance = maxDistanceCm ?? (targetDistanceCm + toleranceCm);
 
     if (distanceCm < minDistance) {
       return DistanceStatus.tooClose;
@@ -441,4 +445,3 @@ class DistanceDetectionService {
     await _faceDetector.close();
   }
 }
-

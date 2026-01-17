@@ -13,6 +13,7 @@ class DistanceWarningOverlay extends StatelessWidget {
   final double targetDistance;
   final VoidCallback onSkip;
   final bool isVisible;
+  final String? testType;
 
   const DistanceWarningOverlay({
     super.key,
@@ -21,6 +22,7 @@ class DistanceWarningOverlay extends StatelessWidget {
     required this.targetDistance,
     required this.onSkip,
     this.isVisible = true,
+    this.testType,
   });
 
   @override
@@ -31,24 +33,24 @@ class DistanceWarningOverlay extends StatelessWidget {
     final instruction = DistanceHelper.getDetailedInstruction(targetDistance);
 
     IconData icon;
-    Color iconColor;
+    final Color iconColor = DistanceHelper.getDistanceColor(
+      currentDistance,
+      targetDistance,
+      testType: testType,
+    );
 
     switch (status) {
       case DistanceStatus.noFaceDetected:
         icon = Icons.person_off_rounded;
-        iconColor = AppColors.error;
         break;
       case DistanceStatus.tooClose:
         icon = Icons.zoom_out_rounded;
-        iconColor = AppColors.warning;
         break;
       case DistanceStatus.tooFar:
         icon = Icons.zoom_in_rounded;
-        iconColor = AppColors.warning;
         break;
       default:
         icon = Icons.warning_rounded;
-        iconColor = AppColors.warning;
     }
 
     return SizedBox.expand(
@@ -149,7 +151,7 @@ class DistanceWarningOverlay extends StatelessWidget {
 
                     // LIVE DISTANCE GAUGE
                     if (DistanceHelper.isFaceDetected(status)) ...[
-                      _buildPremiumDistanceGauge(targetDistance),
+                      _buildPremiumDistanceGauge(targetDistance, iconColor),
                     ] else
                       _buildSearchingIndicator(),
 
@@ -163,7 +165,9 @@ class DistanceWarningOverlay extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.textSecondary,
                           side: BorderSide(
-                            color: AppColors.textSecondary.withValues(alpha: 0.3),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -190,14 +194,10 @@ class DistanceWarningOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildPremiumDistanceGauge(double target) {
+  Widget _buildPremiumDistanceGauge(double target, Color statusColor) {
     final isTooClose = status == DistanceStatus.tooClose;
     final isTooFar = status == DistanceStatus.tooFar;
     final isOptimal = status == DistanceStatus.optimal;
-
-    final statusColor = isOptimal
-        ? AppColors.success
-        : (isTooClose || isTooFar ? AppColors.warning : AppColors.error);
 
     return Column(
       children: [
@@ -373,4 +373,3 @@ class DistanceWarningOverlay extends StatelessWidget {
     );
   }
 }
-
