@@ -464,7 +464,6 @@ class _MobileRefractometryTestScreenState
   }
 
   void _generateNewRound() {
-    // âœ… Clear state before generating new E (mic already stopped in relaxation)
     _lastDetectedSpeech = null;
     _isSpeechActive = false;
     _eDisplayStartTime = null;
@@ -486,7 +485,6 @@ class _MobileRefractometryTestScreenState
       _isSpeechActive = false;
     });
 
-    // âœ… MATCHES VA: Small delay then start mic
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) return;
       _eDisplayStartTime = DateTime.now();
@@ -508,7 +506,6 @@ class _MobileRefractometryTestScreenState
 
       if (_remainingSeconds <= 0) {
         timer.cancel();
-        // âœ… MATCHES VA: Rotate E at same size instead of scoring as incorrect
         _generateNewRound();
       }
     });
@@ -582,7 +579,6 @@ class _MobileRefractometryTestScreenState
     _waitingForResponse = false;
     _roundTimer?.cancel();
 
-    // âœ… ULTRA-CRITICAL: STOP MICROPHONE IMMEDIATELY to prevent carryover
     _continuousSpeech.stop();
     _continuousSpeech.clearAccumulated();
     _speechEraserTimer?.cancel();
@@ -591,11 +587,9 @@ class _MobileRefractometryTestScreenState
     final correct = response == _currentDirection;
     final isCantSee = response == EDirection.blurry;
 
-    // âœ… TTS Feedback - MATCHES VA EXACTLY
     if (correct) {
       _ttsService.speakCorrect(response?.label ?? 'None');
     } else if (isCantSee) {
-      // For blurry, just say the response was heard but don't say correct/incorrect
       _ttsService.speak('Cannot see');
     } else if (response != null) {
       _ttsService.speakIncorrect(response.label);
@@ -639,25 +633,21 @@ class _MobileRefractometryTestScreenState
     setState(() {
       _lastResponse = response;
       _showResult = true;
-      // Don't clear _lastDetectedSpeech immediately so it stays visible during result display
       _isSpeechActive = false;
     });
 
-    // âœ… MATCHES VA: 800ms result display, then relaxation
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       setState(() {
         _showResult = false;
         _currentRound++;
       });
-      // âœ… Start relaxation BEFORE next E (matches VA flow)
       _startRelaxation();
     });
   }
 
   void _finishEye() {
     if (_currentEye == 'right') {
-      // Reset for left eye
       setState(() {
         _currentEye = 'left';
         _currentRound = 0;
@@ -665,7 +655,6 @@ class _MobileRefractometryTestScreenState
         _currentPhase = RefractPhase.instruction;
       });
 
-      // Show left eye instruction AFTER state update
       Future.delayed(const Duration(milliseconds: 300), () {
         if (!mounted) return;
         Navigator.of(context).push(
@@ -673,8 +662,7 @@ class _MobileRefractometryTestScreenState
             builder: (context) => CoverRightEyeInstructionScreen(
               title: 'Mobile Refractometry',
               subtitle: 'Focus with your LEFT eye only',
-              ttsMessage:
-                  'Cover your right eye. Keep your left eye open. We will measure your refraction.',
+              ttsMessage: 'Cover your right eye. Keep your left eye open.',
               targetDistance: TestConstants.mobileRefractometryDistanceCm,
               startButtonText: 'Start Left Eye Test',
               onContinue: () {
@@ -739,7 +727,7 @@ class _MobileRefractometryTestScreenState
         pathology['identifiedRisks'],
       ),
       criticalAlert: pathology['criticalAlert'] as bool,
-      overallInterpretation: pathology['interpretation'] as String,
+      overallInterpretation: pathology['interpretation'] as String? ?? 'Normal',
     );
 
     context.read<TestSessionProvider>().setMobileRefractometryResult(
@@ -848,17 +836,24 @@ class _MobileRefractometryTestScreenState
       (val >= 0 ? '+' : '') + val.toStringAsFixed(2);
 
   String _getSnellenScore(double fontSize) {
-    VisualAcuityLevel closest = TestConstants.visualAcuityLevels[0];
-    double minDiff = (fontSize - closest.flutterFontSize).abs();
-
-    for (var level in TestConstants.visualAcuityLevels) {
-      double diff = (fontSize - level.flutterFontSize).abs();
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = level;
-      }
+    if (_isNearMode) {
+      if (fontSize >= 68) return '6/60';
+      if (fontSize >= 55) return '6/36';
+      if (fontSize >= 40) return '6/24';
+      if (fontSize >= 30) return '6/18';
+      if (fontSize >= 20) return '6/12';
+      if (fontSize >= 15) return '6/9';
+      return '6/6';
+    } else {
+      if (fontSize >= 145) return '6/60';
+      if (fontSize >= 115) return '6/48';
+      if (fontSize >= 90) return '6/36';
+      if (fontSize >= 70) return '6/24';
+      if (fontSize >= 52) return '6/18';
+      if (fontSize >= 38) return '6/12';
+      if (fontSize >= 28) return '6/9';
+      return '6/6';
     }
-    return closest.snellen;
   }
 
   @override
@@ -870,22 +865,18 @@ class _MobileRefractometryTestScreenState
         _showPauseDialog();
       },
       child: Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.testBackground,
         appBar: AppBar(
           backgroundColor: AppColors.white,
           elevation: 0,
-          title: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              'Mobile Refractometry ${_currentEye.toUpperCase()}',
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+          title: Text(
+            'Mobile Refractometry - ${_currentEye.toUpperCase()} Eye',
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w900,
             ),
           ),
-          centerTitle: true,
+          centerTitle: false,
           leading: IconButton(
             icon: const Icon(Icons.close, color: AppColors.textPrimary),
             onPressed: () => _showPauseDialog(),
@@ -902,7 +893,19 @@ class _MobileRefractometryTestScreenState
                     _buildDirectionButtons(),
                 ],
               ),
-              // âœ… UNIVERSAL Distance warning overlay
+
+              // Recognized text indicator (center bottom above buttons)
+              Positioned(
+                bottom:
+                    (_currentPhase == RefractPhase.test && _waitingForResponse)
+                    ? 150
+                    : 50,
+                left: 0,
+                right: 0,
+                child: Center(child: _buildRecognizedTextIndicator()),
+              ),
+
+              // distance warning overlay
               DistanceWarningOverlay(
                 isVisible:
                     _isDistanceOk == false &&
@@ -921,133 +924,22 @@ class _MobileRefractometryTestScreenState
                   _resumeTestAfterDistance();
                 },
               ),
-              // Distance indicator (bottom right corner) - MATCHES VA
+              // Distance indicator (bottom right corner) - MATCHES VA (ALWAYS SHOWN)
               if ((_currentPhase == RefractPhase.test ||
                       _currentPhase == RefractPhase.relaxation) &&
-                  !_isDistanceOk) // Changed from !_isTestPausedForDistance to !_isDistanceOk
+                  _currentPhase != RefractPhase.calibration)
                 Positioned(
                   right: 12,
-                  bottom: _waitingForResponse ? 120 : 55,
+                  bottom:
+                      (_currentPhase == RefractPhase.test &&
+                          _waitingForResponse)
+                      ? 120
+                      : 55,
                   child: _buildDistanceIndicator(),
                 ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoBar() {
-    // Count total correct responses for this eye
-    final responses = _currentEye == 'right'
-        ? _rightEyeResponses
-        : _leftEyeResponses;
-    final correctCount = responses.where((r) => r['correct'] == true).length;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: AppColors.surface,
-      child: Row(
-        children: [
-          // Eye indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _currentEye == 'right'
-                  ? AppColors.rightEye.withValues(alpha: 0.1)
-                  : AppColors.leftEye.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.visibility,
-                  size: 14,
-                  color: _currentEye == 'right'
-                      ? AppColors.rightEye
-                      : AppColors.leftEye,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _currentEye.toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: _currentEye == 'right'
-                        ? AppColors.rightEye
-                        : AppColors.leftEye,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Level/Progress indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              '${_currentEye[0].toUpperCase()}$_currentRound/${TestConstants.mobileRefractometryMaxRounds}',
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Score indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.success.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Text(
-              '$correctCount/${responses.length}',
-              style: const TextStyle(
-                color: AppColors.success,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          const Spacer(),
-          // Speech waveform
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.success.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _SpeechWaveform(
-                  isListening:
-                      _continuousSpeech.shouldBeListening &&
-                      !_continuousSpeech.isPausedForTts,
-                  isTalking: _isSpeechActive,
-                  color: AppColors.success,
-                ),
-                const SizedBox(width: 6),
-                const Icon(Icons.mic, size: 14, color: AppColors.success),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1067,14 +959,137 @@ class _MobileRefractometryTestScreenState
                 ),
               );
       case RefractPhase.calibration:
-        return const Center(child: EyeLoader(size: 60));
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const EyeLoader(size: 80),
+              const SizedBox(height: 24),
+              Text(
+                'Opening Distance Calibration...',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+              ),
+            ],
+          ),
+        );
       case RefractPhase.relaxation:
         return _buildRelaxationView();
       case RefractPhase.test:
+        if (_showResult) {
+          return TestFeedbackOverlay(
+            isCorrect: _lastResponse == _currentDirection,
+            isBlurry: _lastResponse == EDirection.blurry,
+            label: _lastResponse == EDirection.blurry ? 'BLURRY' : null,
+          );
+        }
         return _buildEView();
       case RefractPhase.complete:
         return const Center(child: EyeLoader(size: 80));
     }
+  }
+
+  Widget _buildInfoBar() {
+    // Count total correct responses for this eye
+    final responses = _currentEye == 'right'
+        ? _rightEyeResponses
+        : _leftEyeResponses;
+    final correctCount = responses.where((r) => r['correct'] == true).length;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Level/Progress indicator - MATCHES VA (1-indexed)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: ShapeDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              shadows: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              'ROUND ${_currentRound + 1}/${TestConstants.mobileRefractometryMaxRounds}',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w900,
+                fontSize: 11,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Score indicator - MATCHES VA
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: ShapeDecoration(
+              color: AppColors.success.withValues(alpha: 0.08),
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              shadows: [
+                BoxShadow(
+                  color: AppColors.success.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              '$correctCount/${responses.length}',
+              style: const TextStyle(
+                color: AppColors.success,
+                fontWeight: FontWeight.w900,
+                fontSize: 11,
+              ),
+            ),
+          ),
+          const Spacer(),
+          // Speech waveform
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _SpeechWaveform(
+                  isListening:
+                      _continuousSpeech.shouldBeListening &&
+                      !_continuousSpeech.isPausedForTts,
+                  isTalking: _isSpeechActive,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.mic_none_rounded,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildRelaxationView() {
@@ -1086,6 +1101,7 @@ class _MobileRefractometryTestScreenState
         physics: const BouncingScrollPhysics(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(height: 20),
             // Hero Card with Image and Overlapping Timer (Maximized)
@@ -1232,147 +1248,213 @@ class _MobileRefractometryTestScreenState
 
     return Column(
       children: [
-        // Timer and Distance indicator row - MATCHES VA
+        // ✅ PROMINENT Timer and Size indicator row - MATCHES VA EXACTLY
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: AppColors.surface.withValues(alpha: 0.9),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.border.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Distance/Mode indicator on LEFT
+              // ✅ Size indicator on LEFT
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                width: 72,
+                height: 44,
                 decoration: ShapeDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   shape: ContinuousRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
-                    side: const BorderSide(color: AppColors.primary, width: 2),
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.straighten,
-                      size: 20,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _getSnellenScore(currentFontSize),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        Text(
-                          _isNearMode ? 'NEAR (40cm)' : 'LONG (100cm)',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.primary.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
+                  shadows: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-              ),
-              // Timer on RIGHT
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.timer,
-                    size: 20,
-                    color: _remainingSeconds <= 1
-                        ? AppColors.error
-                        : AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${_remainingSeconds}s',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: _remainingSeconds <= 1
-                          ? AppColors.error
-                          : AppColors.primary,
+                child: Center(
+                  child: Text(
+                    _getSnellenScore(currentFontSize),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primary,
+                      letterSpacing: -0.5,
                     ),
+                  ),
+                ),
+              ),
+
+              // Timer on RIGHT
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'TIME REMAINING',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textSecondary.withValues(alpha: 0.5),
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        size: 16,
+                        color: _remainingSeconds <= 2
+                            ? AppColors.error
+                            : AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _isTestPausedForDistance
+                            ? 'PAUSED'
+                            : '${_remainingSeconds}s',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: _remainingSeconds <= 2
+                              ? AppColors.error
+                              : AppColors.primary,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ],
           ),
         ),
-        // E Display - MATCHES VA (no extra container, just centered)
+        // E Display - MATCHES VA (Dedicated Expanded Area with FittedBox to prevent clipping)
         Expanded(
-          child: _showResult
-              ? TestFeedbackOverlay(
-                  isCorrect: _lastResponse == _currentDirection,
-                  isBlurry: _lastResponse == EDirection.blurry,
-                  label: _lastResponse == EDirection.blurry
-                      ? 'CANNOT SEE'
-                      : null,
-                )
-              : Center(
-                  child: ImageFiltered(
-                    imageFilter: ui.ImageFilter.blur(
-                      sigmaX: _currentBlur,
-                      sigmaY: _currentBlur,
-                    ),
-                    child: Transform.rotate(
-                      angle: _currentDirection.rotationDegrees * math.pi / 180,
-                      child: Text(
-                        'E',
-                        textScaler: TextScaler.noScaling,
-                        style: TextStyle(
-                          fontSize: currentFontSize,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.black,
-                        ),
-                      ),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Transform.rotate(
+                angle: _currentDirection.rotationDegrees * math.pi / 180,
+                child: ImageFiltered(
+                  imageFilter: ui.ImageFilter.blur(
+                    sigmaX: _currentBlur,
+                    sigmaY: _currentBlur,
+                  ),
+                  child: Text(
+                    'E',
+                    textScaler: TextScaler.noScaling,
+                    style: TextStyle(
+                      fontSize: currentFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
                     ),
                   ),
-                ),
-        ),
-        // Speech recognition bubble - MATCHES VA
-        if (_lastDetectedSpeech != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _lastDetectedSpeech!,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: AppColors.white,
-                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
+        ),
+        // Instruction text with voice status - MATCHES VA EXACTLY
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_continuousSpeech.isActive)
+                    Icon(
+                      Icons.mic,
+                      size: 20,
+                      color: _isTestPausedForDistance
+                          ? AppColors.warning
+                          : AppColors.success,
+                    ),
+                  if (_continuousSpeech.isActive) const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      _isTestPausedForDistance
+                          ? 'Test paused - Adjust distance'
+                          : 'Which way is the E pointing?',
+                      style: TextStyle(
+                        color: _isTestPausedForDistance
+                            ? AppColors.warning
+                            : AppColors.textSecondary,
+                        fontSize: 16,
+                        fontWeight: _isTestPausedForDistance
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _isTestPausedForDistance
+                    ? 'Voice recognition active - waiting to resume'
+                    : 'Use buttons or say: Upper or Upward, Down or Downward, Left, Right',
+                style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildRecognizedTextIndicator() {
+    final bool hasRecognized =
+        _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
+
+    if (!hasRecognized) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        _lastDetectedSpeech!,
+        style: const TextStyle(
+          fontSize: 16,
+          color: AppColors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        textAlign: TextAlign.center,
+      ),
     );
   }
 
   Widget _buildDirectionButtons() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1388,7 +1470,7 @@ class _MobileRefractometryTestScreenState
                 direction: EDirection.left,
                 onPressed: () => _handleResponse(EDirection.left),
               ),
-              const SizedBox(width: 60),
+              const SizedBox(width: 80), // MATCHES VA
               _DirectionButton(
                 direction: EDirection.right,
                 onPressed: () => _handleResponse(EDirection.right),
@@ -1400,23 +1482,36 @@ class _MobileRefractometryTestScreenState
             direction: EDirection.down,
             onPressed: () => _handleResponse(EDirection.down),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
+          // Blurry/Can't See Clearly button (Proper Button) - MATCHES VA
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _handleResponse(EDirection.blurry),
-              icon: const Icon(Icons.visibility_off, size: 20),
+              icon: const Icon(
+                Icons.visibility_off_rounded,
+                size: 18,
+                color: AppColors.primary,
+              ),
               label: const Text(
-                "Can't See Clearly / Blurry",
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                "BLURRY / CAN'T SEE CLEARLY",
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  letterSpacing: 0.5,
+                ),
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.warning,
-                side: const BorderSide(color: AppColors.warning, width: 2),
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.5),
+                  width: 1.5,
                 ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -1602,16 +1697,26 @@ class _DirectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.primary,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          width: 70,
-          height: 70,
-          child: Icon(_icon, color: AppColors.white, size: 32),
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(20),
+          child: Center(child: Icon(_icon, color: AppColors.white, size: 28)),
         ),
       ),
     );
