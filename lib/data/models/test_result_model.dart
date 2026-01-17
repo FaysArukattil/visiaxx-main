@@ -10,9 +10,9 @@ import 'refraction_prescription_model.dart';
 
 /// Test result status
 enum TestStatus {
-  normal('Normal', '…'),
-  review('Review Recommended', ' ï¸'),
-  urgent('Urgent Consultation', 'š¨');
+  normal('Normal', '✅'),
+  review('Review Recommended', '⚠️'),
+  urgent('Urgent Consultation', '🚨');
 
   final String label;
   final String emoji;
@@ -376,4 +376,3 @@ class PractitionerNotes {
     };
   }
 }
-

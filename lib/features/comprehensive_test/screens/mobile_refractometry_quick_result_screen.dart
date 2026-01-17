@@ -121,6 +121,9 @@ class _MobileRefractometryQuickResultScreenState
       setState(() {
         _prescription = _prescription!.copyWith(
           rightEyeSubjective: data,
+          finalPrescription: _prescription!.finalPrescription.copyWith(
+            right: data,
+          ),
           hasManualEdits: true,
         );
         _isSaved = false;
@@ -134,6 +137,9 @@ class _MobileRefractometryQuickResultScreenState
       setState(() {
         _prescription = _prescription!.copyWith(
           leftEyeSubjective: data,
+          finalPrescription: _prescription!.finalPrescription.copyWith(
+            left: data,
+          ),
           hasManualEdits: true,
         );
         _isSaved = false;
@@ -1262,6 +1268,7 @@ class _MobileRefractometryQuickResultScreenState
   Widget _buildPractitionerPrescriptionSection(
     MobileRefractometryResult result,
   ) {
+    final shouldShowAdd = _patientAge >= 40;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1370,6 +1377,7 @@ class _MobileRefractometryQuickResultScreenState
             initialData: _prescription!.rightEyeSubjective,
             onDataChanged: _onRightEyeChanged,
             onVerifiedChanged: _onRightEyeVerified,
+            showAddColumn: shouldShowAdd,
           ),
         if (result.leftEye != null)
           RefractionTableWidget(
@@ -1377,11 +1385,13 @@ class _MobileRefractometryQuickResultScreenState
             initialData: _prescription!.leftEyeSubjective,
             onDataChanged: _onLeftEyeChanged,
             onVerifiedChanged: _onLeftEyeVerified,
+            showAddColumn: shouldShowAdd,
           ),
         FinalPrescriptionTableWidget(
           initialData: _prescription!.finalPrescription,
           onDataChanged: _onFinalPrescriptionChanged,
           onVerifiedChanged: _onFinalVerified,
+          showAddColumn: shouldShowAdd,
         ),
         const SizedBox(height: 32),
         if (_isSaved)

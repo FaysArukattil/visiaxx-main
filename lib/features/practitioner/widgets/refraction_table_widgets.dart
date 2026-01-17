@@ -219,29 +219,50 @@ class _RefractionTableWidgetState extends State<RefractionTableWidget> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: _verifyAll,
-                  icon: Icon(
-                    _isAllVerified ? Icons.check_circle : Icons.done_all,
-                    size: 16,
-                  ),
-                  label: Text(
-                    _isAllVerified ? 'Verified' : 'Verify All',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: _isAllVerified
-                        ? AppColors.success
-                        : AppColors.primary,
+                InkWell(
+                  onTap: _verifyAll,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    decoration: BoxDecoration(
+                      color: _isAllVerified
+                          ? AppColors.success.withValues(alpha: 0.1)
+                          : AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _isAllVerified
+                            ? AppColors.success.withValues(alpha: 0.3)
+                            : AppColors.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _isAllVerified
+                              ? Icons.check_box_rounded
+                              : Icons.check_box_outline_blank_rounded,
+                          size: 18,
+                          color: _isAllVerified
+                              ? AppColors.success
+                              : AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isAllVerified ? 'Verified' : 'Verify All',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: _isAllVerified
+                                ? AppColors.success
+                                : AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -674,12 +695,16 @@ class FinalPrescriptionTableWidget extends StatefulWidget {
   final FinalPrescriptionData initialData;
   final Function(FinalPrescriptionData) onDataChanged;
   final Function(bool) onVerifiedChanged;
+  final bool showAddColumn;
+  final String? profileAge;
 
   const FinalPrescriptionTableWidget({
     super.key,
     required this.initialData,
     required this.onDataChanged,
     required this.onVerifiedChanged,
+    this.showAddColumn = true,
+    this.profileAge,
   });
 
   @override
@@ -777,14 +802,16 @@ class _FinalPrescriptionTableWidgetState
       'rightAxis',
       'rightVn',
       'rightPrism',
-      'rightAdd',
       'leftSph',
       'leftCyl',
       'leftAxis',
       'leftVn',
       'leftPrism',
-      'leftAdd',
     ];
+    if (widget.showAddColumn) {
+      requiredFields.add('rightAdd');
+      requiredFields.add('leftAdd');
+    }
     for (final field in requiredFields) {
       if (!(_edited[field] ?? false)) return false;
     }
@@ -817,15 +844,16 @@ class _FinalPrescriptionTableWidgetState
       'rightAxis',
       'rightVn',
       'rightPrism',
-      'rightAdd',
       'leftSph',
       'leftCyl',
       'leftAxis',
       'leftVn',
       'leftPrism',
-      'leftAdd',
     ];
-
+    if (widget.showAddColumn) {
+      requiredFields.add('rightAdd');
+      requiredFields.add('leftAdd');
+    }
     bool allVerified = true;
     for (final field in requiredFields) {
       if (!(_edited[field] ?? false)) {
@@ -969,29 +997,50 @@ class _FinalPrescriptionTableWidgetState
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: _verifyAll,
-                  icon: Icon(
-                    _isAllVerified ? Icons.check_circle : Icons.done_all,
-                    size: 16,
-                  ),
-                  label: Text(
-                    _isAllVerified ? 'Verified' : 'Verify All',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: _isAllVerified
-                        ? AppColors.success
-                        : AppColors.primary,
+                InkWell(
+                  onTap: _verifyAll,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    decoration: BoxDecoration(
+                      color: _isAllVerified
+                          ? AppColors.success.withValues(alpha: 0.1)
+                          : AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _isAllVerified
+                            ? AppColors.success.withValues(alpha: 0.3)
+                            : AppColors.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _isAllVerified
+                              ? Icons.check_box_rounded
+                              : Icons.check_box_outline_blank_rounded,
+                          size: 18,
+                          color: _isAllVerified
+                              ? AppColors.success
+                              : AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isAllVerified ? 'Verified' : 'Verify All',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: _isAllVerified
+                                ? AppColors.success
+                                : AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -1014,6 +1063,7 @@ class _FinalPrescriptionTableWidgetState
                       prismController: _leftPrismController,
                       addController: _leftAddController,
                       prefix: 'left',
+                      showAdd: widget.showAddColumn,
                     ),
                     const Divider(height: 1),
                     _buildSectionHeader('RIGHT'),
@@ -1025,6 +1075,7 @@ class _FinalPrescriptionTableWidgetState
                       prismController: _rightPrismController,
                       addController: _rightAddController,
                       prefix: 'right',
+                      showAdd: widget.showAddColumn,
                     ),
                   ],
                 );
@@ -1052,6 +1103,7 @@ class _FinalPrescriptionTableWidgetState
                         prismController: _leftPrismController,
                         addController: _leftAddController,
                         prefix: 'left',
+                        showAdd: widget.showAddColumn,
                       ),
                       _buildEyeDataColumn(
                         sphController: _rightSphController,
@@ -1061,6 +1113,7 @@ class _FinalPrescriptionTableWidgetState
                         prismController: _rightPrismController,
                         addController: _rightAddController,
                         prefix: 'right',
+                        showAdd: widget.showAddColumn,
                       ),
                     ],
                   ),
@@ -1282,5 +1335,3 @@ class _FinalPrescriptionTableWidgetState
     );
   }
 }
-
-

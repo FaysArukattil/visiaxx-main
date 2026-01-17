@@ -104,6 +104,16 @@ class FinalPrescriptionData {
   factory FinalPrescriptionData.fromMap(Map<String, dynamic> map) {
     return FinalPrescriptionData.fromJson(map);
   }
+
+  FinalPrescriptionData copyWith({
+    SubjectiveRefractionData? right,
+    SubjectiveRefractionData? left,
+  }) {
+    return FinalPrescriptionData(
+      right: right ?? this.right,
+      left: left ?? this.left,
+    );
+  }
 }
 
 /// Complete refraction prescription model

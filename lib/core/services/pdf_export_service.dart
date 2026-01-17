@@ -2067,7 +2067,7 @@ class PdfExportService {
               }
               await file.writeAsBytes(bytes);
               debugPrint(
-                '[PdfExportService] ©¹ Healed local file at: $localPath',
+                '[PdfExportService] 🛠️ Healed local file at: $localPath',
               );
             } catch (e) {
               debugPrint(
@@ -2079,11 +2079,11 @@ class PdfExportService {
           return bytes;
         }
       } catch (e) {
-        debugPrint('[PdfExportService] Œ Error fetching remote image: $e');
+        debugPrint('[PdfExportService] ❌ Error fetching remote image: $e');
       }
     }
 
-    debugPrint('[PdfExportService]  ï¸ No image bytes available');
+    debugPrint('[PdfExportService] ⚠️ No image bytes available');
     return null;
   }
 
@@ -2132,6 +2132,7 @@ class PdfExportService {
                       'RIGHT EYE',
                       prescription.rightEyeSubjective,
                       PdfColor.fromInt(0xFF1565C0),
+                      (result.profileAge ?? 0) >= 40,
                     ),
                   ),
                   pw.SizedBox(width: 12),
@@ -2140,6 +2141,7 @@ class PdfExportService {
                       'LEFT EYE',
                       prescription.leftEyeSubjective,
                       PdfColor.fromInt(0xFF00695C),
+                      (result.profileAge ?? 0) >= 40,
                     ),
                   ),
                 ],
@@ -2169,7 +2171,10 @@ class PdfExportService {
                 ),
               ),
               pw.SizedBox(height: 8),
-              _buildFinalRxTable(prescription.finalPrescription),
+              _buildFinalRxTable(
+                prescription.finalPrescription,
+                (result.profileAge ?? 0) >= 40,
+              ),
             ],
           ),
         ),
@@ -2190,6 +2195,7 @@ class PdfExportService {
     String title,
     SubjectiveRefractionData data,
     PdfColor color,
+    bool showAdd,
   ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -2224,7 +2230,7 @@ class PdfExportService {
                 _buildPdfTableCell('VN', isHeader: true),
                 if (data.prism != '0.00' && data.prism.isNotEmpty)
                   _buildPdfTableCell('PRISM', isHeader: true),
-                if (data.add != '0.00' && data.add.isNotEmpty)
+                if (showAdd && data.add != '0.00' && data.add.isNotEmpty)
                   _buildPdfTableCell('ADD', isHeader: true),
               ],
             ),
@@ -2236,7 +2242,7 @@ class PdfExportService {
                 _buildPdfTableCell(data.vn),
                 if (data.prism != '0.00' && data.prism.isNotEmpty)
                   _buildPdfTableCell(data.prism),
-                if (data.add != '0.00' && data.add.isNotEmpty)
+                if (showAdd && data.add != '0.00' && data.add.isNotEmpty)
                   _buildPdfTableCell(data.add),
               ],
             ),
@@ -2246,7 +2252,7 @@ class PdfExportService {
     );
   }
 
-  pw.Widget _buildFinalRxTable(FinalPrescriptionData data) {
+  pw.Widget _buildFinalRxTable(FinalPrescriptionData data, bool showAdd) {
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
       children: [
@@ -2258,7 +2264,7 @@ class PdfExportService {
             _buildPdfTableCell('CYL', isHeader: true),
             _buildPdfTableCell('AXIS', isHeader: true),
             _buildPdfTableCell('VN', isHeader: true),
-            _buildPdfTableCell('ADD', isHeader: true),
+            if (showAdd) _buildPdfTableCell('ADD', isHeader: true),
           ],
         ),
         pw.TableRow(
@@ -2268,7 +2274,7 @@ class PdfExportService {
             _buildPdfTableCell(data.right.cyl),
             _buildPdfTableCell(data.right.axis),
             _buildPdfTableCell(data.right.vn),
-            _buildPdfTableCell(data.right.add),
+            if (showAdd) _buildPdfTableCell(data.right.add),
           ],
         ),
         pw.TableRow(
@@ -2278,7 +2284,7 @@ class PdfExportService {
             _buildPdfTableCell(data.left.cyl),
             _buildPdfTableCell(data.left.axis),
             _buildPdfTableCell(data.left.vn),
-            _buildPdfTableCell(data.left.add),
+            if (showAdd) _buildPdfTableCell(data.left.add),
           ],
         ),
       ],
