@@ -32,7 +32,12 @@ import './mobile_refractometry_instructions_screen.dart';
 enum RefractPhase { instruction, calibration, relaxation, test, complete }
 
 class MobileRefractometryTestScreen extends StatefulWidget {
-  const MobileRefractometryTestScreen({super.key});
+  final bool showInitialInstructions;
+
+  const MobileRefractometryTestScreen({
+    super.key,
+    this.showInitialInstructions = true,
+  });
 
   @override
   State<MobileRefractometryTestScreen> createState() =>
@@ -82,10 +87,12 @@ class _MobileRefractometryTestScreenState
   late AnimationController _relaxationProgressController;
   bool _relaxationShownForCurrentEye =
       false; // Only show relaxation once per eye
+  bool _isTransitioning = false;
 
   // Distance monitoring
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
+  bool _isInstructionComplete = false;
   bool _isDistanceOk = true;
   final bool _isCalibrationActive = false;
   bool _isTestPausedForDistance = false;
@@ -147,7 +154,18 @@ class _MobileRefractometryTestScreenState
     if (mounted) {
       final provider = context.read<TestSessionProvider>();
       _patientAge = provider.profileAge ?? 30;
-      _startDistanceCalibration(TestConstants.mobileRefractometryDistanceCm);
+
+      // START FLOW LOGIC
+      if (!widget.showInitialInstructions) {
+        // Skip general instructions, go straight to setup
+        _isInstructionComplete = true;
+        _instructionShown = true;
+        _startDistanceCalibration(TestConstants.mobileRefractometryDistanceCm);
+      } else {
+        // Standard flow: Start instructions first
+        _isTransitioning = true;
+        _startInstruction();
+      }
     }
   }
 
@@ -199,6 +217,7 @@ class _MobileRefractometryTestScreenState
       MaterialPageRoute(
         builder: (context) => MobileRefractometryInstructionsScreen(
           onContinue: () {
+            _isTransitioning = false;
             Navigator.of(context).pop();
             _onInstructionComplete();
           },
@@ -208,13 +227,17 @@ class _MobileRefractometryTestScreenState
   }
 
   void _onInstructionComplete() {
-    // Sequence: Calibration -> General Instruction -> Eye Instruction
-    _showEyeInstructionStage();
+    _isInstructionComplete = true;
+    _instructionShown = true;
+    _startDistanceCalibration(TestConstants.mobileRefractometryDistanceCm);
   }
 
   void _showEyeInstructionStage() {
+    if (_isTransitioning) return;
+
     // Show eye instruction after calibration for the first eye
     if (_currentEye == 'right' && _currentRound == 0 && !_isNearMode) {
+      _isTransitioning = true;
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => CoverLeftEyeInstructionScreen(
@@ -225,6 +248,7 @@ class _MobileRefractometryTestScreenState
             targetDistance: TestConstants.mobileRefractometryDistanceCm,
             startButtonText: 'Start Right Eye Test',
             onContinue: () {
+              _isTransitioning = false;
               Navigator.of(context).pop();
               // Relaxation only at start of eye test, not during distance switch
               if (!_relaxationShownForCurrentEye) {
@@ -294,7 +318,9 @@ class _MobileRefractometryTestScreenState
   void _handleDistanceUpdate(double distance, DistanceStatus status) {
     if (!mounted) return;
 
-    final testTypeForHelper = _isNearMode ? 'short_distance' : 'visual_acuity';
+    final testTypeForHelper = _isNearMode
+        ? 'refraction_near'
+        : 'refraction_distance';
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
       status,
@@ -304,8 +330,6 @@ class _MobileRefractometryTestScreenState
     setState(() {
       _currentDistance = distance;
       _distanceStatus = status;
-      // … FIX: Only set _isDistanceOk to true here.
-      // It is set to false only in _pauseTestForDistance after cooldown check.
       if (!shouldPause) {
         _isDistanceOk = true;
       }
@@ -695,7 +719,14 @@ class _MobileRefractometryTestScreenState
   }
 
   void _finishEye() {
+    // Prevent duplicate calls if already transitioning or finished
+    if (_currentPhase == RefractPhase.complete || _isTransitioning) return;
+
+    _isTransitioning = true;
+
     if (_currentEye == 'right') {
+      if (_currentPhase == RefractPhase.instruction) return;
+
       setState(() {
         _currentEye = 'left';
         _currentRound = 0;
@@ -718,6 +749,7 @@ class _MobileRefractometryTestScreenState
               startButtonText: 'Start Left Eye Test',
               onContinue: () {
                 Navigator.of(context).pop();
+                _isTransitioning = false;
                 _startRelaxation();
               },
             ),
@@ -730,6 +762,7 @@ class _MobileRefractometryTestScreenState
   }
 
   void _calculateResults() {
+    _isTransitioning = false;
     setState(() => _currentPhase = RefractPhase.complete);
 
     final rightResults = _processEyeData(_rightEyeResponses);

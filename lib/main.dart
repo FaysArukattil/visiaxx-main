@@ -94,13 +94,13 @@ void main() async {
   await NotificationService().initialize();
 
   // Initialize AWS credentials from Firebase Remote Config
-  debugPrint('[VisiAxx] ”„ Loading AWS credentials...');
+  debugPrint('[VisiAxx] ... Loading AWS credentials...');
   final awsInitialized = await AWSCredentials.initialize();
   if (awsInitialized) {
-    debugPrint('[VisiAxx] … AWS credentials loaded successfully');
+    debugPrint('[VisiAxx] ... AWS credentials loaded successfully');
   } else {
     debugPrint(
-      '[VisiAxx]  ï¸ AWS credentials failed to load - will use Firebase only',
+      '[VisiAxx] AWS credentials failed to load - will use Firebase only',
     );
   }
 
@@ -147,7 +147,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         // Remove after animation is cached (500ms should be enough)
         Future.delayed(const Duration(milliseconds: 500), () {
           overlay.remove();
-          debugPrint('[VisiAxx] … Eye animation preloaded');
+          debugPrint('[VisiAxx] ... Eye animation preloaded');
         });
       }
     });

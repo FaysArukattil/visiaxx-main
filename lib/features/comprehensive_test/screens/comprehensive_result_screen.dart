@@ -172,7 +172,7 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                     ],
                     if (refractometry != null) ...[
                       const SizedBox(height: 16),
-                      _buildRefractometrySection(refractometry),
+                      _buildRefractometrySection(provider, refractometry),
                     ],
                     if (_hasPrescription(provider)) ...[
                       const SizedBox(height: 16),
@@ -309,7 +309,10 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
     );
   }
 
-  Widget _buildRefractometrySection(MobileRefractometryResult result) {
+  Widget _buildRefractometrySection(
+    TestSessionProvider provider,
+    MobileRefractometryResult result,
+  ) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -367,7 +370,11 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
               children: [
                 if (result.rightEye != null)
                   Expanded(
-                    child: _buildEyeRefraction('RIGHT', result.rightEye!),
+                    child: _buildEyeRefraction(
+                      'RIGHT',
+                      result.rightEye!,
+                      provider.profileAge,
+                    ),
                   ),
                 if (result.rightEye != null && result.leftEye != null)
                   Container(
@@ -377,7 +384,13 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                     margin: const EdgeInsets.symmetric(horizontal: 12),
                   ),
                 if (result.leftEye != null)
-                  Expanded(child: _buildEyeRefraction('LEFT', result.leftEye!)),
+                  Expanded(
+                    child: _buildEyeRefraction(
+                      'LEFT',
+                      result.leftEye!,
+                      provider.profileAge,
+                    ),
+                  ),
               ],
             ),
           ],
@@ -386,7 +399,16 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
     );
   }
 
-  Widget _buildEyeRefraction(String eye, MobileRefractometryEyeResult res) {
+  Widget _buildEyeRefraction(
+    String eye,
+    MobileRefractometryEyeResult res,
+    int? age,
+  ) {
+    final showAdd =
+        (age ?? 0) >= 40 &&
+        double.tryParse(res.addPower) != null &&
+        double.parse(res.addPower) > 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -402,9 +424,11 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
         _buildRefractionValue('SPH', res.sphere),
         _buildRefractionValue('CYL', res.cylinder),
         _buildRefractionValue('AXIS', '${res.axis}°'),
-        if (double.tryParse(res.addPower) != null &&
-            double.parse(res.addPower) > 0)
-          _buildRefractionValue('ADD', '+${res.addPower}'),
+        if (showAdd)
+          _buildRefractionValue(
+            'ADD',
+            '+${res.addPower.replaceFirst(RegExp(r'^\++'), '')}',
+          ),
       ],
     );
   }
@@ -663,7 +687,10 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.success.withValues(alpha: 0.3), width: 1.5),
+        side: BorderSide(
+          color: AppColors.success.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
       ),
       color: AppColors.success.withValues(alpha: 0.02),
       child: Padding(
@@ -855,5 +882,3 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
     );
   }
 }
-
-

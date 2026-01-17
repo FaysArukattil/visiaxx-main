@@ -498,7 +498,7 @@ class _MobileRefractometryQuickResultScreenState
         if (showAdd)
           _buildValueItem(
             'READING',
-            res.addPower.startsWith('+') ? res.addPower : '+${res.addPower}',
+            '+${res.addPower.replaceFirst(RegExp(r'^\++'), '')}',
             'Add Power',
           ),
       ],

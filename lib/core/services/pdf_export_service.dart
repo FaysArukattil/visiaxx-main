@@ -85,7 +85,7 @@ class PdfExportService {
 
         if (status.isDenied) {
           debugPrint(
-            '[PdfExportService]  ï¸ Permission denied, trying app directory',
+            '[PdfExportService] Permission denied, trying app directory',
           );
           return await _saveToAppDirectory(bytes, filename);
         }
@@ -1636,9 +1636,7 @@ class PdfExportService {
                     double.tryParse(res.addPower) != null &&
                     double.parse(res.addPower) > 0)
                   _buildTableCell(
-                    res.addPower.startsWith('+')
-                        ? res.addPower
-                        : '+${res.addPower}',
+                    '+${res.addPower.replaceFirst(RegExp(r'^\++'), '')}',
                   ),
               ],
             ),

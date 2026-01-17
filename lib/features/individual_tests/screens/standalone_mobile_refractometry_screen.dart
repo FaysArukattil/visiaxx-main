@@ -29,7 +29,11 @@ class StandaloneMobileRefractometryScreen extends StatelessWidget {
 
     return MobileRefractometryInstructionsScreen(
       onContinue: () {
-        Navigator.pushReplacementNamed(context, '/mobile-refractometry-test');
+        Navigator.pushReplacementNamed(
+          context,
+          '/mobile-refractometry-test',
+          arguments: {'showInstructions': false},
+        );
       },
     );
   }

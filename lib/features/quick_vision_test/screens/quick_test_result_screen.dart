@@ -2288,6 +2288,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   'Right Eye',
                   result.rightEye!,
                   AppColors.primary,
+                  provider,
                 ),
               if (result.rightEye != null && result.leftEye != null)
                 const Padding(
@@ -2299,6 +2300,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   'Left Eye',
                   result.leftEye!,
                   AppColors.secondary,
+                  provider,
                 ),
             ],
           ),
@@ -2357,11 +2359,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     String label,
     MobileRefractometryEyeResult res,
     Color color,
+    TestSessionProvider provider,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildEnhancedRefractionEye(label, res, color),
+        _buildEnhancedRefractionEye(label, res, color, provider),
         const SizedBox(height: 20),
         _buildLaymanEyeInterpretation(label, res, color),
       ],
@@ -2372,6 +2375,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     String label,
     MobileRefractometryEyeResult? res,
     Color color,
+    TestSessionProvider provider,
   ) {
     if (res == null) return const SizedBox.shrink();
 
@@ -2443,9 +2447,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 _buildValueCell('SPH', res.sphere, 'Sphere'),
                 _buildValueCell('CYL', res.cylinder, 'Cylinder'),
                 _buildValueCell('AXIS', '${res.axis}°', 'Axis'),
-                if (double.tryParse(res.addPower) != null &&
+                if (provider.profileAge != null &&
+                    provider.profileAge! >= 40 &&
+                    double.tryParse(res.addPower) != null &&
                     double.parse(res.addPower) > 0)
-                  _buildValueCell('ADD', '+${res.addPower}', 'Reading')
+                  _buildValueCell(
+                    'ADD',
+                    '+${res.addPower.replaceFirst(RegExp(r'^\++'), '')}',
+                    'Reading',
+                  )
                 else
                   const SizedBox.shrink(),
               ],
@@ -2993,4 +3003,3 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         provider.amslerGridLeft != null;
   }
 }
-
