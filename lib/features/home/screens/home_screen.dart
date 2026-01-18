@@ -269,18 +269,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: EdgeInsets.all(logoHeight * 0.1),
-                    child: Image.asset(
-                      'assets/images/icons/app_logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.remove_red_eye,
-                          color: AppColors.primary,
-                        );
-                      },
-                    ),
+                  child: Image.asset(
+                    'assets/images/icons/app_logo.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.remove_red_eye,
+                        color: AppColors.primary,
+                      );
+                    },
                   ),
                 ),
               ),
@@ -342,11 +339,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: screenHeight * 0.005),
+                    SizedBox(height: screenHeight * 0.008),
                     Container(
+                      width: double.infinity,
                       padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.03,
-                        vertical: screenHeight * 0.006,
+                        horizontal: screenWidth * 0.035,
+                        vertical: screenHeight * 0.01,
                       ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -363,23 +361,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icon(
                             Icons.remove_red_eye,
                             color: AppColors.primary,
-                            size: (screenWidth * 0.035).clamp(12.0, 16.0),
+                            size: (screenWidth * 0.04).clamp(14.0, 18.0),
                           ),
-                          SizedBox(width: screenWidth * 0.015),
-                          Flexible(
-                            child: Text(
-                              'Your Vision, Our Priority',
-                              style: TextStyle(
-                                fontSize: (screenWidth * 0.028).clamp(
-                                  10.0,
-                                  12.0,
-                                ),
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          SizedBox(width: screenWidth * 0.02),
+                          Text(
+                            'Your Vision, Our Priority',
+                            style: TextStyle(
+                              fontSize: (screenWidth * 0.035).clamp(12.0, 14.5),
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -526,7 +519,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     slide['heading'] as String,
@@ -568,29 +560,31 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(width: availableWidth * 0.02),
             Flexible(
               flex: 35,
-              child: SizedBox(
-                height: availableHeight * 0.85,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      child: _buildFounderImage(
-                        'assets/images/founder_image_1.png',
-                        availableWidth,
-                        availableHeight,
+              child: Center(
+                child: SizedBox(
+                  height: availableHeight * 0.85,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        child: _buildFounderImage(
+                          'assets/images/founder_image_1.png',
+                          availableWidth,
+                          availableHeight,
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: _buildFounderImage(
-                        'assets/images/founder_image_2.png',
-                        availableWidth,
-                        availableHeight,
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: _buildFounderImage(
+                          'assets/images/founder_image_2.png',
+                          availableWidth,
+                          availableHeight,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -645,55 +639,57 @@ class _HomeScreenState extends State<HomeScreen> {
         final availableWidth = cardConstraints.maxWidth;
         final availableHeight = cardConstraints.maxHeight;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              slide['heading'] as String,
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: (availableWidth * 0.055).clamp(14.0, 18.0),
-                fontWeight: FontWeight.bold,
-                height: 1.2,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            SizedBox(height: availableHeight * 0.05),
-            Text(
-              slide['content'] as String,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: (availableWidth * 0.038).clamp(10.5, 13.0),
-                height: 1.4,
-              ),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-            ),
-            SizedBox(height: availableHeight * 0.05),
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: availableWidth * 0.03,
-                vertical: availableHeight * 0.025,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                slide['supportText'] as String,
+        return Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                slide['heading'] as String,
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontSize: (availableWidth * 0.032).clamp(9.0, 11.0),
-                  fontWeight: FontWeight.w600,
+                  fontSize: (availableWidth * 0.055).clamp(14.0, 18.0),
+                  fontWeight: FontWeight.bold,
+                  height: 1.2,
                 ),
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+              SizedBox(height: availableHeight * 0.05),
+              Text(
+                slide['content'] as String,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: (availableWidth * 0.038).clamp(10.5, 13.0),
+                  height: 1.4,
+                ),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: availableHeight * 0.05),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: availableWidth * 0.03,
+                  vertical: availableHeight * 0.025,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  slide['supportText'] as String,
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: (availableWidth * 0.032).clamp(9.0, 11.0),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -850,10 +846,13 @@ class _CompactServiceCard extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, cardConstraints) {
         final availableWidth = cardConstraints.maxWidth;
-        final iconSize = (availableWidth * 0.12).clamp(20.0, 28.0);
-        final titleFontSize = (availableWidth * 0.065).clamp(11.5, 15.0);
-        final subtitleFontSize = (availableWidth * 0.048).clamp(8.5, 11.0);
-        final cardPadding = (availableWidth * 0.05).clamp(8.0, 12.0);
+        final iconSize = (availableWidth * 0.18).clamp(
+          28.0,
+          36.0,
+        ); // Increased icon size
+        final titleFontSize = (availableWidth * 0.08).clamp(13.0, 16.0);
+        final subtitleFontSize = (availableWidth * 0.058).clamp(9.5, 12.0);
+        final cardPadding = (availableWidth * 0.065).clamp(10.0, 14.0);
 
         return Material(
           color: Colors.transparent,
@@ -894,8 +893,8 @@ class _CompactServiceCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      width: iconSize + 12,
-                      height: iconSize + 12,
+                      width: iconSize + 14,
+                      height: iconSize + 14,
                       decoration: BoxDecoration(
                         color: AppColors.background,
                         borderRadius: BorderRadius.circular(12),
@@ -917,7 +916,7 @@ class _CompactServiceCard extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               fontSize: titleFontSize,
                               color: AppColors.primary,
-                              height: 1.15,
+                              height: 1.1,
                               letterSpacing: -0.2,
                             ),
                             maxLines: 2,
@@ -930,7 +929,7 @@ class _CompactServiceCard extends StatelessWidget {
                               fontWeight: FontWeight.w500,
                               fontSize: subtitleFontSize,
                               color: AppColors.textSecondary,
-                              height: 1.15,
+                              height: 1.1,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
