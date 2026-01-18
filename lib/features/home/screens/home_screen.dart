@@ -397,7 +397,7 @@ class _HomeScreenState extends State<HomeScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.primary.withOpacity(0.08),
+                AppColors.primary.withValues(alpha: .08),
                 AppColors.primaryLight.withOpacity(0.05),
               ],
             ),
@@ -752,21 +752,10 @@ class _CompactServiceCard extends StatelessWidget {
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryLight],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(icon, color: AppColors.white, size: 28),
+                  child: Icon(icon, color: AppColors.primary, size: 28),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -844,21 +833,10 @@ class _WideServiceCard extends StatelessWidget {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryLight],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(icon, color: AppColors.white, size: 26),
+                  child: Icon(icon, color: AppColors.primary, size: 26),
                 ),
                 const SizedBox(width: 18),
                 Expanded(
