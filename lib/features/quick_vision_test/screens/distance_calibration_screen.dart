@@ -968,6 +968,12 @@ class _GlassHUDCard extends StatelessWidget {
   }
 
   Widget _buildMagneticIndicator(bool detected) {
+    // Calculate the vertical offset for silhouette animation
+    // percent positive (Too Far) -> Move DOWN
+    // percent negative (Too Close) -> Move UP (towards phone)
+    final double percent = _getOffsetPercent();
+    final double verticalOffset = 105 + (percent * 85);
+
     return Column(
       children: [
         SizedBox(
@@ -1012,53 +1018,44 @@ class _GlassHUDCard extends StatelessWidget {
               ),
 
               // 4. VERTICAL GLIDING USER: Enhanced Silhouette with Dual Arrows
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 400), // Smooth Glide
+              // Using AnimatedPositioned for smooth continuous movement
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOutCubic,
-                tween: Tween<double>(begin: 0, end: _getOffsetPercent()),
-                builder: (context, percent, child) {
-                  // PERSPECTIVE: Phone is at TOP (0). Target is at 105.
-                  // percent positive (Too Far) -> Move DOWN
-                  // percent negative (Too Close) -> Move UP (towards phone)
-                  final double verticalOffset = 105 + (percent * 85);
-
-                  return Positioned(
-                    top: verticalOffset - 25, // Centering human
-                    child: _DualArrowGlider(
-                      status: status,
-                      statusColor: statusColor,
-                    ),
-                  );
-                },
+                top: verticalOffset - 25, // Centering human
+                child: _DualArrowGlider(
+                  status: status,
+                  statusColor: statusColor,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 36),
 
+        // CM Display - Direct value display like old code
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 1200),
-              curve: Curves.easeInOutCubic,
-              tween: Tween<double>(
-                begin: targetDistance,
-                end: detected ? currentDistance : targetDistance + 15,
+            // Use AnimatedSwitcher for smooth text transitions
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: Text(
+                detected ? currentDistance.toStringAsFixed(0) : '--',
+                key: ValueKey<String>(
+                  detected ? currentDistance.toStringAsFixed(0) : '--',
+                ),
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 54,
+                  fontWeight: FontWeight.w900,
+                  fontFeatures: const [ui.FontFeature.tabularFigures()],
+                ),
               ),
-              builder: (context, val, child) {
-                return Text(
-                  detected ? val.toStringAsFixed(0) : '--',
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 54,
-                    fontWeight: FontWeight.w900,
-                    fontFeatures: const [ui.FontFeature.tabularFigures()],
-                  ),
-                );
-              },
             ),
             const SizedBox(width: 12),
             Text(
@@ -1077,8 +1074,14 @@ class _GlassHUDCard extends StatelessWidget {
   }
 
   double _getOffsetPercent() {
+    // If no face detected, return 0 (centered)
+    if (status == DistanceStatus.noFaceDetected) return 0.0;
+
     final diff = currentDistance - targetDistance;
-    return (diff / 20).clamp(-1.0, 1.0);
+    // Increase divisor for more responsive movement
+    // Positive diff = too far = move down (positive offset)
+    // Negative diff = too close = move up (negative offset)
+    return (diff / 35).clamp(-1.0, 1.0);
   }
 
   String _getGuidanceMessage() {
