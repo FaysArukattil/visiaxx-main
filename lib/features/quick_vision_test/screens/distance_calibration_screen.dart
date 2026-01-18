@@ -895,9 +895,9 @@ class _GlassHUDCard extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: statusColor,
                           foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 22),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
+                            borderRadius: BorderRadius.circular(24),
                           ),
                           elevation: 0,
                         ),
@@ -911,18 +911,18 @@ class _GlassHUDCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 2,
-                                  fontSize: 14,
+                                  fontSize: 12,
                                 ),
                               ),
-                              SizedBox(width: 8),
-                              Icon(Icons.check_circle_outline, size: 18),
+                              SizedBox(width: 6),
+                              Icon(Icons.check_circle_outline, size: 16),
                             ],
                           ),
                         ),
                       )
                     else
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 22),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         width: double.infinity,
                         alignment: Alignment.center,
                         child: Text(
@@ -931,28 +931,28 @@ class _GlassHUDCard extends StatelessWidget {
                             color: AppColors.white.withValues(alpha: 0.2),
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2,
-                            fontSize: 14,
+                            fontSize: 12,
                           ),
                         ),
                       ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
 
                     // Premium Button-style Bypass (No Toggle)
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: onSkip,
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(20),
                         child: Container(
-                          width: double.infinity, // Full width button feel
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: BoxDecoration(
                             color: AppColors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: AppColors.white.withValues(alpha: 0.1),
-                              width: 1.5,
+                              width: 1,
                             ),
                           ),
                           child: Center(
@@ -960,7 +960,7 @@ class _GlassHUDCard extends StatelessWidget {
                               'BYPASS CALIBRATION',
                               style: TextStyle(
                                 color: AppColors.white.withValues(alpha: 0.5),
-                                fontSize: 11,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 2,
                               ),
@@ -984,44 +984,43 @@ class _GlassHUDCard extends StatelessWidget {
     // percent positive (Too Far) -> Move DOWN
     // percent negative (Too Close) -> Move UP (towards phone)
     final double percent = _getOffsetPercent();
-    final double verticalOffset =
-        75 + (percent * 60); // Reduced from 105 + (percent * 85)
+    final double verticalOffset = 90 + (percent * 70); // Target at 90, range 70
 
     return Column(
       children: [
         SizedBox(
-          height: 180, // Reduced from 240
+          height: 200, // Increased for better phone-to-optimal distance
           width: double.infinity,
           child: Stack(
             alignment: Alignment.center,
             clipBehavior: Clip.none,
             children: [
-              // 1. Vertical Track Line (Dashed-feel)
+              // 1. Vertical Track Line
               Container(
                 width: 1,
-                height: 150, // Reduced from 200
+                height: 170, // Full runway height
                 color: AppColors.white.withValues(alpha: 0.1),
               ),
 
-              // 2. FIXED REFERENCE: Enlarged Phone (TOP)
+              // 2. FIXED REFERENCE: Phone (TOP)
               Positioned(
                 top: 0,
                 child: Icon(
                   Icons.phone_iphone_rounded,
                   color: AppColors.white.withValues(alpha: 0.35),
-                  size: 32, // Slightly reduced from 38
+                  size: 28,
                 ),
               ),
 
-              // 3. TARGET ZONE: Centered
+              // 3. TARGET ZONE: Positioned at 90
               Positioned(
-                top: 75, // Reduced from 105
+                top: 90,
                 child: Container(
-                  width: 55, // Slightly reduced from 65
-                  height: 14, // Slightly reduced from 16
+                  width: 50,
+                  height: 12,
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(7),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: AppColors.success.withValues(alpha: 0.3),
                       width: 2,
@@ -1031,11 +1030,10 @@ class _GlassHUDCard extends StatelessWidget {
               ),
 
               // 4. VERTICAL GLIDING USER: Enhanced Silhouette with Dual Arrows
-              // Using AnimatedPositioned for smooth continuous movement
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOutCubic,
-                top: verticalOffset - 20, // Adjusted centering
+                top: verticalOffset - 18, // Centering
                 child: _DualArrowGlider(
                   status: status,
                   statusColor: statusColor,
@@ -1044,14 +1042,13 @@ class _GlassHUDCard extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 24), // Reduced from 36
-        // CM Display - Direct value display like old code
+        const SizedBox(height: 16),
+        // CM Display - Compact size
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            // Use AnimatedSwitcher for smooth text transitions
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
               transitionBuilder: (child, animation) =>
@@ -1063,20 +1060,20 @@ class _GlassHUDCard extends StatelessWidget {
                 ),
                 style: TextStyle(
                   color: statusColor,
-                  fontSize: 54,
+                  fontSize: 42, // Reduced from 54
                   fontWeight: FontWeight.w900,
                   fontFeatures: const [ui.FontFeature.tabularFigures()],
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Text(
               'CM',
               style: TextStyle(
                 color: statusColor.withValues(alpha: 0.4),
-                fontSize: 18,
+                fontSize: 14, // Reduced from 18
                 fontWeight: FontWeight.w900,
-                letterSpacing: 4,
+                letterSpacing: 3,
               ),
             ),
           ],
