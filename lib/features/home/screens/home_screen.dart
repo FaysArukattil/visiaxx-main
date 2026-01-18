@@ -5,7 +5,6 @@ import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/snackbar_utils.dart';
-import 'profile_screen.dart';
 
 /// User home screen with navigation grid and carousel
 class HomeScreen extends StatefulWidget {
@@ -20,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _authService = AuthService();
   UserModel? _user;
   bool _isLoading = true;
-  bool _isConsultationLoading = false; // For demonstration
+  bool _isConsultationLoading = false;
   String _selectedLanguage = 'English';
 
   final List<Map<String, String>> _languages = [
@@ -77,11 +76,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadUserData() async {
     try {
       if (_authService.currentUserId != null) {
-        // Now returns from local cache instantly or refreshes from server
         final user = await _authService.getUserData(
           _authService.currentUserId!,
         );
-
         if (mounted && user != null) {
           setState(() {
             _user = user;
@@ -205,20 +202,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildHeader(),
-                        const SizedBox(height: 20),
-                        _buildTagline(),
                         const SizedBox(height: 16),
                         _buildCarousel(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         _buildCarouselIndicators(),
-                        const SizedBox(height: 28),
-                        _buildSectionTitle('Services'),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
                         _buildServicesGrid(),
-                        const SizedBox(height: 32),
-                        const SizedBox(height: 32),
-
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 100), // Space for bottom nav
                       ],
                     ),
                   ),
@@ -242,30 +232,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top row: Logo + Language + Profile (combined section)
           Row(
             children: [
+              // Logo
               Container(
-                width: 120,
-                height: 52,
+                width: 100,
+                height: 48,
                 decoration: BoxDecoration(
                   color: AppColors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.08),
-                      blurRadius: 10,
+                      color: AppColors.black.withValues(alpha: 0.06),
+                      blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   child: Padding(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(5),
                     child: Image.asset(
                       'assets/images/icons/app_logo.png',
                       fit: BoxFit.cover,
@@ -274,140 +266,112 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const Spacer(),
+              // Language selector
               GestureDetector(
                 onTap: _showLanguageSelector,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 10,
+                    vertical: 7,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.language,
-                        size: 18,
+                        size: 16,
                         color: AppColors.textSecondary,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 5),
                       Text(
                         selectedLang['code']!.toUpperCase(),
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                          fontSize: 12,
                           color: AppColors.textPrimary,
                         ),
                       ),
                       const Icon(
                         Icons.keyboard_arrow_down,
-                        size: 18,
+                        size: 16,
                         color: AppColors.textSecondary,
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () {
-                  if (_user != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProfileScreen(user: _user!),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Greeting section
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hello, ${_user?.firstName ?? 'User'} 👋',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                            color: AppColors.textPrimary,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                    );
-                  }
-                },
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      _user?.firstName.isNotEmpty == true
-                          ? _user!.firstName[0].toUpperCase()
-                          : 'U',
-                      style: const TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.1),
+                            AppColors.primary.withValues(alpha: 0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.remove_red_eye,
+                            color: AppColors.primary,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Your Vision, Our Priority',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Hello, ${_user?.firstName ?? 'User'} 👋',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'How can we help you today?',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTagline() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.primary.withValues(alpha: 0.1),
-              AppColors.primary.withValues(alpha: 0.05),
-            ],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.remove_red_eye, color: AppColors.primary, size: 20),
-            const SizedBox(width: 10),
-            Text(
-              'Your Vision, Our Priority',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildCarousel() {
     final screenHeight = MediaQuery.of(context).size.height;
-    final carouselHeight =
-        screenHeight * 0.22; // Approximately 22% of screen height
+    final carouselHeight = screenHeight * 0.22; // Back to original 22%
 
     return CarouselSlider(
       options: CarouselOptions(
@@ -444,7 +408,6 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(20),
             child: Stack(
               children: [
-                // Decorative circles
                 Positioned(
                   right: -30,
                   top: -30,
@@ -469,7 +432,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                // Content
                 Padding(
                   padding: const EdgeInsets.all(18),
                   child: slide['hasImages'] as bool
@@ -488,7 +450,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Text content (left side)
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -496,30 +457,29 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 slide['heading'] as String,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.primary,
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 0.3,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
                 slide['content'] as String,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 10.5,
+                  fontSize: 10,
                   height: 1.2,
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 slide['supportText'] as String,
                 style: TextStyle(
                   color: AppColors.primary.withValues(alpha: 0.8),
-                  fontSize: 10,
+                  fontSize: 9,
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w500,
                 ),
@@ -528,10 +488,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        // Founder images (right side) - staggered diagonally
         SizedBox(
-          width: 70,
-          height: 150, // Reduced from 190
+          width: 65,
+          height: 140,
           child: Stack(
             children: [
               Positioned(
@@ -553,21 +512,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFounderImage(String imagePath) {
     return Container(
-      width: 45, // Reduced from 50
-      height: 85, // Reduced from 100
+      width: 42,
+      height: 80,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: AppColors.black.withValues(alpha: 0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Image.asset(
           imagePath,
           fit: BoxFit.cover,
@@ -577,7 +536,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Icon(
                 Icons.person,
                 color: AppColors.white.withValues(alpha: 0.6),
-                size: 28,
+                size: 24,
               ),
             );
           },
@@ -593,11 +552,10 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Text(
           slide['heading'] as String,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.primary,
-            fontSize: 18,
+            fontSize: 17,
             fontWeight: FontWeight.bold,
-            letterSpacing: 0.3,
           ),
         ),
         const SizedBox(height: 8),
@@ -605,24 +563,24 @@ class _HomeScreenState extends State<HomeScreen> {
           slide['content'] as String,
           style: const TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 11.5,
-            height: 1.4,
+            fontSize: 11,
+            height: 1.3,
           ),
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             slide['supportText'] as String,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.primary,
-              fontSize: 10.5,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -638,28 +596,15 @@ class _HomeScreenState extends State<HomeScreen> {
         _carouselSlides.length,
         (index) => AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: _currentCarouselIndex == index ? 24 : 8,
-          height: 8,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: _currentCarouselIndex == index ? 20 : 6,
+          height: 6,
           decoration: BoxDecoration(
             color: _currentCarouselIndex == index
                 ? AppColors.primary
                 : AppColors.divider,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(3),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
         ),
       ),
     );
@@ -670,18 +615,19 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
+          // Row 1: Quick Test + Full Eye Exam
           Row(
             children: [
               Expanded(
-                child: _ServiceCard(
+                child: _CompactServiceCard(
                   icon: Icons.speed_rounded,
                   title: 'Quick Test',
                   onTap: () => Navigator.pushNamed(context, '/quick-test'),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
-                child: _ServiceCard(
+                child: _CompactServiceCard(
                   icon: Icons.assessment_rounded,
                   title: 'Full Eye Exam',
                   onTap: () =>
@@ -690,19 +636,19 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          // Row 2: My Results (Full Width)
+          _WideServiceCard(
+            icon: Icons.history_rounded,
+            title: 'My Results',
+            onTap: () => Navigator.pushNamed(context, '/my-results'),
+          ),
+          const SizedBox(height: 12),
+          // Row 3: Consultation + Eye Care Tips
           Row(
             children: [
               Expanded(
-                child: _ServiceCard(
-                  icon: Icons.history_rounded,
-                  title: 'My Results',
-                  onTap: () => Navigator.pushNamed(context, '/my-results'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _ServiceCard(
+                child: _CompactServiceCard(
                   icon: Icons.calendar_month_rounded,
                   title: 'Consultation',
                   onTap: () async {
@@ -718,21 +664,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
+              const SizedBox(width: 12),
               Expanded(
-                child: _ServiceCard(
-                  icon: Icons.remove_red_eye_rounded,
-                  title: 'Visiaxx TV',
-                  onTap: () => Navigator.pushNamed(context, '/eye-exercises'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _ServiceCard(
+                child: _CompactServiceCard(
                   icon: Icons.lightbulb_outline_rounded,
                   title: 'Eye Care Tips',
                   onTap: () => Navigator.pushNamed(context, '/eye-care-tips'),
@@ -746,12 +680,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _ServiceCard extends StatelessWidget {
+class _CompactServiceCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
 
-  const _ServiceCard({
+  const _CompactServiceCard({
     required this.icon,
     required this.title,
     required this.onTap,
@@ -762,43 +696,133 @@ class _ServiceCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 130,
-        padding: const EdgeInsets.all(16),
+        height: 100,
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: AppColors.primary.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: AppColors.white, size: 24),
               ),
-              child: Icon(icon, color: AppColors.primary, size: 26),
-            ),
-            const Spacer(),
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: AppColors.textPrimary,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.primary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WideServiceCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _WideServiceCard({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 70,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: AppColors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppColors.primary.withValues(alpha: 0.6),
+              ),
+            ],
+          ),
         ),
       ),
     );

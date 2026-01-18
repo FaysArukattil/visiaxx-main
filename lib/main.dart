@@ -8,6 +8,7 @@ import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'package:visiaxx/core/widgets/network_indicator_widget.dart';
 import 'package:visiaxx/features/eye_care_tips/screens/eye_care_tips_screen.dart';
 import 'package:visiaxx/features/eye_exercises/screens/eye_exercise_reels_screen.dart';
+import 'package:visiaxx/features/home/screens/main_navigation_screen.dart';
 import 'package:visiaxx/features/home/screens/settings_screen.dart';
 import 'package:visiaxx/features/results/screens/speech_log_viewer_screen.dart';
 import 'firebase_options.dart';
@@ -16,6 +17,7 @@ import 'features/auth/screens/splashscreen.dart';
 import 'features/auth/screens/loginscreen.dart';
 import 'features/auth/screens/registration_screen.dart';
 import 'features/auth/screens/forgot_password_screen.dart';
+// ignore: unused_import
 import 'features/home/screens/home_screen.dart';
 import 'features/quick_vision_test/screens/profile_selection_screen.dart';
 import 'features/quick_vision_test/screens/questionnaire_screen.dart';
@@ -196,7 +198,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegistrationScreen(),
           '/forgot-password': (context) => const ForgotPasswordScreen(),
-          '/home': (context) => const HomeScreen(),
+          '/home': (context) => const MainNavigationScreen(),
           '/quick-test': (context) => const QuickTestIntroScreen(),
           '/profile-selection': (context) => const ProfileSelectionScreen(),
           '/questionnaire': (context) => const QuestionnaireScreen(),
