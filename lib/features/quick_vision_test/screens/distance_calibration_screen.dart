@@ -67,25 +67,12 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
   void initState() {
     super.initState();
 
-    // ✅ CRITICAL FIX: Initialize with widget parameters
     _distanceService = DistanceDetectionService(
       targetDistanceCm: widget.targetDistanceCm,
       toleranceCm: widget.toleranceCm,
       minDistanceCm: widget.minDistanceCm,
       maxDistanceCm: widget.maxDistanceCm,
     );
-
-    debugPrint('═════════════════════════════════════');
-    debugPrint('🎯 CALIBRATION INITIALIZED:');
-    debugPrint('   Target Distance: ${widget.targetDistanceCm}cm');
-    debugPrint('   Tolerance: ±${widget.toleranceCm}cm');
-    debugPrint(
-      '   Min Boundary: ${widget.minDistanceCm ?? (widget.targetDistanceCm - widget.toleranceCm)}cm',
-    );
-    debugPrint(
-      '   Max Boundary: ${widget.maxDistanceCm ?? (widget.targetDistanceCm + widget.toleranceCm)}cm',
-    );
-    debugPrint('═════════════════════════════════════');
 
     _initializeCamera();
   }
@@ -99,110 +86,54 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
 
     try {
       await _ttsService.initialize();
-
-      // Set up distance service callbacks
       _distanceService.onDistanceUpdate = _handleDistanceUpdate;
       _distanceService.onError = _handleError;
 
-      debugPrint('[DistanceCalibration] 🔥 Initializing camera...');
-
-      // Initialize camera with retry logic
       int retries = 0;
       const maxRetries = 3;
 
       while (retries < maxRetries && _cameraController == null) {
         try {
           _cameraController = await _distanceService.initializeCamera();
-
           if (_cameraController != null &&
-              _cameraController!.value.isInitialized) {
-            debugPrint(
-              '[DistanceCalibration] ✅ Camera initialized successfully',
-            );
+              _cameraController!.value.isInitialized)
             break;
-          }
-
           retries++;
-          if (retries < maxRetries) {
-            debugPrint(
-              '[DistanceCalibration] ⚠️ Retry $retries/$maxRetries...',
-            );
+          if (retries < maxRetries)
             await Future.delayed(Duration(milliseconds: 500 * retries));
-          }
         } catch (e) {
-          debugPrint(
-            '[DistanceCalibration] ❌ Camera init attempt $retries failed: $e',
-          );
           retries++;
-          if (retries < maxRetries) {
+          if (retries < maxRetries)
             await Future.delayed(Duration(milliseconds: 500 * retries));
-          }
         }
       }
 
       if (_cameraController == null ||
           !_cameraController!.value.isInitialized) {
-        // One last quick retry with a small delay
-        await Future.delayed(const Duration(milliseconds: 500));
-        _cameraController = await _distanceService.initializeCamera();
-
-        if (_cameraController == null ||
-            !_cameraController!.value.isInitialized) {
-          throw Exception(
-            'Failed to initialize camera after $maxRetries attempts',
-          );
-        }
+        throw Exception('Failed to initialize camera');
       }
 
-      // Add a listener to ensure UI updates on any controller changes
       _cameraController!.addListener(() {
         if (mounted) setState(() {});
       });
 
-      // ✅ DEBUG: Log camera details
-      debugPrint('=== CAMERA DEBUG INFO ===');
-      debugPrint(
-        'Camera initialized: ${_cameraController!.value.isInitialized}',
-      );
-      debugPrint('Preview size: ${_cameraController!.value.previewSize}');
-      debugPrint('Aspect ratio: ${_cameraController!.value.aspectRatio}');
-      debugPrint('Is streaming: ${_cameraController!.value.isStreamingImages}');
-      debugPrint('Error: ${_cameraController!.value.errorDescription}');
-      debugPrint('========================');
-
-      // Small delay before starting monitoring to let camera stabilize
       await Future.delayed(const Duration(milliseconds: 200));
-
-      // Start monitoring
       await _distanceService.startMonitoring();
 
-      // Force a rebuild to show camera preview
       if (mounted) {
         setState(() {
           _isInitializing = false;
         });
       }
 
-      // Debug logging
-      debugPrint('[DistanceCalibration] Camera preview ready');
-      debugPrint(
-        '[DistanceCalibration] Preview size: ${_cameraController!.value.previewSize}',
-      );
-      debugPrint(
-        '[DistanceCalibration] Aspect ratio: ${_cameraController!.value.aspectRatio}',
-      );
-
-      // Speak instructions
       final distanceText = widget.targetDistanceCm >= 100
           ? '1 meter'
           : '${widget.targetDistanceCm.toInt()} centimeters';
 
       _ttsService.speak(
-        'Position yourself at $distanceText from the screen. '
-        'Look at the camera and I will guide you.',
+        'Position yourself at $distanceText from the screen. Look at the camera and I will guide you.',
       );
     } catch (e) {
-      debugPrint('[DistanceCalibration] ❌ Fatal error: $e');
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -220,15 +151,12 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
       _currentDistance = distance;
       _distanceStatus = status;
 
-      // Check stability
       if (status == DistanceStatus.optimal) {
         _stableReadingsCount++;
         if (_stableReadingsCount >= _requiredStableReadings) {
           _isDistanceStable = true;
-          // Vibrate to indicate success
           HapticFeedback.mediumImpact();
 
-          // ✅ AUTO-CONTINUE: Automatically proceed after 1 second
           if (!_hasAutoNavigated) {
             _hasAutoNavigated = true;
             Future.delayed(const Duration(seconds: 1), () {
@@ -241,11 +169,10 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
       } else {
         _stableReadingsCount = 0;
         _isDistanceStable = false;
-        _hasAutoNavigated = false; // Reset flag if user moves
+        _hasAutoNavigated = false;
       }
     });
 
-    // Speak guidance if status changed
     if (status != _lastSpokenStatus) {
       _lastSpokenStatus = status;
       _speakGuidance(status);
@@ -261,22 +188,19 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         _ttsService.speak('Come closer, you are too far');
         break;
       case DistanceStatus.optimal:
-        if (_stableReadingsCount == 1) {
+        if (_stableReadingsCount == 1)
           _ttsService.speak('Perfect distance! Hold still.');
-        }
         break;
       case DistanceStatus.noFaceDetected:
         _ttsService.speak('Searching for face');
         break;
       case DistanceStatus.faceDetectedNoDistance:
-        // Don't speak - using cached distance, test can continue
         break;
     }
   }
 
   void _handleError(String message) {
     debugPrint('[DistanceCalibration] Error: $message');
-    // Don't show UI errors for transient issues
   }
 
   void _onContinuePressed() {
@@ -338,7 +262,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(context);
               await NavigationUtils.navigateHome(context);
             },
             child: const Text('Exit', style: TextStyle(color: AppColors.error)),
@@ -439,7 +363,6 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1. Immersive Camera Preview
         if (_cameraController != null && _cameraController!.value.isInitialized)
           Positioned.fill(
             child: OverflowBox(
@@ -455,7 +378,6 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
             ),
           ),
 
-        // 2. Cinematic Deep Vignette
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
@@ -471,7 +393,6 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
         ),
 
-        // 3. Directional Guidance (Spatial Layer)
         Center(
           child: _DirectionalChevronOverlay(
             status: _distanceStatus,
@@ -479,7 +400,6 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
         ),
 
-        // 4. Central Ethereal Halo (Core Alignment)
         Center(
           child: _EtherealLightHalo(
             status: _distanceStatus,
@@ -489,7 +409,6 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
         ),
 
-        // 5. Floating Precision HUD
         Positioned(
           bottom: 40,
           left: 20,
@@ -506,7 +425,6 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
         ),
 
-        // 6. Minimal Instrument Header
         Positioned(
           top: 0,
           left: 0,
@@ -574,7 +492,6 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
   }
 }
 
-/// Cinematic Directional Chevrons
 class _DirectionalChevronOverlay extends StatefulWidget {
   final DistanceStatus status;
   final Color color;
@@ -611,7 +528,6 @@ class _DirectionalChevronOverlayState extends State<_DirectionalChevronOverlay>
         widget.status == DistanceStatus.noFaceDetected) {
       return const SizedBox.shrink();
     }
-
     final bool isTooClose = widget.status == DistanceStatus.tooClose;
 
     return Stack(
@@ -621,9 +537,7 @@ class _DirectionalChevronOverlayState extends State<_DirectionalChevronOverlay>
           animation: _controller,
           builder: (context, child) {
             double progress = (_controller.value + (index / 3)) % 1.0;
-            // Reverse direction if too close (pointing away)
             double t = isTooClose ? progress : 1.0 - progress;
-
             return Transform.scale(
               scale: 0.5 + (t * 1.5),
               child: Opacity(
@@ -645,7 +559,6 @@ class _DirectionalChevronOverlayState extends State<_DirectionalChevronOverlay>
   }
 }
 
-/// Ultra-Minimal Ethereal Light Halo with Depth Pulsing
 class _EtherealLightHalo extends StatelessWidget {
   final DistanceStatus status;
   final Color color;
@@ -662,7 +575,6 @@ class _EtherealLightHalo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final detected = status != DistanceStatus.noFaceDetected;
-    // Scale Halo based on distance (closer = bigger)
     final double scale = detected
         ? (targetDistance / currentDistance.clamp(1, 200)).clamp(0.8, 1.2)
         : 1.0;
@@ -683,7 +595,6 @@ class _EtherealLightHalo extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // High-Reflectivity Glow
           if (detected)
             Container(
               decoration: BoxDecoration(
@@ -697,8 +608,6 @@ class _EtherealLightHalo extends StatelessWidget {
                 ],
               ),
             ),
-
-          // Spatial Status Badge
           if (detected && status != DistanceStatus.optimal)
             Positioned(
               top: -60,
@@ -710,7 +619,6 @@ class _EtherealLightHalo extends StatelessWidget {
   }
 }
 
-/// Professional Spatial Status Badge
 class _SpatialBadge extends StatelessWidget {
   final DistanceStatus status;
   final Color color;
@@ -723,11 +631,9 @@ class _SpatialBadge extends StatelessWidget {
         status == DistanceStatus.noFaceDetected) {
       return const SizedBox.shrink();
     }
-
     String label = status == DistanceStatus.tooClose
         ? 'MOVE BACK'
         : 'MOVE CLOSER';
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -760,7 +666,6 @@ class _SpatialBadge extends StatelessWidget {
   }
 }
 
-/// Animated Command Arrow for Directional Cues
 class _AnimatedCommandArrow extends StatefulWidget {
   final DistanceStatus status;
   final Color color;
@@ -816,7 +721,6 @@ class _AnimatedCommandArrowState extends State<_AnimatedCommandArrow>
   Widget build(BuildContext context) {
     final bool isTooClose = widget.status == DistanceStatus.tooClose;
     final bool isTooFar = widget.status == DistanceStatus.tooFar;
-
     if (!isTooClose && !isTooFar) return const SizedBox.shrink();
 
     return AnimatedBuilder(
@@ -828,7 +732,6 @@ class _AnimatedCommandArrowState extends State<_AnimatedCommandArrow>
         final IconData icon = isTooClose
             ? Icons.keyboard_arrow_down_rounded
             : Icons.keyboard_arrow_up_rounded;
-
         return Transform.translate(
           offset: Offset(0, offset),
           child: Icon(icon, color: widget.color, size: widget.size),
@@ -886,16 +789,18 @@ class _GlassHUDCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. Command Guidance System
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _AnimatedCommandArrow(
-                    status: status,
-                    color: statusColor,
-                    size: 30,
+                  Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Flexible(
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
@@ -918,27 +823,23 @@ class _GlassHUDCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  _AnimatedCommandArrow(
-                    status: status,
-                    color: statusColor,
-                    size: 30,
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 48),
 
-              // 1.5 Universal Spatial Illustration
-              _SpatialGuidanceVisual(status: status, color: statusColor),
-
-              const SizedBox(height: 16),
-
-              // 2. Magnetic Precision Indicator (Zone Docking)
               _buildMagneticIndicator(detected),
 
-              const SizedBox(height: 36),
+              const SizedBox(height: 40),
 
-              // 3. Locking Signal
               if (detected && status == DistanceStatus.optimal) ...[
                 Column(
                   children: [
@@ -971,7 +872,6 @@ class _GlassHUDCard extends StatelessWidget {
                 const SizedBox(height: 20),
               ],
 
-              // 4. Primary Command
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -1044,17 +944,24 @@ class _GlassHUDCard extends StatelessWidget {
         Stack(
           alignment: Alignment.center,
           children: [
-            // Subdued Trace Line
             Container(
               height: 1,
               width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 24),
+              margin: const EdgeInsets.symmetric(horizontal: 40),
               color: AppColors.white.withValues(alpha: 0.08),
             ),
 
-            // Target Zone (The "Portion")
+            Positioned(
+              left: 0,
+              child: Icon(
+                Icons.phone_iphone_rounded,
+                color: AppColors.white.withValues(alpha: 0.3),
+                size: 24,
+              ),
+            ),
+
             Container(
-              width: 60, // Optimal Zone Portion
+              width: 60,
               height: 14,
               decoration: BoxDecoration(
                 color: AppColors.success.withValues(alpha: 0.05),
@@ -1064,47 +971,66 @@ class _GlassHUDCard extends StatelessWidget {
                   width: 1.5,
                 ),
               ),
-              child: Center(
-                child: Container(
-                  width: 2,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                ),
-              ),
             ),
 
-            // Magnetic Core (Gliding Capsule)
             TweenAnimationBuilder<double>(
               duration: const Duration(milliseconds: 1500),
               curve: Curves.easeInOutCubic,
               tween: Tween<double>(begin: 0, end: _getOffsetPercent()),
               builder: (context, percent, child) {
-                return FractionallySizedBox(
-                  widthFactor: 1.0,
+                final double horizontalOffset = percent * 100;
+
+                return Transform.translate(
+                  offset: Offset(horizontalOffset, 0),
                   child: Stack(
                     alignment: Alignment.center,
+                    clipBehavior: Clip.none,
                     children: [
-                      Transform.translate(
-                        offset: Offset(percent * 140, 0),
-                        child: Container(
-                          width: 36,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            borderRadius: BorderRadius.circular(4),
-                            boxShadow: [
-                              BoxShadow(
-                                color: statusColor.withValues(alpha: 0.4),
-                                blurRadius: 20,
-                                spreadRadius: -2,
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: statusColor, width: 2),
+                              color: statusColor.withValues(alpha: 0.25),
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Container(
+                            width: 20,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(6),
+                                topRight: Radius.circular(6),
                               ),
-                            ],
+                              border: Border.all(color: statusColor, width: 2),
+                              color: statusColor.withValues(alpha: 0.25),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (status == DistanceStatus.tooClose)
+                        Positioned(
+                          right: -24,
+                          child: Icon(
+                            Icons.arrow_right_alt_rounded,
+                            color: statusColor,
+                            size: 18,
                           ),
                         ),
-                      ),
+                      if (status == DistanceStatus.tooFar)
+                        Positioned(
+                          left: -24,
+                          child: Icon(
+                            Icons.keyboard_backspace_rounded,
+                            color: statusColor,
+                            size: 18,
+                          ),
+                        ),
                     ],
                   ),
                 );
@@ -1112,7 +1038,7 @@ class _GlassHUDCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 36),
 
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1156,13 +1082,11 @@ class _GlassHUDCard extends StatelessWidget {
 
   double _getOffsetPercent() {
     final diff = currentDistance - targetDistance;
-    // Higher sensitivity for tighter docking
     return (diff / 20).clamp(-1.0, 1.0);
   }
 
   String _getGuidanceMessage() {
     if (isStable) return 'POSITION SECURED';
-
     switch (status) {
       case DistanceStatus.optimal:
         return 'HOLD STEADY';
@@ -1175,178 +1099,5 @@ class _GlassHUDCard extends StatelessWidget {
       case DistanceStatus.faceDetectedNoDistance:
         return 'INITIALIZING...';
     }
-  }
-}
-
-/// Universal Spatial Illustration (Skeuomorphic Guidance)
-class _SpatialGuidanceVisual extends StatefulWidget {
-  final DistanceStatus status;
-  final Color color;
-
-  const _SpatialGuidanceVisual({required this.status, required this.color});
-
-  @override
-  State<_SpatialGuidanceVisual> createState() => _SpatialGuidanceVisualState();
-}
-
-class _SpatialGuidanceVisualState extends State<_SpatialGuidanceVisual>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _movement;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-
-    _movement = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0.0,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeInOutCubic)),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 0.0,
-        ).chain(CurveTween(curve: Curves.easeInOutCubic)),
-        weight: 50,
-      ),
-    ]).animate(_controller);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isTooClose = widget.status == DistanceStatus.tooClose;
-    final bool isTooFar = widget.status == DistanceStatus.tooFar;
-
-    if (!isTooClose && !isTooFar) return const SizedBox.shrink();
-
-    return Container(
-      height: 80,
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: AnimatedBuilder(
-        animation: _movement,
-        builder: (context, child) {
-          // Calculate positions based on status
-          // Too Close: Move person away from phone
-          // Too Far: Move person towards phone
-          double personOffset;
-          if (isTooClose) {
-            // person is at 20px (close), moves to 100px (away)
-            personOffset = 20 + (_movement.value * 80);
-          } else {
-            // person is at 100px (away), moves to 20px (close)
-            personOffset = 100 - (_movement.value * 80);
-          }
-
-          return Stack(
-            alignment: Alignment.centerLeft,
-            children: [
-              // 1. Mobile Phone Silhouette
-              Container(
-                width: 28,
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: AppColors.white.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 12,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: AppColors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(1),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 2. Connecting Arrow (Floating)
-              Positioned(
-                left: 36,
-                right: 0,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              widget.color.withValues(alpha: 0.0),
-                              widget.color.withValues(alpha: 0.4),
-                              widget.color.withValues(alpha: 0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 3. Command Arrow (Pulsing)
-              Positioned(
-                left: isTooClose ? personOffset - 20 : personOffset + 20,
-                child: Icon(
-                  isTooClose ? Icons.arrow_right_alt : Icons.keyboard_backspace,
-                  color: widget.color.withValues(alpha: 0.6),
-                  size: 20,
-                ),
-              ),
-
-              // 4. Person Silhouette
-              Positioned(
-                left: personOffset,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Head
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: widget.color, width: 2),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    // Body (shoulders)
-                    Container(
-                      width: 24,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8),
-                        ),
-                        border: Border.all(color: widget.color, width: 2),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
   }
 }
