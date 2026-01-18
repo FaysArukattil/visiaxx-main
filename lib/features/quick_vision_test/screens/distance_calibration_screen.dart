@@ -96,15 +96,18 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         try {
           _cameraController = await _distanceService.initializeCamera();
           if (_cameraController != null &&
-              _cameraController!.value.isInitialized)
+              _cameraController!.value.isInitialized) {
             break;
+          }
           retries++;
-          if (retries < maxRetries)
+          if (retries < maxRetries) {
             await Future.delayed(Duration(milliseconds: 500 * retries));
+          }
         } catch (e) {
           retries++;
-          if (retries < maxRetries)
+          if (retries < maxRetries) {
             await Future.delayed(Duration(milliseconds: 500 * retries));
+          }
         }
       }
 
@@ -188,8 +191,9 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
         _ttsService.speak('Come closer, you are too far');
         break;
       case DistanceStatus.optimal:
-        if (_stableReadingsCount == 1)
+        if (_stableReadingsCount == 1) {
           _ttsService.speak('Perfect distance! Hold still.');
+        }
         break;
       case DistanceStatus.noFaceDetected:
         _ttsService.speak('Searching for face');
@@ -393,36 +397,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
         ),
 
-        // Chevron overlay - positioned below header
         Positioned(
-          top: 100, // Below the header
-          left: 0,
-          right: 0,
-          child: Center(
-            child: _DirectionalChevronOverlay(
-              status: _distanceStatus,
-              color: _getStatusColor(),
-            ),
-          ),
-        ),
-
-        // Ethereal light halo - positioned below header
-        Positioned(
-          top: 100, // Below the header
-          left: 0,
-          right: 0,
-          child: Center(
-            child: _EtherealLightHalo(
-              status: _distanceStatus,
-              color: _getStatusColor(),
-              currentDistance: _currentDistance,
-              targetDistance: widget.targetDistanceCm,
-            ),
-          ),
-        ),
-
-        Positioned(
-          bottom: 40,
+          bottom: 20,
           left: 20,
           right: 20,
           child: _GlassHUDCard(
@@ -504,133 +480,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
   }
 }
 
-class _DirectionalChevronOverlay extends StatefulWidget {
-  final DistanceStatus status;
-  final Color color;
-
-  const _DirectionalChevronOverlay({required this.status, required this.color});
-
-  @override
-  State<_DirectionalChevronOverlay> createState() =>
-      _DirectionalChevronOverlayState();
-}
-
-class _DirectionalChevronOverlayState extends State<_DirectionalChevronOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.status == DistanceStatus.optimal ||
-        widget.status == DistanceStatus.noFaceDetected) {
-      return const SizedBox.shrink();
-    }
-    final bool isTooClose = widget.status == DistanceStatus.tooClose;
-
-    return Stack(
-      alignment: Alignment.center,
-      children: List.generate(3, (index) {
-        return AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            double progress = (_controller.value + (index / 3)) % 1.0;
-            double t = isTooClose ? progress : 1.0 - progress;
-            return Transform.scale(
-              scale: 0.5 + (t * 1.5),
-              child: Opacity(
-                opacity: (1.0 - t).clamp(0, 1) * 0.3,
-                child: Container(
-                  width: 300,
-                  height: 360,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(150),
-                    border: Border.all(color: widget.color, width: 2),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      }),
-    );
-  }
-}
-
-class _EtherealLightHalo extends StatelessWidget {
-  final DistanceStatus status;
-  final Color color;
-  final double currentDistance;
-  final double targetDistance;
-
-  const _EtherealLightHalo({
-    required this.status,
-    required this.color,
-    required this.currentDistance,
-    required this.targetDistance,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final detected = status != DistanceStatus.noFaceDetected;
-    final double scale = detected
-        ? (targetDistance / currentDistance.clamp(1, 200)).clamp(0.8, 1.2)
-        : 1.0;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 1200),
-      curve: Curves.easeInOutCubic,
-      width: (detected ? 280 : 260) * scale,
-      height: (detected ? 340 : 320) * scale,
-      decoration: BoxDecoration(
-        shape: BoxShape.rectangle,
-        borderRadius: BorderRadius.circular((detected ? 140 : 130) * scale),
-        border: Border.all(
-          color: color.withValues(alpha: detected ? 0.8 : 0.1),
-          width: detected ? 1.5 : 0.5,
-        ),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (detected)
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(140 * scale),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.1),
-                    blurRadius: 60,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-            ),
-          if (detected && status != DistanceStatus.optimal)
-            Positioned(
-              top: -60,
-              child: _SpatialBadge(status: status, color: color),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
+// ignore: unused_element
 class _SpatialBadge extends StatelessWidget {
   final DistanceStatus status;
   final Color color;
@@ -783,16 +633,22 @@ class _GlassHUDCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(40),
       child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+        filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 70),
           decoration: BoxDecoration(
-            color: AppColors.black.withValues(alpha: 0.65),
+            color: AppColors.black.withValues(
+              alpha: 0.25,
+            ), // Changed from 0.65 to 0.25
             borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: AppColors.white.withValues(alpha: 0.15)),
+            border: Border.all(
+              color: AppColors.white.withValues(alpha: 0.2),
+            ), // Changed from 0.15 to 0.2
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withValues(alpha: 0.3),
+                color: AppColors.black.withValues(
+                  alpha: 0.15,
+                ), // Changed from 0.3 to 0.15
                 blurRadius: 40,
                 offset: const Offset(0, 15),
               ),
@@ -984,12 +840,13 @@ class _GlassHUDCard extends StatelessWidget {
     // percent positive (Too Far) -> Move DOWN
     // percent negative (Too Close) -> Move UP (towards phone)
     final double percent = _getOffsetPercent();
-    final double verticalOffset = 90 + (percent * 70); // Target at 90, range 70
+    final double verticalOffset =
+        120 + (percent * 90); // Changed: Target at 120, range 90
 
     return Column(
       children: [
         SizedBox(
-          height: 200, // Increased for better phone-to-optimal distance
+          height: 260, // Changed from 200 to 260 - increases total space
           width: double.infinity,
           child: Stack(
             alignment: Alignment.center,
@@ -998,7 +855,7 @@ class _GlassHUDCard extends StatelessWidget {
               // 1. Vertical Track Line
               Container(
                 width: 1,
-                height: 170, // Full runway height
+                height: 230, // Changed from 170 to 230 - matches new space
                 color: AppColors.white.withValues(alpha: 0.1),
               ),
 
@@ -1012,9 +869,9 @@ class _GlassHUDCard extends StatelessWidget {
                 ),
               ),
 
-              // 3. TARGET ZONE: Positioned at 90
+              // 3. TARGET ZONE: Positioned at 120
               Positioned(
-                top: 90,
+                top: 120, // Changed from 90 to 120
                 child: Container(
                   width: 50,
                   height: 12,
