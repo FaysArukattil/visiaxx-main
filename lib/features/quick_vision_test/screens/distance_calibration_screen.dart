@@ -1,11 +1,11 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../core/services/tts_service.dart';
-import '../../../core/utils/distance_helper.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
 
@@ -439,8 +439,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // ✅ FIX: Camera preview with proper error handling and fallback
-        // ✅ ENHANCED: Better camera preview rendering
+        // 1. Immersive Camera Preview
         if (_cameraController != null && _cameraController!.value.isInitialized)
           Positioned.fill(
             child: OverflowBox(
@@ -454,367 +453,621 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                 ),
               ),
             ),
-          )
-        else
-          // ✅ ENHANCED: Better loading state
-          Container(
-            color: AppColors.black87, // Dark but not pure black
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ✅ Add animated loading indicator
-                  const EyeLoader(size: 60),
-                  const SizedBox(height: 20),
-                  Text(
-                    _hasError ? 'Camera not available' : 'Starting camera...',
-                    style: TextStyle(
-                      color: _hasError ? AppColors.error : AppColors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _hasError
-                        ? 'Please allow camera permission'
-                        : 'This may take a few seconds',
-                    style: TextStyle(color: AppColors.white70, fontSize: 12),
-                  ),
-                  if (_hasError) ...[
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: _initializeCamera,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Try Again'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                      ),
-                    ),
-                  ],
+          ),
+
+        // 2. Cinematic Deep Vignette
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.2,
+                colors: [
+                  Colors.transparent,
+                  AppColors.black.withValues(alpha: 0.8),
                 ],
               ),
             ),
           ),
-        // Overlay gradient (top)
+        ),
+
+        // 3. Directional Guidance (Spatial Layer)
+        Center(
+          child: _DirectionalChevronOverlay(
+            status: _distanceStatus,
+            color: _getStatusColor(),
+          ),
+        ),
+
+        // 4. Central Ethereal Halo (Core Alignment)
+        Center(
+          child: _EtherealLightHalo(
+            status: _distanceStatus,
+            color: _getStatusColor(),
+            currentDistance: _currentDistance,
+            targetDistance: widget.targetDistanceCm,
+          ),
+        ),
+
+        // 5. Floating Precision HUD
+        Positioned(
+          bottom: 40,
+          left: 20,
+          right: 20,
+          child: _GlassHUDCard(
+            status: _distanceStatus,
+            currentDistance: _currentDistance,
+            targetDistance: widget.targetDistanceCm,
+            statusColor: _getStatusColor(),
+            stableProgress: _stableReadingsCount / _requiredStableReadings,
+            isStable: _isDistanceStable,
+            onContinue: _onContinuePressed,
+            onSkip: _onSkipPressed,
+          ),
+        ),
+
+        // 6. Minimal Instrument Header
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          height: 200,
           child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.black.withValues(alpha: 0.7),
-                  AppColors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Overlay gradient (bottom)
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 300,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  AppColors.black.withValues(alpha: 0.85),
-                  AppColors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Face guide frame - centered and responsive
-        Center(
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.6,
-            height: MediaQuery.of(context).size.width * 0.75,
-            constraints: const BoxConstraints(maxWidth: 280, maxHeight: 350),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: _getStatusColor().withValues(alpha: 0.6),
-                width: 3,
-              ),
-              borderRadius: BorderRadius.circular(140),
-            ),
-          ),
-        ),
-
-        // Content overlay
-        Positioned.fill(
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        _distanceService.stopMonitoring();
-                        Navigator.of(context).pop();
-                      },
-                      icon: const Icon(Icons.close, color: AppColors.white),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Distance Calibration',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: _showExitConfirmation,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.white.withValues(alpha: 0.05),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.white.withValues(alpha: 0.1),
                       ),
                     ),
-                    const SizedBox(width: 48),
-                  ],
-                ),
-              ),
-
-              const Spacer(),
-
-              // Distance display
-              _buildDistanceDisplay(),
-              const SizedBox(height: 12),
-
-              // Guidance message
-              _buildGuidanceMessage(),
-              const SizedBox(height: 24),
-
-              // Progress indicator
-              _buildProgressIndicator(),
-              const SizedBox(height: 32),
-
-              // Action buttons
-              _buildActionButtons(),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDistanceDisplay() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      decoration: BoxDecoration(
-        color: AppColors.black.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        children: [
-          Text(
-            DistanceHelper.isFaceDetected(_distanceStatus)
-                ? '${_currentDistance.toStringAsFixed(0)} cm'
-                : '--',
-            style: TextStyle(
-              fontSize: 56,
-              fontWeight: FontWeight.bold,
-              color: _getStatusColor(),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            (widget.minDistanceCm != null || widget.maxDistanceCm != null)
-                ? 'Target Range: ${(widget.minDistanceCm ?? (widget.targetDistanceCm - widget.toleranceCm)).toInt()}-${(widget.maxDistanceCm ?? (widget.targetDistanceCm + widget.toleranceCm)).toInt()} cm'
-                : 'Target: ${widget.targetDistanceCm.toInt()} cm (±${widget.toleranceCm.toInt()} cm)',
-            style: TextStyle(
-              color: AppColors.white.withValues(alpha: 0.6),
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGuidanceMessage() {
-    final message = _getGuidanceMessage();
-    final icon = _getGuidanceIcon();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      decoration: BoxDecoration(
-        color: _getStatusColor().withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: _getStatusColor(), width: 2),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: _getStatusColor(), size: 24),
-          const SizedBox(width: 12),
-          Text(
-            message,
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressIndicator() {
-    final progress = _distanceStatus == DistanceStatus.optimal
-        ? _stableReadingsCount / _requiredStableReadings
-        : 0.0;
-
-    return Column(
-      children: [
-        Text(
-          _isDistanceStable
-              ? 'Distance locked! Auto-continuing...'
-              : _distanceStatus == DistanceStatus.optimal
-              ? 'Hold still...'
-              : 'Adjust your position',
-          style: TextStyle(
-            color: AppColors.white.withValues(alpha: 0.8),
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: 200,
-          height: 6,
-          decoration: BoxDecoration(
-            color: AppColors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: progress.clamp(0.0, 1.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: _isDistanceStable
-                    ? AppColors.success
-                    : AppColors.warning,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isDistanceStable ? _onContinuePressed : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                disabledBackgroundColor: AppColors.textTertiary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _isDistanceStable ? Icons.check_circle : Icons.lock,
-                    color: AppColors.white,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isDistanceStable ? 'Continue to Test' : 'Adjust Distance',
-                    style: const TextStyle(
+                    child: const Icon(
+                      Icons.close,
                       color: AppColors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      size: 20,
                     ),
                   ),
-                ],
-              ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'OPTICAL CALIBRATION',
+                      style: TextStyle(
+                        color: AppColors.white.withValues(alpha: 0.8),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(height: 2, width: 20, color: AppColors.primary),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: _onSkipPressed,
-            child: Text(
-              'Skip Distance Calibration',
-              style: TextStyle(color: AppColors.white.withValues(alpha: 0.7)),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Color _getStatusColor() {
     switch (_distanceStatus) {
       case DistanceStatus.optimal:
-        return _isDistanceStable ? AppColors.success : AppColors.successLight;
+        return AppColors.success;
       case DistanceStatus.tooClose:
         return AppColors.error;
       case DistanceStatus.tooFar:
         return AppColors.warning;
       case DistanceStatus.noFaceDetected:
-        return AppColors.white54;
+        return AppColors.white.withValues(alpha: 0.2);
       case DistanceStatus.faceDetectedNoDistance:
-        return AppColors.successLight; // Face visible, using cached distance
+        return AppColors.successLight;
     }
+  }
+}
+
+/// Cinematic Directional Chevrons
+class _DirectionalChevronOverlay extends StatefulWidget {
+  final DistanceStatus status;
+  final Color color;
+
+  const _DirectionalChevronOverlay({required this.status, required this.color});
+
+  @override
+  State<_DirectionalChevronOverlay> createState() =>
+      _DirectionalChevronOverlayState();
+}
+
+class _DirectionalChevronOverlayState extends State<_DirectionalChevronOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.status == DistanceStatus.optimal ||
+        widget.status == DistanceStatus.noFaceDetected) {
+      return const SizedBox.shrink();
+    }
+
+    final bool isTooClose = widget.status == DistanceStatus.tooClose;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: List.generate(3, (index) {
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            double progress = (_controller.value + (index / 3)) % 1.0;
+            // Reverse direction if too close (pointing away)
+            double t = isTooClose ? progress : 1.0 - progress;
+
+            return Transform.scale(
+              scale: 0.5 + (t * 1.5),
+              child: Opacity(
+                opacity: (1.0 - t).clamp(0, 1) * 0.3,
+                child: Container(
+                  width: 300,
+                  height: 360,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(150),
+                    border: Border.all(color: widget.color, width: 2),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+}
+
+/// Ultra-Minimal Ethereal Light Halo with Depth Pulsing
+class _EtherealLightHalo extends StatelessWidget {
+  final DistanceStatus status;
+  final Color color;
+  final double currentDistance;
+  final double targetDistance;
+
+  const _EtherealLightHalo({
+    required this.status,
+    required this.color,
+    required this.currentDistance,
+    required this.targetDistance,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final detected = status != DistanceStatus.noFaceDetected;
+    // Scale Halo based on distance (closer = bigger)
+    final double scale = detected
+        ? (targetDistance / currentDistance.clamp(1, 200)).clamp(0.8, 1.2)
+        : 1.0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 1200),
+      curve: Curves.easeInOutCubic,
+      width: (detected ? 280 : 260) * scale,
+      height: (detected ? 340 : 320) * scale,
+      decoration: BoxDecoration(
+        shape: BoxShape.rectangle,
+        borderRadius: BorderRadius.circular((detected ? 140 : 130) * scale),
+        border: Border.all(
+          color: color.withValues(alpha: detected ? 0.8 : 0.1),
+          width: detected ? 1.5 : 0.5,
+        ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // High-Reflectivity Glow
+          if (detected)
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(140 * scale),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.1),
+                    blurRadius: 60,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+            ),
+
+          // Spatial Status Badge
+          if (detected && status != DistanceStatus.optimal)
+            Positioned(
+              top: -60,
+              child: _SpatialBadge(status: status, color: color),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Professional Spatial Status Badge
+class _SpatialBadge extends StatelessWidget {
+  final DistanceStatus status;
+  final Color color;
+
+  const _SpatialBadge({required this.status, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    String label = '';
+    IconData icon = Icons.info_outline;
+
+    if (status == DistanceStatus.tooClose) {
+      label = 'MOVE BACK ↓';
+      icon = Icons.arrow_downward;
+    } else if (status == DistanceStatus.tooFar) {
+      label = 'MOVE CLOSER ↑';
+      icon = Icons.arrow_upward;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Glassmorphic HUD Card with Precision Indicator
+class _GlassHUDCard extends StatelessWidget {
+  final DistanceStatus status;
+  final double currentDistance;
+  final double targetDistance;
+  final Color statusColor;
+  final double stableProgress;
+  final bool isStable;
+  final VoidCallback onContinue;
+  final VoidCallback onSkip;
+
+  const _GlassHUDCard({
+    required this.status,
+    required this.currentDistance,
+    required this.targetDistance,
+    required this.statusColor,
+    required this.stableProgress,
+    required this.isStable,
+    required this.onContinue,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final message = _getGuidanceMessage();
+    final detected = status != DistanceStatus.noFaceDetected;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(36),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: AppColors.black.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(36),
+            border: Border.all(color: AppColors.white.withValues(alpha: 0.15)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withValues(alpha: 0.2),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. Guidance System
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    child: Text(
+                      message,
+                      key: ValueKey(message),
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // 2. Magnetic Precision Indicator (Zone Docking)
+              _buildMagneticIndicator(detected),
+
+              const SizedBox(height: 32),
+
+              // 3. Locking Signal
+              if (detected && status == DistanceStatus.optimal) ...[
+                Column(
+                  children: [
+                    Text(
+                      'STABILIZING SIGNAL...',
+                      style: TextStyle(
+                        color: statusColor.withValues(alpha: 0.4),
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: stableProgress,
+                        minHeight: 3,
+                        backgroundColor: AppColors.white.withValues(
+                          alpha: 0.03,
+                        ),
+                        valueColor: AlwaysStoppedAnimation(statusColor),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // 4. Primary Command
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isStable ? onContinue : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isStable
+                        ? statusColor
+                        : AppColors.white.withValues(alpha: 0.05),
+                    foregroundColor: AppColors.white,
+                    disabledBackgroundColor: AppColors.white.withValues(
+                      alpha: 0.05,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 22),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    isStable ? 'START EXAMINATION ✓' : 'CALIBRATING POSITION',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 3,
+                      fontSize: 12,
+                      color: isStable
+                          ? AppColors.white
+                          : AppColors.white.withValues(alpha: 0.2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: onSkip,
+                child: Text(
+                  'BYPASS CALIBRATION',
+                  style: TextStyle(
+                    color: AppColors.white.withValues(alpha: 0.3),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMagneticIndicator(bool detected) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            // Subdued Trace Line
+            Container(
+              height: 1,
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              color: AppColors.white.withValues(alpha: 0.08),
+            ),
+
+            // Target Zone (The "Portion")
+            Container(
+              width: 50, // Optimal Zone Portion
+              height: 12,
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AppColors.success.withValues(alpha: 0.25),
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: Container(
+                  width: 2,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            ),
+
+            // Magnetic Core (Gliding Capsule)
+            TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 1500),
+              curve: Curves.easeInOutCubic,
+              tween: Tween<double>(begin: 0, end: _getOffsetPercent()),
+              builder: (context, percent, child) {
+                return FractionallySizedBox(
+                  widthFactor: 1.0,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Transform.translate(
+                        offset: Offset(percent * 140, 0),
+                        child: Container(
+                          width: 32,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            borderRadius: BorderRadius.circular(3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: statusColor.withValues(alpha: 0.4),
+                                blurRadius: 15,
+                                spreadRadius: -2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 1200),
+              curve: Curves.easeInOutCubic,
+              tween: Tween<double>(
+                begin: targetDistance,
+                end: detected ? currentDistance : targetDistance + 15,
+              ),
+              builder: (context, val, child) {
+                return Text(
+                  detected ? val.toStringAsFixed(0) : '--',
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 54,
+                    fontWeight: FontWeight.w900,
+                    fontFeatures: const [ui.FontFeature.tabularFigures()],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'CM',
+              style: TextStyle(
+                color: statusColor.withValues(alpha: 0.5),
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 3,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  double _getOffsetPercent() {
+    final diff = currentDistance - targetDistance;
+    // Higher sensitivity for tighter docking
+    return (diff / 20).clamp(-1.0, 1.0);
   }
 
   String _getGuidanceMessage() {
-    if (_isDistanceStable) {
-      return 'Perfect! Distance locked';
-    }
+    if (isStable) return 'POSITION SECURED ✓';
 
-    switch (_distanceStatus) {
+    switch (status) {
       case DistanceStatus.optimal:
-        return 'Hold still...';
+        return 'HOLD STEADY';
       case DistanceStatus.tooClose:
-        return 'Move back';
+        return 'MOVE BACK ↓';
       case DistanceStatus.tooFar:
-        return 'Move closer';
+        return 'MOVE CLOSER ↑';
       case DistanceStatus.noFaceDetected:
-        return 'Distance search active';
+        return 'ALIGN YOUR FACE';
       case DistanceStatus.faceDetectedNoDistance:
-        return 'Using last distance';
-    }
-  }
-
-  IconData _getGuidanceIcon() {
-    if (_isDistanceStable) {
-      return Icons.check_circle;
-    }
-
-    switch (_distanceStatus) {
-      case DistanceStatus.optimal:
-        return Icons.hourglass_empty;
-      case DistanceStatus.tooClose:
-        return Icons.arrow_back;
-      case DistanceStatus.tooFar:
-        return Icons.arrow_forward;
-      case DistanceStatus.noFaceDetected:
-        return Icons.face;
-      case DistanceStatus.faceDetectedNoDistance:
-        return Icons.visibility; // Eye icon - face detected but partial
+        return 'INITIALIZING...';
     }
   }
 }
