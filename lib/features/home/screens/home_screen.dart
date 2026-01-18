@@ -200,20 +200,29 @@ class _HomeScreenState extends State<HomeScreen> {
           SafeArea(
             child: _isLoading
                 ? const Center(child: EyeLoader.fullScreen())
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(),
-                        const SizedBox(height: 16),
-                        _buildCarousel(),
-                        const SizedBox(height: 12),
-                        _buildCarouselIndicators(),
-                        const SizedBox(height: 24),
-                        _buildServicesGrid(),
-                        const SizedBox(height: 100), // Space for bottom nav
-                      ],
-                    ),
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildHeader(),
+                              const SizedBox(height: 16),
+                              _buildCarousel(),
+                              const SizedBox(height: 12),
+                              _buildCarouselIndicators(),
+                              SizedBox(height: constraints.maxHeight * 0.018),
+                              _buildServicesGrid(constraints),
+                              const SizedBox(height: 80),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
           ),
           if (_isConsultationLoading)
@@ -631,7 +640,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildServicesGrid() {
+  Widget _buildServicesGrid(BoxConstraints constraints) {
+    final screenHeight = constraints.maxHeight;
+
+    // Determine if it's a small screen
+    bool isSmallScreen = screenHeight < 700;
+    final cardSpacing = isSmallScreen ? 10.0 : 12.0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -643,26 +658,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.flash_on_rounded,
                   title: 'Quick Test',
                   onTap: () => Navigator.pushNamed(context, '/quick-test'),
+                  height: isSmallScreen ? 95 : 105,
                 ),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: cardSpacing),
               Expanded(
                 child: _CompactServiceCard(
                   icon: Icons.medical_services_rounded,
                   title: 'Full Eye Exam',
                   onTap: () =>
                       Navigator.pushNamed(context, '/comprehensive-test'),
+                  height: isSmallScreen ? 95 : 105,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: cardSpacing),
           _WideServiceCard(
             icon: Icons.analytics_rounded,
             title: 'My Results',
             onTap: () => Navigator.pushNamed(context, '/my-results'),
+            height: isSmallScreen ? 60 : 68,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: cardSpacing),
           Row(
             children: [
               Expanded(
@@ -680,14 +698,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     }
                   },
+                  height: isSmallScreen ? 95 : 105,
                 ),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: cardSpacing),
               Expanded(
                 child: _CompactServiceCard(
                   icon: Icons.spa_rounded,
                   title: 'Eye Care Tips',
                   onTap: () => Navigator.pushNamed(context, '/eye-care-tips'),
+                  height: isSmallScreen ? 95 : 105,
                 ),
               ),
             ],
@@ -702,11 +722,13 @@ class _CompactServiceCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
+  final double height;
 
   const _CompactServiceCard({
     required this.icon,
     required this.title,
     required this.onTap,
+    this.height = 105,
   });
 
   @override
@@ -715,7 +737,7 @@ class _CompactServiceCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(20),
         splashColor: AppColors.primary.withOpacity(0.1),
         highlightColor: AppColors.primary.withOpacity(0.05),
         child: Ink(
@@ -728,44 +750,44 @@ class _CompactServiceCard extends StatelessWidget {
                 AppColors.primaryLight.withOpacity(0.05),
               ],
             ),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: AppColors.primary.withOpacity(0.15),
-              width: 1.5,
+              width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.06),
-                blurRadius: 20,
+                color: AppColors.primary.withOpacity(0.05),
+                blurRadius: 12,
                 spreadRadius: 0,
-                offset: const Offset(0, 8),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Container(
-            height: 130,
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            height: height,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: AppColors.background,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: AppColors.primary, size: 28),
+                  child: Icon(icon, color: AppColors.primary, size: 24),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Text(
                   title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 13.5,
+                    fontSize: 12,
                     color: AppColors.primary,
-                    height: 1.2,
+                    height: 1.1,
                     letterSpacing: -0.2,
                   ),
                   maxLines: 2,
@@ -784,11 +806,13 @@ class _WideServiceCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
+  final double height;
 
   const _WideServiceCard({
     required this.icon,
     required this.title,
     required this.onTap,
+    this.height = 68,
   });
 
   @override
@@ -797,7 +821,7 @@ class _WideServiceCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(20),
         splashColor: AppColors.primary.withOpacity(0.1),
         highlightColor: AppColors.primary.withOpacity(0.05),
         child: Ink(
@@ -810,55 +834,55 @@ class _WideServiceCard extends StatelessWidget {
                 AppColors.primaryLight.withOpacity(0.05),
               ],
             ),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: AppColors.primary.withOpacity(0.15),
-              width: 1.5,
+              width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.06),
-                blurRadius: 20,
+                color: AppColors.primary.withOpacity(0.05),
+                blurRadius: 12,
                 spreadRadius: 0,
-                offset: const Offset(0, 8),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Container(
-            height: 80,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            height: height,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: AppColors.background,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: AppColors.primary, size: 26),
+                  child: Icon(icon, color: AppColors.primary, size: 24),
                 ),
-                const SizedBox(width: 18),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     title,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 17,
+                      fontSize: 15,
                       color: AppColors.primary,
                       letterSpacing: -0.3,
                     ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.arrow_forward_rounded,
-                    size: 20,
+                    size: 18,
                     color: AppColors.primary,
                   ),
                 ),
