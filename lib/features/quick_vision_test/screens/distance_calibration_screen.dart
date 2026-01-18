@@ -926,7 +926,12 @@ class _GlassHUDCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 32),
+
+              // 1.5 Universal Spatial Illustration
+              _SpatialGuidanceVisual(status: status, color: statusColor),
+
+              const SizedBox(height: 16),
 
               // 2. Magnetic Precision Indicator (Zone Docking)
               _buildMagneticIndicator(detected),
@@ -1170,5 +1175,178 @@ class _GlassHUDCard extends StatelessWidget {
       case DistanceStatus.faceDetectedNoDistance:
         return 'INITIALIZING...';
     }
+  }
+}
+
+/// Universal Spatial Illustration (Skeuomorphic Guidance)
+class _SpatialGuidanceVisual extends StatefulWidget {
+  final DistanceStatus status;
+  final Color color;
+
+  const _SpatialGuidanceVisual({required this.status, required this.color});
+
+  @override
+  State<_SpatialGuidanceVisual> createState() => _SpatialGuidanceVisualState();
+}
+
+class _SpatialGuidanceVisualState extends State<_SpatialGuidanceVisual>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _movement;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+
+    _movement = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 50,
+      ),
+    ]).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isTooClose = widget.status == DistanceStatus.tooClose;
+    final bool isTooFar = widget.status == DistanceStatus.tooFar;
+
+    if (!isTooClose && !isTooFar) return const SizedBox.shrink();
+
+    return Container(
+      height: 80,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: AnimatedBuilder(
+        animation: _movement,
+        builder: (context, child) {
+          // Calculate positions based on status
+          // Too Close: Move person away from phone
+          // Too Far: Move person towards phone
+          double personOffset;
+          if (isTooClose) {
+            // person is at 20px (close), moves to 100px (away)
+            personOffset = 20 + (_movement.value * 80);
+          } else {
+            // person is at 100px (away), moves to 20px (close)
+            personOffset = 100 - (_movement.value * 80);
+          }
+
+          return Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              // 1. Mobile Phone Silhouette
+              Container(
+                width: 28,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: AppColors.white.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Container(
+                    width: 12,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: AppColors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 2. Connecting Arrow (Floating)
+              Positioned(
+                left: 36,
+                right: 0,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              widget.color.withValues(alpha: 0.0),
+                              widget.color.withValues(alpha: 0.4),
+                              widget.color.withValues(alpha: 0.0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 3. Command Arrow (Pulsing)
+              Positioned(
+                left: isTooClose ? personOffset - 20 : personOffset + 20,
+                child: Icon(
+                  isTooClose ? Icons.arrow_right_alt : Icons.keyboard_backspace,
+                  color: widget.color.withValues(alpha: 0.6),
+                  size: 20,
+                ),
+              ),
+
+              // 4. Person Silhouette
+              Positioned(
+                left: personOffset,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Head
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: widget.color, width: 2),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    // Body (shoulders)
+                    Container(
+                      width: 24,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
+                        ),
+                        border: Border.all(color: widget.color, width: 2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
