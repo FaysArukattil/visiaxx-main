@@ -393,19 +393,31 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
         ),
 
-        Center(
-          child: _DirectionalChevronOverlay(
-            status: _distanceStatus,
-            color: _getStatusColor(),
+        // Chevron overlay - positioned below header
+        Positioned(
+          top: 100, // Below the header
+          left: 0,
+          right: 0,
+          child: Center(
+            child: _DirectionalChevronOverlay(
+              status: _distanceStatus,
+              color: _getStatusColor(),
+            ),
           ),
         ),
 
-        Center(
-          child: _EtherealLightHalo(
-            status: _distanceStatus,
-            color: _getStatusColor(),
-            currentDistance: _currentDistance,
-            targetDistance: widget.targetDistanceCm,
+        // Ethereal light halo - positioned below header
+        Positioned(
+          top: 100, // Below the header
+          left: 0,
+          right: 0,
+          child: Center(
+            child: _EtherealLightHalo(
+              status: _distanceStatus,
+              color: _getStatusColor(),
+              currentDistance: _currentDistance,
+              targetDistance: widget.targetDistanceCm,
+            ),
           ),
         ),
 
@@ -972,12 +984,13 @@ class _GlassHUDCard extends StatelessWidget {
     // percent positive (Too Far) -> Move DOWN
     // percent negative (Too Close) -> Move UP (towards phone)
     final double percent = _getOffsetPercent();
-    final double verticalOffset = 105 + (percent * 85);
+    final double verticalOffset =
+        75 + (percent * 60); // Reduced from 105 + (percent * 85)
 
     return Column(
       children: [
         SizedBox(
-          height: 240, // Vertical runway
+          height: 180, // Reduced from 240
           width: double.infinity,
           child: Stack(
             alignment: Alignment.center,
@@ -986,7 +999,7 @@ class _GlassHUDCard extends StatelessWidget {
               // 1. Vertical Track Line (Dashed-feel)
               Container(
                 width: 1,
-                height: 200,
+                height: 150, // Reduced from 200
                 color: AppColors.white.withValues(alpha: 0.1),
               ),
 
@@ -996,19 +1009,19 @@ class _GlassHUDCard extends StatelessWidget {
                 child: Icon(
                   Icons.phone_iphone_rounded,
                   color: AppColors.white.withValues(alpha: 0.35),
-                  size: 38, // Enlarged
+                  size: 32, // Slightly reduced from 38
                 ),
               ),
 
               // 3. TARGET ZONE: Centered
               Positioned(
-                top: 105,
+                top: 75, // Reduced from 105
                 child: Container(
-                  width: 65,
-                  height: 16,
+                  width: 55, // Slightly reduced from 65
+                  height: 14, // Slightly reduced from 16
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(7),
                     border: Border.all(
                       color: AppColors.success.withValues(alpha: 0.3),
                       width: 2,
@@ -1022,7 +1035,7 @@ class _GlassHUDCard extends StatelessWidget {
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOutCubic,
-                top: verticalOffset - 25, // Centering human
+                top: verticalOffset - 20, // Adjusted centering
                 child: _DualArrowGlider(
                   status: status,
                   statusColor: statusColor,
@@ -1031,8 +1044,7 @@ class _GlassHUDCard extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 36),
-
+        const SizedBox(height: 24), // Reduced from 36
         // CM Display - Direct value display like old code
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
