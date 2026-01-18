@@ -203,23 +203,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 : LayoutBuilder(
                     builder: (context, constraints) {
                       return SingleChildScrollView(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildHeader(),
-                              const SizedBox(height: 16),
-                              _buildCarousel(),
-                              const SizedBox(height: 12),
-                              _buildCarouselIndicators(),
-                              SizedBox(height: constraints.maxHeight * 0.018),
-                              _buildServicesGrid(constraints),
-                              const SizedBox(height: 80),
-                            ],
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeader(constraints),
+                            SizedBox(height: constraints.maxHeight * 0.015),
+                            _buildCarousel(constraints),
+                            SizedBox(height: constraints.maxHeight * 0.012),
+                            _buildCarouselIndicators(),
+                            SizedBox(height: constraints.maxHeight * 0.02),
+                            _buildServicesGrid(constraints),
+                            SizedBox(height: constraints.maxHeight * 0.02),
+                          ],
                         ),
                       );
                     },
@@ -237,24 +232,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BoxConstraints constraints) {
     final selectedLang = _languages.firstWhere(
       (l) => l['name'] == _selectedLanguage,
       orElse: () => _languages.first,
     );
 
+    final horizontalPadding = constraints.maxWidth * 0.045;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Dynamic logo sizing based on screen dimensions
+    final logoWidth = (screenWidth * 0.28).clamp(100.0, 140.0);
+    final logoHeight = (screenHeight * 0.06).clamp(48.0, 65.0);
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 8, horizontalPadding, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: Logo + Language + Profile (combined section)
           Row(
             children: [
-              // Logo
               Container(
-                width: 100,
-                height: 48,
+                width: logoWidth,
+                height: logoHeight,
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -269,22 +270,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
-                    padding: const EdgeInsets.all(5),
+                    padding: EdgeInsets.all(logoHeight * 0.1),
                     child: Image.asset(
                       'assets/images/icons/app_logo.png',
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.remove_red_eye,
+                          color: AppColors.primary,
+                        );
+                      },
                     ),
                   ),
                 ),
               ),
               const Spacer(),
-              // Language selector
               GestureDetector(
                 onTap: _showLanguageSelector,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 7,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.025,
+                    vertical: screenHeight * 0.008,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.white,
@@ -294,23 +300,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.language,
-                        size: 16,
+                        size: (screenWidth * 0.04).clamp(14.0, 18.0),
                         color: AppColors.textSecondary,
                       ),
-                      const SizedBox(width: 5),
+                      SizedBox(width: screenWidth * 0.012),
                       Text(
                         selectedLang['code']!.toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                          fontSize: (screenWidth * 0.03).clamp(11.0, 13.0),
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.keyboard_arrow_down,
-                        size: 16,
+                        size: (screenWidth * 0.04).clamp(14.0, 18.0),
                         color: AppColors.textSecondary,
                       ),
                     ],
@@ -319,8 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Greeting section
+          SizedBox(height: screenHeight * 0.015),
           Row(
             children: [
               Expanded(
@@ -329,18 +334,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       'Hello, ${_user?.firstName ?? 'User'} 👋',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22,
-                            color: AppColors.textPrimary,
-                          ),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: (screenWidth * 0.055).clamp(18.0, 24.0),
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: screenHeight * 0.005),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.03,
+                        vertical: screenHeight * 0.006,
                       ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -357,15 +363,22 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icon(
                             Icons.remove_red_eye,
                             color: AppColors.primary,
-                            size: 14,
+                            size: (screenWidth * 0.035).clamp(12.0, 16.0),
                           ),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Your Vision, Our Priority',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                          SizedBox(width: screenWidth * 0.015),
+                          Flexible(
+                            child: Text(
+                              'Your Vision, Our Priority',
+                              style: TextStyle(
+                                fontSize: (screenWidth * 0.028).clamp(
+                                  10.0,
+                                  12.0,
+                                ),
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -381,169 +394,216 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCarousel() {
+  Widget _buildCarousel(BoxConstraints constraints) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final carouselHeight = screenHeight * 0.22;
+    final carouselHeight = (screenHeight * 0.22).clamp(160.0, 220.0);
 
-    return CarouselSlider(
-      options: CarouselOptions(
-        height: carouselHeight > 220
-            ? 220
-            : (carouselHeight < 180 ? 180 : carouselHeight),
-        autoPlay: true,
-        autoPlayInterval: const Duration(seconds: 5),
-        enlargeCenterPage: true,
-        enlargeFactor: 0.1,
-        viewportFraction: 0.92,
-        onPageChanged: (index, reason) =>
-            setState(() => _currentCarouselIndex = index),
+    return SizedBox(
+      width: screenWidth,
+      height: carouselHeight,
+      child: CarouselSlider(
+        options: CarouselOptions(
+          height: carouselHeight,
+          autoPlay: true,
+          autoPlayInterval: const Duration(seconds: 5),
+          enlargeCenterPage: true,
+          enlargeFactor: 0.08,
+          viewportFraction: 0.88,
+          padEnds: true,
+          onPageChanged: (index, reason) =>
+              setState(() => _currentCarouselIndex = index),
+        ),
+        items: _carouselSlides.map((slide) {
+          return Builder(
+            builder: (BuildContext context) {
+              return Container(
+                width: screenWidth * 0.88,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withValues(alpha: .08),
+                      AppColors.primaryLight.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.15),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.08),
+                      blurRadius: 20,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -30,
+                        top: -30,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                AppColors.primary.withOpacity(0.12),
+                                AppColors.primary.withOpacity(0.02),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: -25,
+                        bottom: -25,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                AppColors.primaryLight.withOpacity(0.1),
+                                AppColors.primaryLight.withOpacity(0.02),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(
+                          (screenWidth * 0.035).clamp(12.0, 18.0),
+                        ),
+                        child: slide['hasImages'] as bool
+                            ? _buildSlideWithImages(
+                                slide,
+                                screenWidth,
+                                screenHeight,
+                              )
+                            : _buildSlideWithoutImages(
+                                slide,
+                                screenWidth,
+                                screenHeight,
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        }).toList(),
       ),
-      items: _carouselSlides.map((slide) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary.withValues(alpha: .08),
-                AppColors.primaryLight.withOpacity(0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.15),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.08),
-                blurRadius: 24,
-                spreadRadius: 0,
-                offset: const Offset(0, 10),
+    );
+  }
+
+  Widget _buildSlideWithImages(
+    Map<String, dynamic> slide,
+    double screenWidth,
+    double screenHeight,
+  ) {
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableHeight = cardConstraints.maxHeight;
+        final availableWidth = cardConstraints.maxWidth;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 65,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    slide['heading'] as String,
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: (availableWidth * 0.055).clamp(13.0, 17.0),
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: availableHeight * 0.04),
+                  Text(
+                    slide['content'] as String,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: (availableWidth * 0.032).clamp(9.0, 11.5),
+                      height: 1.35,
+                    ),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: availableHeight * 0.035),
+                  Text(
+                    slide['supportText'] as String,
+                    style: TextStyle(
+                      color: AppColors.primary.withValues(alpha: 0.8),
+                      fontSize: (availableWidth * 0.028).clamp(8.0, 10.0),
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -40,
-                  top: -40,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          AppColors.primary.withOpacity(0.12),
-                          AppColors.primary.withOpacity(0.02),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: -30,
-                  bottom: -30,
-                  child: Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          AppColors.primaryLight.withOpacity(0.1),
-                          AppColors.primaryLight.withOpacity(0.02),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: slide['hasImages'] as bool
-                      ? _buildSlideWithImages(slide)
-                      : _buildSlideWithoutImages(slide),
-                ),
-              ],
             ),
-          ),
+            SizedBox(width: availableWidth * 0.02),
+            Flexible(
+              flex: 35,
+              child: SizedBox(
+                height: availableHeight * 0.85,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: _buildFounderImage(
+                        'assets/images/founder_image_1.png',
+                        availableWidth,
+                        availableHeight,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: _buildFounderImage(
+                        'assets/images/founder_image_2.png',
+                        availableWidth,
+                        availableHeight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         );
-      }).toList(),
+      },
     );
   }
 
-  Widget _buildSlideWithImages(Map<String, dynamic> slide) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                slide['heading'] as String,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                slide['content'] as String,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 10,
-                  height: 1.2,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                slide['supportText'] as String,
-                style: TextStyle(
-                  color: AppColors.primary.withValues(alpha: 0.8),
-                  fontSize: 9,
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 65,
-          height: 140,
-          child: Stack(
-            children: [
-              Positioned(
-                top: 0,
-                left: 0,
-                child: _buildFounderImage('assets/images/founder_image_1.png'),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: _buildFounderImage('assets/images/founder_image_2.png'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFounderImage(String imagePath) {
+  Widget _buildFounderImage(String imagePath, double width, double height) {
     return Container(
-      width: 42,
-      height: 80,
+      width: (width * 0.13).clamp(38.0, 52.0),
+      height: (height * 0.42).clamp(65.0, 90.0),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(10),
@@ -562,11 +622,11 @@ class _HomeScreenState extends State<HomeScreen> {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: AppColors.white.withValues(alpha: 0.2),
+              color: AppColors.primary.withValues(alpha: 0.1),
               child: Icon(
                 Icons.person,
-                color: AppColors.white.withValues(alpha: 0.6),
-                size: 24,
+                color: AppColors.primary.withValues(alpha: 0.6),
+                size: 20,
               ),
             );
           },
@@ -575,65 +635,88 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSlideWithoutImages(Map<String, dynamic> slide) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          slide['heading'] as String,
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          slide['content'] as String,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 11,
-            height: 1.3,
-          ),
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            slide['supportText'] as String,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
+  Widget _buildSlideWithoutImages(
+    Map<String, dynamic> slide,
+    double screenWidth,
+    double screenHeight,
+  ) {
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableWidth = cardConstraints.maxWidth;
+        final availableHeight = cardConstraints.maxHeight;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              slide['heading'] as String,
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: (availableWidth * 0.055).clamp(14.0, 18.0),
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ),
-      ],
+            SizedBox(height: availableHeight * 0.05),
+            Text(
+              slide['content'] as String,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: (availableWidth * 0.038).clamp(10.5, 13.0),
+                height: 1.4,
+              ),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: availableHeight * 0.05),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: availableWidth * 0.03,
+                vertical: availableHeight * 0.025,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                slide['supportText'] as String,
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: (availableWidth * 0.032).clamp(9.0, 11.0),
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildCarouselIndicators() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        _carouselSlides.length,
-        (index) => AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: _currentCarouselIndex == index ? 20 : 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color: _currentCarouselIndex == index
-                ? AppColors.primary
-                : AppColors.divider,
-            borderRadius: BorderRadius.circular(3),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          _carouselSlides.length,
+          (index) => AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: _currentCarouselIndex == index ? 20 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _currentCarouselIndex == index
+                  ? AppColors.primary
+                  : AppColors.divider,
+              borderRadius: BorderRadius.circular(3),
+            ),
           ),
         ),
       ),
@@ -641,52 +724,76 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildServicesGrid(BoxConstraints constraints) {
-    final screenHeight = constraints.maxHeight;
+    final horizontalPadding = constraints.maxWidth * 0.045;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-    // Determine if it's a small screen
-    bool isSmallScreen = screenHeight < 700;
-    final cardSpacing = isSmallScreen ? 10.0 : 12.0;
+    // Calculate available height for grid
+    final usedHeight =
+        (screenHeight * 0.06) + // Header logo height
+        (screenHeight * 0.015) + // Spacing after header
+        (screenHeight * 0.015) + // Greeting height estimate
+        (screenHeight * 0.22).clamp(160.0, 220.0) + // Carousel height
+        (screenHeight * 0.012) + // Spacing after carousel
+        (screenHeight * 0.015) + // Indicators
+        (screenHeight * 0.02) + // Spacing before grid
+        (screenHeight * 0.02); // Spacing after grid
+
+    final availableGridHeight = (screenHeight - usedHeight).clamp(280.0, 500.0);
+
+    // Dynamic spacing and heights based on available grid space
+    final cardSpacing = (availableGridHeight * 0.035).clamp(6.0, 12.0);
+    final compactCardHeight = (availableGridHeight * 0.32).clamp(85.0, 115.0);
+    final wideCardHeight = (availableGridHeight * 0.2).clamp(55.0, 72.0);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
               Expanded(
                 child: _CompactServiceCard(
-                  icon: Icons.flash_on_rounded,
+                  icon: Icons.timer_outlined,
                   title: 'Quick Test',
+                  subtitle: 'rapid tests',
                   onTap: () => Navigator.pushNamed(context, '/quick-test'),
-                  height: isSmallScreen ? 95 : 105,
+                  height: compactCardHeight,
+                  screenWidth: screenWidth,
                 ),
               ),
               SizedBox(width: cardSpacing),
               Expanded(
                 child: _CompactServiceCard(
-                  icon: Icons.medical_services_rounded,
+                  icon: Icons.health_and_safety_outlined,
                   title: 'Full Eye Exam',
+                  subtitle: 'Comprehensive',
                   onTap: () =>
                       Navigator.pushNamed(context, '/comprehensive-test'),
-                  height: isSmallScreen ? 95 : 105,
+                  height: compactCardHeight,
+                  screenWidth: screenWidth,
                 ),
               ),
             ],
           ),
           SizedBox(height: cardSpacing),
           _WideServiceCard(
-            icon: Icons.analytics_rounded,
+            icon: Icons.assessment_outlined,
             title: 'My Results',
+            subtitle: 'View & download reports',
             onTap: () => Navigator.pushNamed(context, '/my-results'),
-            height: isSmallScreen ? 60 : 68,
+            height: wideCardHeight,
+            screenWidth: screenWidth,
           ),
           SizedBox(height: cardSpacing),
           Row(
             children: [
               Expanded(
                 child: _CompactServiceCard(
-                  icon: Icons.video_call_rounded,
+                  icon: Icons.video_call_outlined,
                   title: 'Consultation',
+                  subtitle: 'Talk to doctor',
                   onTap: () async {
                     setState(() => _isConsultationLoading = true);
                     await Future.delayed(const Duration(seconds: 4));
@@ -698,16 +805,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     }
                   },
-                  height: isSmallScreen ? 95 : 105,
+                  height: compactCardHeight,
+                  screenWidth: screenWidth,
                 ),
               ),
               SizedBox(width: cardSpacing),
               Expanded(
                 child: _CompactServiceCard(
-                  icon: Icons.spa_rounded,
+                  icon: Icons.tips_and_updates_outlined,
                   title: 'Eye Care Tips',
+                  subtitle: 'Daily care guide',
                   onTap: () => Navigator.pushNamed(context, '/eye-care-tips'),
-                  height: isSmallScreen ? 95 : 105,
+                  height: compactCardHeight,
+                  screenWidth: screenWidth,
                 ),
               ),
             ],
@@ -721,83 +831,120 @@ class _HomeScreenState extends State<HomeScreen> {
 class _CompactServiceCard extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String subtitle;
   final VoidCallback onTap;
   final double height;
+  final double screenWidth;
 
   const _CompactServiceCard({
     required this.icon,
     required this.title,
+    required this.subtitle,
     required this.onTap,
-    this.height = 105,
+    required this.height,
+    required this.screenWidth,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        splashColor: AppColors.primary.withOpacity(0.1),
-        highlightColor: AppColors.primary.withOpacity(0.05),
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary.withOpacity(0.08),
-                AppColors.primaryLight.withOpacity(0.05),
-              ],
-            ),
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableWidth = cardConstraints.maxWidth;
+        final iconSize = (availableWidth * 0.12).clamp(20.0, 28.0);
+        final titleFontSize = (availableWidth * 0.065).clamp(11.5, 15.0);
+        final subtitleFontSize = (availableWidth * 0.048).clamp(8.5, 11.0);
+        final cardPadding = (availableWidth * 0.05).clamp(8.0, 12.0);
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.15),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.05),
-                blurRadius: 12,
-                spreadRadius: 0,
-                offset: const Offset(0, 4),
+            splashColor: AppColors.primary.withOpacity(0.1),
+            highlightColor: AppColors.primary.withOpacity(0.05),
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withOpacity(0.08),
+                    AppColors.primaryLight.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.15),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.05),
+                    blurRadius: 12,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Container(
-            height: height,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: AppColors.primary, size: 24),
+              child: Container(
+                height: height,
+                padding: EdgeInsets.all(cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: iconSize + 12,
+                      height: iconSize + 12,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: AppColors.primary,
+                        size: iconSize,
+                      ),
+                    ),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: titleFontSize,
+                              color: AppColors.primary,
+                              height: 1.15,
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: subtitleFontSize,
+                              color: AppColors.textSecondary,
+                              height: 1.15,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    color: AppColors.primary,
-                    height: 1.1,
-                    letterSpacing: -0.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -805,92 +952,146 @@ class _CompactServiceCard extends StatelessWidget {
 class _WideServiceCard extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String subtitle;
   final VoidCallback onTap;
   final double height;
+  final double screenWidth;
 
   const _WideServiceCard({
     required this.icon,
     required this.title,
+    required this.subtitle,
     required this.onTap,
-    this.height = 68,
+    required this.height,
+    required this.screenWidth,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        splashColor: AppColors.primary.withOpacity(0.1),
-        highlightColor: AppColors.primary.withOpacity(0.05),
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary.withOpacity(0.08),
-                AppColors.primaryLight.withOpacity(0.05),
-              ],
-            ),
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final iconSize = (cardConstraints.maxWidth * 0.055).clamp(24.0, 30.0);
+        final titleFontSize = (cardConstraints.maxWidth * 0.042).clamp(
+          14.0,
+          17.0,
+        );
+        final subtitleFontSize = (cardConstraints.maxWidth * 0.032).clamp(
+          10.0,
+          12.0,
+        );
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.15),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.05),
-                blurRadius: 12,
-                spreadRadius: 0,
-                offset: const Offset(0, 4),
+            splashColor: AppColors.primary.withOpacity(0.1),
+            highlightColor: AppColors.primary.withOpacity(0.05),
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withOpacity(0.08),
+                    AppColors.primaryLight.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.15),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.05),
+                    blurRadius: 12,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Container(
-            height: height,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: height,
+                padding: EdgeInsets.symmetric(
+                  horizontal: (cardConstraints.maxWidth * 0.04).clamp(
+                    12.0,
+                    18.0,
                   ),
-                  child: Icon(icon, color: AppColors.primary, size: 24),
+                  vertical: 10,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: AppColors.primary,
-                      letterSpacing: -0.3,
+                child: Row(
+                  children: [
+                    Container(
+                      width: iconSize + 14,
+                      height: iconSize + 14,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: AppColors.primary,
+                        size: iconSize,
+                      ),
                     ),
-                  ),
+                    SizedBox(
+                      width: (cardConstraints.maxWidth * 0.03).clamp(8.0, 14.0),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: titleFontSize,
+                              color: AppColors.primary,
+                              letterSpacing: -0.3,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: subtitleFontSize,
+                              color: AppColors.textSecondary,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: (cardConstraints.maxWidth * 0.038).clamp(
+                          16.0,
+                          20.0,
+                        ),
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
