@@ -15,8 +15,7 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen>
-    with SingleTickerProviderStateMixin {
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late final PageController _pageController;
   int _currentIndex = 0;
   double _page = 0;
@@ -77,6 +76,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         : const Center(child: EyeLoader.fullScreen()),
   ];
 
+  // Determine if current page has dark background
+  bool get _isDarkBackground => _currentIndex == 1; // Exercise screen is dark
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -86,206 +88,243 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     return Scaffold(
       extendBody: true,
       backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // PageView with screens
-          PageView(
-            controller: _pageController,
-            physics: const BouncingScrollPhysics(),
-            onPageChanged: (i) {
-              setState(() => _currentIndex = i);
-            },
-            children: _screens,
-          ),
+      body: PageView(
+        controller: _pageController,
+        physics: const BouncingScrollPhysics(),
+        onPageChanged: (i) {
+          setState(() => _currentIndex = i);
+        },
+        children: _screens,
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          height: 68,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _isDarkBackground
+                        ? [
+                            AppColors.white.withOpacity(0.15),
+                            AppColors.white.withOpacity(0.08),
+                          ]
+                        : [
+                            AppColors.black.withOpacity(0.65),
+                            AppColors.black.withOpacity(0.55),
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: _isDarkBackground
+                        ? AppColors.white.withOpacity(0.2)
+                        : AppColors.white.withOpacity(0.15),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withOpacity(0.15),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final totalWidth = constraints.maxWidth;
+                    const itemCount = 3;
+                    final itemWidth = totalWidth / itemCount;
 
-          // Glassmorphic bottom navigation bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.25),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.black.withValues(alpha: 0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, -4),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 8,
-                      ),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final totalWidth = constraints.maxWidth;
-                          const itemCount = 3;
-                          final itemWidth = totalWidth / itemCount;
-                          final indicatorWidth = itemWidth - 12;
+                    final animatedLeft =
+                        (_dragging
+                            ? (_dragIndicatorPage.clamp(0, itemCount - 1) *
+                                  itemWidth)
+                            : (_page.clamp(0, itemCount - 1) * itemWidth)) +
+                        8;
 
-                          final animatedLeft =
-                              (_dragging
-                                  ? (_dragIndicatorPage.clamp(
-                                          0,
-                                          itemCount - 1,
-                                        ) *
-                                        itemWidth)
-                                  : (_page.clamp(0, itemCount - 1) *
-                                        itemWidth)) +
-                              6;
-
-                          return GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onPanStart: (details) {
-                              _dragAccumX = 0;
-                              setState(() {
-                                _dragging = true;
-                                _dragStartPage = _page;
-                                _dragIndicatorPage = _page;
-                              });
-                            },
-                            onPanUpdate: (details) {
-                              _dragAccumX += details.delta.dx;
-                              final deltaPages = _dragAccumX / itemWidth;
-                              final double newPage =
-                                  (_dragStartPage + deltaPages).clamp(
-                                    0.0,
-                                    (itemCount - 1).toDouble(),
-                                  );
-                              setState(() {
-                                _dragIndicatorPage = newPage;
-                              });
-                              if (_pageController.hasClients &&
-                                  _pageController.position.haveDimensions) {
-                                final w =
-                                    _pageController.position.viewportDimension;
-                                _pageController.position.jumpTo(newPage * w);
-                              }
-                            },
-                            onPanEnd: (details) {
-                              final target = _dragIndicatorPage.round();
-                              setState(() {
-                                _dragging = false;
-                              });
-                              _goTo(target);
-                            },
-                            child: SizedBox(
-                              height: 56,
-                              child: Stack(
-                                children: [
-                                  // Animated pill indicator behind icons
-                                  Positioned(
-                                    left: animatedLeft,
-                                    top: 4,
-                                    width: indicatorWidth,
-                                    height: 48,
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 180,
-                                      ),
-                                      curve: Curves.easeOut,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            AppColors.primary.withValues(
-                                              alpha: 0.35,
-                                            ),
-                                            AppColors.primaryLight.withValues(
-                                              alpha: 0.28,
-                                            ),
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        border: Border.all(
-                                          color: AppColors.white.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          width: 1,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.primary.withValues(
-                                              alpha: 0.2,
-                                            ),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-
-                                  // Icons row (equal width slots, strictly centered)
-                                  Row(
-                                    children: [
-                                      SizedBox(
-                                        width: itemWidth,
-                                        child: Center(
-                                          child: _NavIcon(
-                                            icon: Icons.home_rounded,
-                                            outline: Icons.home_outlined,
-
-                                            selected: (_page.round() == 0),
-                                            onTap: () => _goTo(0),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: itemWidth,
-                                        child: Center(
-                                          child: _NavIcon(
-                                            icon: Icons.play_circle_rounded,
-                                            outline: Icons
-                                                .play_circle_outline_rounded,
-                                            selected: (_page.round() == 1),
-                                            onTap: () => _goTo(1),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: itemWidth,
-                                        child: Center(
-                                          child: _NavIcon(
-                                            icon: Icons.person_rounded,
-                                            outline:
-                                                Icons.person_outline_rounded,
-                                            selected: (_page.round() == 2),
-                                            onTap: () => _goTo(2),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                    return GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onPanStart: (details) {
+                        _dragAccumX = 0;
+                        setState(() {
+                          _dragging = true;
+                          _dragStartPage = _page;
+                          _dragIndicatorPage = _page;
+                        });
+                      },
+                      onPanUpdate: (details) {
+                        _dragAccumX += details.delta.dx;
+                        final deltaPages = _dragAccumX / itemWidth;
+                        final double newPage = (_dragStartPage + deltaPages)
+                            .clamp(0.0, (itemCount - 1).toDouble());
+                        setState(() {
+                          _dragIndicatorPage = newPage;
+                        });
+                        if (_pageController.hasClients &&
+                            _pageController.position.haveDimensions) {
+                          final w = _pageController.position.viewportDimension;
+                          _pageController.position.jumpTo(newPage * w);
+                        }
+                      },
+                      onPanEnd: (details) {
+                        final target = _dragIndicatorPage.round();
+                        setState(() {
+                          _dragging = false;
+                        });
+                        _goTo(target);
+                      },
+                      child: Stack(
+                        children: [
+                          // Animated selection indicator (full width)
+                          Positioned(
+                            left: animatedLeft,
+                            top: 8,
+                            width: itemWidth - 16,
+                            height: 52,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOutCubic,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary.withOpacity(0.85),
+                                    AppColors.primaryLight.withOpacity(0.75),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withOpacity(0.4),
+                                    blurRadius: 16,
+                                    spreadRadius: 2,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
                             ),
-                          );
-                        },
+                          ),
+
+                          // Icons row
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: itemWidth,
+                                child: _buildNavIcon(
+                                  icon: Icons.home_rounded,
+                                  index: 0,
+                                ),
+                              ),
+                              SizedBox(
+                                width: itemWidth,
+                                child: _buildNavIcon(
+                                  icon: Icons.play_circle_rounded,
+                                  index: 1,
+                                ),
+                              ),
+                              SizedBox(
+                                width: itemWidth,
+                                child: _buildProfileIcon(index: 2),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavIcon({required IconData icon, required int index}) {
+    final isSelected = (_page.round() == index);
+
+    return InkWell(
+      onTap: () => _goTo(index),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, anim) =>
+                ScaleTransition(scale: anim, child: child),
+            child: Icon(
+              icon,
+              key: ValueKey<bool>(isSelected),
+              size: isSelected ? 30 : 26,
+              color: isSelected
+                  ? AppColors.white
+                  : (_isDarkBackground
+                        ? AppColors.white.withOpacity(0.5)
+                        : AppColors.grey.withOpacity(0.6)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileIcon({required int index}) {
+    final isSelected = (_page.round() == index);
+
+    return InkWell(
+      onTap: () => _goTo(index),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        child: Center(
+          child: _user?.firstName != null
+              ? AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: isSelected ? 32 : 28,
+                  height: isSelected ? 32 : 28,
+                  decoration: ShapeDecoration(
+                    shape: ContinuousRectangleBorder(
+                      borderRadius: BorderRadius.circular(isSelected ? 20 : 18),
+                      side: BorderSide(
+                        color: isSelected
+                            ? AppColors.white
+                            : AppColors.white.withOpacity(0.3),
+                        width: isSelected ? 2.5 : 2,
+                      ),
+                    ),
+                    image: DecorationImage(
+                      image: NetworkImage(_user!.firstName),
+                      fit: BoxFit.cover,
+                    ),
+                    shadows: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.white.withOpacity(0.3),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : null,
+                  ),
+                )
+              : Icon(
+                  Icons.person_rounded,
+                  size: isSelected ? 30 : 26,
+                  color: isSelected
+                      ? AppColors.white
+                      : (_isDarkBackground
+                            ? AppColors.white.withOpacity(0.5)
+                            : AppColors.grey.withOpacity(0.6)),
+                ),
+        ),
       ),
     );
   }
@@ -295,53 +334,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     setState(() => _currentIndex = index);
     _pageController.animateToPage(
       index,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOut,
-    );
-  }
-}
-
-class _NavIcon extends StatelessWidget {
-  final IconData icon;
-  final IconData outline;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _NavIcon({
-    required this.icon,
-    required this.outline,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              transitionBuilder: (child, anim) =>
-                  ScaleTransition(scale: anim, child: child),
-              child: Icon(
-                selected ? icon : outline,
-                key: ValueKey<bool>(selected),
-                size: selected ? 26 : 23,
-                color: selected
-                    ? AppColors.white
-                    : AppColors.white.withValues(alpha: 0.7),
-              ),
-            ),
-            const SizedBox(height: 2),
-          ],
-        ),
-      ),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
     );
   }
 }
