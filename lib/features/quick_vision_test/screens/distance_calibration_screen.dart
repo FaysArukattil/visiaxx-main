@@ -874,61 +874,90 @@ class _GlassHUDCard extends StatelessWidget {
 
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: isStable ? onContinue : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isStable
-                        ? statusColor
-                        : AppColors.white.withValues(alpha: 0.05),
-                    foregroundColor: AppColors.white,
-                    disabledBackgroundColor: AppColors.white.withValues(
-                      alpha: 0.05,
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 22),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          isStable
-                              ? 'START EXAMINATION'
-                              : 'CALIBRATING POSITION',
+                child: Column(
+                  children: [
+                    // Main Action Button / Status Indicator
+                    if (isStable)
+                      ElevatedButton(
+                        onPressed: onContinue,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: statusColor,
+                          foregroundColor: AppColors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 22),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'START EXAMINATION',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(Icons.check_circle_outline, size: 18),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 22),
+                        width: double.infinity,
+                        alignment: Alignment.center,
+                        child: Text(
+                          'CALIBRATING POSITION...',
                           style: TextStyle(
+                            color: AppColors.white.withValues(alpha: 0.2),
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2,
                             fontSize: 14,
-                            color: isStable
-                                ? AppColors.white
-                                : AppColors.white.withValues(alpha: 0.2),
                           ),
                         ),
-                        if (isStable) ...[
-                          const SizedBox(width: 8),
-                          const Icon(Icons.check_circle_outline, size: 18),
-                        ],
-                      ],
+                      ),
+
+                    const SizedBox(height: 16),
+
+                    // Premium Button-style Bypass (No Toggle)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: onSkip,
+                        borderRadius: BorderRadius.circular(24),
+                        child: Container(
+                          width: double.infinity, // Full width button feel
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: AppColors.white.withValues(alpha: 0.1),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'BYPASS CALIBRATION',
+                              style: TextStyle(
+                                color: AppColors.white.withValues(alpha: 0.5),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: onSkip,
-                child: Text(
-                  'BYPASS CALIBRATION',
-                  style: TextStyle(
-                    color: AppColors.white.withValues(alpha: 0.3),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    decoration: TextDecoration.underline,
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -941,102 +970,69 @@ class _GlassHUDCard extends StatelessWidget {
   Widget _buildMagneticIndicator(bool detected) {
     return Column(
       children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              height: 1,
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 40),
-              color: AppColors.white.withValues(alpha: 0.08),
-            ),
-
-            Positioned(
-              left: 0,
-              child: Icon(
-                Icons.phone_iphone_rounded,
-                color: AppColors.white.withValues(alpha: 0.3),
-                size: 24,
+        SizedBox(
+          height: 240, // Vertical runway
+          width: double.infinity,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // 1. Vertical Track Line (Dashed-feel)
+              Container(
+                width: 1,
+                height: 200,
+                color: AppColors.white.withValues(alpha: 0.1),
               ),
-            ),
 
-            Container(
-              width: 60,
-              height: 14,
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(7),
-                border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.25),
-                  width: 1.5,
+              // 2. FIXED REFERENCE: Enlarged Phone (TOP)
+              Positioned(
+                top: 0,
+                child: Icon(
+                  Icons.phone_iphone_rounded,
+                  color: AppColors.white.withValues(alpha: 0.35),
+                  size: 38, // Enlarged
                 ),
               ),
-            ),
 
-            TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 1500),
-              curve: Curves.easeInOutCubic,
-              tween: Tween<double>(begin: 0, end: _getOffsetPercent()),
-              builder: (context, percent, child) {
-                final double horizontalOffset = percent * 100;
-
-                return Transform.translate(
-                  offset: Offset(horizontalOffset, 0),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: statusColor, width: 2),
-                              color: statusColor.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Container(
-                            width: 20,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(6),
-                                topRight: Radius.circular(6),
-                              ),
-                              border: Border.all(color: statusColor, width: 2),
-                              color: statusColor.withValues(alpha: 0.25),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (status == DistanceStatus.tooClose)
-                        Positioned(
-                          right: -24,
-                          child: Icon(
-                            Icons.arrow_right_alt_rounded,
-                            color: statusColor,
-                            size: 18,
-                          ),
-                        ),
-                      if (status == DistanceStatus.tooFar)
-                        Positioned(
-                          left: -24,
-                          child: Icon(
-                            Icons.keyboard_backspace_rounded,
-                            color: statusColor,
-                            size: 18,
-                          ),
-                        ),
-                    ],
+              // 3. TARGET ZONE: Centered
+              Positioned(
+                top: 105,
+                child: Container(
+                  width: 65,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.3),
+                      width: 2,
+                    ),
                   ),
-                );
-              },
-            ),
-          ],
+                ),
+              ),
+
+              // 4. VERTICAL GLIDING USER: Enhanced Silhouette with Dual Arrows
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 400), // Smooth Glide
+                curve: Curves.easeOutCubic,
+                tween: Tween<double>(begin: 0, end: _getOffsetPercent()),
+                builder: (context, percent, child) {
+                  // PERSPECTIVE: Phone is at TOP (0). Target is at 105.
+                  // percent positive (Too Far) -> Move DOWN
+                  // percent negative (Too Close) -> Move UP (towards phone)
+                  final double verticalOffset = 105 + (percent * 85);
+
+                  return Positioned(
+                    top: verticalOffset - 25, // Centering human
+                    child: _DualArrowGlider(
+                      status: status,
+                      statusColor: statusColor,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 36),
 
@@ -1099,5 +1095,129 @@ class _GlassHUDCard extends StatelessWidget {
       case DistanceStatus.faceDetectedNoDistance:
         return 'INITIALIZING...';
     }
+  }
+}
+
+/// Enlarged User Silhouette with Dual Side Animating Arrows
+class _DualArrowGlider extends StatefulWidget {
+  final DistanceStatus status;
+  final Color statusColor;
+
+  const _DualArrowGlider({required this.status, required this.statusColor});
+
+  @override
+  State<_DualArrowGlider> createState() => _DualArrowGliderState();
+}
+
+class _DualArrowGliderState extends State<_DualArrowGlider>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _arrowController;
+  late Animation<double> _arrowSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _arrowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
+
+    _arrowSlide = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 12.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 12.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 50,
+      ),
+    ]).animate(_arrowController);
+  }
+
+  @override
+  void dispose() {
+    _arrowController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        // Enlarged Human Silhouette
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Head
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: widget.statusColor, width: 2.5),
+                color: widget.statusColor.withValues(alpha: 0.2),
+              ),
+            ),
+            const SizedBox(height: 2),
+            // Body
+            Container(
+              width: 38,
+              height: 18,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(10),
+                  topRight: Radius.circular(10),
+                ),
+                border: Border.all(color: widget.statusColor, width: 2.5),
+                color: widget.statusColor.withValues(alpha: 0.2),
+              ),
+            ),
+          ],
+        ),
+
+        // Dual Animating Arrows
+        if (widget.status == DistanceStatus.tooClose) ...[
+          // Move BACK -> Arrows DOWN on both sides
+          _buildAnimatingSideArrow(left: -32, down: true),
+          _buildAnimatingSideArrow(right: -32, down: true),
+        ],
+        if (widget.status == DistanceStatus.tooFar) ...[
+          // Move CLOSER -> Arrows UP on both sides
+          _buildAnimatingSideArrow(left: -32, down: false),
+          _buildAnimatingSideArrow(right: -32, down: false),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAnimatingSideArrow({
+    double? left,
+    double? right,
+    required bool down,
+  }) {
+    return AnimatedBuilder(
+      animation: _arrowSlide,
+      builder: (context, child) {
+        return Positioned(
+          left: left,
+          right: right,
+          top: down ? -8 + _arrowSlide.value : null,
+          bottom: down ? null : -8 + _arrowSlide.value,
+          child: Icon(
+            down ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+            color: widget.statusColor,
+            size: 26,
+          ),
+        );
+      },
+    );
   }
 }
