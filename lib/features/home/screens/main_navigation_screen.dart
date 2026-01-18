@@ -76,8 +76,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         : const Center(child: EyeLoader.fullScreen()),
   ];
 
-  // Determine if current page has dark background
-  bool get _isDarkBackground => _currentIndex == 1; // Exercise screen is dark
+  bool get _isDarkBackground => _currentIndex == 1;
 
   @override
   Widget build(BuildContext context) {
@@ -98,39 +97,40 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          height: 68,
+          margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          height: 70,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(35),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                     colors: _isDarkBackground
                         ? [
-                            AppColors.white.withOpacity(0.15),
-                            AppColors.white.withOpacity(0.08),
+                            AppColors.white.withOpacity(0.18),
+                            AppColors.white.withOpacity(0.12),
                           ]
                         : [
-                            AppColors.black.withOpacity(0.65),
-                            AppColors.black.withOpacity(0.55),
+                            const Color(0xFF1C1C1E).withOpacity(0.75),
+                            const Color(0xFF1C1C1E).withOpacity(0.85),
                           ],
                   ),
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(35),
                   border: Border.all(
                     color: _isDarkBackground
-                        ? AppColors.white.withOpacity(0.2)
-                        : AppColors.white.withOpacity(0.15),
+                        ? AppColors.white.withOpacity(0.25)
+                        : AppColors.white.withOpacity(0.12),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withOpacity(0.15),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
+                      color: AppColors.black.withOpacity(0.2),
+                      blurRadius: 30,
+                      spreadRadius: -5,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
@@ -145,7 +145,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             ? (_dragIndicatorPage.clamp(0, itemCount - 1) *
                                   itemWidth)
                             : (_page.clamp(0, itemCount - 1) * itemWidth)) +
-                        8;
+                        12;
 
                     return GestureDetector(
                       behavior: HitTestBehavior.translucent,
@@ -180,38 +180,37 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       },
                       child: Stack(
                         children: [
-                          // Animated selection indicator (full width)
+                          // Selection indicator
                           Positioned(
                             left: animatedLeft,
-                            top: 8,
-                            width: itemWidth - 16,
-                            height: 52,
+                            top: 10,
+                            width: itemWidth - 24,
+                            height: 50,
                             child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 250),
+                              duration: const Duration(milliseconds: 280),
                               curve: Curves.easeOutCubic,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.primary.withOpacity(0.85),
-                                    AppColors.primaryLight.withOpacity(0.75),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(20),
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(25),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.4),
-                                    blurRadius: 16,
-                                    spreadRadius: 2,
+                                    color: AppColors.white.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    spreadRadius: 0,
                                     offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: AppColors.primary.withOpacity(0.2),
+                                    blurRadius: 15,
+                                    spreadRadius: -2,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
                             ),
                           ),
 
-                          // Icons row
+                          // Icons
                           Row(
                             children: [
                               SizedBox(
@@ -252,23 +251,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     return InkWell(
       onTap: () => _goTo(index),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(25),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Center(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, anim) =>
-                ScaleTransition(scale: anim, child: child),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
             child: Icon(
               icon,
-              key: ValueKey<bool>(isSelected),
-              size: isSelected ? 30 : 26,
+              size: isSelected ? 28 : 25,
               color: isSelected
-                  ? AppColors.white
+                  ? AppColors.primary
                   : (_isDarkBackground
-                        ? AppColors.white.withOpacity(0.5)
-                        : AppColors.grey.withOpacity(0.6)),
+                        ? AppColors.white.withOpacity(0.6)
+                        : AppColors.white.withOpacity(0.5)),
             ),
           ),
         ),
@@ -281,33 +278,33 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     return InkWell(
       onTap: () => _goTo(index),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(25),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Center(
           child: _user?.firstName != null
               ? AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: const Duration(milliseconds: 280),
                   width: isSelected ? 32 : 28,
                   height: isSelected ? 32 : 28,
                   decoration: ShapeDecoration(
                     shape: ContinuousRectangleBorder(
-                      borderRadius: BorderRadius.circular(isSelected ? 20 : 18),
+                      borderRadius: BorderRadius.circular(isSelected ? 22 : 20),
                       side: BorderSide(
                         color: isSelected
-                            ? AppColors.white
-                            : AppColors.white.withOpacity(0.3),
+                            ? AppColors.primary
+                            : AppColors.white.withOpacity(0.4),
                         width: isSelected ? 2.5 : 2,
                       ),
                     ),
                     image: DecorationImage(
-                      image: NetworkImage(_user!.firstName),
+                      image: NetworkImage(_user!.firstName!),
                       fit: BoxFit.cover,
                     ),
                     shadows: isSelected
                         ? [
                             BoxShadow(
-                              color: AppColors.white.withOpacity(0.3),
+                              color: AppColors.primary.withOpacity(0.3),
                               blurRadius: 8,
                               spreadRadius: 1,
                             ),
@@ -317,12 +314,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 )
               : Icon(
                   Icons.person_rounded,
-                  size: isSelected ? 30 : 26,
+                  size: isSelected ? 28 : 25,
                   color: isSelected
-                      ? AppColors.white
+                      ? AppColors.primary
                       : (_isDarkBackground
-                            ? AppColors.white.withOpacity(0.5)
-                            : AppColors.grey.withOpacity(0.6)),
+                            ? AppColors.white.withOpacity(0.6)
+                            : AppColors.white.withOpacity(0.5)),
                 ),
         ),
       ),
