@@ -384,6 +384,12 @@ class PdfExportService {
     );
   }
 
+  /// Generate PDF bytes without saving (for bulk downloads)
+  Future<Uint8List> generatePdfBytes(TestResultModel result) async {
+    final pdf = await _buildPdfDocument(result);
+    return await pdf.save();
+  }
+
   pw.Widget _buildTitleSection(
     TestResultModel result,
     String? userName,

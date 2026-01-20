@@ -56,6 +56,13 @@ class VisualAcuityResult {
   bool get isNormal => logMAR <= 0.0; // 20/20 or better
   bool get needsReview => logMAR > 0.0 && logMAR <= 0.3; // 20/25 to 20/40
   bool get needsAttention => logMAR > 0.3; // Worse than 20/40
+  /// Get condition category based on logMAR
+  String get conditionCategory {
+    if (logMAR <= 0.0) return 'Normal';
+    if (logMAR <= 0.3) return 'Mild Vision Loss';
+    if (logMAR <= 0.7) return 'Moderate Vision Loss';
+    return 'Significant Vision Loss';
+  }
 }
 
 /// Individual E response record

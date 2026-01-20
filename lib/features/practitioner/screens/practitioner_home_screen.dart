@@ -690,7 +690,10 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
             icon: Icons.assessment_outlined,
             title: 'Patient Results',
             subtitle: 'View & download reports',
-            onTap: () => Navigator.pushNamed(context, '/practitioner-results'),
+            onTap: () => Navigator.pushNamed(
+              context,
+              '/practitioner-dashboard',
+            ), // Changed from '/practitioner-results'
             height: wideCardHeight,
             screenWidth: screenWidth,
           ),

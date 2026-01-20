@@ -196,6 +196,19 @@ class TestResultModel {
     };
   }
 
+  /// Helper getter to get primary visual acuity result for condition checking
+  VisualAcuityResult? get visualAcuityResult {
+    // Return the worse eye for overall condition assessment
+    if (visualAcuityRight == null && visualAcuityLeft == null) return null;
+    if (visualAcuityRight == null) return visualAcuityLeft;
+    if (visualAcuityLeft == null) return visualAcuityRight;
+
+    // Return the eye with worse condition
+    return visualAcuityRight!.logMAR >= visualAcuityLeft!.logMAR
+        ? visualAcuityRight
+        : visualAcuityLeft;
+  }
+
   /// Calculate overall status based on individual test results
   static TestStatus calculateOverallStatus({
     VisualAcuityResult? vaRight,
