@@ -34,7 +34,7 @@ class _PractitionerDashboardScreenState
   bool _isInitialLoading = true;
   bool _isFilterLoading = false;
   String _selectedPeriod = 'all';
-  String _selectedCondition = 'All';
+  List<String> _selectedConditions = []; // Changed from single to multiple
   Map<String, dynamic> _statistics = {};
   List<TestResultModel> _filteredResults = [];
   List<PatientModel> _patients = [];
@@ -42,6 +42,7 @@ class _PractitionerDashboardScreenState
 
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  bool _showOnlyWithCalls = false; // Filter for patients with phone numbers
 
   @override
   void initState() {
@@ -144,11 +145,14 @@ class _PractitionerDashboardScreenState
         ? allResults
         : allResults.where((r) => r.timestamp.isAfter(startDate!)).toList();
 
-    // Apply condition filter
-    if (_selectedCondition != 'All') {
+    // Apply multiple condition filters
+    if (_selectedConditions.isNotEmpty) {
       filtered = filtered.where((r) {
-        final condition = _getResultCondition(r);
-        return condition == _selectedCondition;
+        final conditions = _getAllResultConditions(r);
+        // Check if ANY selected condition matches ANY result condition
+        return _selectedConditions.any(
+          (selected) => conditions.contains(selected),
+        );
       }).toList();
     }
 
@@ -167,9 +171,11 @@ class _PractitionerDashboardScreenState
       statusCounts[result.overallStatus.label] =
           (statusCounts[result.overallStatus.label] ?? 0) + 1;
 
-      // Get condition from result
-      final condition = _getResultCondition(result);
-      conditionCounts[condition] = (conditionCounts[condition] ?? 0) + 1;
+      // Count all conditions (not just primary)
+      final conditions = _getAllResultConditions(result);
+      for (final condition in conditions) {
+        conditionCounts[condition] = (conditionCounts[condition] ?? 0) + 1;
+      }
 
       uniquePatients.add(result.profileId);
     }
@@ -182,9 +188,11 @@ class _PractitionerDashboardScreenState
     };
   }
 
-  /// Determine condition from test result
-  String _getResultCondition(TestResultModel result) {
-    // Priority 1: Check mobile refractometry for actual refractive conditions
+  /// Get ALL conditions from a result (not just primary)
+  List<String> _getAllResultConditions(TestResultModel result) {
+    final conditions = <String>[];
+
+    // Check mobile refractometry
     if (result.mobileRefractometry != null) {
       final rightSphere =
           double.tryParse(
@@ -210,58 +218,92 @@ class _PractitionerDashboardScreenState
           : leftSphere;
       final worseCyl = rightCyl.abs() > leftCyl.abs() ? rightCyl : leftCyl;
 
-      // Check for astigmatism first (cylinder power)
-      if (worseCyl.abs() >= 0.75) {
-        return 'Astigmatism';
-      }
+      if (worseCyl.abs() >= 0.75) conditions.add('Astigmatism');
+      if (worseSphere < -0.50) conditions.add('Myopia');
+      if (worseSphere > 0.50) conditions.add('Hyperopia');
 
-      // Check for myopia (negative sphere)
-      if (worseSphere < -0.50) {
-        return 'Myopia';
-      }
-
-      // Check for hyperopia (positive sphere)
-      if (worseSphere > 0.50) {
-        return 'Hyperopia';
-      }
+      // Check for presbyopia (add power for near vision)
+      final rightAdd =
+          double.tryParse(
+            result.mobileRefractometry!.rightEye?.addPower ?? '0',
+          ) ??
+          0;
+      final leftAdd =
+          double.tryParse(
+            result.mobileRefractometry!.leftEye?.addPower ?? '0',
+          ) ??
+          0;
+      if (rightAdd > 0.75 || leftAdd > 0.75) conditions.add('Presbyopia');
     }
 
-    // Priority 2: Check visual acuity
+    // Check visual acuity
     final rightLogMAR = result.visualAcuityRight?.logMAR ?? 0;
     final leftLogMAR = result.visualAcuityLeft?.logMAR ?? 0;
     final worseLogMAR = rightLogMAR > leftLogMAR ? rightLogMAR : leftLogMAR;
 
-    if (worseLogMAR > 0.3) {
-      return 'Vision Impairment';
-    }
+    if (worseLogMAR > 0.3) conditions.add('Vision Impairment');
 
-    // Priority 3: Check for other conditions
+    // Check color vision
     if (result.colorVision != null && !result.colorVision!.isNormal) {
-      return 'Color Vision Deficiency';
+      conditions.add('Color Vision Deficiency');
     }
 
+    // Check Amsler Grid for macular issues
     if ((result.amslerGridRight?.hasDistortions ?? false) ||
         (result.amslerGridLeft?.hasDistortions ?? false)) {
-      return 'Macular Issue';
+      conditions.add('Macular Issue');
+
+      // Severe distortions might indicate more serious conditions
+      final rightDistortions =
+          result.amslerGridRight?.distortionPoints.length ?? 0;
+      final leftDistortions =
+          result.amslerGridLeft?.distortionPoints.length ?? 0;
+      if (rightDistortions >= 5 || leftDistortions >= 5) {
+        conditions.add('Possible Cataract');
+      }
     }
 
+    // Check contrast sensitivity
     if (result.pelliRobson != null && result.pelliRobson!.needsReferral) {
-      return 'Low Contrast Sensitivity';
+      conditions.add('Low Contrast Sensitivity');
     }
 
+    // If no issues found
+    if (conditions.isEmpty) conditions.add('Normal');
+
+    return conditions;
+  }
+
+  /// Get primary condition for display
+  String _getPrimaryCondition(TestResultModel result) {
+    final conditions = _getAllResultConditions(result);
+    if (conditions.contains('Possible Cataract')) return 'Possible Cataract';
+    if (conditions.contains('Macular Issue')) return 'Macular Issue';
+    if (conditions.contains('Myopia')) return 'Myopia';
+    if (conditions.contains('Hyperopia')) return 'Hyperopia';
+    if (conditions.contains('Astigmatism')) return 'Astigmatism';
+    if (conditions.contains('Presbyopia')) return 'Presbyopia';
+    if (conditions.contains('Color Vision Deficiency'))
+      return 'Color Vision Deficiency';
+    if (conditions.contains('Vision Impairment')) return 'Vision Impairment';
+    if (conditions.contains('Low Contrast Sensitivity'))
+      return 'Low Contrast Sensitivity';
     return 'Normal';
   }
 
-  Future<void> _changeFilter(String period, String condition) async {
-    if (period == _selectedPeriod && condition == _selectedCondition) return;
+  Future<void> _changeFilter(String period, List<String> conditions) async {
+    if (period == _selectedPeriod &&
+        conditions.toSet().difference(_selectedConditions.toSet()).isEmpty &&
+        _selectedConditions.toSet().difference(conditions.toSet()).isEmpty) {
+      return;
+    }
 
     setState(() {
       _selectedPeriod = period;
-      _selectedCondition = condition;
+      _selectedConditions = conditions;
       _isFilterLoading = true;
     });
 
-    // Simulate brief loading for smooth UX
     await Future.delayed(const Duration(milliseconds: 150));
 
     final cachedData = _cache.getCachedData();
@@ -612,7 +654,7 @@ class _PractitionerDashboardScreenState
     final isSelected = _selectedPeriod == value;
     return Expanded(
       child: GestureDetector(
-        onTap: () => _changeFilter(value, _selectedCondition),
+        onTap: () => _changeFilter(value, _selectedConditions),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
@@ -966,6 +1008,13 @@ class _PractitionerDashboardScreenState
 
     if (entries.isEmpty) return const SizedBox.shrink();
 
+    // Sort entries: Normal first, then alphabetically
+    entries.sort((a, b) {
+      if (a.key == 'Normal') return -1;
+      if (b.key == 'Normal') return 1;
+      return a.key.compareTo(b.key);
+    });
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -986,12 +1035,12 @@ class _PractitionerDashboardScreenState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Filter by Condition',
+                'Filter by Conditions',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              if (_selectedCondition != 'All')
+              if (_selectedConditions.isNotEmpty)
                 GestureDetector(
-                  onTap: () => _changeFilter(_selectedPeriod, 'All'),
+                  onTap: () => _changeFilter(_selectedPeriod, []),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -1001,14 +1050,18 @@ class _PractitionerDashboardScreenState
                       color: AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.clear, size: 14, color: AppColors.error),
-                        SizedBox(width: 4),
+                        const Icon(
+                          Icons.clear_all,
+                          size: 14,
+                          color: AppColors.error,
+                        ),
+                        const SizedBox(width: 4),
                         Text(
-                          'Clear',
-                          style: TextStyle(
+                          'Clear (${_selectedConditions.length})',
+                          style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.error,
                           ),
@@ -1019,17 +1072,18 @@ class _PractitionerDashboardScreenState
                 ),
             ],
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap to select multiple conditions',
+            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              _buildConditionChip(
-                'All',
-                conditionCounts.values.fold(0, (a, b) => a + b),
-              ),
-              ...entries.map((e) => _buildConditionChip(e.key, e.value)),
-            ],
+            children: entries
+                .map((e) => _buildConditionChip(e.key, e.value))
+                .toList(),
           ),
         ],
       ),
@@ -1037,26 +1091,19 @@ class _PractitionerDashboardScreenState
   }
 
   Widget _buildConditionChip(String condition, int count) {
-    final isSelected = _selectedCondition == condition;
-    Color color;
-
-    switch (condition) {
-      case 'Normal':
-        color = AppColors.success;
-        break;
-      case 'Myopia':
-      case 'Hyperopia':
-        color = AppColors.warning;
-        break;
-      case 'Astigmatism':
-        color = AppColors.info;
-        break;
-      default:
-        color = AppColors.primary;
-    }
+    final isSelected = _selectedConditions.contains(condition);
+    Color color = _getConditionColor(condition);
 
     return GestureDetector(
-      onTap: () => _changeFilter(_selectedPeriod, condition),
+      onTap: () {
+        final newConditions = List<String>.from(_selectedConditions);
+        if (isSelected) {
+          newConditions.remove(condition);
+        } else {
+          newConditions.add(condition);
+        }
+        _changeFilter(_selectedPeriod, newConditions);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -1067,12 +1114,21 @@ class _PractitionerDashboardScreenState
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color : color.withValues(alpha: 0.3),
-            width: isSelected ? 1.5 : 1,
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (isSelected)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Icon(
+                  Icons.check_circle,
+                  size: 14,
+                  color: AppColors.white,
+                ),
+              ),
             Text(
               condition,
               style: TextStyle(
@@ -1105,10 +1161,65 @@ class _PractitionerDashboardScreenState
     );
   }
 
+  Color _getConditionColor(String condition) {
+    switch (condition) {
+      case 'Normal':
+        return AppColors.success;
+      case 'Myopia':
+      case 'Hyperopia':
+      case 'Presbyopia':
+        return AppColors.warning;
+      case 'Astigmatism':
+        return AppColors.info;
+      case 'Color Vision Deficiency':
+        return const Color(0xFF9C27B0); // Purple
+      case 'Macular Issue':
+      case 'Possible Cataract':
+        return AppColors.error;
+      case 'Vision Impairment':
+      case 'Low Contrast Sensitivity':
+        return const Color(0xFFFF6F00); // Deep Orange
+      default:
+        return AppColors.primary;
+    }
+  }
+
   Widget _buildRecentResults() {
     if (_filteredResults.isEmpty) return const SizedBox.shrink();
 
-    final recentResults = _filteredResults.take(5).toList();
+    // Get unique patients from filtered results
+    final patientsWithResults = <String, PatientModel>{};
+    for (final result in _filteredResults) {
+      final patientId = result.profileId ?? result.profileName;
+      if (!patientsWithResults.containsKey(patientId)) {
+        final patient = _patients.firstWhere(
+          (p) => p.id == result.profileId || p.fullName == result.profileName,
+          orElse: () => PatientModel(
+            id: result.profileId ?? '',
+            firstName: result.profileName.split(' ').first,
+            lastName: result.profileName.split(' ').length > 1
+                ? result.profileName.split(' ').last
+                : '',
+            age: result.profileAge ?? 0,
+            sex: result.profileSex ?? 'Unknown',
+            phone: null,
+            createdAt: result.timestamp,
+          ),
+        );
+        patientsWithResults[patientId] = patient;
+      }
+    }
+
+    final searchFilteredResults = _searchQuery.isEmpty
+        ? _filteredResults
+        : _filteredResults.where((r) {
+            final query = _searchQuery.toLowerCase();
+            return r.profileName.toLowerCase().contains(query) ||
+                (patientsWithResults[r.profileId ?? r.profileName]?.phone
+                        ?.toLowerCase()
+                        .contains(query) ??
+                    false);
+          }).toList();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1130,26 +1241,77 @@ class _PractitionerDashboardScreenState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Recent Test Results',
+                'Test Results',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              if (_filteredResults.length > 5)
-                TextButton(
-                  onPressed: () {
-                    // Navigate to full results view
-                  },
-                  child: const Text('View All', style: TextStyle(fontSize: 12)),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
                 ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${searchFilteredResults.length} results',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          ...recentResults.map((result) => _buildResultCard(result)),
+
+          // Search Bar
+          TextField(
+            controller: _searchController,
+            onChanged: (value) => setState(() => _searchQuery = value),
+            decoration: InputDecoration(
+              hintText: 'Search by patient name or phone...',
+              hintStyle: const TextStyle(fontSize: 13),
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: AppColors.background,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 12,
+                horizontal: 16,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Results List
+          ...searchFilteredResults.map((result) {
+            final patient =
+                patientsWithResults[result.profileId ?? result.profileName];
+            return _buildEnhancedResultCard(result, patient);
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildResultCard(TestResultModel result) {
+  // Enhanced Result Card matching My Results screen
+  Widget _buildEnhancedResultCard(
+    TestResultModel result,
+    PatientModel? patient,
+  ) {
     Color statusColor;
     switch (result.overallStatus) {
       case TestStatus.normal:
@@ -1164,68 +1326,76 @@ class _PractitionerDashboardScreenState
     }
 
     final isComprehensive = result.testType == 'comprehensive';
+    final hasPhone = patient?.phone != null && patient!.phone!.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isComprehensive
-              ? [
-                  AppColors.primary.withValues(alpha: 0.08),
-                  AppColors.primary.withValues(alpha: 0.05),
-                ]
-              : [AppColors.background, AppColors.background],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isComprehensive
-              ? AppColors.primary.withValues(alpha: 0.2)
-              : AppColors.border,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-            child: Text(
-              result.profileName.isNotEmpty
-                  ? result.profileName[0].toUpperCase()
-                  : '?',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                fontSize: 16,
-              ),
-            ),
+        color: isComprehensive
+            ? AppColors.primary.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: isComprehensive
+            ? Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                width: 1.5,
+              )
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: isComprehensive
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : AppColors.cardShadow,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with call button
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                child: Text(
+                  result.profileName.isNotEmpty ? result.profileName[0] : '?',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        result.profileName.isNotEmpty
-                            ? result.profileName
-                            : 'Self',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      result.profileName.isNotEmpty
+                          ? result.profileName
+                          : 'Self',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
-                    if (isComprehensive)
+                    Text(
+                      DateFormat(
+                        'MMM dd, yyyy • h:mm a',
+                      ).format(result.timestamp),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    if (isComprehensive) ...[
+                      const SizedBox(height: 4),
                       Container(
-                        margin: const EdgeInsets.only(left: 6),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 2,
@@ -1235,62 +1405,96 @@ class _PractitionerDashboardScreenState
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text(
-                          'FULL',
+                          'FULL EXAMINATION',
                           style: TextStyle(
                             color: AppColors.white,
                             fontSize: 8,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  DateFormat('MMM dd, yyyy • h:mm a').format(result.timestamp),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    _buildMiniStat(
-                      'VA',
-                      result.visualAcuityRight?.snellenScore ?? 'N/A',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildMiniStat(
-                      'Color',
-                      result.colorVision?.isNormal == true ? '✓' : '✗',
-                    ),
-                    if (isComprehensive && result.pelliRobson != null) ...[
-                      const SizedBox(width: 8),
-                      _buildMiniStat(
-                        'CS',
-                        result.pelliRobson!.averageScore.toStringAsFixed(1),
                       ),
                     ],
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              result.overallStatus.label,
-              style: TextStyle(
-                color: statusColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 10,
               ),
+              // Call Button
+              if (hasPhone)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.phone, size: 18),
+                    color: AppColors.success,
+                    onPressed: () => _makePhoneCall(patient!.phone!),
+                    tooltip: patient!.phone,
+                  ),
+                ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  result.overallStatus.label,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Results Grid
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                _buildMiniResult(
+                  'VA (R)',
+                  result.visualAcuityRight?.snellenScore ?? 'N/A',
+                ),
+                _buildMiniResult(
+                  'VA (L)',
+                  result.visualAcuityLeft?.snellenScore ?? 'N/A',
+                ),
+                _buildMiniResult(
+                  'Color',
+                  result.colorVision?.isNormal == true ? 'Normal' : 'Check',
+                ),
+                if (isComprehensive && result.pelliRobson != null)
+                  _buildMiniResult(
+                    'Contrast',
+                    result.pelliRobson!.averageScore.toStringAsFixed(1),
+                  )
+                else
+                  _buildMiniResult(
+                    'Amsler',
+                    (result.amslerGridRight?.hasDistortions != true &&
+                            result.amslerGridLeft?.hasDistortions != true)
+                        ? 'Normal'
+                        : 'Check',
+                  ),
+              ],
             ),
           ),
         ],
@@ -1298,33 +1502,30 @@ class _PractitionerDashboardScreenState
     );
   }
 
-  Widget _buildMiniStat(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+  Widget _buildMiniResult(String label, String value) {
+    return Expanded(
+      child: Column(
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 9,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 4),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 9,
-              color: AppColors.primary,
               fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: AppColors.primary,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textSecondary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
