@@ -338,22 +338,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     SizedBox(height: screenHeight * 0.008),
                     Container(
-                      width: double.infinity,
+                      width: double.infinity, // Takes full width
                       padding: EdgeInsets.symmetric(
                         horizontal: screenWidth * 0.035,
                         vertical: screenHeight * 0.01,
                       ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                           colors: [
-                            AppColors.primary.withValues(alpha: 0.1),
-                            AppColors.primary.withValues(alpha: 0.05),
+                            AppColors.primary.withOpacity(0.08),
+                            AppColors.primaryLight.withOpacity(0.05),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(
+                          20,
+                        ), // Already matches the grid cards
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.15),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.05),
+                            blurRadius: 12,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisSize: MainAxisSize.min, // Keep content centered
                         children: [
                           Icon(
                             Icons.remove_red_eye,
@@ -361,15 +377,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: (screenWidth * 0.04).clamp(14.0, 18.0),
                           ),
                           SizedBox(width: screenWidth * 0.02),
-                          Text(
-                            'Your Vision, Our Priority',
-                            style: TextStyle(
-                              fontSize: (screenWidth * 0.035).clamp(12.0, 14.5),
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                          Flexible(
+                            // Changed from no wrapper to Flexible for better text handling
+                            child: Text(
+                              'Your Vision, Our Priority',
+                              style: TextStyle(
+                                fontSize: (screenWidth * 0.035).clamp(
+                                  12.0,
+                                  14.5,
+                                ),
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
