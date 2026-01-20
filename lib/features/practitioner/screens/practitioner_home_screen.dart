@@ -159,13 +159,31 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
               // Practitioner badge replacing language selector
               Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.025,
-                  vertical: screenHeight * 0.008,
+                  horizontal: screenWidth * 0.035,
+                  vertical: screenHeight * 0.01,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.border),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withOpacity(0.08),
+                      AppColors.primaryLight.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.15),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.05),
+                      blurRadius: 12,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -173,15 +191,15 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     Icon(
                       Icons.medical_services,
                       size: (screenWidth * 0.04).clamp(14.0, 18.0),
-                      color: AppColors.textSecondary,
+                      color: AppColors.primary,
                     ),
-                    SizedBox(width: screenWidth * 0.012),
+                    SizedBox(width: screenWidth * 0.02),
                     Text(
                       'PRACTITIONER',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: (screenWidth * 0.03).clamp(11.0, 13.0),
-                        color: AppColors.textPrimary,
+                        color: AppColors.primary,
                       ),
                     ),
                   ],
