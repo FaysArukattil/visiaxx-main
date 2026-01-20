@@ -76,7 +76,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         : const Center(child: EyeLoader.fullScreen()),
   ];
 
-  bool get _isDarkBackground => _currentIndex == 1;
+  void _goTo(int index) {
+    if (index == _currentIndex) return;
+    setState(() => _currentIndex = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +93,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     return Scaffold(
-      extendBody: true,
       backgroundColor: AppColors.background,
       body: PageView(
         controller: _pageController,
@@ -95,149 +102,179 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         },
         children: _screens,
       ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-          height: 70,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(35),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: _isDarkBackground
-                        ? [
-                            AppColors.white.withOpacity(0.18),
-                            AppColors.white.withOpacity(0.12),
-                          ]
-                        : [
-                            const Color(0xFF1C1C1E).withOpacity(0.75),
-                            const Color(0xFF1C1C1E).withOpacity(0.85),
-                          ],
-                  ),
-                  borderRadius: BorderRadius.circular(35),
-                  border: Border.all(
-                    color: _isDarkBackground
-                        ? AppColors.white.withOpacity(0.25)
-                        : AppColors.white.withOpacity(0.12),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.black.withOpacity(0.2),
-                      blurRadius: 30,
-                      spreadRadius: -5,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final totalWidth = constraints.maxWidth;
-                    const itemCount = 3;
-                    final itemWidth = totalWidth / itemCount;
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primary.withOpacity(0.08),
+              AppColors.primaryLight.withOpacity(0.05),
+            ],
+          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(
+            color: AppColors.primary.withOpacity(0.15),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.05),
+              blurRadius: 12,
+              spreadRadius: 0,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: SafeArea(
+            child: SizedBox(
+              height: 68,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final totalWidth = constraints.maxWidth;
+                  const itemCount = 3;
+                  final itemWidth = totalWidth / itemCount;
 
-                    final animatedLeft =
-                        (_dragging
-                            ? (_dragIndicatorPage.clamp(0, itemCount - 1) *
-                                  itemWidth)
-                            : (_page.clamp(0, itemCount - 1) * itemWidth)) +
-                        12;
+                  final currentPage = _dragging
+                      ? _dragIndicatorPage
+                      : _currentIndex.toDouble();
+                  final animatedLeft =
+                      (currentPage.clamp(0, itemCount - 1) * itemWidth) +
+                      (itemWidth / 2) -
+                      24;
 
-                    return GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onPanStart: (details) {
-                        _dragAccumX = 0;
-                        setState(() {
-                          _dragging = true;
-                          _dragStartPage = _page;
-                          _dragIndicatorPage = _page;
-                        });
-                      },
-                      onPanUpdate: (details) {
-                        _dragAccumX += details.delta.dx;
-                        final deltaPages = _dragAccumX / itemWidth;
-                        final double newPage = (_dragStartPage + deltaPages)
-                            .clamp(0.0, (itemCount - 1).toDouble());
-                        setState(() {
-                          _dragIndicatorPage = newPage;
-                        });
-                        if (_pageController.hasClients &&
-                            _pageController.position.haveDimensions) {
-                          final w = _pageController.position.viewportDimension;
-                          _pageController.position.jumpTo(newPage * w);
-                        }
-                      },
-                      onPanEnd: (details) {
-                        final target = _dragIndicatorPage.round();
-                        setState(() {
-                          _dragging = false;
-                        });
-                        _goTo(target);
-                      },
-                      child: Stack(
-                        children: [
-                          // Selection indicator
-                          Positioned(
-                            left: animatedLeft,
-                            top: 10,
-                            width: itemWidth - 24,
-                            height: 50,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 280),
-                              curve: Curves.easeOutCubic,
+                  return GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onPanStart: (details) {
+                      _dragAccumX = 0;
+                      setState(() {
+                        _dragging = true;
+                        _dragStartPage = _currentIndex
+                            .toDouble(); // Start from current index
+                        _dragIndicatorPage = _currentIndex.toDouble();
+                      });
+                    },
+                    onPanUpdate: (details) {
+                      _dragAccumX += details.delta.dx;
+                      final deltaPages = _dragAccumX / itemWidth;
+                      final double newPage = (_dragStartPage + deltaPages)
+                          .clamp(0.0, (itemCount - 1).toDouble());
+                      setState(() {
+                        _dragIndicatorPage = newPage;
+                      });
+                      if (_pageController.hasClients &&
+                          _pageController.position.haveDimensions) {
+                        final w = _pageController.position.viewportDimension;
+                        _pageController.position.jumpTo(newPage * w);
+                      }
+                    },
+                    onPanEnd: (details) {
+                      final target = _dragIndicatorPage.round();
+                      setState(() {
+                        _dragging = false;
+                      });
+                      _goTo(target);
+                    },
+                    child: Stack(
+                      children: [
+                        // Subtle drag indicator (shows while dragging) - FULL WIDTH & HEIGHT
+                        if (_dragging)
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 100),
+                            curve: Curves.easeOut,
+                            left:
+                                (currentPage.clamp(0, itemCount - 1) *
+                                itemWidth),
+                            top: 0,
+                            bottom: 0,
+                            width: itemWidth,
+                            child: Container(
                               decoration: BoxDecoration(
-                                color: AppColors.white,
-                                borderRadius: BorderRadius.circular(25),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.white.withOpacity(0.3),
-                                    blurRadius: 20,
-                                    spreadRadius: 0,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                  BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.2),
-                                    blurRadius: 15,
-                                    spreadRadius: -2,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                                color: AppColors.primary.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
 
-                          // Icons
-                          Row(
-                            children: [
-                              SizedBox(
-                                width: itemWidth,
-                                child: _buildNavIcon(
-                                  icon: Icons.home_rounded,
-                                  index: 0,
+                        // Profile gradient rectangle (only when profile is selected and NOT dragging)
+                        if (!_dragging && _currentIndex == 2)
+                          Positioned(
+                            left: (2 * itemWidth) + (itemWidth / 2) - 24,
+                            top: 10,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 300),
+                              opacity: 1.0,
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppColors.primary,
+                                      AppColors.primary.withOpacity(0.85),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(
+                                        0.35,
+                                      ),
+                                      blurRadius: 16,
+                                      spreadRadius: 0,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      spreadRadius: -2,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              SizedBox(
-                                width: itemWidth,
-                                child: _buildNavIcon(
-                                  icon: Icons.play_circle_rounded,
-                                  index: 1,
-                                ),
-                              ),
-                              SizedBox(
-                                width: itemWidth,
-                                child: _buildProfileIcon(index: 2),
-                              ),
-                            ],
+                            ),
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+
+                        // Icons
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: itemWidth,
+                              child: _buildNavIcon(
+                                icon: Icons.home_rounded,
+                                index: 0,
+                              ),
+                            ),
+                            SizedBox(
+                              width: itemWidth,
+                              child: _buildNavIcon(
+                                icon: Icons.play_circle_rounded,
+                                index: 1,
+                              ),
+                            ),
+                            SizedBox(
+                              width: itemWidth,
+                              child: _buildNavIcon(
+                                icon: Icons.account_circle_rounded,
+                                index: 2,
+                                isProfile: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -246,93 +283,44 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  Widget _buildNavIcon({required IconData icon, required int index}) {
-    final isSelected = (_page.round() == index);
+  Widget _buildNavIcon({
+    required IconData icon,
+    required int index,
+    bool isProfile = false,
+  }) {
+    final isSelected = (_currentIndex == index);
 
     return InkWell(
       onTap: () => _goTo(index),
-      borderRadius: BorderRadius.circular(25),
+      borderRadius: BorderRadius.circular(16),
+      splashColor: AppColors.primary.withOpacity(0.1),
+      highlightColor: AppColors.primary.withOpacity(0.05),
       child: Container(
         padding: const EdgeInsets.all(10),
         child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-            child: Icon(
-              icon,
-              size: isSelected ? 28 : 25,
-              color: isSelected
-                  ? AppColors.primary
-                  : (_isDarkBackground
-                        ? AppColors.white.withOpacity(0.6)
-                        : AppColors.white.withOpacity(0.5)),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileIcon({required int index}) {
-    final isSelected = (_page.round() == index);
-
-    return InkWell(
-      onTap: () => _goTo(index),
-      borderRadius: BorderRadius.circular(25),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        child: Center(
-          child: _user?.firstName != null
-              ? AnimatedContainer(
-                  duration: const Duration(milliseconds: 280),
-                  width: isSelected ? 32 : 28,
-                  height: isSelected ? 32 : 28,
-                  decoration: ShapeDecoration(
-                    shape: ContinuousRectangleBorder(
-                      borderRadius: BorderRadius.circular(isSelected ? 22 : 20),
-                      side: BorderSide(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.white.withOpacity(0.4),
-                        width: isSelected ? 2.5 : 2,
-                      ),
-                    ),
-                    image: DecorationImage(
-                      image: NetworkImage(_user!.firstName!),
-                      fit: BoxFit.cover,
-                    ),
-                    shadows: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ]
-                        : null,
+          child: isProfile && _user?.firstName != null
+              ? AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOutCubic,
+                  style: TextStyle(
+                    color: isSelected
+                        ? AppColors.white
+                        : AppColors.textSecondary.withOpacity(0.5),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
+                  child: Text(_user!.firstName!.substring(0, 1).toUpperCase()),
                 )
               : Icon(
-                  Icons.person_rounded,
-                  size: isSelected ? 28 : 25,
+                  icon,
+                  key: ValueKey('icon_${index}_$isSelected'),
+                  size: 28,
                   color: isSelected
                       ? AppColors.primary
-                      : (_isDarkBackground
-                            ? AppColors.white.withOpacity(0.6)
-                            : AppColors.white.withOpacity(0.5)),
+                      : AppColors.textSecondary.withOpacity(0.5),
                 ),
         ),
       ),
-    );
-  }
-
-  void _goTo(int index) {
-    if (index == _currentIndex) return;
-    setState(() => _currentIndex = index);
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
     );
   }
 }
