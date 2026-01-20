@@ -27,7 +27,6 @@ import 'features/quick_vision_test/screens/test_instructions_screen.dart';
 import 'features/quick_vision_test/screens/visual_acuity_test_screen.dart';
 import 'features/individual_tests/screens/standalone_visual_acuity_screen.dart';
 import 'features/individual_tests/screens/standalone_color_vision_screen.dart';
-import 'features/individual_tests/screens/individual_tests_screen.dart';
 import 'features/quick_vision_test/screens/color_vision_test_screen.dart';
 import 'features/quick_vision_test/screens/amsler_grid_test_screen.dart';
 import 'features/quick_vision_test/screens/quick_test_result_screen.dart';
@@ -216,7 +215,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/practitioner-home': (context) =>
               const PractitionerMainNavigationScreen(),
           '/practitioner-individual-tests': (context) =>
-              const PractitionerIndividualTestsScreen(),
+              const IndividualTestsScreen(),
           '/practitioner-profile-selection': (context) {
             final args =
                 ModalRoute.of(context)?.settings.arguments

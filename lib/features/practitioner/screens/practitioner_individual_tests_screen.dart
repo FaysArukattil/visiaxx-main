@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
-class PractitionerIndividualTestsScreen extends StatelessWidget {
-  const PractitionerIndividualTestsScreen({super.key});
+/// Screen showing all individual test options
+class IndividualTestsScreen extends StatelessWidget {
+  const IndividualTestsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +33,29 @@ class PractitionerIndividualTestsScreen extends StatelessWidget {
                   horizontal: constraints.maxWidth * 0.045,
                   vertical: 16,
                 ),
-                child: _buildTestsGrid(context, constraints),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Select a Vision Test',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Choose from our comprehensive vision screening tests',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildTestsGrid(context, constraints),
+                  ],
+                ),
               ),
             );
           },
@@ -43,107 +66,65 @@ class PractitionerIndividualTestsScreen extends StatelessWidget {
 
   Widget _buildTestsGrid(BuildContext context, BoxConstraints constraints) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final cardHeight = (constraints.maxHeight * 0.18).clamp(100.0, 130.0);
     final cardSpacing = (constraints.maxWidth * 0.035).clamp(10.0, 16.0);
 
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _IndividualTestCard(
-                icon: Icons.visibility_outlined,
-                title: 'Visual Acuity',
-                color: AppColors.primary,
-                onTap: () =>
-                    _navigateToPatientSelection(context, 'visual_acuity'),
-                height: cardHeight,
-                screenWidth: screenWidth,
-              ),
-            ),
-            SizedBox(width: cardSpacing),
-            Expanded(
-              child: _IndividualTestCard(
-                icon: Icons.palette_outlined,
-                title: 'Color Vision',
-                color: const Color(0xFFE91E63),
-                onTap: () =>
-                    _navigateToPatientSelection(context, 'color_vision'),
-                height: cardHeight,
-                screenWidth: screenWidth,
-              ),
-            ),
-          ],
+        _IndividualTestCard(
+          icon: Icons.visibility_outlined,
+          title: 'Visual Acuity',
+          description:
+              'Test how clearly you can see at distance using standard eye chart',
+          onTap: () =>
+              Navigator.pushNamed(context, '/visual-acuity-standalone'),
+          screenWidth: screenWidth,
         ),
         SizedBox(height: cardSpacing),
-        Row(
-          children: [
-            Expanded(
-              child: _IndividualTestCard(
-                icon: Icons.grid_4x4_outlined,
-                title: 'Amsler Grid',
-                color: const Color(0xFF00BCD4),
-                onTap: () =>
-                    _navigateToPatientSelection(context, 'amsler_grid'),
-                height: cardHeight,
-                screenWidth: screenWidth,
-              ),
-            ),
-            SizedBox(width: cardSpacing),
-            Expanded(
-              child: _IndividualTestCard(
-                icon: Icons.menu_book_outlined,
-                title: 'Reading Test',
-                color: const Color(0xFF4CAF50),
-                onTap: () =>
-                    _navigateToPatientSelection(context, 'reading_test'),
-                height: cardHeight,
-                screenWidth: screenWidth,
-              ),
-            ),
-          ],
+        _IndividualTestCard(
+          icon: Icons.palette_outlined,
+          title: 'Color Vision',
+          description: 'Screen for color blindness and red-green deficiencies',
+          onTap: () => Navigator.pushNamed(context, '/color-vision-standalone'),
+          screenWidth: screenWidth,
         ),
         SizedBox(height: cardSpacing),
-        Row(
-          children: [
-            Expanded(
-              child: _IndividualTestCard(
-                icon: Icons.contrast_outlined,
-                title: 'Contrast',
-                color: const Color(0xFFFF9800),
-                onTap: () => _navigateToPatientSelection(
-                  context,
-                  'contrast_sensitivity',
-                ),
-                height: cardHeight,
-                screenWidth: screenWidth,
-              ),
-            ),
-            SizedBox(width: cardSpacing),
-            Expanded(
-              child: _IndividualTestCard(
-                icon: Icons.remove_red_eye_rounded,
-                title: 'Refractometry',
-                color: const Color(0xFF9C27B0),
-                onTap: () => _navigateToPatientSelection(
-                  context,
-                  'mobile_refractometry',
-                ),
-                height: cardHeight,
-                screenWidth: screenWidth,
-              ),
-            ),
-          ],
+        _IndividualTestCard(
+          icon: Icons.grid_4x4_outlined,
+          title: 'Amsler Grid',
+          description: 'Check for central vision distortions and blind spots',
+          onTap: () => Navigator.pushNamed(context, '/amsler-grid-standalone'),
+          screenWidth: screenWidth,
+        ),
+        SizedBox(height: cardSpacing),
+        _IndividualTestCard(
+          icon: Icons.menu_book_outlined,
+          title: 'Reading Test',
+          description:
+              'Assess your near vision and reading ability at close distance',
+          onTap: () => Navigator.pushNamed(context, '/reading-test-standalone'),
+          screenWidth: screenWidth,
+        ),
+        SizedBox(height: cardSpacing),
+        _IndividualTestCard(
+          icon: Icons.contrast_outlined,
+          title: 'Contrast Sensitivity',
+          description:
+              'Measure ability to distinguish objects in different lighting conditions',
+          onTap: () =>
+              Navigator.pushNamed(context, '/contrast-sensitivity-standalone'),
+          screenWidth: screenWidth,
+        ),
+        SizedBox(height: cardSpacing),
+        _IndividualTestCard(
+          icon: Icons.remove_red_eye_rounded,
+          title: 'Mobile Refractometry',
+          description:
+              'Detect refractive errors and estimate prescription strength',
+          onTap: () =>
+              Navigator.pushNamed(context, '/mobile-refractometry-standalone'),
+          screenWidth: screenWidth,
         ),
       ],
-    );
-  }
-
-  void _navigateToPatientSelection(BuildContext context, String testType) {
-    Navigator.pushNamed(
-      context,
-      '/practitioner-profile-selection',
-      arguments: {'testType': testType},
     );
   }
 }
@@ -151,17 +132,15 @@ class PractitionerIndividualTestsScreen extends StatelessWidget {
 class _IndividualTestCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final Color color;
+  final String description;
   final VoidCallback onTap;
-  final double height;
   final double screenWidth;
 
   const _IndividualTestCard({
     required this.icon,
     required this.title,
-    required this.color,
+    required this.description,
     required this.onTap,
-    required this.height,
     required this.screenWidth,
   });
 
@@ -170,61 +149,105 @@ class _IndividualTestCard extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, cardConstraints) {
         final availableWidth = cardConstraints.maxWidth;
-        final iconSize = (availableWidth * 0.18).clamp(28.0, 36.0);
-        final titleFontSize = (availableWidth * 0.08).clamp(13.0, 16.0);
+        final iconSize = (availableWidth * 0.055).clamp(24.0, 30.0);
+        final titleFontSize = (availableWidth * 0.042).clamp(14.0, 17.0);
+        final descriptionFontSize = (availableWidth * 0.032).clamp(10.0, 12.0);
 
         return Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: color.withOpacity(0.1),
-            highlightColor: color.withOpacity(0.05),
+            splashColor: AppColors.primary.withOpacity(0.1),
+            highlightColor: AppColors.primary.withOpacity(0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [color.withOpacity(0.08), color.withOpacity(0.05)],
+                  colors: [
+                    AppColors.primary.withOpacity(0.08),
+                    AppColors.primaryLight.withOpacity(0.05),
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.15),
+                  width: 1.2,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withOpacity(0.1),
+                    color: AppColors.primary.withOpacity(0.05),
                     blurRadius: 12,
                     spreadRadius: 0,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Container(
-                height: height,
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: (availableWidth * 0.04).clamp(12.0, 18.0),
+                  vertical: 16,
+                ),
+                child: Row(
                   children: [
                     Container(
                       width: iconSize + 14,
                       height: iconSize + 14,
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: AppColors.background,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(icon, color: color, size: iconSize),
-                    ),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: titleFontSize,
-                        color: color,
-                        height: 1.1,
-                        letterSpacing: -0.2,
+                      child: Icon(
+                        icon,
+                        color: AppColors.primary,
+                        size: iconSize,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(width: (availableWidth * 0.03).clamp(12.0, 16.0)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: titleFontSize,
+                              color: AppColors.primary,
+                              letterSpacing: -0.3,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            description,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: descriptionFontSize,
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: (availableWidth * 0.02).clamp(8.0, 12.0)),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: (availableWidth * 0.038).clamp(16.0, 20.0),
+                        color: AppColors.primary,
+                      ),
                     ),
                   ],
                 ),
