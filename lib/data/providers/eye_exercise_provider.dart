@@ -6,15 +6,18 @@ class EyeExerciseProvider with ChangeNotifier {
   List<ExerciseVideo> _videos = [];
   int _currentIndex = 0;
   bool _isInitialized = false;
+  bool _shouldPauseVideos = false;
 
   List<ExerciseVideo> get videos => _videos;
   int get currentIndex => _currentIndex;
   bool get isInitialized => _isInitialized;
+  bool get shouldPauseVideos => _shouldPauseVideos;
 
   void initialize() {
     if (_isInitialized) return;
     _videos = ExerciseVideos.getShuffledVideos();
     _isInitialized = true;
+    _shouldPauseVideos = false;
     notifyListeners();
   }
 
@@ -36,6 +39,17 @@ class EyeExerciseProvider with ChangeNotifier {
     _currentIndex = 0;
     _videos = [];
     _isInitialized = false;
+    _shouldPauseVideos = false;
+    notifyListeners();
+  }
+
+  void pauseCurrentVideo() {
+    _shouldPauseVideos = true;
+    notifyListeners();
+  }
+
+  void resumeCurrentVideo() {
+    _shouldPauseVideos = false;
     notifyListeners();
   }
 }

@@ -16,17 +16,21 @@ class EyeExerciseReelsScreen extends StatefulWidget {
   State<EyeExerciseReelsScreen> createState() => _EyeExerciseReelsScreenState();
 }
 
-class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
+class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   late PageController _pageController;
   int _videosWatched = 0;
   bool _isPopupShowing = false;
   bool _wasPopupDismissedManually = false;
   bool _showYouTubeHint = false;
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    WidgetsBinding.instance.addObserver(this);
     // Initialize provider data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<EyeExerciseProvider>().initialize();
@@ -76,12 +80,26 @@ class _EyeExerciseReelsScreenState extends State<EyeExerciseReelsScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    final provider = context.read<EyeExerciseProvider>();
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // Pause video when app goes to background or loses focus
+      provider.pauseCurrentVideo();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: AppColors.black,
       body: Consumer<EyeExerciseProvider>(

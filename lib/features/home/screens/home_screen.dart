@@ -1,6 +1,4 @@
-﻿import 'dart:ui';
-
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
@@ -23,7 +21,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   bool _isConsultationLoading = false;
   String _selectedLanguage = 'English';
-  static const bool _isDarkMode = false;
 
   final List<Map<String, String>> _languages = [
     {'code': 'en', 'name': 'English', 'native': 'English'},

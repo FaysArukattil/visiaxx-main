@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:visiaxx/core/constants/app_colors.dart';
 import 'package:visiaxx/core/services/auth_service.dart';
 import 'package:visiaxx/data/models/user_model.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
+import 'package:visiaxx/data/providers/eye_exercise_provider.dart';
 import 'package:visiaxx/features/home/screens/home_screen.dart';
 import 'package:visiaxx/features/eye_exercises/screens/eye_exercise_reels_screen.dart';
 import 'package:visiaxx/features/home/screens/profile_screen.dart';
+import 'package:provider/provider.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -78,6 +79,27 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   void _goTo(int index) {
     if (index == _currentIndex) return;
+
+    // Pause videos when leaving exercise screen (index 1)
+    if (_currentIndex == 1 && index != 1) {
+      debugPrint('🔴 Leaving exercise screen - pausing videos');
+      try {
+        context.read<EyeExerciseProvider>().pauseCurrentVideo();
+      } catch (e) {
+        debugPrint('❌ Error pausing video: $e');
+      }
+    }
+
+    // Resume videos when entering exercise screen
+    if (index == 1 && _currentIndex != 1) {
+      debugPrint('🟢 Entering exercise screen - resuming videos');
+      try {
+        context.read<EyeExerciseProvider>().resumeCurrentVideo();
+      } catch (e) {
+        debugPrint('❌ Error resuming video: $e');
+      }
+    }
+
     setState(() => _currentIndex = index);
     _pageController.animateToPage(
       index,
@@ -98,10 +120,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         controller: _pageController,
         physics: const BouncingScrollPhysics(),
         onPageChanged: (i) {
+          // Handle pause/resume when swiping between pages
+          if (_currentIndex == 1 && i != 1) {
+            debugPrint(
+              '🔴 [PageView] Leaving exercise screen - pausing videos',
+            );
+            try {
+              context.read<EyeExerciseProvider>().pauseCurrentVideo();
+            } catch (e) {
+              debugPrint('❌ Error pausing video: $e');
+            }
+          }
+
+          if (i == 1 && _currentIndex != 1) {
+            debugPrint(
+              '🟢 [PageView] Entering exercise screen - resuming videos',
+            );
+            try {
+              context.read<EyeExerciseProvider>().resumeCurrentVideo();
+            } catch (e) {
+              debugPrint('❌ Error resuming video: $e');
+            }
+          }
+
           setState(() => _currentIndex = i);
         },
         children: _screens,
       ),
+
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -140,10 +186,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   final currentPage = _dragging
                       ? _dragIndicatorPage
                       : _currentIndex.toDouble();
-                  final animatedLeft =
-                      (currentPage.clamp(0, itemCount - 1) * itemWidth) +
-                      (itemWidth / 2) -
-                      24;
 
                   return GestureDetector(
                     behavior: HitTestBehavior.translucent,
@@ -309,7 +351,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
-                  child: Text(_user!.firstName!.substring(0, 1).toUpperCase()),
+                  child: Text(_user!.firstName.substring(0, 1).toUpperCase()),
                 )
               : Icon(
                   icon,
