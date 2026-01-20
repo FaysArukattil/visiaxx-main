@@ -1,17 +1,22 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/database_service.dart';
 import '../../../core/services/patient_service.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../core/services/dashboard_cache_service.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/download_success_dialog.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../data/models/patient_model.dart';
+import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -34,7 +39,7 @@ class _PractitionerDashboardScreenState
   bool _isInitialLoading = true;
   bool _isFilterLoading = false;
   String _selectedPeriod = 'all';
-  List<String> _selectedConditions = []; // Changed from single to multiple
+  List<String> _selectedConditions = [];
   Map<String, dynamic> _statistics = {};
   List<TestResultModel> _filteredResults = [];
   List<PatientModel> _patients = [];
@@ -42,7 +47,10 @@ class _PractitionerDashboardScreenState
 
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  bool _showOnlyWithCalls = false; // Filter for patients with phone numbers
+
+  // Date filter state
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   @override
   void initState() {
@@ -63,7 +71,6 @@ class _PractitionerDashboardScreenState
     setState(() => _isInitialLoading = true);
 
     try {
-      // Try cache first
       final cachedData = _cache.getCachedData();
 
       if (cachedData != null) {
@@ -73,8 +80,6 @@ class _PractitionerDashboardScreenState
         return;
       }
 
-      // Load fresh data
-      final now = DateTime.now();
       final results = await Future.wait([
         _dbService.getTestStatistics(practitionerId: user.uid),
         _dbService.getPractitionerTestResults(practitionerId: user.uid),
@@ -87,7 +92,6 @@ class _PractitionerDashboardScreenState
       final patients = results[2] as List<PatientModel>;
       final dailyCounts = results[3] as Map<DateTime, int>;
 
-      // Cache the data
       _cache.cacheData(
         statistics: allStats,
         allResults: allResults,
@@ -145,11 +149,23 @@ class _PractitionerDashboardScreenState
         ? allResults
         : allResults.where((r) => r.timestamp.isAfter(startDate!)).toList();
 
-    // Apply multiple condition filters
+    // Apply custom date range if set
+    if (_startDate != null || _endDate != null) {
+      filtered = filtered.where((r) {
+        if (_startDate != null && r.timestamp.isBefore(_startDate!)) {
+          return false;
+        }
+        if (_endDate != null &&
+            r.timestamp.isAfter(_endDate!.add(const Duration(days: 1)))) {
+          return false;
+        }
+        return true;
+      }).toList();
+    }
+
     if (_selectedConditions.isNotEmpty) {
       filtered = filtered.where((r) {
         final conditions = _getAllResultConditions(r);
-        // Check if ANY selected condition matches ANY result condition
         return _selectedConditions.any(
           (selected) => conditions.contains(selected),
         );
@@ -171,7 +187,6 @@ class _PractitionerDashboardScreenState
       statusCounts[result.overallStatus.label] =
           (statusCounts[result.overallStatus.label] ?? 0) + 1;
 
-      // Count all conditions (not just primary)
       final conditions = _getAllResultConditions(result);
       for (final condition in conditions) {
         conditionCounts[condition] = (conditionCounts[condition] ?? 0) + 1;
@@ -188,11 +203,9 @@ class _PractitionerDashboardScreenState
     };
   }
 
-  /// Get ALL conditions from a result (not just primary)
   List<String> _getAllResultConditions(TestResultModel result) {
     final conditions = <String>[];
 
-    // Check mobile refractometry
     if (result.mobileRefractometry != null) {
       final rightSphere =
           double.tryParse(
@@ -222,7 +235,6 @@ class _PractitionerDashboardScreenState
       if (worseSphere < -0.50) conditions.add('Myopia');
       if (worseSphere > 0.50) conditions.add('Hyperopia');
 
-      // Check for presbyopia (add power for near vision)
       final rightAdd =
           double.tryParse(
             result.mobileRefractometry!.rightEye?.addPower ?? '0',
@@ -236,24 +248,20 @@ class _PractitionerDashboardScreenState
       if (rightAdd > 0.75 || leftAdd > 0.75) conditions.add('Presbyopia');
     }
 
-    // Check visual acuity
     final rightLogMAR = result.visualAcuityRight?.logMAR ?? 0;
     final leftLogMAR = result.visualAcuityLeft?.logMAR ?? 0;
     final worseLogMAR = rightLogMAR > leftLogMAR ? rightLogMAR : leftLogMAR;
 
     if (worseLogMAR > 0.3) conditions.add('Vision Impairment');
 
-    // Check color vision
     if (result.colorVision != null && !result.colorVision!.isNormal) {
       conditions.add('Color Vision Deficiency');
     }
 
-    // Check Amsler Grid for macular issues
     if ((result.amslerGridRight?.hasDistortions ?? false) ||
         (result.amslerGridLeft?.hasDistortions ?? false)) {
       conditions.add('Macular Issue');
 
-      // Severe distortions might indicate more serious conditions
       final rightDistortions =
           result.amslerGridRight?.distortionPoints.length ?? 0;
       final leftDistortions =
@@ -263,18 +271,15 @@ class _PractitionerDashboardScreenState
       }
     }
 
-    // Check contrast sensitivity
     if (result.pelliRobson != null && result.pelliRobson!.needsReferral) {
       conditions.add('Low Contrast Sensitivity');
     }
 
-    // If no issues found
     if (conditions.isEmpty) conditions.add('Normal');
 
     return conditions;
   }
 
-  /// Get primary condition for display
   String _getPrimaryCondition(TestResultModel result) {
     final conditions = _getAllResultConditions(result);
     if (conditions.contains('Possible Cataract')) return 'Possible Cataract';
@@ -315,12 +320,314 @@ class _PractitionerDashboardScreenState
     setState(() => _isFilterLoading = false);
   }
 
+  Future<void> _showDatePicker() async {
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        height: 400,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _startDate = null;
+                      _endDate = null;
+                    });
+                    Navigator.pop(context);
+                    final cachedData = _cache.getCachedData();
+                    if (cachedData != null) {
+                      _applyFilters(cachedData['allResults']);
+                    }
+                  },
+                  child: const Text('Clear'),
+                ),
+                const Text(
+                  'Select Date Range',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    final cachedData = _cache.getCachedData();
+                    if (cachedData != null) {
+                      _applyFilters(cachedData['allResults']);
+                    }
+                  },
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: CupertinoTheme(
+                data: const CupertinoThemeData(
+                  textTheme: CupertinoTextThemeData(
+                    dateTimePickerTextStyle: TextStyle(fontSize: 16),
+                  ),
+                ),
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: _startDate ?? DateTime.now(),
+                  maximumDate: DateTime.now(),
+                  onDateTimeChanged: (date) {
+                    setState(() => _startDate = date);
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _showDownloadOptionsDialog() async {
+    final totalResults = _cache.getCachedData()?['allResults']?.length ?? 0;
+    final filteredCount = _filteredResults.length;
+    final hasFilters =
+        _selectedPeriod != 'all' ||
+        _selectedConditions.isNotEmpty ||
+        _startDate != null ||
+        _endDate != null;
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.download, color: AppColors.primary),
+            SizedBox(width: 12),
+            Text('Download PDFs'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Choose which reports to download:',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+
+            // Download All Option
+            _buildDownloadOption(
+              icon: Icons.select_all,
+              title: 'Download All Reports',
+              subtitle: '$totalResults total reports',
+              value: 'all',
+              isRecommended: !hasFilters,
+            ),
+
+            const SizedBox(height: 12),
+
+            // Download Filtered Option
+            _buildDownloadOption(
+              icon: Icons.filter_alt,
+              title: 'Download Filtered Reports',
+              subtitle: _getFilterDescription(filteredCount),
+              value: 'filtered',
+              isRecommended: hasFilters,
+              isEnabled: filteredCount > 0,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDownloadOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String value,
+    bool isRecommended = false,
+    bool isEnabled = true,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isEnabled ? () => Navigator.pop(context, value) : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isEnabled
+                ? (isRecommended
+                      ? AppColors.primary.withValues(alpha: 0.1)
+                      : AppColors.background)
+                : AppColors.background.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isRecommended && isEnabled
+                  ? AppColors.primary
+                  : AppColors.border,
+              width: isRecommended ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isEnabled
+                      ? AppColors.primary.withValues(alpha: 0.1)
+                      : AppColors.textTertiary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: isEnabled ? AppColors.primary : AppColors.textTertiary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: isEnabled
+                                ? AppColors.textPrimary
+                                : AppColors.textTertiary,
+                          ),
+                        ),
+                        if (isRecommended) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'RECOMMENDED',
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isEnabled
+                            ? AppColors.textSecondary
+                            : AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isEnabled)
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getFilterDescription(int count) {
+    final filters = <String>[];
+
+    if (_selectedPeriod != 'all') {
+      filters.add(_selectedPeriod.toUpperCase());
+    }
+
+    if (_startDate != null || _endDate != null) {
+      if (_startDate != null && _endDate != null) {
+        filters.add(
+          '${DateFormat('MMM d').format(_startDate!)} - ${DateFormat('MMM d').format(_endDate!)}',
+        );
+      } else if (_startDate != null) {
+        filters.add('From ${DateFormat('MMM d').format(_startDate!)}');
+      } else if (_endDate != null) {
+        filters.add('Until ${DateFormat('MMM d').format(_endDate!)}');
+      }
+    }
+
+    if (_selectedConditions.isNotEmpty) {
+      if (_selectedConditions.length == 1) {
+        filters.add(_selectedConditions.first);
+      } else {
+        filters.add('${_selectedConditions.length} conditions');
+      }
+    }
+
+    final filterText = filters.isNotEmpty
+        ? filters.join(' • ')
+        : 'Current view';
+    return '$count reports • $filterText';
+  }
+
   Future<void> _downloadAllPDFs() async {
-    if (_filteredResults.isEmpty) {
+    // Show download options dialog
+    final choice = await _showDownloadOptionsDialog();
+
+    if (choice == null) return; // User cancelled
+
+    // Determine which results to download
+    List<TestResultModel> resultsToDownload;
+    String folderName;
+
+    if (choice == 'all') {
+      final cachedData = _cache.getCachedData();
+      if (cachedData == null) {
+        SnackbarUtils.showError(context, 'No data available');
+        return;
+      }
+      resultsToDownload = cachedData['allResults'] as List<TestResultModel>;
+      folderName = 'All_Reports';
+    } else {
+      // Download filtered results
+      if (_filteredResults.isEmpty) {
+        SnackbarUtils.showInfo(context, 'No filtered results to download');
+        return;
+      }
+      resultsToDownload = _filteredResults;
+      folderName = _getPeriodFolderName();
+    }
+
+    if (resultsToDownload.isEmpty) {
       SnackbarUtils.showInfo(context, 'No results to download');
       return;
     }
 
+    // Check permissions for Android
     if (Platform.isAndroid) {
       PermissionStatus status = await Permission.storage.status;
       if (status.isDenied) {
@@ -356,6 +663,7 @@ class _PractitionerDashboardScreenState
 
     if (!mounted) return;
 
+    // Show progress dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -370,7 +678,15 @@ class _PractitionerDashboardScreenState
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text('Downloading ${_filteredResults.length} PDFs...'),
+              Text('Downloading ${resultsToDownload.length} PDFs...'),
+              const SizedBox(height: 8),
+              Text(
+                choice == 'all' ? 'All reports' : 'Filtered reports',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
         ),
@@ -379,9 +695,8 @@ class _PractitionerDashboardScreenState
 
     try {
       final baseDir = await _getDownloadDirectory();
-      final periodFolder = _getPeriodFolderName();
       final targetDir = Directory(
-        '${baseDir.path}/Visiaxx_Reports/$periodFolder',
+        '${baseDir.path}/Visiaxx_Reports/$folderName',
       );
 
       if (!await targetDir.exists()) {
@@ -389,7 +704,7 @@ class _PractitionerDashboardScreenState
       }
 
       int successCount = 0;
-      for (final result in _filteredResults) {
+      for (final result in resultsToDownload) {
         try {
           final pdfBytes = await _pdfService.generatePdfBytes(result);
           final name = result.profileName.replaceAll(
@@ -527,6 +842,74 @@ class _PractitionerDashboardScreenState
     }
   }
 
+  Future<void> _downloadPdf(TestResultModel result) async {
+    try {
+      final String filePath = await _pdfService.getExpectedFilePath(result);
+      final File file = File(filePath);
+
+      if (await file.exists()) {
+        if (mounted) {
+          await showDownloadSuccessDialog(context: context, filePath: filePath);
+        }
+        return;
+      }
+
+      if (!mounted) return;
+      UIUtils.showProgressDialog(
+        context: context,
+        message: 'Generating PDF...',
+      );
+
+      final String generatedPath = await _pdfService.generateAndDownloadPdf(
+        result,
+      );
+
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+        await showDownloadSuccessDialog(
+          context: context,
+          filePath: generatedPath,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+        final errorMessage = e.toString().contains('Permission denied')
+            ? 'Storage permission denied. PDF saved to app folder instead.'
+            : 'Failed to generate PDF: $e';
+        SnackbarUtils.showError(context, errorMessage);
+      }
+    }
+  }
+
+  Future<void> _sharePdf(TestResultModel result) async {
+    try {
+      UIUtils.showProgressDialog(context: context, message: 'Preparing PDF...');
+
+      final String filePath = await _pdfService.generateAndDownloadPdf(result);
+
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+      }
+
+      await Share.shareXFiles([XFile(filePath)], text: 'Vision Test Report');
+    } catch (e) {
+      if (mounted) {
+        UIUtils.hideProgressDialog(context);
+        SnackbarUtils.showError(context, 'Failed to share PDF: $e');
+      }
+    }
+  }
+
+  void _showResultDetails(TestResultModel result) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuickTestResultScreen(historicalResult: result),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -568,8 +951,6 @@ class _PractitionerDashboardScreenState
                         _buildConditionBreakdown(),
                         const SizedBox(height: 20),
                         _buildRecentResults(),
-                        const SizedBox(height: 20),
-                        _buildPatientsList(),
                         const SizedBox(height: 80),
                       ],
                     ),
@@ -589,6 +970,14 @@ class _PractitionerDashboardScreenState
   }
 
   Widget _buildDownloadButton() {
+    final cachedData = _cache.getCachedData();
+    final totalResults = cachedData?['allResults']?.length ?? 0;
+    final hasFilters =
+        _selectedPeriod != 'all' ||
+        _selectedConditions.isNotEmpty ||
+        _startDate != null ||
+        _endDate != null;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -615,13 +1004,36 @@ class _PractitionerDashboardScreenState
               children: [
                 const Icon(Icons.download, color: AppColors.white, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'Download All (${_filteredResults.length})',
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasFilters ? 'Download PDFs' : 'Download All',
+                      style: const TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (hasFilters) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_filteredResults.length} / $totalResults',
+                        style: TextStyle(
+                          color: AppColors.white.withValues(alpha: 0.8),
+                          fontSize: 10,
+                        ),
+                      ),
+                    ] else
+                      Text(
+                        '$totalResults reports',
+                        style: TextStyle(
+                          color: AppColors.white.withValues(alpha: 0.8),
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -632,21 +1044,51 @@ class _PractitionerDashboardScreenState
   }
 
   Widget _buildPeriodSelector() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          _buildPeriodButton('Today', 'today'),
-          _buildPeriodButton('Week', 'week'),
-          _buildPeriodButton('Month', 'month'),
-          _buildPeriodButton('All', 'all'),
-        ],
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                _buildPeriodButton('Today', 'today'),
+                _buildPeriodButton('Week', 'week'),
+                _buildPeriodButton('Month', 'month'),
+                _buildPeriodButton('All', 'all'),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: (_startDate != null || _endDate != null)
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: (_startDate != null || _endDate != null)
+                  ? AppColors.primary
+                  : AppColors.border,
+            ),
+          ),
+          child: IconButton(
+            icon: Icon(
+              Icons.calendar_today,
+              color: (_startDate != null || _endDate != null)
+                  ? AppColors.primary
+                  : AppColors.textSecondary,
+            ),
+            onPressed: _showDatePicker,
+            tooltip: 'Custom Date Range',
+          ),
+        ),
+      ],
     );
   }
 
@@ -680,33 +1122,52 @@ class _PractitionerDashboardScreenState
     final uniquePatients = _statistics['uniquePatients'] ?? 0;
     final statusCounts = _statistics['statusCounts'] as Map<String, int>? ?? {};
 
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            'Total Tests',
-            '$totalTests',
-            Icons.assessment_outlined,
-            AppColors.primary,
-          ),
+        // First Row: Total Tests & Patients
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Total Tests',
+                '$totalTests',
+                Icons.assessment_outlined,
+                AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                'Patients',
+                '$uniquePatients',
+                Icons.people_outline,
+                AppColors.secondary,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Patients',
-            '$uniquePatients',
-            Icons.people_outline,
-            AppColors.secondary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Urgent',
-            '${statusCounts['Urgent'] ?? 0}',
-            Icons.warning_amber_rounded,
-            AppColors.error,
-          ),
+        const SizedBox(height: 12),
+        // Second Row: Review & Urgent
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Review',
+                '${statusCounts['Review'] ?? 0}',
+                Icons.visibility_outlined,
+                AppColors.warning,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                'Urgent',
+                '${statusCounts['Urgent'] ?? 0}',
+                Icons.warning_amber_rounded,
+                AppColors.error,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -1008,7 +1469,6 @@ class _PractitionerDashboardScreenState
 
     if (entries.isEmpty) return const SizedBox.shrink();
 
-    // Sort entries: Normal first, then alphabetically
     entries.sort((a, b) {
       if (a.key == 'Normal') return -1;
       if (b.key == 'Normal') return 1;
@@ -1172,13 +1632,13 @@ class _PractitionerDashboardScreenState
       case 'Astigmatism':
         return AppColors.info;
       case 'Color Vision Deficiency':
-        return const Color(0xFF9C27B0); // Purple
+        return const Color(0xFF9C27B0);
       case 'Macular Issue':
       case 'Possible Cataract':
         return AppColors.error;
       case 'Vision Impairment':
       case 'Low Contrast Sensitivity':
-        return const Color(0xFFFF6F00); // Deep Orange
+        return const Color(0xFFFF6F00);
       default:
         return AppColors.primary;
     }
@@ -1187,7 +1647,6 @@ class _PractitionerDashboardScreenState
   Widget _buildRecentResults() {
     if (_filteredResults.isEmpty) return const SizedBox.shrink();
 
-    // Get unique patients from filtered results
     final patientsWithResults = <String, PatientModel>{};
     for (final result in _filteredResults) {
       final patientId = result.profileId ?? result.profileName;
@@ -1265,8 +1724,6 @@ class _PractitionerDashboardScreenState
             ],
           ),
           const SizedBox(height: 12),
-
-          // Search Bar
           TextField(
             controller: _searchController,
             onChanged: (value) => setState(() => _searchQuery = value),
@@ -1295,8 +1752,6 @@ class _PractitionerDashboardScreenState
             ),
           ),
           const SizedBox(height: 12),
-
-          // Results List
           ...searchFilteredResults.map((result) {
             final patient =
                 patientsWithResults[result.profileId ?? result.profileName];
@@ -1307,7 +1762,6 @@ class _PractitionerDashboardScreenState
     );
   }
 
-  // Enhanced Result Card matching My Results screen
   Widget _buildEnhancedResultCard(
     TestResultModel result,
     PatientModel? patient,
@@ -1355,8 +1809,9 @@ class _PractitionerDashboardScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with call button
           Row(
+            crossAxisAlignment:
+                CrossAxisAlignment.start, // Changed from default
             children: [
               CircleAvatar(
                 radius: 18,
@@ -1383,7 +1838,11 @@ class _PractitionerDashboardScreenState
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
+                      maxLines: 2, // Added: Allow 2 lines for long names
+                      overflow: TextOverflow
+                          .ellipsis, // Added: Show ... if still too long
                     ),
+                    const SizedBox(height: 2), // Added small spacing
                     Text(
                       DateFormat(
                         'MMM dd, yyyy • h:mm a',
@@ -1392,6 +1851,8 @@ class _PractitionerDashboardScreenState
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
+                      maxLines: 1, // Added: Ensure single line
+                      overflow: TextOverflow.ellipsis, // Added: Handle overflow
                     ),
                     if (isComprehensive) ...[
                       const SizedBox(height: 4),
@@ -1418,7 +1879,6 @@ class _PractitionerDashboardScreenState
                   ],
                 ),
               ),
-              // Call Button
               if (hasPhone)
                 Container(
                   margin: const EdgeInsets.only(left: 8),
@@ -1429,73 +1889,151 @@ class _PractitionerDashboardScreenState
                   child: IconButton(
                     icon: const Icon(Icons.phone, size: 18),
                     color: AppColors.success,
+                    padding: const EdgeInsets.all(8), // Added: Reduce padding
+                    constraints: const BoxConstraints(
+                      minWidth: 36, // Added: Set minimum size
+                      minHeight: 36,
+                    ),
                     onPressed: () => _makePhoneCall(patient!.phone!),
                     tooltip: patient!.phone,
                   ),
                 ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  result.overallStatus.label,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
+              Flexible(
+                // Changed from no wrapper to Flexible
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    result.overallStatus.label,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                    maxLines: 1, // Added: Ensure single line
+                    overflow: TextOverflow.ellipsis, // Added: Handle overflow
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-
-          // Results Grid
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                width: 1,
+          GestureDetector(
+            onTap: () => _showResultDetails(result),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: 8,
+                horizontal: 4,
+              ), // Added horizontal padding
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+              ),
+              child: IntrinsicHeight(
+                // Added: Makes all columns same height
+                child: Row(
+                  children: [
+                    _buildMiniResult(
+                      'VA (R)',
+                      result.visualAcuityRight?.snellenScore ?? 'N/A',
+                    ),
+                    _buildMiniResult(
+                      'VA (L)',
+                      result.visualAcuityLeft?.snellenScore ?? 'N/A',
+                    ),
+                    _buildMiniResult(
+                      'Color',
+                      result.colorVision?.isNormal == true ? 'Normal' : 'Check',
+                    ),
+                    if (isComprehensive && result.pelliRobson != null)
+                      _buildMiniResult(
+                        'Contrast',
+                        result.pelliRobson!.averageScore.toStringAsFixed(1),
+                      )
+                    else
+                      _buildMiniResult(
+                        'Amsler',
+                        (result.amslerGridRight?.hasDistortions != true &&
+                                result.amslerGridLeft?.hasDistortions != true)
+                            ? 'Normal'
+                            : 'Check',
+                      ),
+                  ],
+                ),
               ),
             ),
-            child: Row(
-              children: [
-                _buildMiniResult(
-                  'VA (R)',
-                  result.visualAcuityRight?.snellenScore ?? 'N/A',
-                ),
-                _buildMiniResult(
-                  'VA (L)',
-                  result.visualAcuityLeft?.snellenScore ?? 'N/A',
-                ),
-                _buildMiniResult(
-                  'Color',
-                  result.colorVision?.isNormal == true ? 'Normal' : 'Check',
-                ),
-                if (isComprehensive && result.pelliRobson != null)
-                  _buildMiniResult(
-                    'Contrast',
-                    result.pelliRobson!.averageScore.toStringAsFixed(1),
-                  )
-                else
-                  _buildMiniResult(
-                    'Amsler',
-                    (result.amslerGridRight?.hasDistortions != true &&
-                            result.amslerGridLeft?.hasDistortions != true)
-                        ? 'Normal'
-                        : 'Check',
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showResultDetails(result),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text(
+                    'View',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-              ],
-            ),
+
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 8,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: () => _downloadPdf(result),
+                  icon: const Icon(Icons.download, size: 16),
+                  label: const Text(
+                    'PDF',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 8,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 1,
+                child: IconButton(
+                  onPressed: () => _sharePdf(result),
+                  icon: const Icon(Icons.share, size: 20),
+                  color: AppColors.primary,
+                  tooltip: 'Share report',
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1504,233 +2042,38 @@ class _PractitionerDashboardScreenState
 
   Widget _buildMiniResult(String label, String value) {
     return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-              color: AppColors.primary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textSecondary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPatientsList() {
-    if (_patients.isEmpty) return const SizedBox.shrink();
-
-    final filteredPatients = _searchQuery.isEmpty
-        ? _patients
-        : _patients.where((p) {
-            final query = _searchQuery.toLowerCase();
-            return p.fullName.toLowerCase().contains(query) ||
-                (p.phone?.toLowerCase().contains(query) ?? false);
-          }).toList();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Patients',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _searchController,
-            onChanged: (value) => setState(() => _searchQuery = value),
-            decoration: InputDecoration(
-              hintText: 'Search patients...',
-              hintStyle: const TextStyle(fontSize: 13),
-              prefixIcon: const Icon(Icons.search, size: 20),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 20),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 2,
+        ), // Added padding between items
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // Added: Minimize vertical space
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: AppColors.primary,
               ),
-              filled: true,
-              fillColor: AppColors.background,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 12,
-                horizontal: 16,
-              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 12),
-          ...filteredPatients
-              .take(8)
-              .map((patient) => _buildPatientCard(patient)),
-          if (filteredPatients.length > 8)
-            Center(
-              child: TextButton(
-                onPressed: () {
-                  // Show all patients
-                },
-                child: Text('View all ${filteredPatients.length} patients'),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.textSecondary,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPatientCard(PatientModel patient) {
-    // Find latest result for this patient
-    final patientResults = _filteredResults
-        .where(
-          (r) => r.profileId == patient.id || r.profileName == patient.fullName,
-        )
-        .toList();
-
-    final latestResult = patientResults.isNotEmpty
-        ? patientResults.first
-        : null;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary.withValues(alpha: 0.03),
-            AppColors.background,
           ],
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-            child: Text(
-              patient.firstName[0].toUpperCase(),
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  patient.fullName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Text(
-                      '${patient.age} yrs • ${patient.sex}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    if (latestResult != null) ...[
-                      const Text(
-                        ' • ',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(
-                            latestResult.overallStatus,
-                          ).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          latestResult.overallStatus.label,
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: _getStatusColor(latestResult.overallStatus),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (patient.phone != null)
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.phone, size: 18),
-                color: AppColors.success,
-                onPressed: () => _makePhoneCall(patient.phone!),
-                tooltip: patient.phone,
-              ),
-            ),
-        ],
       ),
     );
-  }
-
-  Color _getStatusColor(TestStatus status) {
-    switch (status) {
-      case TestStatus.normal:
-        return AppColors.success;
-      case TestStatus.review:
-        return AppColors.warning;
-      case TestStatus.urgent:
-        return AppColors.error;
-    }
   }
 }
