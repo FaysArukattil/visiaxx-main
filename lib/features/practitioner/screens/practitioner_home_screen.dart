@@ -4,7 +4,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/widgets/eye_loader.dart';
-import '../../home/screens/profile_screen.dart';
 
 class PractitionerHomeScreen extends StatefulWidget {
   const PractitionerHomeScreen({super.key});
@@ -60,7 +59,6 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   Future<void> _loadUserData() async {
     try {
       if (_authService.currentUserId != null) {
-        // Now returns from local cache instantly or refreshes from server
         final user = await _authService.getUserData(
           _authService.currentUserId!,
         );
@@ -90,363 +88,425 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
       body: SafeArea(
         child: _isLoading
             ? const Center(child: EyeLoader.fullScreen())
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 20),
-                    _buildTagline(),
-                    const SizedBox(height: 16),
-                    _buildCarousel(),
-                    const SizedBox(height: 16),
-                    _buildCarouselIndicators(),
-                    const SizedBox(height: 28),
-                    _buildSectionTitle('Services'),
-                    const SizedBox(height: 16),
-                    _buildServicesGrid(),
-                    const SizedBox(height: 32),
-                    _buildSectionTitle('Individual Tests'),
-                    const SizedBox(height: 16),
-                    _buildIndividualTestsGrid(),
-                    const SizedBox(height: 32),
-                  ],
-                ),
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(constraints),
+                        SizedBox(height: constraints.maxHeight * 0.015),
+                        _buildCarousel(constraints),
+                        SizedBox(height: constraints.maxHeight * 0.012),
+                        _buildCarouselIndicators(),
+                        SizedBox(height: constraints.maxHeight * 0.02),
+                        _buildServicesGrid(constraints),
+                        SizedBox(height: constraints.maxHeight * 0.02),
+                      ],
+                    ),
+                  );
+                },
               ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BoxConstraints constraints) {
+    final horizontalPadding = constraints.maxWidth * 0.045;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Dynamic logo sizing based on screen dimensions
+    final logoWidth = (screenWidth * 0.28).clamp(100.0, 140.0);
+    final logoHeight = (screenHeight * 0.06).clamp(48.0, 65.0);
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 8, horizontalPadding, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 120,
-                height: 52,
+                width: logoWidth,
+                height: logoHeight,
                 decoration: BoxDecoration(
                   color: AppColors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.08),
-                      blurRadius: 10,
+                      color: AppColors.black.withValues(alpha: 0.06),
+                      blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Image.asset(
-                      'assets/images/icons/app_logo.png',
-                      fit: BoxFit.cover,
-                    ),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/images/icons/app_logo.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.remove_red_eye,
+                        color: AppColors.primary,
+                      );
+                    },
                   ),
                 ),
               ),
               const Spacer(),
-              // Practitioner badge
+              // Practitioner badge replacing language selector
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.025,
+                  vertical: screenHeight * 0.008,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                  ),
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.medical_services,
-                      size: 16,
-                      color: AppColors.primary,
+                      size: (screenWidth * 0.04).clamp(14.0, 18.0),
+                      color: AppColors.textSecondary,
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: screenWidth * 0.012),
                     Text(
-                      'Practitioner',
+                      'PRACTITIONER',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: AppColors.primary,
+                        fontSize: (screenWidth * 0.03).clamp(11.0, 13.0),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () {
-                  if (_user != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProfileScreen(user: _user!),
-                      ),
-                    );
-                  }
-                },
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      _userName.isNotEmpty ? _userName[0].toUpperCase() : 'P',
-                      style: const TextStyle(
-                        color: AppColors.white,
+            ],
+          ),
+          SizedBox(height: screenHeight * 0.015),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hello, $_userName 👋',
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: (screenWidth * 0.055).clamp(18.0, 24.0),
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: screenHeight * 0.008),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.035,
+                        vertical: screenHeight * 0.01,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primary.withOpacity(0.08),
+                            AppColors.primaryLight.withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.15),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.05),
+                            blurRadius: 12,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.remove_red_eye,
+                            color: AppColors.primary,
+                            size: (screenWidth * 0.04).clamp(14.0, 18.0),
+                          ),
+                          SizedBox(width: screenWidth * 0.02),
+                          Flexible(
+                            child: Text(
+                              'Your Vision, Our Priority',
+                              style: TextStyle(
+                                fontSize: (screenWidth * 0.035).clamp(
+                                  12.0,
+                                  14.5,
+                                ),
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Hello, $_userName 👋',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Ready to help your patients today?',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTagline() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.primary.withValues(alpha: 0.1),
-              AppColors.primary.withValues(alpha: 0.05),
-            ],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+  Widget _buildCarousel(BoxConstraints constraints) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final carouselHeight = (screenHeight * 0.22).clamp(160.0, 220.0);
+
+    return SizedBox(
+      width: screenWidth,
+      height: carouselHeight,
+      child: CarouselSlider(
+        options: CarouselOptions(
+          height: carouselHeight,
+          autoPlay: true,
+          autoPlayInterval: const Duration(seconds: 5),
+          enlargeCenterPage: true,
+          enlargeFactor: 0.08,
+          viewportFraction: 0.88,
+          padEnds: true,
+          onPageChanged: (index, reason) =>
+              setState(() => _currentCarouselIndex = index),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        items: _carouselSlides.map((slide) {
+          return Builder(
+            builder: (BuildContext context) {
+              return Container(
+                width: screenWidth * 0.88,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withValues(alpha: .08),
+                      AppColors.primaryLight.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.15),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.08),
+                      blurRadius: 20,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -30,
+                        top: -30,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                AppColors.primary.withOpacity(0.12),
+                                AppColors.primary.withOpacity(0.02),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: -25,
+                        bottom: -25,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                AppColors.primaryLight.withOpacity(0.1),
+                                AppColors.primaryLight.withOpacity(0.02),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(
+                          (screenWidth * 0.035).clamp(12.0, 18.0),
+                        ),
+                        child: slide['hasImages'] as bool
+                            ? _buildSlideWithImages(
+                                slide,
+                                screenWidth,
+                                screenHeight,
+                              )
+                            : _buildSlideWithoutImages(
+                                slide,
+                                screenWidth,
+                                screenHeight,
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSlideWithImages(
+    Map<String, dynamic> slide,
+    double screenWidth,
+    double screenHeight,
+  ) {
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableHeight = cardConstraints.maxHeight;
+        final availableWidth = cardConstraints.maxWidth;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(Icons.remove_red_eye, color: AppColors.primary, size: 20),
-            const SizedBox(width: 10),
-            Text(
-              'Your Vision, Our Priority',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-                letterSpacing: 0.3,
+            Expanded(
+              flex: 65,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    slide['heading'] as String,
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: (availableWidth * 0.055).clamp(13.0, 17.0),
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: availableHeight * 0.04),
+                  Text(
+                    slide['content'] as String,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: (availableWidth * 0.032).clamp(9.0, 11.5),
+                      height: 1.35,
+                    ),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: availableHeight * 0.035),
+                  Text(
+                    slide['supportText'] as String,
+                    style: TextStyle(
+                      color: AppColors.primary.withValues(alpha: 0.8),
+                      fontSize: (availableWidth * 0.028).clamp(8.0, 10.0),
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: availableWidth * 0.02),
+            Flexible(
+              flex: 35,
+              child: Center(
+                child: SizedBox(
+                  height: availableHeight * 0.85,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        child: _buildFounderImage(
+                          'assets/images/founder_image_1.png',
+                          availableWidth,
+                          availableHeight,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: _buildFounderImage(
+                          'assets/images/founder_image_2.png',
+                          availableWidth,
+                          availableHeight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCarousel() {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final carouselHeight = screenHeight * 0.22;
-
-    return CarouselSlider(
-      options: CarouselOptions(
-        height: carouselHeight > 220
-            ? 220
-            : (carouselHeight < 180 ? 180 : carouselHeight),
-        autoPlay: true,
-        autoPlayInterval: const Duration(seconds: 5),
-        enlargeCenterPage: true,
-        enlargeFactor: 0.1,
-        viewportFraction: 0.92,
-        onPageChanged: (index, reason) =>
-            setState(() => _currentCarouselIndex = index),
-      ),
-      items: _carouselSlides.map((slide) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
-              children: [
-                // Decorative circles
-                Positioned(
-                  right: -30,
-                  top: -30,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.05),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: -20,
-                  bottom: -20,
-                  child: Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.05),
-                    ),
-                  ),
-                ),
-                // Content
-                Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: slide['hasImages'] as bool
-                      ? _buildSlideWithImages(slide)
-                      : _buildSlideWithoutImages(slide),
-                ),
-              ],
-            ),
-          ),
         );
-      }).toList(),
+      },
     );
   }
 
-  Widget _buildSlideWithImages(Map<String, dynamic> slide) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Text content (left side)
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                slide['heading'] as String,
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.3,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                slide['content'] as String,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 10.5,
-                  height: 1.2,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                slide['supportText'] as String,
-                style: TextStyle(
-                  color: AppColors.primary.withValues(alpha: 0.8),
-                  fontSize: 10,
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Founder images (right side) - staggered diagonally
-        SizedBox(
-          width: 70,
-          height: 150,
-          child: Stack(
-            children: [
-              Positioned(
-                top: 0,
-                left: 0,
-                child: _buildFounderImage('assets/images/founder_image_1.png'),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: _buildFounderImage('assets/images/founder_image_2.png'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFounderImage(String imagePath) {
+  Widget _buildFounderImage(String imagePath, double width, double height) {
     return Container(
-      width: 45,
-      height: 85,
+      width: (width * 0.13).clamp(38.0, 52.0),
+      height: (height * 0.42).clamp(65.0, 90.0),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: AppColors.black.withValues(alpha: 0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Image.asset(
           imagePath,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: AppColors.white.withValues(alpha: 0.2),
+              color: AppColors.primary.withValues(alpha: 0.1),
               child: Icon(
                 Icons.person,
-                color: AppColors.white.withValues(alpha: 0.6),
-                size: 28,
+                color: AppColors.primary.withValues(alpha: 0.6),
+                size: 20,
               ),
             );
           },
@@ -455,444 +515,467 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
     );
   }
 
-  Widget _buildSlideWithoutImages(Map<String, dynamic> slide) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          slide['heading'] as String,
-          style: TextStyle(
-            color: AppColors.primary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.3,
+  Widget _buildSlideWithoutImages(
+    Map<String, dynamic> slide,
+    double screenWidth,
+    double screenHeight,
+  ) {
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableWidth = cardConstraints.maxWidth;
+        final availableHeight = cardConstraints.maxHeight;
+
+        return Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                slide['heading'] as String,
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: (availableWidth * 0.055).clamp(14.0, 18.0),
+                  fontWeight: FontWeight.bold,
+                  height: 1.2,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: availableHeight * 0.05),
+              Text(
+                slide['content'] as String,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: (availableWidth * 0.038).clamp(10.5, 13.0),
+                  height: 1.4,
+                ),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: availableHeight * 0.05),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: availableWidth * 0.03,
+                  vertical: availableHeight * 0.025,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  slide['supportText'] as String,
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: (availableWidth * 0.032).clamp(9.0, 11.0),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          slide['content'] as String,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 11.5,
-            height: 1.4,
-          ),
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            slide['supportText'] as String,
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _buildCarouselIndicators() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        _carouselSlides.length,
-        (index) => AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: _currentCarouselIndex == index ? 24 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: _currentCarouselIndex == index
-                ? AppColors.primary
-                : AppColors.border,
-            borderRadius: BorderRadius.circular(4),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          _carouselSlides.length,
+          (index) => AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: _currentCarouselIndex == index ? 20 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _currentCarouselIndex == index
+                  ? AppColors.primary
+                  : AppColors.divider,
+              borderRadius: BorderRadius.circular(3),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
-  }
+  Widget _buildServicesGrid(BoxConstraints constraints) {
+    final horizontalPadding = constraints.maxWidth * 0.045;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-  Widget _buildServicesGrid() {
+    // Calculate available height for grid
+    final usedHeight =
+        (screenHeight * 0.06) + // Header logo height
+        (screenHeight * 0.015) + // Spacing after header
+        (screenHeight * 0.015) + // Greeting height estimate
+        (screenHeight * 0.22).clamp(160.0, 220.0) + // Carousel height
+        (screenHeight * 0.012) + // Spacing after carousel
+        (screenHeight * 0.015) + // Indicators
+        (screenHeight * 0.02) + // Spacing before grid
+        (screenHeight * 0.02); // Spacing after grid
+
+    final availableGridHeight = (screenHeight - usedHeight).clamp(280.0, 500.0);
+
+    // Dynamic spacing and heights based on available grid space
+    final cardSpacing = (availableGridHeight * 0.035).clamp(6.0, 12.0);
+    final compactCardHeight = (availableGridHeight * 0.32).clamp(85.0, 115.0);
+    final wideCardHeight = (availableGridHeight * 0.2).clamp(55.0, 72.0);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // First row: Add Patient and Full Eye Exam
+          // Row 1: Quick Test and Full Eye Exam
           Row(
             children: [
               Expanded(
-                child: _ServiceCard(
-                  icon: Icons.speed_rounded,
+                child: _CompactServiceCard(
+                  icon: Icons.timer_outlined,
                   title: 'Quick Test',
-                  subtitle: null,
+                  subtitle: 'rapid tests',
                   onTap: () => Navigator.pushNamed(
                     context,
                     '/practitioner-profile-selection',
                   ),
+                  height: compactCardHeight,
+                  screenWidth: screenWidth,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: cardSpacing),
               Expanded(
-                child: _ServiceCard(
-                  icon: Icons.assessment_rounded,
+                child: _CompactServiceCard(
+                  icon: Icons.health_and_safety_outlined,
                   title: 'Full Eye Exam',
-                  subtitle: null,
+                  subtitle: 'Comprehensive',
                   onTap: () => Navigator.pushNamed(
                     context,
                     '/practitioner-profile-selection',
                     arguments: {'comprehensive': true},
                   ),
+                  height: compactCardHeight,
+                  screenWidth: screenWidth,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Second row: My Results spans full width (no Consultation)
+          SizedBox(height: cardSpacing),
+          // Row 2: Patient Results (wide card)
           _WideServiceCard(
-            icon: Icons.history_rounded,
+            icon: Icons.assessment_outlined,
             title: 'Patient Results',
-            subtitle: 'View all patient test results, organized by date',
+            subtitle: 'View & download reports',
             onTap: () => Navigator.pushNamed(context, '/practitioner-results'),
+            height: wideCardHeight,
+            screenWidth: screenWidth,
           ),
-          const SizedBox(height: 16),
-          // Third row: Eye Exercises and Eye Care Tips
+          SizedBox(height: cardSpacing),
+          // Row 3: Individual Tests and Visiaxx TV
           Row(
             children: [
               Expanded(
-                child: _ServiceCard(
-                  icon: Icons.remove_red_eye_rounded,
+                child: _CompactServiceCard(
+                  icon: Icons.list_alt_outlined,
+                  title: 'Individual Tests',
+                  subtitle: 'Quick standalone tests',
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    '/practitioner-individual-tests',
+                  ),
+                  height: compactCardHeight,
+                  screenWidth: screenWidth,
+                ),
+              ),
+              SizedBox(width: cardSpacing),
+              Expanded(
+                child: _CompactServiceCard(
+                  icon: Icons.video_library_outlined,
                   title: 'Visiaxx TV',
+                  subtitle: 'Eye exercises',
                   onTap: () => Navigator.pushNamed(context, '/eye-exercises'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _ServiceCard(
-                  icon: Icons.lightbulb_outline_rounded,
-                  title: 'Eye Care Tips',
-                  subtitle: 'Patient education',
-                  onTap: () => Navigator.pushNamed(context, '/eye-care-tips'),
+                  height: compactCardHeight,
+                  screenWidth: screenWidth,
                 ),
               ),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildIndividualTestsGrid() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _IndividualTestCard(
-                  icon: Icons.visibility_outlined,
-                  title: 'Visual Acuity',
-                  color: AppColors.primary,
-                  onTap: () => _navigateToPatientSelection('visual_acuity'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _IndividualTestCard(
-                  icon: Icons.palette_outlined,
-                  title: 'Color Vision',
-                  color: const Color(0xFFE91E63),
-                  onTap: () => _navigateToPatientSelection('color_vision'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _IndividualTestCard(
-                  icon: Icons.grid_4x4_outlined,
-                  title: 'Amsler Grid',
-                  color: const Color(0xFF00BCD4),
-                  onTap: () => _navigateToPatientSelection('amsler_grid'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _IndividualTestCard(
-                  icon: Icons.menu_book_outlined,
-                  title: 'Reading Test',
-                  color: const Color(0xFF4CAF50),
-                  onTap: () => _navigateToPatientSelection('reading_test'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _IndividualTestCard(
-                  icon: Icons.contrast_outlined,
-                  title: 'Contrast',
-                  color: const Color(0xFFFF9800),
-                  onTap: () =>
-                      _navigateToPatientSelection('contrast_sensitivity'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _IndividualTestCard(
-                  icon: Icons.remove_red_eye_rounded,
-                  title: 'Refractometry',
-                  color: const Color(0xFF9C27B0),
-                  onTap: () =>
-                      _navigateToPatientSelection('mobile_refractometry'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToPatientSelection(String testType) {
-    Navigator.pushNamed(
-      context,
-      '/practitioner-profile-selection',
-      arguments: {'testType': testType},
     );
   }
 }
 
-class _ServiceCard extends StatelessWidget {
+class _CompactServiceCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle;
+  final String subtitle;
   final VoidCallback onTap;
+  final double height;
+  final double screenWidth;
 
-  const _ServiceCard({
+  const _CompactServiceCard({
     required this.icon,
     required this.title,
-    this.subtitle,
+    required this.subtitle,
     required this.onTap,
+    required this.height,
+    required this.screenWidth,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 130,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableWidth = cardConstraints.maxWidth;
+        final iconSize = (availableWidth * 0.18).clamp(28.0, 36.0);
+        final titleFontSize = (availableWidth * 0.08).clamp(13.0, 16.0);
+        final subtitleFontSize = (availableWidth * 0.058).clamp(9.5, 12.0);
+        final cardPadding = (availableWidth * 0.065).clamp(10.0, 14.0);
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            splashColor: AppColors.primary.withOpacity(0.1),
+            highlightColor: AppColors.primary.withOpacity(0.05),
+            child: Ink(
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 26),
-            ),
-            const Spacer(),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtitle!,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withOpacity(0.08),
+                    AppColors.primaryLight.withOpacity(0.05),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.15),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.05),
+                    blurRadius: 12,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ],
-        ),
-      ),
+              child: Container(
+                height: height,
+                padding: EdgeInsets.all(cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: iconSize + 14,
+                      height: iconSize + 14,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: AppColors.primary,
+                        size: iconSize,
+                      ),
+                    ),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: titleFontSize,
+                              color: AppColors.primary,
+                              height: 1.1,
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: subtitleFontSize,
+                              color: AppColors.textSecondary,
+                              height: 1.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-/// Wide service card spanning full width - used for My Results in practitioner mode
 class _WideServiceCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final double height;
+  final double screenWidth;
 
   const _WideServiceCard({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    required this.height,
+    required this.screenWidth,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final iconSize = (cardConstraints.maxWidth * 0.055).clamp(24.0, 30.0);
+        final titleFontSize = (cardConstraints.maxWidth * 0.042).clamp(
+          14.0,
+          17.0,
+        );
+        final subtitleFontSize = (cardConstraints.maxWidth * 0.032).clamp(
+          10.0,
+          12.0,
+        );
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            splashColor: AppColors.primary.withOpacity(0.1),
+            highlightColor: AppColors.primary.withOpacity(0.05),
+            child: Ink(
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 26),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withOpacity(0.08),
+                    AppColors.primaryLight.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.15),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.05),
+                    blurRadius: 12,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: AppColors.textTertiary,
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _IndividualTestCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _IndividualTestCard({
-    required this.icon,
-    required this.title,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 100,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+              child: Container(
+                height: height,
+                padding: EdgeInsets.symmetric(
+                  horizontal: (cardConstraints.maxWidth * 0.04).clamp(
+                    12.0,
+                    18.0,
+                  ),
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: iconSize + 14,
+                      height: iconSize + 14,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: AppColors.primary,
+                        size: iconSize,
+                      ),
+                    ),
+                    SizedBox(
+                      width: (cardConstraints.maxWidth * 0.03).clamp(8.0, 14.0),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: titleFontSize,
+                              color: AppColors.primary,
+                              letterSpacing: -0.3,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: subtitleFontSize,
+                              color: AppColors.textSecondary,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: (cardConstraints.maxWidth * 0.038).clamp(
+                          16.0,
+                          20.0,
+                        ),
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

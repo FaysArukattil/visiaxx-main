@@ -10,6 +10,8 @@ import 'package:visiaxx/features/eye_care_tips/screens/eye_care_tips_screen.dart
 import 'package:visiaxx/features/eye_exercises/screens/eye_exercise_reels_screen.dart';
 import 'package:visiaxx/features/home/screens/main_navigation_screen.dart';
 import 'package:visiaxx/features/home/screens/settings_screen.dart';
+import 'package:visiaxx/features/practitioner/screens/practitioner_individual_tests_screen.dart';
+import 'package:visiaxx/features/practitioner/screens/practitioner_main_navigation_screen.dart';
 import 'package:visiaxx/features/results/screens/speech_log_viewer_screen.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
@@ -211,7 +213,10 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/speech-logs': (context) => const SpeechLogViewerScreen(),
           '/practitioner-dashboard': (context) =>
               const PractitionerDashboardScreen(),
-          '/practitioner-home': (context) => const PractitionerHomeScreen(),
+          '/practitioner-home': (context) =>
+              const PractitionerMainNavigationScreen(),
+          '/practitioner-individual-tests': (context) =>
+              const PractitionerIndividualTestsScreen(),
           '/practitioner-profile-selection': (context) {
             final args =
                 ModalRoute.of(context)?.settings.arguments
