@@ -1,10 +1,14 @@
-﻿import 'package:flutter/material.dart';
+﻿// ignore_for_file: use_build_context_synchronously
+
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:visiaxx/core/services/file_manager_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/database_service.dart';
 import '../../../core/services/patient_service.dart';
@@ -18,7 +22,6 @@ import '../../../data/models/test_result_model.dart';
 import '../../../data/models/patient_model.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PractitionerDashboardScreen extends StatefulWidget {
@@ -129,40 +132,91 @@ class _PractitionerDashboardScreenState
   void _applyFilters(List<TestResultModel> allResults) {
     final now = DateTime.now();
     DateTime? startDate;
+    DateTime? endDate;
 
-    switch (_selectedPeriod) {
-      case 'today':
-        startDate = DateTime(now.year, now.month, now.day);
-        break;
-      case 'week':
-        startDate = now.subtract(const Duration(days: 7));
-        break;
-      case 'month':
-        startDate = now.subtract(const Duration(days: 30));
-        break;
-      case 'all':
-        startDate = null;
-        break;
+    // First apply period filter if no custom date range is set
+    if (_startDate == null && _endDate == null) {
+      switch (_selectedPeriod) {
+        case 'today':
+          startDate = DateTime(now.year, now.month, now.day);
+          endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+          break;
+        case 'week':
+          startDate = now.subtract(const Duration(days: 7));
+          endDate = now;
+          break;
+        case 'month':
+          startDate = now.subtract(const Duration(days: 30));
+          endDate = now;
+          break;
+        case 'all':
+          startDate = null;
+          endDate = null;
+          break;
+      }
     }
 
-    var filtered = startDate == null
-        ? allResults
-        : allResults.where((r) => r.timestamp.isAfter(startDate!)).toList();
+    var filtered = allResults;
 
-    // Apply custom date range if set
-    if (_startDate != null || _endDate != null) {
+    // Apply custom date range if set (this overrides period filter)
+    if (_startDate != null && _endDate != null) {
+      // Check if it's a single date (start and end are the same day)
+      final isSingleDate =
+          _startDate!.year == _endDate!.year &&
+          _startDate!.month == _endDate!.month &&
+          _startDate!.day == _endDate!.day;
+
+      if (isSingleDate) {
+        // Filter for exact date
+        filtered = filtered.where((r) {
+          return r.timestamp.year == _startDate!.year &&
+              r.timestamp.month == _startDate!.month &&
+              r.timestamp.day == _startDate!.day;
+        }).toList();
+      } else {
+        // Filter for date range
+        final rangeStart = DateTime(
+          _startDate!.year,
+          _startDate!.month,
+          _startDate!.day,
+        );
+        final rangeEnd = DateTime(
+          _endDate!.year,
+          _endDate!.month,
+          _endDate!.day,
+          23,
+          59,
+          59,
+        );
+
+        filtered = filtered.where((r) {
+          if (endDate != null) {
+            return r.timestamp.isAfter(
+                  startDate!.subtract(const Duration(seconds: 1)),
+                ) &&
+                r.timestamp.isBefore(endDate.add(const Duration(seconds: 1)));
+          } else {
+            return r.timestamp.isAfter(startDate!);
+          }
+        }).toList();
+      }
+    } else if (startDate != null) {
+      // Apply period filter
+      final filterStartDate =
+          startDate; // Capture in a non-nullable local variable
       filtered = filtered.where((r) {
-        if (_startDate != null && r.timestamp.isBefore(_startDate!)) {
-          return false;
+        if (endDate != null) {
+          return r.timestamp.isAfter(
+                filterStartDate.subtract(const Duration(seconds: 1)),
+              ) &&
+              r.timestamp.isBefore(endDate.add(const Duration(seconds: 1)));
+        } else {
+          return r.timestamp.isAfter(filterStartDate);
         }
-        if (_endDate != null &&
-            r.timestamp.isAfter(_endDate!.add(const Duration(days: 1)))) {
-          return false;
-        }
-        return true;
       }).toList();
     }
 
+    // Apply condition filters
     if (_selectedConditions.isNotEmpty) {
       filtered = filtered.where((r) {
         final conditions = _getAllResultConditions(r);
@@ -288,11 +342,13 @@ class _PractitionerDashboardScreenState
     if (conditions.contains('Hyperopia')) return 'Hyperopia';
     if (conditions.contains('Astigmatism')) return 'Astigmatism';
     if (conditions.contains('Presbyopia')) return 'Presbyopia';
-    if (conditions.contains('Color Vision Deficiency'))
+    if (conditions.contains('Color Vision Deficiency')) {
       return 'Color Vision Deficiency';
+    }
     if (conditions.contains('Vision Impairment')) return 'Vision Impairment';
-    if (conditions.contains('Low Contrast Sensitivity'))
+    if (conditions.contains('Low Contrast Sensitivity')) {
       return 'Low Contrast Sensitivity';
+    }
     return 'Normal';
   }
 
@@ -783,44 +839,52 @@ class _PractitionerDashboardScreenState
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
         title: const Row(
           children: [
-            Icon(Icons.download, color: AppColors.primary),
+            Icon(Icons.download, color: AppColors.primary, size: 24),
             SizedBox(width: 12),
-            Text('Download PDFs'),
+            Expanded(
+              child: Text('Download PDFs', style: TextStyle(fontSize: 18)),
+            ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Choose which reports to download:',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.85,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Choose which reports to download:',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
 
-            // Download All Option
-            _buildDownloadOption(
-              icon: Icons.select_all,
-              title: 'Download All Reports',
-              subtitle: '$totalResults total reports',
-              value: 'all',
-              isRecommended: !hasFilters,
-            ),
+              // Download All Option
+              _buildDownloadOption(
+                icon: Icons.select_all,
+                title: 'Download All Reports',
+                subtitle: '$totalResults total reports',
+                value: 'all',
+                isRecommended: !hasFilters,
+              ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // Download Filtered Option
-            _buildDownloadOption(
-              icon: Icons.filter_alt,
-              title: 'Download Filtered Reports',
-              subtitle: _getFilterDescription(filteredCount),
-              value: 'filtered',
-              isRecommended: hasFilters,
-              isEnabled: filteredCount > 0,
-            ),
-          ],
+              // Download Filtered Option
+              _buildDownloadOption(
+                icon: Icons.filter_alt,
+                title: 'Download Filtered Reports',
+                subtitle: _getFilterDescription(filteredCount),
+                value: 'filtered',
+                isRecommended: hasFilters,
+                isEnabled: filteredCount > 0,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -846,7 +910,7 @@ class _PractitionerDashboardScreenState
         onTap: isEnabled ? () => Navigator.pop(context, value) : null,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: isEnabled
                 ? (isRecommended
@@ -884,14 +948,18 @@ class _PractitionerDashboardScreenState
                   children: [
                     Row(
                       children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: isEnabled
-                                ? AppColors.textPrimary
-                                : AppColors.textTertiary,
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: isEnabled
+                                  ? AppColors.textPrimary
+                                  : AppColors.textTertiary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (isRecommended) ...[
@@ -909,8 +977,9 @@ class _PractitionerDashboardScreenState
                               'RECOMMENDED',
                               style: TextStyle(
                                 color: AppColors.white,
-                                fontSize: 8,
+                                fontSize: 7,
                                 fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ),
@@ -921,15 +990,18 @@ class _PractitionerDashboardScreenState
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: isEnabled
                             ? AppColors.textSecondary
                             : AppColors.textTertiary,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               if (isEnabled)
                 const Icon(
                   Icons.arrow_forward_ios,
@@ -946,34 +1018,44 @@ class _PractitionerDashboardScreenState
   String _getFilterDescription(int count) {
     final filters = <String>[];
 
-    if (_selectedPeriod != 'all') {
-      filters.add(_selectedPeriod.toUpperCase());
-    }
-
-    if (_startDate != null || _endDate != null) {
-      if (_startDate != null && _endDate != null) {
+    // Date-based description
+    if (_startDate != null && _endDate != null) {
+      if (_startDate!.year == _endDate!.year &&
+          _startDate!.month == _endDate!.month &&
+          _startDate!.day == _endDate!.day) {
+        filters.add('📅 ${DateFormat('MMM d, yyyy').format(_startDate!)}');
+      } else {
         filters.add(
-          '${DateFormat('MMM d').format(_startDate!)} - ${DateFormat('MMM d').format(_endDate!)}',
+          '📅 ${DateFormat('MMM d').format(_startDate!)} - ${DateFormat('MMM d, yyyy').format(_endDate!)}',
         );
-      } else if (_startDate != null) {
-        filters.add('From ${DateFormat('MMM d').format(_startDate!)}');
-      } else if (_endDate != null) {
-        filters.add('Until ${DateFormat('MMM d').format(_endDate!)}');
+      }
+    } else if (_selectedPeriod != 'all') {
+      switch (_selectedPeriod) {
+        case 'today':
+          filters.add('📅 Today');
+          break;
+        case 'week':
+          filters.add('📅 Last 7 days');
+          break;
+        case 'month':
+          filters.add('📅 Last 30 days');
+          break;
       }
     }
 
+    // Condition-based description
     if (_selectedConditions.isNotEmpty) {
       if (_selectedConditions.length == 1) {
-        filters.add(_selectedConditions.first);
+        filters.add('🏥 ${_selectedConditions.first}');
+      } else if (_selectedConditions.length <= 3) {
+        filters.add('🏥 ${_selectedConditions.join(', ')}');
       } else {
-        filters.add('${_selectedConditions.length} conditions');
+        filters.add('🏥 ${_selectedConditions.length} conditions');
       }
     }
 
-    final filterText = filters.isNotEmpty
-        ? filters.join(' • ')
-        : 'Current view';
-    return '$count reports • $filterText';
+    final filterText = filters.isNotEmpty ? filters.join(' • ') : 'All reports';
+    return '$count reports\n$filterText';
   }
 
   Future<void> _downloadAllPDFs() async {
@@ -1001,7 +1083,7 @@ class _PractitionerDashboardScreenState
         return;
       }
       resultsToDownload = _filteredResults;
-      folderName = _getPeriodFolderName();
+      folderName = _getSmartFolderName();
     }
 
     if (resultsToDownload.isEmpty) {
@@ -1009,36 +1091,149 @@ class _PractitionerDashboardScreenState
       return;
     }
 
-    // Check permissions for Android
+    // Check and request permissions for Android
     if (Platform.isAndroid) {
-      PermissionStatus status = await Permission.storage.status;
-      if (status.isDenied) {
-        status = await Permission.storage.request();
+      final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      final int sdkInt = androidInfo.version.sdkInt;
+
+      debugPrint('[Dashboard] Android SDK: $sdkInt');
+
+      bool hasPermission = false;
+
+      if (sdkInt >= 33) {
+        hasPermission = true;
+        debugPrint('[Dashboard] Android 13+: Using scoped storage');
+      } else if (sdkInt >= 30) {
+        PermissionStatus status = await Permission.manageExternalStorage.status;
+
+        if (status.isDenied) {
+          final shouldRequest = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.folder_open, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('Storage Access')),
+                ],
+              ),
+              content: const Text(
+                'Visiaxx needs access to save PDF reports to your Downloads folder.\n\n'
+                'This permission allows the app to:\n'
+                '• Save reports to Downloads/Visiaxx_Reports\n'
+                '• Organize files for easy access\n\n'
+                'Your files remain private and secure.',
+                style: TextStyle(fontSize: 14),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Grant Access'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldRequest != true) return;
+          status = await Permission.manageExternalStorage.request();
+        }
+
+        if (status.isPermanentlyDenied) {
+          final shouldOpen = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Row(
+                children: [
+                  Icon(Icons.settings, color: AppColors.warning),
+                  SizedBox(width: 12),
+                  Expanded(child: Text('Permission Required')),
+                ],
+              ),
+              content: const Text(
+                'Storage permission is required to save PDFs to Downloads.\n\n'
+                'Please enable it in Settings:\n'
+                '1. Open App Settings\n'
+                '2. Go to Permissions\n'
+                '3. Enable "Files and media" or "All files access"',
+                style: TextStyle(fontSize: 14),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldOpen == true) {
+            await openAppSettings();
+          }
+          return;
+        }
+
+        hasPermission = status.isGranted;
+      } else {
+        PermissionStatus status = await Permission.storage.status;
+
+        if (status.isDenied) {
+          status = await Permission.storage.request();
+        }
+
+        if (status.isPermanentlyDenied) {
+          final shouldOpen = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text('Permission Required'),
+              content: const Text(
+                'Storage permission is needed to download PDFs. '
+                'Please enable it in app settings.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldOpen == true) {
+            await openAppSettings();
+          }
+          return;
+        }
+
+        hasPermission = status.isGranted;
       }
-      if (status.isPermanentlyDenied) {
-        final shouldOpen = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text('Permission Required'),
-            content: const Text(
-              'Storage permission is needed to download PDFs. Please enable it in settings.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Open Settings'),
-              ),
-            ],
-          ),
+
+      if (!hasPermission) {
+        SnackbarUtils.showError(
+          context,
+          'Storage permission denied. PDFs cannot be saved.',
         );
-        if (shouldOpen == true) await openAppSettings();
         return;
       }
     }
@@ -1107,12 +1302,12 @@ class _PractitionerDashboardScreenState
       }
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(); // Close progress dialog
         _showDownloadSuccessDialog(successCount, targetDir.path);
       }
     } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(); // Close progress dialog
         SnackbarUtils.showError(context, 'Failed to download PDFs: $e');
       }
     }
@@ -1138,15 +1333,77 @@ class _PractitionerDashboardScreenState
               ),
             ),
             const SizedBox(width: 12),
-            const Text('Download Complete'),
+            const Expanded(
+              child: Text('Download Complete', style: TextStyle(fontSize: 16)),
+            ),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Successfully downloaded $count PDFs'),
+            Text(
+              'Successfully downloaded $count PDF${count > 1 ? 's' : ''}',
+              style: const TextStyle(fontSize: 14),
+            ),
             const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.success.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.success,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'How to access your reports:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (Platform.isAndroid) ...[
+                    _buildInstructionStep('1', 'Open Files app or My Files'),
+                    _buildInstructionStep('2', 'Go to Downloads folder'),
+                    _buildInstructionStep('3', 'Find Visiaxx_Reports folder'),
+                    _buildInstructionStep('4', 'View your PDF reports'),
+                  ] else ...[
+                    _buildInstructionStep('1', 'Open Files app'),
+                    _buildInstructionStep('2', 'Tap "On My iPhone/iPad"'),
+                    _buildInstructionStep('3', 'Navigate to visiaxx folder'),
+                    _buildInstructionStep('4', 'View your reports'),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Location:',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -1168,8 +1425,9 @@ class _PractitionerDashboardScreenState
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
+                        fontFamily: 'monospace',
                       ),
-                      maxLines: 2,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -1179,40 +1437,185 @@ class _PractitionerDashboardScreenState
           ],
         ),
         actions: [
-          ElevatedButton(
+          TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.of(context).pop();
+
+              if (Platform.isAndroid) {
+                final success = await FileManagerService.openFolder(path);
+
+                if (!success && mounted) {
+                  SnackbarUtils.showWarning(
+                    context,
+                    'Please open Files app → Downloads → Visiaxx_Reports',
+                    duration: const Duration(seconds: 5),
+                  );
+                }
+              } else {
+                await Share.share(
+                  'Visiaxx Reports saved to:\n$path\n\n'
+                  'Open Files app → On My iPhone → visiaxx',
+                );
+              }
+            },
+            icon: Icon(
+              Platform.isIOS ? Icons.share : Icons.folder_open,
+              size: 18,
+            ),
+            label: Text(Platform.isIOS ? 'Share' : 'Open Folder'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Future<Directory> _getDownloadDirectory() async {
-    if (Platform.isAndroid) {
-      final dir = Directory('/storage/emulated/0/Download');
-      if (await dir.exists()) return dir;
-      final altDir = Directory('/storage/emulated/0/Downloads');
-      if (await altDir.exists()) return altDir;
-      final externalDir = await getExternalStorageDirectory();
-      return externalDir ?? await getApplicationDocumentsDirectory();
+  // Helper widget for instruction steps
+  Widget _buildInstructionStep(String number, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: AppColors.success,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: AppColors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openFolder(String folderPath) async {
+    try {
+      final success = await FileManagerService.openFolder(folderPath);
+
+      if (!success && mounted) {
+        // Instead of showing a simple snackbar, show helpful instructions
+        SnackbarUtils.showWarning(
+          context,
+          Platform.isAndroid
+              ? 'Files saved! Open Files app → Downloads → Visiaxx_Reports'
+              : 'Files saved! Open Files app to view reports',
+          duration: const Duration(seconds: 5),
+        );
+      } else if (success && mounted) {
+        SnackbarUtils.showSuccess(context, 'Opening file manager...');
+      }
+    } catch (e) {
+      debugPrint('[Dashboard] Error opening folder: $e');
+      if (mounted) {
+        SnackbarUtils.showError(
+          context,
+          'Could not open file manager. Files are saved in Downloads/Visiaxx_Reports',
+        );
+      }
     }
-    return await getApplicationDocumentsDirectory();
+  }
+
+  Future<Directory> _getDownloadDirectory() async {
+    return await FileManagerService.getDownloadDirectory();
   }
 
   String _getPeriodFolderName() {
+    return _getSmartFolderName(); // Use the smart folder name
+  }
+
+  String _getSmartFolderName() {
     final now = DateTime.now();
-    switch (_selectedPeriod) {
-      case 'today':
-        return DateFormat('yyyy-MM-dd').format(now);
-      case 'week':
-        final weekStart = now.subtract(Duration(days: now.weekday - 1));
-        return 'Week_${DateFormat('yyyy-MM-dd').format(weekStart)}';
-      case 'month':
-        return DateFormat('yyyy-MM').format(now);
-      default:
-        return 'All_Reports';
+    final parts = <String>[];
+
+    // 1. Date-based filtering
+    if (_startDate != null && _endDate != null) {
+      // Check if it's a single date
+      if (_startDate!.year == _endDate!.year &&
+          _startDate!.month == _endDate!.month &&
+          _startDate!.day == _endDate!.day) {
+        // Single date
+        parts.add('Date_${DateFormat('yyyy-MM-dd').format(_startDate!)}');
+      } else {
+        // Date range
+        final start = DateFormat('yyyy-MM-dd').format(_startDate!);
+        final end = DateFormat('yyyy-MM-dd').format(_endDate!);
+        parts.add('Range_${start}_to_$end');
+      }
+    } else {
+      // Period-based
+      switch (_selectedPeriod) {
+        case 'today':
+          parts.add('Today_${DateFormat('yyyy-MM-dd').format(now)}');
+          break;
+        case 'week':
+          final weekStart = now.subtract(Duration(days: now.weekday - 1));
+          parts.add('Week_${DateFormat('yyyy-MM-dd').format(weekStart)}');
+          break;
+        case 'month':
+          parts.add('Month_${DateFormat('yyyy-MM').format(now)}');
+          break;
+        case 'all':
+          parts.add('All_Time');
+          break;
+      }
     }
+
+    // 2. Condition-based filtering
+    if (_selectedConditions.isNotEmpty) {
+      if (_selectedConditions.length == 1) {
+        // Single condition
+        final condition = _selectedConditions.first.replaceAll(' ', '_');
+        parts.add('Condition_$condition');
+      } else if (_selectedConditions.length <= 3) {
+        // Multiple conditions (up to 3)
+        final conditions = _selectedConditions
+            .map((c) => c.replaceAll(' ', '_'))
+            .join('_and_');
+        parts.add('Conditions_$conditions');
+      } else {
+        // Many conditions
+        parts.add('Multiple_Conditions_${_selectedConditions.length}');
+      }
+    }
+
+    // 3. If no filters applied (shouldn't happen, but just in case)
+    if (parts.isEmpty) {
+      parts.add('All_Reports');
+    }
+
+    // Join parts with forward slash for folder hierarchy
+    final folderName = parts.join('/');
+
+    debugPrint('[Dashboard] Smart folder name: $folderName');
+    return folderName;
   }
 
   Future<void> _makePhoneCall(String phone) async {
@@ -1300,21 +1703,20 @@ class _PractitionerDashboardScreenState
         title: const Text('Dashboard'),
         backgroundColor: AppColors.surface,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _cache.clearCache();
-              _loadDashboardData();
-            },
-          ),
-        ],
       ),
       body: _isInitialLoading
           ? const Center(child: EyeLoader.fullScreen())
           : RefreshIndicator(
               onRefresh: () async {
                 _cache.clearCache();
+                setState(() {
+                  _selectedPeriod = 'all';
+                  _selectedConditions = [];
+                  _startDate = null;
+                  _endDate = null;
+                  _searchQuery = '';
+                  _searchController.clear();
+                });
                 await _loadDashboardData();
               },
               child: Stack(
@@ -1864,8 +2266,9 @@ class _PractitionerDashboardScreenState
                       interval: sortedDates.length > 14 ? 2 : 1,
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
-                        if (index < 0 || index >= sortedDates.length)
+                        if (index < 0 || index >= sortedDates.length) {
                           return const Text('');
+                        }
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
@@ -2137,7 +2540,7 @@ class _PractitionerDashboardScreenState
 
     final patientsWithResults = <String, PatientModel>{};
     for (final result in _filteredResults) {
-      final patientId = result.profileId ?? result.profileName;
+      final patientId = result.profileId;
       if (!patientsWithResults.containsKey(patientId)) {
         final patient = _patients.firstWhere(
           (p) => p.id == result.profileId || p.fullName == result.profileName,
@@ -2382,8 +2785,8 @@ class _PractitionerDashboardScreenState
                       minWidth: 36, // Added: Set minimum size
                       minHeight: 36,
                     ),
-                    onPressed: () => _makePhoneCall(patient!.phone!),
-                    tooltip: patient!.phone,
+                    onPressed: () => _makePhoneCall(patient.phone!),
+                    tooltip: patient.phone,
                   ),
                 ),
               const SizedBox(width: 8),
