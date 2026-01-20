@@ -321,71 +321,453 @@ class _PractitionerDashboardScreenState
   }
 
   Future<void> _showDatePicker() async {
+    DateTime? tempStartDate = _startDate;
+    DateTime? tempEndDate = _endDate;
+    bool isSelectingStartDate = true;
+    bool isRangeMode = true; // New: Track if user wants range or single date
+
     await showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        height: 400,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.65,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Column(
               children: [
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _startDate = null;
-                      _endDate = null;
-                    });
-                    Navigator.pop(context);
-                    final cachedData = _cache.getCachedData();
-                    if (cachedData != null) {
-                      _applyFilters(cachedData['allResults']);
-                    }
-                  },
-                  child: const Text('Clear'),
+                // Header with clear and done buttons
+                Row(
+                  children: [
+                    // Clear button
+                    TextButton.icon(
+                      onPressed: () {
+                        setModalState(() {
+                          tempStartDate = null;
+                          tempEndDate = null;
+                          isSelectingStartDate = true;
+                        });
+                      },
+                      icon: const Icon(Icons.clear, size: 18),
+                      label: const Text('Clear'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+
+                    // Title (centered and flexible)
+                    Expanded(
+                      child: Text(
+                        'Select Date',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+
+                    // Done button
+                    TextButton.icon(
+                      onPressed: () {
+                        // Validate dates before applying
+                        if (isRangeMode) {
+                          if (tempStartDate != null && tempEndDate != null) {
+                            if (tempStartDate!.isAfter(tempEndDate!)) {
+                              SnackbarUtils.showError(
+                                context,
+                                'Start date must be before end date',
+                              );
+                              return;
+                            }
+                          }
+                        }
+
+                        setState(() {
+                          _startDate = tempStartDate;
+                          _endDate = isRangeMode ? tempEndDate : tempStartDate;
+                        });
+                        Navigator.pop(context);
+                        final cachedData = _cache.getCachedData();
+                        if (cachedData != null) {
+                          _applyFilters(cachedData['allResults']);
+                        }
+                      },
+                      icon: const Icon(Icons.check, size: 18),
+                      label: const Text('Done'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Text(
-                  'Select Date Range',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+
+                const SizedBox(height: 16),
+
+                // Mode selector: Range or Single Date
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setModalState(() {
+                              isRangeMode = true;
+                              isSelectingStartDate = true;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isRangeMode
+                                  ? AppColors.primary
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Range',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: isRangeMode
+                                    ? AppColors.white
+                                    : AppColors.textSecondary,
+                                fontWeight: isRangeMode
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setModalState(() {
+                              isRangeMode = false;
+                              isSelectingStartDate = true;
+                              tempEndDate = tempStartDate;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: !isRangeMode
+                                  ? AppColors.primary
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Single Date',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: !isRangeMode
+                                    ? AppColors.white
+                                    : AppColors.textSecondary,
+                                fontWeight: !isRangeMode
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    final cachedData = _cache.getCachedData();
-                    if (cachedData != null) {
-                      _applyFilters(cachedData['allResults']);
-                    }
-                  },
-                  child: const Text('Done'),
+
+                const SizedBox(height: 16),
+
+                // Date selection indicator
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      if (isRangeMode)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildDateDisplay(
+                                label: 'From Date',
+                                date: tempStartDate,
+                                isActive: isSelectingStartDate,
+                                onTap: () {
+                                  setModalState(() {
+                                    isSelectingStartDate = true;
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.arrow_forward,
+                              color: AppColors.primary.withValues(alpha: 0.5),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildDateDisplay(
+                                label: 'To Date',
+                                date: tempEndDate,
+                                isActive: !isSelectingStartDate,
+                                onTap: () {
+                                  setModalState(() {
+                                    isSelectingStartDate = false;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        _buildDateDisplay(
+                          label: 'Selected Date',
+                          date: tempStartDate,
+                          isActive: true,
+                          onTap: () {},
+                        ),
+                      if (isRangeMode &&
+                          tempStartDate != null &&
+                          tempEndDate != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: AppColors.success,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  '${_calculateDaysBetween(tempStartDate!, tempEndDate!)} days selected',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Instruction text
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline,
+                        size: 16,
+                        color: AppColors.warning,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isRangeMode
+                              ? (isSelectingStartDate
+                                    ? 'Select the start date of your range'
+                                    : 'Select the end date of your range')
+                              : 'Select a single date to view tests',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Calendar picker
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.light(
+                          primary: AppColors.primary,
+                          onPrimary: AppColors.white,
+                          surface: AppColors.surface,
+                          onSurface: AppColors.textPrimary,
+                        ),
+                      ),
+                      child: CupertinoTheme(
+                        data: CupertinoThemeData(
+                          primaryColor: AppColors.primary,
+                          textTheme: CupertinoTextThemeData(
+                            dateTimePickerTextStyle: TextStyle(
+                              fontSize: 18,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        child: CupertinoDatePicker(
+                          mode: CupertinoDatePickerMode.date,
+                          initialDateTime: isRangeMode
+                              ? (isSelectingStartDate
+                                    ? (tempStartDate ?? DateTime.now())
+                                    : (tempEndDate ?? DateTime.now()))
+                              : (tempStartDate ?? DateTime.now()),
+                          minimumDate: DateTime(2020, 1, 1),
+                          maximumDate: DateTime.now(),
+                          onDateTimeChanged: (date) {
+                            setModalState(() {
+                              if (isRangeMode) {
+                                if (isSelectingStartDate) {
+                                  tempStartDate = date;
+                                  // Auto-set end date if it's before the new start date
+                                  if (tempEndDate == null ||
+                                      tempEndDate!.isBefore(date)) {
+                                    tempEndDate = date;
+                                  }
+                                  // Auto advance to end date selection
+                                  Future.delayed(
+                                    const Duration(milliseconds: 300),
+                                    () {
+                                      if (mounted) {
+                                        setModalState(() {
+                                          isSelectingStartDate = false;
+                                        });
+                                      }
+                                    },
+                                  );
+                                } else {
+                                  // Only validate and prevent invalid selection
+                                  if (tempStartDate != null &&
+                                      date.isBefore(tempStartDate!)) {
+                                    // Don't update - prevent invalid selection
+                                    return;
+                                  } else {
+                                    tempEndDate = date;
+                                  }
+                                }
+                              } else {
+                                // Single date mode
+                                tempStartDate = date;
+                                tempEndDate = date;
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: CupertinoTheme(
-                data: const CupertinoThemeData(
-                  textTheme: CupertinoTextThemeData(
-                    dateTimePickerTextStyle: TextStyle(fontSize: 16),
-                  ),
-                ),
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.date,
-                  initialDateTime: _startDate ?? DateTime.now(),
-                  maximumDate: DateTime.now(),
-                  onDateTimeChanged: (date) {
-                    setState(() => _startDate = date);
-                  },
-                ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDateDisplay({
+    required String label,
+    required DateTime? date,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : AppColors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive ? AppColors.primary : AppColors.border,
+            width: isActive ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: isActive
+                    ? AppColors.white.withValues(alpha: 0.8)
+                    : AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              date != null
+                  ? DateFormat('MMM dd, yyyy').format(date)
+                  : 'Not selected',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isActive
+                    ? AppColors.white
+                    : (date != null
+                          ? AppColors.textPrimary
+                          : AppColors.textTertiary),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  int _calculateDaysBetween(DateTime start, DateTime end) {
+    return end.difference(start).inDays + 1;
   }
 
   Future<String?> _showDownloadOptionsDialog() async {
@@ -1044,52 +1426,158 @@ class _PractitionerDashboardScreenState
   }
 
   Widget _buildPeriodSelector() {
-    return Row(
+    final hasDateFilter = _startDate != null || _endDate != null;
+
+    return Column(
       children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(4),
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    _buildPeriodButton('Today', 'today'),
+                    _buildPeriodButton('Week', 'week'),
+                    _buildPeriodButton('Month', 'month'),
+                    _buildPeriodButton('All', 'all'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: hasDateFilter
+                    ? AppColors.primary.withValues(alpha: 0.1)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: hasDateFilter ? AppColors.primary : AppColors.border,
+                  width: hasDateFilter ? 2 : 1,
+                ),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  hasDateFilter ? Icons.date_range : Icons.calendar_today,
+                  color: hasDateFilter
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
+                ),
+                onPressed: _showDatePicker,
+                tooltip: 'Custom Date Range',
+              ),
+            ),
+          ],
+        ),
+
+        // Show selected date range
+        if (hasDateFilter) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
-                _buildPeriodButton('Today', 'today'),
-                _buildPeriodButton('Week', 'week'),
-                _buildPeriodButton('Month', 'month'),
-                _buildPeriodButton('All', 'all'),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(
+                    Icons.calendar_month,
+                    size: 16,
+                    color: AppColors.white,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Custom Date Range',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatDateRange(),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  color: AppColors.error,
+                  onPressed: () {
+                    setState(() {
+                      _startDate = null;
+                      _endDate = null;
+                    });
+                    final cachedData = _cache.getCachedData();
+                    if (cachedData != null) {
+                      _applyFilters(cachedData['allResults']);
+                    }
+                  },
+                  tooltip: 'Clear date filter',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                ),
               ],
             ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: (_startDate != null || _endDate != null)
-                ? AppColors.primary.withValues(alpha: 0.1)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: (_startDate != null || _endDate != null)
-                  ? AppColors.primary
-                  : AppColors.border,
-            ),
-          ),
-          child: IconButton(
-            icon: Icon(
-              Icons.calendar_today,
-              color: (_startDate != null || _endDate != null)
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
-            ),
-            onPressed: _showDatePicker,
-            tooltip: 'Custom Date Range',
-          ),
-        ),
+        ],
       ],
     );
+  }
+
+  String _formatDateRange() {
+    if (_startDate != null && _endDate != null) {
+      // Check if it's a single date
+      if (_startDate!.year == _endDate!.year &&
+          _startDate!.month == _endDate!.month &&
+          _startDate!.day == _endDate!.day) {
+        return DateFormat('MMM d, yyyy').format(_startDate!);
+      }
+
+      // It's a range
+      final isSameMonth =
+          _startDate!.month == _endDate!.month &&
+          _startDate!.year == _endDate!.year;
+      if (isSameMonth) {
+        return '${DateFormat('MMM d').format(_startDate!)} - ${DateFormat('d, yyyy').format(_endDate!)}';
+      }
+      return '${DateFormat('MMM d, yyyy').format(_startDate!)} - ${DateFormat('MMM d, yyyy').format(_endDate!)}';
+    } else if (_startDate != null) {
+      return 'From ${DateFormat('MMM d, yyyy').format(_startDate!)}';
+    } else if (_endDate != null) {
+      return 'Until ${DateFormat('MMM d, yyyy').format(_endDate!)}';
+    }
+    return 'Select dates';
   }
 
   Widget _buildPeriodButton(String label, String value) {
