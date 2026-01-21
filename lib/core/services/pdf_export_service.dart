@@ -272,14 +272,15 @@ class PdfExportService {
             pw.SizedBox(height: 12),
           ],
 
-          // Overall Assessment
-          _buildOverallAssessment(result),
-
           // Questionnaire
           if (result.questionnaire != null) ...[
             pw.SizedBox(height: 12),
             _buildQuestionnaireSection(result.questionnaire!),
           ],
+
+          // Overall Assessment
+          pw.SizedBox(height: 12),
+          _buildOverallAssessment(result),
         ],
       ),
     );
