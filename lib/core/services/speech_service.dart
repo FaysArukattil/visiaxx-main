@@ -21,7 +21,7 @@ class SpeechService {
   Timer? _bufferTimer;
 
   // Optimized Offline Support
-  bool _hasOnDeviceRecognition = false;
+  bool _offlineFallbackTriggered = false;
 
   // Callbacks
   Function(String recognized)? onResult;
@@ -80,6 +80,16 @@ class SpeechService {
           debugPrint('[SpeechService] Œ Speech error: ${error.errorMsg}');
           _isListening = false;
 
+          // … FALLBACK: If MI PAD / XIAOMI fails in offline mode, trigger online fallback for NEXT attempt
+          if (!_offlineFallbackTriggered &&
+              (error.errorMsg.contains('on_device') ||
+                  error.errorMsg.contains('no_match'))) {
+            debugPrint(
+              '[SpeechService]  ï¸  Detected probable offline failure. Enabling CLOUD fallback for next attempt.',
+            );
+            _offlineFallbackTriggered = true;
+          }
+
           // ­ If the language isn't available, we don't want to spam retries
           if (error.errorMsg == 'error_language_unavailable') {
             debugPrint(
@@ -119,13 +129,32 @@ class SpeechService {
       );
 
       if (_isInitialized) {
-        // … Enforced: Offline mode requested as primary
-        _hasOnDeviceRecognition = true;
+        // … NEW: DIAGNOSTICS FOR MI PAD / XIAOMI
+        final systemLocale = await _speechToText.systemLocale();
+        final locales = await _speechToText.locales();
+
+        debugPrint('[SpeechService] Ž§ DEVICE DIAGNOSTICS:');
         debugPrint(
-          '[SpeechService] › ï¸ Offline mode enforced as primary method',
+          '[SpeechService] › ï¸  System Locale: ${systemLocale?.localeId}',
+        );
+        debugPrint(
+          '[SpeechService] › ï¸  Available Locales Count: ${locales.length}',
+        );
+
+        // Log first 5 locales
+        for (var i = 0; i < (locales.length > 5 ? 5 : locales.length); i++) {
+          debugPrint(
+            '[SpeechService]   - [${locales[i].localeId}] ${locales[i].name}',
+          );
+        }
+
+        debugPrint(
+          '[SpeechService] › ï¸  Offline mode initialized as PRIMARY attempt',
         );
       } else {
-        debugPrint('[SpeechService] Œ _speechToText.initialize returned false');
+        debugPrint(
+          '[SpeechService] Œ _speechToText.initialize returned false',
+        );
         onError?.call('Speech recognition not available on this device');
       }
 
@@ -174,19 +203,48 @@ class SpeechService {
     debugPrint('[SpeechService] Ž¤ Starting to listen...');
 
     try {
-      // ­ OPTIMIZATION: Use NULL for localeId to let the system choose its best default English
-      // This fixes the "error_language_unavailable" on devices that don't have "en-US" specifically.
-      // … MANDATORY: Use on-device recognition (offline) as primary
-      final useOnDevice = _hasOnDeviceRecognition;
+      // … MI PAD OPTIMIZATION: Try to find the best English locale (en_IN or en_US)
+      // On Indian devices, en_IN is common but en_US often has better offline support.
+      final locales = await _speechToText.locales();
+      String? bestLocale;
+
+      for (var l in locales) {
+        if (l.localeId == 'en_IN' ||
+            l.localeId == 'en_GB' ||
+            l.localeId == 'en_UK') {
+          bestLocale = l.localeId;
+          break; // Prefer en_IN, en_GB, or en_UK for regional alignment
+        }
+      }
+
+      if (bestLocale == null) {
+        for (var l in locales) {
+          if (l.localeId.startsWith('en_')) {
+            bestLocale = l.localeId;
+            break;
+          }
+        }
+      }
 
       debugPrint(
-        '[SpeechService] Ž§ Mode: ENFORCED ON-DEVICE (Offline), Locale: System Default',
+        '[SpeechService] Ž§ MI PAD TUNING: Selected Locale: ${bestLocale ?? "System Default"}',
       );
+
+      // … ENFORCED: Offline mode as primary, use fallback ONLY if previous failure detected
+      final bool useOnDevice = !_offlineFallbackTriggered;
+
+      if (_offlineFallbackTriggered) {
+        debugPrint(
+          '[SpeechService]  ï¸  USING CLOUD FALLBACK for Mi Pad stability',
+        );
+      }
 
       await _speechToText.listen(
         onResult: (result) => _onSpeechResult(result, bufferMs, minConfidence),
         listenFor: listenFor ?? const Duration(seconds: 60),
-        pauseFor: pauseFor ?? const Duration(seconds: 5),
+        pauseFor:
+            pauseFor ??
+            const Duration(seconds: 15), // Extended for slower tablets
         onSoundLevelChange: (level) {
           onSoundLevelChange?.call(level);
         },
@@ -196,7 +254,7 @@ class SpeechService {
           listenMode: ListenMode.confirmation,
           onDevice: useOnDevice,
         ),
-        localeId: null, // ¡ Use system default
+        localeId: bestLocale, // ¡ Use best found locale instead of null
       );
 
       debugPrint('[SpeechService] … Listen started successfully');
@@ -519,4 +577,3 @@ class SpeechService {
     _speechToText.cancel();
   }
 }
-
