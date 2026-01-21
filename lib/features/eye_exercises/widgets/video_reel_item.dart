@@ -203,137 +203,176 @@ class _VideoReelItemState extends State<VideoReelItem>
           _handleProviderPauseState(provider.shouldPauseVideos);
         });
 
-        return GestureDetector(
-          onTap: _togglePlay,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Video Player
-              FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _controller.value.size.width,
-                  height: _controller.value.size.height,
-                  child: VideoPlayer(_controller),
-                ),
-              ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide =
+                constraints.maxWidth > 600 ||
+                constraints.maxWidth > constraints.maxHeight;
 
-              // Bottom Gradient
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        AppColors.black.withValues(alpha: 0.7),
-                        AppColors.black.withValues(alpha: 0.3),
-                        AppColors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Play/Pause Icon Overlay
-              if (_showPlayIcon)
-                Center(
-                  child: AnimatedOpacity(
-                    opacity: _showPlayIcon ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(
-                        color: AppColors.black45,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _controller.value.isPlaying
-                            ? Icons.play_arrow
-                            : Icons.pause,
-                        size: 48,
-                        color: AppColors.white70,
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Video Meta Information
-              Positioned(
-                left: 20,
-                bottom: 60,
-                right: 80,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+            return GestureDetector(
+              onTap: _togglePlay,
+              child: Container(
+                color: AppColors.black,
+                child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'VISIAXX TV',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
+                    // 1. Video Player
+                    if (!isWide)
+                      // Portrait: Full Screen Cover
+                      FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _controller.value.size.width,
+                          height: _controller.value.size.height,
+                          child: VideoPlayer(_controller),
+                        ),
+                      )
+                    else
+                      // Landscape/Tablet: Centered AspectRatio
+                      Center(
+                        child: AspectRatio(
+                          aspectRatio: _controller.value.aspectRatio,
+                          child: VideoPlayer(_controller),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.video.title,
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        height: 1.2,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 10,
-                            color: AppColors.black87,
-                            offset: const Offset(0, 2),
+
+                    // 2. Bottom Gradient
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              AppColors.black.withValues(alpha: 0.7),
+                              AppColors.black.withValues(alpha: 0.3),
+                              AppColors.transparent,
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                    if (widget.video.description != null) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        widget.video.description!,
-                        style: TextStyle(
-                          color: AppColors.white.withValues(alpha: 0.85),
-                          fontSize: 15,
-                          height: 1.4,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 4,
+
+                    // 3. Play/Pause Icon Overlay
+                    if (_showPlayIcon)
+                      Center(
+                        child: AnimatedOpacity(
+                          opacity: _showPlayIcon ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: const BoxDecoration(
                               color: AppColors.black45,
-                              offset: const Offset(0, 1),
+                              shape: BoxShape.circle,
                             ),
-                          ],
+                            child: Icon(
+                              _controller.value.isPlaying
+                                  ? Icons.play_arrow
+                                  : Icons.pause,
+                              size: 48,
+                              color: AppColors.white70,
+                            ),
+                          ),
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
+
+                    // 4. Video Meta Information
+                    Positioned(
+                      left: isWide ? 0 : 20,
+                      right: isWide ? 0 : 80,
+                      bottom: 60,
+                      child: isWide
+                          ? Center(
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 600,
+                                ),
+                                padding: const EdgeInsets.only(
+                                  left: 20,
+                                  right: 80,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: _buildMetaContent(),
+                                ),
+                              ),
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: _buildMetaContent(),
+                            ),
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
+  }
+
+  List<Widget> _buildMetaContent() {
+    return [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.error.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Text(
+          'VISIAXX TV',
+          style: TextStyle(
+            color: AppColors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        widget.video.title,
+        style: TextStyle(
+          color: AppColors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+          height: 1.2,
+          shadows: [
+            Shadow(
+              blurRadius: 10,
+              color: AppColors.black87,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+      ),
+      if (widget.video.description != null) ...[
+        const SizedBox(height: 10),
+        Text(
+          widget.video.description!,
+          style: TextStyle(
+            color: AppColors.white.withValues(alpha: 0.85),
+            fontSize: 15,
+            height: 1.4,
+            shadows: [
+              Shadow(
+                blurRadius: 4,
+                color: AppColors.black45,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ];
   }
 }
