@@ -188,14 +188,10 @@ class _PractitionerDashboardScreenState
         );
 
         filtered = filtered.where((r) {
-          if (endDate != null) {
-            return r.timestamp.isAfter(
-                  startDate!.subtract(const Duration(seconds: 1)),
-                ) &&
-                r.timestamp.isBefore(endDate.add(const Duration(seconds: 1)));
-          } else {
-            return r.timestamp.isAfter(startDate!);
-          }
+          return r.timestamp.isAfter(
+                rangeStart.subtract(const Duration(seconds: 1)),
+              ) &&
+              r.timestamp.isBefore(rangeEnd.add(const Duration(seconds: 1)));
         }).toList();
       }
     } else if (startDate != null) {
@@ -347,7 +343,7 @@ class _PractitionerDashboardScreenState
 
   String _getPrimaryCondition(TestResultModel result) {
     final conditions = _getAllResultConditions(result);
-    if (conditions.contains('Possible Cataract')) return 'Possible Cataract';
+    if (conditions.contains('Cataract')) return 'Cataract';
     if (conditions.contains('Macular Issue')) return 'Macular Issue';
     if (conditions.contains('Myopia')) return 'Myopia';
     if (conditions.contains('Hyperopia')) return 'Hyperopia';
