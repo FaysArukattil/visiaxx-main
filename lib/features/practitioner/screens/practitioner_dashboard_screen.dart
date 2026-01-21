@@ -1747,11 +1747,7 @@ class _PractitionerDashboardScreenState
   Widget _buildDownloadButton() {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryLight],
-        ),
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(16), // Premium squircle radius
         boxShadow: [
           BoxShadow(
@@ -1796,14 +1792,7 @@ class _PractitionerDashboardScreenState
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.08),
-                      AppColors.primaryLight.withValues(alpha: 0.05),
-                    ],
-                  ),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: AppColors.primary.withValues(alpha: 0.15),
@@ -1833,18 +1822,9 @@ class _PractitionerDashboardScreenState
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  gradient: hasDateFilter
-                      ? LinearGradient(
-                          colors: [AppColors.primary, AppColors.primaryLight],
-                        )
-                      : LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.primary.withValues(alpha: 0.08),
-                            AppColors.primaryLight.withValues(alpha: 0.05),
-                          ],
-                        ),
+                  color: hasDateFilter
+                      ? AppColors.primary
+                      : AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: hasDateFilter
@@ -1878,14 +1858,7 @@ class _PractitionerDashboardScreenState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.08),
-                  AppColors.primaryLight.withValues(alpha: 0.05),
-                ],
-              ),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: AppColors.primary.withValues(alpha: 0.15),
@@ -1999,11 +1972,7 @@ class _PractitionerDashboardScreenState
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            gradient: isSelected
-                ? LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryLight],
-                  )
-                : null,
+            color: isSelected ? AppColors.primary : null,
             borderRadius: BorderRadius.circular(20),
             boxShadow: isSelected
                 ? [
