@@ -1167,113 +1167,129 @@ class _MobileRefractometryTestScreenState
           children: [
             const SizedBox(height: 20),
             // Hero Card with Image and Overlapping Timer (Maximized)
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.bottomCenter,
-              children: [
-                // Image Card
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  height: MediaQuery.of(context).size.height * 0.65,
-                  width: double.infinity,
-                  decoration: ShapeDecoration(
-                    color: AppColors.white,
-                    shape: ContinuousRectangleBorder(
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                    shadows: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        blurRadius: 40,
-                        offset: const Offset(0, 20),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.asset(
-                    AppAssets.relaxationImage,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.primary.withValues(alpha: 0.05),
-                      child: const Icon(
-                        Icons.landscape,
-                        size: 100,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ),
+            Builder(
+              builder: (context) {
+                final screenHeight = MediaQuery.of(context).size.height;
+                final isLandscape =
+                    MediaQuery.of(context).orientation == Orientation.landscape;
+                final imageHeight = isLandscape
+                    ? screenHeight * 0.45
+                    : screenHeight * 0.65;
 
-                // Glassmorphism Smooth Timer
-                Positioned(
-                  bottom: -45, // Half of timer height (90/2)
-                  child: AnimatedBuilder(
-                    animation: _relaxationProgressController,
-                    builder: (context, child) {
-                      return Container(
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          color: AppColors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 25,
-                              spreadRadius: 2,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
+                return Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    // Image Card
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      height: imageHeight,
+                      width: double.infinity,
+                      decoration: ShapeDecoration(
+                        color: AppColors.white,
+                        shape: ContinuousRectangleBorder(
+                          borderRadius: BorderRadius.circular(32),
                         ),
-                        child: ClipOval(
-                          child: BackdropFilter(
-                            filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.white.withValues(alpha: 0.3),
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 80,
-                                    height: 80,
-                                    child: CircularProgressIndicator(
-                                      value:
-                                          _relaxationProgressController.value,
-                                      strokeWidth: 4,
-                                      backgroundColor: AppColors.primary
-                                          .withValues(alpha: 0.1),
-                                      valueColor:
-                                          const AlwaysStoppedAnimation<Color>(
-                                            AppColors.primary,
-                                          ),
-                                    ),
-                                  ),
-                                  Text(
-                                    '$_relaxationCountdown',
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w900,
-                                      color: AppColors.primary,
-                                      fontFamily: 'Inter',
-                                      letterSpacing: -1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        shadows: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            blurRadius: 40,
+                            offset: const Offset(0, 20),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset(
+                        AppAssets.relaxationImage,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppColors.primary.withValues(alpha: 0.05),
+                          child: const Icon(
+                            Icons.landscape,
+                            size: 100,
+                            color: AppColors.primary,
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+
+                    // Glassmorphism Smooth Timer
+                    Positioned(
+                      bottom: -45, // Half of timer height (90/2)
+                      child: AnimatedBuilder(
+                        animation: _relaxationProgressController,
+                        builder: (context, child) {
+                          return Container(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              color: AppColors.white.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 25,
+                                  spreadRadius: 2,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: BackdropFilter(
+                                filter: ui.ImageFilter.blur(
+                                  sigmaX: 12,
+                                  sigmaY: 12,
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.white.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 80,
+                                        height: 80,
+                                        child: CircularProgressIndicator(
+                                          value: _relaxationProgressController
+                                              .value,
+                                          strokeWidth: 4,
+                                          backgroundColor: AppColors.primary
+                                              .withValues(alpha: 0.1),
+                                          valueColor:
+                                              const AlwaysStoppedAnimation<
+                                                Color
+                                              >(AppColors.primary),
+                                        ),
+                                      ),
+                                      Text(
+                                        '$_relaxationCountdown',
+                                        style: const TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                          color: AppColors.primary,
+                                          fontFamily: 'Inter',
+                                          letterSpacing: -1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(
               height: 60,
