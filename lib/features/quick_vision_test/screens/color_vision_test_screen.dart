@@ -1,4 +1,5 @@
 ﻿import 'dart:async';
+import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -872,30 +873,90 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   Widget _buildTestView() {
-    return Column(
-      children: [
-        // Fixed image section (non-scrollable)
-        Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-              child: _currentPlateIndex < _testPlates.length
-                  ? IshiharaPlateViewer(
-                      plateNumber: _testPlates[_currentPlateIndex].plateNumber,
-                      imagePath: _testPlates[_currentPlateIndex].svgPath,
-                      size: MediaQuery.of(context).size.width - 40,
-                    )
-                  : const SizedBox.shrink(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLandscape = constraints.maxWidth > constraints.maxHeight;
+
+        if (isLandscape) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left side: Plate image (Big and visible)
+              Expanded(
+                flex: 3,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: _currentPlateIndex < _testPlates.length
+                        ? IshiharaPlateViewer(
+                            plateNumber:
+                                _testPlates[_currentPlateIndex].plateNumber,
+                            imagePath: _testPlates[_currentPlateIndex].svgPath,
+                            size: min(
+                              constraints.maxWidth * 0.6 - 40,
+                              constraints.maxHeight - 40,
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+              // Right side: Options
+              Expanded(
+                flex: 2,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    border: Border(
+                      left: BorderSide(
+                        color: AppColors.border.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: _buildOptionButtons(isLandscape: true),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          children: [
+            // Fixed image section (non-scrollable)
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 2,
+                  ),
+                  child: _currentPlateIndex < _testPlates.length
+                      ? IshiharaPlateViewer(
+                          plateNumber:
+                              _testPlates[_currentPlateIndex].plateNumber,
+                          imagePath: _testPlates[_currentPlateIndex].svgPath,
+                          size: min(
+                            constraints.maxWidth - 40,
+                            constraints.maxHeight * 0.6,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
             ),
-          ),
-        ),
-        // Scrollable options section
-        _buildOptionButtons(),
-      ],
+            // Scrollable options section
+            _buildOptionButtons(isLandscape: false),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildOptionButtons() {
+  Widget _buildOptionButtons({bool isLandscape = false}) {
     if (_currentPlateIndex >= _testPlates.length) {
       return const SizedBox.shrink();
     }
@@ -904,6 +965,104 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     final options = _currentOptions.isNotEmpty
         ? _currentOptions
         : _getOptionsForPlate(plate);
+
+    Widget content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!isLandscape) ...[
+          // Drag Handle
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 0),
+            decoration: BoxDecoration(
+              color: AppColors.border.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+
+        // Title with Icon
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.touch_app_rounded,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                'Select the number you see',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.2,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Premium Options Grid with optimized dimensions
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final availableWidth = constraints.maxWidth;
+            final spacing = 12.0;
+            final buttonWidth = (availableWidth - spacing) / 2;
+
+            // Constrain button height to prevent overflow on wide screens/landscape
+            final buttonHeight = isLandscape
+                ? min(80.0, buttonWidth * 0.6)
+                : buttonWidth * 0.7;
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: List.generate(options.length, (index) {
+                final option = options[index];
+                final isSelected = _selectedOptionIndex == index;
+                final isCorrect = _checkAnswer(option, plate);
+                final showResult = isSelected;
+
+                return SizedBox(
+                  width: buttonWidth,
+                  height: buttonHeight,
+                  child: _PremiumOptionButton(
+                    option: option,
+                    isSelected: isSelected,
+                    showResult: showResult,
+                    isCorrect: isCorrect,
+                    onTap: () => _submitAnswer(option, index),
+                  ),
+                );
+              }),
+            );
+          },
+        ),
+
+        const SizedBox(height: 4),
+      ],
+    );
+
+    if (isLandscape) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: content,
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -927,90 +1086,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag Handle
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 0),
-            decoration: BoxDecoration(
-              color: AppColors.border.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // Title with Icon
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.touch_app_rounded,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  'Select the number you see',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                    letterSpacing: 0.2,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Premium Options Grid with optimized dimensions
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final availableWidth = constraints.maxWidth;
-              final spacing = 12.0;
-              final buttonWidth = (availableWidth - spacing) / 2;
-              final buttonHeight =
-                  buttonWidth * 0.7; // 1:0.7 ratio for better proportions
-
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: List.generate(options.length, (index) {
-                  final option = options[index];
-                  final isSelected = _selectedOptionIndex == index;
-                  final isCorrect = _checkAnswer(option, plate);
-                  final showResult = isSelected;
-
-                  return SizedBox(
-                    width: buttonWidth,
-                    height: buttonHeight,
-                    child: _PremiumOptionButton(
-                      option: option,
-                      isSelected: isSelected,
-                      showResult: showResult,
-                      isCorrect: isCorrect,
-                      onTap: () => _submitAnswer(option, index),
-                    ),
-                  );
-                }),
-              );
-            },
-          ),
-
-          const SizedBox(height: 4),
-        ],
-      ),
+      child: content,
     );
   }
 
@@ -1736,4 +1812,3 @@ class _PulseRingPainter extends CustomPainter {
   bool shouldRepaint(_PulseRingPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
-
