@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:visiaxx/core/services/file_manager_service.dart';
@@ -20,6 +19,7 @@ import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../data/models/patient_model.dart';
+import '../../../data/models/mobile_refractometry_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
@@ -46,7 +46,6 @@ class _PractitionerDashboardScreenState
   Map<String, dynamic> _statistics = {};
   List<TestResultModel> _filteredResults = [];
   List<PatientModel> _patients = [];
-  Map<DateTime, int> _dailyCounts = {};
 
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -124,7 +123,6 @@ class _PractitionerDashboardScreenState
     _statistics = data['statistics'] as Map<String, dynamic>;
     final allResults = data['allResults'] as List<TestResultModel>;
     _patients = data['patients'] as List<PatientModel>;
-    _dailyCounts = data['dailyCounts'] as Map<DateTime, int>;
 
     _applyFilters(allResults);
   }
@@ -234,7 +232,18 @@ class _PractitionerDashboardScreenState
 
   void _calculateFilteredStats() {
     final statusCounts = <String, int>{};
-    final conditionCounts = <String, int>{};
+    final conditionCounts = {
+      'Normal': 0,
+      'Myopia': 0,
+      'Hyperopia': 0,
+      'Astigmatism': 0,
+      'Presbyopia': 0,
+      'Color Vision Deficiency': 0,
+      'Cataract': 0,
+      'Macular Issue': 0,
+      'Vision Impairment': 0,
+      'Low Contrast Sensitivity': 0,
+    };
     final uniquePatients = <String>{};
 
     for (final result in _filteredResults) {
@@ -243,7 +252,9 @@ class _PractitionerDashboardScreenState
 
       final conditions = _getAllResultConditions(result);
       for (final condition in conditions) {
-        conditionCounts[condition] = (conditionCounts[condition] ?? 0) + 1;
+        if (conditionCounts.containsKey(condition)) {
+          conditionCounts[condition] = (conditionCounts[condition] ?? 0) + 1;
+        }
       }
 
       uniquePatients.add(result.profileId);
@@ -321,7 +332,7 @@ class _PractitionerDashboardScreenState
       final leftDistortions =
           result.amslerGridLeft?.distortionPoints.length ?? 0;
       if (rightDistortions >= 5 || leftDistortions >= 5) {
-        conditions.add('Possible Cataract');
+        conditions.add('Cataract');
       }
     }
 
@@ -837,66 +848,95 @@ class _PractitionerDashboardScreenState
 
     return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-        title: const Row(
-          children: [
-            Icon(Icons.download, color: AppColors.primary, size: 24),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text('Download PDFs', style: TextStyle(fontSize: 18)),
-            ),
-          ],
-        ),
-        content: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.85,
-          ),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          constraints: const BoxConstraints(maxWidth: 450),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.picture_as_pdf_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Download Reports',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
               const Text(
-                'Choose which reports to download:',
+                'Select the report collection you wish to export to your device.',
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Download All Option
-              _buildDownloadOption(
-                icon: Icons.select_all,
-                title: 'Download All Reports',
-                subtitle: '$totalResults total reports',
+              // Option 1: All Reports
+              _buildDownloadCard(
+                icon: Icons.auto_awesome_motion_rounded,
+                title: 'All Recommendations',
+                subtitle: 'Export entire database ($totalResults reports)',
                 value: 'all',
                 isRecommended: !hasFilters,
               ),
 
               const SizedBox(height: 12),
 
-              // Download Filtered Option
-              _buildDownloadOption(
-                icon: Icons.filter_alt,
-                title: 'Download Filtered Reports',
+              // Option 2: Filtered Reports
+              _buildDownloadCard(
+                icon: Icons.filter_list_rounded,
+                title: 'Current Filters',
                 subtitle: _getFilterDescription(filteredCount),
                 value: 'filtered',
                 isRecommended: hasFilters,
                 isEnabled: filteredCount > 0,
               ),
+
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildDownloadOption({
+  Widget _buildDownloadCard({
     required IconData icon,
     required String title,
     required String subtitle,
@@ -908,32 +948,32 @@ class _PractitionerDashboardScreenState
       color: Colors.transparent,
       child: InkWell(
         onTap: isEnabled ? () => Navigator.pop(context, value) : null,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isEnabled
                 ? (isRecommended
-                      ? AppColors.primary.withValues(alpha: 0.1)
-                      : AppColors.background)
+                      ? AppColors.primary.withValues(alpha: 0.05)
+                      : AppColors.surface)
                 : AppColors.background.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isRecommended && isEnabled
                   ? AppColors.primary
-                  : AppColors.border,
-              width: isRecommended ? 2 : 1,
+                  : AppColors.border.withValues(alpha: isEnabled ? 1 : 0.5),
+              width: isRecommended && isEnabled ? 2 : 1,
             ),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isEnabled
                       ? AppColors.primary.withValues(alpha: 0.1)
                       : AppColors.textTertiary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
@@ -941,7 +981,7 @@ class _PractitionerDashboardScreenState
                   size: 24,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -952,8 +992,8 @@ class _PractitionerDashboardScreenState
                           child: Text(
                             title,
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
                               color: isEnabled
                                   ? AppColors.textPrimary
                                   : AppColors.textTertiary,
@@ -962,24 +1002,24 @@ class _PractitionerDashboardScreenState
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (isRecommended) ...[
-                          const SizedBox(width: 6),
+                        if (isRecommended && isEnabled) ...[
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                              horizontal: 8,
+                              vertical: 3,
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
-                              'RECOMMENDED',
+                              'BEST CHOICE',
                               style: TextStyle(
                                 color: AppColors.white,
-                                fontSize: 7,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.3,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
@@ -990,10 +1030,11 @@ class _PractitionerDashboardScreenState
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         color: isEnabled
                             ? AppColors.textSecondary
                             : AppColors.textTertiary,
+                        fontWeight: FontWeight.w500,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -1001,13 +1042,6 @@ class _PractitionerDashboardScreenState
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              if (isEnabled)
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
             ],
           ),
         ),
@@ -1316,202 +1350,154 @@ class _PractitionerDashboardScreenState
   void _showDownloadSuccessDialog(int count, String path) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle,
-                color: AppColors.success,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text('Download Complete', style: TextStyle(fontSize: 16)),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Successfully downloaded $count PDF${count > 1 ? 's' : ''}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.3),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          constraints: const BoxConstraints(maxWidth: 500),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.success,
+                  size: 48,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppColors.success,
+              const SizedBox(height: 20),
+              const Text(
+                'Reports Ready',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Successfully exported $count diagnostic report${count > 1 ? 's' : ''}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'SAVE LOCATION',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textTertiary,
+                        letterSpacing: 1,
                       ),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'How to access your reports:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.success,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.folder_open_rounded,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            path.split('/').last,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (Platform.isAndroid) ...[
-                    _buildInstructionStep('1', 'Open Files app or My Files'),
-                    _buildInstructionStep('2', 'Go to Downloads folder'),
-                    _buildInstructionStep('3', 'Find Visiaxx_Reports folder'),
-                    _buildInstructionStep('4', 'View your PDF reports'),
-                  ] else ...[
-                    _buildInstructionStep('1', 'Open Files app'),
-                    _buildInstructionStep('2', 'Tap "On My iPhone/iPad"'),
-                    _buildInstructionStep('3', 'Navigate to visiaxx folder'),
-                    _buildInstructionStep('4', 'View your reports'),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Location:',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.folder,
-                    size: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    Text(
                       path,
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: AppColors.textSecondary,
                         fontFamily: 'monospace',
                       ),
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: const BorderSide(color: AppColors.border),
+                      ),
+                      child: const Text(
+                        'Dismiss',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        if (Platform.isAndroid) {
+                          await FileManagerService.openFolder(path);
+                        } else {
+                          await Share.share(
+                            'Reports saved to:\n$path\n\nFind them in the Files app.',
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        Platform.isIOS ? 'Share' : 'Open',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.of(context).pop();
-
-              if (Platform.isAndroid) {
-                final success = await FileManagerService.openFolder(path);
-
-                if (!success && mounted) {
-                  SnackbarUtils.showWarning(
-                    context,
-                    'Please open Files app → Downloads → Visiaxx_Reports',
-                    duration: const Duration(seconds: 5),
-                  );
-                }
-              } else {
-                await Share.share(
-                  'Visiaxx Reports saved to:\n$path\n\n'
-                  'Open Files app → On My iPhone → visiaxx',
-                );
-              }
-            },
-            icon: Icon(
-              Platform.isIOS ? Icons.share : Icons.folder_open,
-              size: 18,
-            ),
-            label: Text(Platform.isIOS ? 'Share' : 'Open Folder'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper widget for instruction steps
-  Widget _buildInstructionStep(String number, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: AppColors.success,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: AppColors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1754,24 +1740,18 @@ class _PractitionerDashboardScreenState
   }
 
   Widget _buildDownloadButton() {
-    final cachedData = _cache.getCachedData();
-    final totalResults = cachedData?['allResults']?.length ?? 0;
-    final hasFilters =
-        _selectedPeriod != 'all' ||
-        _selectedConditions.isNotEmpty ||
-        _startDate != null ||
-        _endDate != null;
-
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
+        color: AppColors.surface.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
+            color: AppColors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
@@ -1780,46 +1760,13 @@ class _PractitionerDashboardScreenState
         color: Colors.transparent,
         child: InkWell(
           onTap: _downloadAllPDFs,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.download, color: AppColors.white, size: 20),
-                const SizedBox(width: 8),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      hasFilters ? 'Download PDFs' : 'Download All',
-                      style: const TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    if (hasFilters) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_filteredResults.length} / $totalResults',
-                        style: TextStyle(
-                          color: AppColors.white.withValues(alpha: 0.8),
-                          fontSize: 10,
-                        ),
-                      ),
-                    ] else
-                      Text(
-                        '$totalResults reports',
-                        style: TextStyle(
-                          color: AppColors.white.withValues(alpha: 0.8),
-                          fontSize: 10,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            child: const Icon(
+              Icons.file_download_outlined,
+              color: AppColors.primary,
+              size: 24,
             ),
           ),
         ),
@@ -1831,7 +1778,17 @@ class _PractitionerDashboardScreenState
     final hasDateFilter = _startDate != null || _endDate != null;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Text(
+          'Analytics Period',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -1870,6 +1827,7 @@ class _PractitionerDashboardScreenState
                   color: hasDateFilter
                       ? AppColors.primary
                       : AppColors.textSecondary,
+                  size: 20,
                 ),
                 onPressed: _showDatePicker,
                 tooltip: 'Custom Date Range',
@@ -1983,15 +1941,31 @@ class _PractitionerDashboardScreenState
   }
 
   Widget _buildPeriodButton(String label, String value) {
-    final isSelected = _selectedPeriod == value;
+    final isSelected = _selectedPeriod == value && _startDate == null;
     return Expanded(
       child: GestureDetector(
-        onTap: () => _changeFilter(value, _selectedConditions),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+        onTap: () {
+          setState(() {
+            _startDate = null;
+            _endDate = null;
+          });
+          _changeFilter(value, _selectedConditions);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
           ),
           child: Text(
             label,
@@ -1999,7 +1973,7 @@ class _PractitionerDashboardScreenState
             style: TextStyle(
               color: isSelected ? AppColors.white : AppColors.textSecondary,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: 14,
+              fontSize: 13,
             ),
           ),
         ),
@@ -2125,78 +2099,55 @@ class _PractitionerDashboardScreenState
     );
   }
 
-  Widget _buildTestGraph() {
-    if (_dailyCounts.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            const Text(
-              'Tests Over Time',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              height: 180,
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.show_chart,
-                    size: 48,
-                    color: AppColors.textTertiary,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'No test data for selected period',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
+  String _getRefractionSummary(MobileRefractometryResult result) {
+    if (result.rightEye == null && result.leftEye == null) return 'N/A';
+
+    final r = result.rightEye;
+    final l = result.leftEye;
+
+    String format(MobileRefractometryEyeResult? eye) {
+      if (eye == null) return '-';
+      return 'S:${eye.sphere} C:${eye.cylinder} A:${eye.axis}';
     }
 
-    final sortedDates = _dailyCounts.keys.toList()..sort();
-    final maxCount = _dailyCounts.values.reduce((a, b) => a > b ? a : b);
-    final yAxisMax = maxCount < 5 ? 5.0 : (maxCount + 2).toDouble();
+    if (r != null && l != null) {
+      return 'R: ${format(r)}\nL: ${format(l)}';
+    } else if (r != null) {
+      return 'R: ${format(r)}';
+    } else {
+      return 'L: ${format(l)}';
+    }
+  }
 
-    final spots = sortedDates.asMap().entries.map((entry) {
-      return FlSpot(
-        entry.key.toDouble(),
-        _dailyCounts[entry.value]!.toDouble(),
-      );
-    }).toList();
+  Widget _buildTestGraph() {
+    final conditionCounts =
+        _statistics['conditionCounts'] as Map<String, int>? ?? {};
+    final totalPatients = _statistics['uniquePatients'] ?? 0;
+
+    if (conditionCounts.isEmpty) return const SizedBox.shrink();
+
+    // Prepare data
+    final displayData = conditionCounts.entries.toList();
+    displayData.sort((a, b) => b.value.compareTo(a.value)); // Sort by count
+
+    final maxCount = displayData.fold<int>(
+      0,
+      (prev, e) => e.value > prev ? e.value : prev,
+    );
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: AppColors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2204,150 +2155,129 @@ class _PractitionerDashboardScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Tests Over Time',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Categorical Distribution',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'Patients grouped by detectable conditions',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
-                  vertical: 4,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  '${_filteredResults.length} total',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                  ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.people_alt_rounded,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$totalPatients',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            child: LineChart(
-              LineChartData(
-                minY: 0,
-                maxY: yAxisMax,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: yAxisMax < 10 ? 1 : null,
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(color: AppColors.border, strokeWidth: 1);
-                  },
-                ),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 35,
-                      interval: yAxisMax < 10 ? 1 : null,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          value.toInt().toString(),
+          const SizedBox(height: 24),
+          // Horizontal Bars
+          ...displayData.map((entry) {
+            final percentage = maxCount > 0 ? entry.value / maxCount : 0.0;
+            final color = _getConditionColor(entry.key);
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          entry.key,
                           style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: sortedDates.length > 14 ? 2 : 1,
-                      getTitlesWidget: (value, meta) {
-                        final index = value.toInt();
-                        if (index < 0 || index >= sortedDates.length) {
-                          return const Text('');
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            DateFormat('d/M').format(sortedDates[index]),
-                            style: const TextStyle(
-                              fontSize: 9,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border(
-                    bottom: BorderSide(color: AppColors.border, width: 1),
-                    left: BorderSide(color: AppColors.border, width: 1),
-                  ),
-                ),
-                lineTouchData: LineTouchData(
-                  enabled: true,
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        final date = sortedDates[spot.x.toInt()];
-                        return LineTooltipItem(
-                          '${DateFormat('MMM d').format(date)}\n${spot.y.toInt()} tests',
-                          const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: spots,
-                    isCurved: spots.length > 2,
-                    curveSmoothness: 0.3,
-                    color: AppColors.primary,
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(
-                          radius: 4,
-                          color: AppColors.primary,
-                          strokeWidth: 2,
-                          strokeColor: AppColors.white,
-                        );
-                      },
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.primary.withValues(alpha: 0.3),
-                          AppColors.primary.withValues(alpha: 0.05),
-                        ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
+                      Text(
+                        '${entry.value}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Stack(
+                    children: [
+                      Container(
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: percentage.clamp(0.01, 1.0),
+                        child: Container(
+                          height: 12,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [color.withValues(alpha: 0.7), color],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: [
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );
@@ -2356,7 +2286,9 @@ class _PractitionerDashboardScreenState
   Widget _buildConditionBreakdown() {
     final conditionCounts =
         _statistics['conditionCounts'] as Map<String, int>? ?? {};
-    final entries = conditionCounts.entries.where((e) => e.value > 0).toList();
+
+    // Always include all core conditions even if count is 0
+    final entries = conditionCounts.entries.toList();
 
     if (entries.isEmpty) return const SizedBox.shrink();
 
@@ -2517,19 +2449,24 @@ class _PractitionerDashboardScreenState
       case 'Normal':
         return AppColors.success;
       case 'Myopia':
+        return const Color(0xFF2196F3); // Blue
       case 'Hyperopia':
+        return const Color(0xFFFF9800); // Orange
       case 'Presbyopia':
-        return AppColors.warning;
+        return const Color(0xFF00BCD4); // Cyan
       case 'Astigmatism':
-        return AppColors.info;
+        return const Color(0xFF673AB7); // Deep Purple
       case 'Color Vision Deficiency':
-        return const Color(0xFF9C27B0);
+        return const Color(0xFFE91E63); // Pink
       case 'Macular Issue':
+        return const Color(0xFFF44336); // Red
       case 'Possible Cataract':
-        return AppColors.error;
+      case 'Cataract':
+        return const Color(0xFF795548); // Brown
       case 'Vision Impairment':
+        return const Color(0xFF607D8B); // Blue Grey
       case 'Low Contrast Sensitivity':
-        return const Color(0xFFFF6F00);
+        return const Color(0xFF3F51B5); // Indigo
       default:
         return AppColors.primary;
     }
@@ -2565,7 +2502,7 @@ class _PractitionerDashboardScreenState
         : _filteredResults.where((r) {
             final query = _searchQuery.toLowerCase();
             return r.profileName.toLowerCase().contains(query) ||
-                (patientsWithResults[r.profileId ?? r.profileName]?.phone
+                (patientsWithResults[r.profileId]?.phone
                         ?.toLowerCase()
                         .contains(query) ??
                     false);
@@ -2644,8 +2581,7 @@ class _PractitionerDashboardScreenState
           ),
           const SizedBox(height: 12),
           ...searchFilteredResults.map((result) {
-            final patient =
-                patientsWithResults[result.profileId ?? result.profileName];
+            final patient = patientsWithResults[result.profileId];
             return _buildEnhancedResultCard(result, patient);
           }),
         ],
@@ -2681,12 +2617,12 @@ class _PractitionerDashboardScreenState
             ? AppColors.primary.withValues(alpha: 0.05)
             : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: isComprehensive
-            ? Border.all(
-                color: AppColors.primary.withValues(alpha: 0.2),
-                width: 1.5,
-              )
-            : null,
+        border: Border.all(
+          color: isComprehensive
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : AppColors.border.withValues(alpha: 0.5),
+          width: isComprehensive ? 1.5 : 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: isComprehensive
@@ -2700,19 +2636,68 @@ class _PractitionerDashboardScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Row 0: Full Examination Badge (New row to prevent overflow)
+          if (isComprehensive)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'FULL EXAMINATION',
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+
+          // Row 1: Status Label (Now separated if isComprehensive)
           Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start, // Changed from default
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  result.overallStatus.label.toUpperCase(),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Row 2: Avatar, Name & Call Button
+          Row(
             children: [
               CircleAvatar(
-                radius: 18,
+                radius: 20,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Text(
                   result.profileName.isNotEmpty ? result.profileName[0] : '?',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
-                    fontSize: 14,
+                    fontSize: 16,
                   ),
                 ),
               ),
@@ -2726,143 +2711,93 @@ class _PractitionerDashboardScreenState
                           ? result.profileName
                           : 'Self',
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        color: AppColors.textPrimary,
                       ),
-                      maxLines: 2, // Added: Allow 2 lines for long names
-                      overflow: TextOverflow
-                          .ellipsis, // Added: Show ... if still too long
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2), // Added small spacing
+                    const SizedBox(height: 2),
                     Text(
                       DateFormat(
                         'MMM dd, yyyy • h:mm a',
                       ).format(result.timestamp),
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 1, // Added: Ensure single line
-                      overflow: TextOverflow.ellipsis, // Added: Handle overflow
                     ),
-                    if (isComprehensive) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'FULL EXAMINATION',
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
               if (hasPhone)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                IconButton(
+                  onPressed: () => _makePhoneCall(patient.phone!),
+                  icon: const Icon(
+                    Icons.call_rounded,
+                    color: AppColors.primary,
+                    size: 20,
                   ),
-                  child: IconButton(
-                    icon: const Icon(Icons.phone, size: 18),
-                    color: AppColors.success,
-                    padding: const EdgeInsets.all(8), // Added: Reduce padding
-                    constraints: const BoxConstraints(
-                      minWidth: 36, // Added: Set minimum size
-                      minHeight: 36,
-                    ),
-                    onPressed: () => _makePhoneCall(patient.phone!),
-                    tooltip: patient.phone,
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    padding: const EdgeInsets.all(8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
-              const SizedBox(width: 8),
-              Flexible(
-                // Changed from no wrapper to Flexible
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    result.overallStatus.label,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                    maxLines: 1, // Added: Ensure single line
-                    overflow: TextOverflow.ellipsis, // Added: Handle overflow
-                  ),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () => _showResultDetails(result),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                vertical: 8,
-                horizontal: 4,
-              ), // Added horizontal padding
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  width: 1,
-                ),
+          // Diagnostic Results Grid
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.5),
               ),
-              child: IntrinsicHeight(
-                // Added: Makes all columns same height
-                child: Row(
-                  children: [
-                    _buildMiniResult(
-                      'VA (R)',
-                      result.visualAcuityRight?.snellenScore ?? 'N/A',
-                    ),
-                    _buildMiniResult(
-                      'VA (L)',
-                      result.visualAcuityLeft?.snellenScore ?? 'N/A',
-                    ),
-                    _buildMiniResult(
-                      'Color',
-                      result.colorVision?.isNormal == true ? 'Normal' : 'Check',
-                    ),
-                    if (isComprehensive && result.pelliRobson != null)
-                      _buildMiniResult(
-                        'Contrast',
-                        result.pelliRobson!.averageScore.toStringAsFixed(1),
-                      )
-                    else
-                      _buildMiniResult(
-                        'Amsler',
-                        (result.amslerGridRight?.hasDistortions != true &&
-                                result.amslerGridLeft?.hasDistortions != true)
-                            ? 'Normal'
-                            : 'Check',
-                      ),
-                  ],
-                ),
-              ),
+            ),
+            child: Column(
+              children: [
+                _buildResultsRow([
+                  _ResultData('VA (R)', result.visualAcuityRight?.snellenScore),
+                  _ResultData('VA (L)', result.visualAcuityLeft?.snellenScore),
+                  _ResultData(
+                    'Refraction',
+                    result.mobileRefractometry != null
+                        ? _getRefractionSummary(result.mobileRefractometry!)
+                        : null,
+                  ),
+                ]),
+                const Divider(height: 16, thickness: 0.5),
+                _buildResultsRow([
+                  _ResultData(
+                    'Color',
+                    result.colorVision != null
+                        ? (result.colorVision!.isNormal
+                              ? 'Normal'
+                              : 'Deficient')
+                        : null,
+                  ),
+                  _ResultData(
+                    'Contrast',
+                    result.pelliRobson?.averageScore.toStringAsFixed(1),
+                  ),
+                  _ResultData(
+                    'Amsler',
+                    (result.amslerGridRight != null ||
+                            result.amslerGridLeft != null)
+                        ? ((result.amslerGridRight?.hasDistortions != true &&
+                                  result.amslerGridLeft?.hasDistortions != true)
+                              ? 'Normal'
+                              : 'Distorted')
+                        : null,
+                  ),
+                ]),
+              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -2931,40 +2866,46 @@ class _PractitionerDashboardScreenState
     );
   }
 
-  Widget _buildMiniResult(String label, String value) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 2,
-        ), // Added padding between items
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // Added: Minimize vertical space
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                color: AppColors.primary,
+  Widget _buildResultsRow(List<_ResultData> items) {
+    final activeItems = items.where((item) => item.value != null).toList();
+    if (activeItems.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      children: activeItems.asMap().entries.map((entry) {
+        final item = entry.value;
+        return Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.label.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.textSecondary,
+              const SizedBox(height: 2),
+              Text(
+                item.value!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
+}
+
+class _ResultData {
+  final String label;
+  final String? value;
+
+  _ResultData(this.label, this.value);
 }
