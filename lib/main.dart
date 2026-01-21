@@ -79,9 +79,12 @@ void main() async {
   );
 
   // Set orientations
+  // Set orientations - Allow all orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
   ]);
 
   // Initialize Firebase
