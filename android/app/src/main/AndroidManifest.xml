@@ -1,15 +1,41 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     
-    <!-- Basic Permissions -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- ========================================= -->
+    <!-- CORE PERMISSIONS - Universal Compatibility -->
+    <!-- ========================================= -->
     
-    <!-- Storage Permissions - Conditional based on Android version -->
-    <!-- tools:replace fixes conflict with camera package -->
+    <!-- Network & Internet -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    
+    <!-- Audio & Speech Recognition - Critical for all devices -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.CAPTURE_AUDIO_OUTPUT" tools:ignore="ProtectedPermissions"/>
+    
+    <!-- Camera -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    
+    <!-- Notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    
+    <!-- ========================================= -->
+    <!-- POWER MANAGEMENT - For Background Tasks -->
+    <!-- Required for: Xiaomi, Oppo, Vivo, Realme, OnePlus -->
+    <!-- ========================================= -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    
+    <!-- ========================================= -->
+    <!-- STORAGE PERMISSIONS - Universal -->
+    <!-- ========================================= -->
+    
+    <!-- Legacy Storage (Android 10 and below) -->
     <uses-permission 
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"
@@ -24,20 +50,46 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     
-    <!-- Special Permission for All Files Access (Use cautiously) -->
+    <!-- All Files Access (for full storage access if needed) -->
     <uses-permission 
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage"/>
     
+    <!-- ========================================= -->
+    <!-- DEVICE FEATURES - Optional but recommended -->
+    <!-- ========================================= -->
+    
+    <!-- Camera features (optional - graceful degradation) -->
+    <uses-feature 
+        android:name="android.hardware.camera" 
+        android:required="false"/>
+    <uses-feature 
+        android:name="android.hardware.camera.autofocus" 
+        android:required="false"/>
+    <uses-feature 
+        android:name="android.hardware.camera.front" 
+        android:required="false"/>
+    
+    <!-- Microphone feature (required for speech recognition) -->
+    <uses-feature 
+        android:name="android.hardware.microphone" 
+        android:required="true"/>
+    
+    <!-- Touchscreen (almost universal, but explicit) -->
+    <uses-feature 
+        android:name="android.hardware.touchscreen" 
+        android:required="false"/>
+    
+    <!-- ========================================= -->
+    <!-- QUERY INTENTS - For Opening External Apps -->
+    <!-- ========================================= -->
+    
     <uses-permission 
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission"/>
-
-    <!-- Camera features -->
-    <uses-feature android:name="android.hardware.camera" android:required="false"/>
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
-
+    
     <queries>
+        <!-- Web browsers -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
@@ -46,9 +98,21 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="http" />
         </intent>
+        
+        <!-- Phone & Email -->
         <intent>
             <action android:name="android.intent.action.DIAL" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="mailto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+        
+        <!-- YouTube -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="vnd.youtube" />
@@ -57,30 +121,55 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="youtube" />
         </intent>
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="mailto" />
-        </intent>
+        
+        <!-- PDF & File viewers -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="content" />
             <data android:mimeType="application/pdf" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/pdf"/>
+        </intent>
+        
+        <!-- Speech Recognition Services -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        
+        <!-- Text processing -->
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        
+        <!-- Specific packages that might be needed -->
         <package android:name="com.google.android.youtube" />
         <package android:name="com.android.documentsui" />
         <package android:name="com.google.android.apps.nbu.files" />
+        <package android:name="com.google.android.googlequicksearchbox" />
+        <package android:name="com.google.android.gms" />
     </queries>
     
+    <!-- ========================================= -->
+    <!-- APPLICATION CONFIGURATION -->
+    <!-- ========================================= -->
+    
     <application
-        android:label="visiaxx"
+        android:label="Visiaxx"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true"
-        android:preserveLegacyExternalStorage="true">
+        android:preserveLegacyExternalStorage="true"
+        android:usesCleartextTraffic="true"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:supportsRtl="true">
+        
+        <!-- ========================================= -->
+        <!-- MAIN ACTIVITY -->
+        <!-- ========================================= -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -89,19 +178,35 @@
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="unspecified"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true">
            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            
+            <!-- Deep linking support (if needed in future) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="visiaxx" />
+            </intent-filter>
         </activity>
         
+        <!-- ========================================= -->
+        <!-- FLUTTER EMBEDDING -->
+        <!-- ========================================= -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
             
-        <!-- FileProvider for sharing files -->
+        <!-- ========================================= -->
+        <!-- FILE PROVIDER - For Sharing Files -->
+        <!-- ========================================= -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -111,6 +216,20 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        
+        <!-- ========================================= -->
+        <!-- NOTIFICATION CONFIGURATION (if using FCM) -->
+        <!-- ========================================= -->
+        <!-- Uncomment if using Firebase Cloud Messaging
+        <service
+            android:name="io.flutter.plugins.firebasemessaging.FlutterFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        -->
+        
     </application>
 
 </manifest>
