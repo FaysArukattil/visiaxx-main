@@ -2099,26 +2099,6 @@ class _PractitionerDashboardScreenState
     );
   }
 
-  String _getRefractionSummary(MobileRefractometryResult result) {
-    if (result.rightEye == null && result.leftEye == null) return 'N/A';
-
-    final r = result.rightEye;
-    final l = result.leftEye;
-
-    String format(MobileRefractometryEyeResult? eye) {
-      if (eye == null) return '-';
-      return 'S:${eye.sphere} C:${eye.cylinder} A:${eye.axis}';
-    }
-
-    if (r != null && l != null) {
-      return 'R: ${format(r)}\nL: ${format(l)}';
-    } else if (r != null) {
-      return 'R: ${format(r)}';
-    } else {
-      return 'L: ${format(l)}';
-    }
-  }
-
   Widget _buildTestGraph() {
     final conditionCounts =
         _statistics['conditionCounts'] as Map<String, int>? ?? {};
@@ -2749,57 +2729,12 @@ class _PractitionerDashboardScreenState
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+
+          const SizedBox(height: 16), // Spacing after date
           // Diagnostic Results Grid
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.border.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Column(
-              children: [
-                _buildResultsRow([
-                  _ResultData('VA (R)', result.visualAcuityRight?.snellenScore),
-                  _ResultData('VA (L)', result.visualAcuityLeft?.snellenScore),
-                  _ResultData(
-                    'Refraction',
-                    result.mobileRefractometry != null
-                        ? _getRefractionSummary(result.mobileRefractometry!)
-                        : null,
-                  ),
-                ]),
-                const Divider(height: 16, thickness: 0.5),
-                _buildResultsRow([
-                  _ResultData(
-                    'Color',
-                    result.colorVision != null
-                        ? (result.colorVision!.isNormal
-                              ? 'Normal'
-                              : 'Deficient')
-                        : null,
-                  ),
-                  _ResultData(
-                    'Contrast',
-                    result.pelliRobson?.averageScore.toStringAsFixed(1),
-                  ),
-                  _ResultData(
-                    'Amsler',
-                    (result.amslerGridRight != null ||
-                            result.amslerGridLeft != null)
-                        ? ((result.amslerGridRight?.hasDistortions != true &&
-                                  result.amslerGridLeft?.hasDistortions != true)
-                              ? 'Normal'
-                              : 'Distorted')
-                        : null,
-                  ),
-                ]),
-              ],
-            ),
-          ),
+          _buildProfessionalDiagnosticGrid(result),
+
+          const SizedBox(height: 16),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -2866,46 +2801,244 @@ class _PractitionerDashboardScreenState
     );
   }
 
-  Widget _buildResultsRow(List<_ResultData> items) {
-    final activeItems = items.where((item) => item.value != null).toList();
-    if (activeItems.isEmpty) return const SizedBox.shrink();
+  Widget _buildProfessionalDiagnosticGrid(TestResultModel result) {
+    // Check if any data exists
+    final hasVA =
+        result.visualAcuityRight != null || result.visualAcuityLeft != null;
+    final hasRefraction = result.mobileRefractometry != null;
+    final hasOthers =
+        result.colorVision != null ||
+        result.pelliRobson != null ||
+        result.amslerGridRight != null ||
+        result.amslerGridLeft != null;
 
-    return Row(
-      children: activeItems.asMap().entries.map((entry) {
-        final item = entry.value;
-        return Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.label.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.5,
-                ),
+    if (!hasVA && !hasRefraction && !hasOthers) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.08),
+            AppColors.primaryLight.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.15),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            blurRadius: 12,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Row 1: Visual Acuity
+          if (hasVA) ...[
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  if (result.visualAcuityRight != null)
+                    _buildDiagnosticItem(
+                      'RIGHT EYE VA',
+                      result.visualAcuityRight?.snellenScore,
+                      icon: Icons.remove_red_eye_outlined,
+                    ),
+                  if (result.visualAcuityRight != null &&
+                      result.visualAcuityLeft != null)
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                    ),
+                  if (result.visualAcuityLeft != null)
+                    _buildDiagnosticItem(
+                      'LEFT EYE VA',
+                      result.visualAcuityLeft?.snellenScore,
+                      icon: Icons.remove_red_eye_outlined,
+                    ),
+                ],
               ),
-              const SizedBox(height: 2),
+            ),
+            if (hasRefraction || hasOthers)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.primary.withValues(alpha: 0.05),
+              ),
+          ],
+          // Row 2: Refraction Table
+          if (hasRefraction) ...[
+            _buildRefractionTable(result.mobileRefractometry!),
+            if (hasOthers)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.primary.withValues(alpha: 0.05),
+              ),
+          ],
+          // Row 3: Others
+          if (hasOthers)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  if (result.colorVision != null)
+                    _buildDiagnosticItem(
+                      'COLOR VISION',
+                      result.colorVision!.isNormal ? 'NORMAL' : 'DEFICIENT',
+                    ),
+                  if (result.pelliRobson != null)
+                    _buildDiagnosticItem(
+                      'CONTRAST',
+                      result.pelliRobson?.averageScore.toStringAsFixed(1),
+                    ),
+                  if (result.amslerGridRight != null ||
+                      result.amslerGridLeft != null)
+                    _buildDiagnosticItem(
+                      'AMSLER GRID',
+                      (result.amslerGridRight?.hasDistortions != true &&
+                              result.amslerGridLeft?.hasDistortions != true
+                          ? 'NORMAL'
+                          : 'DISTORTED'),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiagnosticItem(String label, String? value, {IconData? icon}) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 10, color: AppColors.primary),
+                const SizedBox(width: 4),
+              ],
               Text(
-                item.value!,
+                value ?? 'N/A',
                 style: const TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w900,
                   color: AppColors.textPrimary,
                 ),
               ),
             ],
           ),
-        );
-      }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefractionTable(MobileRefractometryResult result) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      color: AppColors.primary.withValues(alpha: 0.02),
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                SizedBox(width: 30),
+                Expanded(child: _TableHeader('SPH')),
+                Expanded(child: _TableHeader('CYL')),
+                Expanded(child: _TableHeader('AXIS')),
+              ],
+            ),
+          ),
+          if (result.rightEye != null) _RefractionRow('OD', result.rightEye!),
+          if (result.leftEye != null) _RefractionRow('OS', result.leftEye!),
+        ],
+      ),
     );
   }
 }
 
-class _ResultData {
+class _TableHeader extends StatelessWidget {
   final String label;
-  final String? value;
+  const _TableHeader(this.label);
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 8,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textSecondary,
+      ),
+    );
+  }
+}
 
-  _ResultData(this.label, this.value);
+class _RefractionRow extends StatelessWidget {
+  final String eye;
+  final MobileRefractometryEyeResult data;
+  const _RefractionRow(this.eye, this.data);
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 30,
+            child: Text(
+              eye,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          Expanded(child: _TableCell(data.sphere)),
+          Expanded(child: _TableCell(data.cylinder)),
+          Expanded(child: _TableCell('${data.axis}')),
+        ],
+      ),
+    );
+  }
+}
+
+class _TableCell extends StatelessWidget {
+  final String value;
+  const _TableCell(this.value);
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      value,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
 }
