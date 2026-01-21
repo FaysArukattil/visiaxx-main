@@ -318,17 +318,13 @@ class _MobileRefractometryQuickResultScreenState
                     const SizedBox(height: 16),
                     if (result.rightEye != null)
                       _buildEyeCard(
-                        'Right Eye',
+                        'Right',
                         result.rightEye!,
                         AppColors.rightEye,
                       ),
                     if (result.leftEye != null) ...[
                       const SizedBox(height: 12),
-                      _buildEyeCard(
-                        'Left Eye',
-                        result.leftEye!,
-                        AppColors.leftEye,
-                      ),
+                      _buildEyeCard('Left', result.leftEye!, AppColors.leftEye),
                     ],
                     const SizedBox(height: 16),
                     _buildClinicalInsights(result),
@@ -1196,7 +1192,7 @@ class _MobileRefractometryQuickResultScreenState
                 ),
                 TableRow(
                   children: [
-                    _buildTableHeader('OD (R)', isEyeLabel: true),
+                    _buildTableHeader('Right', isEyeLabel: true),
                     _buildTableValue(data.right.sph),
                     _buildTableValue(data.right.cyl),
                     _buildTableValue(data.right.axis),
@@ -1205,7 +1201,7 @@ class _MobileRefractometryQuickResultScreenState
                 ),
                 TableRow(
                   children: [
-                    _buildTableHeader('OS (L)', isEyeLabel: true),
+                    _buildTableHeader('Left', isEyeLabel: true),
                     _buildTableValue(data.left.sph),
                     _buildTableValue(data.left.cyl),
                     _buildTableValue(data.left.axis),

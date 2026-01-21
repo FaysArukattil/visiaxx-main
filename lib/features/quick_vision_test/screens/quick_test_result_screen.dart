@@ -1024,7 +1024,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              eyeResult.status.displayName,
+              eyeResult.detectedType != null &&
+                      eyeResult.detectedType != DeficiencyType.none
+                  ? eyeResult.detectedType!.displayName
+                  : eyeResult.status.displayName,
               style: TextStyle(
                 fontSize: 12,
                 color: isNormal ? AppColors.success : AppColors.warning,
@@ -1048,18 +1051,24 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       return 'Normal color vision.';
     }
 
-    String typeStr = type.toString().split('.').last.toUpperCase();
     String sevStr =
         severity?.toString().split('.').last.toLowerCase() ?? 'unknown';
 
-    if (type == DeficiencyType.protan) {
-      return 'Protanopia/Protanomaly ($sevStr) detected. This is a red-color deficiency where the long-wavelength sensitive cones are missing or abnormal.';
+    if (type == DeficiencyType.protan ||
+        type == DeficiencyType.protanopia ||
+        type == DeficiencyType.protanomaly) {
+      return 'Protan (Red Deficiency) detected. This involves reduced sensitivity or absence of red-light photoreceptors.';
     }
-    if (type == DeficiencyType.deutan) {
-      return 'Deuteranopia/Deuteranomaly ($sevStr) detected. This is a green-color deficiency, the most common type of red-green color blindness.';
+    if (type == DeficiencyType.deutan ||
+        type == DeficiencyType.deuteranopia ||
+        type == DeficiencyType.deuteranomaly) {
+      return 'Deutan (Green Deficiency) detected. This is the most common form of red-green color blindness.';
+    }
+    if (type == DeficiencyType.redGreenDeficiency) {
+      return 'Red-Green Color Vision Deficiency detected. This indicates difficulty distinguishing between red and green hues.';
     }
 
-    return '$typeStr deficiency ($sevStr) detected. Ishihara plates screening indicates reduced sensitivity to specific color spectrums.';
+    return '${type.displayName} ($sevStr) detected. Ishihara plate screening indicates reduced sensitivity to specific color spectrums.';
   }
 
   Widget _buildAmslerGridCard(TestSessionProvider provider) {
@@ -1812,31 +1821,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Start Full Eye Exam (Continue action)
-        ElevatedButton.icon(
-          onPressed: () {
-            provider.reset();
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/comprehensive-test',
-              (route) => false,
-            );
-          },
-          icon: const Icon(Icons.assessment_rounded),
-          label: const Text('Start Full Eye Exam'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.white,
-            minimumSize: const Size(double.infinity, 54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-
         // Restart Current Test
-        OutlinedButton.icon(
+        ElevatedButton.icon(
           onPressed: () {
             provider.reset();
             Navigator.pushNamedAndRemoveUntil(
@@ -1847,12 +1833,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           },
           icon: const Icon(Icons.refresh_rounded),
           label: const Text('Restart Test'),
-          style: OutlinedButton.styleFrom(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.warning.withValues(alpha: 0.1),
             foregroundColor: AppColors.warning,
             minimumSize: const Size(double.infinity, 54),
-            side: const BorderSide(color: AppColors.warning, width: 2),
+            elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.warning, width: 1.5),
             ),
           ),
         ),
@@ -1901,11 +1889,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           icon: const Icon(Icons.home_rounded),
           label: const Text('Back to Home'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.grey.withValues(alpha: 0.1),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
             foregroundColor: AppColors.primary,
             minimumSize: const Size(double.infinity, 54),
+            elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                width: 1.5,
+              ),
             ),
           ),
         ),

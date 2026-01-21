@@ -2275,7 +2275,7 @@ class PdfExportService {
         ),
         pw.TableRow(
           children: [
-            _buildPdfTableCell('R (OD)', isHeader: true),
+            _buildPdfTableCell('Right', isHeader: true),
             _buildPdfTableCell(data.right.sph),
             _buildPdfTableCell(data.right.cyl),
             _buildPdfTableCell(data.right.axis),
@@ -2285,7 +2285,7 @@ class PdfExportService {
         ),
         pw.TableRow(
           children: [
-            _buildPdfTableCell('L (OS)', isHeader: true),
+            _buildPdfTableCell('Left', isHeader: true),
             _buildPdfTableCell(data.left.sph),
             _buildPdfTableCell(data.left.cyl),
             _buildPdfTableCell(data.left.axis),

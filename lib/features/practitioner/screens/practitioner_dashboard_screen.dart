@@ -18,6 +18,7 @@ import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../data/models/patient_model.dart';
+import '../../../data/models/color_vision_result.dart';
 import '../../../data/models/mobile_refractometry_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
@@ -227,17 +228,19 @@ class _PractitionerDashboardScreenState
 
   void _calculateFilteredStats() {
     final statusCounts = <String, int>{'normal': 0, 'review': 0, 'urgent': 0};
-    final conditionCounts = {
-      'Normal': 0,
-      'Myopia': 0,
-      'Hyperopia': 0,
-      'Astigmatism': 0,
-      'Presbyopia': 0,
-      'Color Vision Deficiency': 0,
-      'Cataract': 0,
-      'Macular Issue': 0,
-      'Vision Impairment': 0,
-      'Low Contrast Sensitivity': 0,
+
+    // Track unique patients per condition
+    final conditionPatients = <String, Set<String>>{
+      'Normal': <String>{},
+      'Myopia': <String>{},
+      'Hyperopia': <String>{},
+      'Astigmatism': <String>{},
+      'Presbyopia': <String>{},
+      'Color Vision Deficiency': <String>{},
+      'Cataract': <String>{},
+      'Macular Issue': <String>{},
+      'Vision Impairment': <String>{},
+      'Low Contrast Sensitivity': <String>{},
     };
     final uniquePatients = <String>{};
 
@@ -245,15 +248,22 @@ class _PractitionerDashboardScreenState
       final statusKey = result.overallStatus.name;
       statusCounts[statusKey] = (statusCounts[statusKey] ?? 0) + 1;
 
+      // Track unique patients for each condition
       final conditions = _getAllResultConditions(result);
       for (final condition in conditions) {
-        if (conditionCounts.containsKey(condition)) {
-          conditionCounts[condition] = (conditionCounts[condition] ?? 0) + 1;
+        if (conditionPatients.containsKey(condition)) {
+          conditionPatients[condition]!.add(result.profileId);
         }
       }
 
       uniquePatients.add(result.profileId);
     }
+
+    // Convert unique patient sets to counts
+    final conditionCounts = <String, int>{};
+    conditionPatients.forEach((condition, patients) {
+      conditionCounts[condition] = patients.length;
+    });
 
     _statistics = {
       'totalTests': _filteredResults.length,
@@ -2112,6 +2122,7 @@ class _PractitionerDashboardScreenState
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -2635,11 +2646,12 @@ class _PractitionerDashboardScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 0: Full Examination Badge (New row to prevent overflow)
+          // Row 0: Full Examination Badge (Full width)
           if (isComprehensive)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Container(
+                width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
@@ -2647,6 +2659,7 @@ class _PractitionerDashboardScreenState
                 ),
                 child: const Text(
                   'FULL EXAMINATION',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.white,
                     fontSize: 8,
@@ -2657,31 +2670,25 @@ class _PractitionerDashboardScreenState
               ),
             ),
 
-          // Row 1: Status Label (Now separated if isComprehensive)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  result.overallStatus.label.toUpperCase(),
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 10,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+          // Row 1: Status Label (Full width)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              result.overallStatus.label.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: statusColor,
+                fontWeight: FontWeight.w900,
+                fontSize: 10,
+                letterSpacing: 0.5,
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 8),
 
@@ -2904,31 +2911,137 @@ class _PractitionerDashboardScreenState
                 color: AppColors.primary.withValues(alpha: 0.05),
               ),
           ],
-          // Row 3: Others
+          // Row 3: Others (Per-Eye Display)
           if (hasOthers)
             Padding(
               padding: const EdgeInsets.all(12),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (result.colorVision != null)
-                    _buildDiagnosticItem(
-                      'COLOR VISION',
-                      result.colorVision!.isNormal ? 'NORMAL' : 'DEFICIENT',
+                  // Color Vision - Per Eye with Specific Deficiency Type
+                  if (result.colorVision != null) ...[
+                    Row(
+                      children: [
+                        // Right Eye Color Vision
+                        _buildDiagnosticItem(
+                          'COLOR VISION (RIGHT)',
+                          result.colorVision!.rightEye.detectedType != null &&
+                                  result.colorVision!.rightEye.detectedType !=
+                                      DeficiencyType.none
+                              ? result
+                                    .colorVision!
+                                    .rightEye
+                                    .detectedType!
+                                    .displayName
+                              : (result.colorVision!.rightEye.status ==
+                                        ColorVisionStatus.normal
+                                    ? 'NORMAL'
+                                    : result
+                                          .colorVision!
+                                          .rightEye
+                                          .status
+                                          .displayName
+                                          .toUpperCase()),
+                          icon: Icons.palette,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                        ),
+                        // Left Eye Color Vision
+                        _buildDiagnosticItem(
+                          'COLOR VISION (LEFT)',
+                          result.colorVision!.leftEye.detectedType != null &&
+                                  result.colorVision!.leftEye.detectedType !=
+                                      DeficiencyType.none
+                              ? result
+                                    .colorVision!
+                                    .leftEye
+                                    .detectedType!
+                                    .displayName
+                              : (result.colorVision!.leftEye.status ==
+                                        ColorVisionStatus.normal
+                                    ? 'NORMAL'
+                                    : result
+                                          .colorVision!
+                                          .leftEye
+                                          .status
+                                          .displayName
+                                          .toUpperCase()),
+                          icon: Icons.palette,
+                        ),
+                      ],
                     ),
-                  if (result.pelliRobson != null)
-                    _buildDiagnosticItem(
-                      'CONTRAST',
-                      result.pelliRobson?.averageScore.toStringAsFixed(1),
+                    if (result.pelliRobson != null ||
+                        result.amslerGridRight != null ||
+                        result.amslerGridLeft != null)
+                      const SizedBox(height: 8),
+                  ],
+                  // Contrast Sensitivity - Per Eye
+                  if (result.pelliRobson != null) ...[
+                    Row(
+                      children: [
+                        // Right Eye Contrast
+                        if (result.pelliRobson!.rightEye != null)
+                          _buildDiagnosticItem(
+                            'CONTRAST (RIGHT)',
+                            '${result.pelliRobson!.rightEye!.longDistance?.adjustedScore.toStringAsFixed(1) ?? '0.0'} CS',
+                            icon: Icons.contrast,
+                          ),
+                        if (result.pelliRobson!.rightEye != null &&
+                            result.pelliRobson!.leftEye != null)
+                          Container(
+                            width: 1,
+                            height: 30,
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                          ),
+                        // Left Eye Contrast
+                        if (result.pelliRobson!.leftEye != null)
+                          _buildDiagnosticItem(
+                            'CONTRAST (LEFT)',
+                            '${result.pelliRobson!.leftEye!.longDistance?.adjustedScore.toStringAsFixed(1) ?? '0.0'} CS',
+                            icon: Icons.contrast,
+                          ),
+                      ],
                     ),
+                    if (result.amslerGridRight != null ||
+                        result.amslerGridLeft != null)
+                      const SizedBox(height: 8),
+                  ],
+                  // Amsler Grid - Per Eye
                   if (result.amslerGridRight != null ||
-                      result.amslerGridLeft != null)
-                    _buildDiagnosticItem(
-                      'AMSLER GRID',
-                      (result.amslerGridRight?.hasDistortions != true &&
-                              result.amslerGridLeft?.hasDistortions != true
-                          ? 'NORMAL'
-                          : 'DISTORTED'),
+                      result.amslerGridLeft != null) ...[
+                    Row(
+                      children: [
+                        // Right Eye Amsler
+                        if (result.amslerGridRight != null)
+                          _buildDiagnosticItem(
+                            'AMSLER (RIGHT)',
+                            result.amslerGridRight!.hasDistortions
+                                ? 'DISTORTED'
+                                : 'NORMAL',
+                            icon: Icons.grid_on,
+                          ),
+                        if (result.amslerGridRight != null &&
+                            result.amslerGridLeft != null)
+                          Container(
+                            width: 1,
+                            height: 30,
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                          ),
+                        // Left Eye Amsler
+                        if (result.amslerGridLeft != null)
+                          _buildDiagnosticItem(
+                            'AMSLER (LEFT)',
+                            result.amslerGridLeft!.hasDistortions
+                                ? 'DISTORTED'
+                                : 'NORMAL',
+                            icon: Icons.grid_on,
+                          ),
+                      ],
                     ),
+                  ],
                 ],
               ),
             ),
@@ -2949,6 +3062,9 @@ class _PractitionerDashboardScreenState
               color: AppColors.textSecondary,
               letterSpacing: 0.5,
             ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
           Row(
@@ -2958,12 +3074,17 @@ class _PractitionerDashboardScreenState
                 Icon(icon, size: 10, color: AppColors.primary),
                 const SizedBox(width: 4),
               ],
-              Text(
-                value ?? 'N/A',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.textPrimary,
+              Flexible(
+                child: Text(
+                  value ?? 'N/A',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -2990,8 +3111,9 @@ class _PractitionerDashboardScreenState
               ],
             ),
           ),
-          if (result.rightEye != null) _RefractionRow('OD', result.rightEye!),
-          if (result.leftEye != null) _RefractionRow('OS', result.leftEye!),
+          if (result.rightEye != null)
+            _RefractionRow('Right', result.rightEye!),
+          if (result.leftEye != null) _RefractionRow('Left', result.leftEye!),
         ],
       ),
     );
