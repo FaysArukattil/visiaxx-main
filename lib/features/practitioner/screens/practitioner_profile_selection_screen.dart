@@ -229,6 +229,7 @@ class _PractitionerProfileSelectionScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Patient'),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

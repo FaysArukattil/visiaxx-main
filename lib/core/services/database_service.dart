@@ -119,10 +119,12 @@ class DatabaseService {
         'Myopia': 0,
         'Hyperopia': 0,
         'Astigmatism': 0,
-        'Cataract Risk': 0,
-        'Glaucoma Risk': 0,
-        'Color Vision Defect': 0,
-        'AMD Risk': 0,
+        'Presbyopia': 0,
+        'Cataract': 0,
+        'Macular Issue': 0,
+        'Color Vision Deficiency': 0,
+        'Vision Impairment': 0,
+        'Low Contrast Sensitivity': 0,
       };
 
       final Map<String, int> statusCounts = {
@@ -143,7 +145,7 @@ class DatabaseService {
         if (result.mobileRefractometry != null) {
           final refrac = result.mobileRefractometry!;
 
-          // Safely parse sphere and cylinder values (they're stored as strings)
+          // Safely parse sphere and cylinder values
           double rightSphere = 0.0;
           double leftSphere = 0.0;
           double rightCyl = 0.0;
@@ -159,58 +161,34 @@ class DatabaseService {
             leftCyl = double.tryParse(refrac.leftEye!.cylinder) ?? 0.0;
           }
 
-          // Check for Myopia (negative sphere)
           if (rightSphere < -0.5 || leftSphere < -0.5) {
             conditionCounts['Myopia'] = (conditionCounts['Myopia'] ?? 0) + 1;
             hasCondition = true;
           }
 
-          // Check for Hyperopia (positive sphere)
           if (rightSphere > 0.5 || leftSphere > 0.5) {
             conditionCounts['Hyperopia'] =
                 (conditionCounts['Hyperopia'] ?? 0) + 1;
             hasCondition = true;
           }
 
-          // Check for Astigmatism (significant cylinder)
           if (rightCyl.abs() > 0.5 || leftCyl.abs() > 0.5) {
             conditionCounts['Astigmatism'] =
                 (conditionCounts['Astigmatism'] ?? 0) + 1;
             hasCondition = true;
           }
+        }
 
-          // Check for cataract risk (blur awareness)
-          if (refrac.healthWarnings.any(
-            (w) => w.toLowerCase().contains('cataract'),
-          )) {
-            conditionCounts['Cataract Risk'] =
-                (conditionCounts['Cataract Risk'] ?? 0) + 1;
+        // Check for common conditions using the standard dashboard logic
+        final conditions = _getDashboardConditions(result);
+        for (final condition in conditions) {
+          if (condition != 'Normal') {
+            conditionCounts[condition] = (conditionCounts[condition] ?? 0) + 1;
             hasCondition = true;
           }
         }
 
-        // Check for color vision defects
-        if (result.colorVision != null && !result.colorVision!.isNormal) {
-          conditionCounts['Color Vision Defect'] =
-              (conditionCounts['Color Vision Defect'] ?? 0) + 1;
-          hasCondition = true;
-        }
-
-        // Check for AMD risk from Amsler Grid
-        if ((result.amslerGridRight?.hasDistortions ?? false) ||
-            (result.amslerGridLeft?.hasDistortions ?? false)) {
-          conditionCounts['AMD Risk'] = (conditionCounts['AMD Risk'] ?? 0) + 1;
-          hasCondition = true;
-        }
-
-        // Check for glaucoma risk (poor contrast sensitivity)
-        if (result.pelliRobson != null && result.pelliRobson!.needsReferral) {
-          conditionCounts['Glaucoma Risk'] =
-              (conditionCounts['Glaucoma Risk'] ?? 0) + 1;
-          hasCondition = true;
-        }
-
-        if (!hasCondition && result.overallStatus == TestStatus.normal) {
+        if (!hasCondition) {
           conditionCounts['Normal'] = (conditionCounts['Normal'] ?? 0) + 1;
         }
       }
@@ -225,11 +203,58 @@ class DatabaseService {
       debugPrint('[DatabaseService] Error calculating statistics: $e');
       return {
         'totalTests': 0,
-        'conditionCounts': {},
-        'statusCounts': {},
+        'conditionCounts': <String, int>{},
+        'statusCounts': <String, int>{},
         'uniquePatients': 0,
       };
     }
+  }
+
+  /// Helper to get conditions for dashboard statistics
+  List<String> _getDashboardConditions(TestResultModel result) {
+    final conditions = <String>[];
+
+    // Reproduce logic from dashboard _getAllResultConditions
+    final rightLogMAR = result.visualAcuityRight?.logMAR ?? 0;
+    final leftLogMAR = result.visualAcuityLeft?.logMAR ?? 0;
+    final worseLogMAR = rightLogMAR > leftLogMAR ? rightLogMAR : leftLogMAR;
+    if (worseLogMAR > 0.3) conditions.add('Vision Impairment');
+
+    if (result.colorVision != null && !result.colorVision!.isNormal) {
+      conditions.add('Color Vision Deficiency');
+    }
+
+    if ((result.amslerGridRight?.hasDistortions ?? false) ||
+        (result.amslerGridLeft?.hasDistortions ?? false)) {
+      conditions.add('Macular Issue');
+      final rightDistortions =
+          result.amslerGridRight?.distortionPoints.length ?? 0;
+      final leftDistortions =
+          result.amslerGridLeft?.distortionPoints.length ?? 0;
+      if (rightDistortions >= 5 || leftDistortions >= 5) {
+        conditions.add('Cataract');
+      }
+    }
+
+    if (result.pelliRobson != null && result.pelliRobson!.needsReferral) {
+      conditions.add('Low Contrast Sensitivity');
+    }
+
+    if (result.mobileRefractometry != null) {
+      final rightAdd =
+          double.tryParse(
+            result.mobileRefractometry!.rightEye?.addPower ?? '0',
+          ) ??
+          0;
+      final leftAdd =
+          double.tryParse(
+            result.mobileRefractometry!.leftEye?.addPower ?? '0',
+          ) ??
+          0;
+      if (rightAdd > 0.75 || leftAdd > 0.75) conditions.add('Presbyopia');
+    }
+
+    return conditions;
   }
 
   /// Get daily test counts for graph (last 30 days)

@@ -14,7 +14,6 @@ import '../../../core/services/patient_service.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../core/services/dashboard_cache_service.dart';
 import '../../../core/widgets/eye_loader.dart';
-import '../../../core/widgets/download_success_dialog.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/utils/ui_utils.dart';
 import '../../../data/models/test_result_model.dart';
@@ -108,7 +107,9 @@ class _PractitionerDashboardScreenState
           'patients': patients,
           'dailyCounts': dailyCounts,
         });
-        setState(() => _isInitialLoading = false);
+        setState(() {
+          _isInitialLoading = false;
+        });
       }
     } catch (e) {
       debugPrint('[Dashboard] ❌ Error loading data: $e');
@@ -196,16 +197,14 @@ class _PractitionerDashboardScreenState
       }
     } else if (startDate != null) {
       // Apply period filter
-      final filterStartDate =
-          startDate; // Capture in a non-nullable local variable
       filtered = filtered.where((r) {
         if (endDate != null) {
           return r.timestamp.isAfter(
-                filterStartDate.subtract(const Duration(seconds: 1)),
+                startDate!.subtract(const Duration(seconds: 1)),
               ) &&
               r.timestamp.isBefore(endDate.add(const Duration(seconds: 1)));
         } else {
-          return r.timestamp.isAfter(filterStartDate);
+          return r.timestamp.isAfter(startDate!);
         }
       }).toList();
     }
@@ -227,7 +226,7 @@ class _PractitionerDashboardScreenState
   }
 
   void _calculateFilteredStats() {
-    final statusCounts = <String, int>{};
+    final statusCounts = <String, int>{'normal': 0, 'review': 0, 'urgent': 0};
     final conditionCounts = {
       'Normal': 0,
       'Myopia': 0,
@@ -243,8 +242,8 @@ class _PractitionerDashboardScreenState
     final uniquePatients = <String>{};
 
     for (final result in _filteredResults) {
-      statusCounts[result.overallStatus.label] =
-          (statusCounts[result.overallStatus.label] ?? 0) + 1;
+      final statusKey = result.overallStatus.name;
+      statusCounts[statusKey] = (statusCounts[statusKey] ?? 0) + 1;
 
       final conditions = _getAllResultConditions(result);
       for (final condition in conditions) {
@@ -1088,53 +1087,24 @@ class _PractitionerDashboardScreenState
     return '$count reports\n$filterText';
   }
 
-  Future<void> _downloadAllPDFs() async {
-    // Show download options dialog
-    final choice = await _showDownloadOptionsDialog();
+  Future<bool> _ensureStoragePermission() async {
+    if (!Platform.isAndroid) return true;
 
-    if (choice == null) return; // User cancelled
-
-    // Determine which results to download
-    List<TestResultModel> resultsToDownload;
-    String folderName;
-
-    if (choice == 'all') {
-      final cachedData = _cache.getCachedData();
-      if (cachedData == null) {
-        SnackbarUtils.showError(context, 'No data available');
-        return;
-      }
-      resultsToDownload = cachedData['allResults'] as List<TestResultModel>;
-      folderName = 'All_Reports';
-    } else {
-      // Download filtered results
-      if (_filteredResults.isEmpty) {
-        SnackbarUtils.showInfo(context, 'No filtered results to download');
-        return;
-      }
-      resultsToDownload = _filteredResults;
-      folderName = _getSmartFolderName();
-    }
-
-    if (resultsToDownload.isEmpty) {
-      SnackbarUtils.showInfo(context, 'No results to download');
-      return;
-    }
-
-    // Check and request permissions for Android
-    if (Platform.isAndroid) {
+    try {
       final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
       final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
       final int sdkInt = androidInfo.version.sdkInt;
 
-      debugPrint('[Dashboard] Android SDK: $sdkInt');
-
-      bool hasPermission = false;
+      debugPrint(
+        '[Dashboard] Checking storage permission for Android SDK: $sdkInt',
+      );
 
       if (sdkInt >= 33) {
-        hasPermission = true;
         debugPrint('[Dashboard] Android 13+: Using scoped storage');
-      } else if (sdkInt >= 30) {
+        return true;
+      }
+
+      if (sdkInt >= 30) {
         PermissionStatus status = await Permission.manageExternalStorage.status;
 
         if (status.isDenied) {
@@ -1172,7 +1142,7 @@ class _PractitionerDashboardScreenState
             ),
           );
 
-          if (shouldRequest != true) return;
+          if (shouldRequest != true) return false;
           status = await Permission.manageExternalStorage.request();
         }
 
@@ -1214,13 +1184,12 @@ class _PractitionerDashboardScreenState
           if (shouldOpen == true) {
             await openAppSettings();
           }
-          return;
+          return false;
         }
 
-        hasPermission = status.isGranted;
+        return status.isGranted;
       } else {
         PermissionStatus status = await Permission.storage.status;
-
         if (status.isDenied) {
           status = await Permission.storage.request();
         }
@@ -1253,20 +1222,52 @@ class _PractitionerDashboardScreenState
           if (shouldOpen == true) {
             await openAppSettings();
           }
-          return;
+          return false;
         }
 
-        hasPermission = status.isGranted;
+        return status.isGranted;
       }
+    } catch (e) {
+      debugPrint('[Dashboard] Error checking permission: $e');
+      return false;
+    }
+  }
 
-      if (!hasPermission) {
-        SnackbarUtils.showError(
-          context,
-          'Storage permission denied. PDFs cannot be saved.',
-        );
+  Future<void> _downloadAllPDFs() async {
+    // Show download options dialog
+    final choice = await _showDownloadOptionsDialog();
+
+    if (choice == null) return; // User cancelled
+
+    // Determine which results to download
+    List<TestResultModel> resultsToDownload;
+    String folderName;
+
+    if (choice == 'all') {
+      final cachedData = _cache.getCachedData();
+      if (cachedData == null) {
+        SnackbarUtils.showError(context, 'No data available');
         return;
       }
+      resultsToDownload = cachedData['allResults'] as List<TestResultModel>;
+      folderName = 'All_Reports';
+    } else {
+      // Download filtered results
+      if (_filteredResults.isEmpty) {
+        SnackbarUtils.showInfo(context, 'No filtered results to download');
+        return;
+      }
+      resultsToDownload = _filteredResults;
+      folderName = _getSmartFolderName();
     }
+
+    if (resultsToDownload.isEmpty) {
+      SnackbarUtils.showInfo(context, 'No results to download');
+      return;
+    }
+
+    // Check and request permissions
+    if (!await _ensureStoragePermission()) return;
 
     if (!mounted) return;
 
@@ -1333,7 +1334,7 @@ class _PractitionerDashboardScreenState
 
       if (mounted) {
         Navigator.of(context).pop(); // Close progress dialog
-        _showDownloadSuccessDialog(successCount, targetDir.path);
+        await _showDownloadSuccessDialog(successCount, targetDir.path);
       }
     } catch (e) {
       if (mounted) {
@@ -1343,8 +1344,8 @@ class _PractitionerDashboardScreenState
     }
   }
 
-  void _showDownloadSuccessDialog(int count, String path) {
-    showDialog(
+  Future<void> _showDownloadSuccessDialog(int count, String path) async {
+    await showDialog(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -1611,15 +1612,8 @@ class _PractitionerDashboardScreenState
 
   Future<void> _downloadPdf(TestResultModel result) async {
     try {
-      final String filePath = await _pdfService.getExpectedFilePath(result);
-      final File file = File(filePath);
-
-      if (await file.exists()) {
-        if (mounted) {
-          await showDownloadSuccessDialog(context: context, filePath: filePath);
-        }
-        return;
-      }
+      // 1. Check permissions
+      if (!await _ensureStoragePermission()) return;
 
       if (!mounted) return;
       UIUtils.showProgressDialog(
@@ -1627,23 +1621,38 @@ class _PractitionerDashboardScreenState
         message: 'Generating PDF...',
       );
 
-      final String generatedPath = await _pdfService.generateAndDownloadPdf(
-        result,
+      final String name = result.profileName.replaceAll(
+        RegExp(r'[^a-zA-Z0-9]'),
+        '_',
       );
+      final age = result.profileAge?.toString() ?? 'NA';
+      final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
+      final timeStr = DateFormat('HH-mm').format(result.timestamp);
+      final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
+
+      final baseDir = await _getDownloadDirectory();
+      final targetDir = Directory(
+        '${baseDir.path}/Visiaxx_Reports/Single_Reports',
+      );
+
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
+      }
+
+      final file = File('${targetDir.path}/$filename');
+
+      // Generate bytes
+      final pdfBytes = await _pdfService.generatePdfBytes(result);
+      await file.writeAsBytes(pdfBytes);
 
       if (mounted) {
         UIUtils.hideProgressDialog(context);
-        await showDownloadSuccessDialog(
-          context: context,
-          filePath: generatedPath,
-        );
+        await _showDownloadSuccessDialog(1, file.path);
       }
     } catch (e) {
       if (mounted) {
         UIUtils.hideProgressDialog(context);
-        final errorMessage = e.toString().contains('Permission denied')
-            ? 'Storage permission denied. PDF saved to app folder instead.'
-            : 'Failed to generate PDF: $e';
+        final errorMessage = 'Failed to generate PDF: $e';
         SnackbarUtils.showError(context, errorMessage);
       }
     }
@@ -1683,7 +1692,7 @@ class _PractitionerDashboardScreenState
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Dashboard'),
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.background,
         elevation: 0,
       ),
       body: _isInitialLoading
@@ -1724,8 +1733,8 @@ class _PractitionerDashboardScreenState
                   if (_isFilterLoading)
                     Positioned.fill(
                       child: Container(
-                        color: AppColors.black.withValues(alpha: 0.3),
-                        child: const Center(child: CircularProgressIndicator()),
+                        color: AppColors.background.withValues(alpha: 0.7),
+                        child: const Center(child: EyeLoader(size: 60)),
                       ),
                     ),
                 ],
@@ -1738,31 +1747,36 @@ class _PractitionerDashboardScreenState
   Widget _buildDownloadButton() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
-          width: 1.5,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primary, AppColors.primaryLight],
         ),
+        borderRadius: BorderRadius.circular(16), // Premium squircle radius
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 15,
+            spreadRadius: 2,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: AppColors.white.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: _downloadAllPDFs,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             child: const Icon(
               Icons.file_download_outlined,
-              color: AppColors.primary,
-              size: 24,
+              color: AppColors.white,
+              size: 26,
             ),
           ),
         ),
@@ -1776,24 +1790,32 @@ class _PractitionerDashboardScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Analytics Period',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.08),
+                      AppColors.primaryLight.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -1805,28 +1827,46 @@ class _PractitionerDashboardScreenState
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: hasDateFilter
-                    ? AppColors.primary.withValues(alpha: 0.1)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: hasDateFilter ? AppColors.primary : AppColors.border,
-                  width: hasDateFilter ? 2 : 1,
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: _showDatePicker,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: hasDateFilter
+                      ? LinearGradient(
+                          colors: [AppColors.primary, AppColors.primaryLight],
+                        )
+                      : LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.08),
+                            AppColors.primaryLight.withValues(alpha: 0.05),
+                          ],
+                        ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: hasDateFilter
+                        ? AppColors.white.withValues(alpha: 0.2)
+                        : AppColors.primary.withValues(alpha: 0.15),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  hasDateFilter ? Icons.date_range : Icons.calendar_today,
-                  color: hasDateFilter
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+                child: Icon(
+                  hasDateFilter
+                      ? Icons.date_range
+                      : Icons.calendar_today_outlined,
+                  color: hasDateFilter ? AppColors.white : AppColors.primary,
                   size: 20,
                 ),
-                onPressed: _showDatePicker,
-                tooltip: 'Custom Date Range',
               ),
             ),
           ],
@@ -1838,10 +1878,18 @@ class _PractitionerDashboardScreenState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.08),
+                  AppColors.primaryLight.withValues(alpha: 0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
+                color: AppColors.primary.withValues(alpha: 0.15),
+                width: 1.2,
               ),
             ),
             child: Row(
@@ -1948,17 +1996,21 @@ class _PractitionerDashboardScreenState
           _changeFilter(value, _selectedConditions);
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            gradient: isSelected
+                ? LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryLight],
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(20),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
                       color: AppColors.primary.withValues(alpha: 0.2),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
                   ]
                 : [],
@@ -1967,9 +2019,10 @@ class _PractitionerDashboardScreenState
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected ? AppColors.white : AppColors.textSecondary,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: 13,
+              color: isSelected ? AppColors.white : AppColors.primary,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              fontSize: 12,
+              letterSpacing: 0.3,
             ),
           ),
         ),
@@ -1980,7 +2033,8 @@ class _PractitionerDashboardScreenState
   Widget _buildStatisticsCards() {
     final totalTests = _statistics['totalTests'] ?? 0;
     final uniquePatients = _statistics['uniquePatients'] ?? 0;
-    final statusCounts = _statistics['statusCounts'] as Map<String, int>? ?? {};
+    final statusCounts =
+        _statistics['statusCounts'] as Map<String, dynamic>? ?? {};
 
     return Column(
       children: [
@@ -2001,7 +2055,7 @@ class _PractitionerDashboardScreenState
                 'Patients',
                 '$uniquePatients',
                 Icons.people_outline,
-                AppColors.secondary,
+                AppColors.primary,
               ),
             ),
           ],
@@ -2013,7 +2067,7 @@ class _PractitionerDashboardScreenState
             Expanded(
               child: _buildStatCard(
                 'Review',
-                '${statusCounts['Review'] ?? 0}',
+                '${statusCounts['review'] ?? statusCounts['Review'] ?? 0}',
                 Icons.visibility_outlined,
                 AppColors.warning,
               ),
@@ -2022,7 +2076,7 @@ class _PractitionerDashboardScreenState
             Expanded(
               child: _buildStatCard(
                 'Urgent',
-                '${statusCounts['Urgent'] ?? 0}',
+                '${statusCounts['urgent'] ?? statusCounts['Urgent'] ?? 0}',
                 Icons.warning_amber_rounded,
                 AppColors.error,
               ),
@@ -2458,7 +2512,7 @@ class _PractitionerDashboardScreenState
         final patient = _patients.firstWhere(
           (p) => p.id == result.profileId || p.fullName == result.profileName,
           orElse: () => PatientModel(
-            id: result.profileId ?? '',
+            id: result.profileId,
             firstName: result.profileName.split(' ').first,
             lastName: result.profileName.split(' ').length > 1
                 ? result.profileName.split(' ').last
