@@ -875,18 +875,21 @@ class PdfExportService {
         pw.SizedBox(height: 8),
         pw.Table(
           border: pw.TableBorder.all(color: PdfColors.blueGrey50, width: 0.5),
+          defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
           columnWidths: {
             0: const pw.FlexColumnWidth(1),
             1: const pw.FlexColumnWidth(1),
-            2: const pw.FlexColumnWidth(2),
+            2: const pw.FlexColumnWidth(1.2),
+            3: const pw.FlexColumnWidth(1.8),
           },
           children: [
             pw.TableRow(
               decoration: const pw.BoxDecoration(color: PdfColors.blueGrey50),
               children: [
                 _buildTableCell('EYE', isHeader: true),
-                _buildTableCell('PLATES CORRECT', isHeader: true),
-                _buildTableCell('STATUS', isHeader: true),
+                _buildTableCell('PLATES', isHeader: true),
+                _buildTableCell('SEVERITY', isHeader: true),
+                _buildTableCell('DEFICIENCY TYPE', isHeader: true),
               ],
             ),
             // Right Eye
@@ -902,6 +905,12 @@ class PdfExportService {
                       ? PdfColors.green800
                       : PdfColors.orange800,
                 ),
+                _buildTableCell(
+                  cv.rightEye.detectedType?.displayName ??
+                      (cv.rightEye.status == ColorVisionStatus.normal
+                          ? 'None'
+                          : 'Undetermined'),
+                ),
               ],
             ),
             // Left Eye
@@ -916,6 +925,12 @@ class PdfExportService {
                   color: cv.leftEye.status == ColorVisionStatus.normal
                       ? PdfColors.green800
                       : PdfColors.orange800,
+                ),
+                _buildTableCell(
+                  cv.leftEye.detectedType?.displayName ??
+                      (cv.leftEye.status == ColorVisionStatus.normal
+                          ? 'None'
+                          : 'Undetermined'),
                 ),
               ],
             ),
