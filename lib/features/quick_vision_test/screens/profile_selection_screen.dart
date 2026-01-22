@@ -8,6 +8,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../data/models/family_member_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/premium_dropdown.dart';
 import '../../../core/utils/snackbar_utils.dart';
 
 /// Profile selection screen - choose self or family member for testing
@@ -468,7 +469,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
-                labelText: 'First Name *',
+                labelText: 'First Name',
                 hintText: 'Enter name',
               ),
               validator: (value) {
@@ -478,10 +479,12 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
+                  flex: 4,
                   child: TextFormField(
                     controller: _ageController,
                     keyboardType: TextInputType.number,
@@ -496,7 +499,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                       }),
                     ],
                     decoration: const InputDecoration(
-                      labelText: 'Age *',
+                      labelText: 'Age',
                       hintText: 'Age',
                     ),
                     validator: (value) {
@@ -513,32 +516,30 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedSex,
-                    decoration: const InputDecoration(labelText: 'Sex *'),
-                    items: const [
-                      DropdownMenuItem(value: 'Male', child: Text('Male')),
-                      DropdownMenuItem(value: 'Female', child: Text('Female')),
-                    ],
+                  flex: 6,
+                  child: PremiumDropdown<String>(
+                    label: 'Sex',
+                    value: _selectedSex,
+                    items: const ['Male', 'Female', 'Other'],
+                    itemLabelBuilder: (s) => s,
                     onChanged: (value) {
-                      setState(() => _selectedSex = value!);
+                      setState(() => _selectedSex = value);
                     },
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedRelationship,
-              decoration: const InputDecoration(labelText: 'Relationship *'),
-              items: _relationships.map((r) {
-                return DropdownMenuItem(value: r, child: Text(r));
-              }).toList(),
+            const SizedBox(height: 20),
+            PremiumDropdown<String>(
+              label: 'Relationship',
+              value: _selectedRelationship,
+              items: _relationships,
+              itemLabelBuilder: (r) => r,
               onChanged: (value) {
-                setState(() => _selectedRelationship = value!);
+                setState(() => _selectedRelationship = value);
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
@@ -547,7 +548,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 LengthLimitingTextInputFormatter(10),
               ],
               decoration: const InputDecoration(
-                labelText: 'Phone Number',
+                labelText: 'Phone Number (Optional)',
                 prefixText: '+91 ',
                 prefixStyle: TextStyle(fontWeight: FontWeight.bold),
                 hintText: '10-digit number',
@@ -559,12 +560,43 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _addFamilyMember,
-              child: const Padding(
-                padding: EdgeInsets.all(12),
-                child: Text('Save Family Member'),
+            const SizedBox(height: 32),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.8),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: _addFamilyMember,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.transparent,
+                  foregroundColor: AppColors.white,
+                  shadowColor: AppColors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Save Family Member',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ),
             ),
           ],

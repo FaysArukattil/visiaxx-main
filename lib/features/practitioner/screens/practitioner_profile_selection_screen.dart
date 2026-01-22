@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/premium_dropdown.dart';
 import '../../../core/services/patient_service.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -506,7 +507,7 @@ class _PractitionerProfileSelectionScreenState
                     controller: _firstNameController,
                     textCapitalization: TextCapitalization.words,
                     decoration: const InputDecoration(
-                      labelText: 'First Name *',
+                      labelText: 'First Name',
                       hintText: 'First name',
                     ),
                     validator: (value) {
@@ -533,8 +534,10 @@ class _PractitionerProfileSelectionScreenState
             const SizedBox(height: 12),
             // Age and Sex row
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
+                  flex: 4,
                   child: TextFormField(
                     controller: _ageController,
                     keyboardType: TextInputType.number,
@@ -549,7 +552,7 @@ class _PractitionerProfileSelectionScreenState
                       }),
                     ],
                     decoration: const InputDecoration(
-                      labelText: 'Age *',
+                      labelText: 'Age',
                       hintText: 'Age',
                     ),
                     validator: (value) {
@@ -566,15 +569,14 @@ class _PractitionerProfileSelectionScreenState
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedSex,
-                    decoration: const InputDecoration(labelText: 'Sex *'),
-                    items: const [
-                      DropdownMenuItem(value: 'Male', child: Text('Male')),
-                      DropdownMenuItem(value: 'Female', child: Text('Female')),
-                    ],
+                  flex: 6,
+                  child: PremiumDropdown<String>(
+                    label: 'Sex',
+                    value: _selectedSex,
+                    items: const ['Male', 'Female', 'Other'],
+                    itemLabelBuilder: (s) => s,
                     onChanged: (value) {
-                      setState(() => _selectedSex = value!);
+                      setState(() => _selectedSex = value);
                     },
                   ),
                 ),
@@ -614,12 +616,43 @@ class _PractitionerProfileSelectionScreenState
                 prefixIcon: Icon(Icons.note),
               ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _addPatient,
-              child: const Padding(
-                padding: EdgeInsets.all(12),
-                child: Text('Save Patient'),
+            const SizedBox(height: 32),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.8),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: _addPatient,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.transparent,
+                  foregroundColor: AppColors.white,
+                  shadowColor: AppColors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Save Patient',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ),
             ),
           ],
