@@ -185,32 +185,37 @@ class PremiumDropdown<T> extends StatelessWidget {
           child: InputDecorator(
             decoration: InputDecoration(
               labelText: label,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
               hintText: hintText,
+              filled: true,
+              fillColor: AppColors.surface,
               suffixIcon: const Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: AppColors.textSecondary,
                 size: 28,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
                   color: AppColors.border,
                   width: 1.5,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
                   color: AppColors.border,
                   width: 1.5,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
                   color: AppColors.primary,
-                  width: 1.5,
+                  width: 2,
                 ),
               ),
               contentPadding: const EdgeInsets.symmetric(

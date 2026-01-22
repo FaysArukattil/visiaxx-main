@@ -732,13 +732,15 @@ class _PractitionerProfileSelectionScreenState
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: AppColors.border.withValues(alpha: 0.3),
+                        color: AppColors.border,
+                        width: 1.5,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: AppColors.border.withValues(alpha: 0.3),
+                        color: AppColors.border,
+                        width: 1.5,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -785,13 +787,15 @@ class _PractitionerProfileSelectionScreenState
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: AppColors.border.withValues(alpha: 0.3),
+                        color: AppColors.border,
+                        width: 1.5,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: AppColors.border.withValues(alpha: 0.3),
+                        color: AppColors.border,
+                        width: 1.5,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -836,14 +840,16 @@ class _PractitionerProfileSelectionScreenState
               fillColor: AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.3),
+                borderSide: const BorderSide(
+                  color: AppColors.border,
+                  width: 1.5,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.3),
+                borderSide: const BorderSide(
+                  color: AppColors.border,
+                  width: 1.5,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -907,14 +913,16 @@ class _PractitionerProfileSelectionScreenState
               fillColor: AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.3),
+                borderSide: const BorderSide(
+                  color: AppColors.border,
+                  width: 1.5,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.3),
+                borderSide: const BorderSide(
+                  color: AppColors.border,
+                  width: 1.5,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -957,14 +965,16 @@ class _PractitionerProfileSelectionScreenState
               fillColor: AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.3),
+                borderSide: const BorderSide(
+                  color: AppColors.border,
+                  width: 1.5,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.3),
+                borderSide: const BorderSide(
+                  color: AppColors.border,
+                  width: 1.5,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
