@@ -2,6 +2,7 @@
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/widgets/premium_dropdown.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../data/models/user_model.dart';
 
@@ -147,94 +148,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildSwipableSexSelector() {
-    final options = ['Male', 'Female', 'Other'];
-    final currentIndex = options.indexOf(_selectedSex);
-
-    return GestureDetector(
-      onHorizontalDragUpdate: (details) {
-        final box = context.findRenderObject() as RenderBox?;
-        if (box != null) {
-          final localPosition = box.globalToLocal(details.globalPosition);
-          final percent = (localPosition.dx / box.size.width).clamp(0.0, 1.0);
-          int newIndex;
-          if (percent < 0.33) {
-            newIndex = 0;
-          } else if (percent < 0.66) {
-            newIndex = 1;
-          } else {
-            newIndex = 2;
-          }
-          if (newIndex != currentIndex) {
-            setState(() => _selectedSex = options[newIndex]);
-          }
-        }
-      },
-      child: Container(
-        height: 52,
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Stack(
-          children: [
-            AnimatedAlign(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutBack,
-              alignment: Alignment(
-                (currentIndex / (options.length - 1)) * 2 - 1,
-                0,
-              ),
-              child: FractionallySizedBox(
-                widthFactor: 1 / options.length,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: AppColors.primaryGradient),
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Row(
-              children: options.map((opt) {
-                final isSelected = _selectedSex == opt;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedSex = opt),
-                    behavior: HitTestBehavior.opaque,
-                    child: Center(
-                      child: Text(
-                        opt,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? AppColors.white
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -373,9 +286,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ),
                           const SizedBox(height: 16),
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                flex: 1,
+                                flex: 4,
                                 child: TextFormField(
                                   controller: _ageController,
                                   keyboardType: TextInputType.number,
@@ -412,8 +326,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                flex: 2,
-                                child: _buildSwipableSexSelector(),
+                                flex: 6,
+                                child: PremiumDropdown<String>(
+                                  label: 'Sex',
+                                  value: _selectedSex,
+                                  items: const ['Male', 'Female', 'Other'],
+                                  itemLabelBuilder: (s) => s,
+                                  onChanged: (value) {
+                                    setState(() => _selectedSex = value);
+                                  },
+                                ),
                               ),
                             ],
                           ),
