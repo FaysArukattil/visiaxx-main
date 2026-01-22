@@ -82,22 +82,52 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     });
 
     try {
-      // Load from cache first for instant display
-      final cachedResults = await _testResultService.getTestResults(
-        user.uid,
-        source: Source.cache,
-      );
+      debugPrint('[MyResults] 📊 Loading results for user: ${user.uid}');
 
-      if (mounted && cachedResults.isNotEmpty) {
-        setState(() {
-          _results = cachedResults;
-          _results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-          _isLoading = false;
-        });
+      // Strategy: Try server first with short timeout, then fallback to cache
+      List<TestResultModel> results = [];
+
+      try {
+        // Try server with 3-second timeout
+        debugPrint('[MyResults] 🌐 Attempting server fetch...');
+        results = await _testResultService
+            .getTestResults(user.uid, source: Source.server)
+            .timeout(
+              const Duration(seconds: 3),
+              onTimeout: () {
+                debugPrint(
+                  '[MyResults] ⏱️ Server timeout, falling back to cache',
+                );
+                return [];
+              },
+            );
+
+        if (results.isNotEmpty) {
+          debugPrint(
+            '[MyResults] ✅ Loaded ${results.length} results from server',
+          );
+        }
+      } catch (serverError) {
+        debugPrint('[MyResults] ⚠️ Server fetch failed: $serverError');
       }
 
-      // Then refresh from server in background
-      final results = await _testResultService.getTestResults(user.uid);
+      // If server failed or timed out, try cache
+      if (results.isEmpty) {
+        debugPrint('[MyResults] 💾 Loading from cache...');
+        try {
+          results = await _testResultService.getTestResults(
+            user.uid,
+            source: Source.cache,
+          );
+          debugPrint(
+            '[MyResults] ✅ Loaded ${results.length} results from cache',
+          );
+        } catch (cacheError) {
+          debugPrint('[MyResults] ❌ Cache fetch also failed: $cacheError');
+        }
+      }
+
+      // Sort results
       results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       if (mounted) {
@@ -105,18 +135,53 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           _results = results;
           _isLoading = false;
           _hasMore = results.length > _itemsPerPage;
+
+          if (results.isEmpty) {
+            _error = null; // Don't show error if just no results yet
+          }
         });
+      }
+
+      // Background refresh from server if we used cache
+      if (results.isNotEmpty) {
+        _backgroundRefresh(user.uid);
       }
     } catch (e) {
       debugPrint('[MyResults] ❌ ERROR loading results: $e');
       if (mounted) {
         setState(() {
-          if (_results.isEmpty) {
-            _error = 'Failed to load results';
-          }
+          _error = 'Failed to load results';
           _isLoading = false;
         });
       }
+    }
+  }
+
+  /// Background refresh from server (doesn't block UI)
+  Future<void> _backgroundRefresh(String userId) async {
+    try {
+      debugPrint('[MyResults] 🔄 Background refresh from server...');
+      final freshResults = await _testResultService
+          .getTestResults(userId, source: Source.server)
+          .timeout(const Duration(seconds: 5));
+
+      if (mounted && freshResults.isNotEmpty) {
+        freshResults.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+        // Only update if data actually changed
+        if (freshResults.length != _results.length) {
+          setState(() {
+            _results = freshResults;
+            _hasMore = freshResults.length > _itemsPerPage;
+          });
+          debugPrint(
+            '[MyResults] ✅ Background refresh complete - ${freshResults.length} results',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[MyResults] ⚠️ Background refresh failed (non-critical): $e');
+      // Don't show error - this is background operation
     }
   }
 
@@ -207,14 +272,34 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     }
   }
 
-  Future<void> _confirmDeleteResult(TestResultModel result) async {
-    final confirmed = await showDialog<bool>(
+  Future<bool?> _confirmDeleteResult(TestResultModel result) async {
+    return await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Remove Result?'),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.error,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Remove Result?', style: TextStyle(fontSize: 18)),
+            ),
+          ],
+        ),
         content: Text(
-          'Are you sure you want to remove the test result for ${result.profileName.isEmpty ? 'Self' : result.profileName}?',
+          'Are you sure you want to remove the test result for ${result.profileName.isEmpty ? 'Self' : result.profileName}?\n\nThis action cannot be undone.',
+          style: const TextStyle(height: 1.5),
         ),
         actions: [
           TextButton(
@@ -223,16 +308,54 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.white,
+            ),
             child: const Text('Remove'),
           ),
         ],
       ),
     );
+  }
 
-    if (confirmed == true && mounted) {
-      await _deleteResult(result);
-    }
+  Widget _buildSwipeBackground({required bool isLeft}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: isLeft ? Alignment.centerLeft : Alignment.centerRight,
+          end: isLeft ? Alignment.centerRight : Alignment.centerLeft,
+          colors: [AppColors.error, AppColors.error.withValues(alpha: 0.7)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Align(
+        alignment: isLeft ? Alignment.centerLeft : Alignment.centerRight,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.white,
+                size: 32,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Delete',
+                style: TextStyle(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteResult(TestResultModel result) async {
@@ -292,10 +415,27 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                                   ),
                                 );
                               }
+
+                              final result = _filteredResults[index];
+
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
-                                child: _buildModernResultCard(
-                                  _filteredResults[index],
+                                child: Dismissible(
+                                  key: Key(result.id),
+                                  direction: DismissDirection.horizontal,
+                                  confirmDismiss: (direction) async {
+                                    return await _confirmDeleteResult(result);
+                                  },
+                                  onDismissed: (direction) {
+                                    _deleteResult(result);
+                                  },
+                                  background: _buildSwipeBackground(
+                                    isLeft: true,
+                                  ),
+                                  secondaryBackground: _buildSwipeBackground(
+                                    isLeft: false,
+                                  ),
+                                  child: _buildModernResultCard(result),
                                 ),
                               );
                             },
@@ -309,42 +449,38 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
   Widget _buildFilters() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+        color: AppColors.background,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.1),
+            width: 1,
           ),
-        ],
+        ),
       ),
       child: Row(
         children: [
+          Expanded(child: _buildFilterChip('All', 'all')),
+          const SizedBox(width: 8),
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildFilterChip('All', 'all'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(
-                    'Normal',
-                    'normal',
-                    color: AppColors.success,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(
-                    'Review',
-                    'review',
-                    color: AppColors.warning,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Urgent', 'urgent', color: AppColors.error),
-                ],
-              ),
+            child: _buildFilterChip(
+              'Normal',
+              'normal',
+              color: AppColors.success,
             ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildFilterChip(
+              'Review',
+              'review',
+              color: AppColors.warning,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildFilterChip('Urgent', 'urgent', color: AppColors.error),
           ),
         ],
       ),
@@ -353,11 +489,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
   Widget _buildFilterChip(String label, String value, {Color? color}) {
     final isSelected = value == _selectedFilter;
+
     return GestureDetector(
       onTap: () => setState(() => _selectedFilter = value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           gradient: isSelected
               ? LinearGradient(
@@ -367,29 +504,35 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   ],
                 )
               : null,
-          color: isSelected ? null : AppColors.background,
-          borderRadius: BorderRadius.circular(25),
+          color: isSelected ? null : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? (color ?? AppColors.primary) : AppColors.border,
+            color: isSelected
+                ? (color ?? AppColors.primary)
+                : AppColors.border.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: (color ?? AppColors.primary).withValues(alpha: 0.3),
+                    color: (color ?? AppColors.primary).withValues(alpha: 0.25),
                     blurRadius: 8,
-                    offset: const Offset(0, 4),
+                    offset: const Offset(0, 3),
                   ),
                 ]
               : null,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? AppColors.white : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            fontSize: 13,
-            letterSpacing: 0.3,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? AppColors.white : AppColors.textSecondary,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              fontSize: 12,
+              letterSpacing: 0.3,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),
@@ -665,7 +808,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                     const SizedBox(width: 6),
                     _buildIconButton(
                       icon: Icons.delete_outline_rounded,
-                      onTap: () => _confirmDeleteResult(result),
+                      onTap: () async {
+                        final confirmed = await _confirmDeleteResult(result);
+                        if (confirmed == true && mounted) {
+                          await _deleteResult(result);
+                        }
+                      },
                       isDelete: true,
                     ),
                   ],

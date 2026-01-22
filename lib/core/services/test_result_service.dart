@@ -511,15 +511,15 @@ class TestResultService {
           try {
             final data = doc.data();
             data['id'] = doc.id;
-            var result = TestResultModel.fromJson(data);
+            final result = TestResultModel.fromJson(data);
 
-            // Load prescription if this is a mobile refractometry test
-            result = await _loadPrescriptionForResult(userId, result);
+            // DON'T load prescription here - only practitioners need it
+            // and they'll load it separately in their dashboard
 
             results.add(result);
             processedDocIds.add(doc.id);
           } catch (e) {
-            debugPrint('[TestResultService] Œ Error parsing ${doc.id}: $e');
+            debugPrint('[TestResultService] ❌ Error parsing ${doc.id}: $e');
           }
         }
       }
@@ -642,10 +642,9 @@ class TestResultService {
 
       final data = doc.data()!;
       data['id'] = doc.id;
-      var result = TestResultModel.fromJson(data);
+      final result = TestResultModel.fromJson(data);
 
-      // Load prescription if this is a mobile refractometry test
-      result = await _loadPrescriptionForResult(userId, result);
+      // Prescription loading removed - only needed in practitioner dashboard
 
       return result;
     } catch (e) {
@@ -691,13 +690,12 @@ class TestResultService {
           if (processedIds.contains(doc.id)) continue;
           if (hiddenIds.contains(doc.id)) continue;
 
-          var result = TestResultModel.fromJson({
+          final result = TestResultModel.fromJson({
             ...doc.data() as Map<String, dynamic>,
             'id': doc.id,
           });
 
-          // Load prescription if this is a mobile refractometry test
-          result = await _loadPrescriptionForResult(userId, result);
+          // Prescription loading removed
 
           results.add(result);
           processedIds.add(doc.id);
@@ -760,10 +758,9 @@ class TestResultService {
       if (snapshot.docs.isEmpty) return null;
 
       final doc = snapshot.docs.first;
-      var result = TestResultModel.fromJson({...doc.data(), 'id': doc.id});
+      final result = TestResultModel.fromJson({...doc.data(), 'id': doc.id});
 
-      // Load prescription if this is a mobile refractometry test
-      result = await _loadPrescriptionForResult(userId, result);
+      // Prescription loading removed
 
       return result;
     } catch (e) {
