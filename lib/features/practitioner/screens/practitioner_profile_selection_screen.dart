@@ -9,6 +9,7 @@ import '../../../core/services/patient_service.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/premium_dropdown.dart';
+import '../../../core/widgets/premium_search_bar.dart';
 
 /// Profile selection screen for practitioners
 /// Shows "Add Patient" instead of "Test for Yourself"
@@ -232,7 +233,7 @@ class _PractitionerProfileSelectionScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: AppColors.white,
@@ -313,51 +314,11 @@ class _PractitionerProfileSelectionScreenState
 
             // Search bar
             if (_patients.isNotEmpty) ...[
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                  decoration: InputDecoration(
-                    hintText: 'Search patients...',
-                    hintStyle: TextStyle(
-                      color: AppColors.textSecondary.withValues(alpha: 0.4),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.search_rounded,
-                      color: AppColors.primary,
-                      size: 22,
-                    ),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 18),
-                            onPressed: () => setState(() => _searchQuery = ''),
-                            color: AppColors.textSecondary,
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                  ),
-                ),
+              PremiumSearchBar(
+                hintText: 'Search patients...',
+                initialValue: _searchQuery,
+                onChanged: (value) => setState(() => _searchQuery = value),
+                onClear: () => setState(() => _searchQuery = ''),
               ),
               const SizedBox(height: 28),
             ],
@@ -900,7 +861,7 @@ class _PractitionerProfileSelectionScreenState
               LengthLimitingTextInputFormatter(10),
             ],
             decoration: InputDecoration(
-              labelText: 'Phone (optional)',
+              labelText: 'Phone Number',
               hintText: '10-digit number',
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.w600,

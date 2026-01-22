@@ -812,7 +812,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               LengthLimitingTextInputFormatter(10),
             ],
             decoration: InputDecoration(
-              labelText: 'Phone Number (Optional)',
+              labelText: 'Phone Number',
               prefixText: '+91 ',
               prefixStyle: const TextStyle(fontWeight: FontWeight.bold),
               hintText: '10-digit number',
