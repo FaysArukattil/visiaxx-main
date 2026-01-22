@@ -27,8 +27,13 @@ import '../../../core/utils/navigation_utils.dart';
 /// Tests BOTH eyes separately using Ishihara plates
 class ColorVisionTestScreen extends StatefulWidget {
   final void Function(ColorVisionResult)? onComplete;
+  final bool showInitialInstructions;
 
-  const ColorVisionTestScreen({super.key, this.onComplete});
+  const ColorVisionTestScreen({
+    super.key,
+    this.onComplete,
+    this.showInitialInstructions = true,
+  });
 
   @override
   State<ColorVisionTestScreen> createState() => _ColorVisionTestScreenState();
@@ -224,7 +229,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   Future<void> _initServices() async {
     await _ttsService.initialize();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showInitialInstructions();
+      if (widget.showInitialInstructions) {
+        _showInitialInstructions();
+      } else {
+        _showCalibrationScreen();
+      }
     });
   }
 

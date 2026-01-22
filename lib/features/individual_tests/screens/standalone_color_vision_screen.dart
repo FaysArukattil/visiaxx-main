@@ -30,6 +30,14 @@ class StandaloneColorVisionScreen extends StatelessWidget {
     });
 
     // Navigate to the standard test - it will automatically stop after color vision
-    return const ColorVisionInstructionsScreen();
+    return ColorVisionInstructionsScreen(
+      onContinue: () {
+        Navigator.pushReplacementNamed(
+          context,
+          '/color-vision-test',
+          arguments: {'showInitialInstructions': false},
+        );
+      },
+    );
   }
 }

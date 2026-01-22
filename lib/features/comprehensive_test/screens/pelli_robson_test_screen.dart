@@ -28,7 +28,9 @@ import '../../../core/widgets/distance_warning_overlay.dart';
 /// Pelli-Robson Contrast Sensitivity Test Screen
 /// Clinical-grade test with 8 screens of decreasing contrast triplets
 class PelliRobsonTestScreen extends StatefulWidget {
-  const PelliRobsonTestScreen({super.key});
+  final bool showInitialInstructions;
+
+  const PelliRobsonTestScreen({super.key, this.showInitialInstructions = true});
 
   @override
   State<PelliRobsonTestScreen> createState() => _PelliRobsonTestScreenState();
@@ -113,7 +115,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _startContinuousDistanceMonitoring();
 
     // First time - show general instructions then calibration
-    if (!_mainInstructionsShown) {
+    if (widget.showInitialInstructions && !_mainInstructionsShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showTestInstructions();
       });
@@ -1338,4 +1340,3 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 }
-

@@ -27,6 +27,14 @@ class StandaloneAmslerGridScreen extends StatelessWidget {
       provider.startIndividualTest('amsler_grid');
     });
 
-    return const AmslerGridInstructionsScreen();
+    return AmslerGridInstructionsScreen(
+      onContinue: () {
+        Navigator.pushReplacementNamed(
+          context,
+          '/amsler-grid-test',
+          arguments: {'showInitialInstructions': false},
+        );
+      },
+    );
   }
 }

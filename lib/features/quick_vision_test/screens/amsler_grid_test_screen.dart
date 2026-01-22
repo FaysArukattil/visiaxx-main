@@ -25,7 +25,9 @@ import 'amsler_grid_cover_eye_screen.dart';
 
 /// Amsler Grid Test for detecting macular degeneration
 class AmslerGridTestScreen extends StatefulWidget {
-  const AmslerGridTestScreen({super.key});
+  final bool showInitialInstructions;
+
+  const AmslerGridTestScreen({super.key, this.showInitialInstructions = true});
 
   @override
   State<AmslerGridTestScreen> createState() => _AmslerGridTestScreenState();
@@ -112,7 +114,13 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
     // Show instruction screen first
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showInitialInstructions();
+      if (widget.showInitialInstructions) {
+        _showInitialInstructions();
+      } else if (_showDistanceCalibration) {
+        _showCalibrationScreen();
+      } else {
+        _startTest();
+      }
     });
   }
 

@@ -30,7 +30,11 @@ class StandaloneContrastSensitivityScreen extends StatelessWidget {
     return PelliRobsonInstructionsScreen(
       testMode: 'short',
       onContinue: () {
-        Navigator.pushReplacementNamed(context, '/pelli-robson-test');
+        Navigator.pushReplacementNamed(
+          context,
+          '/pelli-robson-test',
+          arguments: {'showInitialInstructions': false},
+        );
       },
     );
   }

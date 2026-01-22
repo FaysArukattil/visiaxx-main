@@ -208,8 +208,22 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/questionnaire': (context) => const QuestionnaireScreen(),
           '/test-instructions': (context) => const TestInstructionsScreen(),
           '/visual-acuity-test': (context) => const VisualAcuityTestScreen(),
-          '/color-vision-test': (context) => const ColorVisionTestScreen(),
-          '/amsler-grid-test': (context) => const AmslerGridTestScreen(),
+          '/color-vision-test': (context) {
+            final args =
+                ModalRoute.of(context)?.settings.arguments
+                    as Map<String, dynamic>?;
+            return ColorVisionTestScreen(
+              showInitialInstructions: args?['showInitialInstructions'] ?? true,
+            );
+          },
+          '/amsler-grid-test': (context) {
+            final args =
+                ModalRoute.of(context)?.settings.arguments
+                    as Map<String, dynamic>?;
+            return AmslerGridTestScreen(
+              showInitialInstructions: args?['showInitialInstructions'] ?? true,
+            );
+          },
           '/quick-test-result': (context) => const QuickTestResultScreen(),
           '/my-results': (context) => const MyResultsScreen(),
           '/speech-logs': (context) => const SpeechLogViewerScreen(),
@@ -242,7 +256,14 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/reading-test-instructions': (context) =>
               const ReadingTestInstructionsScreen(),
           '/comprehensive-test': (context) => const ComprehensiveIntroScreen(),
-          '/pelli-robson-test': (context) => const PelliRobsonTestScreen(),
+          '/pelli-robson-test': (context) {
+            final args =
+                ModalRoute.of(context)?.settings.arguments
+                    as Map<String, dynamic>?;
+            return PelliRobsonTestScreen(
+              showInitialInstructions: args?['showInitialInstructions'] ?? true,
+            );
+          },
           '/eye-exercises': (context) => const EyeExerciseReelsScreen(),
           '/eye-care-tips': (context) => const EyeCareTipsScreen(),
           '/settings': (context) => const SettingsScreen(),
