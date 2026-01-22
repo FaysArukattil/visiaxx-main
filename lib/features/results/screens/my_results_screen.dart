@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:visiaxx/data/models/color_vision_result.dart';
+import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
 import '../../../core/providers/network_connectivity_provider.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
@@ -827,130 +829,17 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   }
 
   Widget _buildTestResultsGrid(TestResultModel result) {
-    final List<Widget> testRows = [];
+    // Check if any data exists
+    final hasVA =
+        result.visualAcuityRight != null || result.visualAcuityLeft != null;
+    final hasRefraction = result.mobileRefractometry != null;
+    final hasOthers =
+        result.colorVision != null ||
+        result.pelliRobson != null ||
+        result.amslerGridRight != null ||
+        result.amslerGridLeft != null;
 
-    // Visual Acuity Row (only if data exists)
-    if (result.visualAcuityRight != null || result.visualAcuityLeft != null) {
-      testRows.add(
-        Row(
-          children: [
-            if (result.visualAcuityRight != null)
-              _buildResultItem(
-                'RIGHT VA',
-                result.visualAcuityRight!.snellenScore,
-                Icons.remove_red_eye_outlined,
-              ),
-            if (result.visualAcuityRight != null &&
-                result.visualAcuityLeft != null)
-              Container(
-                width: 1,
-                height: 32,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                color: AppColors.border,
-              ),
-            if (result.visualAcuityLeft != null)
-              _buildResultItem(
-                'LEFT VA',
-                result.visualAcuityLeft!.snellenScore,
-                Icons.remove_red_eye_outlined,
-              ),
-          ],
-        ),
-      );
-    }
-
-    // Color Vision Row (with detailed status per eye)
-    if (result.colorVision != null) {
-      if (testRows.isNotEmpty) testRows.add(const SizedBox(height: 12));
-
-      final rightStatus = _getColorVisionStatus(result.colorVision!.rightEye);
-      final leftStatus = _getColorVisionStatus(result.colorVision!.leftEye);
-
-      testRows.add(
-        Row(
-          children: [
-            _buildResultItem('COLOR (R)', rightStatus, Icons.palette_rounded),
-            Container(
-              width: 1,
-              height: 32,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              color: AppColors.border,
-            ),
-            _buildResultItem('COLOR (L)', leftStatus, Icons.palette_rounded),
-          ],
-        ),
-      );
-    }
-
-    // Contrast Sensitivity or Amsler Grid Row
-    if (result.testType == 'comprehensive' && result.pelliRobson != null) {
-      if (testRows.isNotEmpty) testRows.add(const SizedBox(height: 12));
-
-      final rightContrast =
-          result.pelliRobson!.rightEye?.longDistance?.adjustedScore;
-      final leftContrast =
-          result.pelliRobson!.leftEye?.longDistance?.adjustedScore;
-
-      if (rightContrast != null || leftContrast != null) {
-        testRows.add(
-          Row(
-            children: [
-              if (rightContrast != null)
-                _buildResultItem(
-                  'CONTRAST (R)',
-                  '${rightContrast.toStringAsFixed(1)} CS',
-                  Icons.contrast_rounded,
-                ),
-              if (rightContrast != null && leftContrast != null)
-                Container(
-                  width: 1,
-                  height: 32,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  color: AppColors.border,
-                ),
-              if (leftContrast != null)
-                _buildResultItem(
-                  'CONTRAST (L)',
-                  '${leftContrast.toStringAsFixed(1)} CS',
-                  Icons.contrast_rounded,
-                ),
-            ],
-          ),
-        );
-      }
-    } else if (result.amslerGridRight != null ||
-        result.amslerGridLeft != null) {
-      if (testRows.isNotEmpty) testRows.add(const SizedBox(height: 12));
-
-      testRows.add(
-        Row(
-          children: [
-            if (result.amslerGridRight != null)
-              _buildResultItem(
-                'AMSLER (R)',
-                result.amslerGridRight!.hasDistortions ? 'Distorted' : 'Normal',
-                Icons.grid_on_rounded,
-              ),
-            if (result.amslerGridRight != null && result.amslerGridLeft != null)
-              Container(
-                width: 1,
-                height: 32,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                color: AppColors.border,
-              ),
-            if (result.amslerGridLeft != null)
-              _buildResultItem(
-                'AMSLER (L)',
-                result.amslerGridLeft!.hasDistortions ? 'Distorted' : 'Normal',
-                Icons.grid_on_rounded,
-              ),
-          ],
-        ),
-      );
-    }
-
-    // If no test data available, show a message
-    if (testRows.isEmpty) {
+    if (!hasVA && !hasRefraction && !hasOthers) {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -971,88 +860,279 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.08),
+            AppColors.primaryLight.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.15),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            blurRadius: 12,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Column(children: testRows),
+      child: Column(
+        children: [
+          // Row 1: Visual Acuity
+          if (hasVA) ...[
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  if (result.visualAcuityRight != null)
+                    _buildDiagnosticItem(
+                      'RIGHT EYE VA',
+                      result.visualAcuityRight?.snellenScore,
+                      icon: Icons.remove_red_eye_outlined,
+                    ),
+                  if (result.visualAcuityRight != null &&
+                      result.visualAcuityLeft != null)
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                    ),
+                  if (result.visualAcuityLeft != null)
+                    _buildDiagnosticItem(
+                      'LEFT EYE VA',
+                      result.visualAcuityLeft?.snellenScore,
+                      icon: Icons.remove_red_eye_outlined,
+                    ),
+                ],
+              ),
+            ),
+            if (hasRefraction || hasOthers)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.primary.withValues(alpha: 0.05),
+              ),
+          ],
+          // Row 2: Refraction Table
+          if (hasRefraction) ...[
+            _buildRefractionTable(result.mobileRefractometry!),
+            if (hasOthers)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.primary.withValues(alpha: 0.05),
+              ),
+          ],
+          // Row 3: Others (Per-Eye Display)
+          if (hasOthers)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Color Vision - Per Eye with Specific Deficiency Type
+                  if (result.colorVision != null) ...[
+                    Row(
+                      children: [
+                        // Right Eye Color Vision
+                        _buildDiagnosticItem(
+                          'COLOR VISION (RIGHT)',
+                          result.colorVision!.rightEye.detectedType != null &&
+                                  result.colorVision!.rightEye.detectedType !=
+                                      DeficiencyType.none
+                              ? result
+                                    .colorVision!
+                                    .rightEye
+                                    .detectedType!
+                                    .displayName
+                              : (result.colorVision!.rightEye.status ==
+                                        ColorVisionStatus.normal
+                                    ? 'NORMAL'
+                                    : result
+                                          .colorVision!
+                                          .rightEye
+                                          .status
+                                          .displayName
+                                          .toUpperCase()),
+                          icon: Icons.palette,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                        ),
+                        // Left Eye Color Vision
+                        _buildDiagnosticItem(
+                          'COLOR VISION (LEFT)',
+                          result.colorVision!.leftEye.detectedType != null &&
+                                  result.colorVision!.leftEye.detectedType !=
+                                      DeficiencyType.none
+                              ? result
+                                    .colorVision!
+                                    .leftEye
+                                    .detectedType!
+                                    .displayName
+                              : (result.colorVision!.leftEye.status ==
+                                        ColorVisionStatus.normal
+                                    ? 'NORMAL'
+                                    : result
+                                          .colorVision!
+                                          .leftEye
+                                          .status
+                                          .displayName
+                                          .toUpperCase()),
+                          icon: Icons.palette,
+                        ),
+                      ],
+                    ),
+                    if (result.pelliRobson != null ||
+                        result.amslerGridRight != null ||
+                        result.amslerGridLeft != null)
+                      const SizedBox(height: 8),
+                  ],
+                  // Contrast Sensitivity - Per Eye
+                  if (result.pelliRobson != null) ...[
+                    Row(
+                      children: [
+                        // Right Eye Contrast
+                        if (result.pelliRobson!.rightEye != null)
+                          _buildDiagnosticItem(
+                            'CONTRAST (RIGHT)',
+                            '${result.pelliRobson!.rightEye!.longDistance?.adjustedScore.toStringAsFixed(1) ?? '0.0'} CS',
+                            icon: Icons.contrast,
+                          ),
+                        if (result.pelliRobson!.rightEye != null &&
+                            result.pelliRobson!.leftEye != null)
+                          Container(
+                            width: 1,
+                            height: 30,
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                          ),
+                        // Left Eye Contrast
+                        if (result.pelliRobson!.leftEye != null)
+                          _buildDiagnosticItem(
+                            'CONTRAST (LEFT)',
+                            '${result.pelliRobson!.leftEye!.longDistance?.adjustedScore.toStringAsFixed(1) ?? '0.0'} CS',
+                            icon: Icons.contrast,
+                          ),
+                      ],
+                    ),
+                    if (result.amslerGridRight != null ||
+                        result.amslerGridLeft != null)
+                      const SizedBox(height: 8),
+                  ],
+                  // Amsler Grid - Per Eye
+                  if (result.amslerGridRight != null ||
+                      result.amslerGridLeft != null) ...[
+                    Row(
+                      children: [
+                        // Right Eye Amsler
+                        if (result.amslerGridRight != null)
+                          _buildDiagnosticItem(
+                            'AMSLER (RIGHT)',
+                            result.amslerGridRight!.hasDistortions
+                                ? 'DISTORTED'
+                                : 'NORMAL',
+                            icon: Icons.grid_on,
+                          ),
+                        if (result.amslerGridRight != null &&
+                            result.amslerGridLeft != null)
+                          Container(
+                            width: 1,
+                            height: 30,
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                          ),
+                        // Left Eye Amsler
+                        if (result.amslerGridLeft != null)
+                          _buildDiagnosticItem(
+                            'AMSLER (LEFT)',
+                            result.amslerGridLeft!.hasDistortions
+                                ? 'DISTORTED'
+                                : 'NORMAL',
+                            icon: Icons.grid_on,
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  String _getColorVisionStatus(dynamic eyeResult) {
-    if (eyeResult == null) return 'N/A';
-
-    // Try to get detected type first
-    if (eyeResult.detectedType != null &&
-        eyeResult.detectedType.toString() != 'DeficiencyType.none') {
-      final type = eyeResult.detectedType.toString().split('.').last;
-      switch (type) {
-        case 'protan':
-          return 'Protan';
-        case 'deutan':
-          return 'Deutan';
-        case 'tritan':
-          return 'Tritan';
-        default:
-          break;
-      }
-    }
-
-    // Fall back to status
-    final status = eyeResult.status?.toString().split('.').last ?? 'unknown';
-    switch (status) {
-      case 'normal':
-        return 'Normal';
-      case 'mild':
-        return 'Mild';
-      case 'moderate':
-        return 'Moderate';
-      case 'severe':
-        return 'Severe';
-      default:
-        return 'Check';
-    }
-  }
-
-  Widget _buildResultItem(String label, String value, IconData icon) {
+  Widget _buildDiagnosticItem(String label, String? value, {IconData? icon}) {
     return Expanded(
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 16, color: AppColors.primary),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 13,
-              color: AppColors.textPrimary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 9,
+              fontSize: 8,
+              fontWeight: FontWeight.w800,
               color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
+              letterSpacing: 0.5,
             ),
+            textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 10, color: AppColors.primary),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  value ?? 'N/A',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefractionTable(MobileRefractometryResult result) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      color: AppColors.primary.withValues(alpha: 0.02),
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                SizedBox(width: 30),
+                Expanded(child: _TableHeader('SPH')),
+                Expanded(child: _TableHeader('CYL')),
+                Expanded(child: _TableHeader('AXIS')),
+              ],
+            ),
+          ),
+          if (result.rightEye != null)
+            _RefractionRow('Right', result.rightEye!),
+          if (result.leftEye != null) _RefractionRow('Left', result.leftEye!),
         ],
       ),
     );
@@ -1262,6 +1342,73 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TableCell extends StatelessWidget {
+  final String value;
+  const _TableCell(this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      value,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
+}
+
+class _RefractionRow extends StatelessWidget {
+  final String eye;
+  final MobileRefractometryEyeResult data;
+  const _RefractionRow(this.eye, this.data);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 30,
+            child: Text(
+              eye,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          Expanded(child: _TableCell(data.sphere)),
+          Expanded(child: _TableCell(data.cylinder)),
+          Expanded(child: _TableCell('${data.axis}')),
+        ],
+      ),
+    );
+  }
+}
+
+class _TableHeader extends StatelessWidget {
+  final String label;
+  const _TableHeader(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 8,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textSecondary,
       ),
     );
   }
