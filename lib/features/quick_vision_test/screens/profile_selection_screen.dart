@@ -21,7 +21,6 @@ class ProfileSelectionScreen extends StatefulWidget {
 
 class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
   List<FamilyMemberModel> _familyMembers = [];
-  bool _showAddForm = false;
   bool _isLoading = true;
 
   // Service
@@ -183,11 +182,15 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         if (mounted) {
           setState(() {
             _familyMembers.insert(0, savedMember);
-            _showAddForm = false;
             _nameController.clear();
             _ageController.clear();
             _phoneController.clear();
           });
+
+          // Close bottom sheet
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
 
           SnackbarUtils.showSuccess(
             context,
@@ -205,11 +208,15 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           if (mounted) {
             setState(() {
               _familyMembers.insert(0, newMember); // Show immediately
-              _showAddForm = false;
               _nameController.clear();
               _ageController.clear();
               _phoneController.clear();
             });
+
+            // Close bottom sheet
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
 
             SnackbarUtils.showInfo(
               context,
@@ -228,97 +235,144 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: const Text('Who is taking the test?'),
+        title: const Text(
+          'Vision Testing Profiles',
+          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.8),
+        ),
         automaticallyImplyLeading: false,
+        backgroundColor: AppColors.white,
+        elevation: 0,
+        centerTitle: false,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Self test card
-            _buildProfileCard(
-              title: 'Test for Yourself',
-              subtitle: 'Start a vision test for your own eyes',
-              icon: Icons.person,
-              color: AppColors.primary,
-              onTap: _selectSelf,
-            ),
-            const SizedBox(height: 24),
-            // Family members section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Family Members',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _showAddForm = !_showAddForm;
-                    });
-                  },
-                  icon: Icon(_showAddForm ? Icons.close : Icons.add),
-                  label: Text(_showAddForm ? 'Cancel' : 'Add Member'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Add family member form
-            if (_showAddForm) ...[
-              _buildAddMemberForm(),
-              const SizedBox(height: 16),
-            ],
-            // Family members list
-            if (_isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: EyeLoader(size: 50),
-                ),
-              )
-            else if (_familyMembers.isEmpty && !_showAddForm)
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.family_restroom,
-                      size: 48,
-                      color: AppColors.textTertiary,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          if (_familyMembers.isEmpty) {
+            setState(() => _isLoading = true);
+          }
+          await _loadFamilyMembers();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Self test card
+              _buildProfileCard(
+                title: 'Test for Yourself',
+                subtitle: 'Vision test for your own eyes',
+                icon: Icons.person_rounded,
+                color: AppColors.primary,
+                onTap: _selectSelf,
+              ),
+              const SizedBox(height: 32),
+              // Family members section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Family Members',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.5,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No family members added',
-                      style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  TextButton.icon(
+                    onPressed: _showAddMemberSheet,
+                    icon: const Icon(Icons.add_rounded, size: 20),
+                    label: const Text(
+                      'Add Member',
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Add family members to test their vision',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textTertiary,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                  ],
-                ),
-              )
-            else
-              ...List.generate(
-                _familyMembers.length,
-                (index) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildFamilyMemberCard(_familyMembers[index]),
-                ),
+                  ),
+                ],
               ),
-          ],
+              const SizedBox(height: 16),
+              // Family members list
+              if (_isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(48),
+                    child: EyeLoader.fullScreen(),
+                  ),
+                )
+              else if (_familyMembers.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.2),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.family_restroom_rounded,
+                          size: 48,
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'No family members added',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Add family members to test their vision',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ...List.generate(
+                  _familyMembers.length,
+                  (index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildFamilyMemberCard(_familyMembers[index]),
+                  ),
+                ),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
@@ -336,25 +390,34 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [color, color.withValues(alpha: 0.85)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
               color: color.withValues(alpha: 0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+              spreadRadius: -2,
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(16),
+                color: AppColors.white.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: AppColors.white.withValues(alpha: 0.1),
+                  width: 1.5,
+                ),
               ),
-              child: Icon(icon, color: AppColors.white, size: 36),
+              child: Icon(icon, color: AppColors.white, size: 32),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -366,21 +429,27 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                     style: const TextStyle(
                       color: AppColors.white,
                       fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: AppColors.white.withValues(alpha: 0.9),
-                      fontSize: 14,
+                      color: AppColors.white.withValues(alpha: 0.95),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: AppColors.white),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: AppColors.white,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -391,23 +460,60 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     return GestureDetector(
       onTap: () => _selectFamilyMember(member),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.border.withValues(alpha: 0.2),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+              spreadRadius: -2,
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
-              radius: 28,
-              child: Text(
-                member.firstName[0].toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.secondary,
+                    AppColors.secondary.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondary.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  member.firstName[0].toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.white,
+                    letterSpacing: -0.5,
+                  ),
                 ),
               ),
             ),
@@ -419,25 +525,73 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   Text(
                     member.firstName,
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     '${member.relationship} • ${member.age} years • ${member.sex}${member.phone != null ? ' • ${member.phone?.replaceFirst('+91', '+91 ')}' : ''}',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: AppColors.textTertiary,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddMemberSheet() {
+    _nameController.clear();
+    _ageController.clear();
+    _phoneController.clear();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                child: _buildAddMemberForm(),
+              ),
             ),
           ],
         ),
@@ -446,161 +600,275 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
   }
 
   Widget _buildAddMemberForm() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Add Family Member',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _nameController,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'First Name',
-                hintText: 'Enter name',
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.person_add_rounded,
+                  color: AppColors.secondary,
+                  size: 24,
+                ),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a name';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 4,
-                  child: TextFormField(
-                    controller: _ageController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
-                      TextInputFormatter.withFunction((oldValue, newValue) {
-                        if (newValue.text.isEmpty) return newValue;
-                        final n = int.tryParse(newValue.text);
-                        if (n != null && n <= 200) return newValue;
-                        return oldValue;
-                      }),
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Age',
-                      hintText: 'Age',
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Add Family Member',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Required';
-                      }
-                      final age = int.tryParse(value);
-                      if (age == null || age < 1 || age > 200) {
-                        return 'Invalid';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 6,
-                  child: PremiumDropdown<String>(
-                    label: 'Sex',
-                    value: _selectedSex,
-                    items: const ['Male', 'Female', 'Other'],
-                    itemLabelBuilder: (s) => s,
-                    onChanged: (value) {
-                      setState(() => _selectedSex = value);
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            PremiumDropdown<String>(
-              label: 'Relationship',
-              value: _selectedRelationship,
-              items: _relationships,
-              itemLabelBuilder: (r) => r,
-              onChanged: (value) {
-                setState(() => _selectedRelationship = value);
-              },
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(10),
-              ],
-              decoration: const InputDecoration(
-                labelText: 'Phone Number (Optional)',
-                prefixText: '+91 ',
-                prefixStyle: TextStyle(fontWeight: FontWeight.bold),
-                hintText: '10-digit number',
-              ),
-              validator: (value) {
-                if (value != null && value.isNotEmpty && value.length != 10) {
-                  return 'Enter exactly 10 digits';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 32),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary,
-                    AppColors.primary.withValues(alpha: 0.8),
+                    Text(
+                      'Register a new family member for vision testing',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          TextFormField(
+            controller: _nameController,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: 'First Name',
+              hintText: 'Enter name',
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              filled: true,
+              fillColor: AppColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a name';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 4,
+                child: TextFormField(
+                  controller: _ageController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(3),
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      if (newValue.text.isEmpty) return newValue;
+                      final n = int.tryParse(newValue.text);
+                      if (n != null && n <= 200) return newValue;
+                      return oldValue;
+                    }),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: 'Age',
+                    hintText: 'Age',
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: AppColors.border.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: AppColors.border.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Required';
+                    }
+                    final age = int.tryParse(value);
+                    if (age == null || age < 1 || age > 200) {
+                      return 'Invalid';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 6,
+                child: PremiumDropdown<String>(
+                  label: 'Sex',
+                  value: _selectedSex,
+                  items: const ['Male', 'Female', 'Other'],
+                  itemLabelBuilder: (s) => s,
+                  onChanged: (value) {
+                    setState(() => _selectedSex = value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          PremiumDropdown<String>(
+            label: 'Relationship',
+            value: _selectedRelationship,
+            items: _relationships,
+            itemLabelBuilder: (r) => r,
+            onChanged: (value) {
+              setState(() => _selectedRelationship = value);
+            },
+          ),
+          const SizedBox(height: 24),
+          TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
+            decoration: InputDecoration(
+              labelText: 'Phone Number (Optional)',
+              prefixText: '+91 ',
+              prefixStyle: const TextStyle(fontWeight: FontWeight.bold),
+              hintText: '10-digit number',
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              filled: true,
+              fillColor: AppColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            validator: (value) {
+              if (value != null && value.isNotEmpty && value.length != 10) {
+                return 'Enter exactly 10 digits';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 32),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary,
+                  AppColors.primary.withValues(alpha: 0.8),
                 ],
               ),
-              child: ElevatedButton(
-                onPressed: _addFamilyMember,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.transparent,
-                  foregroundColor: AppColors.white,
-                  shadowColor: AppColors.transparent,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
-                child: const Text(
-                  'Save Family Member',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
+              ],
+            ),
+            child: ElevatedButton(
+              onPressed: _addFamilyMember,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.transparent,
+                foregroundColor: AppColors.white,
+                shadowColor: AppColors.transparent,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                'Save Family Member',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
