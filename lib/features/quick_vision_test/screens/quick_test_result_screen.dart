@@ -1821,29 +1821,6 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Restart Current Test
-        ElevatedButton.icon(
-          onPressed: () {
-            provider.reset();
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/quick-test',
-              (route) => false,
-            );
-          },
-          icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Restart Test'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.warning.withValues(alpha: 0.1),
-            foregroundColor: AppColors.warning,
-            minimumSize: const Size(double.infinity, 54),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: AppColors.warning, width: 1.5),
-            ),
-          ),
-        ),
         const SizedBox(height: 12),
 
         // Sharing Row
