@@ -4,15 +4,21 @@ import '../../data/models/user_model.dart';
 
 class NavigationUtils {
   static Future<void> navigateHome(BuildContext context) async {
-    // ¡ ADDED TIMEOUT to prevent hang during exit if network is flaky
+    // ! Robust role check with longer timeout to prevent accidental redirection to user home
     final role = await AuthService().getCurrentUserRole().timeout(
-      const Duration(seconds: 1),
-      onTimeout: () => UserRole.user, // Default to normal user home
+      const Duration(seconds: 3),
+      onTimeout: () {
+        debugPrint(
+          '[NavigationUtils] getCurrentUserRole timed out, defaulting to user role',
+        );
+        return UserRole.user;
+      },
     );
 
     if (!context.mounted) return;
 
     final route = role == UserRole.examiner ? '/practitioner-home' : '/home';
+    debugPrint('[NavigationUtils] Navigating to home: $route (role: $role)');
 
     Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
   }
@@ -23,4 +29,3 @@ class NavigationUtils {
     return role == UserRole.examiner ? '/practitioner-home' : '/home';
   }
 }
-

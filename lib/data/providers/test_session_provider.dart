@@ -158,6 +158,7 @@ class TestSessionProvider extends ChangeNotifier {
     _isComprehensiveTest = false;
     _isIndividualTest = true;
     _individualTestType = testType;
+    resetAllResults(); // Clear any previous test results
     startTest();
     debugPrint('Ž¯ [TestSessionProvider] Started individual test: $testType');
   }
@@ -389,4 +390,3 @@ class TestSessionProvider extends ChangeNotifier {
     debugPrint('… [TestSessionProvider] Refraction prescription saved.');
   }
 }
-

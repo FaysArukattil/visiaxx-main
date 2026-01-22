@@ -1138,14 +1138,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     final provider = context.read<TestSessionProvider>();
     if (provider.isIndividualTest) {
-      Navigator.pushReplacementNamed(
-        context,
-        '/visual-acuity-result-individual',
-        arguments: {
-          'rightEye': provider.visualAcuityRight,
-          'leftEye': provider.visualAcuityLeft,
-        },
-      );
+      Navigator.pushReplacementNamed(context, '/quick-test-result');
     } else {
       Navigator.pushReplacement(
         context,

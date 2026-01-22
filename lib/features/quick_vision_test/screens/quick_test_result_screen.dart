@@ -282,14 +282,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     const SizedBox(height: 20),
 
                     // Visual Acuity Results
-                    if (_hasVAData(provider)) ...[
+                    if (_shouldShowSection(provider, 'visual_acuity')) ...[
                       _buildSectionTitle('Visual Acuity', Icons.visibility),
                       _buildVisualAcuityCard(provider),
                       const SizedBox(height: 20),
                     ],
 
                     // Short Distance Results
-                    if (_hasShortDistanceData(provider)) ...[
+                    if (_shouldShowSection(provider, 'reading_test')) ...[
                       _buildSectionTitle(
                         'Reading Test (Near Vision)',
                         Icons.text_fields,
@@ -299,21 +299,24 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     ],
 
                     // Color Vision Results
-                    if (_hasColorVisionData(provider)) ...[
+                    if (_shouldShowSection(provider, 'color_vision')) ...[
                       _buildSectionTitle('Color Vision', Icons.palette),
                       _buildColorVisionCard(provider),
                       const SizedBox(height: 20),
                     ],
 
                     // Amsler Grid Results
-                    if (_hasAmslerData(provider)) ...[
+                    if (_shouldShowSection(provider, 'amsler_grid')) ...[
                       _buildSectionTitle('Amsler Grid', Icons.grid_on),
                       _buildAmslerGridCard(provider),
                       const SizedBox(height: 20),
                     ],
 
                     // Pelli-Robson Contrast Sensitivity Results
-                    if (_hasPelliRobsonResults(provider)) ...[
+                    if (_shouldShowSection(
+                      provider,
+                      'contrast_sensitivity',
+                    )) ...[
                       _buildSectionTitle(
                         'Contrast Sensitivity',
                         Icons.contrast,
@@ -323,7 +326,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     ],
 
                     // Mobile Refractometry Results
-                    if (_hasRefractometryResults(provider)) ...[
+                    if (_shouldShowSection(
+                      provider,
+                      'mobile_refractometry',
+                    )) ...[
                       _buildSectionTitle(
                         'Mobile Refractometry',
                         Icons.phone_android_rounded,
@@ -490,11 +496,22 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       name =
           familyMember?.firstName ??
           (provider.profileName.isEmpty ? 'User' : provider.profileName);
-      age = familyMember?.age;
-      sex = familyMember?.sex;
+      age = familyMember?.age ?? provider.profileAge;
+      sex = familyMember?.sex ?? provider.profileSex;
       testDate = DateFormat('MMM dd, yyyy • h:mm a').format(DateTime.now());
-      isFamily = familyMember != null;
+      // Check if it's family or patient
+      isFamily = provider.profileType == 'family';
     }
+
+    final isPatient =
+        widget.historicalResult?.profileType == 'patient' ||
+        provider.profileType == 'patient';
+    final badgeText = isPatient
+        ? 'Patient'
+        : (isFamily ? 'Family Member' : 'Primary Account');
+    final badgeColor = isPatient
+        ? AppColors.warning
+        : (isFamily ? AppColors.info : AppColors.primary);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -566,14 +583,13 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: (isFamily ? AppColors.info : AppColors.primary)
-                      .withValues(alpha: 0.08),
+                  color: badgeColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(100), // ⚡ Pill shape
                 ),
                 child: Text(
-                  isFamily ? 'Family Member' : 'Primary Account',
+                  badgeText,
                   style: TextStyle(
-                    color: isFamily ? AppColors.info : AppColors.primary,
+                    color: badgeColor,
                     fontWeight: FontWeight.w800,
                     fontSize: 10,
                     letterSpacing: 0.5,
@@ -1858,6 +1874,51 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ),
         const SizedBox(height: 12),
 
+        // Restart Test (Individual Test specific)
+        if (provider.isIndividualTest && widget.historicalResult == null) ...[
+          OutlinedButton.icon(
+            onPressed: () {
+              final testType = provider.individualTestType;
+              String route = '/quick-test'; // Fallback
+
+              switch (testType) {
+                case 'visual_acuity':
+                  route = '/visual-acuity-standalone';
+                  break;
+                case 'color_vision':
+                  route = '/color-vision-standalone';
+                  break;
+                case 'amsler_grid':
+                  route = '/amsler-grid-standalone';
+                  break;
+                case 'reading_test':
+                  route = '/reading-test-standalone';
+                  break;
+                case 'contrast_sensitivity':
+                  route = '/contrast-sensitivity-standalone';
+                  break;
+                case 'mobile_refractometry':
+                  route = '/mobile-refractometry-standalone';
+                  break;
+              }
+
+              provider.reset();
+              Navigator.pushNamedAndRemoveUntil(context, route, (r) => false);
+            },
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Restart Test'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.warning,
+              minimumSize: const Size(double.infinity, 54),
+              side: const BorderSide(color: AppColors.warning, width: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
         // Back to Home
         ElevatedButton.icon(
           onPressed: () {
@@ -1881,6 +1942,51 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ),
       ],
     );
+  }
+
+  bool _shouldShowSection(TestSessionProvider provider, String sectionType) {
+    // If it's a historical result, show based on data presence
+    if (widget.historicalResult != null) {
+      switch (sectionType) {
+        case 'visual_acuity':
+          return _hasVAData(provider);
+        case 'reading_test':
+          return _hasShortDistanceData(provider);
+        case 'color_vision':
+          return _hasColorVisionData(provider);
+        case 'amsler_grid':
+          return _hasAmslerData(provider);
+        case 'contrast_sensitivity':
+          return _hasPelliRobsonResults(provider);
+        case 'mobile_refractometry':
+          return _hasRefractometryResults(provider);
+        default:
+          return false;
+      }
+    }
+
+    // If it's a current individual test, ONLY show that test's section
+    if (provider.isIndividualTest) {
+      return provider.individualTestType == sectionType;
+    }
+
+    // Otherwise (Quick/Comprehensive), show if data exists
+    switch (sectionType) {
+      case 'visual_acuity':
+        return _hasVAData(provider);
+      case 'reading_test':
+        return _hasShortDistanceData(provider);
+      case 'color_vision':
+        return _hasColorVisionData(provider);
+      case 'amsler_grid':
+        return _hasAmslerData(provider);
+      case 'contrast_sensitivity':
+        return _hasPelliRobsonResults(provider);
+      case 'mobile_refractometry':
+        return _hasRefractometryResults(provider);
+      default:
+        return false;
+    }
   }
 
   Widget _buildSecondaryButton({

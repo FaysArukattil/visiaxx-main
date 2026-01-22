@@ -26,10 +26,6 @@ import 'features/quick_vision_test/screens/questionnaire_screen.dart';
 import 'features/quick_vision_test/screens/test_instructions_screen.dart';
 import 'features/quick_vision_test/screens/visual_acuity_test_screen.dart';
 import 'features/individual_tests/screens/standalone_visual_acuity_screen.dart';
-import 'package:visiaxx/features/individual_tests/screens/individual_visual_acuity_result_screen.dart';
-import 'package:visiaxx/features/individual_tests/screens/individual_color_vision_result_screen.dart';
-import 'package:visiaxx/data/models/visiual_acuity_result.dart';
-import 'package:visiaxx/data/models/color_vision_result.dart';
 import 'package:visiaxx/features/individual_tests/screens/standalone_color_vision_screen.dart';
 import 'features/quick_vision_test/screens/color_vision_test_screen.dart';
 import 'features/quick_vision_test/screens/amsler_grid_test_screen.dart';
@@ -275,23 +271,6 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/mobile-refractometry-standalone': (context) =>
               const StandaloneMobileRefractometryScreen(),
           '/individual-tests': (context) => const IndividualTestsScreen(),
-          '/visual-acuity-result-individual': (context) {
-            final args =
-                ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
-            return IndividualVisualAcuityResultScreen(
-              rightEye: args?['rightEye'] as VisualAcuityResult,
-              leftEye: args?['leftEye'] as VisualAcuityResult,
-            );
-          },
-          '/color-vision-result-individual': (context) {
-            final args =
-                ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
-            return IndividualColorVisionResultScreen(
-              result: args?['result'] as ColorVisionResult,
-            );
-          },
         },
       ),
     );

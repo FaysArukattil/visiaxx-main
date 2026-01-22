@@ -707,11 +707,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     final provider = context.read<TestSessionProvider>();
 
     if (provider.isIndividualTest) {
-      Navigator.pushReplacementNamed(
-        context,
-        '/color-vision-result-individual',
-        arguments: {'result': provider.colorVision},
-      );
+      Navigator.pushReplacementNamed(context, '/quick-test-result');
       return;
     }
 
