@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
@@ -154,7 +155,7 @@ class _PractitionerProfileSelectionScreenState
         sex: _selectedSex,
         phone: _phoneController.text.trim().isEmpty
             ? null
-            : _phoneController.text.trim(),
+            : '+91${_phoneController.text.trim()}',
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -457,7 +458,7 @@ class _PractitionerProfileSelectionScreenState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${patient.age} years • ${patient.sex}${patient.phone != null ? ' • ${patient.phone}' : ''}',
+                    '${patient.age} years • ${patient.sex}${patient.phone != null ? ' • ${patient.phone?.replaceFirst('+91', '+91 ')}' : ''}',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -537,6 +538,16 @@ class _PractitionerProfileSelectionScreenState
                   child: TextFormField(
                     controller: _ageController,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        if (newValue.text.isEmpty) return newValue;
+                        final n = int.tryParse(newValue.text);
+                        if (n != null && n <= 200) return newValue;
+                        return oldValue;
+                      }),
+                    ],
                     decoration: const InputDecoration(
                       labelText: 'Age *',
                       hintText: 'Age',
@@ -546,7 +557,7 @@ class _PractitionerProfileSelectionScreenState
                         return 'Required';
                       }
                       final age = int.tryParse(value);
-                      if (age == null || age < 1 || age > 120) {
+                      if (age == null || age < 1 || age > 200) {
                         return 'Invalid';
                       }
                       return null;
@@ -574,11 +585,23 @@ class _PractitionerProfileSelectionScreenState
             TextFormField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
               decoration: const InputDecoration(
                 labelText: 'Phone (optional)',
-                hintText: 'Contact number',
+                hintText: '10-digit number',
                 prefixIcon: Icon(Icons.phone),
+                prefixText: '+91 ',
+                prefixStyle: TextStyle(fontWeight: FontWeight.bold),
               ),
+              validator: (value) {
+                if (value != null && value.isNotEmpty && value.length != 10) {
+                  return 'Enter exactly 10 digits';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 12),
             // Notes

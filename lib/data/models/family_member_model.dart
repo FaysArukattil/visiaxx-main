@@ -7,6 +7,7 @@ class FamilyMemberModel {
   final int age;
   final String sex;
   final String relationship;
+  final String? phone;
   final DateTime createdAt;
 
   FamilyMemberModel({
@@ -15,6 +16,7 @@ class FamilyMemberModel {
     required this.age,
     required this.sex,
     required this.relationship,
+    this.phone,
     required this.createdAt,
   });
 
@@ -33,6 +35,7 @@ class FamilyMemberModel {
       age: data['age'] ?? 0,
       sex: data['sex'] ?? '',
       relationship: data['relationship'] ?? '',
+      phone: data['phone'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -45,6 +48,7 @@ class FamilyMemberModel {
       age: data['age'] ?? 0,
       sex: data['sex'] ?? '',
       relationship: data['relationship'] ?? '',
+      phone: data['phone'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -56,6 +60,7 @@ class FamilyMemberModel {
       'age': age,
       'sex': sex,
       'relationship': relationship,
+      'phone': phone,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -67,6 +72,7 @@ class FamilyMemberModel {
     int? age,
     String? sex,
     String? relationship,
+    String? phone,
     DateTime? createdAt,
   }) {
     return FamilyMemberModel(
@@ -75,6 +81,7 @@ class FamilyMemberModel {
       age: age ?? this.age,
       sex: sex ?? this.sex,
       relationship: relationship ?? this.relationship,
+      phone: phone ?? this.phone,
       createdAt: createdAt ?? this.createdAt,
     );
   }

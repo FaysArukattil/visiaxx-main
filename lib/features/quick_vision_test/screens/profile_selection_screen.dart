@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
@@ -29,6 +30,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
+  final _phoneController = TextEditingController();
   String _selectedSex = 'Male';
   String _selectedRelationship = 'Spouse';
 
@@ -80,6 +82,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -156,6 +159,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         age: int.parse(_ageController.text),
         sex: _selectedSex,
         relationship: _selectedRelationship,
+        phone: _phoneController.text.trim().isEmpty
+            ? null
+            : '+91${_phoneController.text.trim()}',
         createdAt: DateTime.now(),
       );
 
@@ -179,6 +185,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             _showAddForm = false;
             _nameController.clear();
             _ageController.clear();
+            _phoneController.clear();
           });
 
           SnackbarUtils.showSuccess(
@@ -200,6 +207,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               _showAddForm = false;
               _nameController.clear();
               _ageController.clear();
+              _phoneController.clear();
             });
 
             SnackbarUtils.showInfo(
@@ -416,7 +424,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${member.relationship} • ${member.age} years • ${member.sex}',
+                    '${member.relationship} • ${member.age} years • ${member.sex}${member.phone != null ? ' • ${member.phone?.replaceFirst('+91', '+91 ')}' : ''}',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -477,6 +485,16 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   child: TextFormField(
                     controller: _ageController,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        if (newValue.text.isEmpty) return newValue;
+                        final n = int.tryParse(newValue.text);
+                        if (n != null && n <= 200) return newValue;
+                        return oldValue;
+                      }),
+                    ],
                     decoration: const InputDecoration(
                       labelText: 'Age *',
                       hintText: 'Age',
@@ -486,7 +504,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                         return 'Required';
                       }
                       final age = int.tryParse(value);
-                      if (age == null || age < 1 || age > 120) {
+                      if (age == null || age < 1 || age > 200) {
                         return 'Invalid';
                       }
                       return null;
@@ -518,6 +536,27 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               }).toList(),
               onChanged: (value) {
                 setState(() => _selectedRelationship = value!);
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                prefixText: '+91 ',
+                prefixStyle: TextStyle(fontWeight: FontWeight.bold),
+                hintText: '10-digit number',
+              ),
+              validator: (value) {
+                if (value != null && value.isNotEmpty && value.length != 10) {
+                  return 'Enter exactly 10 digits';
+                }
+                return null;
               },
             ),
             const SizedBox(height: 20),

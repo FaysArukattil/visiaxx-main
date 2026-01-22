@@ -383,6 +383,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,
                                     LengthLimitingTextInputFormatter(3),
+                                    TextInputFormatter.withFunction((
+                                      oldValue,
+                                      newValue,
+                                    ) {
+                                      if (newValue.text.isEmpty)
+                                        return newValue;
+                                      final n = int.tryParse(newValue.text);
+                                      if (n != null && n <= 200)
+                                        return newValue;
+                                      return oldValue;
+                                    }),
                                   ],
                                   decoration: const InputDecoration(
                                     labelText: 'Age',
@@ -392,7 +403,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                       return 'Age?';
                                     }
                                     final age = int.tryParse(value);
-                                    if (age == null || age < 1 || age > 120) {
+                                    if (age == null || age < 1 || age > 200) {
                                       return '!';
                                     }
                                     return null;

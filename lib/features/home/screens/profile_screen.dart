@@ -325,7 +325,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          user.phone,
+          user.phone.replaceFirst('+91', '+91 '),
           style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
       ],
@@ -1003,5 +1003,3 @@ class _AboutSection extends StatelessWidget {
     );
   }
 }
-
-
