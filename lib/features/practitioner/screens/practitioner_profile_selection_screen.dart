@@ -436,32 +436,36 @@ class _PractitionerProfileSelectionScreenState
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
             ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: _buildAddPatientForm(),
-              ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    child: _buildAddPatientForm(setSheetState),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -584,8 +588,8 @@ class _PractitionerProfileSelectionScreenState
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.secondary,
-                    AppColors.secondary.withValues(alpha: 0.8),
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.8),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -593,7 +597,7 @@ class _PractitionerProfileSelectionScreenState
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.secondary.withValues(alpha: 0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -655,7 +659,7 @@ class _PractitionerProfileSelectionScreenState
     );
   }
 
-  Widget _buildAddPatientForm() {
+  Widget _buildAddPatientForm(StateSetter setSheetState) {
     return Form(
       key: _formKey,
       child: Column(
@@ -871,7 +875,7 @@ class _PractitionerProfileSelectionScreenState
             items: const ['Male', 'Female', 'Other'],
             itemLabelBuilder: (s) => s,
             onChanged: (value) {
-              setState(() => _selectedSex = value);
+              setSheetState(() => _selectedSex = value);
             },
           ),
           const SizedBox(height: 16),

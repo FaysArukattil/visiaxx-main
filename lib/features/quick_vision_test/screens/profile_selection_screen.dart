@@ -272,30 +272,52 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Family Members',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.5,
+                  Expanded(
+                    child: Text(
+                      'Family Profiles',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.8,
+                      ),
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: _showAddMemberSheet,
-                    icon: const Icon(Icons.add_rounded, size: 20),
-                    label: const Text(
-                      'Add Member',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
+                  InkWell(
+                    onTap: _showAddMemberSheet,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                        horizontal: 14,
+                        vertical: 10,
                       ),
-                      shape: RoundedRectangleBorder(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.add_rounded,
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Add New',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -490,8 +512,8 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.secondary,
-                    AppColors.secondary.withValues(alpha: 0.8),
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.8),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -499,7 +521,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.secondary.withValues(alpha: 0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -565,41 +587,48 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     _nameController.clear();
     _ageController.clear();
     _phoneController.clear();
+    _selectedSex = 'Male';
+    _selectedRelationship = 'Spouse';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
             ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: _buildAddMemberForm(),
-              ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    child: _buildAddMemberForm(setSheetState),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildAddMemberForm() {
+  Widget _buildAddMemberForm(StateSetter setSheetState) {
     return Form(
       key: _formKey,
       child: Column(
@@ -610,12 +639,12 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.person_add_rounded,
-                  color: AppColors.secondary,
+                  color: AppColors.primary,
                   size: 24,
                 ),
               ),
@@ -624,9 +653,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Add Family Member',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                         color: AppColors.textPrimary,
@@ -649,14 +678,14 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           const SizedBox(height: 24),
           TextFormField(
             controller: _nameController,
-            textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
-              labelText: 'First Name',
+              labelText: 'Full Name',
               hintText: 'Enter name',
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
+              prefixIcon: const Icon(Icons.person_outline, size: 20),
               filled: true,
               fillColor: AppColors.surface,
               border: OutlineInputBorder(
@@ -683,14 +712,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 vertical: 16,
               ),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter a name';
-              }
-              return null;
-            },
+            validator: (value) =>
+                (value == null || value.isEmpty) ? 'Required' : null,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -702,12 +727,6 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(3),
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      final n = int.tryParse(newValue.text);
-                      if (n != null && n <= 200) return newValue;
-                      return oldValue;
-                    }),
                   ],
                   decoration: InputDecoration(
                     labelText: 'Age',
@@ -763,7 +782,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   items: const ['Male', 'Female', 'Other'],
                   itemLabelBuilder: (s) => s,
                   onChanged: (value) {
-                    setState(() => _selectedSex = value);
+                    setSheetState(() => _selectedSex = value);
                   },
                 ),
               ),
@@ -776,7 +795,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             items: _relationships,
             itemLabelBuilder: (r) => r,
             onChanged: (value) {
-              setState(() => _selectedRelationship = value);
+              setSheetState(() => _selectedRelationship = value);
             },
           ),
           const SizedBox(height: 24),
@@ -822,31 +841,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 vertical: 16,
               ),
             ),
-            validator: (value) {
-              if (value != null && value.isNotEmpty && value.length != 10) {
-                return 'Enter exactly 10 digits';
-              }
-              return null;
-            },
           ),
           const SizedBox(height: 32),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primary.withValues(alpha: 0.8),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
+          SizedBox(
+            width: double.infinity,
             child: ElevatedButton(
               onPressed: _addFamilyMember,
               style: ElevatedButton.styleFrom(
