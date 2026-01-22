@@ -237,14 +237,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: const Text(
-          'Vision Testing Profiles',
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.8),
-        ),
         automaticallyImplyLeading: false,
         backgroundColor: AppColors.white,
         elevation: 0,
-        centerTitle: false,
+        toolbarHeight: 20, // Reduced height since title is removed
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -253,148 +249,149 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           }
           await _loadFamilyMembers();
         },
-        child: SingleChildScrollView(
+        child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Self test card
-              _buildProfileCard(
-                title: 'Test for Yourself',
-                subtitle: 'Vision test for your own eyes',
-                icon: Icons.person_rounded,
-                color: AppColors.primary,
-                onTap: _selectSelf,
-              ),
-              const SizedBox(height: 32),
-              // Family members section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Family Profiles',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.8,
-                      ),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          children: [
+            // Hero Section
+            _buildProfileCard(
+              title: 'Test My Vision',
+              subtitle: 'Quickly assess your own eye health',
+              icon: Icons.remove_red_eye_rounded,
+              color: AppColors.primary,
+              onTap: _selectSelf,
+            ),
+            const SizedBox(height: 32),
+
+            // Family Profiles Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Family Profiles',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.8,
                     ),
-                  ),
-                  InkWell(
-                    onTap: _showAddMemberSheet,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.add_rounded,
-                            size: 20,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Add New',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Family members list
-              if (_isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(48),
-                    child: EyeLoader.fullScreen(),
-                  ),
-                )
-              else if (_familyMembers.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(40),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.2),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.family_restroom_rounded,
-                          size: 48,
-                          color: AppColors.secondary,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'No family members added',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Add family members to test their vision',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                ...List.generate(
-                  _familyMembers.length,
-                  (index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildFamilyMemberCard(_familyMembers[index]),
                   ),
                 ),
-              const SizedBox(height: 40),
-            ],
-          ),
+                InkWell(
+                  onTap: _showAddMemberSheet,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.add_rounded,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Add New',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Family members list
+            if (_isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(48),
+                  child: EyeLoader.fullScreen(),
+                ),
+              )
+            else if (_familyMembers.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.2),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.family_restroom_rounded,
+                        size: 48,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Add family profiles to test for specific family members',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Add family members to test their vision',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...List.generate(
+                _familyMembers.length,
+                (index) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildFamilyMemberCard(_familyMembers[index]),
+                ),
+              ),
+            const SizedBox(height: 40),
+          ],
         ),
       ),
     );
@@ -410,34 +407,31 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(28),
           gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.85)],
+            colors: [color, color.withValues(alpha: 0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
               color: color.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
-              spreadRadius: -2,
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.25),
+                color: AppColors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: AppColors.white.withValues(alpha: 0.1),
-                  width: 1.5,
-                ),
               ),
               child: Icon(icon, color: AppColors.white, size: 32),
             ),
@@ -450,16 +444,16 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                     title,
                     style: const TextStyle(
                       color: AppColors.white,
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: AppColors.white.withValues(alpha: 0.95),
+                      color: AppColors.white.withValues(alpha: 0.8),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -467,10 +461,17 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: AppColors.white,
-              size: 20,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_forward_rounded,
+                color: AppColors.white,
+                size: 20,
+              ),
             ),
           ],
         ),
@@ -843,21 +844,36 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary,
+                  AppColors.primary.withValues(alpha: 0.8),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
             child: ElevatedButton(
               onPressed: _addFamilyMember,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.transparent,
+                backgroundColor: Colors.transparent,
                 foregroundColor: AppColors.white,
-                shadowColor: AppColors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                shadowColor: Colors.transparent,
+                padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
               child: const Text(
-                'Save Family Member',
+                'Save Family Profile',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
