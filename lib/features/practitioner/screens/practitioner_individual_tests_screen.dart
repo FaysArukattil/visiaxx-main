@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../data/models/user_model.dart';
 import '../../../core/constants/app_colors.dart';
 
 /// Screen showing all individual test options
@@ -75,8 +77,7 @@ class IndividualTestsScreen extends StatelessWidget {
           title: 'Visual Acuity',
           description:
               'Test how clearly you can see at distance using standard eye chart',
-          onTap: () =>
-              Navigator.pushNamed(context, '/visual-acuity-standalone'),
+          onTap: () => _handleTestSelection(context, 'visual_acuity'),
           screenWidth: screenWidth,
         ),
         SizedBox(height: cardSpacing),
@@ -84,7 +85,7 @@ class IndividualTestsScreen extends StatelessWidget {
           icon: Icons.palette_outlined,
           title: 'Color Vision',
           description: 'Screen for color blindness and red-green deficiencies',
-          onTap: () => Navigator.pushNamed(context, '/color-vision-standalone'),
+          onTap: () => _handleTestSelection(context, 'color_vision'),
           screenWidth: screenWidth,
         ),
         SizedBox(height: cardSpacing),
@@ -92,7 +93,7 @@ class IndividualTestsScreen extends StatelessWidget {
           icon: Icons.grid_4x4_outlined,
           title: 'Amsler Grid',
           description: 'Check for central vision distortions and blind spots',
-          onTap: () => Navigator.pushNamed(context, '/amsler-grid-standalone'),
+          onTap: () => _handleTestSelection(context, 'amsler_grid'),
           screenWidth: screenWidth,
         ),
         SizedBox(height: cardSpacing),
@@ -101,7 +102,7 @@ class IndividualTestsScreen extends StatelessWidget {
           title: 'Reading Test',
           description:
               'Assess your near vision and reading ability at close distance',
-          onTap: () => Navigator.pushNamed(context, '/reading-test-standalone'),
+          onTap: () => _handleTestSelection(context, 'reading_test'),
           screenWidth: screenWidth,
         ),
         SizedBox(height: cardSpacing),
@@ -110,8 +111,7 @@ class IndividualTestsScreen extends StatelessWidget {
           title: 'Contrast Sensitivity',
           description:
               'Measure ability to distinguish objects in different lighting conditions',
-          onTap: () =>
-              Navigator.pushNamed(context, '/contrast-sensitivity-standalone'),
+          onTap: () => _handleTestSelection(context, 'contrast_sensitivity'),
           screenWidth: screenWidth,
         ),
         SizedBox(height: cardSpacing),
@@ -120,12 +120,35 @@ class IndividualTestsScreen extends StatelessWidget {
           title: 'Mobile Refractometry',
           description:
               'Detect refractive errors and estimate prescription strength',
-          onTap: () =>
-              Navigator.pushNamed(context, '/mobile-refractometry-standalone'),
+          onTap: () => _handleTestSelection(context, 'mobile_refractometry'),
           screenWidth: screenWidth,
         ),
       ],
     );
+  }
+
+  Future<void> _handleTestSelection(
+    BuildContext context,
+    String testType,
+  ) async {
+    final authService = AuthService();
+    final role = await authService.getCurrentUserRole();
+
+    if (!context.mounted) return;
+
+    if (role == UserRole.examiner) {
+      Navigator.pushNamed(
+        context,
+        '/practitioner-profile-selection',
+        arguments: {'testType': testType},
+      );
+    } else {
+      Navigator.pushNamed(
+        context,
+        '/profile-selection',
+        arguments: {'testType': testType},
+      );
+    }
   }
 }
 

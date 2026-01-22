@@ -1136,12 +1136,24 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Stop distance monitoring before navigating
     _distanceService.stopMonitoring();
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ReadingTestInstructionsScreen(),
-      ),
-    );
+    final provider = context.read<TestSessionProvider>();
+    if (provider.isIndividualTest) {
+      Navigator.pushReplacementNamed(
+        context,
+        '/visual-acuity-result-individual',
+        arguments: {
+          'rightEye': provider.visualAcuityRight,
+          'leftEye': provider.visualAcuityLeft,
+        },
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ReadingTestInstructionsScreen(),
+        ),
+      );
+    }
   }
 
   @override

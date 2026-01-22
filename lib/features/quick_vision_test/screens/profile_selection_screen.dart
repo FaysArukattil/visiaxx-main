@@ -122,15 +122,48 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
 
     if (!mounted) return;
     provider.selectSelfProfile(userId, userName, age);
-    provider.startTest();
-    Navigator.pushNamed(context, '/questionnaire');
+    _proceedWithTest(provider);
   }
 
   void _selectFamilyMember(FamilyMemberModel member) {
     final provider = context.read<TestSessionProvider>();
     provider.selectFamilyMember(member);
-    provider.startTest();
-    Navigator.pushNamed(context, '/questionnaire');
+    _proceedWithTest(provider);
+  }
+
+  void _proceedWithTest(TestSessionProvider provider) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final testType = args?['testType'] as String?;
+
+    if (testType != null) {
+      provider.startIndividualTest(testType);
+      switch (testType) {
+        case 'visual_acuity':
+          Navigator.pushNamed(context, '/visual-acuity-standalone');
+          break;
+        case 'color_vision':
+          Navigator.pushNamed(context, '/color-vision-standalone');
+          break;
+        case 'amsler_grid':
+          Navigator.pushNamed(context, '/amsler-grid-standalone');
+          break;
+        case 'reading_test':
+          Navigator.pushNamed(context, '/reading-test-standalone');
+          break;
+        case 'contrast_sensitivity':
+          Navigator.pushNamed(context, '/contrast-sensitivity-standalone');
+          break;
+        case 'mobile_refractometry':
+          Navigator.pushNamed(context, '/mobile-refractometry-standalone');
+          break;
+        default:
+          Navigator.pushNamed(context, '/questionnaire');
+      }
+    } else {
+      provider.startTest();
+      Navigator.pushNamed(context, '/questionnaire');
+    }
   }
 
   Future<void> _addFamilyMember() async {

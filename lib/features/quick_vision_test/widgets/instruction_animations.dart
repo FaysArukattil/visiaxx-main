@@ -149,7 +149,7 @@ class _DistanceAnimationState extends State<DistanceAnimation>
               ),
               const SizedBox(height: 8),
               Text(
-                '40 cm',
+                '1 m',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,

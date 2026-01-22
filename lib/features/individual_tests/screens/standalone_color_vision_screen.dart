@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/services/auth_service.dart';
-import '../../quick_vision_test/screens/color_vision_test_screen.dart';
+import '../../quick_vision_test/screens/color_vision_instructions_screen.dart';
 
 /// Entry point for Color Vision individual test
 class StandaloneColorVisionScreen extends StatelessWidget {
@@ -30,6 +30,6 @@ class StandaloneColorVisionScreen extends StatelessWidget {
     });
 
     // Navigate to the standard test - it will automatically stop after color vision
-    return const ColorVisionTestScreen();
+    return const ColorVisionInstructionsScreen();
   }
 }

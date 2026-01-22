@@ -33,7 +33,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
 
   final List<String> _ttsMessages = [
     'First, find a quiet, well-lit room for the best results.',
-    'Hold the device about 40 centimeters away from your face.',
+    'Hold the device about 1 meter (arm\'s length) away from your face.',
     'You can speak your answers clearly or use the buttons on screen.',
     'If you wear glasses for distance, please keep them on during the test.',
   ];
@@ -152,7 +152,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       1,
                       Icons.straighten_rounded,
                       'Optimal Distance',
-                      'Hold the device about 40 centimeters (arm\'s length) away from your eyes.',
+                      'Hold the device about 1 meter (100 cm) away from your eyes.',
                       AppColors.primary,
                       animation: const DistanceAnimation(isCompact: true),
                     ),
@@ -515,4 +515,3 @@ class _EyeInstructionPainter extends CustomPainter {
   bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
-

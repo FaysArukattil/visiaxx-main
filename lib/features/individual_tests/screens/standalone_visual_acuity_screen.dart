@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/services/auth_service.dart';
-import '../../quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
+import '../../quick_vision_test/screens/test_instructions_screen.dart';
 
 /// Entry point for Visual Acuity individual test
 class StandaloneVisualAcuityScreen extends StatelessWidget {
@@ -30,6 +30,6 @@ class StandaloneVisualAcuityScreen extends StatelessWidget {
     });
 
     // Navigate to the standard test flow - it will automatically stop after VA
-    return const CoverLeftEyeInstructionScreen();
+    return const TestInstructionsScreen();
   }
 }

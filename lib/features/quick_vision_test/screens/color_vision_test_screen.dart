@@ -706,13 +706,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _proceedToAmslerTest() {
     final provider = context.read<TestSessionProvider>();
 
-    // If individual test mode, navigate to standard result screen
     if (provider.isIndividualTest) {
-      Navigator.pushReplacementNamed(context, '/quick-test-result');
+      Navigator.pushReplacementNamed(
+        context,
+        '/color-vision-result-individual',
+        arguments: {'result': provider.colorVision},
+      );
       return;
     }
 
-    // Otherwise continue to next test
     Navigator.pushReplacementNamed(context, '/amsler-grid-test');
   }
 
