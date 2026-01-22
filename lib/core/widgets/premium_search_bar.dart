@@ -58,50 +58,62 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> {
         ],
       ),
       child: Material(
-        color: AppColors.white,
+        color: Colors.transparent,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        child: TextField(
-          controller: _controller,
-          onChanged: widget.onChanged,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withValues(alpha: 0.1),
+                AppColors.primaryLight.withValues(alpha: 0.05),
+              ],
+            ),
           ),
-          decoration: InputDecoration(
-            hintText: widget.hintText,
-            hintStyle: TextStyle(
-              color: AppColors.textSecondary.withValues(alpha: 0.4),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+          child: TextField(
+            controller: _controller,
+            onChanged: widget.onChanged,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: AppColors.primary,
-              size: 22,
-            ),
-            suffixIcon: _controller.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear_rounded, size: 20),
-                    onPressed: () {
-                      _controller.clear();
-                      widget.onChanged('');
-                      widget.onClear();
-                      setState(() {});
-                    },
-                    color: AppColors.primary,
-                  )
-                : null,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 16,
+            decoration: InputDecoration(
+              hintText: widget.hintText,
+              hintStyle: TextStyle(
+                color: AppColors.primary.withValues(alpha: 0.5),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: AppColors.primary,
+                size: 22,
+              ),
+              suffixIcon: _controller.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 20),
+                      onPressed: () {
+                        _controller.clear();
+                        widget.onChanged('');
+                        widget.onClear();
+                        setState(() {});
+                      },
+                      color: AppColors.primary,
+                    )
+                  : null,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
+              ),
             ),
           ),
         ),
