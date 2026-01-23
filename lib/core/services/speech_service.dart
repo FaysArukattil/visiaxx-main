@@ -177,10 +177,19 @@ class SpeechService {
 
       // 🔄 Ensure engine is fully stopped before listen
       if (_speechToText.isListening) {
+        debugPrint('[SpeechService] ⚠️ Engine still listening - forcing stop');
         await _speechToText.stop();
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future.delayed(
+          const Duration(milliseconds: 500),
+        ); // Increased from 200ms
       }
-
+      if (_isListening) {
+        debugPrint(
+          '[SpeechService] 🛑 Still marked as listening - resetting state',
+        );
+        _isListening = false;
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
       await _speechToText
           .listen(
             onResult: (result) =>
@@ -390,23 +399,29 @@ class SpeechService {
 
   /// Cancel listening completely
   /// NOTE: This also resets _isInitialized so next call will reinitialize
+  /// Cancel listening completely
+  /// ✅ FIX: Keep initialized state to avoid repeated reinitializations
   Future<void> cancel() async {
     _bufferTimer?.cancel();
 
-    await _speechToText.cancel().timeout(
-      const Duration(seconds: 3),
-      onTimeout: () {
-        debugPrint('[SpeechService] ⚠️ Native cancel() TIMEOUT');
-      },
-    );
-    _isListening = false;
-    _isInitialized = false; // 🔄 Reset so next call reinitializes
+    if (_isListening) {
+      await _speechToText.cancel().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          debugPrint('[SpeechService] ⚠️ Native cancel() TIMEOUT');
+        },
+      );
+      _isListening = false;
+    }
+
+    // ✅ CRITICAL FIX: Don't reset _isInitialized
+    // This prevents unnecessary reinitializations that often fail
 
     _lastRecognizedValue = null;
     _lastConfidence = 0.0;
     onListeningStopped?.call();
     debugPrint(
-      '[SpeechService] ❌ Cancelled listening (will reinitialize on next use)',
+      '[SpeechService] ❌ Cancelled listening (keeping initialized state)',
     );
   }
 

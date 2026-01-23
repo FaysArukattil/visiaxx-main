@@ -70,6 +70,7 @@ class ContinuousSpeechManager {
   }
 
   /// Start continuous listening
+  /// Start continuous listening
   Future<void> start({
     Duration? listenDuration,
     int bufferMs = 1000,
@@ -79,6 +80,14 @@ class ContinuousSpeechManager {
     debugPrint(
       '[ContinuousSpeech] Starting continuous listener (force: $force)',
     );
+
+    // ✅ CRITICAL: If already active and not forcing, don't start again
+    if (!force && _isActive && _speechService.isListening) {
+      debugPrint(
+        '[ContinuousSpeech] Already active and listening, skipping start',
+      );
+      return;
+    }
 
     _shouldBeListening = true;
     _restartAttempts = 0;
@@ -226,11 +235,16 @@ class ContinuousSpeechManager {
 
     if (!_shouldBeListening || _isPausedForTts) return;
 
-    if (error.contains('error_server_disconnected')) {
+    // ✅ CRITICAL: Handle server disconnect with longer delay
+    if (error.contains('error_server_disconnected') ||
+        error.contains('error_busy')) {
       debugPrint(
-        '[ContinuousSpeech] ⚡️ Server disconnected - prioritized retry',
+        '[ContinuousSpeech] ⚡️ Audio system disconnected - extended retry',
       );
-      _scheduleRestart(immediate: true);
+      _scheduleRestart(immediate: true); // This now uses 5s delay
+    } else if (error.contains('error_no_match')) {
+      // No match is not a critical error - just restart normally
+      _scheduleRestart();
     } else {
       _scheduleRestart();
     }
@@ -250,13 +264,12 @@ class ContinuousSpeechManager {
     _isRestartPending = true;
 
     int delayMs;
-    // ⚡️ ENSURE _restartAttempts increments even for immediate flags
-    // to trigger forceReinitialize eventually
     _restartAttempts++;
 
     if (immediate) {
-      // 🏁 Increased to 3.0s to ensure native system clears its "busy" state
-      delayMs = 3000;
+      // ✅ CRITICAL FIX: Reduced from 5s to 2s for button interactions
+      // This allows voice to resume quickly after button press
+      delayMs = 2000;
     } else {
       final now = DateTime.now();
       if (_lastFailureTime != null &&
@@ -271,8 +284,7 @@ class ContinuousSpeechManager {
         delayMs = 8000;
         _rapidFailureCount = 0;
       } else {
-        // Reduced base backoff but kept cap
-        delayMs = (1000 * (1 << (_restartAttempts - 1))).clamp(1000, 5000);
+        delayMs = (1500 * (1 << (_restartAttempts - 1))).clamp(1500, 6000);
       }
     }
 
@@ -287,9 +299,11 @@ class ContinuousSpeechManager {
 
   Future<void> pauseForTts() async {
     if (_isPausedForTts) return;
+    debugPrint('[ContinuousSpeech] 🔇 Pausing for TTS');
     _isPausedForTts = true;
     _restartTimer?.cancel();
-    // 💡 SAFE-SYNC: Explicitly stop hardware to avoid focus collision
+
+    // ✅ FIX: Use stopListening instead of cancel to preserve initialized state
     if (_isActive || _speechService.isListening) {
       await _speechService.stopListening();
     }
@@ -297,13 +311,14 @@ class ContinuousSpeechManager {
 
   Future<void> resumeAfterTts() async {
     if (!_isPausedForTts) return;
+    debugPrint('[ContinuousSpeech] 🔊 Resuming after TTS');
     _isPausedForTts = false;
     _restartAttempts = 0;
 
     if (_shouldBeListening) {
-      // 💡 RECOVERY DELAY: Give Android time to release audio focus after TTS
-      await Future.delayed(const Duration(milliseconds: 1500));
-      await _startListening(force: true); // Force restart hardware
+      // ✅ FIX: Shorter delay (800ms instead of 1500ms) for faster response
+      await Future.delayed(const Duration(milliseconds: 800));
+      await _startListening(force: true);
     }
   }
 
