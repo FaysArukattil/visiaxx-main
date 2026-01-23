@@ -4,13 +4,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'speech_service.dart';
 
-/// Ž¤ FIXED Continuous Speech Manager
-///
-/// Key fixes:
-/// - Proper TTS pause/resume handling
-/// - Callbacks are always set correctly
-/// - Single restart mechanism (no conflicts)
-/// - Better state management
+/// FIXED Continuous Speech Manager
 class ContinuousSpeechManager {
   final SpeechService _speechService;
 
@@ -22,13 +16,16 @@ class ContinuousSpeechManager {
   int _restartAttempts = 0;
   DateTime? _lastFailureTime;
   int _rapidFailureCount = 0;
+  Timer? _stuckStateCheckTimer;
+  DateTime? _lastSoundLevelTime;
+  bool _isRestartPending = false; // Guard for concurrent restarts
 
   // Accumulated results
   final List<String> _allDetectedSpeech = [];
   String? _lastRecognizedValue;
   DateTime? _lastRecognitionTime;
 
-  // Callbacks - ALWAYS set these properly
+  // Callbacks
   Function(String)? onSpeechDetected;
   Function(String)? onFinalResult;
   Function(bool)? onListeningStateChanged;
@@ -38,38 +35,38 @@ class ContinuousSpeechManager {
 
   ContinuousSpeechManager(this._speechService) {
     _setupCallbacks();
-    debugPrint('[ContinuousSpeech] Ž¤ Manager created, callbacks set up');
+    debugPrint('[ContinuousSpeech] Manager created');
   }
 
   void _setupCallbacks() {
-    debugPrint('[ContinuousSpeech] ”§ Setting up callbacks...');
-
     _speechService.onResult = (result) {
-      debugPrint('[ContinuousSpeech] “ onResult called: "$result"');
+      debugPrint('[ContinuousSpeech] onResult: "$result"');
       _handleResult(result);
     };
 
     _speechService.onSpeechDetected = (speech) {
-      debugPrint('[ContinuousSpeech] Ž¤ onSpeechDetected called: "$speech"');
+      debugPrint('[ContinuousSpeech] onSpeechDetected: "$speech"');
       _handleSpeechDetected(speech);
     };
 
     _speechService.onListeningStarted = () {
-      debugPrint('[ContinuousSpeech] … onListeningStarted called');
+      debugPrint('[ContinuousSpeech] Listening started');
       _handleListeningStarted();
     };
 
     _speechService.onListeningStopped = () {
-      debugPrint('[ContinuousSpeech] ¸ï¸ onListeningStopped called');
       _handleListeningStopped();
     };
 
     _speechService.onError = (error) {
-      debugPrint('[ContinuousSpeech]  ï¸ onError called: $error');
       _handleError(error);
     };
 
-    debugPrint('[ContinuousSpeech] … Callbacks configured');
+    _speechService.onSoundLevelChange = (level) {
+      if (level > 0) {
+        _lastSoundLevelTime = DateTime.now();
+      }
+    };
   }
 
   /// Start continuous listening
@@ -77,49 +74,91 @@ class ContinuousSpeechManager {
     Duration? listenDuration,
     int bufferMs = 1000,
     double minConfidence = 0.05,
+    bool force = false,
   }) async {
     debugPrint(
-      '[ContinuousSpeech] š€ Starting continuous speech (paused: $_isPausedForTts)',
+      '[ContinuousSpeech] Starting continuous listener (force: $force)',
     );
 
     _shouldBeListening = true;
     _restartAttempts = 0;
+
+    if (force) {
+      _isPausedForTts = false;
+      _isRestartPending = false;
+      _isActive = false;
+      _restartTimer?.cancel();
+    }
+
     _allDetectedSpeech.clear();
     _lastRecognizedValue = null;
-    _speechService.clearBuffer(); // … Fixed: Clear underlying service too
+    _speechService.clearBuffer();
 
-    // Don't start if paused for TTS
-    if (_isPausedForTts) {
-      debugPrint(
-        '[ContinuousSpeech] ¸ï¸ Paused for TTS, will start when resumed',
-      );
-      return;
-    }
+    if (_isPausedForTts && !force) return;
 
     await _startListening(
       listenDuration: listenDuration,
       bufferMs: bufferMs,
       minConfidence: minConfidence,
+      force: force,
     );
+
+    _startStuckStateCheck();
+  }
+
+  void _startStuckStateCheck() {
+    _stuckStateCheckTimer = Timer.periodic(const Duration(seconds: 10), (
+      timer,
+    ) {
+      if (!_shouldBeListening || _isRestartPending) return;
+      // 💡 Heartbeat ignore _isPausedForTts because we want to detect stalls
+      // even if something accidentally kept the pause flag on.
+
+      final now = DateTime.now();
+
+      // 1. HARD STUCK: Logically not active
+      if (!_isActive) {
+        debugPrint(
+          '[ContinuousSpeech] STUCK: Engine not active. Restarting...',
+        );
+        _scheduleRestart();
+        return;
+      }
+
+      // 2. SILENT STALL: Logically active but no audio data (Heartbeat)
+      if (_lastSoundLevelTime != null &&
+          now.difference(_lastSoundLevelTime!) > const Duration(seconds: 12)) {
+        debugPrint(
+          '[ContinuousSpeech] HEARTBEAT FAILURE: Microphone is silent. Kicking engine...',
+        );
+        _lastSoundLevelTime = null; // Reset
+        _scheduleRestart(immediate: true);
+      }
+    });
   }
 
   Future<void> _startListening({
     Duration? listenDuration,
     int bufferMs = 1000,
     double minConfidence = 0.05,
+    bool force = false,
   }) async {
-    // Don't start if we shouldn't be listening or paused for TTS
-    if (!_shouldBeListening || _isPausedForTts) {
-      debugPrint(
-        '[ContinuousSpeech] ¸ï¸ Skipping start (shouldListen: $_shouldBeListening, pausedForTts: $_isPausedForTts)',
-      );
+    if (!_shouldBeListening) return;
+    if (_isPausedForTts && !force) return;
+
+    // Guard against concurrency (unless forced)
+    if (!force && (_isActive || _speechService.isListening)) {
+      debugPrint('[ContinuousSpeech] Already listening, skipping');
       return;
     }
 
     try {
-      debugPrint(
-        '[ContinuousSpeech] Ž¤ Starting speech service (attempt ${_restartAttempts + 1})',
-      );
+      debugPrint('[ContinuousSpeech] Start attempt ${_restartAttempts + 1}');
+
+      // Early re-init for persistent issues
+      if (_restartAttempts > 3 && _restartAttempts % 3 == 0) {
+        await _speechService.forceReinitialize();
+      }
 
       await _speechService.startListening(
         listenFor: listenDuration ?? const Duration(seconds: 60),
@@ -130,230 +169,169 @@ class ContinuousSpeechManager {
 
       _isActive = true;
       _restartAttempts = 0;
-
-      // Ž¤ LOG RECOGNITION MODE
-      final isOffline = _speechService.isAvailable; // Approximate check
-      debugPrint(
-        '[ContinuousSpeech] … Started (Probable mode: ${isOffline ? "Offline-Ready" : "Cloud"})',
-      );
+      _isRestartPending = false;
     } catch (e) {
-      debugPrint('[ContinuousSpeech] Œ Error starting speech: $e');
+      debugPrint('[ContinuousSpeech] Start error: $e');
+      _isActive = false;
+      _isRestartPending = false;
       _scheduleRestart();
     }
   }
 
   void _handleResult(String result) {
-    debugPrint('[ContinuousSpeech] “ Final result received: "$result"');
-
+    // 💡 LOGICAL SUPPRESSION: Ignore results while TTS is speaking
+    // to prevent echo detection, without stopping hardware.
+    if (_isPausedForTts) {
+      debugPrint(
+        '[ContinuousSpeech] Ignoring result (Logical TTS Pause): $result',
+      );
+      return;
+    }
     _lastRecognizedValue = result;
+
     _lastRecognitionTime = DateTime.now();
-
-    if (!_allDetectedSpeech.contains(result)) {
-      _allDetectedSpeech.add(result);
-    }
-
-    // Call the callback
-    if (onFinalResult != null) {
-      debugPrint('[ContinuousSpeech] ✅ Calling onFinalResult callback');
-      onFinalResult!(result);
-    } else {
-      debugPrint('[ContinuousSpeech]  ï¸ WARNING: onFinalResult is NULL!');
-    }
+    if (!_allDetectedSpeech.contains(result)) _allDetectedSpeech.add(result);
+    if (onFinalResult != null) onFinalResult!(result);
   }
 
   void _handleSpeechDetected(String speech) {
-    debugPrint('[ContinuousSpeech] Ž¤ Speech detected: "$speech"');
-
+    if (_isPausedForTts) return;
     _lastRecognitionTime = DateTime.now();
 
-    if (!_allDetectedSpeech.contains(speech)) {
-      _allDetectedSpeech.add(speech);
-    }
-
-    // Call the callback
-    if (onSpeechDetected != null) {
-      debugPrint('[ContinuousSpeech] ✅ Calling onSpeechDetected callback');
-      onSpeechDetected!(speech);
-    } else {
-      debugPrint('[ContinuousSpeech]  ï¸ WARNING: onSpeechDetected is NULL!');
-    }
+    if (!_allDetectedSpeech.contains(speech)) _allDetectedSpeech.add(speech);
+    if (onSpeechDetected != null) onSpeechDetected!(speech);
   }
 
   void _handleListeningStarted() {
-    debugPrint('[ContinuousSpeech] … Listening started');
     _isActive = true;
     onListeningStateChanged?.call(true);
   }
 
   void _handleListeningStopped() {
-    debugPrint('[ContinuousSpeech] ¸ï¸ Listening stopped');
+    debugPrint('[ContinuousSpeech] Stop event');
     _isActive = false;
     onListeningStateChanged?.call(false);
 
-    // Auto-restart ONLY if:
-    // 1. We should be listening
-    // 2. NOT paused for TTS
-    // 3. Haven't exceeded max attempts
-    if (_shouldBeListening &&
-        !_isPausedForTts &&
-        _restartAttempts < _maxRestartAttempts) {
-      debugPrint('[ContinuousSpeech] ”„ Scheduling auto-restart...');
-      _scheduleRestart();
-    } else {
-      debugPrint(
-        '[ContinuousSpeech] ¹ï¸ Not restarting (should: $_shouldBeListening, tts: $_isPausedForTts, attempts: $_restartAttempts)',
-      );
+    if (_shouldBeListening && !_isPausedForTts) {
+      // Don't overwrite error-triggered restart
+      if (!_isRestartPending) {
+        _scheduleRestart();
+      }
     }
   }
 
   void _handleError(String error) {
-    debugPrint('[ContinuousSpeech]  ï¸ Error: $error');
+    debugPrint('[ContinuousSpeech] onError: $error');
     _isActive = false;
 
-    // Try to restart on error (if not paused for TTS)
-    if (_shouldBeListening && !_isPausedForTts) {
+    if (!_shouldBeListening || _isPausedForTts) return;
+
+    if (error.contains('error_server_disconnected')) {
+      debugPrint(
+        '[ContinuousSpeech] ⚡️ Server disconnected - prioritized retry',
+      );
+      _scheduleRestart(immediate: true);
+    } else {
       _scheduleRestart();
     }
   }
 
-  void _scheduleRestart() {
-    if (!_shouldBeListening || _isPausedForTts) {
-      debugPrint(
-        '[ContinuousSpeech] ¹ï¸ Not scheduling restart (should: $_shouldBeListening, tts: $_isPausedForTts)',
-      );
+  void _scheduleRestart({bool immediate = false}) {
+    if (!_shouldBeListening ||
+        _isPausedForTts ||
+        _restartAttempts >= _maxRestartAttempts) {
+      _isRestartPending = false;
       return;
     }
 
-    if (_restartAttempts >= _maxRestartAttempts) {
-      debugPrint(
-        '[ContinuousSpeech] Œ Max restart attempts reached ($_maxRestartAttempts)',
-      );
-      return;
-    }
+    if (!immediate && _isRestartPending) return;
 
     _restartTimer?.cancel();
+    _isRestartPending = true;
 
-    // Check for rapid failures (e.g. within 2 seconds)
-    final now = DateTime.now();
-    if (_lastFailureTime != null &&
-        now.difference(_lastFailureTime!) < const Duration(seconds: 2)) {
-      _rapidFailureCount++;
-    } else {
-      _rapidFailureCount = 0;
-    }
-    _lastFailureTime = now;
-
-    // If we have too many rapid failures, wait MUCH longer (cooldown)
     int delayMs;
-    if (_rapidFailureCount > 3) {
-      delayMs = 8000; // Increased to 8 second cooldown
-      debugPrint(
-        '[ContinuousSpeech] ›‘ CRITICAL RESTART LOOP. Cooling down for 8s to prevent UI freeze.',
-      );
-      _rapidFailureCount = 0;
-    } else {
-      // Increased base delay to 1.5s - this is usually enough to stop the "spam" sound
-      delayMs = (1500 * (1 << _restartAttempts)).clamp(1500, 5000);
-    }
-
+    // ⚡️ ENSURE _restartAttempts increments even for immediate flags
+    // to trigger forceReinitialize eventually
     _restartAttempts++;
 
+    if (immediate) {
+      // 🏁 Increased to 3.0s to ensure native system clears its "busy" state
+      delayMs = 3000;
+    } else {
+      final now = DateTime.now();
+      if (_lastFailureTime != null &&
+          now.difference(_lastFailureTime!) < const Duration(seconds: 2)) {
+        _rapidFailureCount++;
+      } else {
+        _rapidFailureCount = 0;
+      }
+      _lastFailureTime = now;
+
+      if (_rapidFailureCount > 3) {
+        delayMs = 8000;
+        _rapidFailureCount = 0;
+      } else {
+        // Reduced base backoff but kept cap
+        delayMs = (1000 * (1 << (_restartAttempts - 1))).clamp(1000, 5000);
+      }
+    }
+
     debugPrint(
-      '[ContinuousSpeech] ° Scheduling restart in ${delayMs}ms (attempts: $_restartAttempts, rapid: $_rapidFailureCount)',
+      '[ContinuousSpeech] Restarting in ${delayMs}ms (immediate: $immediate, attempt: $_restartAttempts)',
     );
 
     _restartTimer = Timer(Duration(milliseconds: delayMs), () async {
-      if (_shouldBeListening && !_isPausedForTts) {
-        debugPrint('[ContinuousSpeech] ”„ Executing restart...');
-        await _startListening();
-      }
+      await _startListening();
     });
   }
 
-  /// ­ KEY FIX: Pause for TTS - stops mic from picking up TTS audio
   Future<void> pauseForTts() async {
-    if (_isPausedForTts) {
-      debugPrint('[ContinuousSpeech]  ï¸ Already paused for TTS');
-      return;
-    }
-
-    debugPrint('[ContinuousSpeech] ”‡ PAUSING FOR TTS');
+    if (_isPausedForTts) return;
     _isPausedForTts = true;
-
-    // Cancel any pending restarts
     _restartTimer?.cancel();
-
-    // Stop the speech service immediately
+    // 💡 SAFE-SYNC: Explicitly stop hardware to avoid focus collision
     if (_isActive || _speechService.isListening) {
       await _speechService.stopListening();
-      debugPrint('[ContinuousSpeech] ›‘ Speech service stopped for TTS');
     }
   }
 
-  /// ­ KEY FIX: Resume after TTS - restarts listening
   Future<void> resumeAfterTts() async {
-    if (!_isPausedForTts) {
-      debugPrint('[ContinuousSpeech]  ï¸ Not paused for TTS');
-      return;
-    }
-
-    debugPrint('[ContinuousSpeech] ”Š RESUMING AFTER TTS');
+    if (!_isPausedForTts) return;
     _isPausedForTts = false;
-    _restartAttempts = 0; // Reset attempts
+    _restartAttempts = 0;
 
-    // Restart if we should be listening
     if (_shouldBeListening) {
-      // Small delay to ensure TTS is fully done
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      debugPrint('[ContinuousSpeech] ”„ Restarting speech after TTS...');
-      await _startListening();
+      // 💡 RECOVERY DELAY: Give Android time to release audio focus after TTS
+      await Future.delayed(const Duration(milliseconds: 1500));
+      await _startListening(force: true); // Force restart hardware
     }
   }
 
-  /// Stop continuous listening
   Future<void> stop() async {
-    debugPrint('[ContinuousSpeech] ›‘ Stopping continuous speech recognition');
-
     _shouldBeListening = false;
     _isActive = false;
     _isPausedForTts = false;
-
     _restartTimer?.cancel();
-
+    _stuckStateCheckTimer?.cancel();
     await _speechService.stopListening();
-    _speechService.clearBuffer(); // … Fixed: Clear underlying service too
-
     onListeningStateChanged?.call(false);
   }
 
-  /// Get all accumulated speech
   List<String> getAllDetectedSpeech() => List.from(_allDetectedSpeech);
-
-  /// Get last recognized value
   String? getLastRecognized() => _lastRecognizedValue;
-
-  /// Clear accumulated speech
   void clearAccumulated() {
     _allDetectedSpeech.clear();
     _lastRecognizedValue = null;
-    _speechService.clearBuffer(); // … Fixed: Clear underlying service too
+    _speechService.clearBuffer();
   }
 
-  /// Check if currently active
   bool get isActive => _isActive && _speechService.isListening;
-
-  /// Check if should be listening
   bool get shouldBeListening => _shouldBeListening;
-
-  /// Check if paused for TTS
   bool get isPausedForTts => _isPausedForTts;
 
-  /// Dispose resources
   void dispose() {
-    debugPrint('[ContinuousSpeech] —‘ï¸ Disposing...');
     _restartTimer?.cancel();
+    _stuckStateCheckTimer?.cancel();
     _shouldBeListening = false;
-    _isPausedForTts = false;
   }
 }

@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
   bool _isInitialized = false;
+  bool _isInitializing = false; // 🔄 Guard for concurrent init
   bool _isListening = false;
 
   // Single buffer system (simplified from dual-buffer)
@@ -60,51 +61,80 @@ class SpeechService {
       return true;
     }
 
+    if (_isInitializing) {
+      debugPrint('[SpeechService] ⏳ Initialization already in progress...');
+      return false;
+    }
+
+    _isInitializing = true;
+
     try {
       final hasPermission = await _requestMicrophonePermission();
       if (!hasPermission) {
         debugPrint('[SpeechService] ❌ No microphone permission');
+        _isInitializing = false;
         return false;
       }
 
       debugPrint('[SpeechService] 🔧 Initializing speech recognition...');
 
-      _isInitialized = await _speechToText.initialize(
-        onError: (error) {
-          debugPrint('[SpeechService] ❌ Speech error: ${error.errorMsg}');
+      // 🔄 Ensure existing session is cancelled before new init
+      await _speechToText.cancel();
 
-          // ⚠️ Handle missing offline models specifically
-          if (error.errorMsg.contains('error_language_not_supported') ||
-              error.errorMsg.contains('error_language_unavailable')) {
-            debugPrint(
-              '[SpeechService] 🛑 Critical: Offline model missing for current locale',
-            );
-          }
+      _isInitialized = await _speechToText
+          .initialize(
+            onError: (error) {
+              debugPrint('[SpeechService] ❌ Speech error: ${error.errorMsg}');
 
-          _isListening = false;
-          if (onListeningStopped != null) onListeningStopped!();
-          if (onError != null) onError!(error.errorMsg);
-        },
-        onStatus: (status) {
-          debugPrint('[SpeechService] 📊 Status: $status');
-          if (status == 'done' || status == 'notListening') {
-            _isListening = false;
-            if (onListeningStopped != null) onListeningStopped!();
-          } else if (status == 'listening') {
-            _isListening = true;
-            if (onListeningStarted != null) onListeningStarted!();
-          }
-        },
-        debugLogging: kDebugMode,
-      );
+              // ⚠️ Handle busy state specifically
+              if (error.errorMsg.contains('error_busy')) {
+                debugPrint('[SpeechService] 🛑 Engine BUSY - scheduling reset');
+                _isListening = false;
+                // No direct reset here to avoid infinite loops,
+                // but we mark as not listening so manager can retry.
+              }
+
+              // ⚠️ Handle missing offline models specifically
+              if (error.errorMsg.contains('error_language_not_supported') ||
+                  error.errorMsg.contains('error_language_unavailable')) {
+                debugPrint(
+                  '[SpeechService] 🛑 Critical: Offline model missing for current locale',
+                );
+              }
+
+              _isListening = false;
+              if (onListeningStopped != null) onListeningStopped!();
+              if (onError != null) onError!(error.errorMsg);
+            },
+            onStatus: (status) {
+              debugPrint('[SpeechService] 📊 Status: $status');
+              if (status == 'done' || status == 'notListening') {
+                _isListening = false;
+                if (onListeningStopped != null) onListeningStopped!();
+              } else if (status == 'listening') {
+                _isListening = true;
+                if (onListeningStarted != null) onListeningStarted!();
+              }
+            },
+            debugLogging: kDebugMode,
+          )
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('[SpeechService] ⚠️ Native initialize() TIMEOUT');
+              return false;
+            },
+          );
 
       debugPrint(
         '[SpeechService] ${_isInitialized ? "✅" : "❌"} Initialization result: $_isInitialized',
       );
 
+      _isInitializing = false;
       return _isInitialized;
     } catch (e) {
       debugPrint('[SpeechService] ❌ Initialization exception: $e');
+      _isInitializing = false;
       onError?.call('Failed to initialize speech: $e');
       return false;
     }
@@ -127,7 +157,9 @@ class SpeechService {
 
     if (_isListening) {
       await stopListening();
-      await Future.delayed(const Duration(milliseconds: 200));
+      // 🔄 MANDATORY DELAY: Prevent native engine from hanging
+      // when cycling sessions too fast (Samsung/Xiaomi fix)
+      await Future.delayed(const Duration(milliseconds: 400));
     }
 
     _lastRecognizedValue = null;
@@ -143,23 +175,44 @@ class SpeechService {
         '[SpeechService] 🎯 Engine Locale: ${localeId ?? "System Default"}',
       );
 
-      await _speechToText.listen(
-        onResult: (result) => _onSpeechResult(result, bufferMs, minConfidence),
-        listenFor: listenFor ?? const Duration(seconds: 60),
-        pauseFor: pauseFor ?? const Duration(seconds: 15),
-        onSoundLevelChange: (level) => onSoundLevelChange?.call(level),
-        listenOptions: SpeechListenOptions(
-          partialResults: true,
-          cancelOnError: false,
-          listenMode:
-              ListenMode.dictation, // Dictation is more robust for short words
-          onDevice: true, // ⚠️ FORCE OFFLINE ONLY
-        ),
-        localeId: localeId,
-      );
+      // 🔄 Ensure engine is fully stopped before listen
+      if (_speechToText.isListening) {
+        await _speechToText.stop();
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+
+      await _speechToText
+          .listen(
+            onResult: (result) =>
+                _onSpeechResult(result, bufferMs, minConfidence),
+            listenFor: listenFor ?? const Duration(seconds: 60),
+            pauseFor: pauseFor ?? const Duration(seconds: 15),
+            onSoundLevelChange: (level) => onSoundLevelChange?.call(level),
+            listenOptions: SpeechListenOptions(
+              partialResults: true,
+              cancelOnError: false,
+              listenMode: ListenMode.dictation,
+              onDevice: true, // ⚠️ STRICTLY OFFLINE ONLY
+            ),
+            localeId: localeId,
+          )
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('[SpeechService] ⚠️ Native listen() TIMEOUT');
+              _isListening = false;
+              throw TimeoutException('Native speech engine timed out');
+            },
+          );
     } catch (e) {
       debugPrint('[SpeechService] ❌ StartListen Error: $e');
       _isListening = false;
+
+      // Handle "busy" error manually if caught here
+      if (e.toString().contains('error_busy')) {
+        forceReinitialize();
+      }
+
       onListeningStopped?.call();
     }
   }
@@ -247,8 +300,10 @@ class SpeechService {
         onResult!(recognized);
       }
 
-      // Stop listening to prevent duplicate triggers
-      stopListening();
+      // 💡 ALWAYS-LISTENING: We NO LONGER stop listening here.
+      // We just notify and keep the engine running for the next command.
+      // clearBuffer() should be called by the manager if it wants to reject further
+      // results for the same plate.
       return;
     }
 
@@ -291,7 +346,12 @@ class SpeechService {
     _bufferTimer?.cancel();
 
     if (_isListening) {
-      await _speechToText.stop();
+      await _speechToText.stop().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          debugPrint('[SpeechService] ⚠️ Native stop() TIMEOUT');
+        },
+      );
       _isListening = false;
       onListeningStopped?.call();
       debugPrint('[SpeechService] 🛑 Stopped listening');
@@ -306,16 +366,48 @@ class SpeechService {
     debugPrint('[SpeechService] 🧹 Buffers cleared');
   }
 
-  /// Cancel listening completely
-  Future<void> cancel() async {
+  /// 🔄 Reset the service to initial state (for recovery)
+  /// Use this when the service gets into a bad state and needs full recovery
+  void reset() {
     _bufferTimer?.cancel();
-
-    await _speechToText.cancel();
+    _wordWaitTimer?.cancel();
+    _speechToText.stop();
+    _speechToText.cancel();
+    _isInitialized = false;
     _isListening = false;
     _lastRecognizedValue = null;
     _lastConfidence = 0.0;
+    debugPrint('[SpeechService] 🔄 Service reset to initial state');
+  }
+
+  /// 🔄 Force reinitialization (use when recovering from errors)
+  /// This completely resets and reinitializes the speech service
+  Future<bool> forceReinitialize() async {
+    debugPrint('[SpeechService] 🔄 Force reinitializing...');
+    reset();
+    return await initialize();
+  }
+
+  /// Cancel listening completely
+  /// NOTE: This also resets _isInitialized so next call will reinitialize
+  Future<void> cancel() async {
+    _bufferTimer?.cancel();
+
+    await _speechToText.cancel().timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {
+        debugPrint('[SpeechService] ⚠️ Native cancel() TIMEOUT');
+      },
+    );
+    _isListening = false;
+    _isInitialized = false; // 🔄 Reset so next call reinitializes
+
+    _lastRecognizedValue = null;
+    _lastConfidence = 0.0;
     onListeningStopped?.call();
-    debugPrint('[SpeechService] ❌ Cancelled listening');
+    debugPrint(
+      '[SpeechService] ❌ Cancelled listening (will reinitialize on next use)',
+    );
   }
 
   /// Finalize with last value
@@ -531,6 +623,9 @@ class SpeechService {
     _wordWaitTimer?.cancel();
     _speechToText.stop();
     _speechToText.cancel();
+    _isInitialized = false;
+    _isListening = false;
+    debugPrint('[SpeechService] 🗑️ Service disposed');
   }
 
   // Add missing field if needed (none identified yet, but checking logic)

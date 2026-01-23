@@ -5,6 +5,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
@@ -249,19 +250,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Resume based on current test phase
     if (_showE && _waitingForResponse) {
       debugPrint('[VisualAcuity] ”„ Resuming E display phase');
-      // Resume speech recognition
-      if (!_continuousSpeech.isActive) {
-        _continuousSpeech.start(
-          listenDuration: const Duration(minutes: 10),
-          minConfidence: 0.15,
-          bufferMs: 1000,
-        );
-      }
+      _continuousSpeech.start(
+        listenDuration: const Duration(minutes: 10),
+        minConfidence: 0.15,
+        bufferMs: 1000,
+      );
       _restartEDisplayTimer();
     } else if (_showRelaxation) {
       debugPrint('[VisualAcuity] ”„ Resuming relaxation phase');
-      // Resume mic if already below 3s
-      if (_relaxationCountdown <= 3 && !_continuousSpeech.isActive) {
+      if (_relaxationCountdown <= 3) {
         _continuousSpeech.start(
           listenDuration: const Duration(minutes: 10),
           minConfidence: 0.15,
@@ -312,7 +309,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _continuousSpeech.onListeningStateChanged = (isListening) {
       if (mounted) setState(() => _isListening = isListening);
     };
-    // ✅ ULTRA-RELIABLE: Pause speech when TTS is speaking to prevent self-recognition
+    // ✅ SAFE-SYNC: Pause speech when TTS is speaking to prevent focus collision
     _ttsService.onSpeakingStateChanged = (isSpeaking) {
       if (isSpeaking) {
         _continuousSpeech.pauseForTts();
@@ -639,6 +636,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         _relaxationCountdown--;
       });
 
+      if (_relaxationCountdown == 3 && mounted) {
+        debugPrint('[VisualAcuity] 🎤 3s remaining - Starting mic early');
+        _continuousSpeech.start(
+          listenDuration: const Duration(minutes: 10),
+          minConfidence: 0.15,
+          bufferMs: 1000,
+        );
+      }
+
       if (_relaxationCountdown <= 0) {
         timer.cancel();
         // … FALLBACK: Transition phase if animation listener fails
@@ -729,8 +735,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     debugPrint(
       '[VisualAcuity] _startRelaxation starting (Duration: ${TestConstants.relaxationDurationSeconds}s)',
     );
-    // Stop mic when relaxation starts
-    _continuousSpeech.stop();
+    // 💡 ALWAYS-LISTENING: We no longer stop the mic here.
+    // The manager will keep listening in the background.
 
     setState(() {
       _showRelaxation = true;
@@ -799,25 +805,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         '(Index: $_currentLevel)',
       );
     });
-
-    // … Start mic ONLY AFTER E is shown and state is updated
-    _continuousSpeech.start(
-      listenDuration: const Duration(minutes: 10),
-      minConfidence: 0.15,
-      bufferMs: 1000,
-    );
-
-    // … FALLBACK: If mic isn't active at the moment E appears, force a start
-    if (!_continuousSpeech.isActive) {
-      debugPrint(
-        '[VisualAcuity] ✅ Fallback: Mic not active at E start, starting now',
-      );
-      _continuousSpeech.start(
-        listenDuration: const Duration(minutes: 10),
-        minConfidence: 0.15,
-        bufferMs: 1000,
-      );
-    }
 
     // … CRITICAL FIX: If already paused due to distance, do not start interaction timers yet
     if (_isTestPausedForDistance) {
@@ -967,9 +954,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       return;
     }
 
-    // Reset distance pause if we were paused but got a response
+    // ⚡️ PROACTIVE: If user used buttons, the mic might have captured noise.
+    // Clean it up immediately and ensure state is fresh for next letter.
     _isTestPausedForDistance = false;
-    _isDistanceOk = true; // Reset distance status
+    _isDistanceOk = true;
+
+    _continuousSpeech.clearAccumulated();
 
     final responseTime = _eDisplayStartTime != null
         ? DateTime.now().difference(_eDisplayStartTime!).inMilliseconds
@@ -1144,6 +1134,57 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         context,
         MaterialPageRoute(
           builder: (context) => const ReadingTestInstructionsScreen(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _manualSpeechReset() async {
+    debugPrint('[VisualAcuity] 🔄 Manual speech reset triggered');
+    HapticFeedback.vibrate();
+
+    // 🛑 Atomic Cleanup: Don't let a dead native engine hang our UI
+    try {
+      await Future.wait([
+        _continuousSpeech.stop(),
+        _speechService.cancel(),
+      ]).timeout(const Duration(seconds: 1));
+    } catch (e) {
+      debugPrint('[VisualAcuity] Cleanup timed out or failed: $e');
+    }
+
+    // 🧹 Clean re-init
+    await _speechService.initialize();
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (mounted &&
+        ((_showE && _waitingForResponse) ||
+            (_showRelaxation && _relaxationCountdown <= 3))) {
+      _continuousSpeech.start(
+        listenDuration: const Duration(minutes: 10),
+        minConfidence: 0.15,
+        bufferMs: 1000,
+        force: true, // Manual override ignores all guards
+      );
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.check_circle, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text('Voice recognition reset'),
+            ],
+          ),
+          duration: const Duration(seconds: 2),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     }
@@ -1343,7 +1384,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
-    _continuousSpeech.stop();
+    // 💡 No stop here, resetTest will handle full cleanup if needed
+
     _distanceService.stopMonitoring();
 
     if (_currentEye == 'right') {
@@ -1461,31 +1503,78 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             ),
           ),
           const Spacer(),
-          // Speech waveform
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _SpeechWaveform(
-                  isListening:
-                      _continuousSpeech.shouldBeListening &&
-                      !_continuousSpeech.isPausedForTts,
-                  isTalking: _isSpeechActive,
-                  color: AppColors.primary,
+          // Speech waveform with Retry Indicator
+          Builder(
+            builder: (context) {
+              // 🧪 LOGIC: Only show "Retry" RED if it SHOULD be listening but ISN'T
+              // and we aren't currently playing TTS.
+              // During relaxation (before 3s) it shouldn't be red.
+              final bool isStalled =
+                  _continuousSpeech.shouldBeListening &&
+                  !_continuousSpeech.isActive &&
+                  !_continuousSpeech.isPausedForTts &&
+                  (_showE || (_showRelaxation && _relaxationCountdown <= 3));
+
+              return GestureDetector(
+                onTap: _manualSpeechReset,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isStalled
+                        ? Colors.red.withValues(alpha: 0.1)
+                        : AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isStalled
+                          ? Colors.red.withValues(alpha: 0.3)
+                          : Colors.transparent,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isStalled) ...[
+                        _SpeechWaveform(
+                          isListening:
+                              _continuousSpeech.shouldBeListening &&
+                              !_continuousSpeech.isPausedForTts,
+                          isTalking: _isSpeechActive,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          _continuousSpeech.isPausedForTts
+                              ? Icons.volume_up_rounded
+                              : Icons.mic_none_rounded,
+                          size: 16,
+                          color: AppColors.primary,
+                        ),
+                      ] else ...[
+                        const Icon(
+                          Icons.refresh_rounded,
+                          size: 16,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'TAP TO RETRY',
+                          style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.mic_none_rounded,
-                  size: 14,
-                  color: AppColors.primary,
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),
