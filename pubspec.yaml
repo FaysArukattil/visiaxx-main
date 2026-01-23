@@ -29,7 +29,7 @@ dependencies:
 
   # Speech & Audio
   flutter_tts: ^4.2.0
-  speech_to_text: ^7.0.0
+  speech_to_text: ^7.3.0
   audioplayers: ^6.1.0
   
   # PDF Generation
