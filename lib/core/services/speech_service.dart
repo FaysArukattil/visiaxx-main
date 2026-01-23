@@ -4,13 +4,9 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 
-/// ✅ FIXED Speech Recognition Service
-/// Key fixes:
-/// - Better TTS pause handling
-/// - Simplified buffer system
-/// - More reliable callbacks
-/// - Device-agnostic locale selection
-/// - On-device only (no cloud fallback)
+/// ✅ STABLE Offline Speech Recognition Service
+/// Transitioned to strictly offline-first logic with reactive partial matching
+/// for zero-latency command recognition.
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
   bool _isInitialized = false;
@@ -76,39 +72,27 @@ class SpeechService {
       _isInitialized = await _speechToText.initialize(
         onError: (error) {
           debugPrint('[SpeechService] ❌ Speech error: ${error.errorMsg}');
-          _isListening = false;
 
-          // ⚠️ If the language error occurs, log diagnostics
+          // ⚠️ Handle missing offline models specifically
           if (error.errorMsg.contains('error_language_not_supported') ||
               error.errorMsg.contains('error_language_unavailable')) {
             debugPrint(
-              '[SpeechService] 🛑 Language error - locale may not be supported for on-device recognition',
+              '[SpeechService] 🛑 Critical: Offline model missing for current locale',
             );
-            // Don't spam retries for language errors
-            return;
           }
 
-          // Call callbacks safely
-          if (onListeningStopped != null) {
-            onListeningStopped!();
-          }
-          if (onError != null) {
-            onError!(error.errorMsg);
-          }
+          _isListening = false;
+          if (onListeningStopped != null) onListeningStopped!();
+          if (onError != null) onError!(error.errorMsg);
         },
         onStatus: (status) {
-          debugPrint('[SpeechService] 📊 Status changed: $status');
+          debugPrint('[SpeechService] 📊 Status: $status');
           if (status == 'done' || status == 'notListening') {
             _isListening = false;
-            if (onListeningStopped != null) {
-              onListeningStopped!();
-            }
+            if (onListeningStopped != null) onListeningStopped!();
           } else if (status == 'listening') {
             _isListening = true;
-            if (onListeningStarted != null) {
-              onListeningStarted!();
-            }
-            debugPrint('[SpeechService] ✅ Listening started successfully');
+            if (onListeningStarted != null) onListeningStarted!();
           }
         },
         debugLogging: kDebugMode,
@@ -126,211 +110,171 @@ class SpeechService {
     }
   }
 
-  /// START LISTENING (No auto-restart - managed externally)
+  /// START LISTENING - Optimized for Offline Reactive Recognition
   Future<void> startListening({
     Duration? listenFor,
     Duration? pauseFor,
-    int bufferMs = 1500,
-    double minConfidence = 0.1,
+    int bufferMs = 800, // Faster buffer for offline mode
+    double minConfidence =
+        0.0, // Accept any offline match (reactive parsing filters it)
   }) async {
-    debugPrint('[SpeechService] 🎤 startListening called');
+    debugPrint('[SpeechService] 🎤 Requesting Offline Listen...');
 
     if (!_isInitialized) {
-      debugPrint(
-        '[SpeechService] ⚠️ Not initialized, attempting to initialize...',
-      );
       final success = await initialize();
-      if (!success) {
-        debugPrint(
-          '[SpeechService] ❌ Initialization failed, cannot start listening',
-        );
-        onError?.call('Speech recognition not available');
-        return;
-      }
+      if (!success) return;
     }
 
-    // Stop if already listening
     if (_isListening) {
-      debugPrint('[SpeechService] ⚠️ Already listening, stopping first...');
       await stopListening();
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 200));
     }
 
     _lastRecognizedValue = null;
     _lastConfidence = 0.0;
     _bufferTimer?.cancel();
 
-    debugPrint('[SpeechService] 🎤 Starting to listen...');
-
     try {
-      // 🆕 Select best available locale for on-device recognition
+      // 🎯 Find best locale (prioritizes system default)
       final selectedLocale = await _selectBestAvailableLocale();
       final localeId = selectedLocale?.localeId;
 
-      if (localeId != null) {
-        debugPrint('[SpeechService] 🎯 Using locale: $localeId');
-      } else {
-        debugPrint(
-          '[SpeechService] ⚠️ No locale selected, using system default',
-        );
-      }
+      debugPrint(
+        '[SpeechService] 🎯 Engine Locale: ${localeId ?? "System Default"}',
+      );
 
       await _speechToText.listen(
         onResult: (result) => _onSpeechResult(result, bufferMs, minConfidence),
         listenFor: listenFor ?? const Duration(seconds: 60),
-        pauseFor:
-            pauseFor ??
-            const Duration(seconds: 15), // Extended for slower tablets
-        onSoundLevelChange: (level) {
-          onSoundLevelChange?.call(level);
-        },
+        pauseFor: pauseFor ?? const Duration(seconds: 15),
+        onSoundLevelChange: (level) => onSoundLevelChange?.call(level),
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: false,
-          listenMode: ListenMode.confirmation,
-          // No onDevice parameter - let Android auto-select
-          // Will use offline if available, cloud otherwise
+          listenMode:
+              ListenMode.dictation, // Dictation is more robust for short words
+          onDevice: true, // ⚠️ FORCE OFFLINE ONLY
         ),
-        localeId: localeId, // ✅ Use selected locale or null for system default
+        localeId: localeId,
       );
-
-      debugPrint('[SpeechService] ✅ Listen started successfully');
     } catch (e) {
-      debugPrint('[SpeechService] ❌ Error starting listen: $e');
+      debugPrint('[SpeechService] ❌ StartListen Error: $e');
       _isListening = false;
       onListeningStopped?.call();
-      onError?.call('Failed to start listening: $e');
     }
   }
 
-  /// 🆕 Select best available locale for on-device recognition
+  /// 🚀 REACTIVE: Select best available locale (Prioritizes System Default)
   Future<LocaleName?> _selectBestAvailableLocale() async {
     try {
       final availableLocales = await _speechToText.locales();
+      final systemLocale = await _speechToText.systemLocale();
 
-      if (availableLocales.isEmpty) {
-        debugPrint('[SpeechService] ⚠️ No locales available!');
-        return null;
+      if (availableLocales.isEmpty) return null;
+
+      // 1. If system locale is English, use it directly (Samsung/iOS cases)
+      if (systemLocale != null) {
+        final id = systemLocale.localeId.toLowerCase();
+        if (id.startsWith('en')) {
+          final match = availableLocales.firstWhere(
+            (l) => l.localeId.toLowerCase() == id,
+            orElse: () => LocaleName('', ''),
+          );
+          if (match.localeId.isNotEmpty) {
+            debugPrint(
+              '[SpeechService] ✅ Found System English: ${match.localeId}',
+            );
+            return match;
+          }
+        }
       }
 
-      // Log available locales for debugging
-      debugPrint(
-        '[SpeechService] 📋 Available locales (${availableLocales.length}):',
-      );
-      for (var locale in availableLocales.take(10)) {
-        debugPrint('  - ${locale.localeId}: ${locale.name}');
-      }
-
-      // Preferred locale chain for English
-      final preferredLocales = ['en_IN', 'en_GB', 'en_UK', 'en_US', 'en_AU'];
-
-      // Try preferred locales first
-      for (var preferred in preferredLocales) {
+      // 2. Fallback to common English variants already on device
+      final englishPriority = ['en_gb', 'en_us', 'en_in', 'en_au'];
+      for (var pref in englishPriority) {
         final match = availableLocales.firstWhere(
-          (l) => l.localeId == preferred,
+          (l) => l.localeId.toLowerCase() == pref,
           orElse: () => LocaleName('', ''),
         );
         if (match.localeId.isNotEmpty) {
           debugPrint(
-            '[SpeechService] ✅ Selected preferred locale: ${match.localeId}',
+            '[SpeechService] ✅ Found English Fallback: ${match.localeId}',
           );
           return match;
         }
       }
 
-      // Fall back to any English variant
+      // 3. Fallback to ANY English
       final anyEnglish = availableLocales.firstWhere(
-        (l) => l.localeId.startsWith('en_') || l.localeId.startsWith('en-'),
+        (l) => l.localeId.toLowerCase().startsWith('en'),
         orElse: () => LocaleName('', ''),
       );
-      if (anyEnglish.localeId.isNotEmpty) {
-        debugPrint(
-          '[SpeechService] ✅ Selected English variant: ${anyEnglish.localeId}',
-        );
-        return anyEnglish;
-      }
+      if (anyEnglish.localeId.isNotEmpty) return anyEnglish;
 
-      // Last resort: use system locale if it's in the list
-      final systemLocale = await _speechToText.systemLocale();
-      if (systemLocale != null) {
-        final systemMatch = availableLocales.firstWhere(
-          (l) => l.localeId == systemLocale.localeId,
-          orElse: () => LocaleName('', ''),
-        );
-        if (systemMatch.localeId.isNotEmpty) {
-          debugPrint(
-            '[SpeechService] ✅ Using system locale: ${systemMatch.localeId}',
-          );
-          return systemMatch;
-        }
-      }
-
-      // Ultimate fallback: first available locale
-      final firstAvailable = availableLocales.first;
-      debugPrint(
-        '[SpeechService] ⚠️ Using first available locale: ${firstAvailable.localeId}',
-      );
-      return firstAvailable;
+      return systemLocale ?? availableLocales.first;
     } catch (e) {
-      debugPrint('[SpeechService] ❌ Error selecting locale: $e');
+      debugPrint('[SpeechService] ❌ Locale Selection Error: $e');
       return null;
     }
   }
 
-  /// Speech result handler
+  /// 🚀 REACTIVE Result Processing
+  /// Instantly scans partial results for directions/numbers to avoid latency.
   void _onSpeechResult(
     SpeechRecognitionResult result,
     int bufferMs,
     double minConfidence,
   ) {
     final recognized = result.recognizedWords.toLowerCase().trim();
-    final confidence = result.confidence;
+    if (recognized.isEmpty) return;
 
     debugPrint(
-      '[SpeechService] 🎤 Recognized: "$recognized" (confidence: ${(confidence * 100).toStringAsFixed(0)}%, final: ${result.finalResult})',
+      '[SpeechService] 🎤 Recognition: "$recognized" (final: ${result.finalResult})',
     );
 
-    if (recognized.isNotEmpty) {
-      // Always notify for visual feedback
-      if (onSpeechDetected != null) {
-        onSpeechDetected!(recognized);
-      }
+    // 🏎️ INSTANT PARSE (Reactive Mode)
+    // Check if the current partial string already contains a valid command
+    final direction = parseDirection(recognized);
+    final number = parseNumber(recognized);
 
-      // Store result
+    if (direction != null || number != null) {
+      debugPrint('[SpeechService] ⚡ REACTIVE MATCH! STOPPING ASAP.');
       _lastRecognizedValue = recognized;
-      _lastConfidence = confidence;
+      _lastConfidence = result.confidence;
 
-      // Accept even LOW confidence results
-      if (confidence >= minConfidence) {
-        debugPrint('[SpeechService] ✅ Accepted (confidence OK)');
-      } else {
-        debugPrint('[SpeechService] ⚠️ Low confidence but stored anyway');
+      // Notify callback immediately!
+      if (onResult != null) {
+        onResult!(recognized);
       }
 
-      // Reset buffer timer
-      _bufferTimer?.cancel();
+      // Stop listening to prevent duplicate triggers
+      stopListening();
+      return;
+    }
 
-      if (result.finalResult) {
-        // Final result
-        if (_lastRecognizedValue != null) {
-          debugPrint('[SpeechService] ✅ FINAL result: "$_lastRecognizedValue"');
-          if (onResult != null) {
-            onResult!(_lastRecognizedValue!);
-          }
+    // Standard flow (visual feedback)
+    if (onSpeechDetected != null) {
+      onSpeechDetected!(recognized);
+    }
+
+    _lastRecognizedValue = recognized;
+    _lastConfidence = result.confidence;
+
+    _bufferTimer?.cancel();
+
+    if (result.finalResult) {
+      if (_lastRecognizedValue != null && onResult != null) {
+        onResult!(_lastRecognizedValue!);
+      }
+    } else {
+      _bufferTimer = Timer(Duration(milliseconds: bufferMs), () {
+        if (_lastRecognizedValue != null && _isListening) {
+          debugPrint(
+            '[SpeechService] ⏱️ Buffer Timeout: "$_lastRecognizedValue"',
+          );
+          if (onResult != null) onResult!(_lastRecognizedValue!);
         }
-      } else {
-        // Partial result - wait for buffer period
-        _bufferTimer = Timer(Duration(milliseconds: bufferMs), () {
-          if (_lastRecognizedValue != null && _isListening) {
-            debugPrint(
-              '[SpeechService] ⏱️ Buffer timeout - using value: "$_lastRecognizedValue"',
-            );
-            if (onResult != null) {
-              onResult!(_lastRecognizedValue!);
-            }
-          }
-        });
-      }
+      });
     }
   }
 
@@ -584,7 +528,11 @@ class SpeechService {
   /// Dispose resources
   void dispose() {
     _bufferTimer?.cancel();
+    _wordWaitTimer?.cancel();
     _speechToText.stop();
     _speechToText.cancel();
   }
+
+  // Add missing field if needed (none identified yet, but checking logic)
+  Timer? _wordWaitTimer;
 }
