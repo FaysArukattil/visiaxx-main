@@ -917,7 +917,13 @@ class _PractitionerDashboardScreenState
   }
 
   Future<String?> _showDownloadOptionsDialog() async {
-    final totalResults = _cache.getCachedData()?['allResults']?.length ?? 0;
+    // Calculate active results only (exclude hidden/deleted ones)
+    final allResults = _allResults;
+    final activeResults = allResults
+        .where((r) => !_hiddenResultIds.contains(r.id))
+        .toList();
+    final totalResults = activeResults.length;
+
     final filteredCount = _filteredResults.length;
     final hasFilters =
         _selectedPeriod != 'all' ||
