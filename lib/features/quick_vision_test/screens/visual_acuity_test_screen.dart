@@ -946,6 +946,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   void _recordResponse(String? userResponse, {String source = 'unknown'}) {
     debugPrint(
+      '[VisualAcuity] 🎬 _recordResponse START (source: $source, value: $userResponse)',
+    );
+    if (!_waitingForResponse) {
+      debugPrint(
+        '[VisualAcuity] ⚠️ _recordResponse ABORT: Already recorded/waiting=false',
+      );
+      return;
+    }
+    debugPrint(
       '[VisualAcuity] ✅ _recordResponse called from $source with: $userResponse',
     );
     if (!_waitingForResponse) {
@@ -1037,6 +1046,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   // … FIXED METHOD: Test exactly 7 plates (one per level)
   void _evaluateAndContinue() {
+    debugPrint('[VisualAcuity] 🔄 _evaluateAndContinue START');
     setState(() => _showResult = false);
 
     // … ALWAYS move to next level after any response (correct or incorrect)
@@ -1160,22 +1170,25 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Future<void> _manualSpeechReset() async {
-    debugPrint('[VisualAcuity] 🔄 Manual speech reset triggered');
-    HapticFeedback.vibrate();
-
     if (_isResettingSpeech) return;
-    _isResettingSpeech = true;
+
+    debugPrint('[VisualAcuity] 🌪️ MANUALLY triggering speech reset');
+    if (mounted) setState(() => _isResettingSpeech = true);
 
     try {
-      // ✅ FAST RESET: Use the manager's dedicated retry method
-      // This is much faster and more reliable than a full manual re-init
-      await _continuousSpeech.retryListening();
+      // 🛡️ Ensure we doesn't hang the UI forever if native call is wedged
+      await _continuousSpeech.retryListening().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('[VisualAcuity] ⛔ Manual retry TIMED OUT');
+          if (mounted) _showResetErrorSnackbar();
+          throw TimeoutException('Speech reset timed out');
+        },
+      );
 
-      if (mounted) {
-        _showResetSuccessSnackbar();
-      }
+      if (mounted) _showResetSuccessSnackbar();
     } catch (e) {
-      debugPrint('[VisualAcuity] ❌ Manual reset error: $e');
+      debugPrint('[VisualAcuity] 🚨 Manual retry FAILED: $e');
       if (mounted) _showResetErrorSnackbar();
     } finally {
       if (mounted) {
@@ -1190,10 +1203,17 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
+          mainAxisSize: MainAxisSize.min,
           children: const [
             Icon(Icons.check_circle, color: Colors.white, size: 20),
             SizedBox(width: 8),
-            Text('Voice recognition reset successfully'),
+            Flexible(
+              child: Text(
+                'Voice system ready',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         duration: const Duration(seconds: 2),
@@ -1210,10 +1230,17 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
+          mainAxisSize: MainAxisSize.min,
           children: const [
             Icon(Icons.error_outline, color: Colors.white, size: 20),
             SizedBox(width: 8),
-            Text('Reset failed - please try again'),
+            Flexible(
+              child: Text(
+                'Reset failed - try again',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         duration: const Duration(seconds: 2),
@@ -1543,46 +1570,53 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           // Speech waveform with Retry Indicator
           Builder(
             builder: (context) {
-              // ✅ FIXED LOGIC: Check actual continuous speech manager state
               final bool shouldBeListening =
                   _continuousSpeech.shouldBeListening;
-              final bool isActuallyListening = _continuousSpeech.isActive;
+              final bool isActuallyListening = _isListening;
               final bool isPausedForTts = _continuousSpeech.isPausedForTts;
+              final bool isRestarting = _continuousSpeech.isRestartPending;
 
-              // Only show as "stalled" if:
-              // 1. We WANT it to be listening (shouldBeListening = true)
-              // 2. It's NOT paused for TTS
-              // 3. It's NOT actually listening
-              // 4. We're in a phase where it SHOULD be listening (E display or late relaxation)
               final bool isInListeningPhase =
                   _showE || (_showRelaxation && _relaxationCountdown <= 3);
 
+              // STALLED = Engine is OFF but should be ON, and isn't currently TRYING to fix itself
               final bool isStalled =
                   shouldBeListening &&
                   !isActuallyListening &&
                   !isPausedForTts &&
+                  // !isRestarting && // Removed to allow manual retry during auto-reconnection
                   isInListeningPhase &&
-                  !_isPausedForExit && // Don't show stalled during pause dialog
-                  !_isTestPausedForDistance; // Don't show stalled during distance pause
+                  !_isPausedForExit &&
+                  !_isTestPausedForDistance &&
+                  !_isResettingSpeech;
+
+              final bool isWorking = isActuallyListening && !isPausedForTts;
 
               return GestureDetector(
-                onTap: isStalled
-                    ? _manualSpeechReset
-                    : null, // Only clickable when stalled
-                child: Container(
+                onTap: isStalled ? _manualSpeechReset : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 10,
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: isStalled
                         ? Colors.red.withValues(alpha: 0.1)
-                        : AppColors.primary.withValues(alpha: 0.08),
+                        : (isWorking
+                              ? AppColors.success.withValues(alpha: 0.1)
+                              : (isRestarting
+                                    ? AppColors.primary.withValues(alpha: 0.1)
+                                    : AppColors.primary.withValues(
+                                        alpha: 0.05,
+                                      ))),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isStalled
                           ? Colors.red.withValues(alpha: 0.3)
-                          : Colors.transparent,
+                          : (isRestarting
+                                ? AppColors.primary.withValues(alpha: 0.3)
+                                : Colors.transparent),
                       width: 1,
                     ),
                   ),
@@ -1591,19 +1625,50 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                     children: [
                       if (!isStalled) ...[
                         _SpeechWaveform(
-                          isListening: isActuallyListening && !isPausedForTts,
+                          isListening: isWorking,
                           isTalking: _isSpeechActive,
-                          color: AppColors.primary,
+                          color: isWorking
+                              ? AppColors.success
+                              : (isRestarting
+                                    ? AppColors.primary
+                                    : AppColors.primary.withValues(alpha: 0.5)),
                         ),
                         const SizedBox(width: 8),
+                        if (isWorking)
+                          Text(
+                            'LISTENING',
+                            style: GoogleFonts.outfit(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.success,
+                              letterSpacing: 0.5,
+                            ),
+                          )
+                        else if (isRestarting)
+                          Text(
+                            'RECONNECTING...',
+                            style: GoogleFonts.outfit(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.primary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        if (isWorking || isRestarting) const SizedBox(width: 6),
                         Icon(
                           isPausedForTts
                               ? Icons.volume_up_rounded
-                              : (isActuallyListening
+                              : (isWorking
                                     ? Icons.mic
-                                    : Icons.mic_off),
+                                    : (isRestarting
+                                          ? Icons.sync
+                                          : Icons.mic_off)),
                           size: 16,
-                          color: AppColors.primary,
+                          color: isWorking
+                              ? AppColors.success
+                              : (isRestarting
+                                    ? AppColors.primary
+                                    : AppColors.primary.withValues(alpha: 0.5)),
                         ),
                       ] else ...[
                         const Icon(
