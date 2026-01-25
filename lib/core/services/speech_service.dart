@@ -96,16 +96,21 @@ class SpeechService {
       await Future.delayed(const Duration(milliseconds: 200));
 
       final system = await _speechToText.systemLocale();
+      debugPrint(
+        '[SpeechService] 🎤 Starting listening with locale: ${system?.localeId}',
+      );
 
       await _speechToText.listen(
         onResult: (result) => _handleResult(result, bufferMs),
-        listenFor: const Duration(seconds: 50),
-        pauseFor: const Duration(seconds: 10),
+        listenFor: const Duration(
+          seconds: 100,
+        ), // Increased for much longer uninterrupted sessions
+        pauseFor: const Duration(seconds: 10), // Standard stability
         onSoundLevelChange: (level) => onSoundLevelChange?.call(level),
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: false,
-          onDevice: true,
+          // onDevice removed as it causes immediate crashes/stops on many devices
         ),
         localeId: system?.localeId,
       );

@@ -831,9 +831,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       );
     });
 
-    // 🚀 NUCLEAR SYNC: Start mic ONLY when letter appears
+    // Start mic for new plate if not already active
     if (!_continuousSpeech.isActive) {
-      debugPrint('[VisualAcuity] 🎤 REQUESTING Mic start for new plate');
+      debugPrint('[VisualAcuity] 🎤 Starting mic for new plate');
       _continuousSpeech.start(bufferMs: 800);
     }
 
@@ -960,7 +960,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     debugPrint('[VisualAcuity] 🖱️ BUTTON PRESSED: ${direction.label}');
 
-    // ✅ CLEAR: Just flush the buffer to prevent clash, but don't stop the hardware
+    // Just flush the buffer to prevent clash, don't interfere with speech service
     _continuousSpeech.clearAccumulated();
 
     // Record response immediately
@@ -1620,20 +1620,20 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               // ⏳ GRACE PERIOD: HW takes ~1-2s to warm up on some devices
               final bool isInGracePeriod =
                   _lastPlateStartTime != null &&
-                  DateTime.now().difference(_lastPlateStartTime!).inSeconds < 2;
+                  DateTime.now().difference(_lastPlateStartTime!).inSeconds < 4;
 
               // STALLED = Engine is OFF but should be ON, and isn't currently TRYING to fix itself
               final bool isStalled =
                   shouldBeListening &&
                   !isActuallyListening &&
                   !isPausedForTts &&
-                  // !isRestarting && // Keep commented to allow manual override
+                  !isRestarting && // 🛡️ CRITICAL: Don't show stalled if we are in the middle of a restart
                   isInListeningPhase &&
                   !_isPausedForExit &&
                   !_isTestPausedForDistance &&
                   !_isResettingSpeech &&
                   !_eyeSwitchPending && // 🛡️ Hide during eye transition
-                  !isInGracePeriod; // 🛡️ Give hardware time to wake up
+                  !isInGracePeriod; // 🛡️ Give hardware time to wake up (now 4s)
 
               final bool isWorking = isActuallyListening && !isPausedForTts;
 
