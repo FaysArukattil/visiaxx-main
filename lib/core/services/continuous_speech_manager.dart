@@ -221,10 +221,20 @@ class ContinuousSpeechManager {
     _isActive = false;
     onListeningStateChanged?.call(false);
 
-    if (_shouldBeListening && !_isPausedForTts) {
-      // Don't overwrite error-triggered restart
+    if (_shouldBeListening) {
+      // ✅ FIX: Always schedule restart if we should be listening
+      // Even if paused for TTS - resumeAfterTts() will handle it
       if (!_isRestartPending) {
-        _scheduleRestart();
+        if (_isPausedForTts) {
+          // Don't actually restart now, just mark as pending
+          // resumeAfterTts() will restart when TTS finishes
+          debugPrint(
+            '[ContinuousSpeech] Stopped during TTS - will restart after',
+          );
+          _isRestartPending = true;
+        } else {
+          _scheduleRestart();
+        }
       }
     }
   }
@@ -299,27 +309,67 @@ class ContinuousSpeechManager {
 
   Future<void> pauseForTts() async {
     if (_isPausedForTts) return;
-    debugPrint('[ContinuousSpeech] 🔇 Pausing for TTS');
+    debugPrint(
+      '[ContinuousSpeech] 🔇 Logical pause for TTS (keeping mic active)',
+    );
     _isPausedForTts = true;
     _restartTimer?.cancel();
 
-    // ✅ FIX: Use stopListening instead of cancel to preserve initialized state
-    if (_isActive || _speechService.isListening) {
-      await _speechService.stopListening();
-    }
+    // ✅ CRITICAL FIX: Don't actually stop listening - just ignore results logically
+    // The _handleResult() already checks _isPausedForTts and ignores results (line 193)
+    // This allows seamless resumption without engine restart delays
+    // Fixes issue where voice stops working after button press or incorrect answer
   }
 
   Future<void> resumeAfterTts() async {
     if (!_isPausedForTts) return;
     debugPrint('[ContinuousSpeech] 🔊 Resuming after TTS');
     _isPausedForTts = false;
-    _restartAttempts = 0;
 
-    if (_shouldBeListening) {
-      // ✅ FIX: Shorter delay (800ms instead of 1500ms) for faster response
-      await Future.delayed(const Duration(milliseconds: 800));
-      await _startListening(force: true);
+    // ✅ CRITICAL FIX: Check if engine is still actually listening
+    // If our "logical pause" worked, it should still be active
+    // If not, we need to restart it
+    if (!_shouldBeListening) return;
+
+    if (_isActive && _speechService.isListening) {
+      // Perfect! Engine never stopped, just resume accepting results
+      debugPrint('[ContinuousSpeech] ✅ Engine still running, instant resume!');
+      return;
     }
+
+    // Engine stopped for some reason (error, timeout, etc.) - restart it
+    debugPrint('[ContinuousSpeech] ⚠️ Engine stopped, restarting...');
+    _restartAttempts = 0;
+    await _startListening(force: true);
+  }
+
+  /// Manual retry - forces immediate restart bypassing delays
+  /// Called from UI retry buttons when user taps to restart listening
+  Future<void> retryListening() async {
+    debugPrint('[ContinuousSpeech] 🔄 Manual retry requested from UI');
+
+    // Clear any pending restart timers
+    _restartTimer?.cancel();
+    _isRestartPending = false;
+
+    // Reset pause state
+    _isPausedForTts = false;
+
+    // Reset failure counters for fresh start
+    _restartAttempts = 0;
+    _rapidFailureCount = 0;
+
+    // Clear accumulated speech
+    clearAccumulated();
+
+    // Force restart regardless of current state
+    _shouldBeListening = true;
+    await _startListening(
+      listenDuration: const Duration(minutes: 10),
+      minConfidence: 0.15,
+      bufferMs: 1000,
+      force: true,
+    );
   }
 
   Future<void> stop() async {

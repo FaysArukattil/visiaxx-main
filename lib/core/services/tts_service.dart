@@ -281,18 +281,18 @@ class TtsService {
 
   /// Speak correct answer feedback
   Future<void> speakCorrect(String direction) async {
-    // Optional: Provide positive feedback
-    // For tests, it's often better to be silent to not disrupt flow
-    // Uncomment if feedback is desired:
-    // await speak('Correct', speechRate: 0.7);
+    // ✅ FIX: Return early without calling any TTS methods
+    // This prevents TTS state change handlers from firing and pausing voice recognition
+    // Even calling speak() with comments triggers the handlers
+    return;
   }
 
   /// Speak incorrect answer feedback
   Future<void> speakIncorrect(String direction) async {
-    // Optional: Provide feedback
-    // For tests, silence is usually better
-    // Uncomment if feedback is desired:
-    // await speak('Incorrect', speechRate: 0.7);
+    // ✅ FIX: Return early without calling any TTS methods
+    // This prevents TTS state change handlers from firing and pausing voice recognition
+    // Even calling speak() with comments triggers the handlers
+    return;
   }
 
   /// Speak test phase (e.g., "Starting visual acuity test")

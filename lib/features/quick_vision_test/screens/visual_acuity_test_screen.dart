@@ -394,22 +394,25 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       });
 
       // … RAPID RESPONSE: If we match a direction even in partial speech, trigger now!
-      // … GUARD: Results arriving within ~800ms of rotation are ignored (likely from relaxation)
       if (_showE && _waitingForResponse) {
-        if (_eDisplayStartTime != null) {
-          final sinceRotation = DateTime.now().difference(_eDisplayStartTime!);
-          if (sinceRotation < const Duration(milliseconds: 1500)) {
-            return;
-          }
-        }
-
         final direction = SpeechService.parseDirection(partialResult);
         if (direction != null) {
           debugPrint(
-            '[VisualAcuity] ¡ Rapid recognition from partial speech: $direction',
+            '[VisualAcuity] ¡ Rapid recognition from partial speech: $direction (Bypassing guard)',
           );
           _recordResponse(direction, source: 'partial_speech');
           return;
+        }
+
+        // … GUARD: Results arriving too quickly that AREN'T commands are ignored
+        if (_eDisplayStartTime != null) {
+          final sinceRotation = DateTime.now().difference(_eDisplayStartTime!);
+          if (sinceRotation < const Duration(milliseconds: 500)) {
+            debugPrint(
+              '[VisualAcuity] ⏱️ Ignoring partial result: arrived too fast after rotation',
+            );
+            return;
+          }
         }
 
         // Check for blurry
@@ -423,6 +426,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         ];
         for (var keyword in blurryKeywords) {
           if (normalized.contains(keyword)) {
+            debugPrint(
+              '[VisualAcuity] ✅ Recognized "blurry" in partial (Bypassing guard)',
+            );
             _recordResponse('blurry');
             return;
           }
@@ -865,63 +871,64 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       return;
     }
 
-    // … NEW: Strict timing guard - ignore speech that arrived too quickly after rotation
-    // Results arriving within ~1500ms of rotation are likely for the PREVIOUS orientation
-    if (_eDisplayStartTime != null) {
-      final sinceRotation = DateTime.now().difference(_eDisplayStartTime!);
-      if (sinceRotation < const Duration(milliseconds: 1500)) {
-        debugPrint(
-          '[VisualAcuity] ⏱️ Ignoring final result: arrived too fast after rotation (${sinceRotation.inMilliseconds}ms)',
-        );
-        return;
-      }
-    }
-
-    debugPrint('[VisualAcuity] Voice recognized: "$recognized"');
-
     final normalized = recognized.toLowerCase().trim();
 
-    // Check for blurry keywords first
-    final blurryKeywords = [
-      'blurry',
-      'blur',
-      'bloody', // Common misrecognition of 'blurry'
-      'cannot see',
-      'can\'t see',
-      'kanchi', // Common misrecognition of 'can't see'
-      'cannot see clearly',
-      'can\'t see clearly',
-      'too blurry',
-      'not clear',
-      'nothing', // User can't see anything
-      'country', // Common misrecognition of 'can't see'
-    ];
-
-    for (var keyword in blurryKeywords) {
-      if (normalized.contains(keyword)) {
-        debugPrint('[VisualAcuity] ✅ Recognized "blurry" keyword');
-        _recordResponse(
-          'blurry',
-          source: 'voice_blurry_keyword',
-        ); // Record "blurry" as the response
-        return;
-      }
-    }
-
-    // If not blurry, try to match a direction
+    // 1. Try to match a direction FIRST (Bypass timing guard for clear commands)
     debugPrint('[VisualAcuity] 💬 Parsing direction from: "$recognized"');
     final direction = SpeechService.parseDirection(normalized);
     debugPrint('[VisualAcuity] ✅ Parsed direction: $direction');
 
     if (direction != null) {
-      debugPrint('[VisualAcuity] … Recording direction: $direction');
-      // … Update preview IMMEDIATELY so user sees what was recognized
+      debugPrint(
+        '[VisualAcuity] … Recording direction: $direction (Bypassing timing guard)',
+      );
       if (mounted) setState(() => _lastDetectedSpeech = recognized);
       _recordResponse(direction, source: 'voice_final');
       return;
-    } else {
-      debugPrint('[VisualAcuity] ❌ Direction is NULL - not recording');
     }
+
+    // 2. Check for blurry keywords (Also bypass guard for clear "blurry" intent)
+    final blurryKeywords = [
+      'blurry',
+      'blur',
+      'bloody',
+      'cannot see',
+      'can\'t see',
+      'kanchi',
+      'cannot see clearly',
+      'can\'t see clearly',
+      'too blurry',
+      'not clear',
+      'nothing',
+      'country',
+    ];
+
+    for (var keyword in blurryKeywords) {
+      if (normalized.contains(keyword)) {
+        debugPrint(
+          '[VisualAcuity] ✅ Recognized "blurry" keyword (Bypassing timing guard)',
+        );
+        _recordResponse('blurry', source: 'voice_blurry_keyword');
+        return;
+      }
+    }
+
+    // 3. APPLY TIMING GUARD ONLY FOR UNRECOGNIZED SPEECH
+    // This prevents accidental triggers from previous plates but allows immediate
+    // correct commands to work (fixing the "Up" issue where it's too fast).
+    if (_eDisplayStartTime != null) {
+      final sinceRotation = DateTime.now().difference(_eDisplayStartTime!);
+      if (sinceRotation < const Duration(milliseconds: 500)) {
+        debugPrint(
+          '[VisualAcuity] ⏱️ Ignoring unrecognized speech: arrived too fast after rotation (${sinceRotation.inMilliseconds}ms)',
+        );
+        return;
+      }
+    }
+
+    debugPrint(
+      '[VisualAcuity] ❌ Direction/Blurry not matched from: "$normalized"',
+    );
   }
 
   void _handleButtonResponse(EDirection direction) {
@@ -1156,86 +1163,24 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     debugPrint('[VisualAcuity] 🔄 Manual speech reset triggered');
     HapticFeedback.vibrate();
 
-    // ✅ CRITICAL: Prevent concurrent resets
-    if (_isResettingSpeech) {
-      debugPrint('[VisualAcuity] ⚠️ Reset already in progress, ignoring');
-      return;
-    }
+    if (_isResettingSpeech) return;
     _isResettingSpeech = true;
 
     try {
-      // 🛑 Step 1: Stop everything cleanly
-      debugPrint('[VisualAcuity] 🛑 Stopping continuous speech...');
-      await _continuousSpeech.stop();
+      // ✅ FAST RESET: Use the manager's dedicated retry method
+      // This is much faster and more reliable than a full manual re-init
+      await _continuousSpeech.retryListening();
 
-      debugPrint('[VisualAcuity] 🛑 Cancelling speech service...');
-      await _speechService.cancel().timeout(
-        const Duration(seconds: 2),
-        onTimeout: () {
-          debugPrint('[VisualAcuity] ⚠️ Speech cancel timeout');
-        },
-      );
-
-      // 🧹 Step 2: Wait for native resources to fully release
-      debugPrint('[VisualAcuity] ⏳ Waiting for audio system to settle...');
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      // 🔄 Step 3: Re-initialize from scratch
-      debugPrint('[VisualAcuity] 🔄 Re-initializing speech service...');
-      final initialized = await _speechService.initialize();
-
-      if (!initialized) {
-        debugPrint('[VisualAcuity] ❌ Failed to reinitialize speech');
-        _showResetErrorSnackbar();
-        return;
-      }
-
-      debugPrint('[VisualAcuity] ✅ Speech service reinitialized');
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // 🎤 Step 4: Restart ONLY if we're in a listening phase
-      // Replace the restart section (after Step 3) with:
-      // 🎤 Step 4: Restart ONLY if we're in a listening phase
       if (mounted) {
-        final shouldRestart =
-            ((_showE && _waitingForResponse) ||
-                (_showRelaxation && _relaxationCountdown <= 3)) &&
-            !_isPausedForExit &&
-            !_isTestPausedForDistance;
-
-        if (shouldRestart) {
-          debugPrint('[VisualAcuity] 🎤 Restarting continuous listener...');
-          // ✅ FIX: Add small delay before restart
-          await Future.delayed(const Duration(milliseconds: 500));
-
-          await _continuousSpeech.start(
-            listenDuration: const Duration(minutes: 10),
-            minConfidence: 0.15,
-            bufferMs: 1000,
-            force: true,
-          );
-
-          // Wait a moment to verify it started
-          await Future.delayed(const Duration(milliseconds: 500));
-
-          if (_continuousSpeech.isActive) {
-            _showResetSuccessSnackbar();
-          } else {
-            debugPrint('[VisualAcuity] ⚠️ Restart appeared to fail');
-            _showResetErrorSnackbar();
-          }
-        } else {
-          debugPrint(
-            '[VisualAcuity] ℹ️ Not in listening phase, skipping restart',
-          );
-          _showResetSuccessSnackbar();
-        }
+        _showResetSuccessSnackbar();
       }
     } catch (e) {
       debugPrint('[VisualAcuity] ❌ Manual reset error: $e');
-      _showResetErrorSnackbar();
+      if (mounted) _showResetErrorSnackbar();
     } finally {
-      _isResettingSpeech = false;
+      if (mounted) {
+        setState(() => _isResettingSpeech = false);
+      }
     }
   }
 

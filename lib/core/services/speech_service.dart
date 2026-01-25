@@ -300,7 +300,7 @@ class SpeechService {
     final number = parseNumber(recognized);
 
     if (direction != null || number != null) {
-      debugPrint('[SpeechService] ⚡ REACTIVE MATCH! STOPPING ASAP.');
+      debugPrint('[SpeechService] ⚡ REACTIVE MATCH! Notifying...');
       _lastRecognizedValue = recognized;
       _lastConfidence = result.confidence;
 
@@ -309,11 +309,8 @@ class SpeechService {
         onResult!(recognized);
       }
 
-      // 💡 ALWAYS-LISTENING: We NO LONGER stop listening here.
-      // We just notify and keep the engine running for the next command.
-      // clearBuffer() should be called by the manager if it wants to reject further
-      // results for the same plate.
-      return;
+      // ✅ FIX: Do NOT return early. Allow the standard flow to cancel timers
+      // and handle finalResult flags. This prevents duplicate/stale triggers.
     }
 
     // Standard flow (visual feedback)
@@ -453,28 +450,13 @@ class SpeechService {
       'up': [
         'up',
         'upp',
-        'op',
         'top',
         'upper',
-        'above',
-        'ceiling',
-        'sky',
-        'north',
         'upward',
         'upwards',
         'up ward',
-        'upword',
-        'apward',
-        'uhpward',
-        'awkward',
-        'afford',
-        'appuard',
-        'appaurd',
-        'appuvert',
-        'appward',
-        'abort',
-        'about',
-        'aboard',
+        // ✅ BALANCED FIX: Removed overly generic words (about, abort, aboard, awkward, afford, etc.)
+        // but kept core recognition variants for reliability
       ],
       'down': [
         'down',
