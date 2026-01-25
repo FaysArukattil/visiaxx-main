@@ -25,6 +25,8 @@ import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/services/database_service.dart'; // RE-ADDED
+import '../../../core/services/auth_service.dart'; // RE-ADDED
+import '../../../data/models/user_model.dart';
 
 class PractitionerDashboardScreen extends StatefulWidget {
   const PractitionerDashboardScreen({super.key});
@@ -41,7 +43,9 @@ class _PractitionerDashboardScreenState
   final DashboardCacheService _cache = DashboardCacheService();
   final TestResultService _resultService = TestResultService();
   final DatabaseService _dbService = DatabaseService(); // RE-ADDED
+  final AuthService _authService = AuthService(); // RE-ADDED
   StreamSubscription<List<TestResultModel>>? _resultsSubscription;
+  StreamSubscription<UserModel?>? _profileSubscription; // NEW
 
   bool _isInitialLoading = true;
   bool _isFilterLoading = false;
@@ -51,6 +55,7 @@ class _PractitionerDashboardScreenState
   List<TestResultModel> _allResults = []; // NEW: Persistent list of all results
   List<TestResultModel> _filteredResults = [];
   List<PatientModel> _patients = [];
+  List<String> _hiddenResultIds = []; // NEW: Real-time hidden IDs
 
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -69,6 +74,7 @@ class _PractitionerDashboardScreenState
   void dispose() {
     _searchController.dispose();
     _resultsSubscription?.cancel();
+    _profileSubscription?.cancel(); // NEW
     super.dispose();
   }
 
@@ -90,7 +96,13 @@ class _PractitionerDashboardScreenState
         _isInitialLoading = false;
       }
 
-      // 2. Load Patients (needed for search matches)
+      // 2. Load User Profile (for hiddenResultIds)
+      final userProfile = await _authService.getUserData(user.uid);
+      if (mounted && userProfile != null) {
+        setState(() => _hiddenResultIds = userProfile.hiddenResultIds);
+      }
+
+      // 3. Load Patients (needed for search matches)
       final patients = await _patientService.getPatients(user.uid);
       if (mounted) {
         setState(() => _patients = patients);
@@ -114,7 +126,24 @@ class _PractitionerDashboardScreenState
         );
       }
 
-      // 4. Start Background Real-time Results Stream
+      // 4. Start Real-time Profile Listener (for hiddenResultIds)
+      debugPrint('[Dashboard] ðŸ”„ Starting real-time profile listener');
+      _profileSubscription = _authService.getUserStream(user.uid).listen((
+        userProfile,
+      ) {
+        if (mounted && userProfile != null) {
+          debugPrint(
+            '[Dashboard] ðŸ“¦ Profile update: ${userProfile.hiddenResultIds.length} hidden items',
+          );
+          setState(() {
+            _hiddenResultIds = userProfile.hiddenResultIds;
+            // Immediate re-filter of all results when hidden list changes
+            _applyFilters(_allResults);
+          });
+        }
+      });
+
+      // 5. Start Background Real-time Results Stream
       debugPrint('[Dashboard] ðŸ”„ Starting background real-time listener');
       _resultsSubscription = _resultService
           .getPractitionerResultsStream(user.uid)
@@ -193,7 +222,10 @@ class _PractitionerDashboardScreenState
       }
     }
 
-    var filtered = allResults;
+    // NEW: Always filter out hidden results first
+    var filtered = allResults
+        .where((r) => !_hiddenResultIds.contains(r.id))
+        .toList();
 
     // Apply custom date range if set (this overrides period filter)
     if (_startDate != null && _endDate != null) {

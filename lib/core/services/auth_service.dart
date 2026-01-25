@@ -309,7 +309,38 @@ class AuthService {
     }
   }
 
-  /// Refresh user data in background without blocking
+  /// Get real-time user stream
+  Stream<UserModel?> getUserStream(String uid) {
+    // We first need the lookup to know which collection to listen to
+    return _firestore
+        .collection('all_users_lookup')
+        .doc(uid)
+        .snapshots()
+        .asyncExpand((lookupSnap) {
+          if (!lookupSnap.exists || lookupSnap.data() == null) {
+            return Stream.value(null);
+          }
+
+          final collection = lookupSnap.data()!['collection'] as String;
+          final identityString = lookupSnap.data()!['identityString'] as String;
+
+          // Return the truly reactive stream of the user document
+          return _firestore
+              .collection(collection)
+              .doc(identityString)
+              .snapshots()
+              .map((userDoc) {
+                if (userDoc.exists && userDoc.data() != null) {
+                  final user = UserModel.fromMap(userDoc.data()!, userDoc.id);
+                  // Update local cache whenever we get a fresh stream update
+                  LocalStorageService().saveUserProfile(user);
+                  return user;
+                }
+                return null;
+              });
+        });
+  }
+
   Future<void> _refreshUserDataInBackground(String uid) async {
     try {
       final lookupDoc = await _firestore
@@ -512,4 +543,3 @@ class AuthResult {
     return AuthResult._(isSuccess: false, message: message);
   }
 }
-
