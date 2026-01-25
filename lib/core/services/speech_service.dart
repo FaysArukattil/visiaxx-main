@@ -6,8 +6,8 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 
-/// ✅ STABLE Low-Level Offline Speech Recognition Wrapper
-/// Provides synchronized native access to prevent hardware deadlocks.
+/// ✅ FINAL STAND Offline Speech Recognition Service
+/// Simple, rock-solid serialized native bridge.
 class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
   bool _isInitialized = false;
@@ -41,9 +41,8 @@ class SpeechService {
     final completer = Completer<void>();
     _nativeOperation = completer.future;
     try {
-      await call().timeout(const Duration(seconds: 6));
+      await call().timeout(const Duration(seconds: 8));
     } catch (_) {
-      // Logic handled in callbacks
     } finally {
       if (!completer.isCompleted) completer.complete();
       _nativeOperation = null;
@@ -86,26 +85,29 @@ class SpeechService {
     }
   }
 
-  Future<void> startListening({
-    Duration? listenFor,
-    Duration? pauseFor,
-    int bufferMs = 800,
-    double minConfidence = 0.0,
-  }) async {
+  Future<void> startListening({int bufferMs = 800}) async {
     if (!_isInitialized && !await initialize()) return;
+
     await _safeNativeCall(() async {
-      final locale = await _speechToText.systemLocale();
+      await _speechToText
+          .cancel()
+          .timeout(const Duration(seconds: 1))
+          .catchError((_) => {});
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      final system = await _speechToText.systemLocale();
+
       await _speechToText.listen(
         onResult: (result) => _handleResult(result, bufferMs),
-        listenFor: listenFor ?? const Duration(seconds: 60),
-        pauseFor: pauseFor ?? const Duration(seconds: 15),
+        listenFor: const Duration(seconds: 50),
+        pauseFor: const Duration(seconds: 10),
         onSoundLevelChange: (level) => onSoundLevelChange?.call(level),
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: false,
           onDevice: true,
         ),
-        localeId: locale?.localeId,
+        localeId: system?.localeId,
       );
     });
   }
@@ -123,7 +125,6 @@ class SpeechService {
 
     if (result.finalResult) {
       _lastReactiveMatch = null;
-      onResult?.call(recognized);
     }
 
     onSpeechDetected?.call(recognized);
@@ -147,6 +148,7 @@ class SpeechService {
     _nativeOperation = null;
     await _speechToText.cancel().catchError((_) => {});
     _isInitialized = false;
+    _isListening = false;
     return await initialize();
   }
 
@@ -155,16 +157,34 @@ class SpeechService {
   }
 
   static String? parseDirection(String s) {
-    if (s.contains('up') || s.contains('top')) return 'up';
-    if (s.contains('down') || s.contains('bottom')) return 'down';
-    if (s.contains('left')) return 'left';
-    if (s.contains('right')) return 'right';
-    if (s.contains('blur')) return 'blurry';
+    s = s.toLowerCase();
+    if (s.contains('up') ||
+        s.contains('top') ||
+        s.contains('app') ||
+        s.contains('ab'))
+      return 'up';
+    if (s.contains('down') || s.contains('bottom') || s.contains('done'))
+      return 'down';
+    if (s.contains('left') ||
+        s.contains('lift') ||
+        s.contains('life') ||
+        s.contains('leaf'))
+      return 'left';
+    if (s.contains('right') ||
+        s.contains('write') ||
+        s.contains('light') ||
+        s.contains('ride'))
+      return 'right';
+    if (s.contains('blur') ||
+        s.contains('see') ||
+        s.contains('nothing') ||
+        s.contains('clear'))
+      return 'blurry';
     return null;
   }
 
   bool get isListening => _isListening || _speechToText.isListening;
-  bool get isReady => _isInitialized;
+  bool get isReady => _isInitialized && _isListening;
 
   Future<void> dispose() async {
     await _speechToText.cancel();

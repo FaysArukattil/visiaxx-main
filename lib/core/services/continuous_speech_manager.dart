@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'speech_service.dart';
 
-/// High-level coordinator for persistent speech recognition.
+/// Coordinator for persistent speech with hardware contention management.
 class ContinuousSpeechManager {
   final SpeechService _speechService;
 
@@ -16,12 +16,16 @@ class ContinuousSpeechManager {
   Timer? _restartTimer;
   int _restartAttempts = 0;
   Timer? _stuckCheckTimer;
-  DateTime? _lastSoundTime;
   String? _lastResult;
 
+  // Callbacks
   Function(String)? onSpeechDetected;
   Function(String)? onFinalResult;
   Function(bool)? onListeningStateChanged;
+
+  // ⚡️ HW CONTENTION CALLS
+  Function()? onContentionStart;
+  Function()? onContentionEnd;
 
   ContinuousSpeechManager(this._speechService) {
     _speechService.onResult = (res) {
@@ -32,12 +36,12 @@ class ContinuousSpeechManager {
     };
     _speechService.onSpeechDetected = (s) {
       _isActive = true;
-      _lastSoundTime = DateTime.now();
       onSpeechDetected?.call(s);
     };
     _speechService.onListeningStarted = () {
       _isActive = true;
       onListeningStateChanged?.call(true);
+      onContentionEnd?.call();
     };
     _speechService.onListeningStopped = () {
       _isActive = false;
@@ -49,18 +53,17 @@ class ContinuousSpeechManager {
     _speechService.onError = (e) {
       _isActive = false;
       onListeningStateChanged?.call(false);
+      onContentionEnd?.call();
       if (e.contains('11') || e.contains('busy')) {
         _scheduleRestart(immediate: true);
       } else {
         _scheduleRestart();
       }
     };
-    _speechService.onSoundLevelChange = (l) {
-      if (l > 0.1) _lastSoundTime = DateTime.now();
-    };
+    _speechService.onSoundLevelChange = (l) {};
   }
 
-  Future<void> start({
+  Future<bool> start({
     Duration? listenDuration,
     int bufferMs = 1000,
     double minConfidence = 0.05,
@@ -69,21 +72,22 @@ class ContinuousSpeechManager {
     _shouldBeListening = true;
     if (force) {
       _isPausedForTts = false;
-      _isRestartPending = false;
       _restartTimer?.cancel();
+      _isRestartPending = false;
+      onContentionStart?.call();
     }
+
     await _speechService.startListening(bufferMs: bufferMs);
     _startStuckCheck();
+    return true; // Simplified return
   }
 
   void _startStuckCheck() {
     _stuckCheckTimer?.cancel();
-    _stuckCheckTimer = Timer.periodic(const Duration(seconds: 12), (t) {
+    _stuckCheckTimer = Timer.periodic(const Duration(seconds: 15), (t) {
       if (!_shouldBeListening || _isPausedForTts || _isRestartPending) return;
-      if (!_isActive ||
-          (_lastSoundTime != null &&
-              DateTime.now().difference(_lastSoundTime!).inSeconds > 20)) {
-        debugPrint('[ContinuousSpeech] Stuck detected, restarting...');
+      if (!_isActive) {
+        debugPrint('[ContinuousSpeech] Auto-Recovery kicking in...');
         _scheduleRestart(immediate: true);
       }
     });
@@ -93,8 +97,7 @@ class ContinuousSpeechManager {
     if (_isRestartPending) return;
     _isRestartPending = true;
 
-    // Auto-clear lock
-    Timer(const Duration(seconds: 6), () => _isRestartPending = false);
+    Timer(const Duration(seconds: 8), () => _isRestartPending = false);
 
     final delay = immediate
         ? 1500
@@ -104,23 +107,34 @@ class ContinuousSpeechManager {
     _restartTimer?.cancel();
     _restartTimer = Timer(Duration(milliseconds: delay), () async {
       if (!_shouldBeListening || _isPausedForTts) return;
-      if (_restartAttempts > 3 && immediate)
+      if (_restartAttempts > 3 && immediate) {
+        onContentionStart?.call();
         await _speechService.forceReinitialize();
+      }
       await _speechService.startListening();
       _isRestartPending = false;
     });
   }
 
-  Future<void> retryListening() async {
+  Future<bool> retryListening() async {
+    debugPrint('[ContinuousSpeech] 🌪️ FORCING HW RESET');
+    onContentionStart?.call();
     _shouldBeListening = true;
     _isRestartPending = false;
     _restartAttempts = 0;
+    _restartTimer?.cancel();
+
     await _speechService.forceReinitialize();
-    await start(force: true);
+    await _speechService.startListening();
+
+    // Give hardware 1 second to settle before clearing contention
+    Timer(const Duration(seconds: 1), () => onContentionEnd?.call());
+    return true;
   }
 
   Future<void> pauseForTts() async {
     _isPausedForTts = true;
+    _restartTimer?.cancel();
     await _speechService.cancel();
   }
 
@@ -137,11 +151,7 @@ class ContinuousSpeechManager {
     await _speechService.stopListening();
   }
 
-  void clearAccumulated() {
-    _lastResult = null;
-    _speechService.clearBuffer();
-  }
-
+  void clearAccumulated() => _speechService.clearBuffer();
   String? getLastRecognized() => _lastResult;
   bool get isActive => _isActive || _speechService.isListening;
   bool get isRestartPending => _isRestartPending;

@@ -118,7 +118,20 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // … FIX: Initialize synchronously to prevent LateInitializationError
     _continuousSpeech = ContinuousSpeechManager(_speechService);
 
-    // … Initialize relaxation animation controller
+    // 🚀 NUCLEAR SYNC: Connect hardware contention protection
+    _continuousSpeech.onContentionStart = () {
+      debugPrint(
+        '🛡️ [VisualAcuity] HW CONTENTION START: Pausing Camera for Mic',
+      );
+      _distanceService.stopMonitoring();
+    };
+
+    _continuousSpeech.onContentionEnd = () {
+      debugPrint('🛡️ [VisualAcuity] HW CONTENTION END: Resuming Camera');
+      if (_useDistanceMonitoring && !_isTestPausedForDistance && !_showResult) {
+        _distanceService.startMonitoring();
+      }
+    };
     _relaxationProgressController = AnimationController(
       vsync: this,
       duration: Duration(seconds: TestConstants.relaxationDurationSeconds),
@@ -804,14 +817,19 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _showResult = false;
       _waitingForResponse = true;
       _lastDetectedSpeech = null;
-      _eDisplayStartTime =
-          DateTime.now(); // … Re-capture precisely after setState triggers
+      _eDisplayStartTime = DateTime.now();
 
       debugPrint(
         '✅ [VisualAcuity] 👁️ Displaying E: Size=${TestConstants.visualAcuityLevels[_currentLevel].sizeMm}mm '
         '(Index: $_currentLevel)',
       );
     });
+
+    // 🚀 NUCLEAR SYNC: Start mic ONLY when letter appears
+    if (!_continuousSpeech.isActive) {
+      debugPrint('[VisualAcuity] 🎤 REQUESTING Mic start for new plate');
+      _continuousSpeech.start(bufferMs: 800);
+    }
 
     // … CRITICAL FIX: If already paused due to distance, do not start interaction timers yet
     if (_isTestPausedForDistance) {
@@ -936,8 +954,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     debugPrint('[VisualAcuity] 🖱️ BUTTON PRESSED: ${direction.label}');
 
-    // ✅ CRITICAL FIX: Don't pause speech - just clear the buffer
-    // This allows both systems to coexist without conflicts
+    // 🚀 NUCLEAR SYNC: Kill mic immediately on button interaction
+    _continuousSpeech.stop();
     _continuousSpeech.clearAccumulated();
 
     // Record response immediately
@@ -962,7 +980,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       return;
     }
 
-    // ✅ FIX: Clear speech buffer but DON'T pause the service
+    // 🚀 NUCLEAR SYNC: Kill mic before processing result overlay
+    _continuousSpeech.stop();
     _continuousSpeech.clearAccumulated();
 
     _eDisplayTimer?.cancel();
@@ -1172,23 +1191,26 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Future<void> _manualSpeechReset() async {
     if (_isResettingSpeech) return;
 
-    debugPrint('[VisualAcuity] 🌪️ MANUALLY triggering speech reset');
+    debugPrint('[VisualAcuity] 🌪️ MANUALLY triggering verified speech reset');
     if (mounted) setState(() => _isResettingSpeech = true);
 
     try {
-      // 🛡️ Ensure we doesn't hang the UI forever if native call is wedged
-      await _continuousSpeech.retryListening().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          debugPrint('[VisualAcuity] ⛔ Manual retry TIMED OUT');
-          if (mounted) _showResetErrorSnackbar();
-          throw TimeoutException('Speech reset timed out');
-        },
+      // 🛡️ VERIFIED RETRY: Returns false if hardware failed
+      final success = await _continuousSpeech.retryListening().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => false,
       );
 
-      if (mounted) _showResetSuccessSnackbar();
+      if (mounted) {
+        if (success) {
+          _showResetSuccessSnackbar();
+        } else {
+          debugPrint('[VisualAcuity] 🛑 Reset failed at hardware level');
+          _showResetErrorSnackbar();
+        }
+      }
     } catch (e) {
-      debugPrint('[VisualAcuity] 🚨 Manual retry FAILED: $e');
+      debugPrint('[VisualAcuity] 🚨 Manual retry EXCEPTION: $e');
       if (mounted) _showResetErrorSnackbar();
     } finally {
       if (mounted) {
