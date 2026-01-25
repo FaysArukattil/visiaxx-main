@@ -916,6 +916,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       'blurry',
       'blur',
       'bloody',
+      'body',
+      'blush',
       'cannot see',
       'can\'t see',
       'kanchi',

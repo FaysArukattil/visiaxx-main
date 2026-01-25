@@ -96,21 +96,19 @@ class SpeechService {
       await Future.delayed(const Duration(milliseconds: 200));
 
       final system = await _speechToText.systemLocale();
-      debugPrint(
-        '[SpeechService] 🎤 Starting listening with locale: ${system?.localeId}',
-      );
+
+      debugPrint('[SpeechService] 🎤 Starting (Locale: ${system?.localeId})');
 
       await _speechToText.listen(
         onResult: (result) => _handleResult(result, bufferMs),
-        listenFor: const Duration(
-          seconds: 100,
-        ), // Increased for much longer uninterrupted sessions
-        pauseFor: const Duration(seconds: 10), // Standard stability
+        listenFor: const Duration(seconds: 100),
+        pauseFor: const Duration(seconds: 10),
         onSoundLevelChange: (level) => onSoundLevelChange?.call(level),
         listenOptions: SpeechListenOptions(
           partialResults: true,
           cancelOnError: false,
-          // onDevice removed as it causes immediate crashes/stops on many devices
+          onDevice:
+              false, // Reverted to false for stability; will try to re-enable once hardware support check is fixed
         ),
         localeId: system?.localeId,
       );
@@ -166,7 +164,13 @@ class SpeechService {
     if (s.contains('up') ||
         s.contains('top') ||
         s.contains('app') ||
-        s.contains('ab'))
+        s.contains('ab') ||
+        s.contains('off') ||
+        s.contains('hop') ||
+        s.contains('ap') ||
+        s.contains('hub') ||
+        s.contains('sup') ||
+        s.contains('pup'))
       return 'up';
     if (s.contains('down') || s.contains('bottom') || s.contains('done'))
       return 'down';
@@ -183,7 +187,10 @@ class SpeechService {
     if (s.contains('blur') ||
         s.contains('see') ||
         s.contains('nothing') ||
-        s.contains('clear'))
+        s.contains('clear') ||
+        s.contains('bloody') ||
+        s.contains('body') ||
+        s.contains('blush'))
       return 'blurry';
     return null;
   }
