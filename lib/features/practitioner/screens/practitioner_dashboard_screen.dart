@@ -1328,13 +1328,31 @@ class _PractitionerDashboardScreenState
     String folderName;
 
     if (choice == 'all') {
-      final cachedData = _cache.getCachedData();
-      if (cachedData == null) {
-        SnackbarUtils.showError(context, 'No data available');
+      // Download only active results (what's shown on dashboard)
+      debugPrint(
+        '[Dashboard] 📥 Download All clicked. _allResults count: ${_allResults.length}',
+      );
+
+      // Filter to only active (non-hidden) results
+      final activeResults = _allResults
+          .where((r) => !_hiddenResultIds.contains(r.id))
+          .toList();
+
+      debugPrint(
+        '[Dashboard] ✅ Active results to download: ${activeResults.length}',
+      );
+
+      if (activeResults.isEmpty) {
+        debugPrint('[Dashboard] ❌ No active results available!');
+        SnackbarUtils.showError(context, 'No active results available');
         return;
       }
-      resultsToDownload = cachedData['allResults'] as List<TestResultModel>;
+
+      resultsToDownload = activeResults;
       folderName = 'All_Reports';
+      debugPrint(
+        '[Dashboard] ✅ Will download ${resultsToDownload.length} results to $folderName',
+      );
     } else {
       // Download filtered results
       if (_filteredResults.isEmpty) {
@@ -1396,6 +1414,12 @@ class _PractitionerDashboardScreenState
       }
 
       int successCount = 0;
+      int failCount = 0;
+      debugPrint(
+        '[Dashboard] 🔄 Starting download of ${resultsToDownload.length} PDFs...',
+      );
+      debugPrint('[Dashboard] 📂 Target: ${targetDir.path}');
+
       for (final result in resultsToDownload) {
         try {
           final pdfBytes = await _pdfService.generatePdfBytes(result);
@@ -1408,13 +1432,51 @@ class _PractitionerDashboardScreenState
           final timeStr = DateFormat('HH-mm').format(result.timestamp);
           final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
 
-          final file = File('${targetDir.path}/$filename');
-          await file.writeAsBytes(pdfBytes);
-          successCount++;
-        } catch (e) {
-          debugPrint('[Dashboard] Failed to save PDF: $e');
+          final filePath = '${targetDir.path}/$filename';
+          final file = File(filePath);
+
+          // CRITICAL: Use writeAsBytes with mode that overwrites
+          // This prevents "File exists" errors
+          try {
+            await file.writeAsBytes(
+              pdfBytes,
+              mode: FileMode.writeOnly,
+              flush: true,
+            );
+            successCount++;
+            debugPrint(
+              '[Dashboard] ✅ [$successCount/${resultsToDownload.length}] Saved: $filename',
+            );
+          } catch (writeError) {
+            // If writeOnly fails, try deleting first
+            if (await file.exists()) {
+              await file.delete();
+            }
+            await file.create(recursive: true);
+            await file.writeAsBytes(pdfBytes, flush: true);
+            successCount++;
+            debugPrint(
+              '[Dashboard] ✅ [$successCount/${resultsToDownload.length}] Saved (retry): $filename',
+            );
+          }
+        } catch (e, stack) {
+          failCount++;
+          debugPrint('[Dashboard] ❌ Failed ${result.profileName}: $e');
+          if (failCount <= 3) {
+            debugPrint(
+              '[Dashboard] Stack: ${stack.toString().substring(0, 200)}...',
+            );
+          }
         }
       }
+
+      debugPrint(
+        '[Dashboard] 🎉 Complete! Success: $successCount, Failed: $failCount',
+      );
+
+      debugPrint(
+        '[Dashboard] 🎉 Download complete! Successfully saved $successCount PDFs',
+      );
 
       if (mounted) {
         Navigator.of(context).pop(); // Close progress dialog
