@@ -151,7 +151,11 @@ class ContinuousSpeechManager {
     await _speechService.stopListening();
   }
 
-  void clearAccumulated() => _speechService.clearBuffer();
+  void clearAccumulated() {
+    _lastResult = null;
+    _speechService.clearBuffer();
+  }
+
   String? getLastRecognized() => _lastResult;
   bool get isActive => _isActive || _speechService.isListening;
   bool get isRestartPending => _isRestartPending;

@@ -109,6 +109,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   bool _isNavigatingToNextTest = false;
 
   Timer? _speechEraserTimer; // … Timer to clear recognized text
+  DateTime? _lastPlateStartTime; // ⏳ Warm-up grace period tracker
 
   @override
   void initState() {
@@ -787,6 +788,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // … Explicitly reset display state
     _eDisplayCountdown = TestConstants.eDisplayDurationSeconds;
     _eDisplayStartTime = DateTime.now();
+    _lastPlateStartTime = DateTime.now(); // ⏳ Start grace period
+
+    // ✅ CRITICAL: Flush ALL stale speech from previous plates
+    // This fixes the bug where a silent timeout was recorded as an incorrect answer
+    _continuousSpeech.clearAccumulated();
 
     // … Cancel ANY existing timers for this eye/trial
     _eDisplayTimer?.cancel();
@@ -954,8 +960,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     debugPrint('[VisualAcuity] 🖱️ BUTTON PRESSED: ${direction.label}');
 
-    // 🚀 NUCLEAR SYNC: Kill mic immediately on button interaction
-    _continuousSpeech.stop();
+    // ✅ CLEAR: Just flush the buffer to prevent clash, but don't stop the hardware
     _continuousSpeech.clearAccumulated();
 
     // Record response immediately
@@ -980,8 +985,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       return;
     }
 
-    // 🚀 NUCLEAR SYNC: Kill mic before processing result overlay
-    _continuousSpeech.stop();
+    // ✅ CLEAR: Just flush the buffer, keep hardware active as requested
     _continuousSpeech.clearAccumulated();
 
     _eDisplayTimer?.cancel();
@@ -991,14 +995,26 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _continuousSpeech.clearAccumulated();
     // 📌 DO NOT clear _lastDetectedSpeech here - let it persist for result screen
 
-    // … HANDLE NO RESPONSE: Rotate E in SAME size and try again
+    // … HANDLE NO RESPONSE (Silence): Rotate E in SAME size and try again
     if (userResponse == null) {
       debugPrint(
         '[VisualAcuity] Timeout - Rotating E (staying at level $_currentLevel)',
       );
-      // Give a tiny delay for the user to see the "I didn't hear you" state if we had one
-      // But user wants it integrated, so we just rotate.
-      _showTumblingE(); // Direct rotation without changing size
+      // 🔥 CLEAR: Ensure no carry-over to the rotated plate
+      _continuousSpeech.clearAccumulated();
+
+      // Update UI state to show rotation is happening
+      if (mounted) {
+        setState(() {
+          _waitingForResponse = false;
+          _showE = false;
+        });
+      }
+
+      // Short delay for rotation feel so the user sees a "new" attempt
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) _showTumblingE();
+      });
       return;
     }
 
@@ -1601,16 +1617,23 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               final bool isInListeningPhase =
                   _showE || (_showRelaxation && _relaxationCountdown <= 3);
 
+              // ⏳ GRACE PERIOD: HW takes ~1-2s to warm up on some devices
+              final bool isInGracePeriod =
+                  _lastPlateStartTime != null &&
+                  DateTime.now().difference(_lastPlateStartTime!).inSeconds < 2;
+
               // STALLED = Engine is OFF but should be ON, and isn't currently TRYING to fix itself
               final bool isStalled =
                   shouldBeListening &&
                   !isActuallyListening &&
                   !isPausedForTts &&
-                  // !isRestarting && // Removed to allow manual retry during auto-reconnection
+                  // !isRestarting && // Keep commented to allow manual override
                   isInListeningPhase &&
                   !_isPausedForExit &&
                   !_isTestPausedForDistance &&
-                  !_isResettingSpeech;
+                  !_isResettingSpeech &&
+                  !_eyeSwitchPending && // 🛡️ Hide during eye transition
+                  !isInGracePeriod; // 🛡️ Give hardware time to wake up
 
               final bool isWorking = isActuallyListening && !isPausedForTts;
 
