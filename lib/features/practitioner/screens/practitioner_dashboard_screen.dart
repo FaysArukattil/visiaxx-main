@@ -1,5 +1,6 @@
 ﻿// ignore_for_file: use_build_context_synchronously
 
+import 'dart:async';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,7 +10,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:visiaxx/core/services/file_manager_service.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/database_service.dart';
 import '../../../core/services/patient_service.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../core/services/dashboard_cache_service.dart';
@@ -23,6 +23,8 @@ import '../../../data/models/mobile_refractometry_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../core/services/test_result_service.dart';
+import '../../../core/services/database_service.dart'; // RE-ADDED
 
 class PractitionerDashboardScreen extends StatefulWidget {
   const PractitionerDashboardScreen({super.key});
@@ -34,16 +36,19 @@ class PractitionerDashboardScreen extends StatefulWidget {
 
 class _PractitionerDashboardScreenState
     extends State<PractitionerDashboardScreen> {
-  final DatabaseService _dbService = DatabaseService();
   final PatientService _patientService = PatientService();
   final PdfExportService _pdfService = PdfExportService();
   final DashboardCacheService _cache = DashboardCacheService();
+  final TestResultService _resultService = TestResultService();
+  final DatabaseService _dbService = DatabaseService(); // RE-ADDED
+  StreamSubscription<List<TestResultModel>>? _resultsSubscription;
 
   bool _isInitialLoading = true;
   bool _isFilterLoading = false;
   String _selectedPeriod = 'all';
   List<String> _selectedConditions = [];
   Map<String, dynamic> _statistics = {};
+  List<TestResultModel> _allResults = []; // NEW: Persistent list of all results
   List<TestResultModel> _filteredResults = [];
   List<PatientModel> _patients = [];
 
@@ -63,6 +68,7 @@ class _PractitionerDashboardScreenState
   @override
   void dispose() {
     _searchController.dispose();
+    _resultsSubscription?.cancel();
     super.dispose();
   }
 
@@ -72,51 +78,82 @@ class _PractitionerDashboardScreenState
 
     setState(() => _isInitialLoading = true);
 
-    try {
-      final cachedData = _cache.getCachedData();
+    // Cancel existing subscription if any
+    await _resultsSubscription?.cancel();
 
+    try {
+      // 1. Initial Quick Load from Cache
+      final cachedData = _cache.getCachedData();
       if (cachedData != null) {
-        debugPrint('[Dashboard] ⚡ Loading from cache');
+        debugPrint('[Dashboard] ðŸ’¡ Initial load from cache');
         _applyCachedData(cachedData);
-        setState(() => _isInitialLoading = false);
-        return;
+        _isInitialLoading = false;
       }
 
-      final results = await Future.wait([
-        _dbService.getTestStatistics(practitionerId: user.uid),
-        _dbService.getPractitionerTestResults(practitionerId: user.uid),
-        _patientService.getPatients(user.uid),
-        _dbService.getDailyTestCounts(practitionerId: user.uid, days: 30),
-      ]);
+      // 2. Load Patients (needed for search matches)
+      final patients = await _patientService.getPatients(user.uid);
+      if (mounted) {
+        setState(() => _patients = patients);
+      }
 
-      final allStats = results[0] as Map<String, dynamic>;
-      final allResults = results[1] as List<TestResultModel>;
-      final patients = results[2] as List<PatientModel>;
-      final dailyCounts = results[3] as Map<DateTime, int>;
-
-      _cache.cacheData(
-        statistics: allStats,
-        allResults: allResults,
-        patients: patients,
-        dailyCounts: dailyCounts,
+      // 3. SECURE FETCH (FALLBACK): Traditional iterative fetch
+      // This ensures data is visible even if the collectionGroup stream (Step 4) fails due to missing index
+      debugPrint('[Dashboard] ðŸ”„ Performing secure initial fetch...');
+      final initialResults = await _dbService.getPractitionerTestResults(
+        practitionerId: user.uid,
       );
 
       if (mounted) {
-        _applyCachedData({
-          'statistics': allStats,
-          'allResults': allResults,
-          'patients': patients,
-          'dailyCounts': dailyCounts,
-        });
         setState(() {
-          _isInitialLoading = false;
+          _allResults = initialResults;
+          _applyFilters(initialResults);
+          _isInitialLoading = false; // Data is now definitely here
         });
+        debugPrint(
+          '[Dashboard] âœ… Initial fetch complete: ${initialResults.length} results',
+        );
       }
+
+      // 4. Start Background Real-time Results Stream
+      debugPrint('[Dashboard] ðŸ”„ Starting background real-time listener');
+      _resultsSubscription = _resultService
+          .getPractitionerResultsStream(user.uid)
+          .listen(
+            (results) {
+              if (mounted) {
+                setState(() {
+                  _allResults = results;
+                  _applyFilters(results);
+                });
+
+                // Background update cache
+                _cache.cacheData(
+                  statistics: _statistics,
+                  allResults: _allResults,
+                  patients: _patients,
+                  dailyCounts: {},
+                );
+                debugPrint('[Dashboard] âœ… Stream update processed');
+              }
+            },
+            onError: (e) {
+              debugPrint(
+                '[Dashboard] âš ï¸ Background stream error (non-fatal): $e',
+              );
+              // Don't show error snackbar if we already have data from the initial fetch
+              if (_allResults.isEmpty && mounted) {
+                SnackbarUtils.showWarning(
+                  context,
+                  'Real-time sync limited. Pull to refresh.',
+                );
+              }
+            },
+          );
     } catch (e) {
-      debugPrint('[Dashboard] ❌ Error loading data: $e');
+      debugPrint('[Dashboard] â Œ Error loading data: $e');
       if (mounted) {
         setState(() => _isInitialLoading = false);
-        SnackbarUtils.showError(context, 'Failed to load dashboard data');
+        SnackbarUtils.showError(context, 'Failed to load dashboard');
       }
     }
   }
@@ -383,10 +420,15 @@ class _PractitionerDashboardScreenState
 
     await Future.delayed(const Duration(milliseconds: 150));
 
-    final cachedData = _cache.getCachedData();
-    if (cachedData != null) {
-      final allResults = cachedData['allResults'] as List<TestResultModel>;
-      _applyFilters(allResults);
+    // Use persistent results list if available, otherwise fallback to cache
+    if (_allResults.isNotEmpty) {
+      _applyFilters(_allResults);
+    } else {
+      final cachedData = _cache.getCachedData();
+      if (cachedData != null) {
+        final allResults = cachedData['allResults'] as List<TestResultModel>;
+        _applyFilters(allResults);
+      }
     }
 
     setState(() => _isFilterLoading = false);
@@ -1687,6 +1729,50 @@ class _PractitionerDashboardScreenState
     }
   }
 
+  Future<void> _deleteResult(TestResultModel result) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await _resultService.deleteTestResult(user.uid, result.id);
+      // The stream listener will automatically update the UI
+      if (mounted) {
+        SnackbarUtils.showSuccess(context, 'Result deleted successfully');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Failed to delete: $e');
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteResult(TestResultModel result) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Result?'),
+        content: Text(
+          'Are you sure you want to remove the test result for ${result.profileName}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _deleteResult(result);
+    }
+  }
+
   void _showResultDetails(TestResultModel result) {
     Navigator.push(
       context,
@@ -2878,6 +2964,12 @@ class _PractitionerDashboardScreenState
                     _buildIconButton(
                       icon: Icons.share_rounded,
                       onTap: () => _sharePdf(result),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildIconButton(
+                      icon: Icons.delete_outline_rounded,
+                      onTap: () => _confirmDeleteResult(result),
+                      isDelete: true,
                     ),
                   ],
                 ),

@@ -443,6 +443,78 @@ class TestResultService {
     }
   }
 
+  /// Get test results stream for a user
+  Stream<List<TestResultModel>> getTestResultsStream(String userId) {
+    debugPrint(
+      '[TestResultService] ðŸ”„ Setting up result stream for: $userId',
+    );
+
+    // Better strategy: Listen to both UID path and Identity path if they differ
+    return _firestore
+        .collection(_identifiedResultsCollection)
+        .doc(userId)
+        .collection('tests')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          final results = snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return TestResultModel.fromJson(data);
+          }).toList();
+          debugPrint(
+            '[TestResultService] âœ… User stream updated: ${results.length} results',
+          );
+          return results;
+        });
+  }
+
+  /// Get a stream of all results for a practitioner, including those of patients
+  /// Uses collection group query to find all tests where the practitioner's ID is the userId
+  Stream<List<TestResultModel>> getPractitionerResultsStream(
+    String practitionerId,
+  ) {
+    debugPrint(
+      '[TestResultService] ðŸ”„ Creating collection group stream for practitioner: $practitionerId',
+    );
+
+    // IMPORTANT: Collection group queries require a composite index if filtered + ordered.
+    // If you see no results or an error, check the debug console for a link to create the index.
+    return _firestore
+        .collectionGroup('tests')
+        .where('userId', isEqualTo: practitionerId)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          debugPrint(
+            '[TestResultService] ðŸ“¦ Received snapshot with ${snapshot.docs.length} docs',
+          );
+
+          final results = snapshot.docs
+              .map((doc) {
+                try {
+                  final data = doc.data();
+                  data['id'] = doc.id;
+
+                  return TestResultModel.fromJson(data);
+                } catch (e) {
+                  debugPrint(
+                    '[TestResultService] â Œ Error parsing result ${doc.id}: $e',
+                  );
+                  return null;
+                }
+              })
+              .where((r) => r != null)
+              .cast<TestResultModel>()
+              .toList();
+
+          debugPrint(
+            '[TestResultService] âœ… Practitioner stream updated with ${results.length} total results',
+          );
+          return results;
+        });
+  }
+
   /// Get all test results for a user
   Future<List<TestResultModel>> getTestResults(
     String userId, {

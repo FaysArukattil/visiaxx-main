@@ -1,9 +1,7 @@
 ﻿import 'dart:async';
-import '../constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 import 'data_cleanup_service.dart';
@@ -59,9 +57,9 @@ class SessionMonitorService with WidgetsBindingObserver {
 
   StreamSubscription<DatabaseEvent>? _sessionSubscription;
   String? _currentSessionId;
-  String? _currentUserId;
   bool _isMonitoring = false;
   bool _wasKickedOut = false;
+  bool _isPractitioner = false;
   Timer? _heartbeatTimer;
   BuildContext? _currentContext;
   StreamSubscription<DatabaseEvent>? _connectionSubscription;
@@ -103,10 +101,23 @@ class SessionMonitorService with WidgetsBindingObserver {
   /// Returns a [SessionCreationResult] containing the sessionId or an error message
   Future<SessionCreationResult> createSession(
     String userId,
-    String identityString,
-  ) async {
+    String identityString, {
+    bool isPractitioner = false,
+  }) async {
     try {
-      debugPrint('[SessionMonitor] Creating session for: $identityString');
+      debugPrint(
+        '[SessionMonitor] Creating session for: $identityString (Practitioner: $isPractitioner)',
+      );
+
+      // If NOT a practitioner, we might want to clear old sessions first
+      // However, usually we let the conflict logic handle it, or we clear it here.
+      // For a clean transition, let's clear the whole node for regular users
+      if (!isPractitioner) {
+        debugPrint(
+          '[SessionMonitor] Regular user login, clearing other sessions...',
+        );
+        await _database.ref('active_sessions/$identityString').remove();
+      }
 
       final sessionId = _generateSessionId();
       final now = DateTime.now();
@@ -123,12 +134,13 @@ class SessionMonitorService with WidgetsBindingObserver {
         isOnline: true,
       );
 
-      // Store session in Firebase Realtime Database using identityString as key
-      final sessionRef = _database.ref('active_sessions/$identityString');
+      // Store session in Firebase Realtime Database using sessionId as a sub-node
+      final sessionRef = _database.ref(
+        'active_sessions/$identityString/$sessionId',
+      );
       await sessionRef.set(sessionData.toMap());
 
       // Use onDisconnect to mark session as "Offline" with a special Kill Signal (-1)
-      // This allows INSTANT takeover by other devices if this device is killed/crashed
       await sessionRef.onDisconnect().update({
         'isOnline': false,
         'lastActiveMillis': -1,
@@ -143,107 +155,109 @@ class SessionMonitorService with WidgetsBindingObserver {
       );
 
       _currentSessionId = sessionId;
-      _currentUserId = userId;
 
       debugPrint(
-        '[SessionMonitor] … Session created: $sessionId under $identityString',
+        '[SessionMonitor] â€¦ Session created: $sessionId under $identityString',
       );
       return SessionCreationResult(sessionId: sessionId);
     } catch (e) {
-      debugPrint('[SessionMonitor] Œ Failed to create session: $e');
+      debugPrint('[SessionMonitor] Å’ Failed to create session: $e');
       return SessionCreationResult(error: 'Failed to create session: $e');
     }
   }
 
-  /// Check if a session exists using the identity string
+  /// Check if an active session exists using the identity string
+  /// For practitioners, this is just for info. For regular users, this blocks login.
   Future<SessionCheckResult> checkExistingSession(String identityString) async {
     try {
-      final sessionRef = _database.ref('active_sessions/$identityString');
-      final snapshot = await sessionRef.get();
+      final userSessionsRef = _database.ref('active_sessions/$identityString');
+      final snapshot = await userSessionsRef.get();
 
       if (!snapshot.exists || snapshot.value == null) {
         return SessionCheckResult(exists: false);
       }
 
-      final sessionData = SessionData.fromMap(
-        snapshot.value as Map<dynamic, dynamic>,
-      );
+      // It's now a map of dynamic (sessionId) -> SessionData
+      final Map<dynamic, dynamic> sessionsMap =
+          snapshot.value as Map<dynamic, dynamic>;
 
-      // Instant Takeover Logic:
-      // If lastActiveMillis is -1, it means the previous device was killed/disconnected
-      final bool isKilled = sessionData.lastActiveMillis == -1;
+      SessionData? conflictingSession;
+      bool hasActiveOtherSession = false;
 
-      // Double-Lock Time Logic:
-      // Only consider "Online" if isOnline is true AND it has been active within last 45 seconds
-      // (reduced from 90s for tighter security, heartbeat is every 30s)
       final now = DateTime.now().millisecondsSinceEpoch;
-      final bool isTimedOut =
-          (now - sessionData.lastActiveMillis) > (45 * 1000);
-
-      final bool isActuallyOnline =
-          !isKilled && sessionData.isOnline && !isTimedOut;
-
-      // Check if we have a stored session that matches
       final storedSessionId = await _secureStorage.read(key: _sessionIdKey);
 
-      if (storedSessionId != null && storedSessionId == sessionData.sessionId) {
+      sessionsMap.forEach((key, value) {
+        final sessionData = SessionData.fromMap(value as Map<dynamic, dynamic>);
+
+        // Ownership Check
+        if (storedSessionId != null &&
+            sessionData.sessionId == storedSessionId) {
+          return;
+        }
+
+        // Online Check
+        final bool isKilled = sessionData.lastActiveMillis == -1;
+        final bool isTimedOut =
+            (now - sessionData.lastActiveMillis) > (45 * 1000);
+        final bool isActuallyOnline =
+            !isKilled && sessionData.isOnline && !isTimedOut;
+
+        if (isActuallyOnline) {
+          hasActiveOtherSession = true;
+          conflictingSession = sessionData;
+        }
+      });
+
+      if (hasActiveOtherSession) {
         return SessionCheckResult(
           exists: true,
-          isOurSession: true,
-          isOnline: isActuallyOnline,
-          sessionData: sessionData,
+          isOurSession: false,
+          isOnline: true,
+          sessionData: conflictingSession,
         );
       }
 
-      // Different session exists
-      return SessionCheckResult(
-        exists: true,
-        isOurSession: false,
-        isOnline: isActuallyOnline,
-        sessionData: sessionData,
-      );
+      return SessionCheckResult(exists: false);
     } catch (e) {
-      debugPrint('[SessionMonitor] Œ Failed to check session: $e');
+      debugPrint('[SessionMonitor] Å’ Failed to check session: $e');
       return SessionCheckResult(exists: false, error: e.toString());
     }
   }
 
   /// Start monitoring the user's session using identity string
-  void startMonitoring(String identityString, BuildContext context) {
+  void startMonitoring(
+    String identityString,
+    BuildContext context, {
+    bool isPractitioner = false,
+  }) {
     _currentContext = context;
+    _isPractitioner = isPractitioner;
     if (_isMonitoring) {
       debugPrint('[SessionMonitor] Already monitoring, updating context');
       return;
     }
 
-    debugPrint('[SessionMonitor] ”„ Monitoring session for: $identityString');
+    debugPrint(
+      '[SessionMonitor] â€ â€ž Monitoring session for: $identityString',
+    );
     _isMonitoring = true;
 
-    final sessionRef = _database.ref('active_sessions/$identityString');
+    final userSessionsRef = _database.ref('active_sessions/$identityString');
 
-    _sessionSubscription = sessionRef.onValue.listen(
+    _sessionSubscription = userSessionsRef.onValue.listen(
       (event) {
         if (_currentContext != null) {
           _handleSessionChange(event, _currentContext!);
         }
       },
       onError: (error) {
-        debugPrint('[SessionMonitor] Œ Stream error: $error');
+        debugPrint('[SessionMonitor] Å’ Stream error: $error');
       },
     );
 
-    // Set online status and onDisconnect every time we start monitoring
-    final now = DateTime.now().millisecondsSinceEpoch;
-    _database.ref('active_sessions/$identityString').update({
-      'isOnline': true,
-      'lastActiveMillis': now,
-    });
-
-    // Ensure onDisconnect is refreshed
-    _database.ref('active_sessions/$identityString').onDisconnect().update({
-      'isOnline': false,
-      'lastActiveMillis': -1, // Kill Signal
-    });
+    // Update OUR specific session node
+    _updateMySessionStatus(identityString, true);
 
     // Listen to connection status to trigger re-verification on network recovery
     _connectionSubscription = _database.ref('.info/connected').onValue.listen((
@@ -251,7 +265,7 @@ class SessionMonitorService with WidgetsBindingObserver {
     ) {
       final isConnected = event.snapshot.value == true;
       if (isConnected && _isMonitoring) {
-        debugPrint('[SessionMonitor] Œ Connection restored, re-verifying...');
+        debugPrint('[SessionMonitor] Å’ Connection restored, re-verifying...');
         _verifyCurrentSession();
       }
     });
@@ -260,38 +274,82 @@ class SessionMonitorService with WidgetsBindingObserver {
     _startHeartbeat();
   }
 
+  Future<void> _updateMySessionStatus(
+    String identityString,
+    bool online,
+  ) async {
+    _currentSessionId ??= await _secureStorage.read(key: _sessionIdKey);
+    if (_currentSessionId == null) return;
+
+    final sessionRef = _database.ref(
+      'active_sessions/$identityString/$_currentSessionId',
+    );
+
+    if (online) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await sessionRef.update({'isOnline': true, 'lastActiveMillis': now});
+
+      // Ensure onDisconnect is refreshed
+      await sessionRef.onDisconnect().update({
+        'isOnline': false,
+        'lastActiveMillis': -1, // Kill Signal
+      });
+    } else {
+      await sessionRef.update({'isOnline': false});
+    }
+  }
+
   /// Handle session changes from Firebase
   void _handleSessionChange(DatabaseEvent event, BuildContext context) async {
     if (!event.snapshot.exists || event.snapshot.value == null) {
-      // Session was removed - likely we logged out, ignore
-      debugPrint('[SessionMonitor] Session removed from database');
       return;
     }
 
     try {
-      final sessionData = SessionData.fromMap(
-        event.snapshot.value as Map<dynamic, dynamic>,
-      );
+      // It's a map of sessions
+      final Map<dynamic, dynamic> sessionsMap =
+          event.snapshot.value as Map<dynamic, dynamic>;
 
-      // Load our stored session ID if we don't have it
       _currentSessionId ??= await _secureStorage.read(key: _sessionIdKey);
+      if (_currentSessionId == null) return;
 
-      if (_currentSessionId == null) {
-        // No local session ID, this shouldn't happen
-        debugPrint('[SessionMonitor]  ï¸ No local session ID found');
+      // Check for cached practitioner status
+      if (_isPractitioner) {
+        // Practitioners allow multiple sessions, so no conflict handling needed here
         return;
       }
 
-      if (sessionData.sessionId != _currentSessionId) {
-        // Different device logged in!
+      SessionData? conflictingSession;
+      bool conflictDetected = false;
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      sessionsMap.forEach((key, value) {
+        if (conflictDetected) return;
+
+        final sessionData = SessionData.fromMap(value as Map<dynamic, dynamic>);
+        if (sessionData.sessionId == _currentSessionId) return;
+
+        final bool isKilled = sessionData.lastActiveMillis == -1;
+        final bool isTimedOut =
+            (now - sessionData.lastActiveMillis) > (45 * 1000);
+
+        if (!isKilled && sessionData.isOnline && !isTimedOut) {
+          // This session is active and NOT ours. For non-practitioners, this is a conflict.
+          conflictDetected = true;
+          conflictingSession = sessionData;
+        }
+      });
+
+      if (conflictDetected && conflictingSession != null) {
         debugPrint(
-          '[SessionMonitor]  ï¸ Session conflict detected! Remote: ${sessionData.sessionId}, Local: $_currentSessionId',
+          '[SessionMonitor] âš  Session conflict detected for regular user!',
         );
         if (!context.mounted) return;
-        await _handleSessionConflict(context, sessionData);
+        await _handleSessionConflict(context, conflictingSession!);
       }
     } catch (e) {
-      debugPrint('[SessionMonitor] Œ Error handling session change: $e');
+      debugPrint('[SessionMonitor] âš  Error handling session change: $e');
     }
   }
 
@@ -300,7 +358,7 @@ class SessionMonitorService with WidgetsBindingObserver {
     BuildContext context,
     SessionData remoteSession,
   ) async {
-    debugPrint('[SessionMonitor] š¨ Handling session conflict...');
+    debugPrint('[SessionMonitor] â€¼ Handling session conflict...');
 
     // Stop monitoring first to prevent loops
     stopMonitoring();
@@ -308,7 +366,6 @@ class SessionMonitorService with WidgetsBindingObserver {
 
     // Clear local session info from memory immediately
     _currentSessionId = null;
-    _currentUserId = null;
 
     if (!context.mounted) return;
 
@@ -320,9 +377,9 @@ class SessionMonitorService with WidgetsBindingObserver {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.warning_amber_rounded,
-              color: AppColors.warning,
+              color: Color(0xFFFF9800),
               size: 28,
             ),
             const SizedBox(width: 12),
@@ -345,7 +402,7 @@ class SessionMonitorService with WidgetsBindingObserver {
             const SizedBox(height: 12),
             Text(
               'Device: ${remoteSession.deviceInfo}',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
           ],
         ),
@@ -377,8 +434,6 @@ class SessionMonitorService with WidgetsBindingObserver {
   /// Remove the session from Firebase when logging out
   Future<void> removeSession() async {
     try {
-      // 1. If we were kicked out, don't delete the remote session
-      // because it now belongs to the NEW device.
       if (_wasKickedOut) {
         debugPrint(
           '[SessionMonitor] Skipping remote remove: already kicked out',
@@ -388,56 +443,25 @@ class SessionMonitorService with WidgetsBindingObserver {
         return;
       }
 
-      // Load our current session ID if not in memory (e.g. at startup)
       _currentSessionId ??= await _secureStorage.read(key: _sessionIdKey);
-
-      // 2. Try to get identityString from multiple sources
       String? identity = await _secureStorage.read(key: _identityStringKey);
 
-      // If we don't have identityString, we might have userId (UID)
-      String? userId =
-          _currentUserId ?? await _secureStorage.read(key: _userIdKey);
-      if (userId == null) {
-        final currentUser = FirebaseAuth.instance.currentUser;
-        userId = currentUser?.uid;
-      }
-
-      if (identity != null) {
-        debugPrint('[SessionMonitor] Checking session validity for: $identity');
-        final sessionRef = _database.ref('active_sessions/$identity');
-
-        // ONLY remove if the session ID in DB matches OUR session ID
-        final snapshot = await sessionRef.get();
-        if (snapshot.exists) {
-          final data = snapshot.value as Map<dynamic, dynamic>;
-          final dbSessionId = data['sessionId'] as String?;
-
-          // CRITICAL: Must have a sessionId and it must match!
-          // If _currentSessionId is null, we don't know who we are, so we MUST NOT delete.
-          if (_currentSessionId != null && dbSessionId == _currentSessionId) {
-            debugPrint(
-              '[SessionMonitor] Removing session from Firebase: $identity',
-            );
-            await sessionRef.remove().timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => debugPrint('[SessionMonitor] Remove timed out'),
-            );
-          } else {
-            debugPrint(
-              '[SessionMonitor] skipping remove: Session mismatch (Remote: $dbSessionId, Local: $_currentSessionId)',
-            );
-          }
-        }
-      } else if (userId != null) {
+      if (identity != null && _currentSessionId != null) {
         debugPrint(
-          '[SessionMonitor] No identityString, skipping legacy remove to be safe',
+          '[SessionMonitor] Removing session $_currentSessionId for: $identity',
         );
-        // We don't want to accidentally delete a descriptive session by UID path
+        final sessionRef = _database.ref(
+          'active_sessions/$identity/$_currentSessionId',
+        );
+        await sessionRef.remove().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => debugPrint('[SessionMonitor] Remove timed out'),
+        );
       }
 
       await _clearLocalSession();
     } catch (e) {
-      debugPrint('[SessionMonitor] Œ Failed to remove session: $e');
+      debugPrint('[SessionMonitor] âš  Failed to remove session: $e');
       await _clearLocalSession();
     }
   }
@@ -448,9 +472,8 @@ class SessionMonitorService with WidgetsBindingObserver {
       await _secureStorage.delete(key: _sessionIdKey);
       await _secureStorage.delete(key: _userIdKey);
       _currentSessionId = null;
-      _currentUserId = null;
     } catch (e) {
-      debugPrint('[SessionMonitor] Œ Failed to clear local session: $e');
+      debugPrint('[SessionMonitor] âš  Failed to clear local session: $e');
     }
   }
 
@@ -479,9 +502,12 @@ class SessionMonitorService with WidgetsBindingObserver {
     String? identity = await _secureStorage.read(key: _identityStringKey);
     if (identity == null) return;
 
+    // If we're a practitioner, we don't care about other sessions
+    if (_isPractitioner) return;
+
     final result = await checkExistingSession(identity);
     if (result.exists && !result.isOurSession) {
-      debugPrint('[SessionMonitor] š¨ Resume conflict detected!');
+      debugPrint('[SessionMonitor] â€¼ Resume conflict detected!');
       if (_currentContext != null) {
         _handleSessionConflict(_currentContext!, result.sessionData!);
       }
@@ -494,47 +520,33 @@ class SessionMonitorService with WidgetsBindingObserver {
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       updateLastActive();
     });
-    debugPrint('[SessionMonitor] ¤ï¸ Heartbeat started (30s)');
+    debugPrint('[SessionMonitor] Â¤ï¸  Heartbeat started (30s)');
   }
 
   /// Stop heartbeat
   void _stopHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
-    debugPrint('[SessionMonitor] ’” Heartbeat stopped');
+    debugPrint('[SessionMonitor] â€™â€  Heartbeat stopped');
   }
 
   /// Manually flag that this device was kicked out (used by SplashScreen)
   void markKickedOut() {
     _wasKickedOut = true;
     _currentSessionId = null;
-    _currentUserId = null;
-    debugPrint('[SessionMonitor] š© Manually marked as kicked out');
+    debugPrint('[SessionMonitor] Å¡Â© Manually marked as kicked out');
   }
 
   /// Update last active timestamp
   Future<void> updateLastActive() async {
     String? identity = await _secureStorage.read(key: _identityStringKey);
+    _currentSessionId ??= await _secureStorage.read(key: _sessionIdKey);
     if (identity == null || _currentSessionId == null) return;
 
     try {
-      final sessionRef = _database.ref('active_sessions/$identity');
-
-      // Ownership Check: Fetch first to prevent double-logging
-      final snapshot = await sessionRef.get();
-      if (snapshot.exists) {
-        final data = snapshot.value as Map<dynamic, dynamic>;
-        final remoteSessionId = data['sessionId'] as String?;
-
-        if (remoteSessionId != _currentSessionId) {
-          debugPrint('[SessionMonitor] š¨ Heartbeat detected conflict!');
-          if (_currentContext != null) {
-            final sessionData = SessionData.fromMap(data);
-            _handleSessionConflict(_currentContext!, sessionData);
-          }
-          return;
-        }
-      }
+      final sessionRef = _database.ref(
+        'active_sessions/$identity/$_currentSessionId',
+      );
 
       final now = DateTime.now();
       final formattedTime =
@@ -547,7 +559,7 @@ class SessionMonitorService with WidgetsBindingObserver {
         'isOnline': true,
       });
     } catch (e) {
-      debugPrint('[SessionMonitor] Œ Failed to update activity: $e');
+      debugPrint('[SessionMonitor] Å’ Failed to update activity: $e');
     }
   }
 
@@ -589,4 +601,3 @@ class SessionCreationResult {
 
   SessionCreationResult({this.sessionId, this.error});
 }
-

@@ -5,6 +5,7 @@ import '../../../core/services/session_monitor_service.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../data/models/user_model.dart';
 
 /// Login screen with Firebase authentication
 class LoginScreen extends StatefulWidget {
@@ -59,14 +60,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // 1. Check for existing active session on another device
         final sessionService = SessionMonitorService();
+        final isPractitioner = result.user!.role == UserRole.examiner;
+
         final checkResult = await sessionService.checkExistingSession(
           result.user!.identityString,
         );
 
         if (checkResult.exists &&
             checkResult.isOnline &&
-            !checkResult.isOurSession) {
-          // Active session elsewhere - Block Login
+            !checkResult.isOurSession &&
+            !isPractitioner) {
+          // Active session elsewhere - Block Login for regular users
           await _authService.signOut();
           if (mounted) {
             setState(() {
@@ -82,6 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final creationResult = await sessionService.createSession(
           result.user!.id,
           result.user!.identityString,
+          isPractitioner: isPractitioner,
         );
 
         if (!creationResult.isSuccess) {
@@ -100,7 +105,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // 3. Start monitoring this session
         if (mounted) {
-          sessionService.startMonitoring(result.user!.identityString, context);
+          sessionService.startMonitoring(
+            result.user!.identityString,
+            context,
+            isPractitioner: isPractitioner,
+          );
         }
 
         // 4. Navigate based on role
@@ -235,7 +244,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     blurRadius: 12,
                                     offset: const Offset(0, 6),
                                   ),
@@ -429,7 +440,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.25),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.25,
+                                    ),
                                     blurRadius: 15,
                                     offset: const Offset(0, 8),
                                   ),
@@ -502,4 +515,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

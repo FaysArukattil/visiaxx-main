@@ -120,7 +120,11 @@ class _SplashScreenState extends State<SplashScreen>
                 .checkExistingSession(user.identityString)
                 .timeout(const Duration(seconds: 3));
 
-            if (checkResult.exists && !checkResult.isOurSession) {
+            final isPractitioner = user.role == UserRole.examiner;
+
+            if (checkResult.exists &&
+                !checkResult.isOurSession &&
+                !isPractitioner) {
               debugPrint(
                 '[SplashScreen] š¨ Session stolen by another device. Forcing logout.',
               );
@@ -172,7 +176,11 @@ class _SplashScreenState extends State<SplashScreen>
             }
 
             if (!mounted) return;
-            sessionService.startMonitoring(user.identityString, context);
+            sessionService.startMonitoring(
+              user.identityString,
+              context,
+              isPractitioner: isPractitioner,
+            );
           } catch (e) {
             debugPrint('[SplashScreen]  ï¸ Session check error: $e');
             // If we can't check session due to network, but user data was fetched,
@@ -285,4 +293,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-

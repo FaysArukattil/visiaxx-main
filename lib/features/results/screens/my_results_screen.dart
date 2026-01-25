@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:visiaxx/data/models/color_vision_result.dart';
@@ -37,6 +38,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   final TestResultService _testResultService = TestResultService();
   final PdfExportService _pdfExportService = PdfExportService();
   final ScrollController _scrollController = ScrollController();
+  StreamSubscription<List<TestResultModel>>? _resultsSubscription;
 
   // Pagination
   static const int _itemsPerPage = 10;
@@ -53,6 +55,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _resultsSubscription?.cancel();
     super.dispose();
   }
 
@@ -68,11 +71,13 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   Future<void> _loadResults() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      setState(() {
-        _results = [];
-        _isLoading = false;
-        _error = 'Please log in to view results';
-      });
+      if (mounted) {
+        setState(() {
+          _results = [];
+          _isLoading = false;
+          _error = 'Please log in to view results';
+        });
+      }
       return;
     }
 
@@ -83,107 +88,55 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       _hasMore = true;
     });
 
+    // Cancel existing subscription if any
+    await _resultsSubscription?.cancel();
+
+    debugPrint('[MyResults] ðŸ”„ Starting real-time stream listen...');
+
+    _resultsSubscription = _testResultService
+        .getTestResultsStream(user.uid)
+        .listen(
+          (results) {
+            if (mounted) {
+              setState(() {
+                _results = results;
+                _isLoading = false;
+                _hasMore = results.length > _itemsPerPage;
+                _error = null;
+              });
+              debugPrint(
+                '[MyResults] âœ… Stream update: ${results.length} results',
+              );
+            }
+          },
+          onError: (e) {
+            debugPrint('[MyResults] â Œ Stream error: $e');
+            if (mounted) {
+              setState(() {
+                if (_results.isEmpty) {
+                  _error = 'Failed to load results';
+                }
+                _isLoading = false;
+              });
+            }
+          },
+        );
+
+    // Initial load from cache/server for immediate feedback
     try {
-      debugPrint('[MyResults] 📊 Loading results for user: ${user.uid}');
-
-      // Strategy: Try server first with short timeout, then fallback to cache
-      List<TestResultModel> results = [];
-
-      try {
-        // Try server with 3-second timeout
-        debugPrint('[MyResults] 🌐 Attempting server fetch...');
-        results = await _testResultService
-            .getTestResults(user.uid, source: Source.server)
-            .timeout(
-              const Duration(seconds: 3),
-              onTimeout: () {
-                debugPrint(
-                  '[MyResults] ⏱️ Server timeout, falling back to cache',
-                );
-                return [];
-              },
-            );
-
-        if (results.isNotEmpty) {
-          debugPrint(
-            '[MyResults] ✅ Loaded ${results.length} results from server',
-          );
-        }
-      } catch (serverError) {
-        debugPrint('[MyResults] ⚠️ Server fetch failed: $serverError');
-      }
-
-      // If server failed or timed out, try cache
-      if (results.isEmpty) {
-        debugPrint('[MyResults] 💾 Loading from cache...');
-        try {
-          results = await _testResultService.getTestResults(
-            user.uid,
-            source: Source.cache,
-          );
-          debugPrint(
-            '[MyResults] ✅ Loaded ${results.length} results from cache',
-          );
-        } catch (cacheError) {
-          debugPrint('[MyResults] ❌ Cache fetch also failed: $cacheError');
-        }
-      }
-
-      // Sort results
-      results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-      if (mounted) {
+      final initialResults = await _testResultService.getTestResults(
+        user.uid,
+        source: Source.serverAndCache,
+      );
+      if (mounted && _results.isEmpty && initialResults.isNotEmpty) {
         setState(() {
-          _results = results;
+          _results = initialResults;
           _isLoading = false;
-          _hasMore = results.length > _itemsPerPage;
-
-          if (results.isEmpty) {
-            _error = null; // Don't show error if just no results yet
-          }
+          _hasMore = initialResults.length > _itemsPerPage;
         });
       }
-
-      // Background refresh from server if we used cache
-      if (results.isNotEmpty) {
-        _backgroundRefresh(user.uid);
-      }
     } catch (e) {
-      debugPrint('[MyResults] ❌ ERROR loading results: $e');
-      if (mounted) {
-        setState(() {
-          _error = 'Failed to load results';
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  /// Background refresh from server (doesn't block UI)
-  Future<void> _backgroundRefresh(String userId) async {
-    try {
-      debugPrint('[MyResults] 🔄 Background refresh from server...');
-      final freshResults = await _testResultService
-          .getTestResults(userId, source: Source.server)
-          .timeout(const Duration(seconds: 5));
-
-      if (mounted && freshResults.isNotEmpty) {
-        freshResults.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-        // Only update if data actually changed
-        if (freshResults.length != _results.length) {
-          setState(() {
-            _results = freshResults;
-            _hasMore = freshResults.length > _itemsPerPage;
-          });
-          debugPrint(
-            '[MyResults] ✅ Background refresh complete - ${freshResults.length} results',
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('[MyResults] ⚠️ Background refresh failed (non-critical): $e');
-      // Don't show error - this is background operation
+      debugPrint('[MyResults] Initial fetch error: $e');
     }
   }
 
