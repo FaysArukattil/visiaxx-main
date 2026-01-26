@@ -1637,7 +1637,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         if (result != null)
           () {
             final String? path = result.annotatedImagePath;
-            final String? url = result.firebaseImageUrl;
+            final String? url = result.firebaseImageUrl ?? result.awsImageUrl;
 
             if (path == null && url == null) return const SizedBox.shrink();
 

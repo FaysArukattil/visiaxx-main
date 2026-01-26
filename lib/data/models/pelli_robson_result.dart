@@ -280,6 +280,7 @@ class PelliRobsonResult {
     'timestamp': timestamp.toIso8601String(),
   };
 
+  Map<String, dynamic> toJson() => toMap();
   factory PelliRobsonResult.fromMap(Map<String, dynamic> map) {
     return PelliRobsonResult(
       rightEye: map['rightEye'] != null

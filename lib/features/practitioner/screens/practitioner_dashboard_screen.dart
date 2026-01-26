@@ -47,6 +47,7 @@ class _PractitionerDashboardScreenState
   StreamSubscription<UserModel?>? _profileSubscription; // NEW
 
   bool _isInitialLoading = true;
+  bool _isSyncing = false; // NEW: Track background sync
   bool _isFilterLoading = false;
   String _selectedPeriod = 'all';
   List<String> _selectedConditions = [];
@@ -127,6 +128,9 @@ class _PractitionerDashboardScreenState
       List<TestResultModel> fetchedResults;
 
       if (lastSync != null && storedResults.isNotEmpty) {
+        // Step 3a: Show background sync indicator
+        setState(() => _isSyncing = true);
+
         // Fetch only new results since last sync
         fetchedResults = await _resultService.getPractitionerResultsIncremental(
           practitionerId: user.uid,
@@ -152,8 +156,10 @@ class _PractitionerDashboardScreenState
           }
           await persistence.saveResults(mergedResults);
         }
+        setState(() => _isSyncing = false);
       } else {
-        // Fallback or First Run: Fetch all results using stream-like logic but one-time
+        // Step 3b: Full fetch (first time or no cache)
+        setState(() => _isSyncing = true);
         debugPrint(
           '[Dashboard] ℹ️ No sync record found. Fetching all available data...',
         );
@@ -166,6 +172,7 @@ class _PractitionerDashboardScreenState
             _allResults = fetchedResults;
             _applyFilters(fetchedResults);
             _isInitialLoading = false;
+            _isSyncing = false;
           });
         }
         await persistence.saveResults(fetchedResults);
@@ -1895,7 +1902,7 @@ class _PractitionerDashboardScreenState
         backgroundColor: AppColors.background,
         elevation: 0,
       ),
-      body: _isInitialLoading
+      body: _isInitialLoading && _allResults.isEmpty
           ? const Center(child: EyeLoader.fullScreen())
           : RefreshIndicator(
               onRefresh: () async {
@@ -1912,30 +1919,46 @@ class _PractitionerDashboardScreenState
               },
               child: Stack(
                 children: [
-                  CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      SliverPadding(
-                        padding: const EdgeInsets.all(16),
-                        sliver: SliverToBoxAdapter(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildPeriodSelector(),
-                              const SizedBox(height: 16),
-                              _buildStatisticsCards(),
-                              const SizedBox(height: 20),
-                              _buildTestGraph(),
-                              const SizedBox(height: 20),
-                              _buildConditionBreakdown(),
-                              const SizedBox(height: 20),
-                              _buildRecentResultsHeader(),
-                            ],
+                  Column(
+                    children: [
+                      if (_isSyncing)
+                        const LinearProgressIndicator(
+                          minHeight: 2,
+                          backgroundColor: Colors.transparent,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.primary,
                           ),
                         ),
+                      Expanded(
+                        child: CustomScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          slivers: [
+                            SliverPadding(
+                              padding: const EdgeInsets.all(16),
+                              sliver: SliverToBoxAdapter(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildPeriodSelector(),
+                                    const SizedBox(height: 16),
+                                    _buildStatisticsCards(),
+                                    const SizedBox(height: 20),
+                                    _buildTestGraph(),
+                                    const SizedBox(height: 20),
+                                    _buildConditionBreakdown(),
+                                    const SizedBox(height: 20),
+                                    _buildRecentResultsHeader(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            _buildRecentResultsList(),
+                            const SliverToBoxAdapter(
+                              child: SizedBox(height: 100),
+                            ),
+                          ],
+                        ),
                       ),
-                      _buildRecentResultsList(),
-                      const SliverToBoxAdapter(child: SizedBox(height: 100)),
                     ],
                   ),
                   if (_isFilterLoading)

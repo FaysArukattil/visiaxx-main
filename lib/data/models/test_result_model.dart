@@ -151,7 +151,7 @@ class TestResultModel {
       'profileType': profileType,
       'timestamp': timestamp.toIso8601String(),
       'testType': testType,
-      'questionnaire': questionnaire?.toFirestore(),
+      'questionnaire': questionnaire?.toJson(),
       'visualAcuityRight': visualAcuityRight?.toMap(),
       'visualAcuityLeft': visualAcuityLeft?.toMap(),
       'shortDistance': shortDistance?.toMap(),
@@ -159,13 +159,13 @@ class TestResultModel {
       'amslerGridRight': amslerGridRight?.toMap(),
       'amslerGridLeft': amslerGridLeft?.toMap(),
       'pelliRobson': pelliRobson?.toMap(),
-      'mobileRefractometry': mobileRefractometry?.toMap(),
-      'refractionPrescription': refractionPrescription?.toMap(),
+      'mobileRefractometry': mobileRefractometry?.toJson(),
+      'refractionPrescription': refractionPrescription?.toJson(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,
       'isFlagged': isFlagged,
-      'practitionerNotes': practitionerNotes?.toMap(),
+      'practitionerNotes': practitionerNotes?.toJson(),
     };
   }
 
@@ -379,13 +379,21 @@ class PractitionerNotes {
     );
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'examinerId': examinerId,
       'examinerName': examinerName,
       'notes': notes,
       'status': status,
-      'timestamp': Timestamp.fromDate(timestamp),
+      'timestamp': timestamp.toIso8601String(),
     };
   }
+
+  Map<String, dynamic> toMap() => {
+    'examinerId': examinerId,
+    'examinerName': examinerName,
+    'notes': notes,
+    'status': status,
+    'timestamp': Timestamp.fromDate(timestamp),
+  };
 }

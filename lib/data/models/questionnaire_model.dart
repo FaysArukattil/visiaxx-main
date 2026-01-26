@@ -48,17 +48,25 @@ class QuestionnaireModel {
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'profileId': profileId,
       'profileType': profileType,
-      'timestamp': Timestamp.fromDate(timestamp),
+      'timestamp': timestamp.toIso8601String(),
       'chiefComplaints': chiefComplaints.toMap(),
       'systemicIllness': systemicIllness.toMap(),
       'currentMedications': currentMedications,
       'hasRecentSurgery': hasRecentSurgery,
       'surgeryDetails': surgeryDetails,
     };
+  }
+
+  Map<String, dynamic> toFirestore() {
+    final data = toJson();
+    data.remove('id');
+    data['timestamp'] = Timestamp.fromDate(timestamp);
+    return data;
   }
 }
 

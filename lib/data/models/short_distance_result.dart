@@ -17,7 +17,7 @@ class ShortDistanceResult {
     required this.status,
   });
 
-  factory ShortDistanceResult.fromMap(Map data) {
+  factory ShortDistanceResult.fromMap(Map<String, dynamic> data) {
     return ShortDistanceResult(
       correctSentences: data['correctSentences'] ?? 0,
       totalSentences: data['totalSentences'] ?? 0,
@@ -26,14 +26,14 @@ class ShortDistanceResult {
       durationSeconds: data['durationSeconds'] ?? 0,
       responses:
           (data['responses'] as List?)
-              ?.map((e) => SentenceResponse.fromMap(e))
+              ?.map((e) => SentenceResponse.fromMap(e as Map<String, dynamic>))
               .toList() ??
           [],
       status: data['status'] ?? '',
     );
   }
 
-  Map toMap() {
+  Map<String, dynamic> toMap() {
     return {
       'correctSentences': correctSentences,
       'totalSentences': totalSentences,
@@ -44,6 +44,8 @@ class ShortDistanceResult {
       'status': status,
     };
   }
+
+  Map<String, dynamic> toJson() => toMap();
 
   double get accuracy =>
       totalSentences > 0 ? correctSentences / totalSentences : 0;
@@ -71,7 +73,7 @@ class SentenceResponse {
     required this.fontSize,
   });
 
-  factory SentenceResponse.fromMap(Map data) {
+  factory SentenceResponse.fromMap(Map<String, dynamic> data) {
     return SentenceResponse(
       screenNumber: data['screenNumber'] ?? 0,
       expectedSentence: data['expectedSentence'] ?? '',
@@ -83,7 +85,7 @@ class SentenceResponse {
     );
   }
 
-  Map toMap() {
+  Map<String, dynamic> toMap() {
     return {
       'screenNumber': screenNumber,
       'expectedSentence': expectedSentence,
