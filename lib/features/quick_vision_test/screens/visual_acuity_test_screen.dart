@@ -1401,13 +1401,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                                 width: 1,
                                 color: AppColors.border.withValues(alpha: 0.2),
                               ),
-                              SingleChildScrollView(
-                                physics: const BouncingScrollPhysics(),
-                                child: SizedBox(
-                                  width: 280,
-                                  child:
-                                      _buildLandscapeDirectionButtonsSidePanel(),
-                                ),
+                              SizedBox(
+                                width: 280,
+                                child:
+                                    _buildLandscapeDirectionButtonsSidePanel(),
                               ),
                             ],
                           ),
@@ -2553,27 +2550,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   Widget _buildLandscapeDirectionButtonsSidePanel() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       color: AppColors.white,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'CONTROLS',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-              color: AppColors.textTertiary,
-            ),
-          ),
-          const SizedBox(height: 12),
           _DirectionButton(
             direction: EDirection.up,
             compact: true,
             onPressed: () => _handleButtonResponse(EDirection.up),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -2582,7 +2570,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 compact: true,
                 onPressed: () => _handleButtonResponse(EDirection.left),
               ),
-              const SizedBox(width: 80),
+              const SizedBox(width: 60),
               _DirectionButton(
                 direction: EDirection.right,
                 compact: true,
@@ -2590,22 +2578,22 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _DirectionButton(
             direction: EDirection.down,
             compact: true,
             onPressed: () => _handleButtonResponse(EDirection.down),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () => _handleButtonResponse(EDirection.blurry),
                 icon: const Icon(
                   Icons.visibility_off_rounded,
-                  size: 18,
+                  size: 16,
                   color: AppColors.primary,
                 ),
                 label: const Text(
@@ -2613,11 +2601,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w900,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

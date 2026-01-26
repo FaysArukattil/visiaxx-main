@@ -92,125 +92,229 @@ class DistanceWarningOverlay extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (!isSmallHeight) ...[
-                      // Premium Badge - Only show if not very small height
-                      Container(
-                        width: isLandscape ? 50 : 70,
-                        height: isLandscape ? 50 : 70,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: iconColor.withValues(alpha: 0.2),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: iconColor.withValues(alpha: 0.12),
-                              blurRadius: 20,
-                              spreadRadius: 3,
+                child: isLandscape
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Left Side: Badge and Typography
+                          Expanded(
+                            flex: 5,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: iconColor.withValues(alpha: 0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: iconColor.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        icon,
+                                        size: 22,
+                                        color: iconColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  pauseReason.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.textPrimary,
+                                    letterSpacing: -0.5,
+                                    height: 1.1,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  instruction,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textPrimary.withValues(
+                                      alpha: 0.6,
+                                    ),
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Container(
-                            width: isLandscape ? 40 : 54,
-                            height: isLandscape ? 40 : 54,
-                            decoration: BoxDecoration(
-                              color: iconColor.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: iconColor.withValues(alpha: 0.3),
-                                width: 1.5,
+                          ),
+                          const SizedBox(width: 24),
+                          // Right Side: Gauge and Actions
+                          Expanded(
+                            flex: 6,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (DistanceHelper.isFaceDetected(status)) ...[
+                                  _buildPremiumDistanceGauge(
+                                    targetDistance,
+                                    iconColor,
+                                    isSmallHeight: isSmallHeight,
+                                    isLandscape: isLandscape,
+                                  ),
+                                ] else
+                                  _buildSearchingIndicator(isSmallHeight: true),
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton(
+                                    onPressed: onSkip,
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.textSecondary,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'SKIP DISTANCE CHECK',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!isSmallHeight) ...[
+                            // Premium Badge - Only show if not very small height
+                            Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: iconColor.withValues(alpha: 0.2),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: iconColor.withValues(alpha: 0.12),
+                                    blurRadius: 20,
+                                    spreadRadius: 3,
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 54,
+                                  height: 54,
+                                  decoration: BoxDecoration(
+                                    color: iconColor.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: iconColor.withValues(alpha: 0.3),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Icon(icon, size: 28, color: iconColor),
+                                ),
                               ),
                             ),
-                            child: Icon(
-                              icon,
-                              size: isLandscape ? 22 : 28,
-                              color: iconColor,
+                            const SizedBox(height: 20),
+                          ],
+
+                          // Typography
+                          Text(
+                            pauseReason.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: isSmallHeight ? 16 : 20,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.5,
+                              height: 1.1,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: isSmallHeight ? 6 : 12),
+                          Text(
+                            instruction,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: isSmallHeight ? 11 : 14,
+                              color: AppColors.textPrimary.withValues(
+                                alpha: 0.6,
+                              ),
+                              height: 1.4,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.1,
                             ),
                           ),
-                        ),
-                      ),
-                      SizedBox(height: isLandscape ? 12 : 20),
-                    ],
+                          SizedBox(height: isSmallHeight ? 12 : 24),
 
-                    // Typography
-                    Text(
-                      pauseReason.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: isSmallHeight ? 16 : (isLandscape ? 18 : 20),
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                        height: 1.1,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: isSmallHeight ? 6 : 12),
-                    Text(
-                      instruction,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: isSmallHeight ? 11 : 14,
-                        color: AppColors.textPrimary.withValues(alpha: 0.6),
-                        height: 1.4,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                    SizedBox(
-                      height: isSmallHeight ? 12 : (isLandscape ? 16 : 24),
-                    ),
+                          // LIVE DISTANCE GAUGE
+                          if (DistanceHelper.isFaceDetected(status)) ...[
+                            _buildPremiumDistanceGauge(
+                              targetDistance,
+                              iconColor,
+                              isSmallHeight: isSmallHeight,
+                              isLandscape: isLandscape,
+                            ),
+                          ] else
+                            _buildSearchingIndicator(
+                              isSmallHeight: isSmallHeight,
+                            ),
 
-                    // LIVE DISTANCE GAUGE
-                    if (DistanceHelper.isFaceDetected(status)) ...[
-                      _buildPremiumDistanceGauge(
-                        targetDistance,
-                        iconColor,
-                        isSmallHeight: isSmallHeight,
-                        isLandscape: isLandscape,
-                      ),
-                    ] else
-                      _buildSearchingIndicator(isSmallHeight: isSmallHeight),
+                          SizedBox(height: isSmallHeight ? 16 : 40),
 
-                    SizedBox(
-                      height: isSmallHeight ? 16 : (isLandscape ? 20 : 40),
-                    ),
-
-                    // Actions
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: onSkip,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
-                          side: BorderSide(
-                            color: AppColors.textSecondary.withValues(
-                              alpha: 0.3,
+                          // Actions
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: onSkip,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.textSecondary,
+                                side: BorderSide(
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  vertical: isSmallHeight ? 10 : 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const Text(
+                                'SKIP DISTANCE CHECK',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1,
+                                  fontSize: 11,
+                                ),
+                              ),
                             ),
                           ),
-                          padding: EdgeInsets.symmetric(
-                            vertical: isSmallHeight ? 10 : 16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          'SKIP DISTANCE CHECK',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1,
-                            fontSize: 11,
-                          ),
-                        ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),

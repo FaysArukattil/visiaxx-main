@@ -73,10 +73,13 @@ class _TestExitConfirmationDialogState
   }
 
   Widget _buildMainView() {
+    final mediaQuery = MediaQuery.of(context);
+    final isLandscape = mediaQuery.orientation == Orientation.landscape;
+
     return Container(
       key: const ValueKey('main'),
       margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(isLandscape ? 20 : 28),
       decoration: ShapeDecoration(
         color: AppColors.white.withValues(alpha: 0.98),
         shape: ContinuousRectangleBorder(
@@ -92,102 +95,221 @@ class _TestExitConfirmationDialogState
       ),
       child: Material(
         color: Colors.transparent,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Premium Icon Header
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-              ),
-              child: const Icon(
-                Icons.pause_circle_filled_rounded,
-                color: AppColors.primary,
-                size: 36,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Test Paused',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              widget.content,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.textPrimary.withValues(alpha: 0.6),
-                height: 1.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 32),
-            // Actions
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    widget.onContinue();
-                  },
-                  icon: const Icon(Icons.play_arrow_rounded, size: 24),
-                  label: const Text('Continue Test'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+        child: SingleChildScrollView(
+          child: isLandscape
+              ? Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.pause_circle_filled_rounded,
+                              color: AppColors.primary,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Test Paused',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.content,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textPrimary.withValues(
+                                alpha: 0.6,
+                              ),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => _showConfirm('restart'),
-                  icon: const Icon(Icons.refresh_rounded, size: 20),
-                  label: const Text('Restart Test'),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: AppColors.warning.withValues(alpha: 0.3),
-                      width: 1.5,
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              widget.onContinue();
+                            },
+                            icon: Icons.play_arrow_rounded,
+                            label: 'Continue Test',
+                            isPrimary: true,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildButton(
+                            onPressed: () => _showConfirm('restart'),
+                            icon: Icons.refresh_rounded,
+                            label: 'Restart Test',
+                          ),
+                          const SizedBox(height: 8),
+                          _buildButton(
+                            onPressed: () => _showConfirm('exit'),
+                            icon: Icons.logout_rounded,
+                            label: 'Exit Test',
+                            isError: true,
+                          ),
+                        ],
+                      ),
                     ),
-                    foregroundColor: AppColors.warning,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Premium Icon Header
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.pause_circle_filled_rounded,
+                        color: AppColors.primary,
+                        size: 36,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Test Paused',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.content,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppColors.textPrimary.withValues(alpha: 0.6),
+                        height: 1.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    // Actions
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            widget.onContinue();
+                          },
+                          icon: const Icon(Icons.play_arrow_rounded, size: 24),
+                          label: const Text('Continue Test'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () => _showConfirm('restart'),
+                          icon: const Icon(Icons.refresh_rounded, size: 20),
+                          label: const Text('Restart Test'),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: AppColors.warning.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
+                            foregroundColor: AppColors.warning,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton.icon(
+                          onPressed: () => _showConfirm('exit'),
+                          icon: const Icon(Icons.logout_rounded, size: 20),
+                          label: const Text('Exit & Lose Progress'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextButton.icon(
-                  onPressed: () => _showConfirm('exit'),
-                  icon: const Icon(Icons.logout_rounded, size: 20),
-                  label: const Text('Exit & Lose Progress'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    bool isPrimary = false,
+    bool isError = false,
+  }) {
+    if (isPrimary) {
+      return ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          minimumSize: const Size(double.infinity, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+
+    final color = isError ? AppColors.error : AppColors.warning;
+
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(color: color.withValues(alpha: 0.3)),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -196,13 +318,15 @@ class _TestExitConfirmationDialogState
     final isExit = _confirmAction == 'exit';
     final actionTitle = isExit ? 'Exit Test?' : 'Restart Test?';
     final actionSub = isExit
-        ? 'Are you sure you want to end this session? All unsaved progress will be lost.'
+        ? 'Are you sure you want to end this session? All progress will be lost.'
         : 'Are you sure you want to start over? Current progress will be reset.';
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Container(
       key: const ValueKey('confirm'),
       margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(isLandscape ? 20 : 28),
       decoration: ShapeDecoration(
         color: AppColors.white.withValues(alpha: 0.98),
         shape: ContinuousRectangleBorder(
@@ -218,95 +342,209 @@ class _TestExitConfirmationDialogState
       ),
       child: Material(
         color: Colors.transparent,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: (isExit ? AppColors.error : AppColors.warning)
-                    .withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isExit ? Icons.dangerous_rounded : Icons.help_outline_rounded,
-                color: isExit ? AppColors.error : AppColors.warning,
-                size: 28,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              actionTitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              actionSub,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textPrimary.withValues(alpha: 0.6),
-                height: 1.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: _hideConfirm,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      foregroundColor: AppColors.textSecondary,
-                    ),
-                    child: const Text(
-                      'No, Go Back',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (isExit) {
-                        await DataCleanupService.cleanupTestData(context);
-                        if (mounted) {
-                          Navigator.pop(context);
-                          widget.onExit();
-                        }
-                      } else {
-                        Navigator.pop(context);
-                        widget.onRestart();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isExit
-                          ? AppColors.error
-                          : AppColors.warning,
-                      foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+        child: SingleChildScrollView(
+          child: isLandscape
+              ? Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color:
+                                  (isExit ? AppColors.error : AppColors.warning)
+                                      .withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isExit
+                                  ? Icons.dangerous_rounded
+                                  : Icons.help_outline_rounded,
+                              color: isExit
+                                  ? AppColors.error
+                                  : AppColors.warning,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            actionTitle,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            actionSub,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textPrimary.withValues(
+                                alpha: 0.6,
+                              ),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Text(
-                      isExit ? 'Yes, Exit' : 'Yes, Restart',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () async {
+                              if (isExit) {
+                                await DataCleanupService.cleanupTestData(
+                                  context,
+                                );
+                                if (mounted) {
+                                  Navigator.pop(context);
+                                  widget.onExit();
+                                }
+                              } else {
+                                Navigator.pop(context);
+                                widget.onRestart();
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isExit
+                                  ? AppColors.error
+                                  : AppColors.warning,
+                              foregroundColor: AppColors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              isExit ? 'Yes, Exit' : 'Yes, Restart',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: _hideConfirm,
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.textSecondary,
+                              minimumSize: const Size(double.infinity, 44),
+                            ),
+                            child: const Text(
+                              'No, Go Back',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: (isExit ? AppColors.error : AppColors.warning)
+                            .withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isExit
+                            ? Icons.dangerous_rounded
+                            : Icons.help_outline_rounded,
+                        color: isExit ? AppColors.error : AppColors.warning,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      actionTitle,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      actionSub,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textPrimary.withValues(alpha: 0.6),
+                        height: 1.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: _hideConfirm,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              foregroundColor: AppColors.textSecondary,
+                            ),
+                            child: const Text(
+                              'No, Go Back',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              if (isExit) {
+                                await DataCleanupService.cleanupTestData(
+                                  context,
+                                );
+                                if (mounted) {
+                                  Navigator.pop(context);
+                                  widget.onExit();
+                                }
+                              } else {
+                                Navigator.pop(context);
+                                widget.onRestart();
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isExit
+                                  ? AppColors.error
+                                  : AppColors.warning,
+                              foregroundColor: AppColors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              isExit ? 'Yes, Exit' : 'Yes, Restart',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
         ),
       ),
     );
