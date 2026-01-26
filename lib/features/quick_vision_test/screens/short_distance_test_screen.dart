@@ -799,117 +799,144 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   }
 
   Widget _buildControls() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenHeight = MediaQuery.of(context).size.height;
+        final isSmallHeight = screenHeight < 500;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: const Offset(0, -5),
+              ),
+            ],
           ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      child: Column(
-        children: [
-          if (_showKeyboard)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: TextField(
-                controller: _inputController,
-                focusNode: _inputFocusNode,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'Type what you read...',
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.send, color: AppColors.primary),
-                    onPressed: () => _processSentence(_inputController.text),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            isSmallHeight ? 8 : 16,
+            16,
+            isSmallHeight
+                ? 8
+                : (MediaQuery.of(context).padding.bottom > 0 ? 8 : 24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_showKeyboard)
+                Padding(
+                  padding: EdgeInsets.only(bottom: isSmallHeight ? 8 : 16),
+                  child: TextField(
+                    controller: _inputController,
+                    focusNode: _inputFocusNode,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: 'Type what you read...',
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      contentPadding: isSmallHeight
+                          ? const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.send, color: AppColors.primary),
+                        onPressed: () =>
+                            _processSentence(_inputController.text),
+                      ),
+                    ),
+                    onSubmitted: _processSentence,
                   ),
                 ),
-                onSubmitted: _processSentence,
+              Builder(
+                builder: (context) {
+                  final provider = context.watch<TestSessionProvider>();
+                  final isPractitioner = provider.profileType == 'patient';
+
+                  if (isPractitioner) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildPremiumActionButton(
+                            icon: Icons.check_circle_outline_rounded,
+                            label: 'CAN READ',
+                            gradient: AppColors.successGradient,
+                            height: isSmallHeight ? 50 : 64,
+                            onTap: () {
+                              final sentence = TestConstants
+                                  .shortDistanceSentences[_currentScreen];
+                              _processSentence(sentence.sentence);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildPremiumActionButton(
+                            icon: Icons.highlight_off_rounded,
+                            label: 'UNABLE TO READ',
+                            gradient: AppColors.errorGradient,
+                            height: isSmallHeight ? 50 : 64,
+                            onTap: () => _processSentence('blurry'),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: _buildLargeActionButton(
+                          icon: Icons.keyboard_rounded,
+                          label: 'KEYBOARD',
+                          isActive: _showKeyboard,
+                          compact: isSmallHeight,
+                          color: AppColors.textSecondary,
+                          onTap: () {
+                            setState(() => _showKeyboard = !_showKeyboard);
+                            if (_showKeyboard) _inputFocusNode.requestFocus();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: _buildLargeActionButton(
+                          icon: Icons.mic_rounded,
+                          label: _isListening ? 'LISTENING' : 'VOICE',
+                          isActive: _isListening,
+                          compact: isSmallHeight,
+                          color: AppColors.primary,
+                          onTap: _startListening,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: _buildLargeActionButton(
+                          icon: Icons.visibility_off_rounded,
+                          label: 'BLURRY',
+                          isActive: false,
+                          compact: isSmallHeight,
+                          color: AppColors.warning,
+                          onTap: () => _processSentence('blurry'),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-            ),
-          Builder(
-            builder: (context) {
-              final provider = context.watch<TestSessionProvider>();
-              final isPractitioner = provider.profileType == 'patient';
-
-              if (isPractitioner) {
-                return Row(
-                  children: [
-                    Expanded(
-                      child: _buildPremiumActionButton(
-                        icon: Icons.check_circle_outline_rounded,
-                        label: 'CAN READ',
-                        gradient: AppColors.successGradient,
-                        onTap: () {
-                          final sentence = TestConstants
-                              .shortDistanceSentences[_currentScreen];
-                          _processSentence(sentence.sentence);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildPremiumActionButton(
-                        icon: Icons.highlight_off_rounded,
-                        label: 'UNABLE TO READ',
-                        gradient: AppColors.errorGradient,
-                        onTap: () => _processSentence('blurry'),
-                      ),
-                    ),
-                  ],
-                );
-              }
-
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: _buildLargeActionButton(
-                      icon: Icons.keyboard_rounded,
-                      label: 'KEYBOARD',
-                      isActive: _showKeyboard,
-                      color: AppColors.textSecondary,
-                      onTap: () {
-                        setState(() => _showKeyboard = !_showKeyboard);
-                        if (_showKeyboard) _inputFocusNode.requestFocus();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: _buildLargeActionButton(
-                      icon: Icons.mic_rounded,
-                      label: _isListening ? 'LISTENING' : 'VOICE',
-                      isActive: _isListening,
-                      color: AppColors.primary,
-                      onTap: _startListening,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: _buildLargeActionButton(
-                      icon: Icons.visibility_off_rounded,
-                      label: 'BLURRY',
-                      isActive: false,
-                      color: AppColors.warning,
-                      onTap: () => _processSentence('blurry'),
-                    ),
-                  ),
-                ],
-              );
-            },
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -918,9 +945,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     required String label,
     required List<Color> gradient,
     required VoidCallback onTap,
+    double height = 64,
   }) {
     return Container(
-      height: 64,
+      height: height,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -972,17 +1000,21 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     required bool isActive,
     required Color color,
     required VoidCallback onTap,
+    bool compact = false,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(compact ? 16 : 24),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        constraints: const BoxConstraints(minWidth: 90, maxWidth: 120),
-        height: 80,
+        constraints: BoxConstraints(
+          minWidth: compact ? 70 : 90,
+          maxWidth: compact ? 100 : 120,
+        ),
+        height: compact ? 60 : 80,
         decoration: BoxDecoration(
           color: isActive ? color : color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(compact ? 16 : 24),
           border: Border.all(
             color: isActive ? color : color.withValues(alpha: 0.2),
             width: 2,

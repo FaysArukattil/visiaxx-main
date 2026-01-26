@@ -1376,17 +1376,32 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           child: Stack(
             children: [
               // Main test content
-              Column(
-                children: [
-                  // Progress and info bar
-                  _buildInfoBar(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isLandscape =
+                      MediaQuery.of(context).orientation ==
+                      Orientation.landscape;
+                  final availableHeight = constraints.maxHeight;
 
-                  // Main content
-                  Expanded(child: _buildMainContent()),
+                  return Column(
+                    children: [
+                      // Progress and info bar (more compact in landscape)
+                      _buildInfoBar(isLandscape: isLandscape),
 
-                  // Direction buttons (when showing E)
-                  if (_showE && _waitingForResponse) _buildDirectionButtons(),
-                ],
+                      // Main content
+                      Expanded(
+                        child: _buildMainContent(
+                          isLandscape: isLandscape,
+                          maxHeight: availableHeight,
+                        ),
+                      ),
+
+                      // Direction buttons (when showing E) - Adaptive layout
+                      if (_showE && _waitingForResponse)
+                        _buildDirectionButtons(isLandscape: isLandscape),
+                    ],
+                  );
+                },
               ),
 
               // Distance indicator (bottom right corner)
@@ -1575,9 +1590,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     });
   }
 
-  Widget _buildInfoBar() {
+  Widget _buildInfoBar({bool isLandscape = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: isLandscape ? 6 : 12,
+      ),
       decoration: BoxDecoration(
         color: AppColors.white,
         border: Border(
@@ -1812,7 +1830,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
   }
 
-  Widget _buildMainContent() {
+  Widget _buildMainContent({bool isLandscape = false, double maxHeight = 0}) {
     if (_eyeSwitchPending) {
       return _buildEyeSwitchView();
     }
@@ -1822,11 +1840,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     }
 
     if (_showRelaxation) {
-      return _buildRelaxationView();
+      return _buildRelaxationView(isLandscape: isLandscape);
     }
 
     if (_showE) {
-      return _buildEView();
+      return _buildEView(isLandscape: isLandscape);
     }
 
     if (_showResult) {
@@ -1854,7 +1872,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
   }
 
-  Widget _buildRelaxationView() {
+  Widget _buildRelaxationView({bool isLandscape = false}) {
     return Container(
       color: AppColors.testBackground,
       width: double.infinity,
@@ -1870,11 +1888,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             Builder(
               builder: (context) {
                 final screenHeight = MediaQuery.of(context).size.height;
-                final isLandscape =
-                    MediaQuery.of(context).orientation == Orientation.landscape;
                 final imageHeight = isLandscape
-                    ? screenHeight * 0.45
-                    : screenHeight * 0.65;
+                    ? screenHeight * 0.40
+                    : screenHeight * 0.60;
 
                 return Stack(
                   clipBehavior: Clip.none,
@@ -2015,195 +2031,206 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
   }
 
-  Widget _buildEView() {
+  Widget _buildEView({bool isLandscape = false}) {
     final level = TestConstants.visualAcuityLevels[_currentLevel];
-    final eSize = level
-        .flutterFontSize; // ✅ REVERTED to use fixed flutterFontSize as requested
 
-    return Column(
-      children: [
-        // Timer and Size indicator row - ALWAYS VISIBLE
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            border: Border(
-              bottom: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.3),
-                width: 1,
+    final eSize = level.flutterFontSize;
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        children: [
+          // Timer and Size indicator row - ALWAYS VISIBLE
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: isLandscape ? 6 : 12,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                  width: 1,
+                ),
               ),
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // ✅ PROMINENT Size indicator on LEFT
-              Container(
-                width: 72,
-                height: 44,
-                decoration: ShapeDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  shadows: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // ✅ PROMINENT Size indicator on LEFT
+                Container(
+                  width: 72,
+                  height: 44,
+                  decoration: ShapeDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    shape: ContinuousRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
                     ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    level.snellen,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Timer on RIGHT
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'TIME REMAINING',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.textSecondary.withValues(alpha: 0.5),
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.timer_outlined,
-                        size: 16,
-                        color: _eDisplayCountdown <= 2
-                            ? AppColors.error
-                            : AppColors.primary,
+                    shadows: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _isTestPausedForDistance
-                            ? 'PAUSED'
-                            : '${_eDisplayCountdown}s',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      level.snellen,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Timer on RIGHT
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'TIME REMAINING',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textSecondary.withValues(alpha: 0.5),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 16,
                           color: _eDisplayCountdown <= 2
                               ? AppColors.error
                               : AppColors.primary,
-                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // Main E display area
-        Expanded(
-          child: Center(
-            child: Transform.rotate(
-              angle: _currentDirection.rotationDegrees * pi / 180,
-              // ✅ FIX: Force antialiasing and proper rendering
-              filterQuality: FilterQuality.high,
-              child: Text(
-                'E',
-                style: TextStyle(
-                  fontSize: eSize,
-                  fontWeight: FontWeight.bold, // Maximum boldness
-
-                  color: AppColors.black,
-                  letterSpacing: 0,
-                  height: 1.0,
+                        const SizedBox(width: 6),
+                        Text(
+                          _isTestPausedForDistance
+                              ? 'PAUSED'
+                              : '${_eDisplayCountdown}s',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: _eDisplayCountdown <= 2
+                                ? AppColors.error
+                                : AppColors.primary,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                // ✅ Add text scaling to ensure crisp rendering
-                textScaler: TextScaler.noScaling,
+              ],
+            ),
+          ),
+
+          // Main E display area - Use a guaranteed height if expanded is too small
+          Container(
+            padding: const EdgeInsets.all(20),
+            constraints: BoxConstraints(minHeight: isLandscape ? 150 : 250),
+            child: Center(
+              child: Transform.rotate(
+                angle: _currentDirection.rotationDegrees * pi / 180,
+                // ✅ FIX: Force antialiasing and proper rendering
+                filterQuality: FilterQuality.high,
+                child: Text(
+                  'E',
+                  style: TextStyle(
+                    fontSize: eSize,
+                    fontWeight: FontWeight.bold, // Maximum boldness
+
+                    color: AppColors.black,
+                    letterSpacing: 0,
+                    height: 1.0,
+                  ),
+                  // ✅ Add text scaling to ensure crisp rendering
+                  textScaler: TextScaler.noScaling,
+                ),
               ),
             ),
           ),
-        ),
 
-        // Instruction text with voice status
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Builder(
-            builder: (context) {
-              final provider = context.watch<TestSessionProvider>();
-              final isPractitioner = provider.profileType == 'patient';
+          // Instruction text with voice status
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Builder(
+              builder: (context) {
+                final provider = context.watch<TestSessionProvider>();
+                final isPractitioner = provider.profileType == 'patient';
 
-              return Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_isListening && !isPractitioner)
-                        Icon(
-                          Icons.mic,
-                          size: 20,
-                          color: _isTestPausedForDistance
-                              ? AppColors.warning
-                              : AppColors.success,
-                        ),
-                      if (_isListening && !isPractitioner)
-                        const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          _isTestPausedForDistance
-                              ? 'Test paused - Adjust distance'
-                              : 'Which way is the E pointing?',
-                          style: TextStyle(
+                return Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isListening && !isPractitioner)
+                          Icon(
+                            Icons.mic,
+                            size: 20,
                             color: _isTestPausedForDistance
                                 ? AppColors.warning
-                                : AppColors.textSecondary,
-                            fontSize: 16,
-                            fontWeight: _isTestPausedForDistance
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                                : AppColors.success,
                           ),
-                          textAlign: TextAlign.center,
+                        if (_isListening && !isPractitioner)
+                          const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _isTestPausedForDistance
+                                ? 'Test paused - Adjust distance'
+                                : 'Which way is the E pointing?',
+                            style: TextStyle(
+                              color: _isTestPausedForDistance
+                                  ? AppColors.warning
+                                  : AppColors.textSecondary,
+                              fontSize: 16,
+                              fontWeight: _isTestPausedForDistance
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
+                      ],
+                    ),
+                    if (!isPractitioner) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _isTestPausedForDistance
+                            ? 'Voice recognition active - waiting to resume'
+                            : 'Use buttons or say: Upper or Upward, Down or Downward, Left, Right',
+                        style: TextStyle(
+                          color: AppColors.textTertiary,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
-                  ),
-                  if (!isPractitioner) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _isTestPausedForDistance
-                          ? 'Voice recognition active - waiting to resume'
-                          : 'Use buttons or say: Upper or Upward, Down or Downward, Left, Right',
-                      style: TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 12,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
                   ],
-                ],
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildDirectionButtons() {
+  Widget _buildDirectionButtons({bool isLandscape = false}) {
+    if (isLandscape) {
+      return _buildLandscapeDirectionButtons();
+    }
     return Container(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+      padding: const EdgeInsets.fromLTRB(32, 20, 32, 32),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -2245,7 +2272,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             direction: EDirection.down,
             onPressed: () => _handleButtonResponse(EDirection.down),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           // Blurry/Can't See Clearly button (Proper Button)
           SizedBox(
             width: double.infinity,
@@ -2266,7 +2293,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 side: BorderSide(
                   color: AppColors.primary.withValues(alpha: 0.5),
                   width: 1.5,
@@ -2275,6 +2302,79 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   borderRadius: BorderRadius.circular(16),
                 ),
                 backgroundColor: AppColors.primary.withValues(alpha: 0.05),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLandscapeDirectionButtons() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Left button
+          _DirectionButton(
+            direction: EDirection.left,
+            compact: true,
+            onPressed: () => _handleButtonResponse(EDirection.left),
+          ),
+          const SizedBox(width: 20),
+          // Column for Up/Down
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _DirectionButton(
+                direction: EDirection.up,
+                compact: true,
+                onPressed: () => _handleButtonResponse(EDirection.up),
+              ),
+              const SizedBox(height: 8),
+              _DirectionButton(
+                direction: EDirection.down,
+                compact: true,
+                onPressed: () => _handleButtonResponse(EDirection.down),
+              ),
+            ],
+          ),
+          const SizedBox(width: 20),
+          // Right button
+          _DirectionButton(
+            direction: EDirection.right,
+            compact: true,
+            onPressed: () => _handleButtonResponse(EDirection.right),
+          ),
+          const SizedBox(width: 40),
+          // Blurry button
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _handleButtonResponse(EDirection.blurry),
+              icon: const Icon(Icons.visibility_off_rounded, size: 16),
+              label: const Text(
+                "BLURRY",
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -2648,8 +2748,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 class _DirectionButton extends StatelessWidget {
   final EDirection direction;
   final VoidCallback onPressed;
+  final bool compact;
 
-  const _DirectionButton({required this.direction, required this.onPressed});
+  const _DirectionButton({
+    required this.direction,
+    required this.onPressed,
+    this.compact = false,
+  });
 
   IconData get _icon {
     switch (direction) {
@@ -2668,17 +2773,18 @@ class _DirectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = compact ? 48.0 : 64.0;
     return Container(
-      width: 64,
-      height: 64,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(compact ? 12 : 20),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: compact ? 6 : 10,
+            offset: Offset(0, compact ? 2 : 4),
           ),
         ],
       ),

@@ -89,198 +89,210 @@ class _HowToRespondAnimationState extends State<HowToRespondAnimation>
       mainAxisSize: MainAxisSize.min,
       children: [
         // Main animation area
-        Container(
-          height: widget.isCompact
-              ? 320.0
-              : 380.0, // Increased to fit labels inside
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              width: 2,
-            ),
-          ),
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              final fadeIn = (_controller.value * 2.5).clamp(0.0, 1.0);
-              final buttonPress =
-                  (_controller.value > 0.5 && _controller.value < 0.8)
-                  ? ((_controller.value - 0.5) / 0.3).clamp(0.0, 1.0)
-                  : 0.0;
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final double horizontalPadding = widget.isCompact ? 12 : 16;
+            final double verticalPadding = widget.isCompact ? 12 : 16;
 
-              return Column(
-                children: [
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildDirectionButton(
-                            Icons.arrow_upward,
-                            buttonSize,
-                            _ButtonPosition.top,
-                            buttonPress,
-                            fadeIn,
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: widget.isCompact ? 320.0 : 380.0,
+              ),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  width: 2,
+                ),
+              ),
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  final fadeIn = (_controller.value * 2.5).clamp(0.0, 1.0);
+                  final buttonPress =
+                      (_controller.value > 0.5 && _controller.value < 0.8)
+                      ? ((_controller.value - 0.5) / 0.3).clamp(0.0, 1.0)
+                      : 0.0;
+
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               _buildDirectionButton(
-                                Icons.arrow_back,
+                                Icons.arrow_upward,
                                 buttonSize,
-                                _ButtonPosition.left,
+                                _ButtonPosition.top,
                                 buttonPress,
                                 fadeIn,
                               ),
-                              SizedBox(width: widget.isCompact ? 40 : 50),
-                              _currentDirection < 4
-                                  ? Opacity(
-                                      opacity: fadeIn,
-                                      child: Transform.rotate(
-                                        angle:
-                                            _directions[_currentDirection]
-                                                .rotation *
-                                            pi /
-                                            180,
-                                        child: Text(
-                                          'E',
-                                          style: TextStyle(
-                                            fontSize: eSize,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary,
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildDirectionButton(
+                                    Icons.arrow_back,
+                                    buttonSize,
+                                    _ButtonPosition.left,
+                                    buttonPress,
+                                    fadeIn,
+                                  ),
+                                  SizedBox(width: widget.isCompact ? 40 : 50),
+                                  _currentDirection < 4
+                                      ? Opacity(
+                                          opacity: fadeIn,
+                                          child: Transform.rotate(
+                                            angle:
+                                                _directions[_currentDirection]
+                                                    .rotation *
+                                                pi /
+                                                180,
+                                            child: Text(
+                                              'E',
+                                              style: TextStyle(
+                                                fontSize: eSize,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : SizedBox(
+                                          width: eSize,
+                                          height: eSize,
+                                          child: Icon(
+                                            Icons.blur_on,
+                                            size: eSize,
+                                            color: AppColors.grey.withValues(
+                                              alpha: 0.3,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    )
-                                  : SizedBox(
-                                      width: eSize,
-                                      height: eSize,
-                                      child: Icon(
-                                        Icons.blur_on,
-                                        size: eSize,
-                                        color: AppColors.grey.withValues(alpha: 0.3),
-                                      ),
-                                    ),
-                              SizedBox(width: widget.isCompact ? 40 : 50),
+                                  SizedBox(width: widget.isCompact ? 40 : 50),
+                                  _buildDirectionButton(
+                                    Icons.arrow_forward,
+                                    buttonSize,
+                                    _ButtonPosition.right,
+                                    buttonPress,
+                                    fadeIn,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
                               _buildDirectionButton(
-                                Icons.arrow_forward,
+                                Icons.arrow_downward,
                                 buttonSize,
-                                _ButtonPosition.right,
+                                _ButtonPosition.bottom,
                                 buttonPress,
                                 fadeIn,
+                              ),
+                              const SizedBox(height: 16),
+                              Opacity(
+                                opacity: fadeIn,
+                                child: _buildBlurryButton(
+                                  buttonPress,
+                                  widget.isCompact,
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          _buildDirectionButton(
-                            Icons.arrow_downward,
-                            buttonSize,
-                            _ButtonPosition.bottom,
-                            buttonPress,
-                            fadeIn,
-                          ),
-                          const SizedBox(height: 16),
-                          Opacity(
-                            opacity: fadeIn,
-                            child: _buildBlurryButton(
-                              buttonPress,
-                              widget.isCompact,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Direction label (Now inside the container)
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: Container(
-                      key: ValueKey(_currentDirection),
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: widget.isCompact ? 8 : 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          width: 1,
                         ),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
+                      const SizedBox(height: 12),
+                      // Direction label (Now inside the container)
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: Container(
+                          key: ValueKey(_currentDirection),
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: widget.isCompact ? 8 : 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                _currentDirection < 4
-                                    ? _getDirectionIcon()
-                                    : Icons.visibility_off,
-                                color: _currentDirection < 4
-                                    ? AppColors.primary
-                                    : AppColors.warning,
-                                size: widget.isCompact ? 16 : 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  _currentDirection < 4
-                                      ? 'Tap ${_directions[_currentDirection].label}'
-                                      : 'Tap "Can\'t See Clearly"',
-                                  style: TextStyle(
-                                    fontSize: widget.isCompact ? 12 : 13,
-                                    fontWeight: FontWeight.bold,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _currentDirection < 4
+                                        ? _getDirectionIcon()
+                                        : Icons.visibility_off,
                                     color: _currentDirection < 4
                                         ? AppColors.primary
                                         : AppColors.warning,
+                                    size: widget.isCompact ? 16 : 18,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      _currentDirection < 4
+                                          ? 'Tap ${_directions[_currentDirection].label}'
+                                          : 'Tap "Can\'t See Clearly"',
+                                      style: TextStyle(
+                                        fontSize: widget.isCompact ? 12 : 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: _currentDirection < 4
+                                            ? AppColors.primary
+                                            : AppColors.warning,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.mic,
-                                color: AppColors.success,
-                                size: widget.isCompact ? 12 : 14,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  _directions[_currentDirection].voiceText,
-                                  style: TextStyle(
-                                    fontSize: widget.isCompact ? 10 : 11,
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.mic,
                                     color: AppColors.success,
-                                    fontWeight: FontWeight.w500,
+                                    size: widget.isCompact ? 12 : 14,
                                   ),
-                                  textAlign: TextAlign.center,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      _directions[_currentDirection].voiceText,
+                                      style: TextStyle(
+                                        fontSize: widget.isCompact ? 10 : 11,
+                                        color: AppColors.success,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+                    ],
+                  );
+                },
+              ),
+            );
+          },
         ),
       ],
     );
@@ -496,4 +508,3 @@ class _DirectionDemo {
     required this.buttonPosition,
   });
 }
-

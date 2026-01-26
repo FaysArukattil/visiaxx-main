@@ -884,92 +884,129 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   }
 
   Widget _buildTestView() {
-    final currentPoints = _currentEye == 'right'
-        ? _rightEyePoints
-        : _leftEyePoints;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLandscape = constraints.maxWidth > constraints.maxHeight;
 
-    return Column(
-      children: [
-        // MASSIVE Grid - takes maximum space
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Calculate maximum grid size (98% of available space for HUGE grid)
-                final maxSize =
-                    min(constraints.maxWidth, constraints.maxHeight) * 0.98;
-
-                return Center(
-                  child: Container(
-                    width: maxSize,
-                    height: maxSize,
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
-                        ),
-                        BoxShadow(
-                          color: AppColors.black.withValues(alpha: 0.05),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: GestureDetector(
-                        onPanStart: (details) =>
-                            _onPanStartRestricted(details, maxSize),
-                        onPanUpdate: (details) =>
-                            _onPanUpdateRestricted(details, maxSize),
-                        child: RepaintBoundary(
-                          key: _gridKey,
-                          child: Stack(
-                            children: [
-                              // Grid image
-                              Positioned.fill(
-                                child: Image.asset(
-                                  AppAssets.amslerGrid,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      _buildFallbackGrid(),
-                                ),
-                              ),
-                              // Drawing overlay
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: AmslerGridPainter(
-                                    points: currentPoints,
-                                    distortionColor: _getPointColor(
-                                      'distortion',
-                                    ),
-                                    missingColor: _getPointColor('missing'),
-                                    blurryColor: _getPointColor('blurry'),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+        if (isLandscape) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left: Grid
+              Expanded(
+                flex: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: _buildGridInterface(
+                    min(constraints.maxWidth * 0.5, constraints.maxHeight - 40),
+                  ),
+                ),
+              ),
+              // Right: Questions and Controls
+              Expanded(
+                flex: 3,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    border: Border(
+                      left: BorderSide(
+                        color: AppColors.border.withValues(alpha: 0.3),
+                        width: 1,
                       ),
                     ),
                   ),
-                );
-              },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: _buildAmslerControls(),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          children: [
+            // Grid
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: _buildGridInterface(
+                  min(constraints.maxWidth, constraints.maxHeight) * 0.98,
+                ),
+              ),
+            ),
+            // Questions and Controls
+            _buildAmslerControls(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildGridInterface(double size) {
+    return Center(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: GestureDetector(
+            onPanStart: (details) => _onPanStartRestricted(details, size),
+            onPanUpdate: (details) => _onPanUpdateRestricted(details, size),
+            child: RepaintBoundary(
+              key: _gridKey,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      AppAssets.amslerGrid,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildFallbackGrid(),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: AmslerGridPainter(
+                        points: _currentEye == 'right'
+                            ? _rightEyePoints
+                            : _leftEyePoints,
+                        distortionColor: _getPointColor('distortion'),
+                        missingColor: _getPointColor('missing'),
+                        blurryColor: _getPointColor('blurry'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
 
-        // Questions section
+  Widget _buildAmslerControls() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Questions
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.all(16),
@@ -1006,13 +1043,12 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             ],
           ),
         ),
-
-        // Mode Selector + Action Buttons in same row
+        const SizedBox(height: 20),
+        // Mode Selector + Action Buttons
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           child: Column(
             children: [
-              // Mode Selector Row
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
@@ -1046,7 +1082,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               const SizedBox(height: 12),
               Row(
                 children: [
-                  // ✅ Undo Button - Enhanced
                   _buildActionButton(
                     icon: Icons.undo_rounded,
                     onTap: _undoLastPoint,
@@ -1054,7 +1089,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                     tooltip: 'Undo',
                   ),
                   const SizedBox(width: 8),
-                  // ✅ Delete Button - Enhanced
                   _buildActionButton(
                     icon: Icons.delete_outline_rounded,
                     onTap: _clearPoints,
@@ -1062,7 +1096,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                     tooltip: 'Clear All',
                   ),
                   const SizedBox(width: 12),
-                  // Continue Button (keep existing code)
                   Expanded(
                     child: _ContinueButton(
                       label: _currentEye == 'right'
@@ -1073,8 +1106,6 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              // Action Buttons Row
             ],
           ),
         ),

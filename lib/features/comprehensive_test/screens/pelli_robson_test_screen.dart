@@ -1054,23 +1054,27 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       ),
       child: Opacity(
         opacity: rowOpacity,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: triplet.letters.split('').map((letter) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Text(
-                letter,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Sloan',
-                  color: AppColors.black,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: triplet.letters.split('').map((letter) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  letter,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Sloan',
+                    color: AppColors.black,
+                  ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
       ),
     );

@@ -29,6 +29,11 @@ class DistanceWarningOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!isVisible) return const SizedBox.shrink();
 
+    final mediaQuery = MediaQuery.of(context);
+    final isLandscape = mediaQuery.orientation == Orientation.landscape;
+    final screenHeight = mediaQuery.size.height;
+    final isSmallHeight = screenHeight < 500;
+
     final pauseReason = DistanceHelper.getPauseReason(status, targetDistance);
     final instruction = DistanceHelper.getDetailedInstruction(targetDistance);
 
@@ -67,10 +72,11 @@ class DistanceWarningOverlay extends StatelessWidget {
           // 2. High-Fidelity Content Card
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 24),
+              padding: EdgeInsets.symmetric(vertical: isSmallHeight ? 12 : 24),
               child: Container(
+                constraints: BoxConstraints(maxWidth: isLandscape ? 500 : 400),
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(isSmallHeight ? 16 : 24),
                 decoration: ShapeDecoration(
                   color: AppColors.white.withValues(alpha: 0.95),
                   shape: ContinuousRectangleBorder(
@@ -87,47 +93,49 @@ class DistanceWarningOverlay extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Premium Badge
-                    Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: iconColor.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: iconColor.withValues(alpha: 0.12),
-                            blurRadius: 20,
-                            spreadRadius: 3,
+                    if (!isSmallHeight) ...[
+                      // Premium Badge - Only show if not very small height
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: iconColor.withValues(alpha: 0.2),
+                            width: 1,
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 54,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            color: iconColor.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: iconColor.withValues(alpha: 0.3),
-                              width: 1.5,
+                          boxShadow: [
+                            BoxShadow(
+                              color: iconColor.withValues(alpha: 0.12),
+                              blurRadius: 20,
+                              spreadRadius: 3,
                             ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              color: iconColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: iconColor.withValues(alpha: 0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Icon(icon, size: 28, color: iconColor),
                           ),
-                          child: Icon(icon, size: 28, color: iconColor),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Typography
                     Text(
                       pauseReason.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontSize: isSmallHeight ? 18 : 20,
                         fontWeight: FontWeight.w900,
                         color: AppColors.textPrimary,
                         letterSpacing: -0.5,
@@ -140,22 +148,26 @@ class DistanceWarningOverlay extends StatelessWidget {
                       instruction,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: isSmallHeight ? 12 : 14,
                         color: AppColors.textPrimary.withValues(alpha: 0.6),
                         height: 1.5,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.1,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: isSmallHeight ? 16 : 24),
 
                     // LIVE DISTANCE GAUGE
                     if (DistanceHelper.isFaceDetected(status)) ...[
-                      _buildPremiumDistanceGauge(targetDistance, iconColor),
+                      _buildPremiumDistanceGauge(
+                        targetDistance,
+                        iconColor,
+                        isSmallHeight: isSmallHeight,
+                      ),
                     ] else
                       _buildSearchingIndicator(),
 
-                    const SizedBox(height: 40),
+                    SizedBox(height: isSmallHeight ? 24 : 40),
 
                     // Actions
                     SizedBox(
@@ -169,7 +181,9 @@ class DistanceWarningOverlay extends StatelessWidget {
                               alpha: 0.3,
                             ),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(
+                            vertical: isSmallHeight ? 12 : 16,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -194,7 +208,11 @@ class DistanceWarningOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildPremiumDistanceGauge(double target, Color statusColor) {
+  Widget _buildPremiumDistanceGauge(
+    double target,
+    Color statusColor, {
+    bool isSmallHeight = false,
+  }) {
     final isTooClose = status == DistanceStatus.tooClose;
     final isTooFar = status == DistanceStatus.tooFar;
     final isOptimal = status == DistanceStatus.optimal;
