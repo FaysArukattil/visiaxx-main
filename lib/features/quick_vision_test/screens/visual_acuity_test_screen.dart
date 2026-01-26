@@ -1384,29 +1384,33 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   final availableHeight = constraints.maxHeight;
 
                   if (isLandscape && _showE && _waitingForResponse) {
-                    return Row(
+                    return Column(
                       children: [
+                        _buildInfoBar(isLandscape: true),
                         Expanded(
-                          flex: 3,
-                          child: Column(
+                          child: Row(
                             children: [
-                              _buildInfoBar(isLandscape: true),
                               Expanded(
+                                flex: 3,
                                 child: _buildEView(
                                   isLandscape: true,
                                   isSideBySide: true,
                                 ),
                               ),
+                              Container(
+                                width: 1,
+                                color: AppColors.border.withValues(alpha: 0.2),
+                              ),
+                              SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: SizedBox(
+                                  width: 280,
+                                  child:
+                                      _buildLandscapeDirectionButtonsSidePanel(),
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                        Container(
-                          width: 1,
-                          color: AppColors.border.withValues(alpha: 0.2),
-                        ),
-                        SizedBox(
-                          width: 280,
-                          child: _buildLandscapeDirectionButtonsSidePanel(),
                         ),
                       ],
                     );
@@ -1432,16 +1436,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   );
                 },
               ),
-
-              // Distance indicator (bottom right corner)
-              if (_useDistanceMonitoring && !_showDistanceCalibration)
-                Positioned(
-                  right: 12,
-                  bottom: (_showE && _waitingForResponse) || _testComplete
-                      ? 120
-                      : 55, // Final fine-tuning to 55 for perfect clearance
-                  child: _buildDistanceIndicator(),
-                ),
 
               Positioned(
                 bottom: _showE && _waitingForResponse ? 150 : 50,
@@ -1470,7 +1464,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
   }
 
-  Widget _buildDistanceIndicator() {
+  Widget _buildDistanceIndicator({bool compact = false}) {
     final indicatorColor = DistanceHelper.getDistanceColor(
       _currentDistance,
       100.0,
@@ -1479,6 +1473,40 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     final distanceText = _currentDistance > 0
         ? '${_currentDistance.toStringAsFixed(0)}cm'
         : 'Searching...';
+
+    if (compact) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: ShapeDecoration(
+          color: indicatorColor.withValues(alpha: 0.08),
+          shape: ContinuousRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: indicatorColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              distanceText,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: indicatorColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
@@ -1688,7 +1716,70 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               ),
             ),
           ),
+          if (isLandscape && _showE) ...[
+            const SizedBox(width: 8),
+            // Snellen Size in Bar (Landscape)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: ShapeDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: ContinuousRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                TestConstants.visualAcuityLevels[_currentLevel].snellen,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Timer in Bar (Landscape)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: ShapeDecoration(
+                color:
+                    (_eDisplayCountdown <= 2
+                            ? AppColors.error
+                            : AppColors.primary)
+                        .withValues(alpha: 0.08),
+                shape: ContinuousRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.timer_outlined,
+                    size: 14,
+                    color: _eDisplayCountdown <= 2
+                        ? AppColors.error
+                        : AppColors.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${_eDisplayCountdown}s',
+                    style: TextStyle(
+                      color: _eDisplayCountdown <= 2
+                          ? AppColors.error
+                          : AppColors.primary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const Spacer(),
+          // Distance Indicator (Compact)
+          if (_useDistanceMonitoring && !_showDistanceCalibration) ...[
+            _buildDistanceIndicator(compact: true),
+            const SizedBox(width: 8),
+          ],
           // Speech waveform with Retry Indicator
           // Speech waveform with Retry Indicator
           Builder(
@@ -1906,157 +1997,200 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       color: AppColors.testBackground,
       width: double.infinity,
       height: double.infinity,
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 20),
-            // Hero Card with Image and Overlapping Timer (Maximized)
-            Builder(
-              builder: (context) {
-                final screenHeight = MediaQuery.of(context).size.height;
-                final imageHeight = isLandscape
-                    ? screenHeight * 0.40
-                    : screenHeight * 0.60;
-
-                return Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.bottomCenter,
+      child: isLandscape
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Left Side: Image and Overlapping Timer (Left Aligned)
+                  Expanded(
+                    flex: 12, // Take more space
+                    child: _buildRelaxationHero(isLandscape: true),
+                  ),
+                  const SizedBox(width: 32),
+                  // Right Side: Instructions (Take remaining space)
+                  Expanded(flex: 5, child: _buildRelaxationInstructions()),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 16,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Image Card
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      height: imageHeight,
-                      width: double.infinity,
-                      decoration: ShapeDecoration(
-                        color: AppColors.white,
-                        shape: ContinuousRectangleBorder(
-                          borderRadius: BorderRadius.circular(32),
-                        ),
-                        shadows: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.12),
-                            blurRadius: 40,
-                            offset: const Offset(0, 20),
-                          ),
-                        ],
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Image.asset(
-                        AppAssets.relaxationImage,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.primary.withValues(alpha: 0.05),
-                          child: const Icon(
-                            Icons.landscape,
-                            size: 100,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Glassmorphism Smooth Timer
-                    Positioned(
-                      bottom: -45, // Half of timer height (90/2)
-                      child: AnimatedBuilder(
-                        animation: _relaxationProgressController,
-                        builder: (context, child) {
-                          return Container(
-                            width: 90,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              color: AppColors.white.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 25,
-                                  spreadRadius: 2,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: BackdropFilter(
-                                filter: ui.ImageFilter.blur(
-                                  sigmaX: 12,
-                                  sigmaY: 12,
-                                ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: AppColors.white.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 80,
-                                        height: 80,
-                                        child: CircularProgressIndicator(
-                                          value: _relaxationProgressController
-                                              .value,
-                                          strokeWidth: 4,
-                                          backgroundColor: AppColors.primary
-                                              .withValues(alpha: 0.1),
-                                          valueColor:
-                                              const AlwaysStoppedAnimation<
-                                                Color
-                                              >(AppColors.primary),
-                                        ),
-                                      ),
-                                      Text(
-                                        '$_relaxationCountdown',
-                                        style: const TextStyle(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.w900,
-                                          color: AppColors.primary,
-                                          fontFamily: 'Inter',
-                                          letterSpacing: -1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    _buildRelaxationHero(isLandscape: false),
+                    const SizedBox(height: 60),
+                    _buildRelaxationInstructions(),
+                    const SizedBox(height: 40),
                   ],
-                );
-              },
-            ),
-            const SizedBox(
-              height: 60,
-            ), // Adjusted spacing for large overlapping timer
-            // Standardized Instruction Text
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'Relax and focus on the distance',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
                 ),
               ),
             ),
+    );
+  }
 
-            const SizedBox(height: 100),
-          ],
+  Widget _buildRelaxationImage({required bool isLandscape, double? height}) {
+    return Builder(
+      builder: (context) {
+        final screenHeight = MediaQuery.of(context).size.height;
+        final finalHeight =
+            height ?? (isLandscape ? screenHeight : screenHeight * 0.60);
+
+        return Container(
+          height: finalHeight,
+          width: double.infinity,
+          decoration: ShapeDecoration(
+            color: AppColors.white,
+            shape: ContinuousRectangleBorder(
+              borderRadius: BorderRadius.circular(32),
+            ),
+            shadows: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Image.asset(
+            AppAssets.relaxationImage,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              child: const Icon(
+                Icons.landscape,
+                size: 100,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRelaxationTimer() {
+    return AnimatedBuilder(
+      animation: _relaxationProgressController,
+      builder: (context, child) {
+        return Center(
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: AppColors.white.withValues(
+                alpha: 0.8,
+              ), // More opaque since it's not over image
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  blurRadius: 25,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 90,
+                  height: 90,
+                  child: CircularProgressIndicator(
+                    value: _relaxationProgressController.value,
+                    strokeWidth: 5,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$_relaxationCountdown',
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primary,
+                    fontFamily: 'Inter',
+                    letterSpacing: -1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRelaxationHero({required bool isLandscape}) {
+    return Builder(
+      builder: (context) {
+        final screenHeight = MediaQuery.of(context).size.height;
+
+        final imageHeight = isLandscape
+            ? screenHeight * 0.8
+            : screenHeight * 0.60;
+
+        return Align(
+          alignment: isLandscape ? Alignment.centerLeft : Alignment.center,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: isLandscape
+                ? Alignment.centerRight
+                : Alignment.bottomCenter,
+            children: [
+              // Image Card
+              Container(
+                margin: EdgeInsets.only(
+                  right: isLandscape ? 50 : 0, // Room for timer overlap
+                  bottom: isLandscape ? 0 : 45, // Room for timer overlap
+                ),
+                child: _buildRelaxationImage(
+                  isLandscape: isLandscape,
+                  height: imageHeight,
+                ),
+              ),
+
+              // Glassmorphism Smooth Timer
+              Positioned(
+                right: isLandscape ? 0 : null,
+                bottom: isLandscape ? null : -45,
+                child: _buildRelaxationTimer(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRelaxationInstructions() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Standardized Instruction Text
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'Relax and focus on the distance',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -2069,8 +2203,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
-          // Timer and Size indicator row - ONLY show in non-side-by-side or if specifically needed
-          if (!isSideBySide)
+          // Timer and Size indicator row
+          if (!isSideBySide && !isLandscape)
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: 20,
@@ -2226,10 +2360,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                               color: _isTestPausedForDistance
                                   ? AppColors.warning
                                   : AppColors.textSecondary,
-                              fontSize: 14,
                               fontWeight: _isTestPausedForDistance
                                   ? FontWeight.bold
                                   : FontWeight.normal,
+                              fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -2433,48 +2567,60 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               color: AppColors.textTertiary,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           _DirectionButton(
             direction: EDirection.up,
+            compact: true,
             onPressed: () => _handleButtonResponse(EDirection.up),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _DirectionButton(
                 direction: EDirection.left,
+                compact: true,
                 onPressed: () => _handleButtonResponse(EDirection.left),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 80),
               _DirectionButton(
                 direction: EDirection.right,
+                compact: true,
                 onPressed: () => _handleButtonResponse(EDirection.right),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _DirectionButton(
             direction: EDirection.down,
+            compact: true,
             onPressed: () => _handleButtonResponse(EDirection.down),
           ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => _handleButtonResponse(EDirection.blurry),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                "BLURRY",
-                style: TextStyle(
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _handleButtonResponse(EDirection.blurry),
+                icon: const Icon(
+                  Icons.visibility_off_rounded,
+                  size: 18,
                   color: AppColors.primary,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
+                ),
+                label: const Text(
+                  "BLURRY",
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
