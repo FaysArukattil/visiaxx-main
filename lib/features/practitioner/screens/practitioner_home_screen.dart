@@ -803,13 +803,13 @@ class _CompactServiceCard extends StatelessWidget {
                 ],
               ),
               child: Container(
-                height: height,
+                constraints: BoxConstraints(minHeight: height),
                 padding: EdgeInsets.all(cardPadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (height > 80)
+                    if (height > 60) ...[
                       Container(
                         width: iconSize + 14,
                         height: iconSize + 14,
@@ -823,37 +823,37 @@ class _CompactServiceCard extends StatelessWidget {
                           size: iconSize,
                         ),
                       ),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: titleFontSize,
-                              color: AppColors.primary,
-                              height: 1.1,
-                              letterSpacing: -0.2,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                      SizedBox(height: cardPadding * 0.8),
+                    ],
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: titleFontSize,
+                            color: AppColors.primary,
+                            height: 1.1,
+                            letterSpacing: -0.2,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: subtitleFontSize,
-                              color: AppColors.textSecondary,
-                              height: 1.1,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: subtitleFontSize,
+                            color: AppColors.textSecondary,
+                            height: 1.1,
                           ),
-                        ],
-                      ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -929,7 +929,7 @@ class _WideServiceCard extends StatelessWidget {
                 ],
               ),
               child: Container(
-                height: height,
+                constraints: BoxConstraints(minHeight: height),
                 padding: EdgeInsets.symmetric(
                   horizontal: (cardConstraints.maxWidth * 0.04).clamp(
                     12.0,
@@ -939,7 +939,7 @@ class _WideServiceCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    if (height > 60)
+                    if (height > 40)
                       Container(
                         width: iconSize + 14,
                         height: iconSize + 14,
@@ -988,6 +988,7 @@ class _WideServiceCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
