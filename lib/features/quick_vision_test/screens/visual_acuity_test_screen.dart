@@ -1383,6 +1383,35 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                       Orientation.landscape;
                   final availableHeight = constraints.maxHeight;
 
+                  if (isLandscape && _showE && _waitingForResponse) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            children: [
+                              _buildInfoBar(isLandscape: true),
+                              Expanded(
+                                child: _buildEView(
+                                  isLandscape: true,
+                                  isSideBySide: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          color: AppColors.border.withValues(alpha: 0.2),
+                        ),
+                        SizedBox(
+                          width: 280,
+                          child: _buildLandscapeDirectionButtonsSidePanel(),
+                        ),
+                      ],
+                    );
+                  }
+
                   return Column(
                     children: [
                       // Progress and info bar (more compact in landscape)
@@ -1844,7 +1873,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     }
 
     if (_showE) {
-      return _buildEView(isLandscape: isLandscape);
+      return _buildEView(isLandscape: isLandscape, isSideBySide: false);
     }
 
     if (_showResult) {
@@ -2031,7 +2060,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     );
   }
 
-  Widget _buildEView({bool isLandscape = false}) {
+  Widget _buildEView({bool isLandscape = false, bool isSideBySide = false}) {
     final level = TestConstants.visualAcuityLevels[_currentLevel];
 
     final eSize = level.flutterFontSize;
@@ -2040,104 +2069,109 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
-          // Timer and Size indicator row - ALWAYS VISIBLE
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: isLandscape ? 6 : 12,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              border: Border(
-                bottom: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.3),
-                  width: 1,
+          // Timer and Size indicator row - ONLY show in non-side-by-side or if specifically needed
+          if (!isSideBySide)
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: isLandscape ? 6 : 12,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.border.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
                 ),
               ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // ✅ PROMINENT Size indicator on LEFT
-                Container(
-                  width: 72,
-                  height: 44,
-                  decoration: ShapeDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    shape: ContinuousRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    shadows: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // ✅ PROMINENT Size indicator on LEFT
+                  Container(
+                    width: 72,
+                    height: 44,
+                    decoration: ShapeDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      shape: ContinuousRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      level.snellen,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.primary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Timer on RIGHT
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'TIME REMAINING',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textSecondary.withValues(alpha: 0.5),
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.timer_outlined,
-                          size: 16,
-                          color: _eDisplayCountdown <= 2
-                              ? AppColors.error
-                              : AppColors.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _isTestPausedForDistance
-                              ? 'PAUSED'
-                              : '${_eDisplayCountdown}s',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: _eDisplayCountdown <= 2
-                                ? AppColors.error
-                                : AppColors.primary,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
+                      shadows: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ],
+                    child: Center(
+                      child: Text(
+                        level.snellen,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Timer on RIGHT
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'TIME REMAINING',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.textSecondary.withValues(alpha: 0.5),
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 16,
+                            color: _eDisplayCountdown <= 2
+                                ? AppColors.error
+                                : AppColors.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _isTestPausedForDistance
+                                ? 'PAUSED'
+                                : '${_eDisplayCountdown}s',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: _eDisplayCountdown <= 2
+                                  ? AppColors.error
+                                  : AppColors.primary,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
 
           // Main E display area - Use a guaranteed height if expanded is too small
           Container(
             padding: const EdgeInsets.all(20),
-            constraints: BoxConstraints(minHeight: isLandscape ? 150 : 250),
+            constraints: BoxConstraints(
+              minHeight: isLandscape ? (isSideBySide ? 200 : 150) : 250,
+            ),
             child: Center(
               child: Transform.rotate(
                 angle: _currentDirection.rotationDegrees * pi / 180,
@@ -2192,7 +2226,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                               color: _isTestPausedForDistance
                                   ? AppColors.warning
                                   : AppColors.textSecondary,
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: _isTestPausedForDistance
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -2202,7 +2236,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                         ),
                       ],
                     ),
-                    if (!isPractitioner) ...[
+                    if (!isPractitioner && !isSideBySide) ...[
                       const SizedBox(height: 8),
                       Text(
                         _isTestPausedForDistance
@@ -2374,6 +2408,73 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLandscapeDirectionButtonsSidePanel() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: AppColors.white,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'CONTROLS',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _DirectionButton(
+            direction: EDirection.up,
+            onPressed: () => _handleButtonResponse(EDirection.up),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _DirectionButton(
+                direction: EDirection.left,
+                onPressed: () => _handleButtonResponse(EDirection.left),
+              ),
+              const SizedBox(width: 16),
+              _DirectionButton(
+                direction: EDirection.right,
+                onPressed: () => _handleButtonResponse(EDirection.right),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _DirectionButton(
+            direction: EDirection.down,
+            onPressed: () => _handleButtonResponse(EDirection.down),
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => _handleButtonResponse(EDirection.blurry),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                "BLURRY",
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
                 ),
               ),
             ),

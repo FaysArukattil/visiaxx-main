@@ -776,40 +776,148 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         ),
       ),
       body: SafeArea(
-        bottom: false, // Allow options to extend to bottom
-        child: Stack(
-          children: [
-            Column(
+        bottom: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isLandscape =
+                MediaQuery.of(context).orientation == Orientation.landscape;
+
+            if (isLandscape) {
+              return Stack(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          children: [
+                            _buildInfoBar(isLandscape: true),
+                            Expanded(child: _buildTestView(isSideBySide: true)),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        color: AppColors.border.withValues(alpha: 0.2),
+                      ),
+                      SizedBox(
+                        width: 250,
+                        child: _buildLandscapeOptionsSidePanel(),
+                      ),
+                    ],
+                  ),
+                  Positioned(
+                    right: 262,
+                    bottom: 12,
+                    child: _buildDistanceIndicator(),
+                  ),
+                ],
+              );
+            }
+
+            return Stack(
               children: [
-                _buildInfoBar(),
-                Expanded(child: _buildTestView()),
+                Column(
+                  children: [
+                    _buildInfoBar(),
+                    Expanded(child: _buildTestView()),
+                  ],
+                ),
+                Positioned(
+                  right: 12,
+                  bottom: 12,
+                  child: _buildDistanceIndicator(),
+                ),
+                // ✅ FIX: Don't show overlay when pause dialog is active
+                DistanceWarningOverlay(
+                  isVisible: _isTestPausedForDistance && !_isPausedForExit,
+                  status: _distanceStatus,
+                  currentDistance: _currentDistance,
+                  targetDistance: 40.0,
+                  onSkip: () {
+                    _distanceAutoSkipTimer?.cancel();
+                    _skipManager.recordSkip(DistanceTestType.colorVision);
+                    setState(() {
+                      _isTestPausedForDistance = false;
+                      _lastShouldPauseTime = null;
+                    });
+                    _ttsService.speak('Resuming test');
+                    _restartPlateTimer();
+                  },
+                ),
               ],
-            ),
-            Positioned(right: 12, bottom: 12, child: _buildDistanceIndicator()),
-            // ✅ FIX: Don't show overlay when pause dialog is active
-            DistanceWarningOverlay(
-              isVisible: _isTestPausedForDistance && !_isPausedForExit,
-              status: _distanceStatus,
-              currentDistance: _currentDistance,
-              targetDistance: 40.0,
-              onSkip: () {
-                _distanceAutoSkipTimer?.cancel();
-                _skipManager.recordSkip(DistanceTestType.colorVision);
-                setState(() {
-                  _isTestPausedForDistance = false;
-                  _lastShouldPauseTime = null;
-                });
-                _ttsService.speak('Resuming test');
-                _restartPlateTimer();
-              },
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildInfoBar() {
+  Widget _buildLandscapeOptionsSidePanel() {
+    return Container(
+      color: AppColors.white,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'SELECT WHAT YOU SEE',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView.separated(
+              itemCount: _currentOptions.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final option = _currentOptions[index];
+                final isSelected = _selectedOptionIndex == index;
+
+                return InkWell(
+                  onTap: () => _submitAnswer(option, index),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.primary.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.primary.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        option.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: isSelected ? Colors.white : AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoBar({bool isLandscape = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -879,86 +987,55 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     );
   }
 
-  Widget _buildTestView() {
+  Widget _buildTestView({bool isSideBySide = false}) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isLandscape = constraints.maxWidth > constraints.maxHeight;
 
-        if (isLandscape) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Left side: Plate image (Big and visible)
-              Expanded(
-                flex: 3,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: _currentPlateIndex < _testPlates.length
-                        ? IshiharaPlateViewer(
-                            plateNumber:
-                                _testPlates[_currentPlateIndex].plateNumber,
-                            imagePath: _testPlates[_currentPlateIndex].svgPath,
-                            size: min(
-                              constraints.maxWidth * 0.6 - 40,
-                              constraints.maxHeight - 40,
-                            ),
-                          )
-                        : const SizedBox.shrink(),
+        if (_showingPlate) {
+          final plate = _testPlates[_currentPlateIndex];
+
+          if (isSideBySide) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: IshiharaPlateViewer(
+                  plateNumber: plate.plateNumber,
+                  imagePath: plate.svgPath,
+                  size: min(
+                    constraints.maxWidth - 40,
+                    constraints.maxHeight - 40,
                   ),
                 ),
               ),
-              // Right side: Options
+            );
+          }
+
+          return Column(
+            children: [
               Expanded(
-                flex: 2,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    border: Border(
-                      left: BorderSide(
-                        color: AppColors.border.withValues(alpha: 0.3),
-                        width: 1,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Hero(
+                      tag: 'ishihara_plate_${plate.plateNumber}',
+                      child: IshiharaPlateViewer(
+                        plateNumber: plate.plateNumber,
+                        imagePath: plate.svgPath,
+                        size: min(
+                          constraints.maxWidth - 40,
+                          constraints.maxHeight * 0.6,
+                        ),
                       ),
                     ),
                   ),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: _buildOptionButtons(isLandscape: true),
-                  ),
                 ),
               ),
+              _buildOptionButtons(isLandscape: isLandscape),
             ],
           );
         }
-
-        return Column(
-          children: [
-            // Fixed image section (non-scrollable)
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 2,
-                  ),
-                  child: _currentPlateIndex < _testPlates.length
-                      ? IshiharaPlateViewer(
-                          plateNumber:
-                              _testPlates[_currentPlateIndex].plateNumber,
-                          imagePath: _testPlates[_currentPlateIndex].svgPath,
-                          size: min(
-                            constraints.maxWidth - 40,
-                            constraints.maxHeight * 0.6,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-              ),
-            ),
-            // Scrollable options section
-            _buildOptionButtons(isLandscape: false),
-          ],
-        );
+        return const Center(child: EyeLoader(size: 60));
       },
     );
   }

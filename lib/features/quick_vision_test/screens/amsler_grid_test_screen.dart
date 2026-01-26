@@ -700,13 +700,17 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           children: [
             Column(
               children: [
-                _buildInfoBar(),
+                _buildInfoBar(
+                  isLandscape:
+                      MediaQuery.of(context).orientation ==
+                      Orientation.landscape,
+                ),
                 Expanded(
                   child: _eyeSwitchPending
                       ? _buildEyeSwitchView()
                       : (!_testingStarted
                             ? const Center(child: CircularProgressIndicator())
-                            : _buildTestView()),
+                            : _buildAdaptiveTestLayout()),
                 ),
               ],
             ),
@@ -738,7 +742,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     );
   }
 
-  Widget _buildInfoBar() {
+  Widget _buildInfoBar({bool isLandscape = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -883,7 +887,180 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     );
   }
 
-  Widget _buildTestView() {
+  Widget _buildAdaptiveTestLayout() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    if (!isLandscape) {
+      return _buildTestView();
+    }
+
+    // Side-by-side for landscape
+    return Row(
+      children: [
+        // Left: Grid
+        Expanded(
+          flex: 4,
+          child: Container(
+            color: AppColors.white,
+            child: _buildTestView(isSideBySide: true),
+          ),
+        ),
+        Container(width: 1, color: AppColors.border.withValues(alpha: 0.2)),
+        // Right: Controls
+        SizedBox(width: 320, child: _buildLandscapeControlsSidePanel()),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeControlsSidePanel() {
+    return Container(
+      color: AppColors.white,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          const Text(
+            'CONTROLS',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Question section
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLandscapeQuestion(
+                    'Are all the lines straight?',
+                    _allLinesStraight,
+                    (val) => setState(() => _allLinesStraight = val),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildLandscapeQuestion(
+                    'Any missing areas?',
+                    _hasMissingAreas,
+                    (val) => setState(() => _hasMissingAreas = val),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildLandscapeQuestion(
+                    'Any distortions?',
+                    _hasDistortions,
+                    (val) => setState(() => _hasDistortions = val),
+                  ),
+                  const SizedBox(height: 32),
+                  // Finish Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed:
+                          (_allLinesStraight != null &&
+                              _hasMissingAreas != null &&
+                              _hasDistortions != null)
+                          ? _completeCurrentEye
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'COMPLETE TEST',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLandscapeQuestion(
+    String question,
+    bool? value,
+    Function(bool) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          question,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildOptionButton(
+                'YES',
+                value == true,
+                () => onChanged(true),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildOptionButton(
+                'NO',
+                value == false,
+                () => onChanged(false),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOptionButton(String label, bool isSelected, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary
+              : AppColors.primary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.primary.withValues(alpha: 0.1),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              color: isSelected ? Colors.white : AppColors.primary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestView({bool isSideBySide = false}) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isLandscape = constraints.maxWidth > constraints.maxHeight;

@@ -76,11 +76,13 @@ class DistanceWarningOverlay extends StatelessWidget {
               child: Container(
                 constraints: BoxConstraints(maxWidth: isLandscape ? 500 : 400),
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: EdgeInsets.all(isSmallHeight ? 16 : 24),
+                padding: EdgeInsets.all(isSmallHeight ? 12 : 24),
                 decoration: ShapeDecoration(
                   color: AppColors.white.withValues(alpha: 0.95),
                   shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
+                    borderRadius: BorderRadius.circular(
+                      isSmallHeight ? 24 : 32,
+                    ),
                   ),
                   shadows: [
                     BoxShadow(
@@ -96,8 +98,8 @@ class DistanceWarningOverlay extends StatelessWidget {
                     if (!isSmallHeight) ...[
                       // Premium Badge - Only show if not very small height
                       Container(
-                        width: 70,
-                        height: 70,
+                        width: isLandscape ? 50 : 70,
+                        height: isLandscape ? 50 : 70,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -114,8 +116,8 @@ class DistanceWarningOverlay extends StatelessWidget {
                         ),
                         child: Center(
                           child: Container(
-                            width: 54,
-                            height: 54,
+                            width: isLandscape ? 40 : 54,
+                            height: isLandscape ? 40 : 54,
                             decoration: BoxDecoration(
                               color: iconColor.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
@@ -124,18 +126,22 @@ class DistanceWarningOverlay extends StatelessWidget {
                                 width: 1.5,
                               ),
                             ),
-                            child: Icon(icon, size: 28, color: iconColor),
+                            child: Icon(
+                              icon,
+                              size: isLandscape ? 22 : 28,
+                              color: iconColor,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: isLandscape ? 12 : 20),
                     ],
 
                     // Typography
                     Text(
                       pauseReason.toUpperCase(),
                       style: TextStyle(
-                        fontSize: isSmallHeight ? 18 : 20,
+                        fontSize: isSmallHeight ? 16 : (isLandscape ? 18 : 20),
                         fontWeight: FontWeight.w900,
                         color: AppColors.textPrimary,
                         letterSpacing: -0.5,
@@ -143,19 +149,21 @@ class DistanceWarningOverlay extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: isSmallHeight ? 6 : 12),
                     Text(
                       instruction,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: isSmallHeight ? 12 : 14,
+                        fontSize: isSmallHeight ? 11 : 14,
                         color: AppColors.textPrimary.withValues(alpha: 0.6),
-                        height: 1.5,
+                        height: 1.4,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.1,
                       ),
                     ),
-                    SizedBox(height: isSmallHeight ? 16 : 24),
+                    SizedBox(
+                      height: isSmallHeight ? 12 : (isLandscape ? 16 : 24),
+                    ),
 
                     // LIVE DISTANCE GAUGE
                     if (DistanceHelper.isFaceDetected(status)) ...[
@@ -163,11 +171,14 @@ class DistanceWarningOverlay extends StatelessWidget {
                         targetDistance,
                         iconColor,
                         isSmallHeight: isSmallHeight,
+                        isLandscape: isLandscape,
                       ),
                     ] else
-                      _buildSearchingIndicator(),
+                      _buildSearchingIndicator(isSmallHeight: isSmallHeight),
 
-                    SizedBox(height: isSmallHeight ? 24 : 40),
+                    SizedBox(
+                      height: isSmallHeight ? 16 : (isLandscape ? 20 : 40),
+                    ),
 
                     // Actions
                     SizedBox(
@@ -182,7 +193,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                             ),
                           ),
                           padding: EdgeInsets.symmetric(
-                            vertical: isSmallHeight ? 12 : 16,
+                            vertical: isSmallHeight ? 10 : 16,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -193,7 +204,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1,
-                            fontSize: 12,
+                            fontSize: 11,
                           ),
                         ),
                       ),
@@ -212,6 +223,7 @@ class DistanceWarningOverlay extends StatelessWidget {
     double target,
     Color statusColor, {
     bool isSmallHeight = false,
+    bool isLandscape = false,
   }) {
     final isTooClose = status == DistanceStatus.tooClose;
     final isTooFar = status == DistanceStatus.tooFar;
@@ -336,7 +348,7 @@ class DistanceWarningOverlay extends StatelessWidget {
     return percent * (width - 4);
   }
 
-  Widget _buildSearchingIndicator() {
+  Widget _buildSearchingIndicator({bool isSmallHeight = false}) {
     return Column(
       children: [
         const EyeLoader(size: 40),

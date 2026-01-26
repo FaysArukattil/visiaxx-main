@@ -879,24 +879,59 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         body: SafeArea(
           child: Stack(
             children: [
-              Column(
-                children: [
-                  _buildInfoBar(),
-                  // Triplets display
-                  Expanded(child: _buildTripletsDisplay()),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isLandscape =
+                      MediaQuery.of(context).orientation ==
+                      Orientation.landscape;
 
-                  // Recognized text banner (Reading test style)
-                  _buildRecognizedTextIndicator(),
+                  if (isLandscape &&
+                      _isTestActive &&
+                      !_isTestPausedForDistance) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            children: [
+                              _buildInfoBar(isLandscape: true),
+                              Expanded(child: _buildTripletsDisplay()),
+                              _buildRecognizedTextIndicator(),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          color: AppColors.border.withValues(alpha: 0.2),
+                        ),
+                        SizedBox(
+                          width: 300,
+                          child: _buildLandscapeControlsSidePanel(),
+                        ),
+                      ],
+                    );
+                  }
 
-                  // Visible / Not Visible buttons
-                  if (_isTestActive && !_isTestPausedForDistance)
-                    _buildVisibleButtons(),
+                  return Column(
+                    children: [
+                      _buildInfoBar(),
+                      // Triplets display
+                      Expanded(child: _buildTripletsDisplay()),
 
-                  // Integrated Speech indicator
-                  _buildSpeechIndicator(),
+                      // Recognized text banner (Reading test style)
+                      _buildRecognizedTextIndicator(),
 
-                  const SizedBox(height: 16),
-                ],
+                      // Visible / Not Visible buttons
+                      if (_isTestActive && !_isTestPausedForDistance)
+                        _buildVisibleButtons(),
+
+                      // Integrated Speech indicator
+                      _buildSpeechIndicator(),
+
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                },
               ),
 
               // Distance indicator - Repositioned to top-right overlapping info bar
@@ -1294,7 +1329,96 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 
-  Widget _buildInfoBar() {
+  Widget _buildLandscapeControlsSidePanel() {
+    return Container(
+      color: AppColors.white,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          const Text(
+            'CONTROLS',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 32),
+          // Large buttons
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 80,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final triplets = PelliRobsonScoring.getTripletsForScreen(
+                        _currentScreenIndex,
+                      );
+                      if (_currentTripletIndex < triplets.length) {
+                        final triplet = triplets[_currentTripletIndex];
+                        _submitCurrentTriplet(triplet.letters);
+                      }
+                    },
+                    icon: const Icon(Icons.visibility, size: 28),
+                    label: const Text(
+                      'VISIBLE',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: AppColors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 80,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      _submitCurrentTriplet('Not visible');
+                    },
+                    icon: const Icon(Icons.visibility_off, size: 28),
+                    label: const Text(
+                      'NOT VISIBLE',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textPrimary,
+                      side: BorderSide(
+                        color: AppColors.border.withValues(alpha: 0.8),
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildSpeechIndicator(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoBar({bool isLandscape = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(

@@ -253,35 +253,37 @@ class _ColorVisionInstructionsScreenState
           border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Step ${index + 1} of $_totalPages',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.1,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Step ${index + 1} of $_totalPages',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.1,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _stepTitles[index],
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+              const SizedBox(height: 4),
+              Text(
+                _stepTitles[index],
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            _buildModernInstructionItem(icon, title, description, color),
-            if (animation != null) ...[
-              const Spacer(),
-              Center(child: animation),
-              const Spacer(),
+              const SizedBox(height: 12),
+              _buildModernInstructionItem(icon, title, description, color),
+              if (animation != null) ...[
+                const SizedBox(height: 24),
+                Center(child: animation),
+                const SizedBox(height: 24),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -506,4 +508,3 @@ class _EyeInstructionPainter extends CustomPainter {
   bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
-

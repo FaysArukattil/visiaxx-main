@@ -267,110 +267,188 @@ class _BothEyesOpenInstructionScreenState
           child: Column(
             children: [
               // Card-ified Illustration Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.5),
+              Builder(
+                builder: (context) {
+                  final isLandscape =
+                      MediaQuery.of(context).orientation ==
+                      Orientation.landscape;
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      isLandscape ? 4 : 8,
+                      16,
+                      isLandscape ? 4 : 8,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(isLandscape ? 8 : 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.5),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Illustration Scale Reduced
-                      SizedBox(
-                        width: 120,
-                        height: 100,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Circular Face Silhouette
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    AppColors.primary.withValues(alpha: 0.1),
-                                    AppColors.primary.withValues(alpha: 0.2),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Eyes
-                            const Positioned(
-                              top: 35,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _AnimatedProfessionalEye(),
-                                  SizedBox(width: 25),
-                                  _AnimatedProfessionalEye(),
-                                ],
-                              ),
-                            ),
-                            // Pulsing Focus Ring
-                            TweenAnimationBuilder<double>(
-                              tween: Tween<double>(begin: 0.8, end: 1.2),
-                              duration: const Duration(milliseconds: 1500),
-                              curve: Curves.easeInOutSine,
-                              builder: (context, value, child) {
-                                return Opacity(
-                                  opacity: (1.2 - value).clamp(0.0, 0.4),
-                                  child: Transform.scale(
-                                    scale: value * 1.5,
-                                    child: Container(
-                                      width: 100,
-                                      height: 100,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: const Color(0xFF4A90E2),
-                                          width: 2,
+                      child: isLandscape
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  height: 50,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: RadialGradient(
+                                            colors: [
+                                              AppColors.primary.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              AppColors.primary.withValues(
+                                                alpha: 0.2,
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                      const Positioned(
+                                        top: 17,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            _AnimatedProfessionalEye(),
+                                            SizedBox(width: 12),
+                                            _AnimatedProfessionalEye(),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                );
-                              },
+                                ),
+                                const SizedBox(width: 16),
+                                const Text(
+                                  'Keep Both Eyes Open',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1B3A57),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                // Illustration Scale Reduced
+                                SizedBox(
+                                  width: 120,
+                                  height: 100,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // Circular Face Silhouette
+                                      Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: RadialGradient(
+                                            colors: [
+                                              AppColors.primary.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              AppColors.primary.withValues(
+                                                alpha: 0.2,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      // Eyes
+                                      const Positioned(
+                                        top: 35,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            _AnimatedProfessionalEye(),
+                                            SizedBox(width: 25),
+                                            _AnimatedProfessionalEye(),
+                                          ],
+                                        ),
+                                      ),
+                                      // Pulsing Focus Ring
+                                      TweenAnimationBuilder<double>(
+                                        tween: Tween<double>(
+                                          begin: 0.8,
+                                          end: 1.2,
+                                        ),
+                                        duration: const Duration(
+                                          milliseconds: 1500,
+                                        ),
+                                        curve: Curves.easeInOutSine,
+                                        builder: (context, value, child) {
+                                          return Opacity(
+                                            opacity: (1.2 - value).clamp(
+                                              0.0,
+                                              0.4,
+                                            ),
+                                            child: Transform.scale(
+                                              scale: value * 1.5,
+                                              child: Container(
+                                                width: 100,
+                                                height: 100,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: const Color(
+                                                      0xFF4A90E2,
+                                                    ),
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Keep Both Eyes Open',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1B3A57),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.subtitle,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF4A90E2),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Keep Both Eyes Open',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1B3A57),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.subtitle,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF4A90E2),
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
 
               // Fixed Instruction Window
@@ -730,5 +808,3 @@ class _EyeInstructionPainter extends CustomPainter {
   bool shouldRepaint(covariant _EyeInstructionPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
-
-

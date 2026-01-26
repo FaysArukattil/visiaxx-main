@@ -639,12 +639,23 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
         (screenHeight * 0.02) + // Spacing before grid
         (screenHeight * 0.02); // Spacing after grid
 
-    final availableGridHeight = (screenHeight - usedHeight).clamp(280.0, 500.0);
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final availableGridHeight = (screenHeight - usedHeight).clamp(
+      isLandscape ? 180.0 : 280.0,
+      500.0,
+    );
 
     // Dynamic spacing and heights based on available grid space
     final cardSpacing = (availableGridHeight * 0.035).clamp(6.0, 12.0);
-    final compactCardHeight = (availableGridHeight * 0.32).clamp(85.0, 115.0);
-    final wideCardHeight = (availableGridHeight * 0.2).clamp(55.0, 72.0);
+    final compactCardHeight = (availableGridHeight * 0.32).clamp(
+      isLandscape ? 65.0 : 85.0,
+      115.0,
+    );
+    final wideCardHeight = (availableGridHeight * 0.2).clamp(
+      isLandscape ? 45.0 : 55.0,
+      72.0,
+    );
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -798,19 +809,20 @@ class _CompactServiceCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      width: iconSize + 14,
-                      height: iconSize + 14,
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
+                    if (height > 80)
+                      Container(
+                        width: iconSize + 14,
+                        height: iconSize + 14,
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: AppColors.primary,
+                          size: iconSize,
+                        ),
                       ),
-                      child: Icon(
-                        icon,
-                        color: AppColors.primary,
-                        size: iconSize,
-                      ),
-                    ),
                     Flexible(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -927,19 +939,20 @@ class _WideServiceCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: iconSize + 14,
-                      height: iconSize + 14,
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
+                    if (height > 60)
+                      Container(
+                        width: iconSize + 14,
+                        height: iconSize + 14,
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: AppColors.primary,
+                          size: iconSize,
+                        ),
                       ),
-                      child: Icon(
-                        icon,
-                        color: AppColors.primary,
-                        size: iconSize,
-                      ),
-                    ),
                     SizedBox(
                       width: (cardConstraints.maxWidth * 0.03).clamp(8.0, 14.0),
                     ),
