@@ -131,121 +131,272 @@ class _MobileRefractometryInstructionsScreenState
           ),
         ),
         body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const BouncingScrollPhysics(),
-                  onPageChanged: (page) {
-                    setState(() => _currentPage = page);
-                    _playCurrentStepTts();
-                  },
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              final isLandscape = orientation == Orientation.landscape;
+
+              if (isLandscape) {
+                return Row(
                   children: [
-                    _buildStep(
-                      0,
-                      Icons.visibility_off_rounded,
-                      'No Eyewear',
-                      'Remove glasses or contact lenses. This test measures your natural vision.',
-                      AppColors.error,
-                      animation: const RemoveGlassesAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      1,
-                      Icons.wb_sunny_rounded,
-                      'Well-lit Room',
-                      'Ensure your room is well-lit and quiet for the most accurate results.',
-                      AppColors.warning,
-                      animation: const LightingAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      2,
-                      Icons.straighten_rounded,
-                      'Multi-Distance',
-                      'You will be asked to hold the device at 100cm (distance) and 40cm (near).',
-                      AppColors.primary,
-                      animation: const DistanceAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      3,
-                      Icons.blur_on_rounded,
-                      'Blur Awareness',
-                      'During the test, the E may become smaller and blurry. If you can barely make it out, say "Blurry" or select "Can\'t See".',
-                      AppColors.warning,
-                      animation: const BlurAwarenessAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      4,
-                      Icons.mic_rounded,
-                      'Voice & Blurry',
-                      'Say the direction clearly. If the letter "E" is out of focus, say "Blurry".',
-                      AppColors.success,
-                      animation: const HowToRespondAnimation(isCompact: true),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _totalPages,
-                        (index) => Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentPage == index
-                                ? AppColors.primary
-                                : AppColors.border,
+                    // Left Side: Step Content
+                    Expanded(
+                      flex: 6,
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const BouncingScrollPhysics(),
+                        onPageChanged: (page) {
+                          setState(() => _currentPage = page);
+                          _playCurrentStepTts();
+                        },
+                        children: [
+                          _buildStep(
+                            0,
+                            Icons.visibility_off_rounded,
+                            'No Eyewear',
+                            'Remove glasses or contact lenses. This test measures your natural vision.',
+                            AppColors.error,
+                            animation: const RemoveGlassesAnimation(
+                              isCompact: true,
+                            ),
+                            isLandscape: true,
                           ),
+                          _buildStep(
+                            1,
+                            Icons.wb_sunny_rounded,
+                            'Well-lit Room',
+                            'Ensure your room is well-lit and quiet for the most accurate results.',
+                            AppColors.warning,
+                            animation: const LightingAnimation(isCompact: true),
+                            isLandscape: true,
+                          ),
+                          _buildStep(
+                            2,
+                            Icons.straighten_rounded,
+                            'Multi-Distance',
+                            'You will be asked to hold the device at 100cm (distance) and 40cm (near).',
+                            AppColors.primary,
+                            animation: const DistanceAnimation(isCompact: true),
+                            isLandscape: true,
+                          ),
+                          _buildStep(
+                            3,
+                            Icons.blur_on_rounded,
+                            'Blur Awareness',
+                            'During the test, the E may become smaller and blurry. If you can barely make it out, say "Blurry" or select "Can\'t See".',
+                            AppColors.warning,
+                            animation: const BlurAwarenessAnimation(
+                              isCompact: true,
+                            ),
+                            isLandscape: true,
+                          ),
+                          _buildStep(
+                            4,
+                            Icons.mic_rounded,
+                            'Voice & Blurry',
+                            'Say the direction clearly. If the letter "E" is out of focus, say "Blurry".',
+                            AppColors.success,
+                            animation: const HowToRespondAnimation(
+                              isCompact: true,
+                            ),
+                            isLandscape: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Right Side: Navigation
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(24.0),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(-4, 0),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Dot Indicator
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                _totalPages,
+                                (index) => Container(
+                                  width: 8,
+                                  height: 8,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: _currentPage == index
+                                        ? AppColors.primary
+                                        : AppColors.border,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 60,
+                              child: ElevatedButton(
+                                onPressed: _handleNext,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: Text(
+                                  _currentPage < _totalPages - 1
+                                      ? 'Next'
+                                      : 'Start Preparation',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 60,
-                      child: ElevatedButton(
-                        onPressed: _handleNext,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          _currentPage < _totalPages - 1
-                              ? 'Next'
-                              : 'Start Preparation',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
-                ),
-              ),
-            ],
+                );
+              }
+
+              return Column(
+                children: [
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const BouncingScrollPhysics(),
+                      onPageChanged: (page) {
+                        setState(() => _currentPage = page);
+                        _playCurrentStepTts();
+                      },
+                      children: [
+                        _buildStep(
+                          0,
+                          Icons.visibility_off_rounded,
+                          'No Eyewear',
+                          'Remove glasses or contact lenses. This test measures your natural vision.',
+                          AppColors.error,
+                          animation: const RemoveGlassesAnimation(
+                            isCompact: true,
+                          ),
+                        ),
+                        _buildStep(
+                          1,
+                          Icons.wb_sunny_rounded,
+                          'Well-lit Room',
+                          'Ensure your room is well-lit and quiet for the most accurate results.',
+                          AppColors.warning,
+                          animation: const LightingAnimation(isCompact: true),
+                        ),
+                        _buildStep(
+                          2,
+                          Icons.straighten_rounded,
+                          'Multi-Distance',
+                          'You will be asked to hold the device at 100cm (distance) and 40cm (near).',
+                          AppColors.primary,
+                          animation: const DistanceAnimation(isCompact: true),
+                        ),
+                        _buildStep(
+                          3,
+                          Icons.blur_on_rounded,
+                          'Blur Awareness',
+                          'During the test, the E may become smaller and blurry. If you can barely make it out, say "Blurry" or select "Can\'t See".',
+                          AppColors.warning,
+                          animation: const BlurAwarenessAnimation(
+                            isCompact: true,
+                          ),
+                        ),
+                        _buildStep(
+                          4,
+                          Icons.mic_rounded,
+                          'Voice & Blurry',
+                          'Say the direction clearly. If the letter "E" is out of focus, say "Blurry".',
+                          AppColors.success,
+                          animation: const HowToRespondAnimation(
+                            isCompact: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            _totalPages,
+                            (index) => Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _currentPage == index
+                                    ? AppColors.primary
+                                    : AppColors.border,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 60,
+                          child: ElevatedButton(
+                            onPressed: _handleNext,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              _currentPage < _totalPages - 1
+                                  ? 'Next'
+                                  : 'Start Preparation',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -259,9 +410,12 @@ class _MobileRefractometryInstructionsScreenState
     String description,
     Color color, {
     Widget? animation,
+    bool isLandscape = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: isLandscape
+          ? const EdgeInsets.all(8.0)
+          : const EdgeInsets.all(16.0),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.white,
@@ -278,36 +432,84 @@ class _MobileRefractometryInstructionsScreenState
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Step ${index + 1} of $_totalPages',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.1,
+          child: isLandscape
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Step ${index + 1} of $_totalPages',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _stepTitles[index],
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildModernInstructionItem(
+                            icon,
+                            title,
+                            description,
+                            color,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (animation != null) ...[
+                      const SizedBox(width: 16),
+                      Expanded(flex: 5, child: Center(child: animation)),
+                    ],
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Step ${index + 1} of $_totalPages',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _stepTitles[index],
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildModernInstructionItem(
+                      icon,
+                      title,
+                      description,
+                      color,
+                    ),
+                    if (animation != null) ...[
+                      const SizedBox(height: 24),
+                      Center(child: animation),
+                    ],
+                  ],
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _stepTitles[index],
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildModernInstructionItem(icon, title, description, color),
-              if (animation != null) ...[
-                const SizedBox(height: 24),
-                Center(child: animation),
-              ],
-            ],
-          ),
         ),
       ),
     );

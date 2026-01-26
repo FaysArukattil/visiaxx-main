@@ -165,7 +165,11 @@ class _ReadingTestInstructionsScreenState
 
               // Dot Indicator & Button
               Container(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(
+                  MediaQuery.of(context).orientation == Orientation.landscape
+                      ? 12.0
+                      : 16.0,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   boxShadow: [
@@ -179,27 +183,34 @@ class _ReadingTestInstructionsScreenState
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _totalPages,
-                        (index) => Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentPage == index
-                                ? AppColors.primary
-                                : AppColors.border,
+                    if (MediaQuery.of(context).orientation !=
+                        Orientation.landscape) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _totalPages,
+                          (index) => Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _currentPage == index
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
                     SizedBox(
                       width: double.infinity,
-                      height: 60,
+                      height:
+                          MediaQuery.of(context).orientation ==
+                              Orientation.landscape
+                          ? 48
+                          : 60,
                       child: ElevatedButton(
                         onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
@@ -214,8 +225,12 @@ class _ReadingTestInstructionsScreenState
                           _currentPage < _totalPages - 1
                               ? 'Next'
                               : 'Start Reading Test',
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize:
+                                MediaQuery.of(context).orientation ==
+                                    Orientation.landscape
+                                ? 16
+                                : 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -239,71 +254,146 @@ class _ReadingTestInstructionsScreenState
     Color color, {
     Widget? animation,
   }) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(isLandscape ? 8.0 : 16.0),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Step ${index + 1} of $_totalPages',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _stepTitles[index],
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        padding: EdgeInsets.symmetric(
+          horizontal: isLandscape ? 16.0 : 20.0,
+          vertical: isLandscape ? 12.0 : 24.0,
+        ),
+        child: isLandscape
+            ? Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(icon, color: color, size: 28),
-                  ),
-                  const SizedBox(width: 16),
                   Expanded(
-                    child: Text(
-                      description,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 15,
-                        height: 1.5,
-                        fontWeight: FontWeight.w400,
+                    flex: 1,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Step ${index + 1} of $_totalPages',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _stepTitles[index],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Icon(icon, color: color, size: 24),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  description,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 14,
+                                    height: 1.5,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
+                  if (animation != null)
+                    Expanded(
+                      flex: 1,
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: animation,
+                        ),
+                      ),
+                    ),
                 ],
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Step ${index + 1} of $_totalPages',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _stepTitles[index],
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(icon, color: color, size: 28),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            description,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 15,
+                              height: 1.5,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (animation != null) ...[
+                      const SizedBox(height: 24),
+                      Center(child: animation),
+                      const SizedBox(height: 24),
+                    ],
+                  ],
+                ),
               ),
-              if (animation != null) ...[
-                const SizedBox(height: 24),
-                Center(child: animation),
-                const SizedBox(height: 24),
-              ],
-            ],
-          ),
-        ),
       ),
     );
   }

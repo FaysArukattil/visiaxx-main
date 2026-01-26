@@ -132,129 +132,278 @@ class _PelliRobsonInstructionsScreenState
           ),
         ),
         body: SafeArea(
-          child: Column(
-            children: [
-              // PageView Content
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const BouncingScrollPhysics(),
-                  onPageChanged: (page) {
-                    setState(() => _currentPage = page);
-                    _playCurrentStepTts();
-                  },
-                  children: [
-                    _buildStep(
-                      0,
-                      Icons.brightness_high_rounded,
-                      'Brightness Check',
-                      'Turn your screen brightness to maximum for the most accurate contrast measurements.',
-                      AppColors.warning,
-                      animation: const LightingAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      1,
-                      Icons.palette_rounded,
-                      'What is Contrast?',
-                      'Contrast sensitivity is your eye\'s ability to distinguish an object from its background.',
-                      AppColors.primary,
-                      animation: const AlignmentAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      2,
-                      Icons.straighten_rounded,
-                      'Perfect Distance',
-                      widget.testMode == 'short'
-                          ? 'Hold the device about 40 centimeters (arm\'s length) away from your eyes.'
-                          : 'Sit exactly 1 meter away from the screen for the long-distance test.',
-                      AppColors.success,
-                      animation: const DistanceAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      3,
-                      Icons.record_voice_over_rounded,
-                      'Reading Triplets',
-                      'You will see several triplets. Read whichever three letters are inside the blue box.',
-                      AppColors.info,
-                      animation: const ReadingTripletsAnimation(
-                        isCompact: true,
-                      ),
-                    ),
-                    _buildStep(
-                      4,
-                      Icons.gradient_rounded,
-                      'Declining Contrast',
-                      'The letters will become fainter and harder to see. Read as many as possible until they are no longer visible.',
-                      AppColors.error,
-                      animation: const FadingTripletsAnimation(isCompact: true),
-                    ),
-                  ],
-                ),
-              ),
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              final isLandscape = orientation == Orientation.landscape;
 
-              // Bottom Navigation Section
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              if (isLandscape) {
+                return Row(
                   children: [
-                    // Dot Indicator
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _totalPages,
-                        (index) => Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentPage == index
-                                ? AppColors.primary
-                                : AppColors.border,
+                    // Left Side: Step Content
+                    Expanded(
+                      flex: 6,
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const BouncingScrollPhysics(),
+                        onPageChanged: (page) {
+                          setState(() => _currentPage = page);
+                          _playCurrentStepTts();
+                        },
+                        children: [
+                          _buildStep(
+                            0,
+                            Icons.brightness_high_rounded,
+                            'Brightness Check',
+                            'Turn your screen brightness to maximum for the most accurate contrast measurements.',
+                            AppColors.warning,
+                            animation: const LightingAnimation(isCompact: true),
+                            isLandscape: true,
                           ),
-                        ),
+                          _buildStep(
+                            1,
+                            Icons.palette_rounded,
+                            'What is Contrast?',
+                            'Contrast sensitivity is your eye\'s ability to distinguish an object from its background.',
+                            AppColors.primary,
+                            animation: const AlignmentAnimation(
+                              isCompact: true,
+                            ),
+                            isLandscape: true,
+                          ),
+                          _buildStep(
+                            2,
+                            Icons.straighten_rounded,
+                            'Perfect Distance',
+                            widget.testMode == 'short'
+                                ? 'Hold the device about 40 centimeters away from your eyes.'
+                                : 'Sit exactly 1 meter away from the screen for the long-distance test.',
+                            AppColors.success,
+                            animation: const DistanceAnimation(isCompact: true),
+                            isLandscape: true,
+                          ),
+                          _buildStep(
+                            3,
+                            Icons.record_voice_over_rounded,
+                            'Reading Triplets',
+                            'You will see several triplets. Read whichever three letters are inside the blue box.',
+                            AppColors.info,
+                            animation: const ReadingTripletsAnimation(
+                              isCompact: true,
+                            ),
+                            isLandscape: true,
+                          ),
+                          _buildStep(
+                            4,
+                            Icons.gradient_rounded,
+                            'Declining Contrast',
+                            'The letters will become fainter and harder to see. Read as many as possible until they are no longer visible.',
+                            AppColors.error,
+                            animation: const FadingTripletsAnimation(
+                              isCompact: true,
+                            ),
+                            isLandscape: true,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 60,
-                      child: ElevatedButton(
-                        onPressed: _handleNext,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                    // Right Side: Navigation
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(24.0),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(-4, 0),
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          _currentPage < _totalPages - 1
-                              ? 'Next'
-                              : 'Start Test',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Dot Indicator
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                _totalPages,
+                                (index) => Container(
+                                  width: 8,
+                                  height: 8,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: _currentPage == index
+                                        ? AppColors.primary
+                                        : AppColors.border,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 60,
+                              child: ElevatedButton(
+                                onPressed: _handleNext,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: Text(
+                                  _currentPage < _totalPages - 1
+                                      ? 'Next'
+                                      : 'Start Test',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
-                ),
-              ),
-            ],
+                );
+              }
+
+              return Column(
+                children: [
+                  // PageView Content
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const BouncingScrollPhysics(),
+                      onPageChanged: (page) {
+                        setState(() => _currentPage = page);
+                        _playCurrentStepTts();
+                      },
+                      children: [
+                        _buildStep(
+                          0,
+                          Icons.brightness_high_rounded,
+                          'Brightness Check',
+                          'Turn your screen brightness to maximum for the most accurate contrast measurements.',
+                          AppColors.warning,
+                          animation: const LightingAnimation(isCompact: true),
+                        ),
+                        _buildStep(
+                          1,
+                          Icons.palette_rounded,
+                          'What is Contrast?',
+                          'Contrast sensitivity is your eye\'s ability to distinguish an object from its background.',
+                          AppColors.primary,
+                          animation: const AlignmentAnimation(isCompact: true),
+                        ),
+                        _buildStep(
+                          2,
+                          Icons.straighten_rounded,
+                          'Perfect Distance',
+                          widget.testMode == 'short'
+                              ? 'Hold the device about 40 centimeters away from your eyes.'
+                              : 'Sit exactly 1 meter away from the screen for the long-distance test.',
+                          AppColors.success,
+                          animation: const DistanceAnimation(isCompact: true),
+                        ),
+                        _buildStep(
+                          3,
+                          Icons.record_voice_over_rounded,
+                          'Reading Triplets',
+                          'You will see several triplets. Read whichever three letters are inside the blue box.',
+                          AppColors.info,
+                          animation: const ReadingTripletsAnimation(
+                            isCompact: true,
+                          ),
+                        ),
+                        _buildStep(
+                          4,
+                          Icons.gradient_rounded,
+                          'Declining Contrast',
+                          'The letters will become fainter and harder to see. Read as many as possible until they are no longer visible.',
+                          AppColors.error,
+                          animation: const FadingTripletsAnimation(
+                            isCompact: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Bottom Navigation Section
+                  Container(
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Dot Indicator
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            _totalPages,
+                            (index) => Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _currentPage == index
+                                    ? AppColors.primary
+                                    : AppColors.border,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 60,
+                          child: ElevatedButton(
+                            onPressed: _handleNext,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              _currentPage < _totalPages - 1
+                                  ? 'Next'
+                                  : 'Start Test',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -268,9 +417,12 @@ class _PelliRobsonInstructionsScreenState
     String description,
     Color color, {
     Widget? animation,
+    bool isLandscape = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: isLandscape
+          ? const EdgeInsets.all(8.0)
+          : const EdgeInsets.all(16.0),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.white,
@@ -279,36 +431,84 @@ class _PelliRobsonInstructionsScreenState
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Step ${index + 1} of $_totalPages',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.1,
+          child: isLandscape
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Step ${index + 1} of $_totalPages',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _stepTitles[index],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildModernInstructionItem(
+                            icon,
+                            title,
+                            description,
+                            color,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (animation != null) ...[
+                      const SizedBox(width: 16),
+                      Expanded(flex: 5, child: Center(child: animation)),
+                    ],
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Step ${index + 1} of $_totalPages',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _stepTitles[index],
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildModernInstructionItem(
+                      icon,
+                      title,
+                      description,
+                      color,
+                    ),
+                    if (animation != null) ...[
+                      const SizedBox(height: 24),
+                      Center(child: animation),
+                      const SizedBox(height: 24),
+                    ],
+                  ],
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _stepTitles[index],
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildModernInstructionItem(icon, title, description, color),
-              if (animation != null) ...[
-                const SizedBox(height: 24),
-                Center(child: animation),
-                const SizedBox(height: 24),
-              ],
-            ],
-          ),
         ),
       ),
     );

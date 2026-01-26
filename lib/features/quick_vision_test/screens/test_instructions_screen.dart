@@ -178,7 +178,11 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
 
               // Bottom Navigation Section
               Container(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(
+                  MediaQuery.of(context).orientation == Orientation.landscape
+                      ? 12.0
+                      : 16.0,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   boxShadow: [
@@ -192,28 +196,35 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Dot Indicator
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _totalPages,
-                        (index) => Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentPage == index
-                                ? AppColors.primary
-                                : AppColors.border,
+                    if (MediaQuery.of(context).orientation !=
+                        Orientation.landscape) ...[
+                      // Dot Indicator
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _totalPages,
+                          (index) => Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _currentPage == index
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
                     SizedBox(
                       width: double.infinity,
-                      height: 60,
+                      height:
+                          MediaQuery.of(context).orientation ==
+                              Orientation.landscape
+                          ? 48
+                          : 60,
                       child: ElevatedButton(
                         onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
@@ -228,8 +239,12 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                           _currentPage < _totalPages - 1
                               ? 'Next'
                               : 'Start Exam',
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize:
+                                MediaQuery.of(context).orientation ==
+                                    Orientation.landscape
+                                ? 16
+                                : 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -253,45 +268,99 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
     Color color, {
     Widget? animation,
   }) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(isLandscape ? 8.0 : 16.0),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Step ${index + 1} of $_totalPages',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.1,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _stepTitles[index],
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildModernInstructionItem(icon, title, description, color),
-            if (animation != null) ...[
-              const Spacer(),
-              Center(child: animation),
-              const Spacer(),
-            ],
-          ],
+        padding: EdgeInsets.symmetric(
+          horizontal: isLandscape ? 16.0 : 20.0,
+          vertical: isLandscape ? 12.0 : 16.0,
         ),
+        child: isLandscape
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Step ${index + 1} of $_totalPages',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _stepTitles[index],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildModernInstructionItem(
+                            icon,
+                            title,
+                            description,
+                            color,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (animation != null) ...[
+                    const SizedBox(width: 16),
+                    Expanded(flex: 6, child: Center(child: animation)),
+                  ],
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Step ${index + 1} of $_totalPages',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _stepTitles[index],
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildModernInstructionItem(icon, title, description, color),
+                  if (animation != null)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 24.0),
+                        child: Center(child: animation),
+                      ),
+                    ),
+                ],
+              ),
       ),
     );
   }
