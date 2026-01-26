@@ -5,7 +5,6 @@ import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:visiaxx/core/utils/distance_helper.dart';
@@ -1386,7 +1385,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   if (isLandscape && _showE && _waitingForResponse) {
                     return Column(
                       children: [
-                        _buildInfoBar(isLandscape: true),
+                        // Single Unified Header
+                        if (_showE) _buildAcuityFixedHeader(isLandscape: true),
                         Expanded(
                           child: Row(
                             children: [
@@ -1415,8 +1415,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
                   return Column(
                     children: [
-                      // Progress and info bar (more compact in landscape)
-                      _buildInfoBar(isLandscape: isLandscape),
+                      // Single Unified Header
+                      if (_showE) _buildAcuityFixedHeader(isLandscape: false),
 
                       // Main content
                       Expanded(
@@ -1433,6 +1433,31 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   );
                 },
               ),
+
+              // Floating Distance Indicator (Pill Design)
+              if (_useDistanceMonitoring &&
+                  !_showDistanceCalibration &&
+                  !_testComplete &&
+                  _isDistanceOk &&
+                  (_showE || _showRelaxation))
+                Positioned(
+                  top:
+                      (MediaQuery.of(context).orientation ==
+                          Orientation.landscape)
+                      ? 60
+                      : 100,
+                  right:
+                      (MediaQuery.of(context).orientation ==
+                          Orientation.landscape)
+                      ? null
+                      : 16,
+                  left:
+                      (MediaQuery.of(context).orientation ==
+                          Orientation.landscape)
+                      ? 16
+                      : null,
+                  child: _buildDistanceIndicator(compact: false),
+                ),
 
               Positioned(
                 bottom: _showE && _waitingForResponse ? 150 : 50,
@@ -1644,278 +1669,93 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     });
   }
 
-  Widget _buildInfoBar({bool isLandscape = false}) {
+  Widget _buildAcuityFixedHeader({bool isLandscape = false}) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: 20,
-        vertical: isLandscape ? 6 : 12,
+        vertical: isLandscape ? 6 : 10,
       ),
       decoration: BoxDecoration(
         color: AppColors.white,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.5),
+            color: AppColors.border.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
       ),
       child: Row(
         children: [
-          // Level indicator
+          // Snellen Size (No label)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
               color: AppColors.primary.withValues(alpha: 0.08),
               shape: ContinuousRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
-              shadows: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Text(
-              'LEVEL ${_currentLevel + 1}/${TestConstants.visualAcuityLevels.length}',
+              TestConstants.visualAcuityLevels[_currentLevel].snellen,
               style: const TextStyle(
-                color: AppColors.primary,
+                fontSize: 14,
                 fontWeight: FontWeight.w900,
-                fontSize: 11,
-                letterSpacing: 0.5,
+                color: AppColors.primary,
               ),
             ),
           ),
           const SizedBox(width: 8),
-          // Score indicator (Squircle)
+          // Level & Score Chip: LEVEL 2/7 ✅ 2/2
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
-              color: AppColors.success.withValues(alpha: 0.08),
+              color: AppColors.primary.withValues(alpha: 0.05),
               shape: ContinuousRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
-              shadows: [
-                BoxShadow(
-                  color: AppColors.success.withValues(alpha: 0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'LEVEL ${_currentLevel + 1}/${TestConstants.visualAcuityLevels.length}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 1,
+                  height: 10,
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.check_circle_outline,
+                  size: 10,
+                  color: AppColors.success,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$_totalCorrect/$_totalResponses',
+                  style: const TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),
-            child: Text(
-              '$_totalCorrect/$_totalResponses',
-              style: const TextStyle(
-                color: AppColors.success,
-                fontWeight: FontWeight.w900,
-                fontSize: 11,
-              ),
-            ),
           ),
-          if (isLandscape && _showE) ...[
-            const SizedBox(width: 8),
-            // Snellen Size in Bar (Landscape)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: ShapeDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                shape: ContinuousRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                TestConstants.visualAcuityLevels[_currentLevel].snellen,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Timer in Bar (Landscape)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: ShapeDecoration(
-                color:
-                    (_eDisplayCountdown <= 2
-                            ? AppColors.error
-                            : AppColors.primary)
-                        .withValues(alpha: 0.08),
-                shape: ContinuousRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.timer_outlined,
-                    size: 14,
-                    color: _eDisplayCountdown <= 2
-                        ? AppColors.error
-                        : AppColors.primary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${_eDisplayCountdown}s',
-                    style: TextStyle(
-                      color: _eDisplayCountdown <= 2
-                          ? AppColors.error
-                          : AppColors.primary,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           const Spacer(),
-          // Distance Indicator (Compact)
-          if (_useDistanceMonitoring && !_showDistanceCalibration) ...[
-            _buildDistanceIndicator(compact: true),
-            const SizedBox(width: 8),
-          ],
-          // Speech waveform with Retry Indicator
-          // Speech waveform with Retry Indicator
-          Builder(
-            builder: (context) {
-              final provider = context.watch<TestSessionProvider>();
-              if (provider.profileType == 'patient') {
-                return const SizedBox.shrink();
-              }
-
-              final bool shouldBeListening =
-                  _continuousSpeech.shouldBeListening;
-              final bool isActuallyListening = _isListening;
-              final bool isPausedForTts = _continuousSpeech.isPausedForTts;
-              final bool isRestarting = _continuousSpeech.isRestartPending;
-
-              final bool isInListeningPhase =
-                  _showE || (_showRelaxation && _relaxationCountdown <= 3);
-
-              // ⏳ GRACE PERIOD: HW takes ~1-2s to warm up on some devices
-              final bool isInGracePeriod =
-                  _lastPlateStartTime != null &&
-                  DateTime.now().difference(_lastPlateStartTime!).inSeconds < 4;
-
-              // STALLED = Engine is OFF but should be ON, and isn't currently TRYING to fix itself
-              final bool isStalled =
-                  shouldBeListening &&
-                  !isActuallyListening &&
-                  !isPausedForTts &&
-                  !isRestarting && // 🛡️ CRITICAL: Don't show stalled if we are in the middle of a restart
-                  isInListeningPhase &&
-                  !_isPausedForExit &&
-                  !_isTestPausedForDistance &&
-                  !_isResettingSpeech &&
-                  !_eyeSwitchPending && // 🛡️ Hide during eye transition
-                  !isInGracePeriod; // 🛡️ Give hardware time to wake up (now 4s)
-
-              final bool isWorking = isActuallyListening && !isPausedForTts;
-
-              return GestureDetector(
-                onTap: isStalled ? _manualSpeechReset : null,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isStalled
-                        ? Colors.red.withValues(alpha: 0.1)
-                        : (isWorking
-                              ? AppColors.success.withValues(alpha: 0.1)
-                              : (isRestarting
-                                    ? AppColors.primary.withValues(alpha: 0.1)
-                                    : AppColors.primary.withValues(
-                                        alpha: 0.05,
-                                      ))),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isStalled
-                          ? Colors.red.withValues(alpha: 0.3)
-                          : (isRestarting
-                                ? AppColors.primary.withValues(alpha: 0.3)
-                                : Colors.transparent),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!isStalled) ...[
-                        _SpeechWaveform(
-                          isListening: isWorking,
-                          isTalking: _isSpeechActive,
-                          color: isWorking
-                              ? AppColors.success
-                              : (isRestarting
-                                    ? AppColors.primary
-                                    : AppColors.primary.withValues(alpha: 0.5)),
-                        ),
-                        const SizedBox(width: 8),
-                        if (isWorking)
-                          Text(
-                            'LISTENING',
-                            style: GoogleFonts.outfit(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.success,
-                              letterSpacing: 0.5,
-                            ),
-                          )
-                        else if (isRestarting)
-                          Text(
-                            'RECONNECTING...',
-                            style: GoogleFonts.outfit(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.primary,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        if (isWorking || isRestarting) const SizedBox(width: 6),
-                        Icon(
-                          isPausedForTts
-                              ? Icons.volume_up_rounded
-                              : (isWorking
-                                    ? Icons.mic
-                                    : (isRestarting
-                                          ? Icons.sync
-                                          : Icons.mic_off)),
-                          size: 16,
-                          color: isWorking
-                              ? AppColors.success
-                              : (isRestarting
-                                    ? AppColors.primary
-                                    : AppColors.primary.withValues(alpha: 0.5)),
-                        ),
-                      ] else ...[
-                        const Icon(
-                          Icons.refresh_rounded,
-                          size: 16,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'TAP TO RETRY',
-                          style: GoogleFonts.outfit(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+          // Waveform (Microphone Status)
+          _buildWaveformSection(),
+          const SizedBox(width: 12),
+          // Timer
+          _buildinfoBarTimer(compact: true),
         ],
       ),
     );
@@ -1944,6 +1784,133 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         ),
         textAlign: TextAlign.center,
       ),
+    );
+  }
+
+  Widget _buildinfoBarTimer({bool compact = false}) {
+    return Column(
+      crossAxisAlignment: compact
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!compact)
+          Text(
+            'TIME REMAINING',
+            style: TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              letterSpacing: 0.8,
+            ),
+          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.timer_outlined,
+              size: 16,
+              color: _eDisplayCountdown <= 2
+                  ? AppColors.error
+                  : AppColors.primary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${_eDisplayCountdown}s',
+              style: TextStyle(
+                fontSize: compact ? 18 : 22,
+                fontWeight: FontWeight.w900,
+                color: _eDisplayCountdown <= 2
+                    ? AppColors.error
+                    : AppColors.primary,
+                fontFeatures: const [ui.FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWaveformSection() {
+    return Builder(
+      builder: (context) {
+        final provider = context.watch<TestSessionProvider>();
+        if (provider.profileType == 'patient') return const SizedBox.shrink();
+
+        final bool isWorking =
+            _isListening && !_continuousSpeech.isPausedForTts;
+        final bool isRestarting = _continuousSpeech.isRestartPending;
+        final bool isStalled =
+            _continuousSpeech.shouldBeListening &&
+            !_isListening &&
+            !_continuousSpeech.isPausedForTts &&
+            !_continuousSpeech.isRestartPending &&
+            (_showE || (_showRelaxation && _relaxationCountdown <= 3)) &&
+            !_isPausedForExit &&
+            !_isTestPausedForDistance &&
+            !_isResettingSpeech &&
+            !_eyeSwitchPending;
+
+        return GestureDetector(
+          onTap: isStalled ? _manualSpeechReset : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isStalled
+                  ? Colors.red.withValues(alpha: 0.1)
+                  : (isWorking
+                        ? AppColors.success.withValues(alpha: 0.1)
+                        : AppColors.primary.withValues(alpha: 0.05)),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isStalled
+                    ? Colors.red.withValues(alpha: 0.3)
+                    : Colors.transparent,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isStalled) ...[
+                  _SpeechWaveform(
+                    isListening: isWorking,
+                    isTalking: _isSpeechActive,
+                    color: isWorking ? AppColors.success : AppColors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    _continuousSpeech.isPausedForTts
+                        ? Icons.volume_up_rounded
+                        : (isWorking
+                              ? Icons.mic
+                              : (isRestarting ? Icons.sync : Icons.mic_off)),
+                    size: 14,
+                    color: isWorking ? AppColors.success : AppColors.primary,
+                  ),
+                ] else ...[
+                  const Icon(
+                    Icons.refresh_rounded,
+                    size: 14,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'RETRY',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -2200,103 +2167,6 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
-          // Timer and Size indicator row
-          if (!isSideBySide && !isLandscape)
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: isLandscape ? 6 : 12,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                border: Border(
-                  bottom: BorderSide(
-                    color: AppColors.border.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // ✅ PROMINENT Size indicator on LEFT
-                  Container(
-                    width: 72,
-                    height: 44,
-                    decoration: ShapeDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
-                      shape: ContinuousRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      shadows: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        level.snellen,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primary,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Timer on RIGHT
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'TIME REMAINING',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textSecondary.withValues(alpha: 0.5),
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.timer_outlined,
-                            size: 16,
-                            color: _eDisplayCountdown <= 2
-                                ? AppColors.error
-                                : AppColors.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _isTestPausedForDistance
-                                ? 'PAUSED'
-                                : '${_eDisplayCountdown}s',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: _eDisplayCountdown <= 2
-                                  ? AppColors.error
-                                  : AppColors.primary,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
           // Main E display area - Use a guaranteed height if expanded is too small
           Container(
             padding: const EdgeInsets.all(20),
@@ -2493,7 +2363,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           // Left button
           _DirectionButton(
             direction: EDirection.left,
-            compact: true,
+            size: 48,
+            iconSize: 26,
             onPressed: () => _handleButtonResponse(EDirection.left),
           ),
           const SizedBox(width: 20),
@@ -2503,13 +2374,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             children: [
               _DirectionButton(
                 direction: EDirection.up,
-                compact: true,
+                size: 48,
+                iconSize: 26,
                 onPressed: () => _handleButtonResponse(EDirection.up),
               ),
               const SizedBox(height: 8),
               _DirectionButton(
                 direction: EDirection.down,
-                compact: true,
+                size: 48,
+                iconSize: 26,
                 onPressed: () => _handleButtonResponse(EDirection.down),
               ),
             ],
@@ -2518,7 +2391,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           // Right button
           _DirectionButton(
             direction: EDirection.right,
-            compact: true,
+            size: 48,
+            iconSize: 26,
             onPressed: () => _handleButtonResponse(EDirection.right),
           ),
           const SizedBox(width: 40),
@@ -2549,72 +2423,89 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildLandscapeDirectionButtonsSidePanel() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: AppColors.white,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _DirectionButton(
-            direction: EDirection.up,
-            compact: true,
-            onPressed: () => _handleButtonResponse(EDirection.up),
-          ),
-          const SizedBox(height: 8),
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        // Calculate dynamic button size based on height
+        // Minimum size 36, default 48 if enough space
+        final buttonSize = (availableHeight < 300) ? 40.0 : 48.0;
+        final iconSize = buttonSize * 0.55;
+        final verticalGap = (availableHeight < 250) ? 4.0 : 8.0;
+        final horizontalGap = (availableHeight < 250) ? 30.0 : 50.0;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          color: AppColors.white,
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _DirectionButton(
-                direction: EDirection.left,
-                compact: true,
-                onPressed: () => _handleButtonResponse(EDirection.left),
+                direction: EDirection.up,
+                size: buttonSize,
+                iconSize: iconSize,
+                onPressed: () => _handleButtonResponse(EDirection.up),
               ),
-              const SizedBox(width: 60),
+              SizedBox(height: verticalGap),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _DirectionButton(
+                    direction: EDirection.left,
+                    size: buttonSize,
+                    iconSize: iconSize,
+                    onPressed: () => _handleButtonResponse(EDirection.left),
+                  ),
+                  SizedBox(width: horizontalGap),
+                  _DirectionButton(
+                    direction: EDirection.right,
+                    size: buttonSize,
+                    iconSize: iconSize,
+                    onPressed: () => _handleButtonResponse(EDirection.right),
+                  ),
+                ],
+              ),
+              SizedBox(height: verticalGap),
               _DirectionButton(
-                direction: EDirection.right,
-                compact: true,
-                onPressed: () => _handleButtonResponse(EDirection.right),
+                direction: EDirection.down,
+                size: buttonSize,
+                iconSize: iconSize,
+                onPressed: () => _handleButtonResponse(EDirection.down),
+              ),
+              SizedBox(height: verticalGap * 1.5),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _handleButtonResponse(EDirection.blurry),
+                    icon: Icon(
+                      Icons.visibility_off_rounded,
+                      size: iconSize * 0.8,
+                      color: AppColors.primary,
+                    ),
+                    label: Text(
+                      "BLURRY",
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w900,
+                        fontSize: (availableHeight < 250) ? 9 : 11,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        vertical: (availableHeight < 250) ? 6 : 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          _DirectionButton(
-            direction: EDirection.down,
-            compact: true,
-            onPressed: () => _handleButtonResponse(EDirection.down),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _handleButtonResponse(EDirection.blurry),
-                icon: const Icon(
-                  Icons.visibility_off_rounded,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
-                label: const Text(
-                  "BLURRY",
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 11,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -2983,12 +2874,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 class _DirectionButton extends StatelessWidget {
   final EDirection direction;
   final VoidCallback onPressed;
-  final bool compact;
+  final double size;
+  final double iconSize;
 
   const _DirectionButton({
     required this.direction,
     required this.onPressed,
-    this.compact = false,
+    this.size = 64.0,
+    this.iconSize = 28.0,
   });
 
   IconData get _icon {
@@ -3008,18 +2901,17 @@ class _DirectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = compact ? 48.0 : 64.0;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.circular(compact ? 12 : 20),
+        borderRadius: BorderRadius.circular(size * 0.3),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: compact ? 6 : 10,
-            offset: Offset(0, compact ? 2 : 4),
+            blurRadius: size * 0.1,
+            offset: Offset(0, size * 0.05),
           ),
         ],
       ),
@@ -3027,8 +2919,10 @@ class _DirectionButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(20),
-          child: Center(child: Icon(_icon, color: AppColors.white, size: 28)),
+          borderRadius: BorderRadius.circular(size * 0.3),
+          child: Center(
+            child: Icon(_icon, color: AppColors.white, size: iconSize),
+          ),
         ),
       ),
     );
