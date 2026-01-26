@@ -953,6 +953,66 @@ class TestResultService {
     };
   }
 
+  /// Get total count of results for a practitioner using Firestore aggregation
+  Future<int> getPractitionerResultsCount(String practitionerId) async {
+    try {
+      final snapshot = await _firestore
+          .collectionGroup('tests')
+          .where('userId', isEqualTo: practitionerId)
+          .count()
+          .get();
+      return snapshot.count ?? 0;
+    } catch (e) {
+      debugPrint('[TestResultService] count error: $e');
+      return 0;
+    }
+  }
+
+  /// Get a page of test results for a practitioner
+  Future<List<TestResultModel>> getPractitionerResultsPaged({
+    required String practitionerId,
+    required int limit,
+    DocumentSnapshot? startAfter,
+  }) async {
+    try {
+      var query = _firestore
+          .collectionGroup('tests')
+          .where('userId', isEqualTo: practitionerId)
+          .orderBy('timestamp', descending: true)
+          .limit(limit);
+
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+
+      final snapshot = await query.get();
+      _lastProcessedDoc = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+
+      final results = snapshot.docs
+          .map((doc) {
+            try {
+              final data = doc.data();
+              data['id'] = doc.id;
+              return TestResultModel.fromJson(data);
+            } catch (e) {
+              debugPrint('[TestResultService] parse error: $e');
+              return null;
+            }
+          })
+          .where((r) => r != null)
+          .cast<TestResultModel>()
+          .toList();
+
+      return results;
+    } catch (e) {
+      debugPrint('[TestResultService] paged fetch error: $e');
+      return [];
+    }
+  }
+
+  DocumentSnapshot? _lastProcessedDoc;
+  DocumentSnapshot? get lastProcessedDoc => _lastProcessedDoc;
+
   /// Helper to map technical test types to descriptive folder/category names
   String _getTestFolderName(String testType) {
     switch (testType) {

@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,7 +25,6 @@ import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/services/test_result_service.dart';
-import '../../../core/services/database_service.dart'; // RE-ADDED
 import '../../../core/services/auth_service.dart'; // RE-ADDED
 import '../../../data/models/user_model.dart';
 
@@ -41,7 +41,6 @@ class _PractitionerDashboardScreenState
   final PatientService _patientService = PatientService();
   final PdfExportService _pdfService = PdfExportService();
   final TestResultService _resultService = TestResultService();
-  final DatabaseService _dbService = DatabaseService(); // RE-ADDED
   final AuthService _authService = AuthService(); // RE-ADDED
   StreamSubscription<List<TestResultModel>>? _resultsSubscription;
   StreamSubscription<UserModel?>? _profileSubscription; // NEW
@@ -49,6 +48,8 @@ class _PractitionerDashboardScreenState
   bool _isInitialLoading = true;
   bool _isSyncing = false; // NEW: Track background sync
   bool _isFilterLoading = false;
+  double _loadingProgress = 0.0; // NEW: Track load %
+  int _totalToLoad = 0; // NEW: Total count
   String _selectedPeriod = 'all';
   List<String> _selectedConditions = [];
   Map<String, dynamic> _statistics = {};
@@ -158,24 +159,107 @@ class _PractitionerDashboardScreenState
         }
         setState(() => _isSyncing = false);
       } else {
-        // Step 3b: Full fetch (first time or no cache)
-        setState(() => _isSyncing = true);
-        debugPrint(
-          '[Dashboard] ℹ️ No sync record found. Fetching all available data...',
-        );
-        fetchedResults = await _dbService.getPractitionerTestResults(
-          practitionerId: user.uid,
+        // Step 3b: Full fetch with PROGRESS tracking
+        setState(() {
+          _isSyncing = true;
+          _loadingProgress = 0.05; // Starting
+        });
+
+        debugPrint('[Dashboard] ℹ️ First run. Fetching with progress...');
+        final totalCount = await _resultService.getPractitionerResultsCount(
+          user.uid,
         );
 
         if (mounted) {
+          setState(() => _totalToLoad = totalCount);
+        }
+
+        if (totalCount > 0) {
+          final List<TestResultModel> pagedResults = [];
+          const int pageSize = 50;
+          DocumentSnapshot? lastDoc;
+
+          while (pagedResults.length < totalCount) {
+            final batch = await _resultService.getPractitionerResultsPaged(
+              practitionerId: user.uid,
+              limit: pageSize,
+              startAfter: lastDoc,
+            );
+
+            if (batch.isEmpty) break;
+
+            pagedResults.addAll(batch);
+            lastDoc = _resultService.lastProcessedDoc;
+
+            if (mounted) {
+              setState(() {
+                _loadingProgress = (pagedResults.length / totalCount).clamp(
+                  0.0,
+                  1.0,
+                );
+                _allResults = List.from(pagedResults);
+                _applyFilters(_allResults);
+              });
+            }
+            await Future.delayed(const Duration(milliseconds: 100));
+          }
+        }
+
+        if (_allResults.isEmpty) {
+          debugPrint(
+            '[Dashboard] ⚠️ CollectionGroup returned 0. Trying patient-by-patient fallback...',
+          );
+          // FALLBACK: Original logic fetching by patient
+          final allPatientsResults = <TestResultModel>[];
+          final identity = userProfile?.identityString ?? user.uid;
+
+          final patientsCount = _patients.length;
+          if (patientsCount > 0) {
+            for (int i = 0; i < patientsCount; i++) {
+              final p = _patients[i];
+              final snapshot = await FirebaseFirestore.instance
+                  .collection('Practitioners')
+                  .doc(identity)
+                  .collection('patients')
+                  .doc(p.id)
+                  .collection('tests')
+                  .orderBy('timestamp', descending: true)
+                  .get();
+
+              for (var doc in snapshot.docs) {
+                final data = doc.data();
+                data['id'] = doc.id;
+                allPatientsResults.add(TestResultModel.fromJson(data));
+              }
+
+              if (mounted) {
+                setState(() {
+                  _loadingProgress = (i + 1) / patientsCount;
+                  _allResults = List.from(allPatientsResults);
+                  _applyFilters(_allResults);
+                });
+              }
+            }
+          }
+
+          if (mounted) {
+            setState(() {
+              _isInitialLoading = false;
+              _isSyncing = false;
+              _loadingProgress = 1.0;
+            });
+          }
+          await persistence.saveResults(_allResults);
+          return;
+        }
+
+        if (mounted) {
           setState(() {
-            _allResults = fetchedResults;
-            _applyFilters(fetchedResults);
             _isInitialLoading = false;
             _isSyncing = false;
           });
         }
-        await persistence.saveResults(fetchedResults);
+        await persistence.saveResults(_allResults);
       }
 
       // 4. Start Real-time Listeners for updates while on screen
@@ -192,18 +276,48 @@ class _PractitionerDashboardScreenState
 
       _resultsSubscription = _resultService
           .getPractitionerResultsStream(user.uid)
-          .listen((results) {
-            if (mounted) {
-              // Check if stream results are actually different or newer
-              if (results.length != _allResults.length) {
-                setState(() {
-                  _allResults = results;
-                  _applyFilters(results);
-                });
-                persistence.saveResults(results);
+          .listen(
+            (streamResults) {
+              if (mounted) {
+                // DEFENSIVE: Merge stream results with existing results to avoid wiping out fallback data
+                // if collectionGroup query has issues but patient-by-patient sync worked.
+                final Map<String, TestResultModel> resultsMap = {
+                  for (var r in _allResults) r.id: r,
+                };
+
+                bool hasAnyChange = false;
+                for (var r in streamResults) {
+                  if (!resultsMap.containsKey(r.id)) {
+                    resultsMap[r.id] = r;
+                    hasAnyChange = true;
+                  }
+                }
+
+                // If stream has fewer items AND we already have data, we might be seeing an inconsistent
+                // collectionGroup vs fallback state. We prioritize keeping the fallback data for now.
+                // However, if stream results are NEWER or DIFFERENT, we should reflect that.
+
+                if (hasAnyChange ||
+                    (streamResults.isNotEmpty &&
+                        streamResults.length != _allResults.length)) {
+                  final mergedResults = resultsMap.values.toList();
+                  mergedResults.sort(
+                    (a, b) => b.timestamp.compareTo(a.timestamp),
+                  );
+
+                  setState(() {
+                    _allResults = mergedResults;
+                    _applyFilters(mergedResults);
+                  });
+                  persistence.saveResults(mergedResults);
+                }
               }
-            }
-          });
+            },
+            onError: (error) {
+              debugPrint('[Dashboard] ❌ Stream Error: $error');
+              // Don't show error to user if we already have some data
+            },
+          );
     } catch (e) {
       debugPrint('[Dashboard] ❌ Error loading data: $e');
       if (mounted) {
@@ -1226,7 +1340,7 @@ class _PractitionerDashboardScreenState
                 'Visiaxx needs access to save PDF reports to your Downloads folder.\n\n'
                 'This permission allows the app to:\n'
                 '• Save reports to Downloads/Visiaxx_Reports\n'
-                '• Organize files for easy access\n\n'
+                '• Organize files for easy access\n'
                 'Your files remain private and secure.',
                 style: TextStyle(fontSize: 14),
               ),
@@ -1898,80 +2012,230 @@ class _PractitionerDashboardScreenState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Practitioner Dashboard'),
         backgroundColor: AppColors.background,
         elevation: 0,
-      ),
-      body: _isInitialLoading && _allResults.isEmpty
-          ? const Center(child: EyeLoader.fullScreen())
-          : RefreshIndicator(
-              onRefresh: () async {
-                await DashboardPersistenceService().clearAll();
-                setState(() {
-                  _selectedPeriod = 'all';
-                  _selectedConditions = [];
-                  _startDate = null;
-                  _endDate = null;
-                  _searchQuery = '';
-                  _searchController.clear();
-                });
-                await _loadDashboardData();
-              },
-              child: Stack(
-                children: [
-                  Column(
-                    children: [
-                      if (_isSyncing)
-                        const LinearProgressIndicator(
-                          minHeight: 2,
-                          backgroundColor: Colors.transparent,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.primary,
-                          ),
-                        ),
-                      Expanded(
-                        child: CustomScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          slivers: [
-                            SliverPadding(
-                              padding: const EdgeInsets.all(16),
-                              sliver: SliverToBoxAdapter(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildPeriodSelector(),
-                                    const SizedBox(height: 16),
-                                    _buildStatisticsCards(),
-                                    const SizedBox(height: 20),
-                                    _buildTestGraph(),
-                                    const SizedBox(height: 20),
-                                    _buildConditionBreakdown(),
-                                    const SizedBox(height: 20),
-                                    _buildRecentResultsHeader(),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            _buildRecentResultsList(),
-                            const SliverToBoxAdapter(
-                              child: SizedBox(height: 100),
-                            ),
-                          ],
-                        ),
+        bottom: _isSyncing
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(4),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: _loadingProgress),
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeInOutSine,
+                  builder: (context, value, child) {
+                    return LinearProgressIndicator(
+                      value: value > 0 ? value : null,
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
                       ),
-                    ],
+                      minHeight: 4,
+                    );
+                  },
+                ),
+              )
+            : null,
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await DashboardPersistenceService().clearAll();
+          setState(() {
+            _selectedPeriod = 'all';
+            _selectedConditions = [];
+            _startDate = null;
+            _endDate = null;
+            _searchQuery = '';
+            _searchController.clear();
+          });
+          await _loadDashboardData();
+        },
+        child: Stack(
+          children: [
+            CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                if (_isSyncing && _totalToLoad > 0)
+                  SliverToBoxAdapter(child: _buildSyncStatusBanner()),
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildPeriodSelector(),
+                        const SizedBox(height: 16),
+                        _buildStatisticsCards(),
+                        const SizedBox(height: 20),
+                        _buildTestGraph(),
+                        const SizedBox(height: 20),
+                        _buildConditionBreakdown(),
+                        const SizedBox(height: 20),
+                        _buildRecentResultsHeader(),
+                      ],
+                    ),
                   ),
-                  if (_isFilterLoading)
-                    Positioned.fill(
-                      child: Container(
-                        color: AppColors.background.withValues(alpha: 0.7),
-                        child: const Center(child: EyeLoader(size: 60)),
+                ),
+                _buildRecentResultsList(),
+                if (_allResults.isEmpty && _isSyncing)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 80),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const EyeLoader(size: 60),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Loading Patient Records...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'We are retrieving clinical data from the cloud',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                ],
-              ),
+                  ),
+                if (_allResults.isEmpty && !_isSyncing && !_isInitialLoading)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 80),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.assignment_late_outlined,
+                            size: 60,
+                            color: AppColors.textTertiary.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'No Patient Records Found',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Try performing a test or checking connection',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              ],
             ),
+            if (_isFilterLoading)
+              Positioned.fill(
+                child: Container(
+                  color: AppColors.background.withValues(alpha: 0.7),
+                  child: const Center(child: EyeLoader(size: 60)),
+                ),
+              ),
+          ],
+        ),
+      ),
       floatingActionButton: _buildDownloadButton(),
+    );
+  }
+
+  Widget _buildSyncStatusBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      margin: const EdgeInsets.only(bottom: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: _loadingProgress),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutSine,
+        builder: (context, value, child) {
+          return Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: value > 0 ? value : null,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppColors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Synchronizing Patient Database...',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Fetching clinical records from clinical cloud storage',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textTertiary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${(value * 100).toInt()}%',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
