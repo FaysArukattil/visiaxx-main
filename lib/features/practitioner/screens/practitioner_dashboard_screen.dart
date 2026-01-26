@@ -607,9 +607,16 @@ class _PractitionerDashboardScreenState
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           return Container(
-            height: MediaQuery.of(context).size.height * 0.65,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+              minHeight:
+                  MediaQuery.of(context).orientation == Orientation.landscape
+                  ? MediaQuery.of(context).size.height * 0.8
+                  : MediaQuery.of(context).size.height * 0.65,
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Header with clear and done buttons
                 Row(
@@ -687,293 +694,300 @@ class _PractitionerDashboardScreenState
 
                 const SizedBox(height: 16),
 
-                // Mode selector: Range or Single Date
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            setModalState(() {
-                              isRangeMode = true;
-                              isSelectingStartDate = true;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: isRangeMode
-                                  ? AppColors.primary
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Range',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: isRangeMode
-                                    ? AppColors.white
-                                    : AppColors.textSecondary,
-                                fontWeight: isRangeMode
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            setModalState(() {
-                              isRangeMode = false;
-                              isSelectingStartDate = true;
-                              tempEndDate = tempStartDate;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: !isRangeMode
-                                  ? AppColors.primary
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Single Date',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: !isRangeMode
-                                    ? AppColors.white
-                                    : AppColors.textSecondary,
-                                fontWeight: !isRangeMode
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Date selection indicator
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      if (isRangeMode)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildDateDisplay(
-                                label: 'From Date',
-                                date: tempStartDate,
-                                isActive: isSelectingStartDate,
-                                onTap: () {
-                                  setModalState(() {
-                                    isSelectingStartDate = true;
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Icon(
-                              Icons.arrow_forward,
-                              color: AppColors.primary.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildDateDisplay(
-                                label: 'To Date',
-                                date: tempEndDate,
-                                isActive: !isSelectingStartDate,
-                                onTap: () {
-                                  setModalState(() {
-                                    isSelectingStartDate = false;
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        _buildDateDisplay(
-                          label: 'Selected Date',
-                          date: tempStartDate,
-                          isActive: true,
-                          onTap: () {},
-                        ),
-                      if (isRangeMode &&
-                          tempStartDate != null &&
-                          tempEndDate != null) ...[
-                        const SizedBox(height: 12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Mode selector: Range or Single Date
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
+                          padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
-                                Icons.info_outline,
-                                size: 16,
-                                color: AppColors.success,
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setModalState(() {
+                                      isRangeMode = true;
+                                      isSelectingStartDate = true;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isRangeMode
+                                          ? AppColors.primary
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Range',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: isRangeMode
+                                            ? AppColors.white
+                                            : AppColors.textSecondary,
+                                        fontWeight: isRangeMode
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  '${_calculateDaysBetween(tempStartDate!, tempEndDate!)} days selected',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.success,
-                                    fontWeight: FontWeight.w600,
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setModalState(() {
+                                      isRangeMode = false;
+                                      isSelectingStartDate = true;
+                                      tempEndDate = tempStartDate;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: !isRangeMode
+                                          ? AppColors.primary
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Single Date',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: !isRangeMode
+                                            ? AppColors.white
+                                            : AppColors.textSecondary,
+                                        fontWeight: !isRangeMode
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Instruction text
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        size: 16,
-                        color: AppColors.warning,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          isRangeMode
-                              ? (isSelectingStartDate
-                                    ? 'Select the start date of your range'
-                                    : 'Select the end date of your range')
-                              : 'Select a single date to view tests',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                        const SizedBox(height: 16),
+                        // Date selection indicator
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              if (isRangeMode)
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildDateDisplay(
+                                        label: 'From Date',
+                                        date: tempStartDate,
+                                        isActive: isSelectingStartDate,
+                                        onTap: () {
+                                          setModalState(() {
+                                            isSelectingStartDate = true;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Icon(
+                                      Icons.arrow_forward,
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildDateDisplay(
+                                        label: 'To Date',
+                                        date: tempEndDate,
+                                        isActive: !isSelectingStartDate,
+                                        onTap: () {
+                                          setModalState(() {
+                                            isSelectingStartDate = false;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else
+                                _buildDateDisplay(
+                                  label: 'Selected Date',
+                                  date: tempStartDate,
+                                  isActive: true,
+                                  onTap: () {},
+                                ),
+                              if (isRangeMode &&
+                                  tempStartDate != null &&
+                                  tempEndDate != null) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.info_outline,
+                                        size: 16,
+                                        color: AppColors.success,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          '${_calculateDaysBetween(tempStartDate!, tempEndDate!)} days selected',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.success,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Calendar picker
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Theme(
-                      data: Theme.of(context).copyWith(
-                        colorScheme: ColorScheme.light(
-                          primary: AppColors.primary,
-                          onPrimary: AppColors.white,
-                          surface: AppColors.surface,
-                          onSurface: AppColors.textPrimary,
+                        const SizedBox(height: 16),
+                        // Instruction text
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.lightbulb_outline,
+                                size: 16,
+                                color: AppColors.warning,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  isRangeMode
+                                      ? (isSelectingStartDate
+                                            ? 'Select the start date of your range'
+                                            : 'Select the end date of your range')
+                                      : 'Select a single date to view tests',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      child: CupertinoTheme(
-                        data: CupertinoThemeData(
-                          primaryColor: AppColors.primary,
-                          textTheme: CupertinoTextThemeData(
-                            dateTimePickerTextStyle: TextStyle(
-                              fontSize: 18,
-                              color: AppColors.textPrimary,
+                        const SizedBox(height: 16),
+                        // Calendar picker
+                        SizedBox(
+                          height: 200,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: ColorScheme.light(
+                                  primary: AppColors.primary,
+                                  onPrimary: AppColors.white,
+                                  surface: AppColors.surface,
+                                  onSurface: AppColors.textPrimary,
+                                ),
+                              ),
+                              child: CupertinoTheme(
+                                data: CupertinoThemeData(
+                                  primaryColor: AppColors.primary,
+                                  textTheme: CupertinoTextThemeData(
+                                    dateTimePickerTextStyle: TextStyle(
+                                      fontSize: 18,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                child: CupertinoDatePicker(
+                                  mode: CupertinoDatePickerMode.date,
+                                  initialDateTime: isRangeMode
+                                      ? (isSelectingStartDate
+                                            ? (tempStartDate ?? DateTime.now())
+                                            : (tempEndDate ?? DateTime.now()))
+                                      : (tempStartDate ?? DateTime.now()),
+                                  minimumDate: DateTime(2020, 1, 1),
+                                  maximumDate: DateTime.now(),
+                                  onDateTimeChanged: (date) {
+                                    setModalState(() {
+                                      if (isRangeMode) {
+                                        if (isSelectingStartDate) {
+                                          tempStartDate = date;
+                                          if (tempEndDate == null ||
+                                              tempEndDate!.isBefore(date)) {
+                                            tempEndDate = date;
+                                          }
+                                          Future.delayed(
+                                            const Duration(milliseconds: 300),
+                                            () {
+                                              if (mounted) {
+                                                setModalState(() {
+                                                  isSelectingStartDate = false;
+                                                });
+                                              }
+                                            },
+                                          );
+                                        } else {
+                                          if (tempStartDate != null &&
+                                              date.isBefore(tempStartDate!)) {
+                                            return;
+                                          } else {
+                                            tempEndDate = date;
+                                          }
+                                        }
+                                      } else {
+                                        tempStartDate = date;
+                                        tempEndDate = date;
+                                      }
+                                    });
+                                  },
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                        child: CupertinoDatePicker(
-                          mode: CupertinoDatePickerMode.date,
-                          initialDateTime: isRangeMode
-                              ? (isSelectingStartDate
-                                    ? (tempStartDate ?? DateTime.now())
-                                    : (tempEndDate ?? DateTime.now()))
-                              : (tempStartDate ?? DateTime.now()),
-                          minimumDate: DateTime(2020, 1, 1),
-                          maximumDate: DateTime.now(),
-                          onDateTimeChanged: (date) {
-                            setModalState(() {
-                              if (isRangeMode) {
-                                if (isSelectingStartDate) {
-                                  tempStartDate = date;
-                                  // Auto-set end date if it's before the new start date
-                                  if (tempEndDate == null ||
-                                      tempEndDate!.isBefore(date)) {
-                                    tempEndDate = date;
-                                  }
-                                  // Auto advance to end date selection
-                                  Future.delayed(
-                                    const Duration(milliseconds: 300),
-                                    () {
-                                      if (mounted) {
-                                        setModalState(() {
-                                          isSelectingStartDate = false;
-                                        });
-                                      }
-                                    },
-                                  );
-                                } else {
-                                  // Only validate and prevent invalid selection
-                                  if (tempStartDate != null &&
-                                      date.isBefore(tempStartDate!)) {
-                                    // Don't update - prevent invalid selection
-                                    return;
-                                  } else {
-                                    tempEndDate = date;
-                                  }
-                                }
-                              } else {
-                                // Single date mode
-                                tempStartDate = date;
-                                tempEndDate = date;
-                              }
-                            });
-                          },
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -1060,86 +1074,91 @@ class _PractitionerDashboardScreenState
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          constraints: const BoxConstraints(maxWidth: 450),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+        child: SingleChildScrollView(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            constraints: const BoxConstraints(maxWidth: 450),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.picture_as_pdf_rounded,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.picture_as_pdf_rounded,
-                      color: AppColors.primary,
-                      size: 24,
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        'Download Reports',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Select the report collection you wish to export to your device.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Text(
-                      'Download Reports',
+                ),
+                const SizedBox(height: 20),
+
+                // Option 1: All Reports
+                _buildDownloadCard(
+                  icon: Icons.auto_awesome_motion_rounded,
+                  title: 'All Recommendations',
+                  subtitle: 'Export entire database ($totalResults reports)',
+                  value: 'all',
+                  isRecommended: !hasFilters,
+                ),
+
+                const SizedBox(height: 12),
+
+                // Option 2: Filtered Reports
+                _buildDownloadCard(
+                  icon: Icons.filter_list_rounded,
+                  title: 'Current Filters',
+                  subtitle: _getFilterDescription(filteredCount),
+                  value: 'filtered',
+                  isRecommended: hasFilters,
+                  isEnabled: filteredCount > 0,
+                ),
+
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text(
+                      'Cancel',
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                        color: AppColors.textTertiary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Select the report collection you wish to export to your device.',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 20),
-
-              // Option 1: All Reports
-              _buildDownloadCard(
-                icon: Icons.auto_awesome_motion_rounded,
-                title: 'All Recommendations',
-                subtitle: 'Export entire database ($totalResults reports)',
-                value: 'all',
-                isRecommended: !hasFilters,
-              ),
-
-              const SizedBox(height: 12),
-
-              // Option 2: Filtered Reports
-              _buildDownloadCard(
-                icon: Icons.filter_list_rounded,
-                title: 'Current Filters',
-                subtitle: _getFilterDescription(filteredCount),
-                value: 'filtered',
-                isRecommended: hasFilters,
-                isEnabled: filteredCount > 0,
-              ),
-
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: AppColors.textTertiary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1626,150 +1645,152 @@ class _PractitionerDashboardScreenState
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          constraints: const BoxConstraints(maxWidth: 500),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+        child: SingleChildScrollView(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            constraints: const BoxConstraints(maxWidth: 500),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.success,
+                    size: 48,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.success,
-                  size: 48,
+                const SizedBox(height: 20),
+                const Text(
+                  'Reports Ready',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Reports Ready',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Successfully exported $count diagnostic report${count > 1 ? 's' : ''}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
+                const SizedBox(height: 8),
+                Text(
+                  'Successfully exported $count diagnostic report${count > 1 ? 's' : ''}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'SAVE LOCATION',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textTertiary,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.folder_open_rounded,
-                          size: 18,
-                          color: AppColors.primary,
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'SAVE LOCATION',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textTertiary,
+                          letterSpacing: 1,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            path.split('/').last,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.folder_open_rounded,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              path.split('/').last,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 20),
-                    Text(
-                      path,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                        fontFamily: 'monospace',
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      const Divider(height: 20),
+                      Text(
+                        path,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                          fontFamily: 'monospace',
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: const BorderSide(color: AppColors.border),
+                        ),
+                        child: const Text(
+                          'Dismiss',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          if (Platform.isAndroid) {
+                            await FileManagerService.openFolder(path);
+                          } else {
+                            await Share.share(
+                              'Reports saved to:\n$path\n\nFind them in the Files app.',
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          Platform.isIOS ? 'Share' : 'Open',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Dismiss',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        if (Platform.isAndroid) {
-                          await FileManagerService.openFolder(path);
-                        } else {
-                          await Share.share(
-                            'Reports saved to:\n$path\n\nFind them in the Files app.',
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        Platform.isIOS ? 'Share' : 'Open',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

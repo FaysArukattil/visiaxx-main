@@ -273,7 +273,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
           ),
           centerTitle: true,
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(80),
+            preferredSize: Size.fromHeight(
+              MediaQuery.of(context).orientation == Orientation.landscape
+                  ? 45
+                  : 80,
+            ),
             child: _buildEyeProgressIndicator(),
           ),
         ),
@@ -284,7 +288,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               child: SingleChildScrollView(
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  MediaQuery.of(context).orientation == Orientation.landscape
+                      ? 12
+                      : 24,
+                  20,
+                  MediaQuery.of(context).orientation == Orientation.landscape
+                      ? 12
+                      : 24,
+                ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   transitionBuilder:
@@ -329,7 +342,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             ),
             // Navigation buttons
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(
+                MediaQuery.of(context).orientation == Orientation.landscape
+                    ? 12
+                    : 24,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: const BorderRadius.vertical(
@@ -356,9 +373,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Text(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical:
+                                  MediaQuery.of(context).orientation ==
+                                      Orientation.landscape
+                                  ? 10
+                                  : 16,
+                            ),
+                            child: const Text(
                               'Back',
                               style: TextStyle(
                                 fontSize: 14,
@@ -384,7 +407,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                                 .withValues(alpha: 0.3),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: EdgeInsets.symmetric(
+                              vertical:
+                                  MediaQuery.of(context).orientation ==
+                                      Orientation.landscape
+                                  ? 10
+                                  : 16,
+                            ),
                             child: Text(
                               _currentStep == 2 ? 'Start Test' : 'Next Step',
                               style: const TextStyle(
@@ -891,30 +920,34 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
   }
 
   Widget _buildStepHeader(String title, String subtitle) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: EdgeInsets.only(bottom: isLandscape ? 12 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 28,
+            style: TextStyle(
+              fontSize: isLandscape ? 20 : 28,
               fontWeight: FontWeight.w900,
               color: AppColors.textPrimary,
               letterSpacing: -1.0,
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.textSecondary,
-              height: 1.5,
-              fontWeight: FontWeight.w400,
+          if (!isLandscape) ...[
+            const SizedBox(height: 12),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+                height: 1.5,
+                fontWeight: FontWeight.w400,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1451,21 +1484,30 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
   }
 
   Widget _buildEyeProgressIndicator() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Container(
-      padding: const EdgeInsets.only(bottom: 24, left: 32, right: 32),
+      padding: EdgeInsets.only(
+        bottom: isLandscape ? 12 : 24,
+        left: 32,
+        right: 32,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(3, (index) {
           final isCompleted = index < _currentStep;
           final isActive = index == _currentStep;
+          final nodeSize = isLandscape
+              ? (isActive ? 32.0 : 28.0)
+              : (isActive ? 42.0 : 36.0);
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Node
               AnimatedContainer(
                 duration: const Duration(milliseconds: 500),
-                width: isActive ? 42 : 36,
-                height: isActive ? 42 : 36,
+                width: nodeSize,
+                height: nodeSize,
                 decoration: BoxDecoration(
                   color: isActive || isCompleted
                       ? AppColors.primary
@@ -1475,13 +1517,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                     color: isActive || isCompleted
                         ? AppColors.primary
                         : AppColors.border.withValues(alpha: 0.5),
-                    width: isActive ? 3 : 1,
+                    width: isActive ? (isLandscape ? 2 : 3) : 1,
                   ),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
                             color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 10,
+                            blurRadius: isLandscape ? 6 : 10,
                             spreadRadius: 1,
                           ),
                         ]
@@ -1496,14 +1538,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                   color: isActive || isCompleted
                       ? AppColors.white
                       : AppColors.textSecondary.withValues(alpha: 0.5),
-                  size: isActive ? 20 : 18,
+                  size: isLandscape
+                      ? (isActive ? 16 : 14)
+                      : (isActive ? 20 : 18),
                 ),
               ),
               // Line
               if (index < 2)
                 Container(
-                  width: 40,
-                  height: 3,
+                  width: isLandscape ? 30 : 40,
+                  height: isLandscape ? 2 : 3,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
