@@ -89,6 +89,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     WidgetsBinding.instance.removeObserver(this);
     _readingCountdownTimer?.cancel();
     _listeningTimer?.cancel();
+    _speechService.setGloballyDisabled(false); // Reset for next session
     _speechService.dispose();
     _ttsService.dispose();
     _distanceService.stopMonitoring();
@@ -126,6 +127,19 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         _startListening();
       }
     };
+
+    // Check if we are in practitioner mode
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = context.read<TestSessionProvider>();
+        if (provider.profileType == 'patient') {
+          debugPrint(
+            '👨‍⚕️ [ShortDistance] Practitioner mode detected: Silencing Speech globally',
+          );
+          _speechService.setGloballyDisabled(true);
+        }
+      }
+    });
 
     _showNextSentence();
   }
@@ -249,7 +263,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   }
 
   void _startListening() async {
-    if (_isPausedForExit || !_isDistanceOk) {
+    final provider = context.read<TestSessionProvider>();
+    if (_isPausedForExit ||
+        !_isDistanceOk ||
+        provider.profileType == 'patient') {
       return;
     }
 
@@ -709,7 +726,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'Read the sentence aloud or type below',
+            context.read<TestSessionProvider>().profileType == 'patient'
+                ? 'Ask the patient to read the sentence below'
+                : 'Read the sentence aloud or type below',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -817,44 +836,128 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                 onSubmitted: _processSentence,
               ),
             ),
-          Row(
+          Builder(
+            builder: (context) {
+              final provider = context.watch<TestSessionProvider>();
+              final isPractitioner = provider.profileType == 'patient';
+
+              if (isPractitioner) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildPremiumActionButton(
+                        icon: Icons.check_circle_outline_rounded,
+                        label: 'CAN READ',
+                        gradient: AppColors.successGradient,
+                        onTap: () {
+                          final sentence = TestConstants
+                              .shortDistanceSentences[_currentScreen];
+                          _processSentence(sentence.sentence);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildPremiumActionButton(
+                        icon: Icons.highlight_off_rounded,
+                        label: 'UNABLE TO READ',
+                        gradient: AppColors.errorGradient,
+                        onTap: () => _processSentence('blurry'),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: _buildLargeActionButton(
+                      icon: Icons.keyboard_rounded,
+                      label: 'KEYBOARD',
+                      isActive: _showKeyboard,
+                      color: AppColors.textSecondary,
+                      onTap: () {
+                        setState(() => _showKeyboard = !_showKeyboard);
+                        if (_showKeyboard) _inputFocusNode.requestFocus();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: _buildLargeActionButton(
+                      icon: Icons.mic_rounded,
+                      label: _isListening ? 'LISTENING' : 'VOICE',
+                      isActive: _isListening,
+                      color: AppColors.primary,
+                      onTap: _startListening,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: _buildLargeActionButton(
+                      icon: Icons.visibility_off_rounded,
+                      label: 'BLURRY',
+                      isActive: false,
+                      color: AppColors.warning,
+                      onTap: () => _processSentence('blurry'),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumActionButton({
+    required IconData icon,
+    required String label,
+    required List<Color> gradient,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradient,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: gradient.first.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Flexible(
-                child: _buildLargeActionButton(
-                  icon: Icons.keyboard_rounded,
-                  label: 'KEYBOARD',
-                  isActive: _showKeyboard,
-                  color: AppColors.textSecondary,
-                  onTap: () {
-                    setState(() => _showKeyboard = !_showKeyboard);
-                    if (_showKeyboard) _inputFocusNode.requestFocus();
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: _buildLargeActionButton(
-                  icon: Icons.mic_rounded,
-                  label: _isListening ? 'LISTENING' : 'VOICE',
-                  isActive: _isListening,
-                  color: AppColors.primary,
-                  onTap: _startListening,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: _buildLargeActionButton(
-                  icon: Icons.visibility_off_rounded,
-                  label: 'BLURRY',
-                  isActive: false,
-                  color: AppColors.warning,
-                  onTap: () => _processSentence('blurry'),
+              Icon(icon, color: AppColors.white, size: 24),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

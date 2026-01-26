@@ -111,6 +111,19 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       if (mounted) setState(() => _isListening = isListening);
     };
 
+    // Check if we are in practitioner mode
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = context.read<TestSessionProvider>();
+        if (provider.profileType == 'patient') {
+          debugPrint(
+            '👨‍⚕️ [PelliRobson] Practitioner mode detected: Silencing Speech globally',
+          );
+          _speechService.setGloballyDisabled(true);
+        }
+      }
+    });
+
     // Start distance monitoring
     _startContinuousDistanceMonitoring();
 
@@ -269,6 +282,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   void _handleSpeechDetected(String partialResult) {
     if (!mounted || !_isTestActive) return;
 
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType == 'patient') return;
+
     setState(() {
       _recognizedText = partialResult;
       _speechDetected = partialResult.isNotEmpty;
@@ -307,6 +323,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   void _handleVoiceResponse(String result) {
     if (!mounted || !_isTestActive) return;
+
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType == 'patient') return;
 
     setState(() => _recognizedText = result);
     if (result.isNotEmpty) {
@@ -506,14 +525,15 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   }
 
   void _startListeningForTriplet() {
-    if (!_continuousSpeech.isActive) {
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType != 'patient' && !_continuousSpeech.isActive) {
       _continuousSpeech.start(
         listenDuration: const Duration(minutes: 10),
         minConfidence: 0.05,
         bufferMs: 300,
       );
     }
-    setState(() => _isListening = true);
+    setState(() => _isListening = provider.profileType != 'patient');
 
     // Cancel existing timers
     _silenceTimer?.cancel();
@@ -821,6 +841,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _scrollController.dispose();
     _silenceTimer?.cancel();
     _autoAdvanceTimer?.cancel();
+    _speechService.setGloballyDisabled(false); // Reset for next session
     _speechService.dispose();
     _ttsService.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -1056,6 +1077,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   }
 
   Widget _buildSpeechIndicator() {
+    final provider = context.watch<TestSessionProvider>();
+    if (provider.profileType == 'patient') return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: _buildVoiceActionButton(
@@ -1139,6 +1163,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   /// Optimized recognized text display (Matches reading test requirement for visibility)
   Widget _buildRecognizedTextIndicator() {
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType == 'patient') return const SizedBox.shrink();
+
     final bool hasRecognized = _recognizedText.isNotEmpty;
 
     if (!hasRecognized && !_isListening) {

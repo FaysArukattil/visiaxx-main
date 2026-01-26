@@ -9,10 +9,16 @@ import 'package:flutter/foundation.dart';
 /// ✅ FINAL STAND Offline Speech Recognition Service
 /// Simple, rock-solid serialized native bridge.
 class SpeechService {
+  // Singleton pattern
+  static final SpeechService _instance = SpeechService._internal();
+  factory SpeechService() => _instance;
+  SpeechService._internal();
+
   final SpeechToText _speechToText = SpeechToText();
   bool _isInitialized = false;
   bool _isInitializing = false;
   bool _isListening = false;
+  bool _isGloballyDisabled = false; // New: Protection for practitioner mode
   String? _lastReactiveMatch;
 
   // 🔒 NATIVE SYNC LOCK
@@ -86,6 +92,12 @@ class SpeechService {
   }
 
   Future<void> startListening({int bufferMs = 800}) async {
+    if (_isGloballyDisabled) {
+      debugPrint(
+        '[SpeechService] 🔇 Speech is GLOBALLY DISABLED. Ignoring start request.',
+      );
+      return;
+    }
     if (!_isInitialized && !await initialize()) return;
 
     await _safeNativeCall(() async {
@@ -138,6 +150,14 @@ class SpeechService {
       await _speechToText.stop();
       _isListening = false;
     });
+  }
+
+  void setGloballyDisabled(bool disabled) {
+    debugPrint('[SpeechService] 🛡️ Global Disabled State: $disabled');
+    _isGloballyDisabled = disabled;
+    if (disabled && isListening) {
+      stopListening();
+    }
   }
 
   Future<void> cancel() async {
@@ -197,6 +217,7 @@ class SpeechService {
 
   bool get isListening => _isListening || _speechToText.isListening;
   bool get isReady => _isInitialized && _isListening;
+  bool get isGloballyDisabled => _isGloballyDisabled;
 
   Future<void> dispose() async {
     await _speechToText.cancel();

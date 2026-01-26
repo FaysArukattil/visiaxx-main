@@ -88,6 +88,15 @@ class ContinuousSpeechManager {
       '[ContinuousSpeech] 🎤 START (force: $force, active: $_isActive)',
     );
 
+    // NEW: Robust guard for practitioner mode
+    if (_speechService.isGloballyDisabled) {
+      debugPrint(
+        '[ContinuousSpeech] 🔇 UNDERLYING SERVICE DISABLED. Cancelling start.',
+      );
+      _shouldBeListening = false;
+      return false;
+    }
+
     // If already active and not forcing, skip
     if (_isActive && !force) {
       debugPrint('[ContinuousSpeech] Already active, skipping start');
@@ -128,6 +137,11 @@ class ContinuousSpeechManager {
       return;
     }
 
+    if (_speechService.isGloballyDisabled) {
+      debugPrint('[ContinuousSpeech] 🔇 Restart aborted: Service disabled');
+      return;
+    }
+
     _isRestartScheduled = true;
     _restartAttempts++;
 
@@ -142,7 +156,9 @@ class ContinuousSpeechManager {
     _restartTimer = Timer(Duration(milliseconds: delay), () async {
       _isRestartScheduled = false;
 
-      if (!_shouldBeListening || _isPausedForTts) {
+      if (!_shouldBeListening ||
+          _isPausedForTts ||
+          _speechService.isGloballyDisabled) {
         debugPrint('[ContinuousSpeech] 🚫 Restart cancelled');
         return;
       }
@@ -162,6 +178,8 @@ class ContinuousSpeechManager {
   }
 
   Future<bool> retryListening() async {
+    if (_speechService.isGloballyDisabled) return false;
+
     debugPrint('[ContinuousSpeech] 🌪️ MANUAL RETRY');
     onContentionStart?.call();
     _shouldBeListening = true;
@@ -185,6 +203,7 @@ class ContinuousSpeechManager {
   }
 
   Future<void> resumeAfterTts() async {
+    if (_speechService.isGloballyDisabled) return;
     debugPrint('[ContinuousSpeech] ▶️ Resume after TTS');
     _isPausedForTts = false;
     if (_shouldBeListening) {

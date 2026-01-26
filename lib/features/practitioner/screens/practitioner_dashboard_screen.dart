@@ -9,10 +9,10 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:visiaxx/core/services/file_manager_service.dart';
+import '../../../core/services/dashboard_persistence_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/patient_service.dart';
 import '../../../core/services/pdf_export_service.dart';
-import '../../../core/services/dashboard_cache_service.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/utils/ui_utils.dart';
@@ -40,7 +40,6 @@ class _PractitionerDashboardScreenState
     extends State<PractitionerDashboardScreen> {
   final PatientService _patientService = PatientService();
   final PdfExportService _pdfService = PdfExportService();
-  final DashboardCacheService _cache = DashboardCacheService();
   final TestResultService _resultService = TestResultService();
   final DatabaseService _dbService = DatabaseService(); // RE-ADDED
   final AuthService _authService = AuthService(); // RE-ADDED
@@ -82,117 +81,129 @@ class _PractitionerDashboardScreenState
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    setState(() => _isInitialLoading = true);
+    if (_allResults.isEmpty) {
+      setState(() => _isInitialLoading = true);
+    }
 
     // Cancel existing subscription if any
     await _resultsSubscription?.cancel();
 
     try {
-      // 1. Initial Quick Load from Cache
-      final cachedData = _cache.getCachedData();
-      if (cachedData != null) {
-        debugPrint('[Dashboard] ðŸ’¡ Initial load from cache');
-        _applyCachedData(cachedData);
-        _isInitialLoading = false;
-      }
+      // 1. FAST LOAD FROM DISK
+      debugPrint('[Dashboard] 💾 Loading from disk...');
+      final persistence = DashboardPersistenceService();
+      final storedResults = await persistence.getStoredResults();
+      final lastSync = await persistence.getLastSyncTime();
 
-      // 2. Load User Profile (for hiddenResultIds)
-      final userProfile = await _authService.getUserData(user.uid);
-      if (mounted && userProfile != null) {
-        setState(() => _hiddenResultIds = userProfile.hiddenResultIds);
-      }
-
-      // 3. Load Patients (needed for search matches)
-      final patients = await _patientService.getPatients(user.uid);
-      if (mounted) {
-        setState(() => _patients = patients);
-      }
-
-      // 3. SECURE FETCH (FALLBACK): Traditional iterative fetch
-      // This ensures data is visible even if the collectionGroup stream (Step 4) fails due to missing index
-      debugPrint('[Dashboard] ðŸ”„ Performing secure initial fetch...');
-      final initialResults = await _dbService.getPractitionerTestResults(
-        practitionerId: user.uid,
-      );
-
-      if (mounted) {
+      if (mounted && storedResults.isNotEmpty) {
         setState(() {
-          _allResults = initialResults;
-          _applyFilters(initialResults);
-          _isInitialLoading = false; // Data is now definitely here
+          _allResults = storedResults;
+          _applyFilters(storedResults);
+          _isInitialLoading = false;
         });
         debugPrint(
-          '[Dashboard] âœ… Initial fetch complete: ${initialResults.length} results',
+          '[Dashboard] ✅ Loaded ${storedResults.length} items from disk',
         );
       }
 
-      // 4. Start Real-time Profile Listener (for hiddenResultIds)
-      debugPrint('[Dashboard] ðŸ”„ Starting real-time profile listener');
+      // 2. Load Patients & Hidden IDs in parallel
+      final results = await Future.wait([
+        _authService.getUserData(user.uid),
+        _patientService.getPatients(user.uid),
+      ]);
+
+      final userProfile = results[0] as UserModel?;
+      _patients = results[1] as List<PatientModel>;
+
+      if (mounted && userProfile != null) {
+        setState(() {
+          _hiddenResultIds = userProfile.hiddenResultIds;
+          if (_allResults.isNotEmpty) _applyFilters(_allResults);
+        });
+      }
+
+      // 3. INCREMENTAL FETCH FROM FIRESTORE
+      debugPrint('[Dashboard] 🔄 Starting incremental fetch...');
+      List<TestResultModel> fetchedResults;
+
+      if (lastSync != null && storedResults.isNotEmpty) {
+        // Fetch only new results since last sync
+        fetchedResults = await _resultService.getPractitionerResultsIncremental(
+          practitionerId: user.uid,
+          since: lastSync,
+        );
+
+        if (fetchedResults.isNotEmpty) {
+          // Merge and update
+          final Map<String, TestResultModel> resultsMap = {
+            for (var r in _allResults) r.id: r,
+          };
+          for (var r in fetchedResults) {
+            resultsMap[r.id] = r;
+          }
+          final mergedResults = resultsMap.values.toList();
+          mergedResults.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+          if (mounted) {
+            setState(() {
+              _allResults = mergedResults;
+              _applyFilters(mergedResults);
+            });
+          }
+          await persistence.saveResults(mergedResults);
+        }
+      } else {
+        // Fallback or First Run: Fetch all results using stream-like logic but one-time
+        debugPrint(
+          '[Dashboard] ℹ️ No sync record found. Fetching all available data...',
+        );
+        fetchedResults = await _dbService.getPractitionerTestResults(
+          practitionerId: user.uid,
+        );
+
+        if (mounted) {
+          setState(() {
+            _allResults = fetchedResults;
+            _applyFilters(fetchedResults);
+            _isInitialLoading = false;
+          });
+        }
+        await persistence.saveResults(fetchedResults);
+      }
+
+      // 4. Start Real-time Listeners for updates while on screen
       _profileSubscription = _authService.getUserStream(user.uid).listen((
         userProfile,
       ) {
         if (mounted && userProfile != null) {
-          debugPrint(
-            '[Dashboard] ðŸ“¦ Profile update: ${userProfile.hiddenResultIds.length} hidden items',
-          );
           setState(() {
             _hiddenResultIds = userProfile.hiddenResultIds;
-            // Immediate re-filter of all results when hidden list changes
             _applyFilters(_allResults);
           });
         }
       });
 
-      // 5. Start Background Real-time Results Stream
-      debugPrint('[Dashboard] ðŸ”„ Starting background real-time listener');
       _resultsSubscription = _resultService
           .getPractitionerResultsStream(user.uid)
-          .listen(
-            (results) {
-              if (mounted) {
+          .listen((results) {
+            if (mounted) {
+              // Check if stream results are actually different or newer
+              if (results.length != _allResults.length) {
                 setState(() {
                   _allResults = results;
                   _applyFilters(results);
                 });
-
-                // Background update cache
-                _cache.cacheData(
-                  statistics: _statistics,
-                  allResults: _allResults,
-                  patients: _patients,
-                  dailyCounts: {},
-                );
-                debugPrint('[Dashboard] âœ… Stream update processed');
+                persistence.saveResults(results);
               }
-            },
-            onError: (e) {
-              debugPrint(
-                '[Dashboard] âš ï¸ Background stream error (non-fatal): $e',
-              );
-              // Don't show error snackbar if we already have data from the initial fetch
-              if (_allResults.isEmpty && mounted) {
-                SnackbarUtils.showWarning(
-                  context,
-                  'Real-time sync limited. Pull to refresh.',
-                );
-              }
-            },
-          );
+            }
+          });
     } catch (e) {
-      debugPrint('[Dashboard] â Œ Error loading data: $e');
+      debugPrint('[Dashboard] ❌ Error loading data: $e');
       if (mounted) {
         setState(() => _isInitialLoading = false);
-        SnackbarUtils.showError(context, 'Failed to load dashboard');
+        SnackbarUtils.showError(context, 'Refresh failed. Check connectivity.');
       }
     }
-  }
-
-  void _applyCachedData(Map<String, dynamic> data) {
-    _statistics = data['statistics'] as Map<String, dynamic>;
-    final allResults = data['allResults'] as List<TestResultModel>;
-    _patients = data['patients'] as List<PatientModel>;
-
-    _applyFilters(allResults);
   }
 
   void _applyFilters(List<TestResultModel> allResults) {
@@ -452,15 +463,9 @@ class _PractitionerDashboardScreenState
 
     await Future.delayed(const Duration(milliseconds: 150));
 
-    // Use persistent results list if available, otherwise fallback to cache
+    // Use persistent results list
     if (_allResults.isNotEmpty) {
       _applyFilters(_allResults);
-    } else {
-      final cachedData = _cache.getCachedData();
-      if (cachedData != null) {
-        final allResults = cachedData['allResults'] as List<TestResultModel>;
-        _applyFilters(allResults);
-      }
     }
 
     setState(() => _isFilterLoading = false);
@@ -542,9 +547,8 @@ class _PractitionerDashboardScreenState
                           _endDate = isRangeMode ? tempEndDate : tempStartDate;
                         });
                         Navigator.pop(context);
-                        final cachedData = _cache.getCachedData();
-                        if (cachedData != null) {
-                          _applyFilters(cachedData['allResults']);
+                        if (_allResults.isNotEmpty) {
+                          _applyFilters(_allResults);
                         }
                       },
                       icon: const Icon(Icons.check, size: 18),
@@ -1895,7 +1899,7 @@ class _PractitionerDashboardScreenState
           ? const Center(child: EyeLoader.fullScreen())
           : RefreshIndicator(
               onRefresh: () async {
-                _cache.clearCache();
+                await DashboardPersistenceService().clearAll();
                 setState(() {
                   _selectedPeriod = 'all';
                   _selectedConditions = [];
@@ -1908,23 +1912,31 @@ class _PractitionerDashboardScreenState
               },
               child: Stack(
                 children: [
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildPeriodSelector(),
-                        const SizedBox(height: 16),
-                        _buildStatisticsCards(),
-                        const SizedBox(height: 20),
-                        _buildTestGraph(),
-                        const SizedBox(height: 20),
-                        _buildConditionBreakdown(),
-                        const SizedBox(height: 20),
-                        _buildRecentResults(),
-                        const SizedBox(height: 80),
-                      ],
-                    ),
+                  CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.all(16),
+                        sliver: SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildPeriodSelector(),
+                              const SizedBox(height: 16),
+                              _buildStatisticsCards(),
+                              const SizedBox(height: 20),
+                              _buildTestGraph(),
+                              const SizedBox(height: 20),
+                              _buildConditionBreakdown(),
+                              const SizedBox(height: 20),
+                              _buildRecentResultsHeader(),
+                            ],
+                          ),
+                        ),
+                      ),
+                      _buildRecentResultsList(),
+                      const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                    ],
                   ),
                   if (_isFilterLoading)
                     Positioned.fill(
@@ -2108,9 +2120,8 @@ class _PractitionerDashboardScreenState
                       _startDate = null;
                       _endDate = null;
                     });
-                    final cachedData = _cache.getCachedData();
-                    if (cachedData != null) {
-                      _applyFilters(cachedData['allResults']);
+                    if (_allResults.isNotEmpty) {
+                      _applyFilters(_allResults);
                     }
                   },
                   tooltip: 'Clear date filter',
@@ -2668,119 +2679,117 @@ class _PractitionerDashboardScreenState
     }
   }
 
-  Widget _buildRecentResults() {
-    if (_filteredResults.isEmpty) return const SizedBox.shrink();
+  Widget _buildRecentResultsHeader() {
+    final searchFilteredResults = _getCurrentFilteredAndSearchedResults();
 
-    final patientsWithResults = <String, PatientModel>{};
-    for (final result in _filteredResults) {
-      final patientId = result.profileId;
-      if (!patientsWithResults.containsKey(patientId)) {
-        final patient = _patients.firstWhere(
-          (p) => p.id == result.profileId || p.fullName == result.profileName,
-          orElse: () => PatientModel(
-            id: result.profileId,
-            firstName: result.profileName.split(' ').first,
-            lastName: result.profileName.split(' ').length > 1
-                ? result.profileName.split(' ').last
-                : '',
-            age: result.profileAge ?? 0,
-            sex: result.profileSex ?? 'Unknown',
-            phone: null,
-            createdAt: result.timestamp,
-          ),
-        );
-        patientsWithResults[patientId] = patient;
-      }
-    }
-
-    final searchFilteredResults = _searchQuery.isEmpty
-        ? _filteredResults
-        : _filteredResults.where((r) {
-            final query = _searchQuery.toLowerCase();
-            return r.profileName.toLowerCase().contains(query) ||
-                (patientsWithResults[r.profileId]?.phone
-                        ?.toLowerCase()
-                        .contains(query) ??
-                    false);
-          }).toList();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Test Results',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${searchFilteredResults.length} results',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _searchController,
-            onChanged: (value) => setState(() => _searchQuery = value),
-            decoration: InputDecoration(
-              hintText: 'Search by patient name or phone...',
-              hintStyle: const TextStyle(fontSize: 13),
-              prefixIcon: const Icon(Icons.search, size: 20),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 20),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Test Results',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              filled: true,
-              fillColor: AppColors.background,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 12,
-                horizontal: 16,
+              child: Text(
+                '${searchFilteredResults.length} results',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
               ),
             ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _searchController,
+          onChanged: (value) => setState(() => _searchQuery = value),
+          decoration: InputDecoration(
+            hintText: 'Search by patient name or phone...',
+            hintStyle: const TextStyle(fontSize: 13),
+            prefixIcon: const Icon(Icons.search, size: 20),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: AppColors.background,
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 16,
+            ),
           ),
-          const SizedBox(height: 12),
-          ...searchFilteredResults.map((result) {
-            final patient = patientsWithResults[result.profileId];
-            return _buildEnhancedResultCard(result, patient);
-          }),
-        ],
+        ),
+      ],
+    );
+  }
+
+  List<TestResultModel> _getCurrentFilteredAndSearchedResults() {
+    if (_searchQuery.isEmpty) return _filteredResults;
+
+    final query = _searchQuery.toLowerCase();
+    return _filteredResults.where((r) {
+      if (r.profileName.toLowerCase().contains(query)) return true;
+
+      // Try to find matching patient phone
+      final patient = _patients.firstWhere(
+        (p) => p.id == r.profileId || p.fullName == r.profileName,
+        orElse: () => PatientModel(
+          id: 'temp',
+          firstName: '',
+          lastName: '',
+          age: 0,
+          sex: '',
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      return patient.phone?.toLowerCase().contains(query) ?? false;
+    }).toList();
+  }
+
+  Widget _buildRecentResultsList() {
+    final results = _getCurrentFilteredAndSearchedResults();
+    if (results.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final result = results[index];
+          final patient = _patients.firstWhere(
+            (p) => p.id == result.profileId || p.fullName == result.profileName,
+            orElse: () => PatientModel(
+              id: result.profileId,
+              firstName: result.profileName.split(' ').first,
+              lastName: result.profileName.split(' ').length > 1
+                  ? result.profileName.split(' ').last
+                  : '',
+              age: result.profileAge ?? 0,
+              sex: result.profileSex ?? 'Unknown',
+              phone: null,
+              createdAt: result.timestamp,
+            ),
+          );
+          return _buildEnhancedResultCard(result, patient);
+        }, childCount: results.length),
       ),
     );
   }

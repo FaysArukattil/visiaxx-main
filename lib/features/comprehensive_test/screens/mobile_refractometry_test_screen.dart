@@ -129,6 +129,19 @@ class _MobileRefractometryTestScreenState
       }
     });
 
+    // Check if we are in practitioner mode
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = context.read<TestSessionProvider>();
+        if (provider.profileType == 'patient') {
+          debugPrint(
+            '👨‍⚕️ [MobileRefract] Practitioner mode detected: Silencing Speech globally',
+          );
+          context.read<SpeechService>().setGloballyDisabled(true);
+        }
+      }
+    });
+
     _initServices();
   }
 
@@ -178,6 +191,9 @@ class _MobileRefractometryTestScreenState
     _speechEraserTimer?.cancel();
     _continuousSpeech.stop();
     _distanceService.stopMonitoring();
+    context.read<SpeechService>().setGloballyDisabled(
+      false,
+    ); // Reset for next session
     _ttsService.dispose();
     super.dispose();
   }
@@ -389,7 +405,10 @@ class _MobileRefractometryTestScreenState
     // Re-initialization (via _startContinuousDistanceMonitoring) causes "Searching..." stall.
 
     if (_currentPhase == RefractPhase.test && _waitingForResponse) {
-      if (!_continuousSpeech.isActive) _continuousSpeech.start();
+      final provider = context.read<TestSessionProvider>();
+      if (provider.profileType != 'patient' && !_continuousSpeech.isActive) {
+        _continuousSpeech.start();
+      }
       _startRoundTimer();
     } else if (_currentPhase == RefractPhase.relaxation) {
       _startRelaxationTimer();
@@ -548,11 +567,14 @@ class _MobileRefractometryTestScreenState
       if (!mounted) return;
       _eDisplayStartTime = DateTime.now();
       _startRoundTimer();
-      _continuousSpeech.start(
-        listenDuration: const Duration(minutes: 10),
-        minConfidence: 0.15,
-        bufferMs: 1000,
-      );
+      final provider = context.read<TestSessionProvider>();
+      if (provider.profileType != 'patient') {
+        _continuousSpeech.start(
+          listenDuration: const Duration(minutes: 10),
+          minConfidence: 0.15,
+          bufferMs: 1000,
+        );
+      }
     });
   }
 
@@ -571,7 +593,11 @@ class _MobileRefractometryTestScreenState
   }
 
   void _handleVoiceResponse(String finalResult) {
-    if (_currentPhase != RefractPhase.test || !_waitingForResponse) return;
+    if (!mounted || _currentPhase != RefractPhase.test || !_waitingForResponse)
+      return;
+
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType == 'patient') return;
 
     // Reject final results arriving too fast after E display (prevent leakage from previous E)
     if (_eDisplayStartTime != null) {
@@ -592,6 +618,10 @@ class _MobileRefractometryTestScreenState
 
   void _handleSpeechDetected(String partialResult) {
     if (!mounted) return;
+
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType == 'patient') return;
+
     setState(() {
       _lastDetectedSpeech = partialResult;
       _isSpeechActive = true;
@@ -1433,50 +1463,61 @@ class _MobileRefractometryTestScreenState
         ),
 
         // Instruction text - MINIMAL HEIGHT
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+        Builder(
+          builder: (context) {
+            final provider = context.watch<TestSessionProvider>();
+            final isPractitioner = provider.profileType == 'patient';
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (_continuousSpeech.isActive)
-                    Icon(
-                      Icons.mic,
-                      size: 16,
-                      color: _isTestPausedForDistance
-                          ? AppColors.warning
-                          : AppColors.success,
-                    ),
-                  if (_continuousSpeech.isActive) const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      _isTestPausedForDistance
-                          ? 'Adjust distance'
-                          : 'Which way is E pointing?',
-                      style: TextStyle(
-                        color: _isTestPausedForDistance
-                            ? AppColors.warning
-                            : AppColors.textSecondary,
-                        fontSize: 13,
-                        fontWeight: _isTestPausedForDistance
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_continuousSpeech.isActive && !isPractitioner)
+                        Icon(
+                          Icons.mic,
+                          size: 16,
+                          color: _isTestPausedForDistance
+                              ? AppColors.warning
+                              : AppColors.success,
+                        ),
+                      if (_continuousSpeech.isActive && !isPractitioner)
+                        const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          _isTestPausedForDistance
+                              ? 'Adjust distance'
+                              : 'Which way is E pointing?',
+                          style: TextStyle(
+                            color: _isTestPausedForDistance
+                                ? AppColors.warning
+                                : AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: _isTestPausedForDistance
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
   }
 
   Widget _buildRecognizedTextIndicator() {
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType == 'patient') return const SizedBox.shrink();
+
     final bool hasRecognized =
         _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
 

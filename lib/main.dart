@@ -61,6 +61,7 @@ import 'core/providers/network_connectivity_provider.dart';
 // AWS Credentials Manager
 import 'core/services/aws_credentials_manager.dart';
 import 'core/services/session_monitor_service.dart';
+import 'core/services/speech_service.dart';
 
 import 'core/constants/app_colors.dart';
 
@@ -181,6 +182,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => TestSessionProvider()),
         ChangeNotifierProvider(create: (_) => EyeExerciseProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        Provider<SpeechService>(create: (_) => SpeechService()),
       ],
       child: MaterialApp(
         navigatorKey: VisiaxApp.navigatorKey,

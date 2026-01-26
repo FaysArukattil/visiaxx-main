@@ -4,6 +4,7 @@ import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'dart:async';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/session_monitor_service.dart';
+import '../../../core/services/speech_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/constants/app_status.dart';
@@ -121,6 +122,9 @@ class _SplashScreenState extends State<SplashScreen>
                 .timeout(const Duration(seconds: 3));
 
             final isPractitioner = user.role == UserRole.examiner;
+
+            // Handle session-wide microphone suppression for practitioners
+            SpeechService().setGloballyDisabled(isPractitioner);
 
             if (checkResult.exists &&
                 !checkResult.isOurSession &&

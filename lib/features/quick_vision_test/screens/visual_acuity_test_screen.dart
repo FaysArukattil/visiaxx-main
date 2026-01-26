@@ -144,6 +144,19 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
     });
 
+    // Check if we are in practitioner mode
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = context.read<TestSessionProvider>();
+        if (provider.profileType == 'patient') {
+          debugPrint(
+            '👨‍⚕️ [VisualAcuity] Practitioner mode detected: Silencing Speech globally',
+          );
+          context.read<SpeechService>().setGloballyDisabled(true);
+        }
+      }
+    });
+
     _initServices();
   }
 
@@ -264,21 +277,27 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     // Resume based on current test phase
     if (_showE && _waitingForResponse) {
-      debugPrint('[VisualAcuity] ”„ Resuming E display phase');
-      _continuousSpeech.start(
-        listenDuration: const Duration(minutes: 10),
-        minConfidence: 0.15,
-        bufferMs: 1000,
-      );
-      _restartEDisplayTimer();
-    } else if (_showRelaxation) {
-      debugPrint('[VisualAcuity] ”„ Resuming relaxation phase');
-      if (_relaxationCountdown <= 3) {
+      debugPrint('[VisualAcuity] 🔄 Resuming E display phase');
+      final provider = context.read<TestSessionProvider>();
+      if (provider.profileType != 'patient') {
         _continuousSpeech.start(
           listenDuration: const Duration(minutes: 10),
           minConfidence: 0.15,
           bufferMs: 1000,
         );
+      }
+      _restartEDisplayTimer();
+    } else if (_showRelaxation) {
+      debugPrint('[VisualAcuity] ”„ Resuming relaxation phase');
+      if (_relaxationCountdown <= 3) {
+        final provider = context.read<TestSessionProvider>();
+        if (provider.profileType != 'patient') {
+          _continuousSpeech.start(
+            listenDuration: const Duration(minutes: 10),
+            minConfidence: 0.15,
+            bufferMs: 1000,
+          );
+        }
       }
       _restartRelaxationTimer();
     }
@@ -400,7 +419,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   void _handleSpeechDetected(String partialResult) {
-    debugPrint('[VisualAcuity] Ž¤ Speech detected: "$partialResult"');
+    if (!mounted) return;
+
+    // Disable speech detection logic for practitioners
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType == 'patient') return;
+
+    debugPrint('[VisualAcuity] 🗣️ Speech detected: "$partialResult"');
     if (mounted) {
       setState(() {
         _lastDetectedSpeech = partialResult;
@@ -605,7 +630,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // Restart the countdown timer with remaining time
     if (_showE && _waitingForResponse) {
       // Resume speech recognition if needed
-      if (!_continuousSpeech.isActive) {
+      final provider = context.read<TestSessionProvider>();
+      if (provider.profileType != 'patient' && !_continuousSpeech.isActive) {
         _continuousSpeech.start(
           listenDuration: const Duration(minutes: 10),
           minConfidence: 0.15,
@@ -614,10 +640,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
       _restartEDisplayTimer();
     } else if (_showRelaxation) {
-      // … RESUME MIC: If we were already below 3s when distance was corrected
-      if (_relaxationCountdown <= 3 && !_continuousSpeech.isActive) {
+      // 🎤 RESUME MIC: If we were already below 3s when distance was corrected
+      final provider = context.read<TestSessionProvider>();
+      if (provider.profileType != 'patient' &&
+          _relaxationCountdown <= 3 &&
+          !_continuousSpeech.isActive) {
         debugPrint(
-          '[VisualAcuity] Ž¤ Resuming mic (already below 3s in relaxation)',
+          '[VisualAcuity] 🗣️ Resuming mic (already below 3s in relaxation)',
         );
         _continuousSpeech.start(
           listenDuration: const Duration(minutes: 10),
@@ -657,7 +686,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         _relaxationCountdown--;
       });
 
-      if (_relaxationCountdown == 3 && mounted) {
+      final provider = context.read<TestSessionProvider>();
+      if (provider.profileType != 'patient' &&
+          _relaxationCountdown == 3 &&
+          mounted) {
         debugPrint('[VisualAcuity] 🎤 3s remaining - Starting mic early');
         _continuousSpeech.start(
           listenDuration: const Duration(minutes: 10),
@@ -684,8 +716,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       return;
     }
 
-    // … Ensure mic is active when resuming E phase
-    if (!_continuousSpeech.isActive) {
+    // 🎤 Ensure mic is active when resuming E phase
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType != 'patient' && !_continuousSpeech.isActive) {
       _continuousSpeech.start(
         listenDuration: const Duration(minutes: 10),
         minConfidence: 0.15,
@@ -1294,6 +1327,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   @override
   void dispose() {
     _relaxationProgressController.dispose();
+    context.read<SpeechService>().setGloballyDisabled(
+      false,
+    ); // Reset for next session
     _speechEraserTimer?.cancel();
     _eDisplayTimer?.cancel();
     _eCountdownTimer?.cancel();
@@ -1610,6 +1646,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           // Speech waveform with Retry Indicator
           Builder(
             builder: (context) {
+              final provider = context.watch<TestSessionProvider>();
+              if (provider.profileType == 'patient') {
+                return const SizedBox.shrink();
+              }
+
               final bool shouldBeListening =
                   _continuousSpeech.shouldBeListening;
               final bool isActuallyListening = _isListening;
@@ -2099,48 +2140,61 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         // Instruction text with voice status
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: Builder(
+            builder: (context) {
+              final provider = context.watch<TestSessionProvider>();
+              final isPractitioner = provider.profileType == 'patient';
+
+              return Column(
                 children: [
-                  if (_isListening)
-                    Icon(
-                      Icons.mic,
-                      size: 20,
-                      color: _isTestPausedForDistance
-                          ? AppColors.warning
-                          : AppColors.success,
-                    ),
-                  if (_isListening) const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isListening && !isPractitioner)
+                        Icon(
+                          Icons.mic,
+                          size: 20,
+                          color: _isTestPausedForDistance
+                              ? AppColors.warning
+                              : AppColors.success,
+                        ),
+                      if (_isListening && !isPractitioner)
+                        const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          _isTestPausedForDistance
+                              ? 'Test paused - Adjust distance'
+                              : 'Which way is the E pointing?',
+                          style: TextStyle(
+                            color: _isTestPausedForDistance
+                                ? AppColors.warning
+                                : AppColors.textSecondary,
+                            fontSize: 16,
+                            fontWeight: _isTestPausedForDistance
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!isPractitioner) ...[
+                    const SizedBox(height: 8),
+                    Text(
                       _isTestPausedForDistance
-                          ? 'Test paused - Adjust distance'
-                          : 'Which way is the E pointing?',
+                          ? 'Voice recognition active - waiting to resume'
+                          : 'Use buttons or say: Upper or Upward, Down or Downward, Left, Right',
                       style: TextStyle(
-                        color: _isTestPausedForDistance
-                            ? AppColors.warning
-                            : AppColors.textSecondary,
-                        fontSize: 16,
-                        fontWeight: _isTestPausedForDistance
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                        color: AppColors.textTertiary,
+                        fontSize: 12,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                  ),
+                  ],
                 ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _isTestPausedForDistance
-                    ? 'Voice recognition active - waiting to resume'
-                    : 'Use buttons or say: Upper or Upward, Down or Downward, Left, Right',
-                style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-            ],
+              );
+            },
           ),
         ),
       ],

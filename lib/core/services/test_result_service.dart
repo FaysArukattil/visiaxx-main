@@ -509,10 +509,55 @@ class TestResultService {
               .toList();
 
           debugPrint(
-            '[TestResultService] âœ… Practitioner stream updated with ${results.length} total results',
+            '[TestResultService] ✅ Practitioner stream updated with ${results.length} total results',
           );
           return results;
         });
+  }
+
+  /// Get test results for a practitioner created after a specific timestamp
+  /// Uses collection group query for efficiency
+  Future<List<TestResultModel>> getPractitionerResultsIncremental({
+    required String practitionerId,
+    required DateTime since,
+  }) async {
+    try {
+      debugPrint(
+        '[TestResultService] 🔄 Fetching incremental results for $practitionerId since $since',
+      );
+
+      final snapshot = await _firestore
+          .collectionGroup('tests')
+          .where('userId', isEqualTo: practitionerId)
+          .where('timestamp', isGreaterThan: Timestamp.fromDate(since))
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      final results = snapshot.docs
+          .map((doc) {
+            try {
+              final data = doc.data();
+              data['id'] = doc.id;
+              return TestResultModel.fromJson(data);
+            } catch (e) {
+              debugPrint(
+                '[TestResultService] ❌ Error parsing result ${doc.id}: $e',
+              );
+              return null;
+            }
+          })
+          .where((r) => r != null)
+          .cast<TestResultModel>()
+          .toList();
+
+      debugPrint(
+        '[TestResultService] ✅ Incremental fetch complete: ${results.length} new results',
+      );
+      return results;
+    } catch (e) {
+      debugPrint('[TestResultService] ❌ Incremental fetch ERROR: $e');
+      return [];
+    }
   }
 
   /// Get all test results for a user
