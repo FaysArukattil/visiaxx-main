@@ -1332,7 +1332,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   Widget _buildLandscapeControlsSidePanel() {
     return Container(
       color: AppColors.white,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Column(
         children: [
           const Text(
@@ -1344,66 +1344,81 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               color: AppColors.textTertiary,
             ),
           ),
-          const SizedBox(height: 32),
-          // Large buttons
-          Expanded(
+          const SizedBox(height: 16),
+          // Large buttons - use Flexible to prevent overflow
+          Flexible(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 80,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final triplets = PelliRobsonScoring.getTripletsForScreen(
-                        _currentScreenIndex,
-                      );
-                      if (_currentTripletIndex < triplets.length) {
-                        final triplet = triplets[_currentTripletIndex];
-                        _submitCurrentTriplet(triplet.letters);
-                      }
-                    },
-                    icon: const Icon(Icons.visibility, size: 28),
-                    label: const Text(
-                      'VISIBLE',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: 60,
+                      maxHeight: 80,
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: AppColors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          final triplets =
+                              PelliRobsonScoring.getTripletsForScreen(
+                                _currentScreenIndex,
+                              );
+                          if (_currentTripletIndex < triplets.length) {
+                            final triplet = triplets[_currentTripletIndex];
+                            _submitCurrentTriplet(triplet.letters);
+                          }
+                        },
+                        icon: const Icon(Icons.visibility, size: 24),
+                        label: const Text(
+                          'VISIBLE',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 80,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      _submitCurrentTriplet('Not visible');
-                    },
-                    icon: const Icon(Icons.visibility_off, size: 28),
-                    label: const Text(
-                      'NOT VISIBLE',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: 60,
+                      maxHeight: 80,
                     ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: BorderSide(
-                        color: AppColors.border.withValues(alpha: 0.8),
-                        width: 2,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          _submitCurrentTriplet('Not visible');
+                        },
+                        icon: const Icon(Icons.visibility_off, size: 24),
+                        label: const Text(
+                          'NOT VISIBLE',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary,
+                          side: BorderSide(
+                            color: AppColors.border.withValues(alpha: 0.8),
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1411,7 +1426,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _buildSpeechIndicator(),
         ],
       ),

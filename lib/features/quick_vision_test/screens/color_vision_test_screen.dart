@@ -941,10 +941,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               itemBuilder: (context, index) {
                 final option = _currentOptions[index];
                 final isSelected = _selectedOptionIndex == index;
-                final isCorrect = _checkAnswer(
-                  option,
-                  _testPlates[_currentPlateIndex],
-                );
+                // Safety check to prevent invalid index access during transitions
+                final plateIndex = _currentPlateIndex >= _testPlates.length
+                    ? _testPlates.length - 1
+                    : _currentPlateIndex;
+                final isCorrect = _checkAnswer(option, _testPlates[plateIndex]);
 
                 return _PremiumOptionButton(
                   option: option,

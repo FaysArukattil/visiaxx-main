@@ -397,20 +397,53 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
         ),
 
-        Positioned(
-          bottom: 20,
-          left: 20,
-          right: 20,
-          child: _GlassHUDCard(
-            status: _distanceStatus,
-            currentDistance: _currentDistance,
-            targetDistance: widget.targetDistanceCm,
-            statusColor: _getStatusColor(),
-            stableProgress: _stableReadingsCount / _requiredStableReadings,
-            isStable: _isDistanceStable,
-            onContinue: _onContinuePressed,
-            onSkip: _onSkipPressed,
-          ),
+        OrientationBuilder(
+          builder: (context, orientation) {
+            final isLandscape = orientation == Orientation.landscape;
+
+            if (isLandscape) {
+              return Positioned(
+                top: 80,
+                bottom: 20,
+                right: 20,
+                width: MediaQuery.of(context).size.width * 0.45,
+                child: _GlassHUDCard(
+                  status: _distanceStatus,
+                  currentDistance: _currentDistance,
+                  targetDistance: widget.targetDistanceCm,
+                  statusColor: _getStatusColor(),
+                  stableProgress:
+                      _stableReadingsCount / _requiredStableReadings,
+                  isStable: _isDistanceStable,
+                  onContinue: _onContinuePressed,
+                  onSkip: _onSkipPressed,
+                  isLandscape: true,
+                ),
+              );
+            }
+
+            return Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              top: 140, // Stricter top boundary to avoid title overlap
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: _GlassHUDCard(
+                  status: _distanceStatus,
+                  currentDistance: _currentDistance,
+                  targetDistance: widget.targetDistanceCm,
+                  statusColor: _getStatusColor(),
+                  stableProgress:
+                      _stableReadingsCount / _requiredStableReadings,
+                  isStable: _isDistanceStable,
+                  onContinue: _onContinuePressed,
+                  onSkip: _onSkipPressed,
+                  isLandscape: false,
+                ),
+              ),
+            );
+          },
         ),
 
         Positioned(
@@ -613,6 +646,7 @@ class _GlassHUDCard extends StatelessWidget {
   final bool isStable;
   final VoidCallback onContinue;
   final VoidCallback onSkip;
+  final bool isLandscape;
 
   const _GlassHUDCard({
     required this.status,
@@ -623,6 +657,7 @@ class _GlassHUDCard extends StatelessWidget {
     required this.isStable,
     required this.onContinue,
     required this.onSkip,
+    required this.isLandscape,
   });
 
   @override
@@ -631,24 +666,21 @@ class _GlassHUDCard extends StatelessWidget {
     final detected = status != DistanceStatus.noFaceDetected;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(40),
+      borderRadius: BorderRadius.circular(isLandscape ? 30 : 40),
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 70),
+          padding: EdgeInsets.symmetric(
+            horizontal: isLandscape ? 20 : 28,
+            vertical: isLandscape ? 20 : 30, // Reduced from 70 to 30
+          ),
           decoration: BoxDecoration(
-            color: AppColors.black.withValues(
-              alpha: 0.25,
-            ), // Changed from 0.65 to 0.25
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(
-              color: AppColors.white.withValues(alpha: 0.2),
-            ), // Changed from 0.15 to 0.2
+            color: AppColors.black.withValues(alpha: 0.25),
+            borderRadius: BorderRadius.circular(isLandscape ? 30 : 40),
+            border: Border.all(color: AppColors.white.withValues(alpha: 0.2)),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withValues(
-                  alpha: 0.15,
-                ), // Changed from 0.3 to 0.15
+                color: AppColors.black.withValues(alpha: 0.15),
                 blurRadius: 40,
                 offset: const Offset(0, 15),
               ),
@@ -657,89 +689,103 @@ class _GlassHUDCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 4,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(scale: animation, child: child),
-                      ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          message,
-                          key: ValueKey(message),
-                          style: TextStyle(
-                            color: statusColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 400),
+                              transitionBuilder: (child, animation) =>
+                                  FadeTransition(
+                                    opacity: animation,
+                                    child: ScaleTransition(
+                                      scale: animation,
+                                      child: child,
+                                    ),
+                                  ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  message,
+                                  key: ValueKey(message),
+                                  style: TextStyle(
+                                    color: statusColor,
+                                    fontSize: isLandscape ? 14 : 18,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 4,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      SizedBox(height: isLandscape ? 8 : 48),
+
+                      _buildMagneticIndicator(detected),
+
+                      if (detected && status == DistanceStatus.optimal) ...[
+                        SizedBox(height: isLandscape ? 12 : 20),
+                        Column(
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'STABILIZING SIGNAL...',
+                                style: TextStyle(
+                                  color: statusColor.withValues(alpha: 0.4),
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: stableProgress,
+                                minHeight: 4,
+                                backgroundColor: AppColors.white.withValues(
+                                  alpha: 0.03,
+                                ),
+                                valueColor: AlwaysStoppedAnimation(statusColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 4,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 48),
-
-              _buildMagneticIndicator(detected),
-
-              const SizedBox(height: 40),
-
-              if (detected && status == DistanceStatus.optimal) ...[
-                Column(
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        'STABILIZING SIGNAL...',
-                        style: TextStyle(
-                          color: statusColor.withValues(alpha: 0.4),
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: stableProgress,
-                        minHeight: 4,
-                        backgroundColor: AppColors.white.withValues(
-                          alpha: 0.03,
-                        ),
-                        valueColor: AlwaysStoppedAnimation(statusColor),
-                      ),
-                    ),
-                  ],
                 ),
-                const SizedBox(height: 20),
-              ],
+              ),
 
+              SizedBox(height: isLandscape ? 12 : 24),
+
+              // Buttons - Always visible at bottom of card
               SizedBox(
                 width: double.infinity,
                 child: Column(
@@ -751,7 +797,10 @@ class _GlassHUDCard extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: statusColor,
                           foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 24,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
@@ -778,7 +827,10 @@ class _GlassHUDCard extends StatelessWidget {
                       )
                     else
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 24,
+                        ),
                         width: double.infinity,
                         alignment: Alignment.center,
                         child: Text(
@@ -840,13 +892,18 @@ class _GlassHUDCard extends StatelessWidget {
     // percent positive (Too Far) -> Move DOWN
     // percent negative (Too Close) -> Move UP (towards phone)
     final double percent = _getOffsetPercent();
-    final double verticalOffset =
-        120 + (percent * 90); // Changed: Target at 120, range 90
+
+    // Use a more compact height if space is constrained
+    final double indicatorHeight = isLandscape ? 180 : 200;
+    final double trackHeight = indicatorHeight - 30;
+    final double targetPos = trackHeight / 2 + 10;
+
+    final double verticalOffset = targetPos + (percent * 70);
 
     return Column(
       children: [
         SizedBox(
-          height: 260, // Changed from 200 to 260 - increases total space
+          height: indicatorHeight,
           width: double.infinity,
           child: Stack(
             alignment: Alignment.center,
@@ -855,7 +912,7 @@ class _GlassHUDCard extends StatelessWidget {
               // 1. Vertical Track Line
               Container(
                 width: 1,
-                height: 230, // Changed from 170 to 230 - matches new space
+                height: trackHeight,
                 color: AppColors.white.withValues(alpha: 0.1),
               ),
 
@@ -865,13 +922,13 @@ class _GlassHUDCard extends StatelessWidget {
                 child: Icon(
                   Icons.phone_iphone_rounded,
                   color: AppColors.white.withValues(alpha: 0.35),
-                  size: 28,
+                  size: 24,
                 ),
               ),
 
-              // 3. TARGET ZONE: Positioned at 120
+              // 3. TARGET ZONE: Centered on track
               Positioned(
-                top: 120, // Changed from 90 to 120
+                top: targetPos,
                 child: Container(
                   width: 50,
                   height: 12,
@@ -1072,21 +1129,22 @@ class _DualArrowGliderState extends State<_DualArrowGlider>
     double? right,
     required bool down,
   }) {
-    return AnimatedBuilder(
-      animation: _arrowSlide,
-      builder: (context, child) {
-        return Positioned(
-          left: left,
-          right: right,
-          top: down ? -8 + _arrowSlide.value : null,
-          bottom: down ? null : -8 + _arrowSlide.value,
-          child: Icon(
-            down ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-            color: widget.statusColor,
-            size: 26,
-          ),
-        );
-      },
+    return Positioned(
+      left: left,
+      right: right,
+      child: AnimatedBuilder(
+        animation: _arrowSlide,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, down ? _arrowSlide.value : -_arrowSlide.value),
+            child: Icon(
+              down ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+              color: widget.statusColor,
+              size: 28,
+            ),
+          );
+        },
+      ),
     );
   }
 }

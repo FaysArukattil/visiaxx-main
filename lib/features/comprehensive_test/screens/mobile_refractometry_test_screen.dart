@@ -962,84 +962,138 @@ class _MobileRefractometryTestScreenState
       },
       child: Scaffold(
         backgroundColor: AppColors.testBackground,
-        appBar: AppBar(
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          title: Text(
-            'Mobile Refractometry - ${_currentEye.toUpperCase()} Eye',
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          centerTitle: false,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
-            onPressed: () => _showPauseDialog(),
-          ),
-        ),
-        body: SafeArea(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  _buildInfoBar(),
-                  Expanded(child: _buildMainContent()),
-                  if (_currentPhase == RefractPhase.test && _waitingForResponse)
-                    _buildDirectionButtons(),
-                ],
-              ),
-
-              // Recognized text indicator (center bottom above buttons)
-              Positioned(
-                bottom:
-                    (_currentPhase == RefractPhase.test && _waitingForResponse)
-                    ? 150
-                    : 50,
-                left: 0,
-                right: 0,
-                child: Center(child: _buildRecognizedTextIndicator()),
-              ),
-
-              // distance warning overlay
-              DistanceWarningOverlay(
-                isVisible:
-                    _isDistanceOk == false &&
-                    (_waitingForResponse ||
-                        _currentPhase == RefractPhase.relaxation) &&
-                    !_isCalibrationActive,
-                status: _distanceStatus,
-                currentDistance: _currentDistance,
-                targetDistance: _isNearMode ? 40.0 : 100.0,
-                testType: _isNearMode
-                    ? 'refraction_near'
-                    : 'refraction_distance',
-                onSkip: () {
-                  _skipManager.recordSkip(
-                    _isNearMode
-                        ? DistanceTestType.shortDistance
-                        : DistanceTestType.mobileRefractometry,
-                  );
-                  _resumeTestAfterDistance();
-                },
-              ),
-              // Distance indicator (bottom right corner) - MATCHES VA (ALWAYS SHOWN)
-              if ((_currentPhase == RefractPhase.test ||
-                      _currentPhase == RefractPhase.relaxation) &&
-                  _currentPhase != RefractPhase.calibration)
-                Positioned(
-                  right: 12,
-                  bottom:
-                      (_currentPhase == RefractPhase.test &&
-                          _waitingForResponse)
-                      ? 120
-                      : 55,
-                  child: _buildDistanceIndicator(),
+        appBar: MediaQuery.of(context).orientation == Orientation.landscape
+            ? null
+            : AppBar(
+                backgroundColor: AppColors.white,
+                elevation: 0,
+                title: Text(
+                  'Mobile Refractometry - ${_currentEye.toUpperCase()} Eye',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-            ],
+                centerTitle: false,
+                leading: IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                  onPressed: () => _showPauseDialog(),
+                ),
+              ),
+        body: SafeArea(
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              final isLandscape = orientation == Orientation.landscape;
+
+              return Stack(
+                children: [
+                  if (isLandscape)
+                    _buildLandscapeLayout()
+                  else
+                    _buildPortraitLayout(),
+
+                  // Recognized text indicator
+                  Positioned(
+                    bottom: isLandscape
+                        ? 20
+                        : (_currentPhase == RefractPhase.test &&
+                              _waitingForResponse)
+                        ? 150
+                        : 50,
+                    left: isLandscape ? 20 : 0,
+                    right: isLandscape ? null : 0,
+                    width: isLandscape ? 300 : null,
+                    child: Center(child: _buildRecognizedTextIndicator()),
+                  ),
+
+                  // Distance warning overlay
+                  DistanceWarningOverlay(
+                    isVisible:
+                        _isDistanceOk == false &&
+                        (_waitingForResponse ||
+                            _currentPhase == RefractPhase.relaxation) &&
+                        !_isCalibrationActive,
+                    status: _distanceStatus,
+                    currentDistance: _currentDistance,
+                    targetDistance: _isNearMode ? 40.0 : 100.0,
+                    testType: _isNearMode
+                        ? 'refraction_near'
+                        : 'refraction_distance',
+                    onSkip: () {
+                      _skipManager.recordSkip(
+                        _isNearMode
+                            ? DistanceTestType.shortDistance
+                            : DistanceTestType.mobileRefractometry,
+                      );
+                      _resumeTestAfterDistance();
+                    },
+                  ),
+
+                  // Distance indicator
+                  if ((_currentPhase == RefractPhase.test ||
+                          _currentPhase == RefractPhase.relaxation) &&
+                      _currentPhase != RefractPhase.calibration)
+                    Positioned(
+                      right: 12,
+                      bottom: isLandscape
+                          ? 12
+                          : (_currentPhase == RefractPhase.test &&
+                                _waitingForResponse)
+                          ? 120
+                          : 55,
+                      child: _buildDistanceIndicator(),
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPortraitLayout() {
+    return Column(
+      children: [
+        _buildInfoBar(),
+        Expanded(child: _buildMainContent()),
+        if (_currentPhase == RefractPhase.test && _waitingForResponse)
+          _buildDirectionButtons(),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeLayout() {
+    // 50/50 split layout matching Visual Acuity
+    return Row(
+      children: [
+        // Left side: Info bar + Main content (E view or relaxation)
+        Expanded(
+          flex: 1,
+          child: Column(
+            children: [
+              _buildInfoBar(),
+              Expanded(child: _buildMainContent()),
+            ],
+          ),
+        ),
+        // Right side: Direction buttons (when waiting for response)
+        if (_currentPhase == RefractPhase.test && _waitingForResponse)
+          Expanded(
+            flex: 1,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                border: Border(
+                  left: BorderSide(
+                    color: AppColors.border.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+              child: _buildDirectionButtons(),
+            ),
+          ),
+      ],
     );
   }
 
