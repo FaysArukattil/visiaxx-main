@@ -153,7 +153,7 @@ class _PelliRobsonInstructionsScreenState
                       'Brightness Check',
                       'Turn your screen brightness to maximum for the most accurate contrast measurements.',
                       AppColors.warning,
-                      animation: const LightingAnimation(isCompact: true),
+                      animation: const LightingAnimation(),
                     ),
                     _buildStep(
                       1,
@@ -171,7 +171,7 @@ class _PelliRobsonInstructionsScreenState
                           ? 'Hold the device about 40 centimeters away from your eyes.'
                           : 'Sit exactly 1 meter away from the screen for the long-distance test.',
                       AppColors.success,
-                      animation: const DistanceAnimation(isCompact: true),
+                      animation: const DistanceAnimation(),
                     ),
                     _buildStep(
                       3,
@@ -197,7 +197,7 @@ class _PelliRobsonInstructionsScreenState
                       'Wear Your Glasses',
                       'If you wear distance correction glasses, please keep them on.',
                       AppColors.info,
-                      animation: const WearSpecsAnimation(isCompact: true),
+                      animation: const WearSpecsAnimation(),
                     ),
                   ],
                 ),
@@ -340,7 +340,12 @@ class _PelliRobsonInstructionsScreenState
                             ),
                           ),
                           const SizedBox(height: 12),
-                          _buildModernInstructionItem(icon, description, color),
+                          _buildModernInstructionItem(
+                            icon,
+                            title,
+                            description,
+                            color,
+                          ),
                         ],
                       ),
                     ),
@@ -373,9 +378,9 @@ class _PelliRobsonInstructionsScreenState
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildModernInstructionItem(icon, description, color),
+                  _buildModernInstructionItem(icon, title, description, color),
                   if (animation != null)
-                    Flexible(
+                    Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(top: 24.0),
                         child: Center(child: animation),
@@ -389,6 +394,7 @@ class _PelliRobsonInstructionsScreenState
 
   Widget _buildModernInstructionItem(
     IconData icon,
+    String title,
     String description,
     Color accentColor,
   ) {
@@ -405,14 +411,28 @@ class _PelliRobsonInstructionsScreenState
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Text(
-            description,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-              height: 1.4,
-              fontWeight: FontWeight.w400,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  height: 1.4,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
           ),
         ),
       ],

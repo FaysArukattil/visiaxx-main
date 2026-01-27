@@ -146,7 +146,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'Well-lit Room',
                       'Ensure your room is well-lit and quiet for the most accurate results.',
                       AppColors.warning,
-                      animation: const LightingAnimation(isCompact: true),
+                      animation: const LightingAnimation(),
                     ),
                     _buildStep(
                       1,
@@ -154,7 +154,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'Optimal Distance',
                       'Hold the device about 1 meter (100 cm) away from your eyes.',
                       AppColors.primary,
-                      animation: const DistanceAnimation(isCompact: true),
+                      animation: const DistanceAnimation(),
                     ),
                     _buildStep(
                       2,
@@ -162,7 +162,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'How to Respond',
                       'Speak the direction of the letter "E" clearly or tap the buttons below.',
                       AppColors.success,
-                      animation: const HowToRespondAnimation(isCompact: true),
+                      animation: const HowToRespondAnimation(),
                     ),
                     _buildStep(
                       3,
@@ -170,7 +170,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       'Wear Your Glasses',
                       'If you wear distance correction glasses, please keep them on.',
                       AppColors.info,
-                      animation: const WearSpecsAnimation(isCompact: true),
+                      animation: const WearSpecsAnimation(),
                     ),
                   ],
                 ),

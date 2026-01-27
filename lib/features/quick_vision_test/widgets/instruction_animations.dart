@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import '../../../core/constants/app_colors.dart';
 
 /// Animation showing a well-lit room requirement
@@ -1354,7 +1355,7 @@ class _AmslerPathwayPainter extends CustomPainter {
   bool shouldRepaint(covariant _AmslerPathwayPainter oldDelegate) => true;
 }
 
-/// Animation showing reading aloud into the microphone
+/// Animation showing reading aloud (Focus on text/speech visual without mic)
 class ReadAloudAnimation extends StatefulWidget {
   final bool isCompact;
   const ReadAloudAnimation({super.key, this.isCompact = false});
@@ -1372,7 +1373,7 @@ class _ReadAloudAnimationState extends State<ReadAloudAnimation>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 3),
     )..repeat();
   }
 
@@ -1388,19 +1389,25 @@ class _ReadAloudAnimationState extends State<ReadAloudAnimation>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
+          final t = _controller.value;
+
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Text Box with "Reading" content
+              // Displaying text to be read
               Container(
+                width: 220,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 8,
+                  vertical: 12,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border, width: 2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.primary.withValues(alpha: 0.05),
@@ -1409,49 +1416,188 @@ class _ReadAloudAnimationState extends State<ReadAloudAnimation>
                     ),
                   ],
                 ),
-                child: Text(
-                  'Reading this aloud...',
+                child: const Text(
+                  "The quick brown fox jumps over the lazy dog",
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: widget.isCompact ? 14 : 18,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              // Mic and Waves
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: 24),
+              // Reading visual (Face + Speech waves)
+              Column(
                 children: [
                   Icon(
-                    Icons.mic_rounded,
-                    size: widget.isCompact ? 30 : 40,
-                    color: AppColors.success,
+                    Icons.record_voice_over_rounded,
+                    size: 50,
+                    color: AppColors.primary,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(height: 12),
                   Row(
-                    children: List.generate(3, (index) {
-                      final waveProgress =
-                          (index * 0.2 + _controller.value) % 1.0;
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (i) {
+                      final wave = math.sin(t * 10 + i) * 6;
                       return Container(
                         margin: const EdgeInsets.symmetric(horizontal: 2),
-                        width: 4,
-                        height: 8 + (12 * math.sin(waveProgress * math.pi)),
+                        width: 3,
+                        height: 10 + wave.abs(),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(
-                            alpha:
-                                0.4 + (0.6 * math.sin(waveProgress * math.pi)),
-                          ),
+                          color: AppColors.primary,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       );
                     }),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "READING ALOUD",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primary,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ],
               ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Animation showing text size reduction and blur for threshold awareness
+class BlurryReadingAnimation extends StatefulWidget {
+  final bool isCompact;
+  const BlurryReadingAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<BlurryReadingAnimation> createState() => _BlurryReadingAnimationState();
+}
+
+class _BlurryReadingAnimationState extends State<BlurryReadingAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final t = _controller.value;
+          // Scale from 1.0 to 0.4, blur from 0 to 4
+          final fontSize = 24.0 * (1.1 - (t * 0.7));
+          final blurLevel = t * 5.0;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 220,
+                height: 140,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.5),
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ImageFiltered(
+                    imageFilter: ui.ImageFilter.blur(
+                      sigmaX: blurLevel,
+                      sigmaY: blurLevel,
+                    ),
+                    child: Text(
+                      "The quick brown fox jumps over the lazy dog",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildButtonMock(
+                    "CAN READ",
+                    Icons.check_circle_outline_rounded,
+                    AppColors.success,
+                    highlight: t < 0.6,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildButtonMock(
+                    "BLURRY",
+                    Icons.visibility_off_rounded,
+                    AppColors.warning,
+                    highlight: t >= 0.6,
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildButtonMock(
+    String label,
+    IconData icon,
+    Color color, {
+    bool highlight = false,
+  }) {
+    return Container(
+      width: 70,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      decoration: BoxDecoration(
+        color: highlight ? color : color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color, width: 2),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: highlight ? AppColors.white : color),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              color: highlight ? AppColors.white : color,
+            ),
+          ),
+        ],
       ),
     );
   }

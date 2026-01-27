@@ -149,7 +149,7 @@ class _MobileRefractometryInstructionsScreenState
                       'No Eyewear',
                       'Remove glasses or contact lenses. This test measures your natural vision.',
                       AppColors.error,
-                      animation: const RemoveGlassesAnimation(isCompact: true),
+                      animation: const RemoveGlassesAnimation(),
                     ),
                     _buildStep(
                       1,
@@ -157,7 +157,7 @@ class _MobileRefractometryInstructionsScreenState
                       'Well-lit Room',
                       'Ensure your room is well-lit and quiet for the most accurate results.',
                       AppColors.warning,
-                      animation: const LightingAnimation(isCompact: true),
+                      animation: const LightingAnimation(),
                     ),
                     _buildStep(
                       2,
@@ -165,7 +165,7 @@ class _MobileRefractometryInstructionsScreenState
                       'Multi-Distance',
                       'You will be asked to hold the device at 100cm (distance) and 40cm (near).',
                       AppColors.primary,
-                      animation: const DistanceAnimation(isCompact: true),
+                      animation: const DistanceAnimation(),
                     ),
                     _buildStep(
                       3,
@@ -173,7 +173,7 @@ class _MobileRefractometryInstructionsScreenState
                       'Blur Awareness',
                       'During the test, the E may become smaller and blurry. If you can barely make it out, say "Blurry" or select "Can\'t See".',
                       AppColors.warning,
-                      animation: const BlurAwarenessAnimation(isCompact: true),
+                      animation: const BlurAwarenessAnimation(),
                     ),
                     _buildStep(
                       4,
@@ -181,7 +181,7 @@ class _MobileRefractometryInstructionsScreenState
                       'Voice & Blurry',
                       'Say the direction clearly. If the letter "E" is out of focus, say "Blurry".',
                       AppColors.success,
-                      animation: const HowToRespondAnimation(isCompact: true),
+                      animation: const HowToRespondAnimation(),
                     ),
                   ],
                 ),
@@ -324,7 +324,12 @@ class _MobileRefractometryInstructionsScreenState
                             ),
                           ),
                           const SizedBox(height: 12),
-                          _buildModernInstructionItem(icon, description, color),
+                          _buildModernInstructionItem(
+                            icon,
+                            title,
+                            description,
+                            color,
+                          ),
                         ],
                       ),
                     ),
@@ -357,9 +362,9 @@ class _MobileRefractometryInstructionsScreenState
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildModernInstructionItem(icon, description, color),
+                  _buildModernInstructionItem(icon, title, description, color),
                   if (animation != null)
-                    Flexible(
+                    Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(top: 24.0),
                         child: Center(child: animation),
@@ -373,6 +378,7 @@ class _MobileRefractometryInstructionsScreenState
 
   Widget _buildModernInstructionItem(
     IconData icon,
+    String title,
     String description,
     Color accentColor,
   ) {
@@ -389,14 +395,28 @@ class _MobileRefractometryInstructionsScreenState
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Text(
-            description,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-              height: 1.4,
-              fontWeight: FontWeight.w400,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  height: 1.4,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
           ),
         ),
       ],

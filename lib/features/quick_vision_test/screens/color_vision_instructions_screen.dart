@@ -147,7 +147,7 @@ class _ColorVisionInstructionsScreenState
                       'Ishihara Plates',
                       'This test uses circular plates with dots of different colors and sizes.',
                       AppColors.primary,
-                      animation: const IshiharaIntroAnimation(isCompact: true),
+                      animation: const IshiharaIntroAnimation(),
                     ),
                     _buildStep(
                       1,
@@ -171,7 +171,7 @@ class _ColorVisionInstructionsScreenState
                       'Wear Your Glasses',
                       'If you wear distance correction glasses, please keep them on.',
                       AppColors.info,
-                      animation: const WearSpecsAnimation(isCompact: true),
+                      animation: const WearSpecsAnimation(),
                     ),
                   ],
                 ),
@@ -286,10 +286,12 @@ class _ColorVisionInstructionsScreenState
         ),
         child: isLandscape
             ? Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    flex: 1,
+                    flex: 4,
                     child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -322,54 +324,43 @@ class _ColorVisionInstructionsScreenState
                       ),
                     ),
                   ),
+                  if (animation != null) ...[
+                    const SizedBox(width: 16),
+                    Expanded(flex: 6, child: Center(child: animation)),
+                  ],
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Step ${index + 1} of $_totalPages',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _stepTitles[index],
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildModernInstructionItem(icon, title, description, color),
                   if (animation != null)
                     Expanded(
-                      flex: 1,
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 200),
-                          child: animation,
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 24.0),
+                        child: Center(child: animation),
                       ),
                     ),
                 ],
-              )
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Step ${index + 1} of $_totalPages',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _stepTitles[index],
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildModernInstructionItem(
-                      icon,
-                      title,
-                      description,
-                      color,
-                    ),
-                    if (animation != null) ...[
-                      const SizedBox(height: 24),
-                      Center(child: animation),
-                      const SizedBox(height: 24),
-                    ],
-                  ],
-                ),
               ),
       ),
     );

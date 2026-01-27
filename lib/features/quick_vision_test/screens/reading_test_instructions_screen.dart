@@ -26,13 +26,13 @@ class _ReadingTestInstructionsScreenState
   final List<String> _stepTitles = [
     'Optimal Position',
     'Read Aloud',
-    'Typing Option',
+    'Difficulty Reading',
   ];
 
   final List<String> _ttsMessages = [
     'Hold the device at a normal reading distance, about 40 centimeters from your eyes.',
     'A sentence will appear on the screen. Read it aloud clearly and completely.',
-    'If you prefer, you can also type the sentence using the on-screen keyboard.',
+    'If you can read the text, tap the "CAN READ" button. If it is too blurry or small, tap "BLURRY".',
   ];
 
   @override
@@ -141,23 +141,23 @@ class _ReadingTestInstructionsScreenState
                       'Optimal Position',
                       'Hold the device at about 40cm (arm\'s length) from your eyes. Keep both eyes open.',
                       AppColors.primary,
-                      animation: const SteadyReadingAnimation(isCompact: true),
+                      animation: const SteadyReadingAnimation(),
                     ),
                     _buildStep(
                       1,
                       Icons.record_voice_over_rounded,
                       'Read Aloud',
-                      'Read the text displayed on the screen clearly into the microphone.',
+                      'Read the text displayed on the screen clearly for the clinician or yourself.',
                       AppColors.success,
-                      animation: const ReadAloudAnimation(isCompact: true),
+                      animation: const ReadAloudAnimation(),
                     ),
                     _buildStep(
                       2,
-                      Icons.keyboard_rounded,
-                      'Typing Option',
-                      'If voice input is not working, you can type the sentence and tap Enter to submit.',
+                      Icons.thumbs_up_down_rounded,
+                      'Identify Result',
+                      'Indicate if you can read the text or if it is too blurry by tapping the matching button.',
                       AppColors.warning,
-                      animation: const KeyboardTypingAnimation(isCompact: true),
+                      animation: const BlurryReadingAnimation(),
                     ),
                   ],
                 ),
@@ -267,14 +267,16 @@ class _ReadingTestInstructionsScreenState
         ),
         padding: EdgeInsets.symmetric(
           horizontal: isLandscape ? 16.0 : 20.0,
-          vertical: isLandscape ? 12.0 : 24.0,
+          vertical: isLandscape ? 12.0 : 16.0,
         ),
         child: isLandscape
             ? Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    flex: 1,
+                    flex: 4,
                     child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -297,104 +299,102 @@ class _ReadingTestInstructionsScreenState
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Icon(icon, color: color, size: 24),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  description,
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 14,
-                                    height: 1.5,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          _buildModernInstructionItem(
+                            icon,
+                            title,
+                            description,
+                            color,
                           ),
                         ],
                       ),
                     ),
                   ),
+                  if (animation != null) ...[
+                    const SizedBox(width: 16),
+                    Expanded(flex: 6, child: Center(child: animation)),
+                  ],
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Step ${index + 1} of $_totalPages',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _stepTitles[index],
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildModernInstructionItem(icon, title, description, color),
                   if (animation != null)
                     Expanded(
-                      flex: 1,
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 200),
-                          child: animation,
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 24.0),
+                        child: Center(child: animation),
                       ),
                     ),
                 ],
-              )
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Step ${index + 1} of $_totalPages',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _stepTitles[index],
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Icon(icon, color: color, size: 28),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            description,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 15,
-                              height: 1.5,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (animation != null) ...[
-                      const SizedBox(height: 24),
-                      Center(child: animation),
-                      const SizedBox(height: 24),
-                    ],
-                  ],
-                ),
               ),
       ),
+    );
+  }
+
+  Widget _buildModernInstructionItem(
+    IconData icon,
+    String title,
+    String description,
+    Color accentColor,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: accentColor, size: 24),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  height: 1.4,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
