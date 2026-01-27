@@ -2368,39 +2368,39 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           // Left button
           _DirectionButton(
             direction: EDirection.left,
-            size: 48,
-            iconSize: 26,
+            size: 56,
+            iconSize: 30,
             onPressed: () => _handleButtonResponse(EDirection.left),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 24),
           // Column for Up/Down
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _DirectionButton(
                 direction: EDirection.up,
-                size: 48,
-                iconSize: 26,
+                size: 56,
+                iconSize: 30,
                 onPressed: () => _handleButtonResponse(EDirection.up),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               _DirectionButton(
                 direction: EDirection.down,
-                size: 48,
-                iconSize: 26,
+                size: 56,
+                iconSize: 30,
                 onPressed: () => _handleButtonResponse(EDirection.down),
               ),
             ],
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 24),
           // Right button
           _DirectionButton(
             direction: EDirection.right,
-            size: 48,
-            iconSize: 26,
+            size: 56,
+            iconSize: 30,
             onPressed: () => _handleButtonResponse(EDirection.right),
           ),
-          const SizedBox(width: 40),
+          const SizedBox(width: 48),
           // Blurry button
           Expanded(
             child: OutlinedButton.icon(
@@ -2432,11 +2432,11 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight;
         // Calculate dynamic button size based on height
-        // Minimum size 36, default 48 if enough space
-        final buttonSize = (availableHeight < 300) ? 40.0 : 48.0;
+        // Minimum size 40, default 56 if enough space
+        final buttonSize = (availableHeight < 300) ? 44.0 : 56.0;
         final iconSize = buttonSize * 0.55;
-        final verticalGap = (availableHeight < 250) ? 4.0 : 8.0;
-        final horizontalGap = (availableHeight < 250) ? 30.0 : 50.0;
+        final verticalGap = (availableHeight < 250) ? 6.0 : 12.0;
+        final horizontalGap = (availableHeight < 250) ? 40.0 : 64.0;
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
