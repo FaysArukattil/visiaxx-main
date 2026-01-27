@@ -19,87 +19,91 @@ class BlurAwarenessAnimation extends StatelessWidget {
             MediaQuery.of(context).orientation == Orientation.landscape;
 
         return Container(
-          padding: EdgeInsets.all(isCompact ? 12.0 : 24.0),
+          padding: EdgeInsets.all(isCompact ? 16.0 : 20.0),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.warning.withValues(alpha: 0.2),
+              width: 2,
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(
-                        child: _buildBlurredE(
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildBlurredE(
                           blur: 0.0,
                           label: 'Clear',
                           fontSize: isCompact ? 36.0 : eSize,
                           labelColor: AppColors.success,
                         ),
-                      ),
-                      Expanded(
-                        child: _buildBlurredE(
+                        const SizedBox(width: 12),
+                        _buildBlurredE(
                           blur: 2.0,
                           label: 'Blur',
                           fontSize: isCompact ? 36.0 : eSize,
                           labelColor: AppColors.warning,
                         ),
-                      ),
-                      Expanded(
-                        child: _buildBlurredE(
+                        const SizedBox(width: 12),
+                        _buildBlurredE(
                           blur: 5.0,
                           label: 'Blurry',
                           fontSize: isCompact ? 36.0 : eSize,
                           labelColor: AppColors.error,
                           isTargetState: true,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: isLandscape && isCompact ? 6 : 10,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      color: AppColors.error,
-                      size: isCompact ? 16 : 20,
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'If you can barely make out the E, select "Blurry" or say "Can\'t See"',
-                        style: TextStyle(
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 280, // Constrain width for FittedBox scaling
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: isLandscape && isCompact ? 6 : 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
                           color: AppColors.error,
-                          fontSize: isCompact ? 11 : 14,
-                          fontWeight: FontWeight.w600,
+                          size: isCompact ? 16 : 20,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'If you can barely make out the E, select "Blurry" or say "Can\'t See"',
+                            style: TextStyle(
+                              color: AppColors.error,
+                              fontSize: isCompact ? 11 : 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },

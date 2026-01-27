@@ -33,40 +33,52 @@ class _LightingAnimationState extends State<LightingAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 100 : 150;
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.warning.withValues(
-                alpha: 0.1 + (_controller.value * 0.1),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.warning.withValues(
-                    alpha: 0.2 * _controller.value,
-                  ),
-                  blurRadius:
-                      (widget.isCompact ? 15 : 20) + (20 * _controller.value),
-                  spreadRadius:
-                      (widget.isCompact ? 3 : 5) + (10 * _controller.value),
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.warning.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            double size = widget.isCompact ? 100 : 150;
+            return Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.warning.withValues(
+                  alpha: 0.1 + (_controller.value * 0.1),
                 ),
-              ],
-            ),
-            child: Icon(
-              Icons.wb_sunny_rounded,
-              size: widget.isCompact ? 50 : 80,
-              color: AppColors.warning.withValues(
-                alpha: 0.8 + (_controller.value * 0.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.warning.withValues(
+                      alpha: 0.2 * _controller.value,
+                    ),
+                    blurRadius:
+                        (widget.isCompact ? 15 : 20) + (20 * _controller.value),
+                    spreadRadius:
+                        (widget.isCompact ? 3 : 5) + (10 * _controller.value),
+                  ),
+                ],
               ),
-            ),
-          );
-        },
+              child: Icon(
+                Icons.wb_sunny_rounded,
+                size: widget.isCompact ? 50 : 80,
+                color: AppColors.warning.withValues(
+                  alpha: 0.8 + (_controller.value * 0.2),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -102,64 +114,79 @@ class _DistanceAnimationState extends State<DistanceAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final t = _controller.value;
-          final iconSize = widget.isCompact ? 35.0 : 50.0;
-          final lineWidth = widget.isCompact ? 80.0 : 120.0;
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final t = _controller.value;
+              final iconSize = widget.isCompact ? 35.0 : 50.0;
+              final lineWidth = widget.isCompact ? 80.0 : 120.0;
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              return Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.face_rounded,
-                    size: iconSize,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Stack(
-                    alignment: Alignment.center,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        width: lineWidth,
-                        height: 2,
-                        color: AppColors.border,
+                      Icon(
+                        Icons.face_rounded,
+                        size: iconSize,
+                        color: AppColors.primary,
                       ),
-                      Positioned(
-                        left: t * (lineWidth - 20),
-                        child: Icon(
-                          Icons.chevron_right_rounded,
-                          color: AppColors.primary,
-                          size: widget.isCompact ? 20 : 24,
-                        ),
+                      const SizedBox(width: 8),
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: lineWidth,
+                            height: 2,
+                            color: AppColors.border,
+                          ),
+                          Positioned(
+                            left: t * (lineWidth - 20),
+                            child: Icon(
+                              Icons.chevron_right_rounded,
+                              color: AppColors.primary,
+                              size: widget.isCompact ? 20 : 24,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.phone_android_rounded,
+                        size: iconSize,
+                        color: AppColors.primary,
                       ),
                     ],
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.phone_android_rounded,
-                    size: iconSize,
-                    color: AppColors.primary,
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.isCompact ? '40 cm' : '1 m',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: widget.isCompact ? 14 : 16,
+                    ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '1 m',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                  fontSize: widget.isCompact ? 14 : 16,
-                ),
-              ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -200,20 +227,32 @@ class _IshiharaIntroAnimationState extends State<IshiharaIntroAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 180 : 250;
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return CustomPaint(
-            size: Size(size, size),
-            painter: _IshiharaPainter(
-              _points,
-              _controller.value,
-              widget.isCompact,
-            ),
-          );
-        },
+    double size = widget.isCompact ? 180 : 210;
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 10 : 15),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return CustomPaint(
+              size: Size(size, size),
+              painter: _IshiharaPainter(
+                _points,
+                _controller.value,
+                widget.isCompact,
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -296,38 +335,51 @@ class _StayFocusedAnimationState extends State<StayFocusedAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 80 : 120;
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: widget.color.withValues(
-                      alpha: 1 - _controller.value,
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: widget.color.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            double size = widget.isCompact ? 80 : 120;
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: widget.color.withValues(
+                        alpha: 1 - _controller.value,
+                      ),
+                      width:
+                          (widget.isCompact ? 2 : 3) + (5 * _controller.value),
                     ),
-                    width: (widget.isCompact ? 2 : 3) + (5 * _controller.value),
                   ),
                 ),
-              ),
-              Container(
-                width: widget.isCompact ? 8 : 12,
-                height: widget.isCompact ? 8 : 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: widget.color,
+                Container(
+                  width: widget.isCompact ? 8 : 12,
+                  height: widget.isCompact ? 8 : 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.color,
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -363,57 +415,69 @@ class _AmslerIntroAnimationState extends State<AmslerIntroAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 100 : 150;
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Opacity(
-            opacity: 0.3 + (0.7 * _controller.value),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.black, width: 2),
-                color: AppColors.white,
-              ),
-              child: Stack(
-                children: [
-                  for (int i = 1; i < 8; i++) ...[
-                    Positioned(
-                      left: i * (size / 8),
-                      top: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 1,
-                        color: AppColors.black.withValues(alpha: 0.3),
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            double size = widget.isCompact ? 100 : 150;
+            return Opacity(
+              opacity: 0.3 + (0.7 * _controller.value),
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.black, width: 2),
+                  color: AppColors.white,
+                ),
+                child: Stack(
+                  children: [
+                    for (int i = 1; i < 8; i++) ...[
+                      Positioned(
+                        left: i * (size / 8),
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 1,
+                          color: AppColors.black.withValues(alpha: 0.3),
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      top: i * (size / 8),
-                      left: 0,
-                      right: 0,
+                      Positioned(
+                        top: i * (size / 8),
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 1,
+                          color: AppColors.black.withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ],
+                    Center(
                       child: Container(
-                        height: 1,
-                        color: AppColors.black.withValues(alpha: 0.3),
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AppColors.black,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ],
-                  Center(
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.black,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -449,70 +513,82 @@ class _AlignmentAnimationState extends State<AlignmentAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 80 : 100;
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final t = _controller.value;
-          final dx = (widget.isCompact ? 20 : 30) * math.sin(t * 2 * math.pi);
-          final dy = (widget.isCompact ? 15 : 20) * math.cos(t * 2 * math.pi);
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.success.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            double size = widget.isCompact ? 80 : 100;
+            final t = _controller.value;
+            final dx = (widget.isCompact ? 20 : 30) * math.sin(t * 2 * math.pi);
+            final dy = (widget.isCompact ? 15 : 20) * math.cos(t * 2 * math.pi);
 
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.5),
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.5),
+                    ),
+                    shape: BoxShape.circle,
                   ),
-                  shape: BoxShape.circle,
+                  child: Center(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(height: 1, color: AppColors.success),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Container(height: 1, color: AppColors.success),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Center(
-                  child: Row(
+                Positioned(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: Container(height: 1, color: AppColors.success),
+                      Container(
+                        width: 1,
+                        height: size * 0.4,
+                        color: AppColors.success,
                       ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Container(height: 1, color: AppColors.success),
+                      const SizedBox(height: 20),
+                      Container(
+                        width: 1,
+                        height: size * 0.4,
+                        color: AppColors.success,
                       ),
                     ],
                   ),
                 ),
-              ),
-              Positioned(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 1,
-                      height: size * 0.4,
-                      color: AppColors.success,
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      width: 1,
-                      height: size * 0.4,
-                      color: AppColors.success,
-                    ),
-                  ],
+                Transform.translate(
+                  offset: Offset(dx * (1 - t), dy * (1 - t)),
+                  child: Icon(
+                    Icons.remove_red_eye,
+                    color: AppColors.success,
+                    size: widget.isCompact ? 24 : 30,
+                  ),
                 ),
-              ),
-              Transform.translate(
-                offset: Offset(dx * (1 - t), dy * (1 - t)),
-                child: Icon(
-                  Icons.remove_red_eye,
-                  color: AppColors.success,
-                  size: widget.isCompact ? 24 : 30,
-                ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -561,21 +637,33 @@ class _SteadyReadingAnimationState extends State<SteadyReadingAnimation>
 
   @override
   Widget build(BuildContext context) {
-    double size = widget.isCompact ? 100 : 140;
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return CustomPaint(
-            size: Size(size * 1.5, size),
-            painter: _SteadyReadingPainter(
-              progress: _controller.value,
-              pulse: _pulse.value,
-              shake: _handMovement.value,
-              isCompact: widget.isCompact,
-            ),
-          );
-        },
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            double size = widget.isCompact ? 100 : 140;
+            return CustomPaint(
+              size: Size(size * 1.5, size),
+              painter: _SteadyReadingPainter(
+                progress: _controller.value,
+                pulse: _pulse.value,
+                shake: _handMovement.value,
+                isCompact: widget.isCompact,
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -800,9 +888,12 @@ class _ReadingTripletsAnimationState extends State<ReadingTripletsAnimation>
           width: 250, // Standard base width for the animation
           height: 200, // Standard base height
           decoration: BoxDecoration(
-            color: AppColors.white,
-            border: Border.all(color: AppColors.border, width: 2),
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.info.withValues(alpha: 0.2),
+              width: 2,
+            ),
           ),
           child: Stack(
             clipBehavior: Clip.hardEdge,
@@ -910,9 +1001,12 @@ class _FadingTripletsAnimationState extends State<FadingTripletsAnimation>
           width: 250,
           height: 200,
           decoration: BoxDecoration(
-            color: AppColors.white,
-            border: Border.all(color: AppColors.border, width: 2),
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.error.withValues(alpha: 0.2),
+              width: 2,
+            ),
           ),
           padding: const EdgeInsets.all(12),
           child: AnimatedBuilder(
@@ -999,8 +1093,8 @@ class _AmslerPathwayAnimationState extends State<AmslerPathwayAnimation>
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  width: 1,
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  width: 2,
                 ),
               ),
               child: AnimatedBuilder(
@@ -1385,87 +1479,102 @@ class _ReadAloudAnimationState extends State<ReadAloudAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final t = _controller.value;
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final t = _controller.value;
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Displaying text to be read
-              Container(
-                width: 220,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Text(
-                  "The quick brown fox jumps over the lazy dog",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Reading visual (Face + Speech waves)
-              Column(
+              return Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.record_voice_over_rounded,
-                    size: 50,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (i) {
-                      final wave = math.sin(t * 10 + i) * 6;
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        width: 3,
-                        height: 10 + wave.abs(),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "READING ALOUD",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
-                      letterSpacing: 1,
+                  // Displaying text to be read
+                  Container(
+                    width: 220,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      "The quick brown fox jumps over the lazy dog",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Reading visual (Face + Speech waves)
+                  Column(
+                    children: [
+                      Icon(
+                        Icons.record_voice_over_rounded,
+                        size: 44,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(5, (i) {
+                          final wave = math.sin(t * 10 + i) * 6;
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            width: 3,
+                            height: 10 + wave.abs(),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "READING ALOUD",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primary,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -1501,71 +1610,87 @@ class _BlurryReadingAnimationState extends State<BlurryReadingAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final t = _controller.value;
-          // Scale from 1.0 to 0.4, blur from 0 to 4
-          final fontSize = 24.0 * (1.1 - (t * 0.7));
-          final blurLevel = t * 5.0;
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.warning.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final t = _controller.value;
+              // Scale from 1.0 to 0.4, blur from 0 to 4
+              final fontSize = 24.0 * (1.1 - (t * 0.7));
+              final blurLevel = t * 5.0;
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 220,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.border.withValues(alpha: 0.5),
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: ImageFiltered(
-                    imageFilter: ui.ImageFilter.blur(
-                      sigmaX: blurLevel,
-                      sigmaY: blurLevel,
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 220,
+                    height:
+                        100, // Reduced height to fit in container with buttons
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.border.withValues(alpha: 0.5),
+                      ),
                     ),
-                    child: Text(
-                      "The quick brown fox jumps over the lazy dog",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: fontSize,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                        height: 1.2,
+                    alignment: Alignment.center,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: ImageFiltered(
+                        imageFilter: ui.ImageFilter.blur(
+                          sigmaX: blurLevel,
+                          sigmaY: blurLevel,
+                        ),
+                        child: Text(
+                          "The quick brown fox jumps over the lazy dog",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            height: 1.2,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildButtonMock(
-                    "CAN READ",
-                    Icons.check_circle_outline_rounded,
-                    AppColors.success,
-                    highlight: t < 0.6,
-                  ),
-                  const SizedBox(width: 16),
-                  _buildButtonMock(
-                    "CANNOT READ",
-                    Icons.visibility_off_rounded,
-                    AppColors.error,
-                    highlight: t >= 0.6,
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildButtonMock(
+                        "CAN READ",
+                        Icons.check_circle_outline_rounded,
+                        AppColors.success,
+                        highlight: t < 0.6,
+                      ),
+                      const SizedBox(width: 16),
+                      _buildButtonMock(
+                        "CANNOT READ",
+                        Icons.visibility_off_rounded,
+                        AppColors.error,
+                        highlight: t >= 0.6,
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
