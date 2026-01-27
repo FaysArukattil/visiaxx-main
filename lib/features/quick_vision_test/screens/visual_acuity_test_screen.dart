@@ -1979,21 +1979,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               ),
             )
           : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 20,
-                  horizontal: 16,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildRelaxationHero(isLandscape: false),
-                    const SizedBox(height: 60),
-                    _buildRelaxationInstructions(),
-                    const SizedBox(height: 40),
-                  ],
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start, // Pin to top
+                children: [
+                  _buildRelaxationHero(isLandscape: false),
+                  const SizedBox(height: 70), // Space for text below timer
+                  _buildRelaxationInstructions(),
+                ],
               ),
             ),
     );
@@ -2044,50 +2037,62 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return AnimatedBuilder(
       animation: _relaxationProgressController,
       builder: (context, child) {
-        return Center(
-          child: Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: AppColors.white.withValues(
-                alpha: 0.8,
-              ), // More opaque since it's not over image
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  blurRadius: 25,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 8),
+        return Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            color: AppColors.white.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 25,
+                spreadRadius: 2,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.white.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
                 ),
-              ],
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 90,
-                  height: 90,
-                  child: CircularProgressIndicator(
-                    value: _relaxationProgressController.value,
-                    strokeWidth: 5,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 90,
+                      height: 90,
+                      child: CircularProgressIndicator(
+                        value: _relaxationProgressController.value,
+                        strokeWidth: 5,
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.1,
+                        ),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.primary,
+                        ),
+                      ),
                     ),
-                  ),
+                    Text(
+                      '$_relaxationCountdown',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primary,
+                        fontFamily: 'Inter',
+                        letterSpacing: -1,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  '$_relaxationCountdown',
-                  style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primary,
-                    fontFamily: 'Inter',
-                    letterSpacing: -1,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         );
@@ -2102,10 +2107,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
         final imageHeight = isLandscape
             ? screenHeight * 0.8
-            : screenHeight * 0.60;
+            : screenHeight * 0.68; // Adjusted for text and padding
 
         return Align(
-          alignment: isLandscape ? Alignment.centerLeft : Alignment.center,
+          alignment: isLandscape ? Alignment.centerLeft : Alignment.topCenter,
           child: Stack(
             clipBehavior: Clip.none,
             alignment: isLandscape
@@ -2116,7 +2121,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Container(
                 margin: EdgeInsets.only(
                   right: isLandscape ? 50 : 0, // Room for timer overlap
-                  bottom: isLandscape ? 0 : 45, // Room for timer overlap
+                  bottom: 0,
                 ),
                 child: _buildRelaxationImage(
                   isLandscape: isLandscape,
@@ -2127,7 +2132,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               // Glassmorphism Smooth Timer
               Positioned(
                 right: isLandscape ? 0 : null,
-                bottom: isLandscape ? null : -45,
+                bottom: isLandscape ? null : -50, // Half of 100px timer height
                 child: _buildRelaxationTimer(),
               ),
             ],
