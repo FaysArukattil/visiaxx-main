@@ -188,364 +188,408 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             ),
           ),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header text
-                    Text(
-                      'Join Visiaxx',
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.primary,
-                        fontSize: 28,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Experience premium digital eye diagnostics',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
+            child: OrientationBuilder(
+              builder: (context, orientation) {
+                final isLandscape = orientation == Orientation.landscape;
 
-                    // Main Container for Form
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.black.withValues(alpha: 0.04),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Error message
-                          if (_errorMessage != null) ...[
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.error.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(
-                                  color: AppColors.error,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-
-                          // --- Personal Info Section ---
-                          _buildSectionTitle(
-                            'Personal Info',
-                            Icons.person_rounded,
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _firstNameController,
-                                  textCapitalization: TextCapitalization.words,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(
-                                    labelText: 'First Name',
-                                  ),
-                                  validator: (value) =>
-                                      (value == null || value.isEmpty)
-                                      ? 'Required'
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _lastNameController,
-                                  textCapitalization: TextCapitalization.words,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Last Name',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
+                if (isLandscape) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left Side: Header Text
+                      Expanded(
+                        flex: 4,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Expanded(
-                                flex: 4,
-                                child: TextFormField(
-                                  controller: _ageController,
-                                  keyboardType: TextInputType.number,
-                                  textInputAction: TextInputAction.next,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                    LengthLimitingTextInputFormatter(3),
-                                    TextInputFormatter.withFunction((
-                                      oldValue,
-                                      newValue,
-                                    ) {
-                                      if (newValue.text.isEmpty)
-                                        return newValue;
-                                      final n = int.tryParse(newValue.text);
-                                      if (n != null && n <= 200)
-                                        return newValue;
-                                      return oldValue;
-                                    }),
-                                  ],
-                                  decoration: const InputDecoration(
-                                    labelText: 'Age',
+                              Text(
+                                'Join Visiaxx',
+                                style: theme.textTheme.displaySmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.primary,
+                                  fontSize: 32,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Experience premium digital eye diagnostics',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 40),
+                              // Already have account
+                              Row(
+                                children: [
+                                  Text(
+                                    'Already have an account? ',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Age?';
-                                    }
-                                    final age = int.tryParse(value);
-                                    if (age == null || age < 1 || age > 200) {
-                                      return '!';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 6,
-                                child: PremiumDropdown<String>(
-                                  label: 'Sex',
-                                  value: _selectedSex,
-                                  items: const ['Male', 'Female', 'Other'],
-                                  itemLabelBuilder: (s) => s,
-                                  onChanged: (value) {
-                                    setState(() => _selectedSex = value);
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-
-                          // --- Contact Info Section ---
-                          _buildSectionTitle(
-                            'Contact Info',
-                            Icons.alternate_email_rounded,
-                          ),
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'Email Address',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Required';
-                              }
-                              if (!value.contains('@')) return 'Invalid email';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            textInputAction: TextInputAction.next,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(10),
-                            ],
-                            decoration: const InputDecoration(
-                              labelText: 'Phone Number',
-                              prefixText: '+91 ',
-                              prefixStyle: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            validator: (value) => (value?.length != 10)
-                                ? '10 digits required'
-                                : null,
-                          ),
-                          const SizedBox(height: 24),
-
-                          // --- Role Section ---
-                          _buildSectionTitle('You are a', Icons.badge_rounded),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _RoleCard(
-                                  title: 'User',
-                                  icon: Icons.person_outline_rounded,
-                                  isSelected: _selectedRole == UserRole.user,
-                                  onTap: () => setState(
-                                    () => _selectedRole = UserRole.user,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _RoleCard(
-                                  title: 'Examiner',
-                                  icon: Icons.medical_services_outlined,
-                                  isSelected:
-                                      _selectedRole == UserRole.examiner,
-                                  onTap: () => setState(
-                                    () => _selectedRole = UserRole.examiner,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_selectedRole == UserRole.examiner) ...[
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _practitionerCodeController,
-                              textInputAction: TextInputAction.next,
-                              decoration: const InputDecoration(
-                                labelText: 'Access Code',
-                                hintText: 'Enter secret code',
-                                prefixIcon: Icon(Icons.vpn_key_rounded),
-                              ),
-                              validator: (value) =>
-                                  (_selectedRole == UserRole.examiner &&
-                                      (value == null || value.isEmpty))
-                                  ? 'Required'
-                                  : null,
-                            ),
-                          ],
-                          const SizedBox(height: 24),
-
-                          // --- Security Section ---
-                          _buildSectionTitle(
-                            'Security',
-                            Icons.lock_outline_rounded,
-                          ),
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: !_isPasswordVisible,
-                            textInputAction: TextInputAction.next,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _isPasswordVisible
-                                      ? Icons.visibility_off_rounded
-                                      : Icons.visibility_rounded,
-                                  size: 20,
-                                ),
-                                onPressed: () => setState(
-                                  () =>
-                                      _isPasswordVisible = !_isPasswordVisible,
-                                ),
-                              ),
-                            ),
-                            validator: (value) =>
-                                (value?.length ?? 0) < 6 ? 'Min 6 chars' : null,
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _confirmPasswordController,
-                            obscureText: !_isPasswordVisible,
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) => _handleRegister(),
-                            decoration: const InputDecoration(
-                              labelText: 'Confirm Password',
-                            ),
-                            validator: (value) =>
-                                (value != _passwordController.text)
-                                ? 'No match'
-                                : null,
-                          ),
-                          const SizedBox(height: 40),
-
-                          // --- Action Button ---
-                          Container(
-                            height: 56,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: AppColors.primaryGradient,
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _handleRegister,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.transparent,
-                                shadowColor: AppColors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: EyeLoader(
-                                        size: 24,
-                                        color: AppColors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Create Account',
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: const Text(
+                                      'Sign In',
                                       style: TextStyle(
-                                        fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.white,
                                       ),
                                     ),
-                            ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Already have account
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Already have an account? ',
-                          style: TextStyle(color: AppColors.textSecondary),
                         ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text(
-                            'Sign In',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      // Right Side: Form
+                      Expanded(
+                        flex: 6,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(12, 12, 24, 32),
+                          child: Form(
+                            key: _formKey,
+                            child: _buildRegistrationForm(),
                           ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                // Portrait layout
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Header text
+                        Text(
+                          'Join Visiaxx',
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primary,
+                            fontSize: 28,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Experience premium digital eye diagnostics',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        _buildRegistrationForm(),
+
+                        const SizedBox(height: 24),
+
+                        // Already have account
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Already have an account? ',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                'Sign In',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRegistrationForm() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Error message
+          if (_errorMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(
+                  color: AppColors.error,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // --- Personal Info Section ---
+          _buildSectionTitle('Personal Info', Icons.person_rounded),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _firstNameController,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'First Name'),
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? 'Required' : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _lastNameController,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'Last Name'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 4,
+                child: TextFormField(
+                  controller: _ageController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(3),
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      if (newValue.text.isEmpty) return newValue;
+                      final n = int.tryParse(newValue.text);
+                      if (n != null && n <= 200) return newValue;
+                      return oldValue;
+                    }),
+                  ],
+                  decoration: const InputDecoration(labelText: 'Age'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Age?';
+                    }
+                    final age = int.tryParse(value);
+                    if (age == null || age < 1 || age > 200) {
+                      return '!';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 6,
+                child: PremiumDropdown<String>(
+                  label: 'Sex',
+                  value: _selectedSex,
+                  items: const ['Male', 'Female', 'Other'],
+                  itemLabelBuilder: (s) => s,
+                  onChanged: (value) {
+                    setState(() => _selectedSex = value);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // --- Contact Info Section ---
+          _buildSectionTitle('Contact Info', Icons.alternate_email_rounded),
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(labelText: 'Email Address'),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Required';
+              }
+              if (!value.contains('@')) return 'Invalid email';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
+            decoration: const InputDecoration(
+              labelText: 'Phone Number',
+              prefixText: '+91 ',
+              prefixStyle: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            validator: (value) =>
+                (value?.length != 10) ? '10 digits required' : null,
+          ),
+          const SizedBox(height: 24),
+
+          // --- Role Section ---
+          _buildSectionTitle('You are a', Icons.badge_rounded),
+          Row(
+            children: [
+              Expanded(
+                child: _RoleCard(
+                  title: 'User',
+                  icon: Icons.person_outline_rounded,
+                  isSelected: _selectedRole == UserRole.user,
+                  onTap: () => setState(() => _selectedRole = UserRole.user),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _RoleCard(
+                  title: 'Examiner',
+                  icon: Icons.medical_services_outlined,
+                  isSelected: _selectedRole == UserRole.examiner,
+                  onTap: () =>
+                      setState(() => _selectedRole = UserRole.examiner),
+                ),
+              ),
+            ],
+          ),
+          if (_selectedRole == UserRole.examiner) ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _practitionerCodeController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Access Code',
+                hintText: 'Enter secret code',
+                prefixIcon: Icon(Icons.vpn_key_rounded),
+              ),
+              validator: (value) =>
+                  (_selectedRole == UserRole.examiner &&
+                      (value == null || value.isEmpty))
+                  ? 'Required'
+                  : null,
+            ),
+          ],
+          const SizedBox(height: 24),
+
+          // --- Security Section ---
+          _buildSectionTitle('Security', Icons.lock_outline_rounded),
+          TextFormField(
+            controller: _passwordController,
+            obscureText: !_isPasswordVisible,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: 'Password',
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _isPasswordVisible
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
+                  size: 20,
+                ),
+                onPressed: () =>
+                    setState(() => _isPasswordVisible = !_isPasswordVisible),
+              ),
+            ),
+            validator: (value) =>
+                (value?.length ?? 0) < 6 ? 'Min 6 chars' : null,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _confirmPasswordController,
+            obscureText: !_isPasswordVisible,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _handleRegister(),
+            decoration: const InputDecoration(labelText: 'Confirm Password'),
+            validator: (value) =>
+                (value != _passwordController.text) ? 'No match' : null,
+          ),
+          const SizedBox(height: 40),
+
+          // --- Action Button ---
+          Container(
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: AppColors.primaryGradient,
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _handleRegister,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.transparent,
+                shadowColor: AppColors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: EyeLoader(size: 24, color: AppColors.white),
+                    )
+                  : const Text(
+                      'Create Account',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.white,
+                      ),
+                    ),
             ),
           ),
         ],

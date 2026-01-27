@@ -231,66 +231,137 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         ),
         child: SafeArea(
-          child: Stack(
-            children: [
-              // Centered logo
-              Center(
-                child: FadeTransition(
-                  opacity: _logoFadeAnimation,
-                  child: ScaleTransition(
-                    scale: _logoScaleAnimation,
-                    child: SizedBox(
-                      width: 240,
-                      height: 240,
-                      child: Image.asset(
-                        'assets/images/icons/app_logo.png',
-                        fit: BoxFit.contain,
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              final isLandscape = orientation == Orientation.landscape;
+
+              if (isLandscape) {
+                return Row(
+                  children: [
+                    // Left side: Logo
+                    Expanded(
+                      flex: 1,
+                      child: Center(
+                        child: FadeTransition(
+                          opacity: _logoFadeAnimation,
+                          child: ScaleTransition(
+                            scale: _logoScaleAnimation,
+                            child: SizedBox(
+                              width: 180,
+                              height: 180,
+                              child: Image.asset(
+                                'assets/images/icons/app_logo.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Right side: Text and Loader
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          FadeTransition(
+                            opacity: _textFadeAnimation,
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Your Eye Partner',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textSecondary,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Professional Eye Care Solutions',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColors.textTertiary,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 48),
+                          EyeLoader.fullScreen(),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              // Portrait layout (mostly same as before but using Column/Stack more safely)
+              return Stack(
+                children: [
+                  // Centered logo
+                  Center(
+                    child: FadeTransition(
+                      opacity: _logoFadeAnimation,
+                      child: ScaleTransition(
+                        scale: _logoScaleAnimation,
+                        child: SizedBox(
+                          width: 240,
+                          height: 240,
+                          child: Image.asset(
+                            'assets/images/icons/app_logo.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
 
-              // Tagline at bottom
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 130, // Increased from 100
-                child: FadeTransition(
-                  opacity: _textFadeAnimation,
-                  child: Column(
-                    children: [
-                      Text(
-                        'Your Eye Partner',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
-                          letterSpacing: 0.5,
-                        ),
+                  // Tagline at bottom
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 130,
+                    child: FadeTransition(
+                      opacity: _textFadeAnimation,
+                      child: Column(
+                        children: [
+                          Text(
+                            'Your Eye Partner',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Professional Eye Care Solutions',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textTertiary,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Professional Eye Care Solutions',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.textTertiary,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              // Loading indicator at bottom
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 30, // Decreased from 40
-                child: Center(child: EyeLoader.fullScreen()),
-              ),
-            ],
+                  // Loading indicator at bottom
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 30,
+                    child: Center(child: EyeLoader.fullScreen()),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
