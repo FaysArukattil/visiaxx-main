@@ -120,6 +120,9 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -128,189 +131,262 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: Text(widget.title),
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
-            onPressed: _showExitConfirmation,
+        appBar: isLandscape
+            ? null
+            : AppBar(
+                title: Text(widget.title),
+                backgroundColor: AppColors.white,
+                elevation: 0,
+                centerTitle: true,
+                leading: IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                  onPressed: _showExitConfirmation,
+                ),
+              ),
+        body: SafeArea(
+          child: isLandscape ? _buildLandscapeLayout() : _buildPortraitLayout(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPortraitLayout() {
+    return Column(
+      children: [
+        // Hero Animation Section
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: _buildHeroSection(),
+        ),
+
+        // Instruction Card
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: _buildInstructionSection(),
           ),
         ),
-        body: SafeArea(
-          child: Column(
+
+        // Action Button
+        _buildActionButtonContainer(),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeLayout() {
+    return Column(
+      children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Hero Animation Section
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 32),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.5),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const DistanceAnimation(isCompact: true),
-                ),
-              ),
-
-              // Instruction Card
+              // Left: Hero Animation
               Expanded(
+                flex: 4,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.settings_overscan_rounded,
-                              color: AppColors.primary,
-                              size: 40,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            widget.headline ?? 'Switching Distance',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            widget.instruction,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: AppColors.textSecondary,
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          // Distance Indicators
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _buildDistanceInfo(
-                                'Current',
-                                widget.currentDistance,
-                                Icons.near_me_disabled_rounded,
-                                AppColors.error,
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.05),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  color: AppColors.primary,
-                                  size: 20,
-                                ),
-                              ),
-                              _buildDistanceInfo(
-                                'Target',
-                                widget.targetDistance,
-                                Icons.straighten_rounded,
-                                AppColors.success,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: _buildHeroSection(),
                 ),
               ),
-
-              // Action Button
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: ElevatedButton(
-                    onPressed: _secondsRemaining == 0 ? _handleContinue : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.white,
-                      disabledBackgroundColor: AppColors.border.withValues(alpha: 0.5),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: _secondsRemaining > 0
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              EyeLoader(
-                                size: 30,
-                                color: AppColors.primary,
-                                value: _progress,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Wait ($_secondsRemaining)',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          )
-                        : const Text(
-                            'Continue to Calibration',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
+              // Right: Instructions
+              Expanded(
+                flex: 5,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                  child: _buildInstructionSection(isLandscape: true),
                 ),
               ),
             ],
           ),
+        ),
+        _buildActionButtonContainer(isLandscape: true),
+      ],
+    );
+  }
+
+  Widget _buildHeroSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: const Center(child: DistanceAnimation(isCompact: true)),
+    );
+  }
+
+  Widget _buildInstructionSection({bool isLandscape = false}) {
+    return Container(
+      padding: EdgeInsets.all(isLandscape ? 16 : 24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLandscape)
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: _showExitConfirmation,
+                  ),
+                  const Spacer(),
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  const SizedBox(width: 40), // Balance close button
+                ],
+              ),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.settings_overscan_rounded,
+                color: AppColors.primary,
+                size: isLandscape ? 30 : 40,
+              ),
+            ),
+            SizedBox(height: isLandscape ? 12 : 24),
+            Text(
+              widget.headline ?? 'Switching Distance',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: isLandscape ? 18 : 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            SizedBox(height: isLandscape ? 8 : 16),
+            Text(
+              widget.instruction,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: isLandscape ? 14 : 16,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: isLandscape ? 16 : 32),
+            // Distance Indicators
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildDistanceInfo(
+                    'Current',
+                    widget.currentDistance,
+                    Icons.near_me_disabled_rounded,
+                    AppColors.error,
+                    small: isLandscape,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppColors.primary,
+                        size: isLandscape ? 16 : 20,
+                      ),
+                    ),
+                  ),
+                  _buildDistanceInfo(
+                    'Target',
+                    widget.targetDistance,
+                    Icons.straighten_rounded,
+                    AppColors.success,
+                    small: isLandscape,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtonContainer({bool isLandscape = false}) {
+    return Container(
+      padding: EdgeInsets.all(isLandscape ? 12 : 16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: isLandscape ? 50 : 60,
+        child: ElevatedButton(
+          onPressed: _secondsRemaining == 0 ? _handleContinue : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.white,
+            disabledBackgroundColor: AppColors.border.withValues(alpha: 0.5),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: _secondsRemaining > 0
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    EyeLoader(
+                      size: isLandscape ? 24 : 30,
+                      color: AppColors.primary,
+                      value: _progress,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Wait ($_secondsRemaining)',
+                      style: TextStyle(
+                        fontSize: isLandscape ? 16 : 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  'Continue to Calibration',
+                  style: TextStyle(
+                    fontSize: isLandscape ? 16 : 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
       ),
     );
@@ -320,27 +396,31 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
     String label,
     String distance,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    bool small = false,
+  }) {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(small ? 8 : 10),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: color, size: 24),
+          child: Icon(icon, color: color, size: small ? 20 : 24),
         ),
         const SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: TextStyle(
+            fontSize: small ? 10 : 12,
+            color: AppColors.textSecondary,
+          ),
         ),
         Text(
           distance,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: small ? 16 : 18,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -349,4 +429,3 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
     );
   }
 }
-

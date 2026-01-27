@@ -1055,7 +1055,7 @@ class _MobileRefractometryTestScreenState
   Widget _buildPortraitLayout() {
     return Column(
       children: [
-        _buildInfoBar(),
+        _buildInfoBar(isLandscape: false),
         Expanded(child: _buildMainContent()),
         if (_currentPhase == RefractPhase.test && _waitingForResponse)
           _buildDirectionButtons(),
@@ -1064,35 +1064,33 @@ class _MobileRefractometryTestScreenState
   }
 
   Widget _buildLandscapeLayout() {
-    // 50/50 split layout matching Visual Acuity
-    return Row(
+    return Column(
       children: [
-        // Left side: Info bar + Main content (E view or relaxation)
+        _buildInfoBar(isLandscape: true),
         Expanded(
-          flex: 1,
-          child: Column(
+          child: Row(
             children: [
-              _buildInfoBar(),
-              Expanded(child: _buildMainContent()),
+              // Left side: Main content (E view or relaxation)
+              Expanded(flex: 1, child: _buildMainContent()),
+              // Right side: Direction buttons (when waiting for response)
+              if (_currentPhase == RefractPhase.test && _waitingForResponse)
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      border: Border(
+                        left: BorderSide(
+                          color: AppColors.border.withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ),
+                    child: _buildLandscapeDirectionButtons(),
+                  ),
+                ),
             ],
           ),
         ),
-        // Right side: Direction buttons (when waiting for response)
-        if (_currentPhase == RefractPhase.test && _waitingForResponse)
-          Expanded(
-            flex: 1,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                border: Border(
-                  left: BorderSide(
-                    color: AppColors.border.withValues(alpha: 0.3),
-                  ),
-                ),
-              ),
-              child: _buildLandscapeDirectionButtons(),
-            ),
-          ),
       ],
     );
   }
@@ -1134,15 +1132,30 @@ class _MobileRefractometryTestScreenState
     }
   }
 
-  Widget _buildInfoBar() {
+  Widget _buildInfoBar({bool isLandscape = false}) {
     // Count total correct responses for this eye
     final responses = _currentEye == 'right'
         ? _rightEyeResponses
         : _leftEyeResponses;
     final correctCount = responses.where((r) => r['correct'] == true).length;
+    final provider = context.watch<TestSessionProvider>();
+    final isPractitioner = provider.profileType == 'patient';
+
+    // Get current font size for size indicator if in landscape test phase
+    double? currentFontSize;
+    if (isLandscape && _currentPhase == RefractPhase.test && !_showResult) {
+      final testRound = TestConstants.getTestRoundConfiguration(
+        _currentRound + 1,
+        _patientAge,
+      );
+      currentFontSize = testRound.fontSize;
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: isLandscape ? 8 : 12,
+      ),
       decoration: BoxDecoration(
         color: AppColors.white,
         border: Border(
@@ -1154,7 +1167,30 @@ class _MobileRefractometryTestScreenState
       ),
       child: Row(
         children: [
-          // Level/Progress indicator - MATCHES VA (1-indexed)
+          // 1. Size Indicator (Landscape only, matches VA)
+          if (isLandscape && currentFontSize != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: ShapeDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: ContinuousRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                _getSnellenScore(currentFontSize),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.primary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+
+          // 2. Level/Progress indicator - MATCHES VA (1-indexed)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
@@ -1181,7 +1217,8 @@ class _MobileRefractometryTestScreenState
             ),
           ),
           const SizedBox(width: 8),
-          // Score indicator - MATCHES VA
+
+          // 3. Score indicator - MATCHES VA
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: ShapeDecoration(
@@ -1206,32 +1243,64 @@ class _MobileRefractometryTestScreenState
               ),
             ),
           ),
+
           const Spacer(),
-          // Speech waveform
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+
+          // 4. Speech waveform (Hiden for practitioners)
+          if (!isPractitioner) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _SpeechWaveform(
+                    isListening:
+                        _continuousSpeech.shouldBeListening &&
+                        !_continuousSpeech.isPausedForTts,
+                    isTalking: _isSpeechActive,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.mic_none_rounded,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                ],
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _SpeechWaveform(
-                  isListening:
-                      _continuousSpeech.shouldBeListening &&
-                      !_continuousSpeech.isPausedForTts,
-                  isTalking: _isSpeechActive,
-                  color: AppColors.primary,
+            const SizedBox(width: 12),
+          ],
+
+          // 5. Timer (Shown in landscape info bar or portrait info bar)
+          // Matching VA style timer
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.timer_outlined,
+                size: 16,
+                color: _remainingSeconds <= 2
+                    ? AppColors.error
+                    : AppColors.primary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                _isTestPausedForDistance ? 'PAUSED' : '${_remainingSeconds}s',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: _remainingSeconds <= 2
+                      ? AppColors.error
+                      : AppColors.primary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.mic_none_rounded,
-                  size: 14,
-                  color: AppColors.primary,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1457,76 +1526,81 @@ class _MobileRefractometryTestScreenState
     final currentFontSize =
         testRound.fontSize; // Use EXACT fontSize from protocol
 
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Column(
       children: [
-        // Timer and Size indicator row - COMPACT VERSION
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            border: Border(
-              bottom: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.3),
-                width: 1,
+        // Timer and Size indicator row - ONLY IN PORTRAIT
+        // (In Landscape, these are moved to the Info Bar)
+        if (!isLandscape)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                  width: 1,
+                ),
               ),
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Size indicator on LEFT - COMPACT
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: ShapeDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Size indicator on LEFT - COMPACT
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
                   ),
-                ),
-                child: Text(
-                  _getSnellenScore(currentFontSize),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primary,
-                    letterSpacing: -0.5,
+                  decoration: ShapeDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    shape: ContinuousRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                ),
-              ),
-
-              // Timer on RIGHT - COMPACT
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.timer_outlined,
-                    size: 14,
-                    color: _remainingSeconds <= 2
-                        ? AppColors.error
-                        : AppColors.primary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _isTestPausedForDistance
-                        ? 'PAUSED'
-                        : '${_remainingSeconds}s',
-                    style: TextStyle(
-                      fontSize: 16,
+                  child: Text(
+                    _getSnellenScore(currentFontSize),
+                    style: const TextStyle(
+                      fontSize: 13,
                       fontWeight: FontWeight.w900,
+                      color: AppColors.primary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+
+                // Timer on RIGHT - COMPACT
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.timer_outlined,
+                      size: 14,
                       color: _remainingSeconds <= 2
                           ? AppColors.error
                           : AppColors.primary,
-                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 4),
+                    Text(
+                      _isTestPausedForDistance
+                          ? 'PAUSED'
+                          : '${_remainingSeconds}s',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: _remainingSeconds <= 2
+                            ? AppColors.error
+                            : AppColors.primary,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
 
         // E Display - FULL SCREEN, NO SCALING, OVERFLOW ALLOWED
         Expanded(
