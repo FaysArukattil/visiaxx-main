@@ -983,64 +983,67 @@ class _AmslerPathwayAnimationState extends State<AmslerPathwayAnimation>
   @override
   Widget build(BuildContext context) {
     double width = widget.isCompact ? 280 : 340;
-    double height = widget.isCompact ? 180 : 220;
+    double height = widget.isCompact ? 160 : 220;
 
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                width: 1,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+              ),
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: _AmslerPathwayPainter(
+                      progress: _controller.value,
+                      isCompact: widget.isCompact,
+                    ),
+                  );
+                },
               ),
             ),
-            child: AnimatedBuilder(
+            const SizedBox(height: 12),
+            AnimatedBuilder(
               animation: _controller,
               builder: (context, child) {
-                return CustomPaint(
-                  painter: _AmslerPathwayPainter(
-                    progress: _controller.value,
-                    isCompact: widget.isCompact,
+                final isNormal = _controller.value < 0.5;
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: (isNormal ? AppColors.success : AppColors.error)
+                        .withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    isNormal
+                        ? "Normal Vision Pathway"
+                        : "Macular Distortion Pathway",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: isNormal ? AppColors.success : AppColors.error,
+                    ),
                   ),
                 );
               },
             ),
-          ),
-          const SizedBox(height: 12),
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              final isNormal = _controller.value < 0.5;
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: (isNormal ? AppColors.success : AppColors.error)
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  isNormal
-                      ? "Normal Vision Pathway"
-                      : "Macular Distortion Pathway",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: isNormal ? AppColors.success : AppColors.error,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

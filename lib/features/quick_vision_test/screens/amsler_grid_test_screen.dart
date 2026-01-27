@@ -683,37 +683,44 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   Widget _buildManualScaffold() {
     return Scaffold(
       backgroundColor: AppColors.testBackground,
-      appBar: AppBar(
-        title: Text(
-          'Amsler Grid - ${_currentEye.toUpperCase()} Eye',
-          style: const TextStyle(fontWeight: FontWeight.w900),
-        ),
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _showExitConfirmation,
-        ),
-      ),
+      appBar: MediaQuery.of(context).orientation == Orientation.landscape
+          ? null
+          : AppBar(
+              title: Text(
+                'Amsler Grid - ${_currentEye.toUpperCase()} Eye',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+              backgroundColor: AppColors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _showExitConfirmation,
+              ),
+            ),
       body: SafeArea(
         child: Stack(
           children: [
-            Column(
-              children: [
-                _buildInfoBar(
-                  isLandscape:
-                      MediaQuery.of(context).orientation ==
-                      Orientation.landscape,
-                ),
-                Expanded(
-                  child: _eyeSwitchPending
-                      ? _buildEyeSwitchView()
-                      : (!_testingStarted
-                            ? const Center(child: CircularProgressIndicator())
-                            : _buildAdaptiveTestLayout()),
-                ),
-              ],
-            ),
+            if (MediaQuery.of(context).orientation != Orientation.landscape)
+              Column(
+                children: [
+                  _buildInfoBar(isLandscape: false),
+                  Expanded(
+                    child: _eyeSwitchPending
+                        ? _buildEyeSwitchView()
+                        : (!_testingStarted
+                              ? const Center(child: CircularProgressIndicator())
+                              : _buildAdaptiveTestLayout()),
+                  ),
+                ],
+              )
+            else
+              Expanded(
+                child: _eyeSwitchPending
+                    ? _buildEyeSwitchView()
+                    : (!_testingStarted
+                          ? const Center(child: CircularProgressIndicator())
+                          : _buildAdaptiveTestLayout()),
+              ),
             // Distance indicator
 
             // Undo and Delete buttons (bottom-right corner)
@@ -895,20 +902,27 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       return _buildTestView();
     }
 
-    // Side-by-side for landscape
+    // Side-by-side for landscape (50/50 split as requested)
     return Row(
       children: [
-        // Left: Grid
+        // Left: Grid (Take half)
         Expanded(
-          flex: 4,
+          flex: 1,
           child: Container(
             color: AppColors.white,
-            child: _buildTestView(isSideBySide: true),
+            padding: const EdgeInsets.all(16),
+            child: _buildGridInterface(
+              min(
+                MediaQuery.of(context).size.width * 0.5 - 32,
+                MediaQuery.of(context).size.height - 32,
+              ),
+            ),
           ),
         ),
-        Container(width: 1, color: AppColors.border.withValues(alpha: 0.2)),
-        // Right: Controls
-        SizedBox(width: 320, child: _buildLandscapeControlsSidePanel()),
+        // Vertical Divider
+        Container(width: 1, color: AppColors.border.withValues(alpha: 0.1)),
+        // Right: Controls and Info (Take half)
+        Expanded(flex: 1, child: _buildLandscapeControlsSidePanel()),
       ],
     );
   }
@@ -916,72 +930,175 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   Widget _buildLandscapeControlsSidePanel() {
     return Container(
       color: AppColors.white,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         children: [
-          const Text(
-            'CONTROLS',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-              color: AppColors.textTertiary,
-            ),
+          // Header / Top Info
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                onPressed: _showExitConfirmation,
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${_currentEye.toUpperCase()} EYE',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const Text(
+                    'AMSLER TEST',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              // Undo in top portion
+              _buildHeaderActionButton(
+                icon: Icons.undo_rounded,
+                onTap: _undoLastPoint,
+                tooltip: 'Undo',
+              ),
+              const SizedBox(width: 8),
+              _buildAcuityStyleDistanceIndicator(),
+            ],
           ),
           const SizedBox(height: 24),
-          // Question section
+
+          // Main Scrollable Area
           Expanded(
             child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Mode Selector
+                  const Text(
+                    'MARKING TOOL',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textTertiary,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildModeChip(
+                            'distortion',
+                            'Wavy',
+                            Icons.waves,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: _buildModeChip(
+                            'missing',
+                            'Missing',
+                            Icons.visibility_off,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: _buildModeChip(
+                            'blurry',
+                            'Blurry',
+                            Icons.blur_on,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Clear under marking tool
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _clearPoints,
+                      icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                      label: const Text('CLEAR ALL MARKS'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: BorderSide(
+                          color: AppColors.error.withValues(alpha: 0.2),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Questions
+                  const Text(
+                    'QUESTIONS',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textTertiary,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   _buildLandscapeQuestion(
-                    'Are all the lines straight?',
+                    'Are all lines straight?',
                     _allLinesStraight,
                     (val) => setState(() => _allLinesStraight = val),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _buildLandscapeQuestion(
                     'Any missing areas?',
                     _hasMissingAreas,
                     (val) => setState(() => _hasMissingAreas = val),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _buildLandscapeQuestion(
-                    'Any distortions?',
+                    'Any wavy or distortions?',
                     _hasDistortions,
                     (val) => setState(() => _hasDistortions = val),
                   ),
                   const SizedBox(height: 32),
-                  // Finish Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed:
-                          (_allLinesStraight != null &&
-                              _hasMissingAreas != null &&
-                              _hasDistortions != null)
-                          ? _completeCurrentEye
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'COMPLETE TEST',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
+            ),
+          ),
+
+          // Bottom Continue Button
+          SizedBox(
+            width: double.infinity,
+            child: _ContinueButton(
+              label: _currentEye == 'right' ? 'CONTINUE' : 'COMPLETE TEST',
+              onTap: _completeCurrentEye,
             ),
           ),
         ],
@@ -1060,7 +1177,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     );
   }
 
-  Widget _buildTestView({bool isSideBySide = false}) {
+  Widget _buildTestView() {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isLandscape = constraints.maxWidth > constraints.maxHeight;
@@ -1394,6 +1511,37 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       default:
         return AppColors.error;
     }
+  }
+
+  Widget _buildHeaderActionButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required String tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.1),
+              ),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.primary),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildQuestionRow(

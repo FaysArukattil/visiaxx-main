@@ -215,16 +215,18 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('Test Instructions'),
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
-            onPressed: _showExitConfirmation,
-          ),
-        ),
+        appBar: MediaQuery.of(context).orientation == Orientation.landscape
+            ? null
+            : AppBar(
+                title: const Text('Test Instructions'),
+                backgroundColor: AppColors.white,
+                elevation: 0,
+                centerTitle: true,
+                leading: IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                  onPressed: _showExitConfirmation,
+                ),
+              ),
         body: SafeArea(
           child: OrientationBuilder(
             builder: (context, orientation) {
@@ -233,11 +235,11 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
               if (isLandscape) {
                 return Row(
                   children: [
-                    // Left Side: Illustration Card
+                    // Left Side: Illustration Card (50%)
                     Expanded(
-                      flex: 4,
+                      flex: 1,
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(24.0),
                         child: Container(
                           decoration: BoxDecoration(
                             color: AppColors.white,
@@ -245,19 +247,41 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                             border: Border.all(
                               color: AppColors.border.withValues(alpha: 0.5),
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.black.withValues(alpha: 0.03),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              // Optional: Add a Close button here in landscape since AppBar is gone
+                              Align(
+                                alignment: Alignment.topLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    onPressed: _showExitConfirmation,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
                               SizedBox(
-                                width: 100,
-                                height: 80,
+                                width: 120,
+                                height: 100,
                                 child: Stack(
                                   alignment: Alignment.center,
                                   children: [
                                     Container(
-                                      width: 60,
-                                      height: 60,
+                                      width: 70,
+                                      height: 70,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         gradient: RadialGradient(
@@ -273,7 +297,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                       ),
                                     ),
                                     Positioned(
-                                      top: 25,
+                                      top: 30,
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -281,7 +305,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                             isActive:
                                                 widget.eyeToCover == 'right',
                                           ),
-                                          const SizedBox(width: 15),
+                                          const SizedBox(width: 20),
                                           _AnimatedProfessionalEye(
                                             isActive:
                                                 widget.eyeToCover == 'left',
@@ -303,32 +327,32 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                             widget.eyeToCover == 'left';
                                         return Positioned(
                                           left: isLeft
-                                              ? 10 + (25 * (1 - value))
+                                              ? 15 + (30 * (1 - value))
                                               : null,
                                           right: !isLeft
-                                              ? 10 + (25 * (1 - value))
+                                              ? 15 + (30 * (1 - value))
                                               : null,
-                                          top: 15 + (10 * (1 - value)),
+                                          top: 20 + (10 * (1 - value)),
                                           child: Opacity(
                                             opacity: value,
                                             child: Container(
-                                              width: 35,
-                                              height: 45,
+                                              width: 40,
+                                              height: 50,
                                               decoration: BoxDecoration(
                                                 color: AppColors.primary
                                                     .withValues(alpha: 0.8),
                                                 borderRadius: BorderRadius.only(
                                                   topLeft: Radius.circular(
-                                                    isLeft ? 25 : 8,
+                                                    isLeft ? 28 : 8,
                                                   ),
                                                   bottomLeft: Radius.circular(
-                                                    isLeft ? 25 : 8,
+                                                    isLeft ? 28 : 8,
                                                   ),
                                                   topRight: Radius.circular(
-                                                    isLeft ? 8 : 25,
+                                                    isLeft ? 8 : 28,
                                                   ),
                                                   bottomRight: Radius.circular(
-                                                    isLeft ? 8 : 25,
+                                                    isLeft ? 8 : 28,
                                                   ),
                                                 ),
                                               ),
@@ -336,7 +360,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                                 child: Icon(
                                                   Icons.pan_tool_rounded,
                                                   color: Colors.white,
-                                                  size: 20,
+                                                  size: 22,
                                                 ),
                                               ),
                                             ),
@@ -347,39 +371,41 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 16),
                               Text(
                                 'Cover ${widget.eyeToCover[0].toUpperCase()}${widget.eyeToCover.substring(1)} Eye',
                                 style: const TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF1B3A57),
+                                  letterSpacing: 0.5,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                'Preparation',
+                                'Amsler Grid Preparation',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 13,
                                   color: Color(0xFF4A90E2),
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
+                              const Spacer(flex: 2),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    // Right Side: Instructions + Button
+                    // Right Side: Instructions + Button (50%)
                     Expanded(
-                      flex: 6,
+                      flex: 1,
                       child: Column(
                         children: [
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(0, 16, 16, 8),
+                              padding: const EdgeInsets.fromLTRB(0, 24, 24, 12),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: AppColors.white,
@@ -401,7 +427,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                   child: SingleChildScrollView(
                                     controller: _scrollController,
                                     physics: const BouncingScrollPhysics(),
-                                    padding: const EdgeInsets.all(20.0),
+                                    padding: const EdgeInsets.all(24.0),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -414,7 +440,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
-                                            vertical: 12,
+                                            vertical: 16,
                                           ),
                                           child: Divider(height: 1),
                                         ),
@@ -426,7 +452,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
-                                            vertical: 12,
+                                            vertical: 16,
                                           ),
                                           child: Divider(height: 1),
                                         ),
@@ -445,10 +471,10 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                           ),
                           // Compact Button Row
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 0, 16, 16),
+                            padding: const EdgeInsets.fromLTRB(0, 0, 24, 24),
                             child: SizedBox(
                               width: double.infinity,
-                              height: 50,
+                              height: 56,
                               child: ElevatedButton(
                                 onPressed: _handleContinue,
                                 style: ElevatedButton.styleFrom(
@@ -465,7 +491,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                             MainAxisAlignment.center,
                                         children: [
                                           EyeLoader(
-                                            size: 24,
+                                            size: 28,
                                             color: AppColors.white,
                                             value: _progress,
                                           ),
@@ -473,7 +499,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                           Text(
                                             'Starting in $_countdown...',
                                             style: const TextStyle(
-                                              fontSize: 14,
+                                              fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                               color: AppColors.white,
                                             ),
