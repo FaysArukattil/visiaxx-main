@@ -235,71 +235,7 @@ class _SplashScreenState extends State<SplashScreen>
             builder: (context, orientation) {
               final isLandscape = orientation == Orientation.landscape;
 
-              if (isLandscape) {
-                return Row(
-                  children: [
-                    // Left side: Logo
-                    Expanded(
-                      flex: 1,
-                      child: Center(
-                        child: FadeTransition(
-                          opacity: _logoFadeAnimation,
-                          child: ScaleTransition(
-                            scale: _logoScaleAnimation,
-                            child: SizedBox(
-                              width: 180,
-                              height: 180,
-                              child: Image.asset(
-                                'assets/images/icons/app_logo.png',
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Right side: Text and Loader
-                    Expanded(
-                      flex: 1,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          FadeTransition(
-                            opacity: _textFadeAnimation,
-                            child: Column(
-                              children: [
-                                Text(
-                                  'Your Eye Partner',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.textSecondary,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Professional Eye Care Solutions',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: AppColors.textTertiary,
-                                    letterSpacing: 1.0,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 48),
-                          EyeLoader.fullScreen(),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              }
-
-              // Portrait layout (mostly same as before but using Column/Stack more safely)
+              // Unified layout for both orientations, but with specific adjustments
               return Stack(
                 children: [
                   // Centered logo
@@ -309,8 +245,8 @@ class _SplashScreenState extends State<SplashScreen>
                       child: ScaleTransition(
                         scale: _logoScaleAnimation,
                         child: SizedBox(
-                          width: 240,
-                          height: 240,
+                          width: isLandscape ? 180 : 240,
+                          height: isLandscape ? 180 : 240,
                           child: Image.asset(
                             'assets/images/icons/app_logo.png',
                             fit: BoxFit.contain,
@@ -320,11 +256,11 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  // Tagline at bottom
+                  // Tagline
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: 130,
+                    bottom: isLandscape ? 70 : 130,
                     child: FadeTransition(
                       opacity: _textFadeAnimation,
                       child: Column(
@@ -332,17 +268,17 @@ class _SplashScreenState extends State<SplashScreen>
                           Text(
                             'Your Eye Partner',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: isLandscape ? 16 : 18,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textSecondary,
                               letterSpacing: 0.5,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             'Professional Eye Care Solutions',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: isLandscape ? 10 : 11,
                               fontWeight: FontWeight.w400,
                               color: AppColors.textTertiary,
                               letterSpacing: 1.0,
@@ -352,12 +288,17 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                   ),
-                  // Loading indicator at bottom
+
+                  // Loading indicator
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: 30,
-                    child: Center(child: EyeLoader.fullScreen()),
+                    bottom: isLandscape ? 20 : 30,
+                    child: Center(
+                      child: isLandscape
+                          ? const EyeLoader(size: 24, color: AppColors.primary)
+                          : EyeLoader.fullScreen(),
+                    ),
                   ),
                 ],
               );
