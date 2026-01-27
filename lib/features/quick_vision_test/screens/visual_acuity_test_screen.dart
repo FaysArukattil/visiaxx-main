@@ -1979,13 +1979,16 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: const EdgeInsets.symmetric(vertical: 20),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start, // Pin to top
                 children: [
                   _buildRelaxationHero(isLandscape: false),
                   const SizedBox(height: 70), // Space for text below timer
-                  _buildRelaxationInstructions(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildRelaxationInstructions(),
+                  ),
                 ],
               ),
             ),
