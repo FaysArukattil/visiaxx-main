@@ -967,26 +967,26 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
-          // We don't have a simple way to show "filled on tap" purely with BoxDecoration animation here
-          // without state, but we can use the splash color.
-          splashColor: baseColor.withValues(alpha: 0.3),
-          highlightColor: baseColor.withValues(alpha: 0.2),
+          // Higher opacity splash for "solid" feel on tap
+          splashColor: baseColor.withValues(alpha: 0.8),
+          highlightColor: baseColor,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: baseColor, size: 22),
-              const SizedBox(width: 12),
+              Icon(icon, color: baseColor, size: 20),
+              const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   label,
                   style: TextStyle(
                     color: baseColor,
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.1,
                   ),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.visible, // Ensure it stays on one line
+                  softWrap: false,
                 ),
               ),
             ],
@@ -1004,50 +1004,56 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     required VoidCallback onTap,
     bool compact = false,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(compact ? 16 : 24),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
-        height: compact ? 56 : 64,
-        decoration: BoxDecoration(
-          color: isActive ? color : color.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(compact ? 16 : 24),
-          border: Border.all(color: color, width: 2.5),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? AppColors.white : color,
-              size: compact ? 20 : 24,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: compact ? 10 : 12,
-                  fontWeight: FontWeight.w900,
-                  color: isActive ? AppColors.white : color,
-                  letterSpacing: 0.5,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(compact ? 16 : 24),
+        splashColor: color.withValues(alpha: 0.8),
+        highlightColor: color,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
+          height: compact ? 56 : 64,
+          decoration: BoxDecoration(
+            color: isActive ? color : color.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(compact ? 16 : 24),
+            border: Border.all(color: color, width: 2.5),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isActive ? AppColors.white : color,
+                size: compact ? 18 : 22,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: compact ? 9 : 11,
+                    fontWeight: FontWeight.w900,
+                    color: isActive ? AppColors.white : color,
+                    letterSpacing: 0.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:visiaxx/features/comprehensive_test/widgets/speech_waveform.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/cover_right_eye_instruction_screen.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_screen.dart';
@@ -53,7 +52,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   int _currentTripletIndex = 0;
   bool _isTestActive = false;
   bool _isListening = false;
-  bool _isSpeechActive = false;
   bool _showingInstructions = false; // Changed initial to false
   bool _showDistanceCalibration = true;
   bool _mainInstructionsShown = false; // Track if general PR instructions shown
@@ -278,7 +276,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     'no',
   ];
 
-  Timer? _speechActiveTimer;
   void _handleSpeechDetected(String partialResult) {
     if (!mounted || !_isTestActive) return;
 
@@ -288,12 +285,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     setState(() {
       _recognizedText = partialResult;
       _speechDetected = partialResult.isNotEmpty;
-      _isSpeechActive = true;
-    });
-
-    _speechActiveTimer?.cancel();
-    _speechActiveTimer = Timer(const Duration(milliseconds: 500), () {
-      if (mounted) setState(() => _isSpeechActive = false);
     });
 
     _silenceTimer?.cancel();
@@ -816,7 +807,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _currentTripletIndex = 0;
       _isTestActive = false;
       _isListening = false;
-      _isSpeechActive = false;
       _showingInstructions = false;
       _showDistanceCalibration = true;
       _mainInstructionsShown = true; // … Skip general instructions on restart
@@ -960,15 +950,13 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 
-  /// ✅ NEW: Visible / Not Visible buttons for tap-based input
   Widget _buildVisibleButtons() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Row(
         children: [
-          // Visible button - submit all letters
           Expanded(
-            child: ElevatedButton.icon(
+            child: _buildPelliActionButton(
               onPressed: () {
                 final triplets = PelliRobsonScoring.getTripletsForScreen(
                   _currentScreenIndex,
@@ -978,43 +966,80 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   _submitCurrentTriplet(triplet.letters);
                 }
               },
-              icon: const Icon(Icons.visibility, size: 20),
-              label: const Text('Visible'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: AppColors.white,
-                elevation: 0,
-                shadowColor: AppColors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
+              icon: Icons.visibility_rounded,
+              label: 'VISIBLE',
+              color: AppColors.success,
             ),
           ),
           const SizedBox(width: 12),
-          // Not Visible button - submit empty
           Expanded(
-            child: OutlinedButton.icon(
+            child: _buildPelliActionButton(
               onPressed: () {
                 _submitCurrentTriplet('Not visible');
               },
-              icon: const Icon(Icons.visibility_off, size: 20),
-              label: const Text('Not Visible'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary,
-                side: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.8),
-                  width: 1.5,
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
+              icon: Icons.visibility_off_rounded,
+              label: 'NOT VISIBLE',
+              color: AppColors.error,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPelliActionButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    required Color color,
+    bool isActive = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(16),
+        splashColor: color.withValues(alpha: 0.8),
+        highlightColor: color,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isActive ? color : color.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color, width: 2.5),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: isActive ? AppColors.white : color, size: 20),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: isActive ? AppColors.white : color,
+                    letterSpacing: 0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1121,15 +1146,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: _buildVoiceActionButton(
+      child: _buildPelliActionButton(
         icon: _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
         label: _isListening ? 'LISTENING' : 'VOICE',
         isActive: _isListening,
         color: AppColors.primary,
-        onTap: () {
+        onPressed: () {
           if (_isListening) {
             _continuousSpeech.stop();
-            // Small delay then restart to ensure a fresh session
             Future.delayed(const Duration(milliseconds: 200), () {
               if (mounted && _isTestActive) _startListeningForTriplet();
             });
@@ -1137,65 +1161,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             _startListeningForTriplet();
           }
         },
-      ),
-    );
-  }
-
-  /// Premium action button for voice control with integrated waveform
-  Widget _buildVoiceActionButton({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        width: double.infinity,
-        height: 64,
-        decoration: BoxDecoration(
-          color: isActive ? color : color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isActive ? color : color.withValues(alpha: 0.2),
-            width: 2.0,
-          ),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isActive)
-              SpeechWaveform(
-                isListening: _isListening,
-                isTalking: _isSpeechActive,
-                color: AppColors.white,
-              )
-            else
-              Icon(icon, color: color, size: 24),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: isActive ? AppColors.white : color,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1351,76 +1316,30 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Flexible(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: 60,
-                      maxHeight: 80,
-                    ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          final triplets =
-                              PelliRobsonScoring.getTripletsForScreen(
-                                _currentScreenIndex,
-                              );
-                          if (_currentTripletIndex < triplets.length) {
-                            final triplet = triplets[_currentTripletIndex];
-                            _submitCurrentTriplet(triplet.letters);
-                          }
-                        },
-                        icon: const Icon(Icons.visibility, size: 24),
-                        label: const Text(
-                          'VISIBLE',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          foregroundColor: AppColors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
+                  child: _buildPelliActionButton(
+                    onPressed: () {
+                      final triplets = PelliRobsonScoring.getTripletsForScreen(
+                        _currentScreenIndex,
+                      );
+                      if (_currentTripletIndex < triplets.length) {
+                        final triplet = triplets[_currentTripletIndex];
+                        _submitCurrentTriplet(triplet.letters);
+                      }
+                    },
+                    icon: Icons.visibility_rounded,
+                    label: 'VISIBLE',
+                    color: AppColors.success,
                   ),
                 ),
                 const SizedBox(height: 16),
                 Flexible(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: 60,
-                      maxHeight: 80,
-                    ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          _submitCurrentTriplet('Not visible');
-                        },
-                        icon: const Icon(Icons.visibility_off, size: 24),
-                        label: const Text(
-                          'NOT VISIBLE',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textPrimary,
-                          side: BorderSide(
-                            color: AppColors.border.withValues(alpha: 0.8),
-                            width: 2,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
+                  child: _buildPelliActionButton(
+                    onPressed: () {
+                      _submitCurrentTriplet('Not visible');
+                    },
+                    icon: Icons.visibility_off_rounded,
+                    label: 'NOT VISIBLE',
+                    color: AppColors.error,
                   ),
                 ),
               ],

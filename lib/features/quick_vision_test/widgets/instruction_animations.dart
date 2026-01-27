@@ -1577,25 +1577,28 @@ class _BlurryReadingAnimationState extends State<BlurryReadingAnimation>
     bool highlight = false,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      constraints: const BoxConstraints(minHeight: 32),
       decoration: BoxDecoration(
         color: highlight ? color : color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color, width: 2),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: highlight ? AppColors.white : color),
-          const SizedBox(width: 8),
+          Icon(icon, size: 14, color: highlight ? AppColors.white : color),
+          const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 8,
               fontWeight: FontWeight.w900,
               color: highlight ? AppColors.white : color,
-              letterSpacing: 0.5,
+              letterSpacing: 0.1,
             ),
+            maxLines: 1,
+            softWrap: false,
           ),
         ],
       ),
