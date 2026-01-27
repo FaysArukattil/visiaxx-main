@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../../quick_vision_test/widgets/instruction_animations.dart';
+import '../../results/widgets/wear_specs_animation.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -25,7 +26,7 @@ class _PelliRobsonInstructionsScreenState
     extends State<PelliRobsonInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 5;
+  final int _totalPages = 6;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
@@ -34,6 +35,7 @@ class _PelliRobsonInstructionsScreenState
     'Test Distance',
     'Reading Triplets',
     'Declining Contrast',
+    'Vision Correction',
   ];
 
   late final List<String> _ttsMessages;
@@ -49,6 +51,7 @@ class _PelliRobsonInstructionsScreenState
           : 'Place the device exactly 1 meter away from your face.',
       'You will see groups of 3 letters. Only read the letters inside the blue box aloud from left to right.',
       'The letters will become fainter and harder to see. Read as many as you can. If you cannot see any, say "nothing" or "skip".',
+      'If you wear glasses for distance, please keep them on during the test.',
     ];
     _initializeTts();
   }
@@ -187,6 +190,14 @@ class _PelliRobsonInstructionsScreenState
                       'The letters will become fainter and harder to see. Read as many as possible until they are no longer visible.',
                       AppColors.error,
                       animation: const FadingTripletsAnimation(isCompact: true),
+                    ),
+                    _buildStep(
+                      5,
+                      Icons.visibility_rounded,
+                      'Wear Your Glasses',
+                      'If you wear distance correction glasses, please keep them on.',
+                      AppColors.info,
+                      animation: const WearSpecsAnimation(isCompact: true),
                     ),
                   ],
                 ),

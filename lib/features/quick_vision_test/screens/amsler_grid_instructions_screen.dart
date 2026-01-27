@@ -6,6 +6,7 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../widgets/amsler_grid_drawing_animation.dart';
+import '../../results/widgets/wear_specs_animation.dart';
 import '../widgets/instruction_animations.dart';
 
 class AmslerGridInstructionsScreen extends StatefulWidget {
@@ -22,19 +23,20 @@ class _AmslerGridInstructionsScreenState
     extends State<AmslerGridInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 3;
+  final int _totalPages = 4;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
     'Amsler Grid Test',
     'Eye Alignment',
     'Drawing Distortions',
+    'Vision Correction',
   ];
 
   final List<String> _ttsMessages = [
-    'This test checks for distortions in your central vision using a grid pattern.',
     'Focus purely on the black dot in the center. Do not look away from it.',
     'If lines look wavy or broken, trace those areas on the screen with your finger.',
+    'If you wear glasses for distance, please keep them on during the test.',
   ];
 
   @override
@@ -165,6 +167,14 @@ class _AmslerGridInstructionsScreenState
                       'If lines look wavy or broken, trace them on the screen with your finger.',
                       AppColors.warning,
                       animation: const AmslerGridDrawingAnimation(),
+                    ),
+                    _buildStep(
+                      3,
+                      Icons.visibility_rounded,
+                      'Wear Your Glasses',
+                      'If you wear distance correction glasses, please keep them on.',
+                      AppColors.info,
+                      animation: const WearSpecsAnimation(isCompact: true),
                     ),
                   ],
                 ),

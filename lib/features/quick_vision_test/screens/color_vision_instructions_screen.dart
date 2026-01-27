@@ -6,6 +6,7 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../widgets/color_vision_response_animation.dart';
+import '../../results/widgets/wear_specs_animation.dart';
 import '../widgets/instruction_animations.dart';
 
 class ColorVisionInstructionsScreen extends StatefulWidget {
@@ -22,19 +23,20 @@ class _ColorVisionInstructionsScreenState
     extends State<ColorVisionInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 3;
+  final int _totalPages = 4;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
     'Ishihara Plates',
     'Identifying Numbers',
     'Optimal Position',
+    'Vision Correction',
   ];
 
   final List<String> _ttsMessages = [
-    'You will see circular plates with colored dots forming numbers.',
     'Identify the number on each plate and select the matching option.',
     'Hold the device at a normal reading distance, about 40 centimeters.',
+    'If you wear glasses for distance, please keep them on during the test.',
   ];
 
   @override
@@ -162,6 +164,14 @@ class _ColorVisionInstructionsScreenState
                       'Hold the device at comfortable reading distance and keep your head steady.',
                       AppColors.warning,
                       animation: const SteadyReadingAnimation(isCompact: true),
+                    ),
+                    _buildStep(
+                      3,
+                      Icons.visibility_rounded,
+                      'Wear Your Glasses',
+                      'If you wear distance correction glasses, please keep them on.',
+                      AppColors.info,
+                      animation: const WearSpecsAnimation(isCompact: true),
                     ),
                   ],
                 ),
