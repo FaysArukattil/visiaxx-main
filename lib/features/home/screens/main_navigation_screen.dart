@@ -244,47 +244,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             ),
                           ),
 
-                        // Profile gradient rectangle (only when profile is selected and NOT dragging)
-                        if (!_dragging && _currentIndex == 2)
-                          Positioned(
-                            left: (2 * itemWidth) + (itemWidth / 2) - 24,
-                            top: 10,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 300),
-                              opacity: 1.0,
-                              child: Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      AppColors.primary,
-                                      AppColors.primary.withOpacity(0.85),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primary.withOpacity(
-                                        0.35,
-                                      ),
-                                      blurRadius: 16,
-                                      spreadRadius: 0,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                    BoxShadow(
-                                      color: AppColors.primary.withOpacity(0.2),
-                                      blurRadius: 8,
-                                      spreadRadius: -2,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+                        // Profile background rectangle removed to emphasize the new circular outline
 
                         // Icons
                         Row(
@@ -341,17 +301,57 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         padding: const EdgeInsets.all(10),
         child: Center(
           child: isProfile && _user?.firstName != null
-              ? AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeInOutCubic,
-                  style: TextStyle(
-                    color: isSelected
-                        ? AppColors.white
-                        : AppColors.textSecondary.withOpacity(0.5),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+              ? Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: isSelected
+                        ? LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primary,
+                              AppColors.primary.withOpacity(0.85),
+                            ],
+                          )
+                        : null,
+                    border: isSelected
+                        ? null
+                        : Border.all(
+                            color: AppColors.grey.withOpacity(0.4),
+                            width: 1.5,
+                          ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.35),
+                              blurRadius: 16,
+                              spreadRadius: 0,
+                              offset: const Offset(0, 4),
+                            ),
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.2),
+                              blurRadius: 8,
+                              spreadRadius: -2,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
-                  child: Text(_user!.firstName.substring(0, 1).toUpperCase()),
+                  alignment: Alignment.center,
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeInOutCubic,
+                    style: TextStyle(
+                      color: isSelected
+                          ? AppColors.white
+                          : AppColors.textSecondary.withOpacity(0.5),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    child: Text(_user!.firstName.substring(0, 1).toUpperCase()),
+                  ),
                 )
               : Icon(
                   icon,
