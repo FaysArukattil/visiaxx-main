@@ -67,6 +67,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   bool _isTestPausedForDistance = false;
   bool _isPausedForExit =
       false; // … Prevent distance warning during pause dialog
+  bool _isShowingResult = false; // Show result badge after one-tap selection
   Timer? _autoNavigationTimer; // … Added timer for cancellable navigation
   final bool _isNavigatingToNextTest = false;
   int _secondsRemaining = 5;
@@ -449,10 +450,11 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _submitAnswer(String answer, int index) {
-    if (_selectedOptionIndex != -1) return; // Prevent double taps
+    if (_selectedOptionIndex != -1 || _isShowingResult) return;
 
     setState(() {
       _selectedOptionIndex = index;
+      _isShowingResult = true;
     });
 
     _plateTimer?.cancel();
@@ -481,11 +483,13 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       _leftEyeResponses.add(response);
     }
 
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted) return;
       setState(() {
+        _isShowingResult = false;
         _showingPlate = false;
         _currentPlateIndex++;
+        _selectedOptionIndex = -1;
       });
 
       if (_currentPlateIndex < _testPlates.length) {
@@ -763,18 +767,20 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   Widget _buildManualScaffold() {
     return Scaffold(
       backgroundColor: AppColors.testBackground,
-      appBar: AppBar(
-        title: Text(
-          'Color Vision - ${_currentEye.toUpperCase()} Eye',
-          style: const TextStyle(fontWeight: FontWeight.w900),
-        ),
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _showExitConfirmation,
-        ),
-      ),
+      appBar: MediaQuery.of(context).orientation == Orientation.landscape
+          ? null
+          : AppBar(
+              title: Text(
+                'Color Vision - ${_currentEye.toUpperCase()} Eye',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+              backgroundColor: AppColors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _showExitConfirmation,
+              ),
+            ),
       body: SafeArea(
         bottom: false,
         child: LayoutBuilder(
@@ -788,26 +794,21 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   Row(
                     children: [
                       Expanded(
-                        flex: 3,
-                        child: Column(
-                          children: [
-                            _buildInfoBar(isLandscape: true),
-                            Expanded(child: _buildTestView(isSideBySide: true)),
-                          ],
-                        ),
+                        flex: 4,
+                        child: _buildTestView(isSideBySide: true),
                       ),
                       Container(
                         width: 1,
                         color: AppColors.border.withValues(alpha: 0.2),
                       ),
                       SizedBox(
-                        width: 250,
+                        width: 280,
                         child: _buildLandscapeOptionsSidePanel(),
                       ),
                     ],
                   ),
                   Positioned(
-                    right: 262,
+                    right: 292,
                     bottom: 12,
                     child: _buildDistanceIndicator(),
                   ),
@@ -855,59 +856,102 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   Widget _buildLandscapeOptionsSidePanel() {
     return Container(
-      color: AppColors.white,
-      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(color: AppColors.white),
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'SELECT WHAT YOU SEE',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-              color: AppColors.textTertiary,
-            ),
+          // 1. Unified Top Row: Plate, Timer, Eye/Exit
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: _buildCompactInfoItem(
+                  '${(_currentPlateIndex >= _testPlates.length ? _testPlates.length - 1 : _currentPlateIndex) + 1}/${_testPlates.length}',
+                  Icons.tag_rounded,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 3,
+                child: _buildCompactInfoItem(
+                  '${_timeRemaining}s',
+                  Icons.timer_outlined,
+                  isAlert: _timeRemaining <= 3,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 4,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _currentEye.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primary,
+                            letterSpacing: 0.2,
+                          ),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const VerticalDivider(
+                        width: 8,
+                        thickness: 1,
+                        indent: 10,
+                        endIndent: 10,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 14),
+                        onPressed: _showExitConfirmation,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        visualDensity: VisualDensity.compact,
+                        color: AppColors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
+          // 2. Grid of options (2x2)
           Expanded(
-            child: ListView.separated(
+            child: GridView.builder(
+              padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.4,
+              ),
               itemCount: _currentOptions.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final option = _currentOptions[index];
                 final isSelected = _selectedOptionIndex == index;
+                final isCorrect = _checkAnswer(
+                  option,
+                  _testPlates[_currentPlateIndex],
+                );
 
-                return InkWell(
+                return _PremiumOptionButton(
+                  option: option,
+                  isSelected: isSelected,
+                  showResult: _isShowingResult && isSelected,
+                  isCorrect: isCorrect,
                   onTap: () => _submitAnswer(option, index),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.primary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.primary.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        option.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: isSelected ? Colors.white : AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  ),
                 );
               },
             ),
@@ -917,7 +961,88 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     );
   }
 
-  Widget _buildInfoBar({bool isLandscape = false}) {
+  Widget _buildCompactInfoItem(
+    String value,
+    IconData icon, {
+    bool isAlert = false,
+  }) {
+    final color = isAlert ? AppColors.error : AppColors.primary;
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 12, color: color.withValues(alpha: 0.6)),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(
+    String label,
+    String value,
+    IconData icon, {
+    bool isAlert = false,
+  }) {
+    final color = isAlert ? AppColors.error : AppColors.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 12, color: color.withValues(alpha: 0.6)),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  color: color.withValues(alpha: 0.6),
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -1024,7 +1149,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                         imagePath: plate.svgPath,
                         size: min(
                           constraints.maxWidth - 40,
-                          constraints.maxHeight * 0.6,
+                          constraints.maxHeight * 0.75,
                         ),
                       ),
                     ),
@@ -1119,7 +1244,6 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 final option = options[index];
                 final isSelected = _selectedOptionIndex == index;
                 final isCorrect = _checkAnswer(option, plate);
-                final showResult = isSelected;
 
                 return SizedBox(
                   width: buttonWidth,
@@ -1127,7 +1251,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   child: _PremiumOptionButton(
                     option: option,
                     isSelected: isSelected,
-                    showResult: showResult,
+                    showResult: _isShowingResult && isSelected,
                     isCorrect: isCorrect,
                     onTap: () => _submitAnswer(option, index),
                   ),
@@ -1150,7 +1274,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 44),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
