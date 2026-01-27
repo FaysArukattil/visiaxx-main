@@ -13,79 +13,96 @@ class BlurAwarenessAnimation extends StatelessWidget {
   Widget build(BuildContext context) {
     final double eSize = isCompact ? 48.0 : 64.0;
 
-    return Container(
-      padding: EdgeInsets.all(isCompact ? 16.0 : 24.0),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLandscape =
+            MediaQuery.of(context).orientation == Orientation.landscape;
+
+        return Container(
+          padding: EdgeInsets.all(isCompact ? 12.0 : 24.0),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Expanded(
-                child: _buildBlurredE(
-                  blur: 0.0,
-                  label: 'Clear',
-                  fontSize: isCompact ? 36.0 : eSize,
-                  labelColor: AppColors.success,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: _buildBlurredE(
+                          blur: 0.0,
+                          label: 'Clear',
+                          fontSize: isCompact ? 36.0 : eSize,
+                          labelColor: AppColors.success,
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildBlurredE(
+                          blur: 2.0,
+                          label: 'Blur',
+                          fontSize: isCompact ? 36.0 : eSize,
+                          labelColor: AppColors.warning,
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildBlurredE(
+                          blur: 5.0,
+                          label: 'Blurry',
+                          fontSize: isCompact ? 36.0 : eSize,
+                          labelColor: AppColors.error,
+                          isTargetState: true,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              Expanded(
-                child: _buildBlurredE(
-                  blur: 2.0,
-                  label: 'Blur',
-                  fontSize: isCompact ? 36.0 : eSize,
-                  labelColor: AppColors.warning,
+              const SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: isLandscape && isCompact ? 6 : 10,
                 ),
-              ),
-              Expanded(
-                child: _buildBlurredE(
-                  blur: 5.0,
-                  label: 'Blurry',
-                  fontSize: isCompact ? 36.0 : eSize,
-                  labelColor: AppColors.error,
-                  isTargetState: true,
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: AppColors.error,
+                      size: isCompact ? 16 : 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'If you can barely make out the E, select "Blurry" or say "Can\'t See"',
+                        style: TextStyle(
+                          color: AppColors.error,
+                          fontSize: isCompact ? 11 : 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: isCompact ? 16.0 : 24.0),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  color: AppColors.error,
-                  size: isCompact ? 18 : 20,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'If you can barely make out the E, select "Blurry" or say "Can\'t See"',
-                    style: TextStyle(
-                      color: AppColors.error,
-                      fontSize: isCompact ? 12 : 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

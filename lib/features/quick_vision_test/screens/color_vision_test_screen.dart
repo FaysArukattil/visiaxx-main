@@ -202,6 +202,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       _timeRemaining = TestConstants.colorVisionTimePerPlateSeconds;
       _isTestPausedForDistance = false;
       _isPausedForExit = false;
+      _isShowingResult = false;
+      _selectedOptionIndex = -1;
+      _currentOptions = [];
     });
 
     _initServices();
@@ -277,8 +280,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _showRightEyeInstruction() {
-    // … FIX: Stop monitoring before cover eye instruction
     _distanceService.stopMonitoring();
+
+    // Reset flags for clean start
+    setState(() {
+      _isShowingResult = false;
+      _selectedOptionIndex = -1;
+      _isTestPausedForDistance = false;
+      _currentOptions = [];
+    });
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -303,8 +313,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _showLeftEyeInstruction() {
-    // … FIX: Stop monitoring before cover eye instruction
     _distanceService.stopMonitoring();
+
+    // Reset flags for clean start
+    setState(() {
+      _isShowingResult = false;
+      _selectedOptionIndex = -1;
+      _isTestPausedForDistance = false;
+      _currentOptions = [];
+    });
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -432,6 +449,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     setState(() {
       _showingPlate = true;
       _timeRemaining = TestConstants.colorVisionTimePerPlateSeconds;
+      _isShowingResult = false; // Safety reset
+      _selectedOptionIndex = -1; // Safety reset
     });
 
     final plate = _testPlates[_currentPlateIndex];
@@ -511,6 +530,13 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   }
 
   void _onEyeTestComplete() {
+    // Clear plate view and options immediately
+    setState(() {
+      _showingPlate = false;
+      _currentOptions = [];
+      _isShowingResult = false;
+    });
+
     if (_currentEye == 'right') {
       _ttsService.stop();
       _ttsService.speak(

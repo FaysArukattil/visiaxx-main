@@ -1090,7 +1090,7 @@ class _MobileRefractometryTestScreenState
                   ),
                 ),
               ),
-              child: _buildDirectionButtons(),
+              child: _buildLandscapeDirectionButtons(),
             ),
           ),
       ],
@@ -1239,163 +1239,211 @@ class _MobileRefractometryTestScreenState
   }
 
   Widget _buildRelaxationView() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Container(
       color: AppColors.testBackground,
       width: double.infinity,
       height: double.infinity,
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 20),
-            // Hero Card with Image and Overlapping Timer (Maximized)
-            Builder(
-              builder: (context) {
-                final screenHeight = MediaQuery.of(context).size.height;
-                final isLandscape =
-                    MediaQuery.of(context).orientation == Orientation.landscape;
-                final imageHeight = isLandscape
-                    ? screenHeight * 0.45
-                    : screenHeight * 0.65;
+      child: isLandscape
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Left Side: Image and Overlapping Timer
+                  Expanded(
+                    flex: 12,
+                    child: _buildRelaxationHero(isLandscape: true),
+                  ),
+                  const SizedBox(width: 32),
+                  // Right Side: Instructions
+                  Expanded(flex: 5, child: _buildRelaxationInstructions()),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  _buildRelaxationHero(isLandscape: false),
+                  const SizedBox(height: 70), // Space for timer overlap
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildRelaxationInstructions(),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
 
-                return Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.bottomCenter,
+  Widget _buildRelaxationHero({required bool isLandscape}) {
+    return Builder(
+      builder: (context) {
+        final screenHeight = MediaQuery.of(context).size.height;
+        final imageHeight = isLandscape
+            ? screenHeight * 0.8
+            : screenHeight * 0.68;
+
+        return Align(
+          alignment: isLandscape ? Alignment.centerLeft : Alignment.topCenter,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: isLandscape
+                ? Alignment.centerRight
+                : Alignment.bottomCenter,
+            children: [
+              // Image Card
+              Container(
+                margin: EdgeInsets.only(
+                  right: isLandscape ? 50 : 0, // Room for timer overlap
+                  bottom: 0,
+                ),
+                child: _buildRelaxationImage(
+                  isLandscape: isLandscape,
+                  height: imageHeight,
+                ),
+              ),
+
+              // Glassmorphism Timer
+              Positioned(
+                right: isLandscape ? 0 : null,
+                bottom: isLandscape ? null : -50,
+                child: _buildRelaxationTimer(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRelaxationImage({required bool isLandscape, double? height}) {
+    return Builder(
+      builder: (context) {
+        final screenHeight = MediaQuery.of(context).size.height;
+        final finalHeight =
+            height ?? (isLandscape ? screenHeight : screenHeight * 0.60);
+
+        return Container(
+          height: finalHeight,
+          width: double.infinity,
+          decoration: ShapeDecoration(
+            color: AppColors.white,
+            shape: ContinuousRectangleBorder(
+              borderRadius: BorderRadius.circular(32),
+            ),
+            shadows: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Image.asset(
+            AppAssets.relaxationImage,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              child: const Icon(
+                Icons.landscape,
+                size: 100,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRelaxationTimer() {
+    return AnimatedBuilder(
+      animation: _relaxationProgressController,
+      builder: (context, child) {
+        return Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            color: AppColors.white.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 25,
+                spreadRadius: 2,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.white.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    // Image Card
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      height: imageHeight,
-                      width: double.infinity,
-                      decoration: ShapeDecoration(
-                        color: AppColors.white,
-                        shape: ContinuousRectangleBorder(
-                          borderRadius: BorderRadius.circular(32),
+                    SizedBox(
+                      width: 90,
+                      height: 90,
+                      child: CircularProgressIndicator(
+                        value: _relaxationProgressController.value,
+                        strokeWidth: 5,
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.1,
                         ),
-                        shadows: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.12),
-                            blurRadius: 40,
-                            offset: const Offset(0, 20),
-                          ),
-                        ],
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Image.asset(
-                        AppAssets.relaxationImage,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.primary.withValues(alpha: 0.05),
-                          child: const Icon(
-                            Icons.landscape,
-                            size: 100,
-                            color: AppColors.primary,
-                          ),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.primary,
                         ),
                       ),
                     ),
-
-                    // Glassmorphism Smooth Timer
-                    Positioned(
-                      bottom: -45, // Half of timer height (90/2)
-                      child: AnimatedBuilder(
-                        animation: _relaxationProgressController,
-                        builder: (context, child) {
-                          return Container(
-                            width: 90,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              color: AppColors.white.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 25,
-                                  spreadRadius: 2,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: BackdropFilter(
-                                filter: ui.ImageFilter.blur(
-                                  sigmaX: 12,
-                                  sigmaY: 12,
-                                ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: AppColors.white.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 80,
-                                        height: 80,
-                                        child: CircularProgressIndicator(
-                                          value: _relaxationProgressController
-                                              .value,
-                                          strokeWidth: 4,
-                                          backgroundColor: AppColors.primary
-                                              .withValues(alpha: 0.1),
-                                          valueColor:
-                                              const AlwaysStoppedAnimation<
-                                                Color
-                                              >(AppColors.primary),
-                                        ),
-                                      ),
-                                      Text(
-                                        '$_relaxationCountdown',
-                                        style: const TextStyle(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.w900,
-                                          color: AppColors.primary,
-                                          fontFamily: 'Inter',
-                                          letterSpacing: -1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                    Text(
+                      '$_relaxationCountdown',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primary,
+                        fontFamily: 'Inter',
+                        letterSpacing: -1,
                       ),
                     ),
                   ],
-                );
-              },
-            ),
-            const SizedBox(
-              height: 60,
-            ), // Adjusted spacing for large overlapping timer
-            // Standardized Instruction Text
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'Relax and focus on the distance',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
                 ),
               ),
             ),
+          ),
+        );
+      },
+    );
+  }
 
-            const SizedBox(height: 100),
-          ],
+  Widget _buildRelaxationInstructions() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Relax and focus on the distance',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -1626,7 +1674,7 @@ class _MobileRefractometryTestScreenState
                 direction: EDirection.left,
                 onPressed: () => _handleResponse(EDirection.left),
               ),
-              const SizedBox(width: 80), // MATCHES VA
+              const SizedBox(width: 80),
               _DirectionButton(
                 direction: EDirection.right,
                 onPressed: () => _handleResponse(EDirection.right),
@@ -1639,7 +1687,6 @@ class _MobileRefractometryTestScreenState
             onPressed: () => _handleResponse(EDirection.down),
           ),
           const SizedBox(height: 24),
-          // Blurry/Can't See Clearly button (Proper Button) - MATCHES VA
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -1673,6 +1720,101 @@ class _MobileRefractometryTestScreenState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLandscapeDirectionButtons() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        // Calculate dynamic button size based on available height
+        double calcButtonSize = availableHeight / 5.2;
+        final buttonSize = calcButtonSize.clamp(40.0, 72.0);
+        final iconSize = buttonSize * 0.5;
+        final gap = (buttonSize / 6).clamp(4.0, 12.0);
+        final horizontalGap = (buttonSize * 1.2).clamp(40.0, 100.0);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: AppColors.white,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _DirectionButton(
+                  direction: EDirection.up,
+                  size: buttonSize,
+                  iconSize: iconSize,
+                  onPressed: () => _handleResponse(EDirection.up),
+                ),
+                SizedBox(height: gap),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _DirectionButton(
+                      direction: EDirection.left,
+                      size: buttonSize,
+                      iconSize: iconSize,
+                      onPressed: () => _handleResponse(EDirection.left),
+                    ),
+                    SizedBox(width: horizontalGap),
+                    _DirectionButton(
+                      direction: EDirection.right,
+                      size: buttonSize,
+                      iconSize: iconSize,
+                      onPressed: () => _handleResponse(EDirection.right),
+                    ),
+                  ],
+                ),
+                SizedBox(height: gap),
+                _DirectionButton(
+                  direction: EDirection.down,
+                  size: buttonSize,
+                  iconSize: iconSize,
+                  onPressed: () => _handleResponse(EDirection.down),
+                ),
+                SizedBox(height: gap * 2),
+                SizedBox(
+                  width: buttonSize * 3.5,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _handleResponse(EDirection.blurry),
+                    icon: Icon(
+                      Icons.visibility_off_rounded,
+                      size: iconSize * 0.6,
+                      color: AppColors.primary,
+                    ),
+                    label: Text(
+                      "BLURRY",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w900,
+                        fontSize: (buttonSize < 45) ? 9 : 11,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        vertical: (buttonSize < 45) ? 6 : 10,
+                      ),
+                      side: BorderSide(
+                        color: AppColors.primary.withValues(alpha: 0.5),
+                        width: 1,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: AppColors.primary.withValues(
+                        alpha: 0.05,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1833,8 +1975,15 @@ class _MobileRefractometryTestScreenState
 class _DirectionButton extends StatelessWidget {
   final EDirection direction;
   final VoidCallback onPressed;
+  final double size;
+  final double iconSize;
 
-  const _DirectionButton({required this.direction, required this.onPressed});
+  const _DirectionButton({
+    required this.direction,
+    required this.onPressed,
+    this.size = 64.0,
+    this.iconSize = 28.0,
+  });
 
   IconData get _icon {
     switch (direction) {
@@ -1854,16 +2003,16 @@ class _DirectionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 64,
-      height: 64,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(size * 0.3),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: size * 0.15,
+            offset: Offset(0, size * 0.05),
           ),
         ],
       ),
@@ -1871,8 +2020,10 @@ class _DirectionButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(20),
-          child: Center(child: Icon(_icon, color: AppColors.white, size: 28)),
+          borderRadius: BorderRadius.circular(size * 0.3),
+          child: Center(
+            child: Icon(_icon, color: AppColors.white, size: iconSize),
+          ),
         ),
       ),
     );
