@@ -2354,79 +2354,94 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   }
 
   Widget _buildLandscapeDirectionButtons() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        border: Border(
-          top: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Left button
-          _DirectionButton(
-            direction: EDirection.left,
-            size: 56,
-            iconSize: 30,
-            onPressed: () => _handleButtonResponse(EDirection.left),
-          ),
-          const SizedBox(width: 24),
-          // Column for Up/Down
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _DirectionButton(
-                direction: EDirection.up,
-                size: 56,
-                iconSize: 30,
-                onPressed: () => _handleButtonResponse(EDirection.up),
-              ),
-              const SizedBox(height: 12),
-              _DirectionButton(
-                direction: EDirection.down,
-                size: 56,
-                iconSize: 30,
-                onPressed: () => _handleButtonResponse(EDirection.down),
-              ),
-            ],
-          ),
-          const SizedBox(width: 24),
-          // Right button
-          _DirectionButton(
-            direction: EDirection.right,
-            size: 56,
-            iconSize: 30,
-            onPressed: () => _handleButtonResponse(EDirection.right),
-          ),
-          const SizedBox(width: 48),
-          // Blurry button
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () => _handleButtonResponse(EDirection.blurry),
-              icon: const Icon(Icons.visibility_off_rounded, size: 16),
-              label: const Text(
-                "BLURRY",
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        final buttonSize = (availableHeight < 150) ? 44.0 : 56.0;
+        final iconSize = buttonSize * 0.55;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            border: Border(
+              top: BorderSide(
+                color: AppColors.border.withValues(alpha: 0.3),
+                width: 1,
               ),
             ),
           ),
-        ],
-      ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Left button
+                _DirectionButton(
+                  direction: EDirection.left,
+                  size: buttonSize,
+                  iconSize: iconSize,
+                  onPressed: () => _handleButtonResponse(EDirection.left),
+                ),
+                const SizedBox(width: 24),
+                // Column for Up/Down
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _DirectionButton(
+                      direction: EDirection.up,
+                      size: buttonSize,
+                      iconSize: iconSize,
+                      onPressed: () => _handleButtonResponse(EDirection.up),
+                    ),
+                    const SizedBox(height: 12),
+                    _DirectionButton(
+                      direction: EDirection.down,
+                      size: buttonSize,
+                      iconSize: iconSize,
+                      onPressed: () => _handleButtonResponse(EDirection.down),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 24),
+                // Right button
+                _DirectionButton(
+                  direction: EDirection.right,
+                  size: buttonSize,
+                  iconSize: iconSize,
+                  onPressed: () => _handleButtonResponse(EDirection.right),
+                ),
+                const SizedBox(width: 48),
+                // Blurry button
+                SizedBox(
+                  width: 100,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _handleButtonResponse(EDirection.blurry),
+                    icon: Icon(
+                      Icons.visibility_off_rounded,
+                      size: iconSize * 0.5,
+                    ),
+                    label: const Text(
+                      "BLURRY",
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -2434,83 +2449,88 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight;
-        // Calculate dynamic button size based on height
-        // Minimum size 40, default 56 if enough space
-        final buttonSize = (availableHeight < 300) ? 44.0 : 56.0;
+        // Calculate dynamic button size based on available height
+        // Base ratio: height / 4.8 (allows for 3 buttons vertically + spacing + blurry)
+        double calcButtonSize = availableHeight / 4.8;
+        final buttonSize = calcButtonSize.clamp(40.0, 72.0);
+
         final iconSize = buttonSize * 0.55;
-        final verticalGap = (availableHeight < 250) ? 6.0 : 12.0;
-        final horizontalGap = (availableHeight < 250) ? 40.0 : 64.0;
+        final verticalGap = (buttonSize / 6).clamp(4.0, 16.0);
+        final horizontalGap = (buttonSize * 1.1).clamp(30.0, 80.0);
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           color: AppColors.white,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _DirectionButton(
-                direction: EDirection.up,
-                size: buttonSize,
-                iconSize: iconSize,
-                onPressed: () => _handleButtonResponse(EDirection.up),
-              ),
-              SizedBox(height: verticalGap),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _DirectionButton(
-                    direction: EDirection.left,
-                    size: buttonSize,
-                    iconSize: iconSize,
-                    onPressed: () => _handleButtonResponse(EDirection.left),
-                  ),
-                  SizedBox(width: horizontalGap),
-                  _DirectionButton(
-                    direction: EDirection.right,
-                    size: buttonSize,
-                    iconSize: iconSize,
-                    onPressed: () => _handleButtonResponse(EDirection.right),
-                  ),
-                ],
-              ),
-              SizedBox(height: verticalGap),
-              _DirectionButton(
-                direction: EDirection.down,
-                size: buttonSize,
-                iconSize: iconSize,
-                onPressed: () => _handleButtonResponse(EDirection.down),
-              ),
-              SizedBox(height: verticalGap * 1.5),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _handleButtonResponse(EDirection.blurry),
-                    icon: Icon(
-                      Icons.visibility_off_rounded,
-                      size: iconSize * 0.8,
-                      color: AppColors.primary,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _DirectionButton(
+                  direction: EDirection.up,
+                  size: buttonSize,
+                  iconSize: iconSize,
+                  onPressed: () => _handleButtonResponse(EDirection.up),
+                ),
+                SizedBox(height: verticalGap),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _DirectionButton(
+                      direction: EDirection.left,
+                      size: buttonSize,
+                      iconSize: iconSize,
+                      onPressed: () => _handleButtonResponse(EDirection.left),
                     ),
-                    label: Text(
-                      "BLURRY",
-                      style: TextStyle(
+                    SizedBox(width: horizontalGap),
+                    _DirectionButton(
+                      direction: EDirection.right,
+                      size: buttonSize,
+                      iconSize: iconSize,
+                      onPressed: () => _handleButtonResponse(EDirection.right),
+                    ),
+                  ],
+                ),
+                SizedBox(height: verticalGap),
+                _DirectionButton(
+                  direction: EDirection.down,
+                  size: buttonSize,
+                  iconSize: iconSize,
+                  onPressed: () => _handleButtonResponse(EDirection.down),
+                ),
+                SizedBox(height: verticalGap * 1.5),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: SizedBox(
+                    width: buttonSize * 2.5, // Proportional width
+                    child: OutlinedButton.icon(
+                      onPressed: () => _handleButtonResponse(EDirection.blurry),
+                      icon: Icon(
+                        Icons.visibility_off_rounded,
+                        size: iconSize * 0.6,
                         color: AppColors.primary,
-                        fontWeight: FontWeight.w900,
-                        fontSize: (availableHeight < 250) ? 9 : 11,
                       ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        vertical: (availableHeight < 250) ? 6 : 10,
+                      label: Text(
+                        "BLURRY",
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: (buttonSize < 45) ? 9 : 11,
+                        ),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          vertical: (buttonSize < 45) ? 6 : 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
