@@ -881,7 +881,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                         Expanded(
                           child: _buildPremiumActionButton(
                             icon: Icons.highlight_off_rounded,
-                            label: 'UNABLE TO READ',
+                            label: 'CANNOT READ',
                             gradient: AppColors.errorGradient,
                             height: isSmallHeight ? 50 : 64,
                             onTap: () => _processSentence('blurry'),
@@ -922,10 +922,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                       Flexible(
                         child: _buildLargeActionButton(
                           icon: Icons.visibility_off_rounded,
-                          label: 'BLURRY',
+                          label: 'CANNOT READ',
                           isActive: false,
                           compact: isSmallHeight,
-                          color: AppColors.warning,
+                          color: AppColors.error,
                           onTap: () => _processSentence('blurry'),
                         ),
                       ),
@@ -947,20 +947,18 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     required VoidCallback onTap,
     double height = 64,
   }) {
+    final baseColor = gradient.first;
     return Container(
       height: height,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradient,
-        ),
+        color: baseColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: baseColor, width: 2.5),
         boxShadow: [
           BoxShadow(
-            color: gradient.first.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: baseColor.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -969,19 +967,23 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
+          // We don't have a simple way to show "filled on tap" purely with BoxDecoration animation here
+          // without state, but we can use the splash color.
+          splashColor: baseColor.withValues(alpha: 0.3),
+          highlightColor: baseColor.withValues(alpha: 0.2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: AppColors.white, size: 20),
-              const SizedBox(width: 8),
+              Icon(icon, color: baseColor, size: 22),
+              const SizedBox(width: 12),
               Flexible(
                 child: Text(
                   label,
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontSize: 12,
+                  style: TextStyle(
+                    color: baseColor,
+                    fontSize: 14,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 0.2,
+                    letterSpacing: 0.5,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1007,31 +1009,42 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       borderRadius: BorderRadius.circular(compact ? 16 : 24),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        constraints: BoxConstraints(
-          minWidth: compact ? 70 : 90,
-          maxWidth: compact ? 100 : 120,
-        ),
-        height: compact ? 60 : 80,
+        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
+        height: compact ? 56 : 64,
         decoration: BoxDecoration(
-          color: isActive ? color : color.withValues(alpha: 0.1),
+          color: isActive ? color : color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(compact ? 16 : 24),
-          border: Border.all(
-            color: isActive ? color : color.withValues(alpha: 0.2),
-            width: 2,
-          ),
+          border: Border.all(color: color, width: 2.5),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
         ),
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: isActive ? AppColors.white : color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                color: isActive ? AppColors.white : color,
-                letterSpacing: 0.5,
+            Icon(
+              icon,
+              color: isActive ? AppColors.white : color,
+              size: compact ? 20 : 24,
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: compact ? 10 : 12,
+                  fontWeight: FontWeight.w900,
+                  color: isActive ? AppColors.white : color,
+                  letterSpacing: 0.5,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

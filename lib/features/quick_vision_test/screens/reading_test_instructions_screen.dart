@@ -32,7 +32,7 @@ class _ReadingTestInstructionsScreenState
   final List<String> _ttsMessages = [
     'Hold the device at a normal reading distance, about 40 centimeters from your eyes.',
     'A sentence will appear on the screen. Read it aloud clearly and completely.',
-    'If you can read the text, tap the "CAN READ" button. If it is too blurry or small, tap "BLURRY".',
+    'If you can read the text, tap the "CAN READ" button. If it is too blurry or small, tap "CANNOT READ".',
   ];
 
   @override

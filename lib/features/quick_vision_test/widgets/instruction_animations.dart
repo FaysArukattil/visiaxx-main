@@ -1556,9 +1556,9 @@ class _BlurryReadingAnimationState extends State<BlurryReadingAnimation>
                   ),
                   const SizedBox(width: 16),
                   _buildButtonMock(
-                    "BLURRY",
+                    "CANNOT READ",
                     Icons.visibility_off_rounded,
-                    AppColors.warning,
+                    AppColors.error,
                     highlight: t >= 0.6,
                   ),
                 ],
@@ -1577,24 +1577,24 @@ class _BlurryReadingAnimationState extends State<BlurryReadingAnimation>
     bool highlight = false,
   }) {
     return Container(
-      width: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: highlight ? color : color.withValues(alpha: 0.1),
+        color: highlight ? color : color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color, width: 2),
       ),
-      child: Column(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: highlight ? AppColors.white : color),
-          const SizedBox(height: 4),
+          Icon(icon, size: 16, color: highlight ? AppColors.white : color),
+          const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
-              fontSize: 8,
+              fontSize: 9,
               fontWeight: FontWeight.w900,
               color: highlight ? AppColors.white : color,
+              letterSpacing: 0.5,
             ),
           ),
         ],
