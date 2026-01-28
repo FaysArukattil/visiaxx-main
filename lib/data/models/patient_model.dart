@@ -12,6 +12,11 @@ class PatientModel {
   final String? notes;
   final DateTime createdAt;
 
+  // Pre-test questionnaire tracking
+  final bool hasPreTestQuestions;
+  final String? latestQuestionnaireId;
+  final DateTime? questionnaireUpdatedAt;
+
   PatientModel({
     required this.id,
     required this.firstName,
@@ -21,6 +26,9 @@ class PatientModel {
     this.phone,
     this.notes,
     required this.createdAt,
+    this.hasPreTestQuestions = false,
+    this.latestQuestionnaireId,
+    this.questionnaireUpdatedAt,
   });
 
   /// Full name combining first and last name
@@ -50,6 +58,10 @@ class PatientModel {
       phone: data['phone'],
       notes: data['notes'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      hasPreTestQuestions: data['hasPreTestQuestions'] ?? false,
+      latestQuestionnaireId: data['latestQuestionnaireId'],
+      questionnaireUpdatedAt: (data['questionnaireUpdatedAt'] as Timestamp?)
+          ?.toDate(),
     );
   }
 
@@ -64,6 +76,10 @@ class PatientModel {
       phone: data['phone'],
       notes: data['notes'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      hasPreTestQuestions: data['hasPreTestQuestions'] ?? false,
+      latestQuestionnaireId: data['latestQuestionnaireId'],
+      questionnaireUpdatedAt: (data['questionnaireUpdatedAt'] as Timestamp?)
+          ?.toDate(),
     );
   }
 
@@ -77,6 +93,10 @@ class PatientModel {
       'phone': phone,
       'notes': notes,
       'createdAt': Timestamp.fromDate(createdAt),
+      'hasPreTestQuestions': hasPreTestQuestions,
+      'latestQuestionnaireId': latestQuestionnaireId,
+      if (questionnaireUpdatedAt != null)
+        'questionnaireUpdatedAt': Timestamp.fromDate(questionnaireUpdatedAt!),
     };
   }
 
@@ -90,6 +110,9 @@ class PatientModel {
     String? phone,
     String? notes,
     DateTime? createdAt,
+    bool? hasPreTestQuestions,
+    String? latestQuestionnaireId,
+    DateTime? questionnaireUpdatedAt,
   }) {
     return PatientModel(
       id: id ?? this.id,
@@ -100,6 +123,11 @@ class PatientModel {
       phone: phone ?? this.phone,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      hasPreTestQuestions: hasPreTestQuestions ?? this.hasPreTestQuestions,
+      latestQuestionnaireId:
+          latestQuestionnaireId ?? this.latestQuestionnaireId,
+      questionnaireUpdatedAt:
+          questionnaireUpdatedAt ?? this.questionnaireUpdatedAt,
     );
   }
 

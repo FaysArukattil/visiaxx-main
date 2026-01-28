@@ -6,7 +6,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/services/patient_service.dart';
+import '../../../core/services/patient_questionnaire_service.dart';
 import '../../../data/models/patient_model.dart';
+import '../../../data/models/questionnaire_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/premium_dropdown.dart';
 import '../../../core/widgets/premium_search_bar.dart';
@@ -88,9 +90,361 @@ class _PractitionerProfileSelectionScreenState
   }
 
   void _selectPatient(PatientModel patient) {
+    // Check if patient has pre-test questions
+    if (patient.hasPreTestQuestions) {
+      // Load the questionnaire and show review popup
+      _loadAndShowReview(patient);
+    } else {
+      _proceedWithPatient(patient, null);
+    }
+  }
+
+  Future<void> _loadAndShowReview(PatientModel patient) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Show a quick loader if needed, but usually we can just load and show
+    try {
+      final questionnaireService = PatientQuestionnaireService();
+      final questionnaire = await questionnaireService.getPatientQuestionnaire(
+        practitionerId: user.uid,
+        patientId: patient.id,
+      );
+
+      if (mounted && questionnaire != null) {
+        _showPretestReviewPopup(patient, questionnaire);
+      } else if (mounted) {
+        // Fallback if questionnaire somehow not found despite the flag
+        _proceedWithPatient(patient, null);
+      }
+    } catch (e) {
+      debugPrint('[PractitionerProfile] Error loading review: $e');
+      if (mounted) _proceedWithPatient(patient, null);
+    }
+  }
+
+  void _showPretestReviewPopup(
+    PatientModel patient,
+    QuestionnaireModel questionnaire,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final size = MediaQuery.of(context).size;
+        final isLandscape = size.width > size.height;
+
+        return Container(
+          height: isLandscape ? size.height * 0.9 : size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.success.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'PRE-TEST DATA FOUND',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.success,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            patient.fullName,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.border.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 20,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildReviewSection(
+                        'Primary Symptoms',
+                        _buildChiefComplaintsReview(
+                          questionnaire.chiefComplaints,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildReviewSection(
+                        'Systemic Illnesses',
+                        _buildSystemicIllnessReview(
+                          questionnaire.systemicIllness,
+                        ),
+                      ),
+                      if (questionnaire.currentMedications?.isNotEmpty ==
+                          true) ...[
+                        const SizedBox(height: 24),
+                        _buildReviewSection('Current Medications', [
+                          questionnaire.currentMedications!,
+                        ]),
+                      ],
+                      if (questionnaire.hasRecentSurgery) ...[
+                        const SizedBox(height: 24),
+                        _buildReviewSection('Recent Surgery History', [
+                          questionnaire.surgeryDetails ?? 'Yes',
+                        ]),
+                      ],
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  16,
+                  24,
+                  MediaQuery.of(context).padding.bottom + 16,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _proceedWithPatient(
+                            patient,
+                            null,
+                            goToQuestionnaire: true,
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.warning),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text(
+                          'Modify',
+                          style: TextStyle(
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _proceedWithPatient(patient, questionnaire);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text(
+                          'Continue with Data',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReviewSection(String title, List<String> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: items.isEmpty
+              ? [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.border.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'None reported',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ]
+              : items
+                    .map(
+                      (item) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          item,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+        ),
+      ],
+    );
+  }
+
+  List<String> _buildChiefComplaintsReview(ChiefComplaints cc) {
+    final items = <String>[];
+    if (cc.hasRedness) items.add('Redness');
+    if (cc.hasWatering) items.add('Watering');
+    if (cc.hasItching) items.add('Itching');
+    if (cc.hasHeadache) items.add('Headache');
+    if (cc.hasDryness) items.add('Dryness');
+    if (cc.hasStickyDischarge) items.add('Sticky Discharge');
+    if (cc.hasLightSensitivity) items.add('Light Sensitivity');
+    if (cc.hasPreviousCataractOperation) items.add('Previous Cataract Op');
+    if (cc.hasFamilyGlaucomaHistory) items.add('Family Glaucoma History');
+    return items;
+  }
+
+  List<String> _buildSystemicIllnessReview(SystemicIllness si) {
+    final items = <String>[];
+    if (si.hasHypertension) items.add('Hypertension');
+    if (si.hasDiabetes) items.add('Diabetes');
+    if (si.hasCopd) items.add('COPD');
+    if (si.hasAsthma) items.add('Asthma');
+    if (si.hasMigraine) items.add('Migraine');
+    if (si.hasSinus) items.add('Sinus');
+    return items;
+  }
+
+  /// Proceed with test after patient selection logic
+  void _proceedWithPatient(
+    PatientModel patient,
+    QuestionnaireModel? questionnaire, {
+    bool goToQuestionnaire = false,
+  }) {
     final provider = context.read<TestSessionProvider>();
-    // Use patient as a family member equivalent for test session
     provider.selectPatientProfile(patient);
+
+    // If we have a questionnaire, set it in the provider
+    if (questionnaire != null) {
+      provider.setQuestionnaire(questionnaire);
+    }
+
+    if (goToQuestionnaire) {
+      // Force go to questionnaire
+      Navigator.pushNamed(context, '/questionnaire');
+      return;
+    }
 
     if (widget.testType != null) {
       // Individual test flow
@@ -123,10 +477,20 @@ class _PractitionerProfileSelectionScreenState
       Navigator.pushReplacementNamed(context, route);
     } else if (widget.isComprehensive) {
       provider.startComprehensiveTest();
-      Navigator.pushNamed(context, '/questionnaire');
+      // If questionnaire exists, skip to test instructions
+      if (questionnaire != null) {
+        Navigator.pushNamed(context, '/test-instructions');
+      } else {
+        Navigator.pushNamed(context, '/questionnaire');
+      }
     } else {
       provider.startTest();
-      Navigator.pushNamed(context, '/questionnaire');
+      // If questionnaire exists, skip to test instructions
+      if (questionnaire != null) {
+        Navigator.pushNamed(context, '/test-instructions');
+      } else {
+        Navigator.pushNamed(context, '/questionnaire');
+      }
     }
   }
 
@@ -549,38 +913,69 @@ class _PractitionerProfileSelectionScreenState
         ),
         child: Row(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary,
-                    AppColors.primary.withValues(alpha: 0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+            Stack(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary,
+                        AppColors.primary.withValues(alpha: 0.8),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  patient.firstName[0].toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.white,
-                    letterSpacing: -0.5,
+                  child: Center(
+                    child: Text(
+                      patient.firstName[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.white,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                // Pre-test indicator badge
+                if (patient.hasPreTestQuestions)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: AppColors.success,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.success.withValues(alpha: 0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.assignment_turned_in,
+                        size: 10,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 16),
             Expanded(

@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/questionnaire_model.dart';
@@ -31,6 +32,14 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
   bool _hasRecentSurgery = false;
   final _surgeryDetailsController = TextEditingController();
 
+  // Patient details (for guest or incomplete profiles)
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _phoneController = TextEditingController();
+  String _selectedSex = 'Male';
+  bool _needsPatientDetails = false;
+
   // Follow-up controllers
   final _rednessController = TextEditingController();
   final _wateringDaysController = TextEditingController();
@@ -47,6 +56,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
   final _dischargeStartController = TextEditingController();
   bool _lightSensitivitySevere = false;
   final _lightSensitivityDetailController = TextEditingController();
+  String _cataractAffectedEye = 'both';
 
   @override
   void initState() {
@@ -64,6 +74,23 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       },
       getTestName: () => 'Questionnaire',
     );
+
+    // Check if we need patient details
+    final provider = context.read<TestSessionProvider>();
+    _needsPatientDetails =
+        provider.profileId == 'guest_id' || provider.profileAge == null;
+
+    if (_needsPatientDetails) {
+      _firstNameController.text = provider.profileName == 'User'
+          ? ''
+          : provider.profileName;
+      if (provider.profileAge != null) {
+        _ageController.text = provider.profileAge.toString();
+      }
+      if (provider.profileSex != null) {
+        _selectedSex = provider.profileSex!;
+      }
+    }
   }
 
   @override
@@ -90,11 +117,22 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     _screenTimeController.dispose();
     _dischargeStartController.dispose();
     _lightSensitivityDetailController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _ageController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
   bool _isStepValid() {
-    if (_currentStep == 0) {
+    int adjustedStep = _needsPatientDetails ? _currentStep - 1 : _currentStep;
+
+    if (_currentStep == 0 && _needsPatientDetails) {
+      return _firstNameController.text.trim().isNotEmpty &&
+          _ageController.text.trim().isNotEmpty;
+    }
+
+    if (adjustedStep == 0) {
       if (_chiefComplaints.hasRedness &&
           _rednessController.text.trim().isEmpty) {
         return false;
@@ -126,7 +164,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       }
       return true;
     }
-    if (_currentStep == 2) {
+    if (adjustedStep == 2) {
       if (_hasRecentSurgery && _surgeryDetailsController.text.trim().isEmpty) {
         return false;
       }
@@ -137,7 +175,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
 
   void _nextStep() {
     if (!_isStepValid()) return;
-    if (_currentStep < 2) {
+    int maxSteps = _needsPatientDetails ? 3 : 2;
+    if (_currentStep < maxSteps) {
       _scrollController.animateTo(
         0,
         duration: const Duration(milliseconds: 300),
@@ -229,9 +268,23 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               details: _lightSensitivityDetailController.text,
             )
           : null,
+      cataractFollowUp: _chiefComplaints.hasPreviousCataractOperation
+          ? CataractFollowUp(affectedEye: _cataractAffectedEye)
+          : null,
     );
 
+    // Update profile in provider if guest or incomplete
     final provider = context.read<TestSessionProvider>();
+    if (_needsPatientDetails) {
+      provider.selectSelfProfile(
+        provider.profileId,
+        '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
+            .trim(),
+        int.tryParse(_ageController.text),
+        _selectedSex,
+      );
+    }
+
     final questionnaire = QuestionnaireModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       profileId: provider.profileId,
@@ -258,6 +311,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isLandscape = size.width > size.height;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -273,12 +329,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
           ),
           centerTitle: true,
           bottom: PreferredSize(
-            preferredSize: Size.fromHeight(
-              MediaQuery.of(context).orientation == Orientation.landscape
-                  ? 45
-                  : 80,
-            ),
-            child: _buildEyeProgressIndicator(),
+            preferredSize: Size.fromHeight(isLandscape ? 45 : 80),
+            child: _buildEyeProgressIndicator(isLandscape),
           ),
         ),
         body: Column(
@@ -290,13 +342,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 physics: const BouncingScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                   20,
-                  MediaQuery.of(context).orientation == Orientation.landscape
-                      ? 12
-                      : 24,
+                  isLandscape ? 12 : 24,
                   20,
-                  MediaQuery.of(context).orientation == Orientation.landscape
-                      ? 12
-                      : 24,
+                  isLandscape ? 12 : 24,
                 ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
@@ -336,16 +384,14 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                           ],
                         );
                       },
-                  child: _buildCurrentStep(),
+                  child: _buildCurrentStep(isLandscape),
                 ),
               ),
             ),
-            // Navigation buttons
             Container(
-              padding: EdgeInsets.all(
-                MediaQuery.of(context).orientation == Orientation.landscape
-                    ? 12
-                    : 24,
+              padding: EdgeInsets.symmetric(
+                horizontal: isLandscape ? 12 : 24,
+                vertical: isLandscape ? 8 : 24,
               ),
               decoration: BoxDecoration(
                 color: AppColors.surface,
@@ -375,11 +421,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                           ),
                           child: Padding(
                             padding: EdgeInsets.symmetric(
-                              vertical:
-                                  MediaQuery.of(context).orientation ==
-                                      Orientation.landscape
-                                  ? 10
-                                  : 16,
+                              vertical: isLandscape ? 10 : 16,
                             ),
                             child: const Text(
                               'Back',
@@ -408,14 +450,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                           ),
                           child: Padding(
                             padding: EdgeInsets.symmetric(
-                              vertical:
-                                  MediaQuery.of(context).orientation ==
-                                      Orientation.landscape
-                                  ? 10
-                                  : 16,
+                              vertical: isLandscape ? 10 : 16,
                             ),
                             child: Text(
-                              _currentStep == 2 ? 'Start Test' : 'Next Step',
+                              _currentStep == (_needsPatientDetails ? 3 : 2)
+                                  ? 'Start Test'
+                                  : 'Next Step',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -436,20 +476,146 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     );
   }
 
-  Widget _buildCurrentStep() {
+  Widget _buildCurrentStep(bool isLandscape) {
+    if (_needsPatientDetails) {
+      switch (_currentStep) {
+        case 0:
+          return _buildPatientDetailsStep(isLandscape);
+        case 1:
+          return _buildChiefComplaintsStep(isLandscape);
+        case 2:
+          return _buildMedicalHistoryStep(isLandscape);
+        case 3:
+          return _buildAdditionalQuestionsStep(isLandscape);
+        default:
+          return Container();
+      }
+    }
+
     switch (_currentStep) {
       case 0:
-        return _buildChiefComplaintsStep();
+        return _buildChiefComplaintsStep(isLandscape);
       case 1:
-        return _buildMedicalHistoryStep();
+        return _buildMedicalHistoryStep(isLandscape);
       case 2:
-        return _buildAdditionalQuestionsStep();
+        return _buildAdditionalQuestionsStep(isLandscape);
       default:
         return Container();
     }
   }
 
-  Widget _buildChiefComplaintsStep() {
+  Widget _buildPatientDetailsStep(bool isLandscape) {
+    return Column(
+      key: const ValueKey(-1),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStepHeader(
+          'Patient Information',
+          'Please provide your details to personalize the test results.',
+          isLandscape,
+        ),
+        const SizedBox(height: 8),
+        if (isLandscape)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildLabeledInput(
+                  label: 'First Name',
+                  hint: 'Enter first name',
+                  controller: _firstNameController,
+                  textCapitalization: TextCapitalization.words,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildLabeledInput(
+                  label: 'Last Name',
+                  hint: 'Enter last name',
+                  controller: _lastNameController,
+                  textCapitalization: TextCapitalization.words,
+                ),
+              ),
+            ],
+          )
+        else ...[
+          _buildLabeledInput(
+            label: 'First Name',
+            hint: 'Enter first name',
+            controller: _firstNameController,
+            textCapitalization: TextCapitalization.words,
+          ),
+          const SizedBox(height: 16),
+          _buildLabeledInput(
+            label: 'Last Name',
+            hint: 'Enter last name',
+            controller: _lastNameController,
+            textCapitalization: TextCapitalization.words,
+          ),
+        ],
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: _buildLabeledInput(
+                label: 'Age',
+                hint: 'Years',
+                controller: _ageController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(3),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Sex',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildModernSelector<String>(
+                    options: {
+                      'Male': 'Male',
+                      'Female': 'Female',
+                      'Other': 'Other',
+                    },
+                    selectedValue: _selectedSex,
+                    onChanged: (v) => setState(() => _selectedSex = v),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildLabeledInput(
+          label: 'Phone (Optional)',
+          hint: '10-digit mobile number',
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildChiefComplaintsStep(bool isLandscape) {
     return Column(
       key: const ValueKey(0),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,6 +623,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         _buildStepHeader(
           'Eye Symptoms',
           'Select the symptoms you are experiencing. We will ask for more details for selected items.',
+          isLandscape,
         ),
         _buildQuestionCard(
           title: 'Redness',
@@ -761,6 +928,25 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               hasPreviousCataractOperation: v,
             );
           }),
+          followUp: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Which eye was operated on?',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildModernSelector<String>(
+                options: {'left': 'Left', 'right': 'Right', 'both': 'Both'},
+                selectedValue: _cataractAffectedEye,
+                onChanged: (v) => setState(() => _cataractAffectedEye = v),
+              ),
+            ],
+          ),
         ),
         _buildBooleanCard(
           title: 'Family history of glaucoma?',
@@ -777,7 +963,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     );
   }
 
-  Widget _buildMedicalHistoryStep() {
+  Widget _buildMedicalHistoryStep(bool isLandscape) {
     return Column(
       key: const ValueKey(1),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -785,6 +971,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         _buildStepHeader(
           'Health Records',
           'Please select any medical conditions you have. This helps us analyze eye-health correlations.',
+          isLandscape,
         ),
         _buildQuestionCard(
           title: 'Hypertension',
@@ -856,7 +1043,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     );
   }
 
-  Widget _buildAdditionalQuestionsStep() {
+  Widget _buildAdditionalQuestionsStep(bool isLandscape) {
     return Column(
       key: const ValueKey(2),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -864,6 +1051,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         _buildStepHeader(
           'Final Details',
           'Almost done! Please fill in these last few clinical details.',
+          isLandscape,
         ),
         _buildLabeledInput(
           label: 'Are you currently on any medications?',
@@ -919,9 +1107,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     );
   }
 
-  Widget _buildStepHeader(String title, String subtitle) {
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+  Widget _buildStepHeader(String title, String subtitle, bool isLandscape) {
     return Padding(
       padding: EdgeInsets.only(bottom: isLandscape ? 12 : 24),
       child: Column(
@@ -940,7 +1126,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             const SizedBox(height: 12),
             Text(
               subtitle,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 15,
                 color: AppColors.textSecondary,
                 height: 1.5,
@@ -1431,6 +1617,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     required TextEditingController controller,
     TextInputType? keyboardType,
     int maxLines = 1,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1448,6 +1636,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          textCapitalization: textCapitalization,
+          inputFormatters: inputFormatters,
           onChanged: (v) => setState(() {}),
           decoration: InputDecoration(
             hintText: hint,
@@ -1483,9 +1673,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     );
   }
 
-  Widget _buildEyeProgressIndicator() {
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+  Widget _buildEyeProgressIndicator(bool isLandscape) {
     return Container(
       padding: EdgeInsets.only(
         bottom: isLandscape ? 12 : 24,
@@ -1494,12 +1682,37 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(3, (index) {
+        children: List.generate(_needsPatientDetails ? 4 : 3, (index) {
           final isCompleted = index < _currentStep;
           final isActive = index == _currentStep;
           final nodeSize = isLandscape
               ? (isActive ? 32.0 : 28.0)
               : (isActive ? 42.0 : 36.0);
+
+          IconData getNodeIcon() {
+            if (_needsPatientDetails) {
+              switch (index) {
+                case 0:
+                  return Icons.person_rounded;
+                case 1:
+                  return Icons.visibility_rounded;
+                case 2:
+                  return Icons.health_and_safety_rounded;
+                default:
+                  return Icons.checklist_rounded;
+              }
+            } else {
+              switch (index) {
+                case 0:
+                  return Icons.visibility_rounded;
+                case 1:
+                  return Icons.health_and_safety_rounded;
+                default:
+                  return Icons.checklist_rounded;
+              }
+            }
+          }
+
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1530,11 +1743,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                       : [],
                 ),
                 child: Icon(
-                  index == 0
-                      ? Icons.visibility_rounded
-                      : (index == 1
-                            ? Icons.health_and_safety_rounded
-                            : Icons.checklist_rounded),
+                  getNodeIcon(),
                   color: isActive || isCompleted
                       ? AppColors.white
                       : AppColors.textSecondary.withValues(alpha: 0.5),
@@ -1544,9 +1753,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 ),
               ),
               // Line
-              if (index < 2)
+              if (index < (_needsPatientDetails ? 3 : 2))
                 Container(
-                  width: isLandscape ? 30 : 40,
+                  width: isLandscape ? (_needsPatientDetails ? 20 : 30) : 40,
                   height: isLandscape ? 2 : 3,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(

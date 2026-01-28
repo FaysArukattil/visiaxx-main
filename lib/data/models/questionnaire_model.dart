@@ -91,6 +91,7 @@ class ChiefComplaints {
   final DrynessFollowUp? drynessFollowUp;
   final DischargeFollowUp? dischargeFollowUp;
   final LightSensitivityFollowUp? lightSensitivityFollowUp;
+  final CataractFollowUp? cataractFollowUp;
 
   ChiefComplaints({
     this.hasRedness = false,
@@ -109,6 +110,7 @@ class ChiefComplaints {
     this.drynessFollowUp,
     this.dischargeFollowUp,
     this.lightSensitivityFollowUp,
+    this.cataractFollowUp,
   });
 
   factory ChiefComplaints.fromMap(Map<String, dynamic> data) {
@@ -144,6 +146,9 @@ class ChiefComplaints {
       lightSensitivityFollowUp: data['lightSensitivityFollowUp'] != null
           ? LightSensitivityFollowUp.fromMap(data['lightSensitivityFollowUp'])
           : null,
+      cataractFollowUp: data['cataractFollowUp'] != null
+          ? CataractFollowUp.fromMap(data['cataractFollowUp'])
+          : null,
     );
   }
 
@@ -165,6 +170,7 @@ class ChiefComplaints {
       'drynessFollowUp': drynessFollowUp?.toMap(),
       'dischargeFollowUp': dischargeFollowUp?.toMap(),
       'lightSensitivityFollowUp': lightSensitivityFollowUp?.toMap(),
+      'cataractFollowUp': cataractFollowUp?.toMap(),
     };
   }
 
@@ -185,6 +191,7 @@ class ChiefComplaints {
     DrynessFollowUp? drynessFollowUp,
     DischargeFollowUp? dischargeFollowUp,
     LightSensitivityFollowUp? lightSensitivityFollowUp,
+    CataractFollowUp? cataractFollowUp,
   }) {
     return ChiefComplaints(
       hasRedness: hasRedness ?? this.hasRedness,
@@ -206,6 +213,7 @@ class ChiefComplaints {
       dischargeFollowUp: dischargeFollowUp ?? this.dischargeFollowUp,
       lightSensitivityFollowUp:
           lightSensitivityFollowUp ?? this.lightSensitivityFollowUp,
+      cataractFollowUp: cataractFollowUp ?? this.cataractFollowUp,
     );
   }
 }
@@ -343,6 +351,18 @@ class LightSensitivityFollowUp {
   }
 
   Map<String, dynamic> toMap() => {'isSevere': isSevere, 'details': details};
+}
+
+class CataractFollowUp {
+  final String affectedEye; // 'left', 'right', or 'both'
+
+  CataractFollowUp({required this.affectedEye});
+
+  factory CataractFollowUp.fromMap(Map<String, dynamic> data) {
+    return CataractFollowUp(affectedEye: data['affectedEye'] ?? 'both');
+  }
+
+  Map<String, dynamic> toMap() => {'affectedEye': affectedEye};
 }
 
 /// Systemic illness tracking

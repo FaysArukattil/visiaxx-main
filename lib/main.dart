@@ -34,6 +34,7 @@ import 'features/results/screens/my_results_screen.dart';
 import 'features/practitioner/screens/practitioner_dashboard_screen.dart';
 import 'features/practitioner/screens/practitioner_home_screen.dart';
 import 'features/practitioner/screens/practitioner_profile_selection_screen.dart';
+import 'features/practitioner/screens/add_patient_questionnaire_screen.dart';
 import '/core/utils/app_logger.dart';
 import 'features/quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
 import 'features/quick_vision_test/screens/cover_right_eye_instruction_screen.dart';
@@ -291,6 +292,8 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
           '/mobile-refractometry-standalone': (context) =>
               const StandaloneMobileRefractometryScreen(),
           '/individual-tests': (context) => const IndividualTestsScreen(),
+          '/add-patient-questionnaire': (context) =>
+              const AddPatientQuestionnaireScreen(),
         },
       ),
     );

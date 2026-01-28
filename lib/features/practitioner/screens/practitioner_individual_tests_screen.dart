@@ -72,6 +72,36 @@ class IndividualTestsScreen extends StatelessWidget {
 
     return Column(
       children: [
+        // Add Patient Card (for receptionists in eye camp workflow)
+        _AddPatientCard(
+          onTap: () =>
+              Navigator.pushNamed(context, '/add-patient-questionnaire'),
+          screenWidth: screenWidth,
+        ),
+        SizedBox(height: cardSpacing * 1.5),
+        // Divider with text
+        Row(
+          children: [
+            Expanded(
+              child: Divider(color: AppColors.border.withValues(alpha: 0.5)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Vision Tests',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Divider(color: AppColors.border.withValues(alpha: 0.5)),
+            ),
+          ],
+        ),
+        SizedBox(height: cardSpacing),
         _IndividualTestCard(
           icon: Icons.visibility_outlined,
           title: 'Visual Acuity',
@@ -274,6 +304,141 @@ class _IndividualTestCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Special card for adding a new patient with pre-test questions
+/// Used primarily for eye camp workflow where receptionists add patients
+class _AddPatientCard extends StatelessWidget {
+  final VoidCallback onTap;
+  final double screenWidth;
+
+  const _AddPatientCard({required this.onTap, required this.screenWidth});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final iconContainerSize = (availableWidth * 0.11).clamp(42.0, 56.0);
+        final iconSize = (iconContainerSize * 0.52).clamp(20.0, 28.0);
+        final titleFontSize = (availableWidth * 0.040).clamp(14.0, 18.0);
+        final descriptionFontSize = (availableWidth * 0.030).clamp(11.0, 14.0);
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: EdgeInsets.all(
+                (availableWidth * 0.04).clamp(14.0, 20.0),
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.success.withValues(alpha: 0.15),
+                    AppColors.success.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.success.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.success.withValues(alpha: 0.08),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: iconContainerSize,
+                    height: iconContainerSize,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.success,
+                          AppColors.success.withValues(alpha: 0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        iconContainerSize * 0.35,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.success.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.person_add_alt_1_rounded,
+                      size: iconSize,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: (availableWidth * 0.03).clamp(12.0, 16.0)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add Patient',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: titleFontSize,
+                            color: AppColors.success,
+                            letterSpacing: -0.3,
+                            height: 1.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Register a new patient with pre-test questionnaire',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: descriptionFontSize,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: (availableWidth * 0.02).clamp(8.0, 12.0)),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.add_rounded,
+                      size: (availableWidth * 0.038).clamp(16.0, 20.0),
+                      color: AppColors.success,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
