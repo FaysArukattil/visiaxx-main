@@ -417,8 +417,8 @@ class _AddPatientQuestionnaireScreenState
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isLandscape = size.width > size.height;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return PopScope(
       canPop: false,
@@ -610,66 +610,64 @@ class _AddPatientQuestionnaireScreenState
             _buildStepHeader('Patient Information', _stepSubtitle, isLandscape),
             SizedBox(height: isLandscape ? 8 : 24),
             // Use 2 columns in landscape for details to save space
-            if (isLandscape)
+            if (isLandscape) ...[
+              // First Row: Names
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Column(
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _buildTextField(
-                                controller: _firstNameController,
-                                label: 'First Name',
-                                hint: 'First name',
-                                textCapitalization: TextCapitalization.words,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Required';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildTextField(
-                                controller: _lastNameController,
-                                label: 'Last Name',
-                                hint: 'Last name',
-                                textCapitalization: TextCapitalization.words,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _ageController,
-                          label: 'Age',
-                          hint: 'Enter age',
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(3),
-                          ],
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Required';
-                            }
-                            final age = int.tryParse(value);
-                            if (age == null || age < 1 || age > 150) {
-                              return 'Invalid age';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
+                    child: _buildTextField(
+                      controller: _firstNameController,
+                      label: 'First Name',
+                      hint: 'First name',
+                      textCapitalization: TextCapitalization.words,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Required';
+                        }
+                        return null;
+                      },
                     ),
                   ),
-                  const SizedBox(width: 24),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _lastNameController,
+                      label: 'Last Name',
+                      hint: 'Last name',
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Second Row: Age and Sex
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _ageController,
+                      label: 'Age',
+                      hint: 'Enter age',
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(3),
+                      ],
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Required';
+                        }
+                        final age = int.tryParse(value);
+                        if (age == null || age < 1 || age > 150) {
+                          return 'Invalid age';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -692,31 +690,34 @@ class _AddPatientQuestionnaireScreenState
                           onChanged: (value) =>
                               setState(() => _selectedSex = value),
                         ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _phoneController,
-                          label: 'Phone',
-                          hint: '10-digit mobile number',
-                          keyboardType: TextInputType.phone,
-                          prefixText: '+91 ',
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(10),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _notesController,
-                          label: 'Notes (Optional)',
-                          hint: 'Any additional notes about the patient',
-                          maxLines: 3,
-                        ),
                       ],
                     ),
                   ),
                 ],
-              )
-            else ...[
+              ),
+              const SizedBox(height: 16),
+              // Third Row: Phone (Full width or shared?)
+              // Let's keep it full width or pair it with something else if needed.
+              // For now, let's keep Phone full width to match the user's "full screen" preference for Notes.
+              _buildTextField(
+                controller: _phoneController,
+                label: 'Phone',
+                hint: '10-digit mobile number',
+                keyboardType: TextInputType.phone,
+                prefixText: '+91 ',
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _notesController,
+                label: 'Notes (Optional)',
+                hint: 'Any additional notes about the patient',
+                maxLines: 3,
+              ),
+            ] else ...[
               // Name row
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

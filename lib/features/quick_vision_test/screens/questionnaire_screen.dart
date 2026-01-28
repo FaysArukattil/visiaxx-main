@@ -311,8 +311,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isLandscape = size.width > size.height;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return PopScope(
       canPop: false,

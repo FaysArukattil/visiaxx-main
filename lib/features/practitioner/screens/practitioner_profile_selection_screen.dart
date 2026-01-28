@@ -771,8 +771,9 @@ class _PractitionerProfileSelectionScreenState
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) {
           final size = MediaQuery.of(context).size;
+          final isLandscape =
+              MediaQuery.of(context).orientation == Orientation.landscape;
           final viewInsets = MediaQuery.of(context).viewInsets;
-          final isLandscape = size.width > size.height;
           final isKeyboardOpen = viewInsets.bottom > 0;
 
           return Container(
@@ -794,9 +795,9 @@ class _PractitionerProfileSelectionScreenState
                 ),
                 // Fixed Header
                 Padding(
-                  padding: EdgeInsets.symmetric(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: 24,
-                    vertical: isLandscape && isKeyboardOpen ? 8 : 16,
+                    vertical: 16,
                   ),
                   child: Row(
                     children: [
@@ -817,26 +818,23 @@ class _PractitionerProfileSelectionScreenState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Add New Patient',
                               style: TextStyle(
-                                fontSize: isLandscape && isKeyboardOpen
-                                    ? 16
-                                    : 20,
+                                fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 color: AppColors.textPrimary,
                                 letterSpacing: -0.5,
                               ),
                             ),
-                            if (!isKeyboardOpen || !isLandscape)
-                              Text(
-                                'Enter clinical details',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            const Text(
+                              'Enter clinical details',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
                               ),
+                            ),
                           ],
                         ),
                       ),
@@ -857,7 +855,7 @@ class _PractitionerProfileSelectionScreenState
                       24,
                       24 + viewInsets.bottom,
                     ),
-                    child: _buildAddPatientForm(setSheetState),
+                    child: _buildAddPatientForm(setSheetState, isLandscape),
                   ),
                 ),
                 // Fixed Footer
@@ -1140,7 +1138,7 @@ class _PractitionerProfileSelectionScreenState
     );
   }
 
-  Widget _buildAddPatientForm(StateSetter setSheetState) {
+  Widget _buildAddPatientForm(StateSetter setSheetState, bool isLandscape) {
     return Form(
       key: _formKey,
       child: Column(
@@ -1255,84 +1253,178 @@ class _PractitionerProfileSelectionScreenState
             ],
           ),
           const SizedBox(height: 16),
-          // Age field
-          TextFormField(
-            controller: _ageController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(3),
-              TextInputFormatter.withFunction((oldValue, newValue) {
-                if (newValue.text.isEmpty) return newValue;
-                final n = int.tryParse(newValue.text);
-                if (n != null && n <= 200) return newValue;
-                return oldValue;
-              }),
-            ],
-            decoration: InputDecoration(
-              labelText: 'Age',
-              hintText: 'Enter age',
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-              filled: true,
-              fillColor: AppColors.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
+          if (isLandscape)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _ageController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        if (newValue.text.isEmpty) return newValue;
+                        final n = int.tryParse(newValue.text);
+                        if (n != null && n <= 200) return newValue;
+                        return oldValue;
+                      }),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: 'Age',
+                      hintText: 'Enter age',
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.border,
+                          width: 1.5,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.border,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary,
+                          width: 2,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.error,
+                          width: 1,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                    ),
+                    scrollPadding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Required';
+                      }
+                      final age = int.tryParse(value);
+                      if (age == null || age < 1 || age > 200) {
+                        return 'Invalid';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: PremiumDropdown<String>(
+                    label: 'Sex',
+                    value: _selectedSex,
+                    items: const ['Male', 'Female', 'Other'],
+                    itemLabelBuilder: (s) => s,
+                    onChanged: (value) {
+                      setSheetState(() => _selectedSex = value);
+                    },
+                  ),
+                ),
+              ],
+            )
+          else ...[
+            // Age field
+            TextFormField(
+              controller: _ageController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  if (newValue.text.isEmpty) return newValue;
+                  final n = int.tryParse(newValue.text);
+                  if (n != null && n <= 200) return newValue;
+                  return oldValue;
+                }),
+              ],
+              decoration: InputDecoration(
+                labelText: 'Age',
+                hintText: 'Enter age',
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                filled: true,
+                fillColor: AppColors.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.border,
+                    width: 1.5,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.border,
+                    width: 1.5,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.error,
+                    width: 1,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
                 ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
-                ),
+              scrollPadding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 120,
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.error, width: 1),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Required';
+                }
+                final age = int.tryParse(value);
+                if (age == null || age < 1 || age > 200) {
+                  return 'Invalid';
+                }
+                return null;
+              },
             ),
-            scrollPadding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+            const SizedBox(height: 16),
+            // Sex selector
+            PremiumDropdown<String>(
+              label: 'Sex',
+              value: _selectedSex,
+              items: const ['Male', 'Female', 'Other'],
+              itemLabelBuilder: (s) => s,
+              onChanged: (value) {
+                setSheetState(() => _selectedSex = value);
+              },
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Required';
-              }
-              final age = int.tryParse(value);
-              if (age == null || age < 1 || age > 200) {
-                return 'Invalid';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          // Sex selector
-          PremiumDropdown<String>(
-            label: 'Sex',
-            value: _selectedSex,
-            items: const ['Male', 'Female', 'Other'],
-            itemLabelBuilder: (s) => s,
-            onChanged: (value) {
-              setSheetState(() => _selectedSex = value);
-            },
-          ),
+          ],
           const SizedBox(height: 16),
           // Phone
           TextFormField(
