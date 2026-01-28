@@ -1705,17 +1705,7 @@ class _PractitionerDashboardScreenState
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Top Accent Bar
-                    Container(
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: AppColors.success,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(28),
-                          topRight: Radius.circular(28),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: 8),
 
                     Padding(
                       padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
@@ -1812,8 +1802,6 @@ class _PractitionerDashboardScreenState
                                     fontFamily: 'monospace',
                                     height: 1.4,
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -1826,43 +1814,6 @@ class _PractitionerDashboardScreenState
                             // Primary Action: Open and Print for single file
                             Row(
                               children: [
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: () async {
-                                      final res = await OpenFilex.open(
-                                        singleFilePath,
-                                      );
-                                      if (res.type != ResultType.done &&
-                                          mounted) {
-                                        SnackbarUtils.showError(
-                                          context,
-                                          'Could not open report',
-                                        );
-                                      }
-                                    },
-                                    icon: const Icon(
-                                      Icons.open_in_new_rounded,
-                                      size: 20,
-                                    ),
-                                    label: const Text('Open Report'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: AppColors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      textStyle: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     onPressed: () async {
@@ -1911,6 +1862,39 @@ class _PractitionerDashboardScreenState
                                     ),
                                   ),
                                 ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      final res = await OpenFilex.open(
+                                        singleFilePath,
+                                      );
+                                      if (res.type != ResultType.done &&
+                                          mounted) {
+                                        SnackbarUtils.showError(
+                                          context,
+                                          'Could not open report',
+                                        );
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: AppColors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    child: const Text('Open'),
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -1923,12 +1907,12 @@ class _PractitionerDashboardScreenState
                                   await _openFolder(path);
                                 },
                                 icon: const Icon(
-                                  Icons.folder_special_rounded,
+                                  Icons.file_download_outlined,
                                   size: 18,
                                 ),
                                 label: const Text('View in Downloads'),
                                 style: TextButton.styleFrom(
-                                  foregroundColor: AppColors.textSecondary,
+                                  foregroundColor: AppColors.primary,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
                                   ),
