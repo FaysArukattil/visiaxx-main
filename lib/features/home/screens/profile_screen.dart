@@ -573,10 +573,39 @@ class ProfileScreen extends StatelessWidget {
         _buildContactDetailItem(
           icon: Icons.phone_outlined,
           title: 'Phone',
-          value: '7208804568',
-          onTap: () {
-            Clipboard.setData(const ClipboardData(text: '7208804568'));
-            SnackbarUtils.showSuccess(context, 'Number copied to clipboard');
+          value: '7208996265',
+          onTap: () async {
+            final Uri phoneUri = Uri(scheme: 'tel', path: '7208996265');
+            if (await canLaunchUrl(phoneUri)) {
+              await launchUrl(phoneUri);
+            } else {
+              Clipboard.setData(const ClipboardData(text: '7208996265'));
+              if (context.mounted) {
+                SnackbarUtils.showSuccess(
+                  context,
+                  'Number copied to clipboard',
+                );
+              }
+            }
+          },
+        ),
+        _buildContactDetailItem(
+          icon: Icons.chat_outlined,
+          title: 'WhatsApp',
+          value: '7208996265',
+          onTap: () async {
+            final Uri whatsappUri = Uri.parse('https://wa.me/917208996265');
+            if (await canLaunchUrl(whatsappUri)) {
+              await launchUrl(
+                whatsappUri,
+                mode: LaunchMode.externalApplication,
+              );
+            } else {
+              Clipboard.setData(const ClipboardData(text: '7208996265'));
+              if (context.mounted) {
+                SnackbarUtils.showSuccess(context, 'WhatsApp number copied');
+              }
+            }
           },
         ),
         _buildContactDetailItem(
@@ -594,6 +623,35 @@ class ProfileScreen extends StatelessWidget {
           onTap: _launchMaps,
         ),
         const SizedBox(height: 32),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.error.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.error.withValues(alpha: 0.1)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.report_problem_outlined,
+                color: AppColors.error,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'For serious issues, please message us on WhatsApp for immediate assistance.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(

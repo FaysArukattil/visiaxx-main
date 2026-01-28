@@ -4,6 +4,8 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../widgets/bug_report_dialog.dart';
+import 'help_center_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -197,7 +199,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                         icon: Icons.help_outline,
                         title: 'Help Center',
                         onTap: () {
-                          _showComingSoonDialog('Help Center');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HelpCenterScreen(),
+                            ),
+                          );
                         },
                       ),
                       const Divider(height: 1, indent: 68),
@@ -205,7 +212,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                         icon: Icons.bug_report_outlined,
                         title: 'Report a Bug',
                         onTap: () {
-                          _showComingSoonDialog('Bug Report');
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: AppColors.transparent,
+                            builder: (context) => const BugReportDialog(),
+                          );
                         },
                       ),
                     ],
@@ -521,4 +533,3 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 }
-
