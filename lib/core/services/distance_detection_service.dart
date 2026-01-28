@@ -172,7 +172,28 @@ class DistanceDetectionService {
         final face = faces.reduce(
           (a, b) => a.boundingBox.width > b.boundingBox.width ? a : b,
         );
-        final distance = _calculateDistanceFromFace(face);
+
+        // Get image dimensions for dynamic focal length
+        double? imageWidth;
+        double? imageHeight;
+
+        if (_cameraController != null &&
+            _cameraController!.value.isInitialized) {
+          // In portrait, height is the longer dimension, width is shorter
+          // But ML Kit usually handles the rotation.
+          // We need the width of the image as processed by ML Kit.
+          final previewSize = _cameraController!.value.previewSize!;
+          // ML Kit input image dimensions match preview dimensions (adjusted for orientation)
+          // For portrait front camera, typical is 720 (width) x 1280 (height) or similar
+          imageWidth = previewSize.height;
+          imageHeight = previewSize.width;
+        }
+
+        final distance = _calculateDistanceFromFace(
+          face,
+          imageWidth: imageWidth,
+          imageHeight: imageHeight,
+        );
 
         if (distance > 0) {
           _smoothedDistance = (_smoothedDistance <= 0)
@@ -210,18 +231,24 @@ class DistanceDetectionService {
     }
   }
 
-  double _calculateDistanceFromFace(Face face) {
+  double _calculateDistanceFromFace(
+    Face face, {
+    double? imageWidth,
+    double? imageHeight,
+  }) {
     try {
       final leftEye = face.landmarks[FaceLandmarkType.leftEye];
       final rightEye = face.landmarks[FaceLandmarkType.rightEye];
       final faceWidth = face.boundingBox.width;
 
-      // Improved heuristic for focal length based on typical mobile cameras
-      // Most front cameras have a vertical field of view around 45-50 degrees.
-      // A more robust focal length estimate for a "ResolutionPreset.medium" (usually 640x480 or 720p)
-      // is around 1.0 to 1.2 times the image width.
-      const double focalLengthPixels =
-          750.0; // Adjusted from 600.0 for better accuracy on modern devices
+      // Dynamic focal length estimation
+      // Use provided imageWidth or fallback to 720 (common portrait width for medium resolution)
+      final effectiveWidth = imageWidth ?? 720.0;
+
+      // Heuristic: focal length in pixels is typically around 1.0 to 1.1 times the image width
+      // for most modern front-facing smartphone cameras (HFOV ~50-60 degrees).
+      // We'll use 1.05 as a middle-ground starting point.
+      final double focalLengthPixels = effectiveWidth * 1.05;
 
       if (leftEye != null && rightEye != null) {
         final dx = leftEye.position.x - rightEye.position.x;
@@ -230,6 +257,16 @@ class DistanceDetectionService {
 
         if (pixelIPD > 0) {
           final distanceCm = (_averageIPDCm * focalLengthPixels) / pixelIPD;
+
+          // Diagnostic Logging
+          if (kDebugMode && _consecutiveErrors == 0) {
+            debugPrint(
+              '[DistanceAccuracy] Res: ${imageWidth?.toInt()}x${imageHeight?.toInt()} | '
+              'PixelIPD: ${pixelIPD.toStringAsFixed(1)} | '
+              'Focal: ${focalLengthPixels.toInt()} | '
+              'Dist: ${distanceCm.toStringAsFixed(1)}cm',
+            );
+          }
 
           if (faceWidth > 0 && distanceCm > 10 && distanceCm < 300) {
             _calibratedFaceWidthRatio =
