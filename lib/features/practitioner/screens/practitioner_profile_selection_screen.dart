@@ -770,8 +770,13 @@ class _PractitionerProfileSelectionScreenState
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) {
+          final size = MediaQuery.of(context).size;
+          final viewInsets = MediaQuery.of(context).viewInsets;
+          final isLandscape = size.width > size.height;
+          final isKeyboardOpen = viewInsets.bottom > 0;
+
           return Container(
-            height: MediaQuery.of(context).size.height * 0.85,
+            height: isLandscape ? size.height * 0.95 : size.height * 0.85,
             decoration: const BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -787,11 +792,121 @@ class _PractitionerProfileSelectionScreenState
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 8),
+                // Fixed Header
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: isLandscape && isKeyboardOpen ? 8 : 16,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.person_add_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Add New Patient',
+                              style: TextStyle(
+                                fontSize: isLandscape && isKeyboardOpen
+                                    ? 16
+                                    : 20,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.textPrimary,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            if (!isKeyboardOpen || !isLandscape)
+                              Text(
+                                'Enter clinical details',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, size: 20),
+                        color: AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                // Scrollable Form
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                     child: _buildAddPatientForm(setSheetState),
+                  ),
+                ),
+                // Fixed Footer
+                Container(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    16,
+                    24,
+                    (isKeyboardOpen
+                        ? 16
+                        : MediaQuery.of(context).padding.bottom + 24),
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primary,
+                          AppColors.primary.withValues(alpha: 0.8),
+                        ],
+                      ),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _addPatient,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.transparent,
+                        foregroundColor: AppColors.white,
+                        shadowColor: AppColors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save Patient',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1027,50 +1142,9 @@ class _PractitionerProfileSelectionScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.person_add_rounded,
-                  color: AppColors.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Add New Patient',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    Text(
-                      'Enter the patient\'s clinical details',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
           // Name row
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: TextFormField(
@@ -1343,45 +1417,6 @@ class _PractitionerProfileSelectionScreenState
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 16,
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.primary.withValues(alpha: 0.8),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ElevatedButton(
-              onPressed: _addPatient,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.transparent,
-                foregroundColor: AppColors.white,
-                shadowColor: AppColors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                'Save Patient',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
               ),
             ),
           ),

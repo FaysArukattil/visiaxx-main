@@ -434,6 +434,7 @@ class _AddPatientQuestionnaireScreenState
         }
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: AppColors.white,
         appBar: AppBar(
           backgroundColor: AppColors.white,
@@ -470,7 +471,9 @@ class _AddPatientQuestionnaireScreenState
                   20,
                   isLandscape ? 12 : 24,
                   20,
-                  isLandscape ? 12 : 24,
+                  MediaQuery.of(context).viewInsets.bottom > 0
+                      ? MediaQuery.of(context).viewInsets.bottom + 20
+                      : (isLandscape ? 24 : 24),
                 ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),

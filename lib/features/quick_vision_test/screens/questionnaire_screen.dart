@@ -321,6 +321,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         _showExitConfirmation();
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title: const Text('Pre-Test Questions'),
           leading: IconButton(
@@ -344,7 +345,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                   20,
                   isLandscape ? 12 : 24,
                   20,
-                  isLandscape ? 12 : 24,
+                  MediaQuery.of(context).viewInsets.bottom > 0
+                      ? MediaQuery.of(context).viewInsets.bottom + 20
+                      : (isLandscape ? 24 : 24),
                 ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
