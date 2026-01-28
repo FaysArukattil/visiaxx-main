@@ -216,14 +216,21 @@ class DistanceDetectionService {
       final rightEye = face.landmarks[FaceLandmarkType.rightEye];
       final faceWidth = face.boundingBox.width;
 
+      // Improved heuristic for focal length based on typical mobile cameras
+      // Most front cameras have a vertical field of view around 45-50 degrees.
+      // A more robust focal length estimate for a "ResolutionPreset.medium" (usually 640x480 or 720p)
+      // is around 1.0 to 1.2 times the image width.
+      const double focalLengthPixels =
+          750.0; // Adjusted from 600.0 for better accuracy on modern devices
+
       if (leftEye != null && rightEye != null) {
         final dx = leftEye.position.x - rightEye.position.x;
         final dy = leftEye.position.y - rightEye.position.y;
         final pixelIPD = math.sqrt(dx * dx + dy * dy);
 
         if (pixelIPD > 0) {
-          const double focalLengthPixels = 600.0;
           final distanceCm = (_averageIPDCm * focalLengthPixels) / pixelIPD;
+
           if (faceWidth > 0 && distanceCm > 10 && distanceCm < 300) {
             _calibratedFaceWidthRatio =
                 distanceCm /
@@ -235,7 +242,6 @@ class DistanceDetectionService {
       }
 
       if (faceWidth > 0) {
-        const double focalLengthPixels = 600.0;
         double rawDist = (_averageFaceWidthCm * focalLengthPixels) / faceWidth;
         double dist = _isFaceWidthCalibrated
             ? rawDist * _calibratedFaceWidthRatio

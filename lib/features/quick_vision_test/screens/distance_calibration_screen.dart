@@ -397,16 +397,18 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           ),
         ),
 
-        OrientationBuilder(
-          builder: (context, orientation) {
-            final isLandscape = orientation == Orientation.landscape;
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isLandscape = constraints.maxWidth > constraints.maxHeight;
+            final horizontalPadding = constraints.maxWidth * 0.05;
+            final verticalPadding = constraints.maxHeight * 0.05;
 
             if (isLandscape) {
               return Positioned(
                 top: 80,
-                bottom: 20,
-                right: 20,
-                width: MediaQuery.of(context).size.width * 0.45,
+                bottom: verticalPadding,
+                right: horizontalPadding,
+                width: constraints.maxWidth * 0.4,
                 child: _GlassHUDCard(
                   status: _distanceStatus,
                   currentDistance: _currentDistance,
@@ -423,23 +425,28 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
             }
 
             return Positioned(
-              bottom: 20,
-              left: 20,
-              right: 20,
-              top: 140, // Stricter top boundary to avoid title overlap
+              bottom: verticalPadding,
+              left: horizontalPadding,
+              right: horizontalPadding,
+              top: 100, // Reduced from 140 to allow more space
               child: Align(
                 alignment: Alignment.bottomCenter,
-                child: _GlassHUDCard(
-                  status: _distanceStatus,
-                  currentDistance: _currentDistance,
-                  targetDistance: widget.targetDistanceCm,
-                  statusColor: _getStatusColor(),
-                  stableProgress:
-                      _stableReadingsCount / _requiredStableReadings,
-                  isStable: _isDistanceStable,
-                  onContinue: _onContinuePressed,
-                  onSkip: _onSkipPressed,
-                  isLandscape: false,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: constraints.maxHeight * 0.7,
+                  ),
+                  child: _GlassHUDCard(
+                    status: _distanceStatus,
+                    currentDistance: _currentDistance,
+                    targetDistance: widget.targetDistanceCm,
+                    statusColor: _getStatusColor(),
+                    stableProgress:
+                        _stableReadingsCount / _requiredStableReadings,
+                    isStable: _isDistanceStable,
+                    onContinue: _onContinuePressed,
+                    onSkip: _onSkipPressed,
+                    isLandscape: false,
+                  ),
                 ),
               ),
             );
@@ -450,47 +457,60 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
           top: 0,
           left: 0,
           right: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: _showExitConfirmation,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.white.withValues(alpha: 0.05),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.white.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: AppColors.white,
-                      size: 20,
-                    ),
-                  ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isLandscape =
+                  MediaQuery.of(context).orientation == Orientation.landscape;
+              return Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: isLandscape ? 20 : 40,
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'DISTANCE CALIBRATION',
-                      style: TextStyle(
-                        color: AppColors.white.withValues(alpha: 0.8),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 4,
+                    GestureDetector(
+                      onTap: _showExitConfirmation,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.white.withValues(alpha: 0.05),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: AppColors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Container(height: 2, width: 20, color: AppColors.primary),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'DISTANCE CALIBRATION',
+                          style: TextStyle(
+                            color: AppColors.white.withValues(alpha: 0.8),
+                            fontSize: isLandscape ? 8 : 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: isLandscape ? 2 : 4,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          height: 2,
+                          width: isLandscape ? 15 : 20,
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ],
@@ -672,7 +692,7 @@ class _GlassHUDCard extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: isLandscape ? 20 : 28,
-            vertical: isLandscape ? 20 : 30, // Reduced from 70 to 30
+            vertical: isLandscape ? 12 : 20,
           ),
           decoration: BoxDecoration(
             color: AppColors.black.withValues(alpha: 0.25),
@@ -743,7 +763,7 @@ class _GlassHUDCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      SizedBox(height: isLandscape ? 8 : 48),
+                      SizedBox(height: isLandscape ? 4 : 16),
 
                       _buildMagneticIndicator(detected),
 
@@ -894,11 +914,12 @@ class _GlassHUDCard extends StatelessWidget {
     final double percent = _getOffsetPercent();
 
     // Use a more compact height if space is constrained
-    final double indicatorHeight = isLandscape ? 180 : 200;
+    final double indicatorHeight = isLandscape ? 140 : 180;
     final double trackHeight = indicatorHeight - 30;
     final double targetPos = trackHeight / 2 + 10;
 
-    final double verticalOffset = targetPos + (percent * 70);
+    final double verticalOffset =
+        targetPos + (percent * (trackHeight / 2 - 20));
 
     return Column(
       children: [
@@ -974,7 +995,7 @@ class _GlassHUDCard extends StatelessWidget {
                 ),
                 style: TextStyle(
                   color: statusColor,
-                  fontSize: 42, // Reduced from 54
+                  fontSize: isLandscape ? 48 : 54, // Increased from 42/54
                   fontWeight: FontWeight.w900,
                   fontFeatures: const [ui.FontFeature.tabularFigures()],
                 ),
