@@ -395,6 +395,38 @@ class AuthService {
     return user?.role;
   }
 
+  /// Update user's agreement to terms and conditions status
+  Future<bool> updateAgreementStatus(String uid, bool agreed) async {
+    try {
+      final lookupDoc = await _firestore
+          .collection('all_users_lookup')
+          .doc(uid)
+          .get();
+
+      if (lookupDoc.exists && lookupDoc.data() != null) {
+        final collection = lookupDoc.data()!['collection'] as String;
+        final identityString = lookupDoc.data()!['identityString'] as String;
+
+        await _firestore.collection(collection).doc(identityString).update({
+          'agreedToTerms': agreed,
+        });
+
+        // Update local cache
+        final cachedUser = await LocalStorageService().getUserProfile();
+        if (cachedUser != null && cachedUser.id == uid) {
+          final updatedUser = cachedUser.copyWith(agreedToTerms: agreed);
+          await LocalStorageService().saveUserProfile(updatedUser);
+        }
+
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('[AuthService] Error updating agreement status: $e');
+      return false;
+    }
+  }
+
   /// Sign out with full session cleanup
   Future<void> signOut() async {
     try {

@@ -6,6 +6,8 @@ import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'package:visiaxx/features/practitioner/screens/practitioner_dashboard_screen.dart';
 import 'package:visiaxx/features/practitioner/screens/practitioner_home_screen.dart';
 import 'package:visiaxx/features/home/screens/profile_screen.dart';
+import 'package:visiaxx/features/home/widgets/terms_acceptance_dialog.dart';
+import 'package:visiaxx/core/utils/snackbar_utils.dart';
 
 class PractitionerMainNavigationScreen extends StatefulWidget {
   const PractitionerMainNavigationScreen({super.key});
@@ -51,6 +53,7 @@ class _PractitionerMainNavigationScreenState
             _user = user;
             _isLoading = false;
           });
+          _checkTermsAgreement();
         } else if (mounted) {
           setState(() => _isLoading = false);
         }
@@ -60,6 +63,30 @@ class _PractitionerMainNavigationScreenState
     } catch (e) {
       debugPrint('[PractitionerMainNavigation] ❌ Error loading user data: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _checkTermsAgreement() {
+    if (_user != null && !_user!.agreedToTerms) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => TermsAcceptanceDialog(
+            userId: _user!.id,
+            onAccepted: () {
+              setState(() {
+                _user = _user!.copyWith(agreedToTerms: true);
+              });
+              Navigator.pop(context);
+              SnackbarUtils.showSuccess(
+                context,
+                'Thank you for accepting our terms.',
+              );
+            },
+          ),
+        );
+      });
     }
   }
 

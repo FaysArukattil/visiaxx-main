@@ -144,7 +144,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Report a Bug',
+                  'System Improvement',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -176,14 +176,14 @@ class _BugReportDialogState extends State<BugReportDialog> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.error,
-                            AppColors.error.withValues(alpha: 0.7),
+                            AppColors.primary,
+                            AppColors.primary.withValues(alpha: 0.7),
                           ],
                         ),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.bug_report_rounded,
+                        Icons.auto_fix_high_rounded,
                         color: AppColors.white,
                         size: 40,
                       ),
@@ -192,7 +192,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
                   const SizedBox(height: 16),
                   Center(
                     child: Text(
-                      'Found a bug? Help us squash it!',
+                      'Help us improve. Share your technical feedback!',
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
@@ -228,7 +228,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(
-                          color: AppColors.error,
+                          color: AppColors.primary,
                           width: 2,
                         ),
                       ),
@@ -306,7 +306,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            backgroundColor: AppColors.error,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: AppColors.white,
                           ),
                           child: _isSubmitting
@@ -319,7 +319,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
                                   ),
                                 )
                               : const Text(
-                                  'Submit Bug',
+                                  'Submit Feedback',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,

@@ -133,14 +133,7 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: AppColors.textPrimary,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'My Profile',
           style: TextStyle(
@@ -204,7 +197,7 @@ class ProfileScreen extends StatelessWidget {
                     _showOptionDetails(
                       context,
                       'Legal Notice & Terms',
-                      _buildLegalContent(),
+                      _buildLegalContent(context),
                     );
                   },
                 ),
@@ -274,7 +267,18 @@ class ProfileScreen extends StatelessWidget {
             _buildLogoutButton(context),
             const SizedBox(height: 48),
             _buildQuote(),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
+            const Center(
+              child: Text(
+                'By using Visiaxx, you agree to our Terms & Policies',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textTertiary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 48),
           ],
         ),
       ),
@@ -715,8 +719,8 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLegalContent() {
-    return const Column(
+  Widget _buildLegalContent(BuildContext context) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -755,12 +759,12 @@ class ProfileScreen extends StatelessWidget {
               'We collect test data, including vision scores, Amsler grid tracings, and user-provided information, to generate reports, improve our AI algorithms, and conduct clinical research. Your privacy is protected in accordance with our data policy.',
         ),
         _LegalSection(
-          title: '6. User Reviews & Feedback Collection',
+          title: '6. System Improvement & Data Collection',
           content:
-              'When you submit a review or feedback through the app, we collect your name, age, rating, and written feedback. This information is sent via email to vnoptocare@gmail.com and stored in our database for the purpose of improving our product and services. Your feedback helps us enhance user experience and develop better features.',
+              'When you submit a review, feedback, or technical bug report, we collect your name, age, and descriptive details. Technical reports are stored in a dedicated secure database section and shared with our development team. This data is used exclusively to improve our AI algorithms, resolve technical glitches, and enhance the overall reliability of the Visiaxx Digital Eye Clinic.',
         ),
-        SizedBox(height: 20),
-        Text(
+        const SizedBox(height: 20),
+        const Text(
           'By continuing to use Visiaxx, you accept these terms and conditions.',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
         ),

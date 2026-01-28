@@ -592,6 +592,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     ),
             ),
           ),
+          const SizedBox(height: 16),
+          const Text(
+            'By creating an account, you agree to our\nTerms of Service and Privacy Policy.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.textTertiary,
+              height: 1.4,
+            ),
+          ),
         ],
       ),
     );

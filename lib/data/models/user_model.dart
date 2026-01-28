@@ -17,6 +17,7 @@ class UserModel {
   final DateTime? lastLoginAt;
   final List<String> familyMemberIds;
   final List<String> hiddenResultIds;
+  final bool agreedToTerms;
 
   UserModel({
     required this.id,
@@ -31,6 +32,7 @@ class UserModel {
     this.lastLoginAt,
     this.familyMemberIds = const [],
     this.hiddenResultIds = const [],
+    this.agreedToTerms = false,
   });
 
   String get fullName => '$firstName $lastName';
@@ -80,6 +82,7 @@ class UserModel {
       lastLoginAt: (data['lastLoginAt'] as Timestamp?)?.toDate(),
       familyMemberIds: List<String>.from(data['familyMemberIds'] ?? []),
       hiddenResultIds: List<String>.from(data['hiddenResultIds'] ?? []),
+      agreedToTerms: data['agreedToTerms'] ?? false,
     );
   }
 
@@ -100,6 +103,7 @@ class UserModel {
           : null,
       'familyMemberIds': familyMemberIds,
       'hiddenResultIds': hiddenResultIds,
+      'agreedToTerms': agreedToTerms,
     };
   }
 
@@ -118,6 +122,7 @@ class UserModel {
       'lastLoginAt': lastLoginAt?.toIso8601String(),
       'familyMemberIds': familyMemberIds,
       'hiddenResultIds': hiddenResultIds,
+      'agreedToTerms': agreedToTerms,
     };
   }
 
@@ -143,6 +148,7 @@ class UserModel {
           : null,
       familyMemberIds: List<String>.from(json['familyMemberIds'] ?? []),
       hiddenResultIds: List<String>.from(json['hiddenResultIds'] ?? []),
+      agreedToTerms: json['agreedToTerms'] ?? false,
     );
   }
 
@@ -176,6 +182,7 @@ class UserModel {
           : null,
       familyMemberIds: List<String>.from(data['familyMemberIds'] ?? []),
       hiddenResultIds: List<String>.from(data['hiddenResultIds'] ?? []),
+      agreedToTerms: data['agreedToTerms'] ?? false,
     );
   }
 
@@ -193,6 +200,7 @@ class UserModel {
     DateTime? lastLoginAt,
     List<String>? familyMemberIds,
     List<String>? hiddenResultIds,
+    bool? agreedToTerms,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -207,6 +215,7 @@ class UserModel {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       familyMemberIds: familyMemberIds ?? this.familyMemberIds,
       hiddenResultIds: hiddenResultIds ?? this.hiddenResultIds,
+      agreedToTerms: agreedToTerms ?? this.agreedToTerms,
     );
   }
 }

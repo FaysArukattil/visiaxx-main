@@ -3,10 +3,12 @@ import 'package:visiaxx/core/constants/app_colors.dart';
 import 'package:visiaxx/core/services/auth_service.dart';
 import 'package:visiaxx/data/models/user_model.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
+import 'package:visiaxx/core/utils/snackbar_utils.dart';
 import 'package:visiaxx/data/providers/eye_exercise_provider.dart';
 import 'package:visiaxx/features/home/screens/home_screen.dart';
 import 'package:visiaxx/features/eye_exercises/screens/eye_exercise_reels_screen.dart';
 import 'package:visiaxx/features/home/screens/profile_screen.dart';
+import 'package:visiaxx/features/home/widgets/terms_acceptance_dialog.dart';
 import 'package:provider/provider.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -51,6 +53,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             _user = user;
             _isLoading = false;
           });
+          _checkTermsAgreement();
         } else if (mounted) {
           setState(() => _isLoading = false);
         }
@@ -60,6 +63,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     } catch (e) {
       debugPrint('[MainNavigation] ❌ Error loading user data: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _checkTermsAgreement() {
+    if (_user != null && !_user!.agreedToTerms) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => TermsAcceptanceDialog(
+            userId: _user!.id,
+            onAccepted: () {
+              setState(() {
+                _user = _user!.copyWith(agreedToTerms: true);
+              });
+              Navigator.pop(context);
+              SnackbarUtils.showSuccess(
+                context,
+                'Thank you for accepting our terms.',
+              );
+            },
+          ),
+        );
+      });
     }
   }
 
