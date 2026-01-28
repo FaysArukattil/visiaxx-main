@@ -428,7 +428,8 @@ class _AddPatientQuestionnaireScreenState
           _previousStep();
         } else {
           final shouldExit = await _showExitConfirmation();
-          if (shouldExit && mounted) {
+          if (!mounted) return;
+          if (shouldExit) {
             Navigator.pop(context);
           }
         }
@@ -583,15 +584,19 @@ class _AddPatientQuestionnaireScreenState
       rows.add(
         Padding(
           padding: EdgeInsets.only(bottom: mainAxisSpacing),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: children[i]),
-              SizedBox(width: crossAxisSpacing),
-              Expanded(
-                child: i + 1 < children.length ? children[i + 1] : Container(),
-              ),
-            ],
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: children[i]),
+                SizedBox(width: crossAxisSpacing),
+                Expanded(
+                  child: i + 1 < children.length
+                      ? children[i + 1]
+                      : Container(),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -804,6 +809,7 @@ class _AddPatientQuestionnaireScreenState
                 maxLines: 3,
               ),
             ],
+            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -1166,6 +1172,7 @@ class _AddPatientQuestionnaireScreenState
             ),
           ],
         ),
+        const SizedBox(height: 80),
       ],
     );
   }
@@ -1250,6 +1257,7 @@ class _AddPatientQuestionnaireScreenState
             ),
           ],
         ),
+        const SizedBox(height: 80),
       ],
     );
   }
@@ -1836,6 +1844,9 @@ class _AddPatientQuestionnaireScreenState
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          scrollPadding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+          ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
