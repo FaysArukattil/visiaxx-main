@@ -9,6 +9,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:printing/printing.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:visiaxx/core/services/file_manager_service.dart';
 import '../../../core/services/dashboard_persistence_service.dart';
 import '../../../core/constants/app_colors.dart';
@@ -1630,7 +1632,30 @@ class _PractitionerDashboardScreenState
 
       if (mounted) {
         Navigator.of(context).pop(); // Close progress dialog
-        await _showDownloadSuccessDialog(successCount, targetDir.path);
+
+        // If only one result, pass its path for the "Print" feature
+        String? singlePath;
+        if (successCount == 1 && resultsToDownload.length == 1) {
+          final result = resultsToDownload.first;
+          final name = result.profileName.replaceAll(
+            RegExp(r'[^a-zA-Z0-9]'),
+            '_',
+          );
+          final age = result.profileAge?.toString() ?? 'NA';
+          final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
+          final timeStr = DateFormat('HH-mm').format(result.timestamp);
+          final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
+          singlePath = '${targetDir.path}/$filename';
+        }
+
+        debugPrint(
+          '[Dashboard] 📊 Showing success dialog: count=$successCount, singlePath=$singlePath',
+        );
+        await _showDownloadSuccessDialog(
+          successCount,
+          targetDir.path,
+          singleFilePath: singlePath,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -1640,158 +1665,344 @@ class _PractitionerDashboardScreenState
     }
   }
 
-  Future<void> _showDownloadSuccessDialog(int count, String path) async {
+  Future<void> _showDownloadSuccessDialog(
+    int count,
+    String path, {
+    String? singleFilePath,
+  }) async {
+    debugPrint(
+      '[Dashboard] 🖼️ Rendering success dialog. Single file: ${singleFilePath != null}',
+    );
+
+    // Get the folder name safely
+    final folderName = path.split(RegExp(r'[/\\]')).last;
+
     await showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: SingleChildScrollView(
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.9,
-            constraints: const BoxConstraints(maxWidth: 500),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              constraints: const BoxConstraints(maxWidth: 480),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withValues(alpha: 0.15),
+                    blurRadius: 30,
+                    offset: const Offset(0, 15),
                   ),
-                  child: const Icon(
-                    Icons.check_circle_rounded,
-                    color: AppColors.success,
-                    size: 48,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Reports Ready',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Successfully exported $count diagnostic report${count > 1 ? 's' : ''}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'SAVE LOCATION',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textTertiary,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.folder_open_rounded,
-                            size: 18,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              path.split('/').last,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 20),
-                      Text(
-                        path,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textSecondary,
-                          fontFamily: 'monospace',
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          side: const BorderSide(color: AppColors.border),
-                        ),
-                        child: const Text(
-                          'Dismiss',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w700,
-                          ),
+                    // Top Accent Bar
+                    Container(
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppColors.success,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(28),
+                          topRight: Radius.circular(28),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          if (Platform.isAndroid) {
-                            await FileManagerService.openFolder(path);
-                          } else {
-                            await Share.share(
-                              'Reports saved to:\n$path\n\nFind them in the Files app.',
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                      child: Column(
+                        children: [
+                          // Success Icon with glow
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.success,
+                              size: 52,
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          Platform.isIOS ? 'Share' : 'Open',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                          const SizedBox(height: 20),
+
+                          const Text(
+                            'Reports Ready',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 8),
+
+                          Text(
+                            'Successfully prepared $count clinical report${count > 1 ? 's' : ''}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.8,
+                              ),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // Location Card
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppColors.border.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.folder_open_rounded,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'SAVE LOCATION',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.textTertiary,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  folderName,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  path,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.textSecondary,
+                                    fontFamily: 'monospace',
+                                    height: 1.4,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // Action Buttons
+                          if (singleFilePath != null) ...[
+                            // Primary Action: Open and Print for single file
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      final res = await OpenFilex.open(
+                                        singleFilePath,
+                                      );
+                                      if (res.type != ResultType.done &&
+                                          mounted) {
+                                        SnackbarUtils.showError(
+                                          context,
+                                          'Could not open report',
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      Icons.open_in_new_rounded,
+                                      size: 20,
+                                    ),
+                                    label: const Text('Open Report'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: AppColors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () async {
+                                      try {
+                                        final file = File(singleFilePath);
+                                        if (await file.exists()) {
+                                          final bytes = await file
+                                              .readAsBytes();
+                                          await Printing.layoutPdf(
+                                            onLayout: (format) async => bytes,
+                                            name: singleFilePath
+                                                .split(RegExp(r'[/\\]'))
+                                                .last,
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          SnackbarUtils.showError(
+                                            context,
+                                            'Print failed: $e',
+                                          );
+                                        }
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      Icons.print_rounded,
+                                      size: 20,
+                                    ),
+                                    label: const Text('Print'),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      side: const BorderSide(
+                                        color: AppColors.primary,
+                                        width: 1.5,
+                                      ),
+                                      foregroundColor: AppColors.primary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Secondary: Folder opening
+                            SizedBox(
+                              width: double.infinity,
+                              child: TextButton.icon(
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  await _openFolder(path);
+                                },
+                                icon: const Icon(
+                                  Icons.folder_special_rounded,
+                                  size: 18,
+                                ),
+                                label: const Text('View in Downloads'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.textSecondary,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            // Batch download - only folder opening
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  await _openFolder(path);
+                                },
+                                icon: const Icon(
+                                  Icons.folder_special_rounded,
+                                  size: 20,
+                                ),
+                                label: const Text('Open Downloads Folder'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 18,
+                                  ),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
+
+            // Close Button (Top-Right)
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.background.withValues(alpha: 0.8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: AppColors.textTertiary,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1945,7 +2156,11 @@ class _PractitionerDashboardScreenState
 
       if (mounted) {
         UIUtils.hideProgressDialog(context);
-        await _showDownloadSuccessDialog(1, file.path);
+        await _showDownloadSuccessDialog(
+          1,
+          targetDir.path,
+          singleFilePath: file.path,
+        );
       }
     } catch (e) {
       if (mounted) {
