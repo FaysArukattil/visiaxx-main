@@ -849,10 +849,14 @@ class _PractitionerProfileSelectionScreenState
                   ),
                 ),
                 const Divider(height: 1),
-                // Scrollable Form
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                    padding: EdgeInsets.fromLTRB(
+                      24,
+                      20,
+                      24,
+                      24 + viewInsets.bottom,
+                    ),
                     child: _buildAddPatientForm(setSheetState),
                   ),
                 ),
@@ -1192,6 +1196,9 @@ class _PractitionerProfileSelectionScreenState
                       vertical: 16,
                     ),
                   ),
+                  scrollPadding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Required';
@@ -1239,6 +1246,9 @@ class _PractitionerProfileSelectionScreenState
                       horizontal: 16,
                       vertical: 16,
                     ),
+                  ),
+                  scrollPadding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 120,
                   ),
                 ),
               ),
@@ -1297,6 +1307,9 @@ class _PractitionerProfileSelectionScreenState
                 horizontal: 16,
                 vertical: 16,
               ),
+            ),
+            scrollPadding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 120,
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -1371,6 +1384,9 @@ class _PractitionerProfileSelectionScreenState
                 vertical: 16,
               ),
             ),
+            scrollPadding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+            ),
             validator: (value) {
               if (value != null && value.isNotEmpty && value.length != 10) {
                 return 'Enter exactly 10 digits';
@@ -1383,6 +1399,9 @@ class _PractitionerProfileSelectionScreenState
           TextFormField(
             controller: _notesController,
             maxLines: 3,
+            scrollPadding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+            ),
             decoration: InputDecoration(
               labelText: 'Notes (optional)',
               hintText: 'Any additional notes...',

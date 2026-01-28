@@ -471,9 +471,8 @@ class _AddPatientQuestionnaireScreenState
                   20,
                   isLandscape ? 12 : 24,
                   20,
-                  MediaQuery.of(context).viewInsets.bottom > 0
-                      ? MediaQuery.of(context).viewInsets.bottom + 20
-                      : (isLandscape ? 24 : 24),
+                  (isLandscape ? 12 : 24) +
+                      MediaQuery.of(context).viewInsets.bottom,
                 ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
@@ -1444,7 +1443,9 @@ class _AddPatientQuestionnaireScreenState
           inputFormatters: inputFormatters,
           maxLines: maxLines,
           validator: validator,
-          scrollPadding: const EdgeInsets.only(bottom: 100),
+          scrollPadding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+          ),
           decoration: InputDecoration(
             hintText: hint,
             prefixText: prefixText,

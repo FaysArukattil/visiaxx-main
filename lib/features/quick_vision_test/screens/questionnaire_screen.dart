@@ -345,9 +345,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                   20,
                   isLandscape ? 12 : 24,
                   20,
-                  MediaQuery.of(context).viewInsets.bottom > 0
-                      ? MediaQuery.of(context).viewInsets.bottom + 20
-                      : (isLandscape ? 24 : 24),
+                  (isLandscape ? 12 : 24) +
+                      MediaQuery.of(context).viewInsets.bottom,
                 ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
@@ -1642,6 +1641,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
           onChanged: (v) => setState(() {}),
+          scrollPadding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+          ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
