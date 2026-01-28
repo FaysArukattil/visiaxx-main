@@ -405,10 +405,12 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
 
             if (isLandscape) {
               return Positioned(
-                top: 80,
+                top: 60, // Reduced from 70 for better fit
                 bottom: verticalPadding,
                 right: horizontalPadding,
-                width: constraints.maxWidth * 0.4,
+                width:
+                    constraints.maxWidth *
+                    0.45, // Increased from 0.4 for more space
                 child: _GlassHUDCard(
                   status: _distanceStatus,
                   currentDistance: _currentDistance,
@@ -494,9 +496,11 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                           'DISTANCE CALIBRATION',
                           style: TextStyle(
                             color: AppColors.white.withValues(alpha: 0.8),
-                            fontSize: isLandscape ? 8 : 10,
+                            fontSize: isLandscape ? 12 : 10, // Increased from 8
                             fontWeight: FontWeight.w900,
-                            letterSpacing: isLandscape ? 2 : 4,
+                            letterSpacing: isLandscape
+                                ? 1.5
+                                : 4, // Reduced from 2
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -744,7 +748,9 @@ class _GlassHUDCard extends StatelessWidget {
                                   key: ValueKey(message),
                                   style: TextStyle(
                                     color: statusColor,
-                                    fontSize: isLandscape ? 14 : 18,
+                                    fontSize: isLandscape
+                                        ? 15
+                                        : 18, // Reduced from 18 to save space
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 2,
                                   ),
@@ -817,8 +823,8 @@ class _GlassHUDCard extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: statusColor,
                           foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
+                          padding: EdgeInsets.symmetric(
+                            vertical: isLandscape ? 10 : 14, // Reduced from 14
                             horizontal: 24,
                           ),
                           shape: RoundedRectangleBorder(
@@ -847,8 +853,8 @@ class _GlassHUDCard extends StatelessWidget {
                       )
                     else
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 14,
+                        padding: EdgeInsets.symmetric(
+                          vertical: isLandscape ? 10 : 14, // Reduced from 14
                           horizontal: 24,
                         ),
                         width: double.infinity,
@@ -888,7 +894,9 @@ class _GlassHUDCard extends StatelessWidget {
                               'BYPASS CALIBRATION',
                               style: TextStyle(
                                 color: AppColors.white.withValues(alpha: 0.5),
-                                fontSize: 10,
+                                fontSize: isLandscape
+                                    ? 12
+                                    : 10, // Increased from 10
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 2,
                               ),
@@ -914,9 +922,9 @@ class _GlassHUDCard extends StatelessWidget {
     final double percent = _getOffsetPercent();
 
     // Use a more compact height if space is constrained
-    final double indicatorHeight = isLandscape ? 140 : 180;
-    final double trackHeight = indicatorHeight - 30;
-    final double targetPos = trackHeight / 2 + 10;
+    final double indicatorHeight = isLandscape ? 90 : 180; // Reduced from 140
+    final double trackHeight = indicatorHeight - 20; // Reduced margin from 30
+    final double targetPos = trackHeight / 2 + 5; // Adjusted from 10
 
     final double verticalOffset =
         targetPos + (percent * (trackHeight / 2 - 20));
@@ -995,7 +1003,9 @@ class _GlassHUDCard extends StatelessWidget {
                 ),
                 style: TextStyle(
                   color: statusColor,
-                  fontSize: isLandscape ? 48 : 54, // Increased from 42/54
+                  fontSize: isLandscape
+                      ? 36
+                      : 54, // Reduced from 48 to save space
                   fontWeight: FontWeight.w900,
                   fontFeatures: const [ui.FontFeature.tabularFigures()],
                 ),

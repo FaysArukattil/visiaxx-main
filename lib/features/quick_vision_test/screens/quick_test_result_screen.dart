@@ -229,11 +229,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             context: context,
             barrierDismissible: false,
             builder: (dialogContext) => TestExitConfirmationDialog(
-              onContinue: () {
-                // Just close the dialog
-              },
+              onContinue: () {},
               onRestart: () {
-                provider.reset();
+                provider.resetKeepProfile();
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   '/quick-test',
@@ -1874,50 +1872,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Restart Test (Individual Test specific)
-        if (provider.isIndividualTest && widget.historicalResult == null) ...[
-          OutlinedButton.icon(
-            onPressed: () {
-              final testType = provider.individualTestType;
-              String route = '/quick-test'; // Fallback
-
-              switch (testType) {
-                case 'visual_acuity':
-                  route = '/visual-acuity-standalone';
-                  break;
-                case 'color_vision':
-                  route = '/color-vision-standalone';
-                  break;
-                case 'amsler_grid':
-                  route = '/amsler-grid-standalone';
-                  break;
-                case 'reading_test':
-                  route = '/reading-test-standalone';
-                  break;
-                case 'contrast_sensitivity':
-                  route = '/contrast-sensitivity-standalone';
-                  break;
-                case 'mobile_refractometry':
-                  route = '/mobile-refractometry-standalone';
-                  break;
-              }
-
-              provider.reset();
-              Navigator.pushNamedAndRemoveUntil(context, route, (r) => false);
-            },
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Restart Test'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.warning,
-              minimumSize: const Size(double.infinity, 54),
-              side: const BorderSide(color: AppColors.warning, width: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
+        const SizedBox(height: 12),
 
         // Back to Home
         ElevatedButton.icon(
