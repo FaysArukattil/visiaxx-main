@@ -211,20 +211,6 @@ class _AddPatientQuestionnaireScreenState
   Future<void> _savePatient() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      if (!mounted) return;
-      SnackbarUtils.showError(context, 'Please log in to add patients');
-      return;
-    }
-
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: EyeLoader.fullScreen()),
-    );
-
     final newPatient = PatientModel(
       id: _savedPatientId ?? DateTime.now().millisecondsSinceEpoch.toString(),
       firstName: _firstNameController.text.trim(),
@@ -243,6 +229,7 @@ class _AddPatientQuestionnaireScreenState
     );
 
     // If data hasn't changed, don't re-save to avoid redundant network calls
+    // Check this BEFORE showing loading dialog to avoid getting stuck
     if (_savedPatient != null &&
         _savedPatient!.firstName == newPatient.firstName &&
         _savedPatient!.lastName == newPatient.lastName &&
@@ -253,6 +240,20 @@ class _AddPatientQuestionnaireScreenState
       // Data is same, just move to next step
       return;
     }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (!mounted) return;
+      SnackbarUtils.showError(context, 'Please log in to add patients');
+      return;
+    }
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: EyeLoader.fullScreen()),
+    );
 
     try {
       final savedId = await _patientService.savePatient(
@@ -1522,6 +1523,7 @@ class _AddPatientQuestionnaireScreenState
               ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Material(
             color: Colors.transparent,
