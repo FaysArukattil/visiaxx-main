@@ -31,7 +31,10 @@ class HelpCenterScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Help Center',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
         ),
         backgroundColor: AppColors.white,
         elevation: 0,
@@ -44,110 +47,191 @@ class HelpCenterScreen extends StatelessWidget {
           children: [
             _buildWhatsAppCard(context),
             const SizedBox(height: 32),
+
+            _buildSectionTitle('App Navigation Guide'),
+            const SizedBox(height: 16),
+            _buildNavigationGuide(
+              title: 'Quick Test',
+              icon: Icons.timer_outlined,
+              description: 'Fast, preliminary vision screening.',
+              purpose:
+                  'Designed for a rapid checkup of your visual clarity and color health in under 3 minutes.',
+              usage:
+                  'Ideal for frequent monitoring or when you have limited time and want a quick status update.',
+            ),
+            const SizedBox(height: 12),
+            _buildNavigationGuide(
+              title: 'Full Eye Exam',
+              icon: Icons.health_and_safety_outlined,
+              description: 'Deep clinical examination.',
+              purpose:
+                  'A comprehensive battery of tests (including Refractometry and Contrast) for a detailed vision profile.',
+              usage:
+                  'Use this for your monthly checkup or if you are experiencing new symptoms like blurriness or eye strain.',
+            ),
+            const SizedBox(height: 12),
+            _buildNavigationGuide(
+              title: 'Visiaxx TV / Eye Exercises',
+              icon: Icons.video_library_outlined,
+              description: 'Eye improvement & relaxation tips.',
+              purpose:
+                  'A library of video reels and tutorials providing information on how to reduce digital eye strain and improve vision naturally.',
+              usage:
+                  'Perfect for learning effective eye care techniques and finding tips to relax your eyes after long screen sessions.',
+            ),
+            const SizedBox(height: 12),
+            _buildNavigationGuide(
+              title: 'Eye Care Tips',
+              icon: Icons.tips_and_updates_outlined,
+              description: 'Daily health & lifestyle advice.',
+              purpose:
+                  'Curated professional tips on lighting, screen distance, nutrition, and habits for long-term eye health.',
+              usage:
+                  'Read these to improve your workspace ergonomics and learn how to protect your eyes daily.',
+            ),
+            const SizedBox(height: 12),
+            _buildNavigationGuide(
+              title: 'My Results',
+              icon: Icons.assessment_outlined,
+              description: 'Your vision records history.',
+              purpose:
+                  'Securely stores every test result. You can view progress charts and download clinical PDF reports.',
+              usage:
+                  'Visit here to show your vision history to your local eye doctor during a physical appointment.',
+            ),
+            const SizedBox(height: 12),
+            _buildNavigationGuide(
+              title: 'Consultation',
+              icon: Icons.video_call_outlined,
+              description: 'Expert professional support.',
+              purpose:
+                  'Connects you with vision specialists if your screening results indicate a need for further clinical investigation.',
+              usage:
+                  'Use this if you have concerns about your test scores or need advice on the next steps for your vision care.',
+            ),
+
+            const SizedBox(height: 32),
             _buildSectionTitle('Comprehensive test Guide'),
             const SizedBox(height: 16),
             _buildTestGuide(
               title: 'Visual Acuity Test',
               icon: Icons.visibility_outlined,
-              color: AppColors.primary,
-              description:
-                  'Measures your ability to see fine detail at a 1-meter distance.',
+              description: 'Sharpness and clarity of vision at a distance.',
               whatIsIt:
-                  'This is the standard test for visual clarity. It uses the "Tumbling E" chart to determine how small an object you can identify from a fixed distance.',
+                  'This is the standard measurement of how well your eyes see fine detail from a fixed distance using the clinically validated "Tumbling E" chart.',
+              whatItDiagnoses:
+                  'Primarily identifies refractive errors like Myopia (nearsightedness), Hyperopia (farsightedness), and Astigmatism. It can also hint at organic eye conditions if acuity remains low with correction.',
+              howUseful:
+                  'Critical for daily safety and performance. It determines your ability to drive, read signs, recognize faces, and perform tasks that require distance focus.',
               howPerformed:
-                  'You will hold the device at exactly 1 meter. An "E" will appear in different orientations. You must say or select the direction the E is pointing.',
+                  'You will hold the device at exactly 1 meter. An "E" symbol will appear in different orientations. You must identify the direction (Up, Down, Left, Right).',
               instructions: [
                 'Ensure the room is well-lit but without glare on the screen.',
                 'Sit or stand exactly 1 meter away from the device.',
-                'The app will use AI to verify your distance.',
+                'The app will use AI to verify your distance in real-time.',
                 'Cover one eye as instructed by the voice guide.',
-                'Read the direction clearly (Up, Down, Left, Right).',
+                'Read the direction clearly aloud.',
               ],
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
               title: 'Color Blindness Screening',
               icon: Icons.palette_outlined,
-              color: AppColors.success,
-              description:
-                  'Detects deficiencies in color perception (Red-Green, etc.).',
+              description: 'Ability to distinguish between different colors.',
               whatIsIt:
-                  'Uses Ishihara-inspired digital plates composed of dots with varying colors. A number or shape is hidden within the pattern.',
+                  'Uses digital "Ishihara" plates—patterns of dots with hidden numbers or shapes—to test if your eyes can differentiate specific color wavelengths.',
+              whatItDiagnoses:
+                  'Detects Red-Green color blindness (Protanopia and Deuteranopia) and less common Blue-Yellow (Tritanopia) perception issues.',
+              howUseful:
+                  'Essential for career safety (aviation, electrical engineering, high-tech manufacturing) and daily tasks like interpreting traffic signals or reading color-coded data charts.',
               howPerformed:
-                  'Hold the device at a normal reading distance (approx. 40cm). A series of plates will be shown.',
+                  'Hold the device at a normal reading distance (40cm). Identify the hidden number within the colored dots on a series of plates.',
               instructions: [
-                'Do not tilt the screen; keep it flat toward your face.',
-                'Identify the number in the center of the dots.',
-                'Select the matching number from the options provided.',
-                'If you see nothing, select "No Number".',
+                'Keep the screen flat and avoid tilting it.',
+                'Do not spend more than 5-10 seconds on a single plate.',
+                'Select the matching number from the options.',
+                'If no number is visible, select the "No Number" option.',
               ],
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
               title: 'Amsler Grid Assessment',
               icon: Icons.grid_on_outlined,
-              color: AppColors.warning,
               description:
-                  'Monitors central vision for macula-related distortions.',
+                  'Monitors the health of your central retina (macula).',
               whatIsIt:
-                  'A diagnostic tool used to detect vision problems resulting from damage to the macula (the central part of the retina).',
+                  'A diagnostic pattern used to detect visual distortions caused by changes in the retina, particularly the macula.',
+              whatItDiagnoses:
+                  'Highly effective at identifying early signs of Macular Degeneration (AMD), Diabetic Maculopathy, and Macular Oedema.',
+              howUseful:
+                  'Allows for home-based monitoring of retinal stability. Early detection of warped or missing lines (Metamorphopsia) can prevent permanent vision loss through timely medical treatment.',
               howPerformed:
-                  'You focus on a central dot on a grid. If lines appear wavy or missing, you trace them.',
+                  'You focus on a central dot on a grid. You must report if any lines appear wavy, broken, or if any sections of the grid are "missing".',
               instructions: [
-                'Hold the device at 40cm (reading distance).',
-                'Focus purely on the central black dot.',
-                'Check if any lines appear wavy, broken, or blurry.',
-                'If you see distortions, trace the area on the screen with your finger.',
+                'Hold the device at 40cm (arm\'s length).',
+                'Focus strictly on the central black dot; do not let your eye wander.',
+                'Check if lines appear wavy or if there is any "graying" or blurring.',
+                'If distortions are seen, trace them accurately on the screen.',
               ],
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
               title: 'Contrast Sensitivity',
               icon: Icons.contrast_outlined,
-              color: AppColors.info,
               description:
-                  'Evaluates your ability to distinguish objects from backgrounds.',
+                  'Measures ability to see objects against their backgrounds.',
               whatIsIt:
-                  'Measures functional vision. Important for tasks like driving at night or reading in low light.',
+                  'Tests your eye\'s ability to distinguish subtle shades of gray. It uses "Pelli-Robson" triplets that gradually fade away.',
+              whatItDiagnoses:
+                  'Can identify early-stage Glaucoma, Cataracts, or Optic Neuritis, even when standard visual acuity still seems "normal".',
+              howUseful:
+                  'Explains functional vision issues, such as difficulty driving at night, reading in dim light, or navigating stairs, where "black and white" contrast is low.',
               howPerformed:
-                  'Uses Pelli-Robson triplets of letters that gradually decrease in contrast (get fainter).',
+                  'Triple-letter groups are shown. The contrast decreases with each group. You read them aloud until they are no longer visible.',
               instructions: [
-                'Turn screen brightness to MAXIMUM for this test.',
-                'Read the 3 letters inside the blue box aloud.',
-                'The test ends when you can no longer distinguish the letters.',
+                'Set your screen brightness to MAXIMUM.',
+                'Sit in a room with stable, non-flickering light.',
+                'Read the 3 letters inside the blue box from left to right.',
+                'The test ends automatically when you reach your threshold.',
               ],
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
               title: 'Reading & Near Vision',
               icon: Icons.chrome_reader_mode_outlined,
-              color: AppColors.secondary,
               description:
-                  'Assesses reading comfort and screens for presbyopia.',
+                  'Evaluates focusing power at close reading distances.',
               whatIsIt:
-                  'Evaluates how well you can see text at a close reading distance.',
+                  'Assesses the quality of vision at a typical smartphone or book distance (40cm).',
+              whatItDiagnoses:
+                  'Detects Presbyopia (age-related inability to focus on close objects) and digital eye strain (Computer Vision Syndrome).',
+              howUseful:
+                  'Assists in determining the need for reading glasses and helps optometrists recommend the correct "Add" power for bifocal or multifocal lenses.',
               howPerformed:
-                  'A sentence is displayed at various sizes. You read it aloud at a 40cm distance.',
+                  'A sequence of sentences at varying font sizes is displayed. You read the text aloud while maintaining a steady near distance.',
               instructions: [
-                'Hold the device at a comfortable reading distance.',
-                'Read the text clearly from the screen.',
-                'Indicate if the text is perfectly clear or blurry.',
+                'Hold the device at your preferred reading distance.',
+                'Read the text clearly and naturally.',
+                'Select if the text is perfectly sharp or if it has any "halo" or blur.',
               ],
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
               title: 'Mobile Refractometry',
               icon: Icons.psychology_outlined,
-              color: AppColors.error,
-              description: 'Natural vision assessment at dual distances.',
+              description: 'Digital assessment of the eye\'s refractive state.',
               whatIsIt:
-                  'A comprehensive assessment checking how your eyes focus at both 1 meter and 40 cm.',
+                  'A sophisticated screening tool that approximates your eye\'s power by analyzing blur patterns at two distinct distances (1m and 40cm).',
+              whatItDiagnoses:
+                  'Provides an estimated refractive error (sphere and cylinder), suggesting if you might need a prescription for Myopia, Hyperopia, or Astigmatism.',
+              howUseful:
+                  'Provides a fast, preliminary digital baseline. It is perfect for remote screening to determine if an urgent comprehensive eye clinic visit is necessary.',
               howPerformed:
-                  'Requires removing glasses or contacts to measure your natural focusing power.',
+                  'This test is performed WITHOUT glasses. Follow the voice prompts to move the device and respond when the target becomes blurry.',
               instructions: [
-                'Remove all eyewear before starting.',
-                'Follow the voice prompts carefully as the distance changes.',
-                'If the target becomes blurry, say "Blurry" immediately.',
+                'Remove all glasses or contact lenses before starting.',
+                'Turn up your volume as voice guidance is extensive here.',
+                'Immediately say "Blurry" or select "Can\'t See" when the letter fades.',
               ],
             ),
             const SizedBox(height: 40),
@@ -252,12 +336,80 @@ class HelpCenterScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildNavigationGuide({
+    required String title,
+    required IconData icon,
+    // Unified to Primary Color
+    required String description,
+    required String purpose,
+    required String usage,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+      ),
+      child: Theme(
+        data: ThemeData().copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+          collapsedShape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 24),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          subtitle: Text(
+            description,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  _buildSubSection('What is this?', purpose),
+                  const SizedBox(height: 16),
+                  _buildSubSection('When to use it?', usage),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTestGuide({
     required String title,
     required IconData icon,
-    required Color color,
+    // Unified to Primary Color
     required String description,
     required String whatIsIt,
+    required String whatItDiagnoses,
+    required String howUseful,
     required String howPerformed,
     required List<String> instructions,
   }) {
@@ -279,10 +431,10 @@ class HelpCenterScreen extends StatelessWidget {
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: AppColors.primary, size: 24),
           ),
           title: Text(
             title,
@@ -309,6 +461,10 @@ class HelpCenterScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildSubSection('What is it?', whatIsIt),
                   const SizedBox(height: 16),
+                  _buildSubSection('What does it diagnose?', whatItDiagnoses),
+                  const SizedBox(height: 16),
+                  _buildSubSection('Why is it useful?', howUseful),
+                  const SizedBox(height: 16),
                   _buildSubSection('How is it performed?', howPerformed),
                   const SizedBox(height: 16),
                   const Text(
@@ -319,17 +475,17 @@ class HelpCenterScreen extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   ...instructions.map(
                     (step) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.only(bottom: 4),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             '• ',
                             style: TextStyle(
-                              color: color,
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
