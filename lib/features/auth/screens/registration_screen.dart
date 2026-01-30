@@ -193,128 +193,157 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 final isLandscape = orientation == Orientation.landscape;
 
                 if (isLandscape) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left Side: Header Text
-                      Expanded(
-                        flex: 4,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Join Visiaxx',
-                                style: theme.textTheme.displaySmall?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.primary,
-                                  fontSize: 32,
-                                ),
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1100),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left Side: Header Text
+                          Expanded(
+                            flex: 4,
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(
+                                24,
+                                40,
+                                24,
+                                32,
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Experience premium digital eye diagnostics',
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.textSecondary,
-                                  height: 1.4,
-                                ),
-                              ),
-                              const SizedBox(height: 40),
-                              // Already have account
-                              Row(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Already have an account? ',
-                                    style: TextStyle(
+                                    'Join Visiaxx',
+                                    style: theme.textTheme.displaySmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          color: AppColors.primary,
+                                          fontSize: 32,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Experience premium digital eye diagnostics',
+                                    style: theme.textTheme.bodyLarge?.copyWith(
                                       color: AppColors.textSecondary,
+                                      height: 1.4,
                                     ),
                                   ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: Size.zero,
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    child: const Text(
-                                      'Sign In',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
+                                  const SizedBox(height: 40),
+                                  // Already have account
+                                  Wrap(
+                                    alignment: WrapAlignment.center,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Already have an account? ',
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                        ),
                                       ),
-                                    ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                          minimumSize: Size.zero,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: const Text(
+                                          'Sign In',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                      // Right Side: Form
-                      Expanded(
-                        flex: 6,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(12, 12, 24, 32),
-                          child: Form(
-                            key: _formKey,
-                            child: _buildRegistrationForm(),
+                          // Right Side: Form
+                          Expanded(
+                            flex: 6,
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(
+                                12,
+                                12,
+                                24,
+                                32,
+                              ),
+                              child: Form(
+                                key: _formKey,
+                                child: _buildRegistrationForm(),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   );
                 }
 
                 // Portrait layout
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Header text
-                        Text(
-                          'Join Visiaxx',
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
-                            fontSize: 28,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Experience premium digital eye diagnostics',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-
-                        _buildRegistrationForm(),
-
-                        const SizedBox(height: 24),
-
-                        // Already have account
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 550),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            // Header text
                             Text(
-                              'Already have an account? ',
-                              style: TextStyle(color: AppColors.textSecondary),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text(
-                                'Sign In',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                              'Join Visiaxx',
+                              style: theme.textTheme.displaySmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.primary,
+                                fontSize: 28,
                               ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Experience premium digital eye diagnostics',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+
+                            _buildRegistrationForm(),
+
+                            const SizedBox(height: 24),
+
+                            // Already have account
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  'Already have an account? ',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text(
+                                    'Sign In',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 );

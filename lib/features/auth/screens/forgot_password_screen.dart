@@ -189,120 +189,134 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 final isLandscape = orientation == Orientation.landscape;
 
                 if (isLandscape) {
-                  return Row(
-                    children: [
-                      // Left Side: Icon & Title
-                      Expanded(
-                        flex: 1,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.1,
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: Row(
+                        children: [
+                          // Left Side: Icon & Title
+                          Expanded(
+                            flex: 1,
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.lock_reset_rounded,
+                                      size: 56,
+                                      color: AppColors.primary,
+                                    ),
                                   ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.lock_reset_rounded,
-                                  size: 56,
-                                  color: AppColors.primary,
-                                ),
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    'Reset Password',
+                                    style: theme.textTheme.headlineMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          color: AppColors.primary,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    "Enter your email to receive a password reset link",
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'Reset Password',
-                                style: theme.textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.primary,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                "Enter your email to receive a password reset link",
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                      // Right Side: Form
-                      Expanded(
-                        flex: 1,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Form(
-                            key: _formKey,
-                            child: _buildFormContent(),
+                          // Right Side: Form
+                          Expanded(
+                            flex: 1,
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Form(
+                                key: _formKey,
+                                child: _buildFormContent(),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   );
                 }
 
                 // Portrait layout
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 48),
-                        // Header Section
-                        Center(
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.1,
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 450),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 48),
+                            // Header Section
+                            Center(
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.lock_reset_rounded,
+                                      size: 40,
+                                      color: AppColors.primary,
+                                    ),
                                   ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.lock_reset_rounded,
-                                  size: 40,
-                                  color: AppColors.primary,
-                                ),
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    'Reset Password',
+                                    style: theme.textTheme.displaySmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          color: AppColors.primary,
+                                          fontSize: 28,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    "Enter your email address and we'll send you a link to reset your password",
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'Reset Password',
-                                style: theme.textTheme.displaySmall?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.primary,
-                                  fontSize: 28,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                "Enter your email address and we'll send you a link to reset your password",
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 48),
+                            ),
+                            const SizedBox(height: 48),
 
-                        _buildFormContent(),
-                      ],
+                            _buildFormContent(),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -440,8 +454,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           const SizedBox(height: 32),
 
           // Back to Login Link
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
                 "Remember your password? ",
