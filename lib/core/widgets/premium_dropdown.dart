@@ -24,10 +24,12 @@ class PremiumDropdown<T> extends StatelessWidget {
   });
 
   void _showBottomSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -57,10 +59,10 @@ class PremiumDropdown<T> extends StatelessWidget {
                     children: [
                       Text(
                         'Select $label',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                          color: theme.textTheme.titleLarge?.color,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -70,7 +72,7 @@ class PremiumDropdown<T> extends StatelessWidget {
                         icon: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: AppColors.background,
+                            color: theme.scaffoldBackgroundColor,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -110,8 +112,8 @@ class PremiumDropdown<T> extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.primary.withValues(alpha: 0.1)
-                                  : AppColors.background.withValues(alpha: 0.5),
+                                  ? colorScheme.primary.withValues(alpha: 0.1)
+                                  : theme.cardColor.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
@@ -135,8 +137,11 @@ class PremiumDropdown<T> extends StatelessWidget {
                                               ? FontWeight.bold
                                               : FontWeight.w600,
                                           color: isSelected
-                                              ? AppColors.primary
-                                              : AppColors.textPrimary,
+                                              ? colorScheme.primary
+                                              : theme
+                                                    .textTheme
+                                                    .bodyLarge
+                                                    ?.color,
                                         ),
                                       ),
                                       if (itemSubtitleBuilder != null) ...[
@@ -176,6 +181,7 @@ class PremiumDropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -191,7 +197,7 @@ class PremiumDropdown<T> extends StatelessWidget {
               ),
               hintText: hintText,
               filled: true,
-              fillColor: AppColors.surface,
+              fillColor: theme.cardColor,
               suffixIcon: const Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: AppColors.textSecondary,

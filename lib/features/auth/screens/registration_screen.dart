@@ -127,6 +127,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Widget _buildSectionTitle(String title, IconData icon) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16, top: 8),
       child: Row(
@@ -135,11 +136,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           const SizedBox(width: 8),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
-              color: AppColors.textPrimary,
+              color: theme.textTheme.titleLarge?.color,
             ),
           ),
           const SizedBox(width: 8),
@@ -154,7 +155,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Create Account'),
         backgroundColor: AppColors.transparent,
@@ -357,14 +358,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Widget _buildRegistrationForm() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.04),
+            color: theme.brightness == Brightness.light
+                ? AppColors.black.withValues(alpha: 0.04)
+                : AppColors.transparent,
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -656,6 +660,7 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -664,10 +669,12 @@ class _RoleCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? context.primary.withValues(alpha: 0.05)
-              : AppColors.white,
+              : theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? context.primary : AppColors.border,
+            color: isSelected
+                ? context.primary
+                : theme.dividerColor.withValues(alpha: 0.5),
             width: isSelected ? 2 : 1,
           ),
         ),

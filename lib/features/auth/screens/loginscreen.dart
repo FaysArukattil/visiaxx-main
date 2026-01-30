@@ -191,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background Decoration
@@ -471,11 +471,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
+            color: theme.brightness == Brightness.light
+                ? AppColors.black.withValues(alpha: 0.05)
+                : AppColors.transparent,
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -495,7 +497,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Text(
             'Please enter your details to sign in',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textTertiary,
+              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 32),

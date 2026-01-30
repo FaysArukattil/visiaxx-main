@@ -219,8 +219,10 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -228,7 +230,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.white, AppColors.surfaceLight],
+            colors: [theme.scaffoldBackgroundColor, colorScheme.surface],
           ),
         ),
         child: SafeArea(
@@ -271,7 +273,8 @@ class _SplashScreenState extends State<SplashScreen>
                             style: TextStyle(
                               fontSize: isLandscape ? 16 : 18,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
+                              color: theme.textTheme.bodyLarge?.color
+                                  ?.withValues(alpha: 0.8),
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -281,7 +284,8 @@ class _SplashScreenState extends State<SplashScreen>
                             style: TextStyle(
                               fontSize: isLandscape ? 10 : 11,
                               fontWeight: FontWeight.w400,
-                              color: AppColors.textTertiary,
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withValues(alpha: 0.6),
                               letterSpacing: 1.0,
                             ),
                           ),
