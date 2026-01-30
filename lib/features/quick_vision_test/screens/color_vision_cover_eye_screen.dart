@@ -2,7 +2,6 @@
 import 'package:flutter/rendering.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -206,8 +205,8 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
   Widget build(BuildContext context) {
     final eyeBeingTested = widget.eyeToCover == 'left' ? 'right' : 'left';
     final eyeColor = eyeBeingTested == 'right'
-        ? AppColors.rightEye
-        : AppColors.leftEye;
+        ? context.primary
+        : context.success;
 
     return PopScope(
       canPop: false,
@@ -458,7 +457,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                 onPressed: _handleContinue,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: eyeColor,
-                                  foregroundColor: AppColors.white,
+                                  foregroundColor: Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),

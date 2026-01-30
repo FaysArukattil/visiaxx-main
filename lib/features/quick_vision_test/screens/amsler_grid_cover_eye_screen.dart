@@ -2,7 +2,6 @@
 import 'package:flutter/rendering.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -205,8 +204,8 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
   Widget build(BuildContext context) {
     final eyeBeingTested = widget.eyeToCover == 'left' ? 'right' : 'left';
     final eyeColor = eyeBeingTested == 'right'
-        ? AppColors.rightEye
-        : AppColors.leftEye;
+        ? context.primary
+        : context.success;
 
     return PopScope(
       canPop: false,
@@ -250,7 +249,9 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.03),
+                                color: Colors.black.withValues(
+                                  alpha: context.isDarkMode ? 0.2 : 0.03,
+                                ),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
@@ -542,7 +543,9 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withValues(
+                              alpha: context.isDarkMode ? 0.2 : 0.05,
+                            ),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -735,7 +738,9 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                       color: context.surface,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withValues(
+                            alpha: context.isDarkMode ? 0.2 : 0.05,
+                          ),
                           blurRadius: 10,
                           offset: const Offset(0, -4),
                         ),

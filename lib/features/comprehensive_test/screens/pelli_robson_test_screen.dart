@@ -853,7 +853,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         if (!didPop) _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: Colors.white, // Pure white for clinical accuracy
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
           backgroundColor: context.surface,
           elevation: 0,
@@ -885,7 +885,13 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                           child: Column(
                             children: [
                               _buildInfoBar(isLandscape: true),
-                              Expanded(child: _buildTripletsDisplay()),
+                              Expanded(
+                                child: Container(
+                                  width: double.infinity,
+                                  color: Colors.white,
+                                  child: _buildTripletsDisplay(),
+                                ),
+                              ),
                               _buildRecognizedTextIndicator(),
                             ],
                           ),
@@ -905,8 +911,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   return Column(
                     children: [
                       _buildInfoBar(),
-                      // Triplets display
-                      Expanded(child: _buildTripletsDisplay()),
+                      // Triplets display - Locked to white for clinical accuracy
+                      Expanded(
+                        child: Container(
+                          width: double.infinity,
+                          color: Colors.white,
+                          child: _buildTripletsDisplay(),
+                        ),
+                      ),
 
                       // Recognized text banner (Reading test style)
                       _buildRecognizedTextIndicator(),

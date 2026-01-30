@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:async';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
@@ -130,16 +130,16 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         appBar: isLandscape
             ? null
             : AppBar(
                 title: Text(widget.title),
-                backgroundColor: AppColors.white,
+                backgroundColor: context.surface,
                 elevation: 0,
                 centerTitle: true,
                 leading: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                  icon: Icon(Icons.close, color: context.textPrimary),
                   onPressed: _showExitConfirmation,
                 ),
               ),
@@ -209,12 +209,14 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(color: context.border.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(
+              alpha: context.isDarkMode ? 0.2 : 0.05,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -228,9 +230,9 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
     return Container(
       padding: EdgeInsets.all(isLandscape ? 16 : 24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(color: context.border.withValues(alpha: 0.5)),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -246,10 +248,10 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                   const Spacer(),
                   Text(
                     widget.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                     ),
                   ),
                   const Spacer(),
@@ -259,12 +261,12 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.settings_overscan_rounded,
-                color: AppColors.primary,
+                color: context.primary,
                 size: isLandscape ? 30 : 40,
               ),
             ),
@@ -275,7 +277,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
               style: TextStyle(
                 fontSize: isLandscape ? 18 : 22,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: context.textPrimary,
               ),
             ),
             SizedBox(height: isLandscape ? 8 : 16),
@@ -284,7 +286,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: isLandscape ? 14 : 16,
-                color: AppColors.textSecondary,
+                color: context.textSecondary,
                 height: 1.4,
               ),
             ),
@@ -299,7 +301,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                     'Current',
                     widget.currentDistance,
                     Icons.near_me_disabled_rounded,
-                    AppColors.error,
+                    context.error,
                     small: isLandscape,
                   ),
                   Padding(
@@ -307,12 +309,12 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.05),
+                        color: context.primary.withValues(alpha: 0.05),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.arrow_forward_rounded,
-                        color: AppColors.primary,
+                        color: context.primary,
                         size: isLandscape ? 16 : 20,
                       ),
                     ),
@@ -321,7 +323,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                     'Target',
                     widget.targetDistance,
                     Icons.straighten_rounded,
-                    AppColors.success,
+                    context.success,
                     small: isLandscape,
                   ),
                 ],
@@ -337,10 +339,12 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
     return Container(
       padding: EdgeInsets.all(isLandscape ? 12 : 16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(
+              alpha: context.isDarkMode ? 0.2 : 0.05,
+            ),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -352,9 +356,9 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
         child: ElevatedButton(
           onPressed: _secondsRemaining == 0 ? _handleContinue : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.white,
-            disabledBackgroundColor: AppColors.border.withValues(alpha: 0.5),
+            backgroundColor: context.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: context.border.withValues(alpha: 0.5),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -366,7 +370,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                   children: [
                     EyeLoader(
                       size: isLandscape ? 24 : 30,
-                      color: AppColors.primary,
+                      color: context.primary,
                       value: _progress,
                     ),
                     const SizedBox(width: 12),
@@ -375,7 +379,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
                       style: TextStyle(
                         fontSize: isLandscape ? 16 : 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                       ),
                     ),
                   ],
@@ -414,7 +418,7 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
           label,
           style: TextStyle(
             fontSize: small ? 10 : 12,
-            color: AppColors.textSecondary,
+            color: context.textSecondary,
           ),
         ),
         Text(
