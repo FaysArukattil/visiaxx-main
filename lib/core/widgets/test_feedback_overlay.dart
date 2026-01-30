@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../extensions/theme_extension.dart';
 
 class TestFeedbackOverlay extends StatelessWidget {
   final bool isCorrect;
@@ -41,7 +42,7 @@ class TestFeedbackOverlay extends StatelessWidget {
         return Container(
           width: double.infinity,
           height: double.infinity,
-          color: AppColors.white, // Solid white background
+          color: context.surface, // Theme-aware background
           child: Stack(
             children: [
               // Subtle background pulse or tint
@@ -60,7 +61,7 @@ class TestFeedbackOverlay extends StatelessWidget {
                         width: 140,
                         height: 140,
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: context.surface,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -112,4 +113,3 @@ class TestFeedbackOverlay extends StatelessWidget {
     );
   }
 }
-

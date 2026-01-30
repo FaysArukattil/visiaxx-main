@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import '../constants/app_colors.dart';
+import '../extensions/theme_extension.dart';
 import '../utils/distance_helper.dart';
 import '../services/distance_detection_service.dart';
 import 'eye_loader.dart';
@@ -65,7 +66,7 @@ class DistanceWarningOverlay extends StatelessWidget {
           Positioned.fill(
             child: BackdropFilter(
               filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: Container(color: AppColors.black.withValues(alpha: 0.4)),
+              child: Container(color: Colors.black.withValues(alpha: 0.6)),
             ),
           ),
 
@@ -78,7 +79,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: EdgeInsets.all(isSmallHeight ? 12 : 24),
                 decoration: ShapeDecoration(
-                  color: AppColors.white.withValues(alpha: 0.95),
+                  color: context.surface.withValues(alpha: 0.95),
                   shape: ContinuousRectangleBorder(
                     borderRadius: BorderRadius.circular(
                       isSmallHeight ? 24 : 32,
@@ -131,10 +132,10 @@ class DistanceWarningOverlay extends StatelessWidget {
                                 const SizedBox(height: 12),
                                 Text(
                                   pauseReason.toUpperCase(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
-                                    color: AppColors.textPrimary,
+                                    color: context.textPrimary,
                                     letterSpacing: -0.5,
                                     height: 1.1,
                                   ),
@@ -146,7 +147,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: AppColors.textPrimary.withValues(
+                                    color: context.textPrimary.withValues(
                                       alpha: 0.6,
                                     ),
                                     height: 1.4,
@@ -165,6 +166,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                               children: [
                                 if (DistanceHelper.isFaceDetected(status)) ...[
                                   _buildPremiumDistanceGauge(
+                                    context,
                                     targetDistance,
                                     iconColor,
                                     isSmallHeight: isSmallHeight,
@@ -178,7 +180,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                                   child: OutlinedButton(
                                     onPressed: onSkip,
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.textSecondary,
+                                      foregroundColor: context.textSecondary,
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 12,
                                       ),
@@ -247,7 +249,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                             style: TextStyle(
                               fontSize: isSmallHeight ? 16 : 20,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                               letterSpacing: -0.5,
                               height: 1.1,
                             ),
@@ -259,9 +261,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: isSmallHeight ? 11 : 14,
-                              color: AppColors.textPrimary.withValues(
-                                alpha: 0.6,
-                              ),
+                              color: context.textPrimary.withValues(alpha: 0.6),
                               height: 1.4,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.1,
@@ -272,6 +272,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                           // LIVE DISTANCE GAUGE
                           if (DistanceHelper.isFaceDetected(status)) ...[
                             _buildPremiumDistanceGauge(
+                              context,
                               targetDistance,
                               iconColor,
                               isSmallHeight: isSmallHeight,
@@ -290,9 +291,9 @@ class DistanceWarningOverlay extends StatelessWidget {
                             child: OutlinedButton(
                               onPressed: onSkip,
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textSecondary,
+                                foregroundColor: context.textSecondary,
                                 side: BorderSide(
-                                  color: AppColors.textSecondary.withValues(
+                                  color: context.textSecondary.withValues(
                                     alpha: 0.3,
                                   ),
                                 ),
@@ -324,6 +325,7 @@ class DistanceWarningOverlay extends StatelessWidget {
   }
 
   Widget _buildPremiumDistanceGauge(
+    BuildContext context,
     double target,
     Color statusColor, {
     bool isSmallHeight = false,
@@ -345,7 +347,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textSecondary.withValues(alpha: 0.5),
+                    color: context.textSecondary.withValues(alpha: 0.5),
                     letterSpacing: 1,
                   ),
                 ),
@@ -365,7 +367,7 @@ class DistanceWarningOverlay extends StatelessWidget {
             Container(
               height: 30,
               width: 1,
-              color: AppColors.border.withValues(alpha: 0.5),
+              color: context.border.withValues(alpha: 0.5),
             ),
             const SizedBox(width: 32),
             Column(
@@ -375,7 +377,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textSecondary.withValues(alpha: 0.5),
+                    color: context.textSecondary.withValues(alpha: 0.5),
                     letterSpacing: 1,
                   ),
                 ),
@@ -385,7 +387,7 @@ class DistanceWarningOverlay extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
+                    color: context.textPrimary,
                     fontFeatures: const [ui.FontFeature.tabularFigures()],
                   ),
                 ),
@@ -399,7 +401,7 @@ class DistanceWarningOverlay extends StatelessWidget {
           height: 8,
           width: 200,
           decoration: BoxDecoration(
-            color: AppColors.border.withValues(alpha: 0.3),
+            color: context.border.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Stack(
@@ -438,7 +440,7 @@ class DistanceWarningOverlay extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildActionHint(isOptimal, isTooClose, isTooFar),
+        _buildActionHint(context, isOptimal, isTooClose, isTooFar),
       ],
     );
   }
@@ -470,7 +472,12 @@ class DistanceWarningOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildActionHint(bool isOptimal, bool isTooClose, bool isTooFar) {
+  Widget _buildActionHint(
+    BuildContext context,
+    bool isOptimal,
+    bool isTooClose,
+    bool isTooFar,
+  ) {
     if (status == DistanceStatus.noFaceDetected) return const SizedBox.shrink();
 
     final text = isOptimal
@@ -479,7 +486,7 @@ class DistanceWarningOverlay extends StatelessWidget {
     final icon = isOptimal
         ? Icons.check_circle_rounded
         : (isTooClose ? Icons.arrow_back_rounded : Icons.arrow_forward_rounded);
-    final color = isOptimal ? AppColors.success : AppColors.warning;
+    final color = isOptimal ? context.success : context.warning;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
-import '../constants/app_colors.dart';
+import '../extensions/theme_extension.dart';
 import '../services/data_cleanup_service.dart';
 
 class TestExitConfirmationDialog extends StatefulWidget {
@@ -81,7 +81,7 @@ class _TestExitConfirmationDialogState
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: EdgeInsets.all(isLandscape ? 20 : 28),
       decoration: ShapeDecoration(
-        color: AppColors.white.withValues(alpha: 0.98),
+        color: context.surface.withValues(alpha: 0.98),
         shape: ContinuousRectangleBorder(
           borderRadius: BorderRadius.circular(40),
         ),
@@ -107,23 +107,23 @@ class _TestExitConfirmationDialogState
                             width: 56,
                             height: 56,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
+                              color: context.primary.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.pause_circle_filled_rounded,
-                              color: AppColors.primary,
+                              color: context.primary,
                               size: 32,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          const Text(
+                          Text(
                             'Test Paused',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -132,9 +132,7 @@ class _TestExitConfirmationDialogState
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textPrimary.withValues(
-                                alpha: 0.6,
-                              ),
+                              color: context.textPrimary.withValues(alpha: 0.6),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -181,27 +179,27 @@ class _TestExitConfirmationDialogState
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.2),
+                          color: context.primary.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.pause_circle_filled_rounded,
-                        color: AppColors.primary,
+                        color: context.primary,
                         size: 36,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Test Paused',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -211,7 +209,7 @@ class _TestExitConfirmationDialogState
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
-                        color: AppColors.textPrimary.withValues(alpha: 0.6),
+                        color: context.textPrimary.withValues(alpha: 0.6),
                         height: 1.5,
                         fontWeight: FontWeight.w600,
                       ),
@@ -229,8 +227,8 @@ class _TestExitConfirmationDialogState
                           icon: const Icon(Icons.play_arrow_rounded, size: 24),
                           label: const Text('Continue Test'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.white,
+                            backgroundColor: context.primary,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -245,10 +243,10 @@ class _TestExitConfirmationDialogState
                           label: const Text('Restart Test'),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(
-                              color: AppColors.warning.withValues(alpha: 0.3),
+                              color: context.warning.withValues(alpha: 0.3),
                               width: 1.5,
                             ),
-                            foregroundColor: AppColors.warning,
+                            foregroundColor: context.warning,
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -261,7 +259,7 @@ class _TestExitConfirmationDialogState
                           icon: const Icon(Icons.logout_rounded, size: 20),
                           label: const Text('Exit & Lose Progress'),
                           style: TextButton.styleFrom(
-                            foregroundColor: AppColors.error,
+                            foregroundColor: context.error,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                         ),
@@ -287,8 +285,8 @@ class _TestExitConfirmationDialogState
         icon: Icon(icon, size: 20),
         label: Text(label),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
+          backgroundColor: context.primary,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(
@@ -298,7 +296,7 @@ class _TestExitConfirmationDialogState
       );
     }
 
-    final color = isError ? AppColors.error : AppColors.warning;
+    final color = isError ? context.error : context.warning;
 
     return OutlinedButton.icon(
       onPressed: onPressed,
@@ -328,7 +326,7 @@ class _TestExitConfirmationDialogState
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: EdgeInsets.all(isLandscape ? 20 : 28),
       decoration: ShapeDecoration(
-        color: AppColors.white.withValues(alpha: 0.98),
+        color: context.surface.withValues(alpha: 0.98),
         shape: ContinuousRectangleBorder(
           borderRadius: BorderRadius.circular(40),
         ),
@@ -354,18 +352,15 @@ class _TestExitConfirmationDialogState
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color:
-                                  (isExit ? AppColors.error : AppColors.warning)
-                                      .withValues(alpha: 0.1),
+                              color: (isExit ? context.error : context.warning)
+                                  .withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               isExit
                                   ? Icons.dangerous_rounded
                                   : Icons.help_outline_rounded,
-                              color: isExit
-                                  ? AppColors.error
-                                  : AppColors.warning,
+                              color: isExit ? context.error : context.warning,
                               size: 24,
                             ),
                           ),
@@ -373,10 +368,10 @@ class _TestExitConfirmationDialogState
                           Text(
                             actionTitle,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -385,9 +380,7 @@ class _TestExitConfirmationDialogState
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textPrimary.withValues(
-                                alpha: 0.6,
-                              ),
+                              color: context.textPrimary.withValues(alpha: 0.6),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -416,9 +409,9 @@ class _TestExitConfirmationDialogState
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isExit
-                                  ? AppColors.error
-                                  : AppColors.warning,
-                              foregroundColor: AppColors.white,
+                                  ? context.error
+                                  : context.warning,
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               minimumSize: const Size(double.infinity, 50),
                               shape: RoundedRectangleBorder(
@@ -436,7 +429,7 @@ class _TestExitConfirmationDialogState
                           TextButton(
                             onPressed: _hideConfirm,
                             style: TextButton.styleFrom(
-                              foregroundColor: AppColors.textSecondary,
+                              foregroundColor: context.textSecondary,
                               minimumSize: const Size(double.infinity, 44),
                             ),
                             child: const Text(
@@ -456,7 +449,7 @@ class _TestExitConfirmationDialogState
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: (isExit ? AppColors.error : AppColors.warning)
+                        color: (isExit ? context.error : context.warning)
                             .withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
@@ -464,7 +457,7 @@ class _TestExitConfirmationDialogState
                         isExit
                             ? Icons.dangerous_rounded
                             : Icons.help_outline_rounded,
-                        color: isExit ? AppColors.error : AppColors.warning,
+                        color: isExit ? context.error : context.warning,
                         size: 28,
                       ),
                     ),
@@ -472,10 +465,10 @@ class _TestExitConfirmationDialogState
                     Text(
                       actionTitle,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -484,7 +477,7 @@ class _TestExitConfirmationDialogState
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textPrimary.withValues(alpha: 0.6),
+                        color: context.textPrimary.withValues(alpha: 0.6),
                         height: 1.5,
                         fontWeight: FontWeight.w600,
                       ),
@@ -497,7 +490,7 @@ class _TestExitConfirmationDialogState
                             onPressed: _hideConfirm,
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              foregroundColor: AppColors.textSecondary,
+                              foregroundColor: context.textSecondary,
                             ),
                             child: const Text(
                               'No, Go Back',
@@ -524,9 +517,9 @@ class _TestExitConfirmationDialogState
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isExit
-                                  ? AppColors.error
-                                  : AppColors.warning,
-                              foregroundColor: AppColors.white,
+                                  ? context.error
+                                  : context.warning,
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               elevation: 0,
                               shape: RoundedRectangleBorder(

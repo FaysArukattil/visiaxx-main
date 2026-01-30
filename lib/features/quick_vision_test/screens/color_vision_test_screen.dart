@@ -8,6 +8,7 @@ import 'package:visiaxx/core/constants/ishihara_plate_data.dart';
 import 'package:visiaxx/core/widgets/distance_warning_overlay.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/color_vision_cover_eye_screen.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/services/tts_service.dart';
@@ -770,9 +771,9 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         _phase == TestPhase.calibration ||
         _phase == TestPhase.rightEyeInstruction ||
         _phase == TestPhase.leftEyeInstruction) {
-      return const Scaffold(
-        backgroundColor: AppColors.testBackground,
-        body: Center(child: EyeLoader(size: 80)),
+      return Scaffold(
+        backgroundColor: context.scaffoldBackground,
+        body: const Center(child: EyeLoader(size: 80)),
       );
     }
 
@@ -792,7 +793,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   Widget _buildManualScaffold() {
     return Scaffold(
-      backgroundColor: AppColors.testBackground,
+      backgroundColor: context.scaffoldBackground,
       appBar: MediaQuery.of(context).orientation == Orientation.landscape
           ? null
           : AppBar(

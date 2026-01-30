@@ -11,6 +11,7 @@ import 'package:visiaxx/core/utils/distance_helper.dart';
 import 'package:visiaxx/core/utils/navigation_utils.dart';
 import '../../../core/widgets/distance_warning_overlay.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/services/tts_service.dart';
@@ -1358,14 +1359,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.testBackground,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
           title: Text(
             'Visual Acuity - ${_currentEye.toUpperCase()} Eye',
-            style: const TextStyle(fontWeight: FontWeight.w900),
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: context.textPrimary,
+            ),
           ),
-          backgroundColor: AppColors.white,
+          backgroundColor: context.surface,
           elevation: 0,
+          iconTheme: IconThemeData(color: context.textPrimary),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: _showExitConfirmation,
@@ -1399,7 +1404,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                               ),
                               Container(
                                 width: 1,
-                                color: AppColors.border.withValues(alpha: 0.2),
+                                color: context.border.withValues(alpha: 0.2),
                               ),
                               SizedBox(
                                 width: 280,
@@ -1541,8 +1546,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withValues(alpha: 0.15),
-                AppColors.white.withValues(alpha: 0.05),
+                context.surface.withValues(alpha: 0.15),
+                context.surface.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
@@ -1676,10 +1681,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         vertical: isLandscape ? 6 : 10,
       ),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.2),
+            color: context.border.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -1690,17 +1695,17 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.primary.withValues(alpha: 0.08),
               shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
             child: Text(
               TestConstants.visualAcuityLevels[_currentLevel].snellen,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
-                color: AppColors.primary,
+                color: context.primary,
               ),
             ),
           ),
@@ -1709,7 +1714,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
-              color: AppColors.primary.withValues(alpha: 0.05),
+              color: context.primary.withValues(alpha: 0.05),
               shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -1719,8 +1724,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               children: [
                 Text(
                   'LEVEL ${_currentLevel + 1}/${TestConstants.visualAcuityLevels.length}',
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.primary,
                     fontWeight: FontWeight.w900,
                     fontSize: 10,
                     letterSpacing: 0.5,
@@ -1730,7 +1735,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 Container(
                   width: 1,
                   height: 10,
-                  color: AppColors.primary.withValues(alpha: 0.2),
+                  color: context.primary.withValues(alpha: 0.2),
                 ),
                 const SizedBox(width: 8),
                 const Icon(
@@ -1800,7 +1805,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             style: TextStyle(
               fontSize: 8,
               fontWeight: FontWeight.w900,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              color: context.textSecondary.withValues(alpha: 0.5),
               letterSpacing: 0.8,
             ),
           ),
@@ -1810,9 +1815,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             Icon(
               Icons.timer_outlined,
               size: 16,
-              color: _eDisplayCountdown <= 2
-                  ? AppColors.error
-                  : AppColors.primary,
+              color: _eDisplayCountdown <= 2 ? context.error : context.primary,
             ),
             const SizedBox(width: 4),
             Text(
@@ -1821,8 +1824,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 fontSize: compact ? 18 : 22,
                 fontWeight: FontWeight.w900,
                 color: _eDisplayCountdown <= 2
-                    ? AppColors.error
-                    : AppColors.primary,
+                    ? context.error
+                    : context.primary,
                 fontFeatures: const [ui.FontFeature.tabularFigures()],
               ),
             ),
@@ -1958,7 +1961,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   Widget _buildRelaxationView({bool isLandscape = false}) {
     return Container(
-      color: AppColors.testBackground,
+      color: context.scaffoldBackground,
       width: double.infinity,
       height: double.infinity,
       child: isLandscape
@@ -2006,7 +2009,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           height: finalHeight,
           width: double.infinity,
           decoration: ShapeDecoration(
-            color: AppColors.white,
+            color: context.surface,
             shape: ContinuousRectangleBorder(
               borderRadius: BorderRadius.circular(32),
             ),
@@ -2044,7 +2047,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: AppColors.white.withValues(alpha: 0.15),
+            color: context.surface.withValues(alpha: 0.15),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
@@ -2062,7 +2065,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.white.withValues(alpha: 0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
@@ -2075,20 +2078,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                       child: CircularProgressIndicator(
                         value: _relaxationProgressController.value,
                         strokeWidth: 5,
-                        backgroundColor: AppColors.primary.withValues(
-                          alpha: 0.1,
-                        ),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.primary,
+                        backgroundColor: context.primary.withValues(alpha: 0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          context.primary,
                         ),
                       ),
                     ),
                     Text(
                       '$_relaxationCountdown',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.primary,
+                        color: context.primary,
                         fontFamily: 'Inter',
                         letterSpacing: -1,
                       ),
@@ -2125,6 +2126,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                 margin: EdgeInsets.only(
                   right: isLandscape ? 50 : 0, // Room for timer overlap
                   bottom: 0,
+                  left: isLandscape ? 0 : 24, // Added left padding for portrait
+                ),
+                padding: EdgeInsets.only(
+                  right: isLandscape
+                      ? 0
+                      : 24, // Added right padding for portrait
                 ),
                 child: _buildRelaxationImage(
                   isLandscape: isLandscape,
@@ -2156,7 +2163,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             'Relax and focus on the distance',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
             ),
@@ -2178,6 +2185,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           // Main E display area - Use a guaranteed height if expanded is too small
           Container(
             padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white, // Always white background for E visibility
+              borderRadius: BorderRadius.circular(24),
+            ),
             constraints: BoxConstraints(
               minHeight: isLandscape ? (isSideBySide ? 200 : 150) : 250,
             ),
@@ -2221,8 +2232,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                             Icons.mic,
                             size: 20,
                             color: _isTestPausedForDistance
-                                ? AppColors.warning
-                                : AppColors.success,
+                                ? context
+                                      .error // Use theme error color
+                                : context.success, // Use theme success color
                           ),
                         if (_isListening && !isPractitioner)
                           const SizedBox(width: 8),
@@ -2233,8 +2245,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                                 : 'Which way is the E pointing?',
                             style: TextStyle(
                               color: _isTestPausedForDistance
-                                  ? AppColors.warning
-                                  : AppColors.textSecondary,
+                                  ? context.error
+                                  : context.textSecondary,
                               fontWeight: _isTestPausedForDistance
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -2252,7 +2264,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                             ? 'Voice recognition active - waiting to resume'
                             : 'Use buttons or say: Upper or Upward, Down or Downward, Left, Right',
                         style: TextStyle(
-                          color: AppColors.textTertiary,
+                          color: context.textPrimary.withValues(alpha: 0.5),
                           fontSize: 12,
                         ),
                         textAlign: TextAlign.center,
@@ -2275,7 +2287,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return Container(
       padding: const EdgeInsets.fromLTRB(32, 20, 32, 32),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
@@ -2321,15 +2333,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _handleButtonResponse(EDirection.blurry),
-              icon: const Icon(
+              icon: Icon(
                 Icons.visibility_off_rounded,
                 size: 18,
-                color: AppColors.primary,
+                color: context.primary,
               ),
-              label: const Text(
+              label: Text(
                 "BLURRY / CAN'T SEE CLEARLY",
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: context.primary,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                   letterSpacing: 0.5,
@@ -2338,13 +2350,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 side: BorderSide(
-                  color: AppColors.primary.withValues(alpha: 0.5),
+                  color: context.primary.withValues(alpha: 0.5),
                   width: 1.5,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                backgroundColor: AppColors.primary.withValues(alpha: 0.05),
+                backgroundColor: context.primary.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -2363,10 +2375,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: context.surface,
             border: Border(
               top: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.3),
+                color: context.border.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -2421,10 +2433,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                       Icons.visibility_off_rounded,
                       size: iconSize * 0.5,
                     ),
-                    label: const Text(
+                    label: Text(
                       "BLURRY",
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: context.primary,
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
                       ),
@@ -2460,7 +2472,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: AppColors.white,
+          color: context.surface,
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Column(
@@ -2508,12 +2520,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                       icon: Icon(
                         Icons.visibility_off_rounded,
                         size: iconSize * 0.6,
-                        color: AppColors.primary,
+                        color: context.primary,
                       ),
                       label: Text(
                         "BLURRY",
                         style: TextStyle(
-                          color: AppColors.primary,
+                          color: context.primary,
                           fontWeight: FontWeight.w900,
                           fontSize: (buttonSize < 45) ? 9 : 11,
                         ),
@@ -2597,11 +2609,14 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.testBackground,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
-          title: const Text('Visual Acuity Result'),
+          title: Text(
+            'Visual Acuity Result',
+            style: TextStyle(color: context.textPrimary),
+          ),
           automaticallyImplyLeading: false,
-          backgroundColor: AppColors.testBackground,
+          backgroundColor: context.scaffoldBackground,
           elevation: 0,
         ),
         body: Column(
@@ -2620,10 +2635,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.08),
+                          color: context.success.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: AppColors.success.withValues(alpha: 0.15),
+                            color: context.success.withValues(alpha: 0.15),
                           ),
                         ),
                         child: Column(
@@ -2631,13 +2646,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppColors.success.withValues(alpha: 0.1),
+                                color: context.success.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.check_circle_rounded,
                                 size: 40,
-                                color: AppColors.success,
+                                color: context.success,
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -2646,7 +2661,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
+                                    color: context.textPrimary,
                                   ),
                               textAlign: TextAlign.center,
                             ),
@@ -2690,8 +2705,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                     _proceedToBothEyesTest();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
+                    backgroundColor: context.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -2715,7 +2730,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -2749,7 +2764,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [
@@ -2783,10 +2798,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   children: [
                     Text(
                       eye,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimary,
                       ),
                     ),
                     Text(
@@ -2805,12 +2820,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text(
+                  Text(
                     'SNELLEN',
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textTertiary,
+                      color: context.textSecondary.withValues(alpha: 0.7),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -2819,7 +2834,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                     style: TextStyle(
                       fontSize: score.contains('Worse') ? 13 : 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                 ],
@@ -2867,17 +2882,17 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           children: [
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: context.textPrimary,
               ),
             ),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 9,
-                color: AppColors.textTertiary,
+                color: context.textSecondary.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -2933,11 +2948,11 @@ class _DirectionButton extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primary,
         borderRadius: BorderRadius.circular(size * 0.3),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: context.primary.withValues(alpha: 0.3),
             blurRadius: size * 0.1,
             offset: Offset(0, size * 0.05),
           ),
@@ -2949,7 +2964,7 @@ class _DirectionButton extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(size * 0.3),
           child: Center(
-            child: Icon(_icon, color: AppColors.white, size: iconSize),
+            child: Icon(_icon, color: Colors.white, size: iconSize),
           ),
         ),
       ),
