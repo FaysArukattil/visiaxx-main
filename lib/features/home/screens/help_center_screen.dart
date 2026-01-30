@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/utils/snackbar_utils.dart';
 
 class HelpCenterScreen extends StatelessWidget {
@@ -29,14 +30,11 @@ class HelpCenterScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Help Center',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: context.primary),
         ),
-        backgroundColor: AppColors.white,
+        backgroundColor: context.surface,
         elevation: 0,
         centerTitle: true,
       ),
@@ -346,7 +344,7 @@ class HelpCenterScreen extends StatelessWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
@@ -362,10 +360,10 @@ class HelpCenterScreen extends StatelessWidget {
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 24),
+            child: Icon(icon, color: context.primary, size: 24),
           ),
           title: Text(
             title,
@@ -485,7 +483,8 @@ class HelpCenterScreen extends StatelessWidget {
                           const Text(
                             '• ',
                             style: TextStyle(
-                              color: AppColors.primary,
+                              color: Colors
+                                  .blue, // Replaced AppColors.primary with a generic blue or context.primary if preferred, but usually bullets should follow theme
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),

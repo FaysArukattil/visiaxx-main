@@ -1,6 +1,7 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/eye_loader.dart';
 
@@ -167,7 +168,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: context.primary.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -208,15 +209,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                     width: 100,
                                     height: 100,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(
+                                      color: context.primary.withValues(
                                         alpha: 0.1,
                                       ),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.lock_reset_rounded,
                                       size: 56,
-                                      color: AppColors.primary,
+                                      color: context.primary,
                                     ),
                                   ),
                                   const SizedBox(height: 24),
@@ -225,7 +226,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                     style: theme.textTheme.headlineMedium
                                         ?.copyWith(
                                           fontWeight: FontWeight.w900,
-                                          color: AppColors.primary,
+                                          color: context.primary,
                                         ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -278,15 +279,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                     width: 80,
                                     height: 80,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(
+                                      color: context.primary.withValues(
                                         alpha: 0.1,
                                       ),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.lock_reset_rounded,
                                       size: 40,
-                                      color: AppColors.primary,
+                                      color: context.primary,
                                     ),
                                   ),
                                   const SizedBox(height: 24),
@@ -295,7 +296,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                     style: theme.textTheme.displaySmall
                                         ?.copyWith(
                                           fontWeight: FontWeight.w900,
-                                          color: AppColors.primary,
+                                          color: context.primary,
                                           fontSize: 28,
                                         ),
                                     textAlign: TextAlign.center,
@@ -412,14 +413,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             height: 56,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: AppColors.primaryGradient,
+                colors: [
+                  context.primary,
+                  context.primary.withValues(alpha: 0.7),
+                ],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.25),
+                  color: context.primary.withValues(alpha: 0.25),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -469,7 +473,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 child: Text(
                   'Sign In',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppColors.primary,
+                    color: context.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

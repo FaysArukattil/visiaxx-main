@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'dart:async';
 import '../../../core/services/auth_service.dart';
@@ -296,7 +297,7 @@ class _SplashScreenState extends State<SplashScreen>
                     bottom: isLandscape ? 20 : 30,
                     child: Center(
                       child: isLandscape
-                          ? const EyeLoader(size: 24, color: AppColors.primary)
+                          ? EyeLoader(size: 24, color: context.primary)
                           : EyeLoader.fullScreen(),
                     ),
                   ),

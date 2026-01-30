@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../core/widgets/eye_loader.dart';
@@ -202,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: context.primary.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -244,14 +245,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                     height: 100,
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
-                                        colors: AppColors.primaryGradient,
+                                        colors: [
+                                          context.primary,
+                                          context.primary.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                        ],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
                                       borderRadius: BorderRadius.circular(28),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.primary.withValues(
+                                          color: context.primary.withValues(
                                             alpha: 0.3,
                                           ),
                                           blurRadius: 15,
@@ -273,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: theme.textTheme.headlineLarge
                                         ?.copyWith(
                                           fontWeight: FontWeight.w900,
-                                          color: AppColors.primary,
+                                          color: context.primary,
                                           letterSpacing: -0.5,
                                         ),
                                   ),
@@ -311,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           'Sign Up Now',
                                           style: theme.textTheme.bodyMedium
                                               ?.copyWith(
-                                                color: AppColors.primary,
+                                                color: context.primary,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                         ),
@@ -363,14 +369,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                     height: 80,
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
-                                        colors: AppColors.primaryGradient,
+                                        colors: [
+                                          context.primary,
+                                          context.primary.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                        ],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
                                       borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.primary.withValues(
+                                          color: context.primary.withValues(
                                             alpha: 0.3,
                                           ),
                                           blurRadius: 12,
@@ -392,7 +403,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: theme.textTheme.displaySmall
                                         ?.copyWith(
                                           fontWeight: FontWeight.w900,
-                                          color: AppColors.primary,
+                                          color: context.primary,
                                           letterSpacing: -0.5,
                                         ),
                                   ),
@@ -433,7 +444,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: Text(
                                     'Sign Up',
                                     style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.primary,
+                                      color: context.primary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -599,14 +610,17 @@ class _LoginScreenState extends State<LoginScreen> {
             height: 56,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: AppColors.primaryGradient,
+                colors: [
+                  context.primary,
+                  context.primary.withValues(alpha: 0.7),
+                ],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.25),
+                  color: context.primary.withValues(alpha: 0.25),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),

@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/premium_dropdown.dart';
 import '../../../core/widgets/eye_loader.dart';
@@ -130,7 +131,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       padding: const EdgeInsets.only(bottom: 16, top: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.primary),
+          Icon(icon, size: 18, color: context.primary),
           const SizedBox(width: 8),
           Text(
             title,
@@ -171,7 +172,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.04),
+                color: context.primary.withValues(alpha: 0.04),
               ),
             ),
           ),
@@ -218,7 +219,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                     style: theme.textTheme.displaySmall
                                         ?.copyWith(
                                           fontWeight: FontWeight.w900,
-                                          color: AppColors.primary,
+                                          color: context.primary,
                                           fontSize: 32,
                                         ),
                                   ),
@@ -302,7 +303,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               'Join Visiaxx',
                               style: theme.textTheme.displaySmall?.copyWith(
                                 fontWeight: FontWeight.w900,
-                                color: AppColors.primary,
+                                color: context.primary,
                                 fontSize: 28,
                               ),
                             ),
@@ -583,14 +584,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             height: 56,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: AppColors.primaryGradient,
+                colors: [
+                  context.primary,
+                  context.primary.withValues(alpha: 0.7),
+                ],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.2),
+                  color: context.primary.withValues(alpha: 0.2),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -659,11 +663,11 @@ class _RoleCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.05)
+              ? context.primary.withValues(alpha: 0.05)
               : AppColors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? context.primary : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -672,7 +676,7 @@ class _RoleCard extends StatelessWidget {
             Icon(
               icon,
               size: 28,
-              color: isSelected ? AppColors.primary : AppColors.textTertiary,
+              color: isSelected ? context.primary : AppColors.textTertiary,
             ),
             const SizedBox(height: 8),
             Text(
@@ -680,7 +684,7 @@ class _RoleCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                color: isSelected ? context.primary : AppColors.textSecondary,
               ),
             ),
           ],
