@@ -294,7 +294,16 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   Widget _buildCarousel(BoxConstraints constraints) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final carouselHeight = (screenHeight * 0.22).clamp(160.0, 220.0);
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    // More adaptive height calculation - Reduced max clamps to avoid excessive height
+    final double carouselHeight;
+    if (isLandscape) {
+      carouselHeight = (screenHeight * 0.45).clamp(180.0, 240.0);
+    } else {
+      carouselHeight = (screenHeight * 0.22).clamp(160.0, 210.0);
+    }
 
     return SizedBox(
       width: screenWidth,
@@ -306,7 +315,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           autoPlayInterval: const Duration(seconds: 5),
           enlargeCenterPage: true,
           enlargeFactor: 0.08,
-          viewportFraction: 0.88,
+          viewportFraction: isLandscape ? 0.65 : 0.88,
           padEnds: true,
           onPageChanged: (index, reason) =>
               setState(() => _currentCarouselIndex = index),
@@ -315,7 +324,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           return Builder(
             builder: (BuildContext context) {
               return Container(
-                width: screenWidth * 0.88,
+                width: screenWidth * (isLandscape ? 0.65 : 0.88),
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -323,7 +332,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     end: Alignment.bottomRight,
                     colors: [
                       AppColors.primary.withValues(alpha: .08),
-                      AppColors.primaryLight.withOpacity(0.05),
+                      AppColors.primaryLight.withValues(alpha: 0.05),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(24),
@@ -379,19 +388,23 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                         ),
                       ),
                       Padding(
-                        padding: EdgeInsets.all(
-                          (screenWidth * 0.035).clamp(12.0, 18.0),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: (screenWidth * 0.04).clamp(16.0, 24.0),
+                          vertical: (screenWidth * 0.02).clamp(
+                            8.0,
+                            12.0,
+                          ), // Reduced vertical padding
                         ),
                         child: slide['hasImages'] as bool
                             ? _buildSlideWithImages(
                                 slide,
                                 screenWidth,
-                                screenHeight,
+                                carouselHeight,
                               )
                             : _buildSlideWithoutImages(
                                 slide,
                                 screenWidth,
-                                screenHeight,
+                                carouselHeight,
                               ),
                       ),
                     ],
@@ -408,113 +421,169 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   Widget _buildSlideWithImages(
     Map<String, dynamic> slide,
     double screenWidth,
-    double screenHeight,
+    double carouselHeight,
   ) {
     return LayoutBuilder(
       builder: (context, cardConstraints) {
         final availableHeight = cardConstraints.maxHeight;
         final availableWidth = cardConstraints.maxWidth;
+        final isBroad = availableWidth > 450;
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              flex: 65,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    slide['heading'] as String,
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: (availableWidth * 0.055).clamp(13.0, 17.0),
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: availableHeight * 0.04),
-                  Text(
-                    slide['content'] as String,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: (availableWidth * 0.032).clamp(9.0, 11.5),
-                      height: 1.35,
-                    ),
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: availableHeight * 0.035),
-                  Text(
-                    slide['supportText'] as String,
-                    style: TextStyle(
-                      color: AppColors.primary.withValues(alpha: 0.8),
-                      fontSize: (availableWidth * 0.028).clamp(8.0, 10.0),
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: availableWidth * 0.02),
-            Flexible(
-              flex: 35,
-              child: Center(
-                child: SizedBox(
-                  height: availableHeight * 0.85,
-                  child: Stack(
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: availableWidth,
+            height: availableHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  flex: isBroad
+                      ? 70
+                      : 64, // Slight increase for text on smaller screens
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize
+                        .min, // Added to prevent unnecessary vertical expansion
                     children: [
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        child: _buildFounderImage(
-                          'assets/images/founder_image_1.png',
-                          availableWidth,
-                          availableHeight,
+                      Text(
+                        slide['heading'] as String,
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: (availableWidth * 0.06).clamp(
+                            15.0,
+                            20.0,
+                          ), // Reduced max font size
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: _buildFounderImage(
-                          'assets/images/founder_image_2.png',
-                          availableWidth,
-                          availableHeight,
+                      SizedBox(
+                        height: (availableHeight * 0.04).clamp(4.0, 8.0),
+                      ), // Reduced spacing
+                      Text(
+                        slide['content'] as String,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: (availableWidth * 0.035).clamp(
+                            11.0,
+                            13.5,
+                          ), // Reduced max font size
+                          height: 1.2, // Tighter height
+                        ),
+                        maxLines: isBroad
+                            ? 3
+                            : 2, // Fewer lines if height is constrained
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(
+                        height: (availableHeight * 0.04).clamp(6.0, 10.0),
+                      ), // Reduced spacing
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8, // Reduced padding
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          slide['supportText'] as String,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: (availableWidth * 0.028).clamp(
+                              9.0,
+                              11.0,
+                            ), // Reduced max font size
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
+                SizedBox(width: availableWidth * 0.02),
+                Flexible(
+                  flex: isBroad ? 30 : 36,
+                  child: Center(
+                    child: SizedBox(
+                      height:
+                          availableHeight *
+                          0.85, // Slightly reduced to avoid overflow
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: (availableWidth * 0.22).clamp(70.0, 110.0),
+                            height: (availableWidth * 0.22).clamp(70.0, 110.0),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primary.withValues(alpha: 0.04),
+                            ),
+                          ),
+                          // Dynamic positioning to prevent overlap on small screens
+                          Positioned(
+                            top: 0,
+                            left: isBroad ? 0 : -5,
+                            child: _buildFounderImage(
+                              'assets/images/founder_image_1.png',
+                              availableWidth,
+                              availableHeight,
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: isBroad ? 0 : -5,
+                            child: _buildFounderImage(
+                              'assets/images/founder_image_2.png',
+                              availableWidth,
+                              availableHeight,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
   }
 
   Widget _buildFounderImage(String imagePath, double width, double height) {
+    final imageWidth = (width * 0.15).clamp(38.0, 58.0); // Reduced size
+    final imageHeight = (height * 0.42).clamp(70.0, 95.0); // Reduced size
+
     return Container(
-      width: (width * 0.13).clamp(38.0, 52.0),
-      height: (height * 0.42).clamp(65.0, 90.0),
+      width: imageWidth,
+      height: imageHeight,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.15),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: AppColors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          width: 0.5,
+        ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         child: Image.asset(
           imagePath,
           fit: BoxFit.cover,
@@ -524,7 +593,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
               child: Icon(
                 Icons.person,
                 color: AppColors.primary.withValues(alpha: 0.6),
-                size: 20,
+                size: imageWidth * 0.4,
               ),
             );
           },
@@ -536,63 +605,68 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   Widget _buildSlideWithoutImages(
     Map<String, dynamic> slide,
     double screenWidth,
-    double screenHeight,
+    double carouselHeight,
   ) {
     return LayoutBuilder(
       builder: (context, cardConstraints) {
         final availableWidth = cardConstraints.maxWidth;
         final availableHeight = cardConstraints.maxHeight;
 
-        return Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                slide['heading'] as String,
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: (availableWidth * 0.055).clamp(14.0, 18.0),
-                  fontWeight: FontWeight.bold,
-                  height: 1.2,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: availableHeight * 0.05),
-              Text(
-                slide['content'] as String,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: (availableWidth * 0.038).clamp(10.5, 13.0),
-                  height: 1.4,
-                ),
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: availableHeight * 0.05),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: availableWidth * 0.03,
-                  vertical: availableHeight * 0.025,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  slide['supportText'] as String,
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: availableWidth,
+            height: availableHeight,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  slide['heading'] as String,
                   style: TextStyle(
                     color: AppColors.primary,
-                    fontSize: (availableWidth * 0.032).clamp(9.0, 11.0),
-                    fontWeight: FontWeight.w600,
+                    fontSize: (availableWidth * 0.06).clamp(16.0, 24.0),
+                    fontWeight: FontWeight.bold,
+                    height: 1.1,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+                SizedBox(height: (availableHeight * 0.05).clamp(6.0, 12.0)),
+                Text(
+                  slide['content'] as String,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: (availableWidth * 0.04).clamp(12.0, 16.0),
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: (availableHeight * 0.06).clamp(8.0, 16.0)),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    slide['supportText'] as String,
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: (availableWidth * 0.035).clamp(10.0, 13.5),
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
