@@ -929,7 +929,7 @@ class _PractitionerProfileSelectionScreenState
                       ),
                     ],
                   ),
-                  child: Container(
+                  child: SizedBox(
                     width: double.infinity,
                     child: Container(
                       decoration: BoxDecoration(

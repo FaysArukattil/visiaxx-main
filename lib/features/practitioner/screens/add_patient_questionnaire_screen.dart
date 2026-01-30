@@ -431,6 +431,7 @@ class _AddPatientQuestionnaireScreenState
           final shouldExit = await _showExitConfirmation();
           if (!mounted) return;
           if (shouldExit) {
+            // ignore: use_build_context_synchronously
             Navigator.pop(context);
           }
         }

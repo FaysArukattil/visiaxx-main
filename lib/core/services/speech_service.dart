@@ -190,28 +190,33 @@ class SpeechService {
         s.contains('ap') ||
         s.contains('hub') ||
         s.contains('sup') ||
-        s.contains('pup'))
+        s.contains('pup')) {
       return 'up';
-    if (s.contains('down') || s.contains('bottom') || s.contains('done'))
+    }
+    if (s.contains('down') || s.contains('bottom') || s.contains('done')) {
       return 'down';
+    }
     if (s.contains('left') ||
         s.contains('lift') ||
         s.contains('life') ||
-        s.contains('leaf'))
+        s.contains('leaf')) {
       return 'left';
+    }
     if (s.contains('right') ||
         s.contains('write') ||
         s.contains('light') ||
-        s.contains('ride'))
+        s.contains('ride')) {
       return 'right';
+    }
     if (s.contains('blur') ||
         s.contains('see') ||
         s.contains('nothing') ||
         s.contains('clear') ||
         s.contains('bloody') ||
         s.contains('body') ||
-        s.contains('blush'))
+        s.contains('blush')) {
       return 'blurry';
+    }
     return null;
   }
 

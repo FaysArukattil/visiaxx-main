@@ -110,13 +110,13 @@ class PremiumDropdown<T> extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.primary.withOpacity(0.1)
-                                  : AppColors.background.withOpacity(0.5),
+                                  ? AppColors.primary.withValues(alpha: 0.1)
+                                  : AppColors.background.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
                                     ? AppColors.primary
-                                    : AppColors.border.withOpacity(0.5),
+                                    : AppColors.border.withValues(alpha: 0.5),
                                 width: 1.5,
                               ),
                             ),
@@ -225,7 +225,7 @@ class PremiumDropdown<T> extends StatelessWidget {
             ),
             child: Text(
               value != null
-                  ? itemLabelBuilder(value!)
+                  ? itemLabelBuilder(value as T)
                   : hintText ?? 'Choose $label',
               style: TextStyle(
                 fontSize: 15,

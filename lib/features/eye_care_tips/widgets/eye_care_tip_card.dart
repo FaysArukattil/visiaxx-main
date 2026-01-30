@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../models/eye_care_tip_model.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 
 /// Reusable card widget for displaying individual eye care tips
 class EyeCareTipCard extends StatelessWidget {
@@ -25,11 +25,11 @@ class EyeCareTipCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -56,18 +56,18 @@ class EyeCareTipCard extends StatelessWidget {
                 children: [
                   Text(
                     tip.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     tip.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -80,4 +80,3 @@ class EyeCareTipCard extends StatelessWidget {
     );
   }
 }
-

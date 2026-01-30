@@ -7,7 +7,6 @@ import '../../data/models/test_result_model.dart';
 import 'package:intl/intl.dart';
 import 'package:visiaxx/core/services/family_member_service.dart';
 import '../providers/network_connectivity_provider.dart';
-import 'refraction_prescription_service.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
@@ -410,37 +409,6 @@ class TestResultService {
     }
 
     return updatedResult;
-  }
-
-  /// Load refraction prescription for a specific test result
-  Future<TestResultModel> _loadPrescriptionForResult(
-    String userId,
-    TestResultModel result,
-  ) async {
-    try {
-      // Only load prescription for mobile refractometry tests
-      if (result.mobileRefractometry == null) return result;
-
-      final refractionService = RefractionPrescriptionService();
-      final prescription = await refractionService.getPrescription(
-        userId,
-        result.id,
-      );
-
-      if (prescription != null) {
-        debugPrint(
-          '[TestResultService] … Loaded prescription for result: ${result.id}',
-        );
-        return result.copyWith(refractionPrescription: prescription);
-      }
-
-      return result;
-    } catch (e) {
-      debugPrint(
-        '[TestResultService]  ï¸ Error loading prescription for ${result.id}: $e',
-      );
-      return result; // Return result without prescription if loading fails
-    }
   }
 
   /// Get test results stream for a user

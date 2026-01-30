@@ -211,26 +211,26 @@ class _IndividualTestCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: AppColors.primary.withOpacity(0.1),
-            highlightColor: AppColors.primary.withOpacity(0.05),
+            splashColor: AppColors.primary.withValues(alpha: 0.1),
+            highlightColor: AppColors.primary.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primary.withOpacity(0.08),
-                    AppColors.primaryLight.withOpacity(0.05),
+                    AppColors.primary.withValues(alpha: 0.08),
+                    AppColors.primaryLight.withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.05),
+                    color: AppColors.primary.withValues(alpha: 0.05),
                     blurRadius: 12,
                     spreadRadius: 0,
                     offset: const Offset(0, 4),
@@ -293,7 +293,7 @@ class _IndividualTestCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(

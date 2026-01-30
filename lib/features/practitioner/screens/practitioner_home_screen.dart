@@ -1,8 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../data/models/user_model.dart';
 import '../../../core/widgets/eye_loader.dart';
 
 class PractitionerHomeScreen extends StatefulWidget {
@@ -15,7 +13,6 @@ class PractitionerHomeScreen extends StatefulWidget {
 class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   int _currentCarouselIndex = 0;
   final _authService = AuthService();
-  UserModel? _user;
   String _userName = 'Practitioner';
   bool _isLoading = true;
 
@@ -65,7 +62,6 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
 
         if (mounted && user != null) {
           setState(() {
-            _user = user;
             _userName = user.firstName;
             _isLoading = false;
           });

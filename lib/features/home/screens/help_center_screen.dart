@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
-import '../../../core/constants/app_colors.dart';
+
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/utils/snackbar_utils.dart';
 
@@ -28,7 +28,7 @@ class HelpCenterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.scaffoldBackground,
       appBar: AppBar(
         title: Text(
           'Help Center',
@@ -46,7 +46,7 @@ class HelpCenterScreen extends StatelessWidget {
             _buildWhatsAppCard(context),
             const SizedBox(height: 32),
 
-            _buildSectionTitle('App Navigation Guide'),
+            _buildSectionTitle(context, 'App Navigation Guide'),
             const SizedBox(height: 16),
             _buildNavigationGuide(
               context: context,
@@ -115,7 +115,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 32),
-            _buildSectionTitle('Comprehensive test Guide'),
+            _buildSectionTitle(context, 'Comprehensive test Guide'),
             const SizedBox(height: 16),
             _buildTestGuide(
               context: context,
@@ -335,13 +335,13 @@ class HelpCenterScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
+        color: context.textPrimary,
       ),
     );
   }
@@ -359,7 +359,7 @@ class HelpCenterScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.5)),
       ),
       child: Theme(
         data: ThemeData().copyWith(dividerColor: Colors.transparent),
@@ -380,18 +380,15 @@ class HelpCenterScreen extends StatelessWidget {
           ),
           title: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
             ),
           ),
           subtitle: Text(
             description,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 12, color: context.textSecondary),
           ),
           children: [
             Padding(
@@ -401,9 +398,9 @@ class HelpCenterScreen extends StatelessWidget {
                 children: [
                   const Divider(),
                   const SizedBox(height: 12),
-                  _buildSubSection('What is this?', purpose),
+                  _buildSubSection(context, 'What is this?', purpose),
                   const SizedBox(height: 16),
-                  _buildSubSection('When to use it?', usage),
+                  _buildSubSection(context, 'When to use it?', usage),
                 ],
               ),
             ),
@@ -429,7 +426,7 @@ class HelpCenterScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.5)),
       ),
       child: Theme(
         data: ThemeData().copyWith(dividerColor: Colors.transparent),
@@ -450,18 +447,15 @@ class HelpCenterScreen extends StatelessWidget {
           ),
           title: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
             ),
           ),
           subtitle: Text(
             description,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 12, color: context.textSecondary),
           ),
           children: [
             Padding(
@@ -471,20 +465,28 @@ class HelpCenterScreen extends StatelessWidget {
                 children: [
                   const Divider(),
                   const SizedBox(height: 12),
-                  _buildSubSection('What is it?', whatIsIt),
+                  _buildSubSection(context, 'What is it?', whatIsIt),
                   const SizedBox(height: 16),
-                  _buildSubSection('What does it diagnose?', whatItDiagnoses),
+                  _buildSubSection(
+                    context,
+                    'What does it diagnose?',
+                    whatItDiagnoses,
+                  ),
                   const SizedBox(height: 16),
-                  _buildSubSection('Why is it useful?', howUseful),
+                  _buildSubSection(context, 'Why is it useful?', howUseful),
                   const SizedBox(height: 16),
-                  _buildSubSection('How is it performed?', howPerformed),
+                  _buildSubSection(
+                    context,
+                    'How is it performed?',
+                    howPerformed,
+                  ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Instructions to follow:',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -505,9 +507,9 @@ class HelpCenterScreen extends StatelessWidget {
                           Expanded(
                             child: Text(
                               step,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
-                                color: AppColors.textSecondary,
+                                color: context.textSecondary,
                                 height: 1.4,
                               ),
                             ),
@@ -525,24 +527,24 @@ class HelpCenterScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSubSection(String title, String content) {
+  Widget _buildSubSection(BuildContext context, String title, String content) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
-            color: AppColors.textPrimary,
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           content,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
-            color: AppColors.textSecondary,
+            color: context.textSecondary,
             height: 1.4,
           ),
         ),

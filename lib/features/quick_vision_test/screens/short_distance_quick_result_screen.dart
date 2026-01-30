@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../data/models/short_distance_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
@@ -92,7 +93,7 @@ class _ShortDistanceQuickResultScreenState
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         body: SafeArea(
           child: Column(
             children: [
@@ -102,12 +103,12 @@ class _ShortDistanceQuickResultScreenState
                   child: Column(
                     children: [
                       // Title
-                      const Text(
+                      Text(
                         'Reading Test Result',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: context.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -141,10 +142,10 @@ class _ShortDistanceQuickResultScreenState
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.1),
+        color: context.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppColors.warning.withValues(alpha: 0.2),
+          color: context.warning.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -154,14 +155,10 @@ class _ShortDistanceQuickResultScreenState
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.15),
+              color: context.warning.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.info_rounded,
-              size: 40,
-              color: AppColors.warning,
-            ),
+            child: Icon(Icons.info_rounded, size: 40, color: context.warning),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -200,7 +197,7 @@ class _ShortDistanceQuickResultScreenState
               fontSize: 11,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.2,
-              color: AppColors.textSecondary.withValues(alpha: 0.6),
+              color: context.textSecondary.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 20),
@@ -208,35 +205,35 @@ class _ShortDistanceQuickResultScreenState
           // Sentences Mastered
           _buildMetricRow(
             icon: Icons.format_quote_rounded,
-            iconColor: AppColors.info,
+            iconColor: context.primary,
             label: 'Sentences Mastered',
             value: '${result.correctSentences}/${result.totalSentences}',
             status: statusInfo['label']!,
             statusColor: statusInfo['color'] as Color,
           ),
 
-          const Divider(height: 32, color: AppColors.border),
+          Divider(height: 32, color: context.dividerColor),
 
           // Average Match
           _buildMetricRow(
             icon: Icons.analytics_rounded,
-            iconColor: AppColors.success,
+            iconColor: context.success,
             label: 'Average Match',
             value: '${result.averageSimilarity.toStringAsFixed(1)}%',
             status: _getMatchStatus(result.averageSimilarity),
             statusColor: _getMatchColor(result.averageSimilarity),
           ),
 
-          const Divider(height: 32, color: AppColors.border),
+          Divider(height: 32, color: context.dividerColor),
 
           // Best Clarity
           _buildMetricRow(
             icon: Icons.visibility_rounded,
-            iconColor: AppColors.warning,
+            iconColor: context.warning,
             label: 'Best Clarity',
             value: result.bestAcuity,
             status: 'Snellen Eq.',
-            statusColor: AppColors.textSecondary,
+            statusColor: context.textSecondary,
           ),
         ],
       ),
@@ -269,10 +266,10 @@ class _ShortDistanceQuickResultScreenState
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -289,10 +286,10 @@ class _ShortDistanceQuickResultScreenState
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: context.textPrimary,
           ),
         ),
       ],
@@ -304,10 +301,10 @@ class _ShortDistanceQuickResultScreenState
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.08),
+        color: context.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.info.withValues(alpha: 0.2),
+          color: context.primary.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -317,23 +314,23 @@ class _ShortDistanceQuickResultScreenState
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.info.withValues(alpha: 0.15),
+              color: context.primary.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.info_outline_rounded,
               size: 20,
-              color: AppColors.info,
+              color: context.primary,
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Text(
               'Near vision reading at 40cm is within healthy limits for standard print sizes.',
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
-                color: AppColors.textPrimary,
+                color: context.textPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -347,10 +344,10 @@ class _ShortDistanceQuickResultScreenState
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -367,8 +364,8 @@ class _ShortDistanceQuickResultScreenState
               _navigateNext();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
+              backgroundColor: context.primary,
+              foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -377,12 +374,12 @@ class _ShortDistanceQuickResultScreenState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   'Continue Test',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.white,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -397,10 +394,10 @@ class _ShortDistanceQuickResultScreenState
                   ),
                   child: Text(
                     '${_countdown}s',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.white,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -414,13 +411,13 @@ class _ShortDistanceQuickResultScreenState
 
   Map<String, dynamic> _getStatusInfo(ShortDistanceResult result) {
     if (result.correctSentences >= 6) {
-      return {'label': 'Excellent', 'color': AppColors.success};
+      return {'label': 'Excellent', 'color': context.success};
     } else if (result.correctSentences >= 4) {
-      return {'label': 'Good', 'color': AppColors.primary};
+      return {'label': 'Good', 'color': context.primary};
     } else if (result.correctSentences >= 2) {
-      return {'label': 'Needs Review', 'color': AppColors.warning};
+      return {'label': 'Needs Review', 'color': context.warning};
     } else {
-      return {'label': 'Poor', 'color': AppColors.error};
+      return {'label': 'Poor', 'color': context.error};
     }
   }
 
@@ -432,9 +429,9 @@ class _ShortDistanceQuickResultScreenState
   }
 
   Color _getMatchColor(double similarity) {
-    if (similarity >= 85.0) return AppColors.success;
-    if (similarity >= 70.0) return AppColors.primary;
-    if (similarity >= 50.0) return AppColors.warning;
-    return AppColors.error;
+    if (similarity >= 85.0) return context.success;
+    if (similarity >= 70.0) return context.primary;
+    if (similarity >= 50.0) return context.warning;
+    return context.error;
   }
 }

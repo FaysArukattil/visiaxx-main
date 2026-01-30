@@ -685,7 +685,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 final color = colors[index];
                 final themeProvider = context.read<ThemeProvider>();
                 final isSelected =
-                    themeProvider.primaryColor.value == color.value;
+                    themeProvider.primaryColor.toARGB32() == color.toARGB32();
 
                 return GestureDetector(
                   onTap: () {

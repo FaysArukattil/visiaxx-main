@@ -32,7 +32,6 @@ import 'features/quick_vision_test/screens/amsler_grid_test_screen.dart';
 import 'features/quick_vision_test/screens/quick_test_result_screen.dart';
 import 'features/results/screens/my_results_screen.dart';
 import 'features/practitioner/screens/practitioner_dashboard_screen.dart';
-import 'features/practitioner/screens/practitioner_home_screen.dart';
 import 'features/practitioner/screens/practitioner_profile_selection_screen.dart';
 import 'features/practitioner/screens/add_patient_questionnaire_screen.dart';
 import '/core/utils/app_logger.dart';

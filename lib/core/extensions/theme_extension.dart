@@ -23,6 +23,10 @@ extension ThemeExtension on BuildContext {
   // Error color
   Color get error => Theme.of(this).colorScheme.error;
 
+  // Status colors - defaults from AppColors
+  Color get success => const Color(0xFF34C759);
+  Color get warning => const Color(0xFFFF9500);
+
   // Divider colors
   Color get dividerColor => Theme.of(this).dividerColor;
 

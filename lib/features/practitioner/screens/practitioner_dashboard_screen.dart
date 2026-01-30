@@ -554,24 +554,6 @@ class _PractitionerDashboardScreenState
     return conditions;
   }
 
-  String _getPrimaryCondition(TestResultModel result) {
-    final conditions = _getAllResultConditions(result);
-    if (conditions.contains('Cataract')) return 'Cataract';
-    if (conditions.contains('Macular Issue')) return 'Macular Issue';
-    if (conditions.contains('Myopia')) return 'Myopia';
-    if (conditions.contains('Hyperopia')) return 'Hyperopia';
-    if (conditions.contains('Astigmatism')) return 'Astigmatism';
-    if (conditions.contains('Presbyopia')) return 'Presbyopia';
-    if (conditions.contains('Color Vision Deficiency')) {
-      return 'Color Vision Deficiency';
-    }
-    if (conditions.contains('Vision Impairment')) return 'Vision Impairment';
-    if (conditions.contains('Low Contrast Sensitivity')) {
-      return 'Low Contrast Sensitivity';
-    }
-    return 'Normal';
-  }
-
   Future<void> _changeFilter(String period, List<String> conditions) async {
     if (period == _selectedPeriod &&
         conditions.toSet().difference(_selectedConditions.toSet()).isEmpty &&
@@ -616,6 +598,12 @@ class _PractitionerDashboardScreenState
                   MediaQuery.of(context).orientation == Orientation.landscape
                   ? MediaQuery.of(context).size.height * 0.8
                   : MediaQuery.of(context).size.height * 0.65,
+            ),
+            decoration: BoxDecoration(
+              color: context.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
@@ -1013,7 +1001,7 @@ class _PractitionerDashboardScreenState
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isActive ? context.primary : Colors.white,
+          color: isActive ? context.primary : context.surface,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isActive ? context.primary : context.dividerColor,
@@ -1527,8 +1515,8 @@ class _PractitionerDashboardScreenState
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => WillPopScope(
-        onWillPop: () async => false,
+      builder: (context) => PopScope(
+        canPop: false,
         child: AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -2083,10 +2071,6 @@ class _PractitionerDashboardScreenState
 
   Future<Directory> _getDownloadDirectory() async {
     return await FileManagerService.getDownloadDirectory();
-  }
-
-  String _getPeriodFolderName() {
-    return _getSmartFolderName(); // Use the smart folder name
   }
 
   String _getSmartFolderName() {

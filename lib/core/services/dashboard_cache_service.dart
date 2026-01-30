@@ -37,7 +37,7 @@ class DashboardCacheService {
     _cachedDailyCounts = dailyCounts;
     _lastCacheTime = DateTime.now();
 
-    debugPrint('[DashboardCache] ✅ Data cached at ${_lastCacheTime}');
+    debugPrint('[DashboardCache] ✅ Data cached at $_lastCacheTime');
   }
 
   Map<String, dynamic>? getCachedData() {

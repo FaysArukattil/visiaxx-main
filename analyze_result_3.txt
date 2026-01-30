@@ -1,4 +1,4 @@
-﻿Analyzing visiaxx-main...
+Analyzing visiaxx-main...
 
   error - lib\features\comprehensive_test\screens\mobile_refractometry_quick_result_screen.dart:1032:28 - Invalid constant value. - invalid_constant
   error - lib\features\home\screens\profile_screen.dart:749:22 - Invalid constant value. - invalid_constant
@@ -15,6 +15,11 @@ warning - lib\features\results\screens\my_results_screen.dart:13:8 - Unused impo
 warning - lib\main.dart:35:8 - Unused import: 'features/practitioner/screens/practitioner_home_screen.dart'. Try removing the import directive. - unused_import
    info - lib\core\providers\theme_provider.dart:67:41 - 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
    info - lib\core\services\dashboard_cache_service.dart:40:51 - Unnecessary braces in a string interpolation. Try removing the braces. - unnecessary_brace_in_string_interps
+   info - lib\core\services\speech_service.dart:194:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\speech_service.dart:196:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\speech_service.dart:201:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\speech_service.dart:206:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - lib\core\services\speech_service.dart:214:7 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
    info - lib\core\widgets\premium_dropdown.dart:113:55 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
    info - lib\core\widgets\premium_dropdown.dart:114:58 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
    info - lib\core\widgets\premium_dropdown.dart:119:56 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
@@ -54,4 +59,4 @@ warning - lib\main.dart:35:8 - Unused import: 'features/practitioner/screens/pra
    info - lib\features\quick_vision_test\screens\questionnaire_screen.dart:1513:57 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
    info - lib\features\quick_vision_test\screens\questionnaire_screen.dart:1516:59 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
 
-53 issues found.
+58 issues found.

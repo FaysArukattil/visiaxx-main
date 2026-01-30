@@ -593,8 +593,11 @@ class _MobileRefractometryTestScreenState
   }
 
   void _handleVoiceResponse(String finalResult) {
-    if (!mounted || _currentPhase != RefractPhase.test || !_waitingForResponse)
+    if (!mounted ||
+        _currentPhase != RefractPhase.test ||
+        !_waitingForResponse) {
       return;
+    }
 
     final provider = context.read<TestSessionProvider>();
     if (provider.profileType == 'patient') return;

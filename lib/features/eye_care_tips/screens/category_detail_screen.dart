@@ -1,7 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../models/eye_care_tip_model.dart';
 import '../widgets/eye_care_tip_card.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 
 /// Detail screen showing all tips for a specific category
 class CategoryDetailScreen extends StatelessWidget {
@@ -12,7 +12,7 @@ class CategoryDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.scaffoldBackground,
       body: CustomScrollView(
         slivers: [
           // Styled App Bar with gradient
@@ -23,16 +23,13 @@ class CategoryDetailScreen extends StatelessWidget {
             backgroundColor: category.color,
             leading: IconButton(
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(
-                Icons.arrow_back,
-                color: AppColors.textOnPrimary,
-              ),
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
             ),
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 category.title,
                 style: const TextStyle(
-                  color: AppColors.textOnPrimary,
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -59,7 +56,7 @@ class CategoryDetailScreen extends StatelessWidget {
                         height: 150,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.textOnPrimary.withValues(alpha: 0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
                     ),
@@ -71,7 +68,7 @@ class CategoryDetailScreen extends StatelessWidget {
                         height: 100,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.textOnPrimary.withValues(alpha: 0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
                     ),
@@ -81,7 +78,7 @@ class CategoryDetailScreen extends StatelessWidget {
                         margin: const EdgeInsets.only(top: 30),
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: AppColors.textOnPrimary.withValues(alpha: 0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: Text(
@@ -123,16 +120,16 @@ class CategoryDetailScreen extends StatelessWidget {
                   const Spacer(),
                   Text(
                     'Scroll for more',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.arrow_downward,
                     size: 16,
-                    color: AppColors.textSecondary,
+                    color: context.textSecondary,
                   ),
                 ],
               ),
@@ -154,4 +151,3 @@ class CategoryDetailScreen extends StatelessWidget {
     );
   }
 }
-

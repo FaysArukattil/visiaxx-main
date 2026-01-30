@@ -1170,26 +1170,30 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         border: Border.all(
           color: value
               ? Theme.of(context).primaryColor
-              : Theme.of(context).dividerColor.withOpacity(0.35),
+              : Theme.of(context).dividerColor.withValues(alpha: 0.35),
           width: value ? 2 : 1,
         ),
         boxShadow: value
             ? [
                 BoxShadow(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                   spreadRadius: -2,
                 ),
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.02),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.shadow.withValues(alpha: 0.02),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.03),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.shadow.withValues(alpha: 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1212,14 +1216,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                       decoration: BoxDecoration(
                         color: value
                             ? Theme.of(context).primaryColor
-                            : Theme.of(context).dividerColor.withOpacity(0.1),
+                            : Theme.of(
+                                context,
+                              ).dividerColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: value
                             ? [
                                 BoxShadow(
                                   color: Theme.of(
                                     context,
-                                  ).primaryColor.withOpacity(0.3),
+                                  ).primaryColor.withValues(alpha: 0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1357,7 +1363,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                     border: Border.all(
                       color: isSelected
                           ? Theme.of(context).primaryColor
-                          : Theme.of(context).dividerColor.withOpacity(0.5),
+                          : Theme.of(
+                              context,
+                            ).dividerColor.withValues(alpha: 0.5),
                       width: 1.5,
                     ),
                     boxShadow: isSelected
@@ -1365,7 +1373,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                             BoxShadow(
                               color: Theme.of(
                                 context,
-                              ).primaryColor.withOpacity(0.2),
+                              ).primaryColor.withValues(alpha: 0.2),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -1413,13 +1421,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               border: Border.all(
                 color: isSelected
                     ? Theme.of(context).primaryColor
-                    : Theme.of(context).dividerColor.withOpacity(0.5),
+                    : Theme.of(context).dividerColor.withValues(alpha: 0.5),
                 width: 1.5,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: Theme.of(context).primaryColor.withOpacity(0.2),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -1458,14 +1468,14 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         border: Border.all(
           color: value
               ? Theme.of(context).primaryColor
-              : Theme.of(context).dividerColor.withOpacity(0.35),
+              : Theme.of(context).dividerColor.withValues(alpha: 0.35),
           width: value ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: value
-                ? Theme.of(context).primaryColor.withOpacity(0.08)
-                : Theme.of(context).colorScheme.shadow.withOpacity(0.03),
+                ? Theme.of(context).primaryColor.withValues(alpha: 0.08)
+                : Theme.of(context).colorScheme.shadow.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -1510,10 +1520,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.03),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Theme.of(context).primaryColor.withOpacity(0.05),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.05),
                   ),
                 ),
                 child: followUp ?? const SizedBox(),

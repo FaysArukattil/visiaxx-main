@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../models/eye_care_tip_model.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 
 /// Category card for eye care tip categories
 class CategoryCard extends StatelessWidget {
@@ -17,11 +17,11 @@ class CategoryCard extends StatelessWidget {
         height: 130,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -47,10 +47,10 @@ class CategoryCard extends StatelessWidget {
             const Spacer(),
             Text(
               category.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: AppColors.textPrimary,
+                color: context.textPrimary,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -58,10 +58,7 @@ class CategoryCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${category.tips.length} tips',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
             ),
           ],
         ),
@@ -69,4 +66,3 @@ class CategoryCard extends StatelessWidget {
     );
   }
 }
-
