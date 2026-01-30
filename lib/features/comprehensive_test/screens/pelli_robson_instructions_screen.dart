@@ -1,7 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import '../../quick_vision_test/widgets/instruction_animations.dart';
 import '../../results/widgets/wear_specs_animation.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
@@ -123,14 +123,14 @@ class _PelliRobsonInstructionsScreenState
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
           title: const Text('Contrast Test Instructions'),
-          backgroundColor: AppColors.white,
+          backgroundColor: context.cardColor,
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: Icon(Icons.close, color: context.textPrimary),
             onPressed: _showExitConfirmation,
           ),
         ),
@@ -152,7 +152,7 @@ class _PelliRobsonInstructionsScreenState
                       Icons.brightness_high_rounded,
                       'Brightness Check',
                       'Turn your screen brightness to maximum for the most accurate contrast measurements.',
-                      AppColors.warning,
+                      context.warning,
                       animation: const LightingAnimation(),
                     ),
                     _buildStep(
@@ -160,7 +160,7 @@ class _PelliRobsonInstructionsScreenState
                       Icons.palette_rounded,
                       'What is Contrast?',
                       'Contrast sensitivity is your eye\'s ability to distinguish an object from its background.',
-                      AppColors.primary,
+                      context.primary,
                       animation: const AlignmentAnimation(isCompact: true),
                     ),
                     _buildStep(
@@ -170,7 +170,7 @@ class _PelliRobsonInstructionsScreenState
                       widget.testMode == 'short'
                           ? 'Hold the device about 40 centimeters away from your eyes.'
                           : 'Sit exactly 1 meter away from the screen for the long-distance test.',
-                      AppColors.success,
+                      context.success,
                       animation: const DistanceAnimation(),
                     ),
                     _buildStep(
@@ -178,7 +178,7 @@ class _PelliRobsonInstructionsScreenState
                       Icons.record_voice_over_rounded,
                       'Reading Triplets',
                       'You will see several triplets. Read whichever three letters are inside the blue box.',
-                      AppColors.info,
+                      context.info,
                       animation: const ReadingTripletsAnimation(
                         isCompact: true,
                       ),
@@ -188,7 +188,7 @@ class _PelliRobsonInstructionsScreenState
                       Icons.gradient_rounded,
                       'Declining Contrast',
                       'The letters will become fainter and harder to see. Read as many as possible until they are no longer visible.',
-                      AppColors.error,
+                      context.error,
                       animation: const FadingTripletsAnimation(isCompact: true),
                     ),
                     _buildStep(
@@ -196,7 +196,7 @@ class _PelliRobsonInstructionsScreenState
                       Icons.visibility_rounded,
                       'Wear Your Glasses',
                       'If you wear distance correction glasses, please keep them on.',
-                      AppColors.info,
+                      context.info,
                       animation: const WearSpecsAnimation(),
                     ),
                   ],
@@ -211,10 +211,10 @@ class _PelliRobsonInstructionsScreenState
                       : 16.0,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.cardColor,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -237,8 +237,8 @@ class _PelliRobsonInstructionsScreenState
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _currentPage == index
-                                  ? AppColors.primary
-                                  : AppColors.border,
+                                  ? context.primary
+                                  : context.dividerColor,
                             ),
                           ),
                         ),
@@ -255,8 +255,8 @@ class _PelliRobsonInstructionsScreenState
                       child: ElevatedButton(
                         onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
+                          backgroundColor: context.primary,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -302,9 +302,11 @@ class _PelliRobsonInstructionsScreenState
       padding: EdgeInsets.all(isLandscape ? 8.0 : 16.0),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.5),
+          ),
         ),
         padding: EdgeInsets.symmetric(
           horizontal: isLandscape ? 16.0 : 20.0,
@@ -323,9 +325,9 @@ class _PelliRobsonInstructionsScreenState
                         children: [
                           Text(
                             'Step ${index + 1} of $_totalPages',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.primary,
+                              color: context.primary,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.1,
                             ),
@@ -333,10 +335,10 @@ class _PelliRobsonInstructionsScreenState
                           const SizedBox(height: 4),
                           Text(
                             _stepTitles[index],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -361,9 +363,9 @@ class _PelliRobsonInstructionsScreenState
                 children: [
                   Text(
                     'Step ${index + 1} of $_totalPages',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.primary,
+                      color: context.primary,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.1,
                     ),
@@ -371,10 +373,10 @@ class _PelliRobsonInstructionsScreenState
                   const SizedBox(height: 4),
                   Text(
                     _stepTitles[index],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -416,17 +418,17 @@ class _PelliRobsonInstructionsScreenState
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: context.textSecondary,
                   fontSize: 14,
                   height: 1.4,
                   fontWeight: FontWeight.w400,

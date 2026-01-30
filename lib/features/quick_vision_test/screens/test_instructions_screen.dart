@@ -1,7 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
@@ -116,14 +116,14 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
           title: const Text('Test Preparation'),
-          backgroundColor: AppColors.white,
+          backgroundColor: context.cardColor,
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: Icon(Icons.close, color: context.textPrimary),
             onPressed: _showExitConfirmation,
           ),
         ),
@@ -145,7 +145,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       Icons.wb_sunny_rounded,
                       'Well-lit Room',
                       'Ensure your room is well-lit and quiet for the most accurate results.',
-                      AppColors.warning,
+                      context.warning,
                       animation: const LightingAnimation(),
                     ),
                     _buildStep(
@@ -153,7 +153,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       Icons.straighten_rounded,
                       'Optimal Distance',
                       'Hold the device about 1 meter (100 cm) away from your eyes.',
-                      AppColors.primary,
+                      context.primary,
                       animation: const DistanceAnimation(),
                     ),
                     _buildStep(
@@ -161,7 +161,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       Icons.mic_rounded,
                       'How to Respond',
                       'Speak the direction of the letter "E" clearly or tap the buttons below.',
-                      AppColors.success,
+                      context.success,
                       animation: const HowToRespondAnimation(),
                     ),
                     _buildStep(
@@ -169,7 +169,7 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       Icons.visibility_rounded,
                       'Wear Your Glasses',
                       'If you wear distance correction glasses, please keep them on.',
-                      AppColors.info,
+                      context.info,
                       animation: const WearSpecsAnimation(),
                     ),
                   ],
@@ -184,10 +184,10 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       : 16.0,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.cardColor,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -210,8 +210,8 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _currentPage == index
-                                  ? AppColors.primary
-                                  : AppColors.border,
+                                  ? context.primary
+                                  : context.dividerColor,
                             ),
                           ),
                         ),
@@ -228,8 +228,8 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       child: ElevatedButton(
                         onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
+                          backgroundColor: context.primary,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -275,9 +275,11 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
       padding: EdgeInsets.all(isLandscape ? 8.0 : 16.0),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.5),
+          ),
         ),
         padding: EdgeInsets.symmetric(
           horizontal: isLandscape ? 16.0 : 20.0,
@@ -296,9 +298,9 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                         children: [
                           Text(
                             'Step ${index + 1} of $_totalPages',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.primary,
+                              color: context.primary,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.1,
                             ),
@@ -306,10 +308,10 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                           const SizedBox(height: 4),
                           Text(
                             _stepTitles[index],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -334,9 +336,9 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                 children: [
                   Text(
                     'Step ${index + 1} of $_totalPages',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.primary,
+                      color: context.primary,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.1,
                     ),
@@ -344,10 +346,10 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     _stepTitles[index],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -389,17 +391,17 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: context.textSecondary,
                   fontSize: 14,
                   height: 1.4,
                   fontWeight: FontWeight.w400,

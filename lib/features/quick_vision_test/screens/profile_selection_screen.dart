@@ -2,7 +2,7 @@
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/family_member_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/family_member_model.dart';
@@ -315,10 +315,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: context.scaffoldBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.white,
+        backgroundColor: context.scaffoldBackground,
         elevation: 0,
         toolbarHeight: 20, // Reduced height since title is removed
       ),
@@ -338,7 +338,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               title: 'Test My Vision',
               subtitle: 'Quickly assess your own eye health',
               icon: Icons.remove_red_eye_rounded,
-              color: AppColors.primary,
+              color: context.primary,
               onTap: _selectSelf,
             ),
             const SizedBox(height: 32),
@@ -350,10 +350,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 Expanded(
                   child: Text(
                     'Family Profiles',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                       letterSpacing: -0.8,
                     ),
                   ),
@@ -367,26 +367,26 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: context.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.primary.withValues(alpha: 0.1),
                         width: 1.5,
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.add_rounded,
                           size: 20,
-                          color: AppColors.primary,
+                          color: context.primary,
                         ),
                         const SizedBox(width: 6),
-                        const Text(
+                        Text(
                           'Add New',
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: context.primary,
                             fontWeight: FontWeight.w800,
                             fontSize: 13,
                             letterSpacing: -0.2,
@@ -412,10 +412,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               Container(
                 padding: const EdgeInsets.all(40),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: AppColors.border.withValues(alpha: 0.2),
+                    color: context.dividerColor.withValues(alpha: 0.2),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -430,23 +430,23 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.family_restroom_rounded,
                         size: 48,
-                        color: AppColors.primary,
+                        color: context.primary,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Add family profiles to test for specific family members',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -455,7 +455,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -510,10 +510,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: Icon(icon, color: AppColors.white, size: 32),
+              child: Icon(icon, color: Colors.white, size: 32),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -523,7 +523,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: AppColors.white,
+                      color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
@@ -533,7 +533,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: AppColors.white.withValues(alpha: 0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -544,12 +544,12 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.arrow_forward_rounded,
-                color: AppColors.white,
+                color: Colors.white,
                 size: 20,
               ),
             ),
@@ -565,15 +565,15 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: AppColors.border.withValues(alpha: 0.2),
+            color: context.dividerColor.withValues(alpha: 0.2),
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.04),
+              color: context.primary.withValues(alpha: 0.04),
               blurRadius: 20,
               offset: const Offset(0, 10),
               spreadRadius: -2,
@@ -593,8 +593,8 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.primary,
-                    AppColors.primary.withValues(alpha: 0.8),
+                    context.primary,
+                    context.primary.withValues(alpha: 0.8),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -602,7 +602,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.2),
+                    color: context.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -614,7 +614,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.white,
+                    color: Colors.white,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -627,10 +627,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 children: [
                   Text(
                     member.firstName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 17,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -639,7 +639,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                     '${member.relationship} • ${member.age} years • ${member.sex}${member.phone != null ? ' • ${member.phone?.replaceFirst('+91', '+91 ')}' : ''}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -651,10 +651,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.edit_outlined,
                         size: 20,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                       ),
                       onPressed: () {
                         // Handle edit
@@ -665,10 +665,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline_rounded,
                         size: 20,
-                        color: AppColors.error,
+                        color: context.error,
                       ),
                       onPressed: () {
                         // Handle delete
@@ -683,13 +683,13 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: context.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
-                    color: AppColors.primary,
+                    color: context.primary,
                   ),
                 ),
               ],
@@ -715,7 +715,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(foregroundColor: context.error),
             child: const Text('Delete'),
           ),
         ],
@@ -755,9 +755,11 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         builder: (context, setSheetState) {
           return Container(
             height: MediaQuery.of(context).size.height * 0.85,
-            decoration: const BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            decoration: BoxDecoration(
+              color: context.cardColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
             ),
             child: Column(
               children: [
@@ -766,7 +768,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border.withValues(alpha: 0.3),
+                    color: context.dividerColor.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -804,9 +806,11 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         builder: (context, setSheetState) {
           return Container(
             height: MediaQuery.of(context).size.height * 0.85,
-            decoration: const BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            decoration: BoxDecoration(
+              color: context.cardColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
             ),
             child: Column(
               children: [
@@ -815,7 +819,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border.withValues(alpha: 0.3),
+                    color: context.dividerColor.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -849,12 +853,12 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: context.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person_add_rounded,
-                  color: AppColors.primary,
+                  color: context.primary,
                   size: 24,
                 ),
               ),
@@ -865,10 +869,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   children: [
                     Text(
                       isEditing ? 'Edit Profile' : 'Add Family Member',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -878,7 +882,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                           : 'Register a new family member for vision testing',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -899,27 +903,18 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               ),
               prefixIcon: const Icon(Icons.person_outline, size: 20),
               filled: true,
-              fillColor: AppColors.surface,
+              fillColor: context.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: context.dividerColor, width: 1.5),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: context.dividerColor, width: 1.5),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: context.primary, width: 2),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -950,27 +945,24 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                       fontSize: 13,
                     ),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: context.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.border,
+                      borderSide: BorderSide(
+                        color: context.dividerColor,
                         width: 1.5,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.border,
+                      borderSide: BorderSide(
+                        color: context.dividerColor,
                         width: 1.5,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary,
-                        width: 2,
-                      ),
+                      borderSide: BorderSide(color: context.primary, width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -1032,27 +1024,18 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 fontSize: 13,
               ),
               filled: true,
-              fillColor: AppColors.surface,
+              fillColor: context.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: context.dividerColor, width: 1.5),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: context.dividerColor, width: 1.5),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: context.primary, width: 2),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -1066,13 +1049,13 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
                 colors: [
-                  AppColors.primary,
-                  AppColors.primary.withValues(alpha: 0.8),
+                  context.primary,
+                  context.primary.withValues(alpha: 0.8),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
+                  color: context.primary.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),
@@ -1083,7 +1066,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   _addFamilyMember(isEditing: isEditing, memberId: memberId),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
-                foregroundColor: AppColors.white,
+                foregroundColor: Colors.white,
                 shadowColor: Colors.transparent,
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(

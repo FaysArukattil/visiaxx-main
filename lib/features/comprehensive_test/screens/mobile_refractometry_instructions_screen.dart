@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:async';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
@@ -119,14 +119,14 @@ class _MobileRefractometryInstructionsScreenState
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
           title: const Text('Mobile Refractometry'),
-          backgroundColor: AppColors.white,
+          backgroundColor: context.cardColor,
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: Icon(Icons.close, color: context.textPrimary),
             onPressed: _showExitConfirmation,
           ),
         ),
@@ -148,7 +148,7 @@ class _MobileRefractometryInstructionsScreenState
                       Icons.visibility_off_rounded,
                       'No Eyewear',
                       'Remove glasses or contact lenses. This test measures your natural vision.',
-                      AppColors.error,
+                      context.error,
                       animation: const RemoveGlassesAnimation(),
                     ),
                     _buildStep(
@@ -156,7 +156,7 @@ class _MobileRefractometryInstructionsScreenState
                       Icons.wb_sunny_rounded,
                       'Well-lit Room',
                       'Ensure your room is well-lit and quiet for the most accurate results.',
-                      AppColors.warning,
+                      context.warning,
                       animation: const LightingAnimation(),
                     ),
                     _buildStep(
@@ -164,7 +164,7 @@ class _MobileRefractometryInstructionsScreenState
                       Icons.straighten_rounded,
                       'Multi-Distance',
                       'You will be asked to hold the device at 100cm (distance) and 40cm (near).',
-                      AppColors.primary,
+                      context.primary,
                       animation: const DistanceAnimation(),
                     ),
                     _buildStep(
@@ -172,7 +172,7 @@ class _MobileRefractometryInstructionsScreenState
                       Icons.blur_on_rounded,
                       'Blur Awareness',
                       'During the test, the E may become smaller and blurry. If you can barely make it out, say "Blurry" or select "Can\'t See".',
-                      AppColors.warning,
+                      context.warning,
                       animation: const BlurAwarenessAnimation(),
                     ),
                     _buildStep(
@@ -180,7 +180,7 @@ class _MobileRefractometryInstructionsScreenState
                       Icons.mic_rounded,
                       'Voice & Blurry',
                       'Say the direction clearly. If the letter "E" is out of focus, say "Blurry".',
-                      AppColors.success,
+                      context.success,
                       animation: const HowToRespondAnimation(),
                     ),
                   ],
@@ -195,10 +195,10 @@ class _MobileRefractometryInstructionsScreenState
                       : 16.0,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.cardColor,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -221,8 +221,8 @@ class _MobileRefractometryInstructionsScreenState
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _currentPage == index
-                                  ? AppColors.primary
-                                  : AppColors.border,
+                                  ? context.primary
+                                  : context.dividerColor,
                             ),
                           ),
                         ),
@@ -239,8 +239,8 @@ class _MobileRefractometryInstructionsScreenState
                       child: ElevatedButton(
                         onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
+                          backgroundColor: context.primary,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -286,9 +286,11 @@ class _MobileRefractometryInstructionsScreenState
       padding: EdgeInsets.all(isLandscape ? 8.0 : 16.0),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.5),
+          ),
         ),
         padding: EdgeInsets.symmetric(
           horizontal: isLandscape ? 16.0 : 20.0,
@@ -307,9 +309,9 @@ class _MobileRefractometryInstructionsScreenState
                         children: [
                           Text(
                             'Step ${index + 1} of $_totalPages',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.primary,
+                              color: context.primary,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.1,
                             ),
@@ -317,10 +319,10 @@ class _MobileRefractometryInstructionsScreenState
                           const SizedBox(height: 4),
                           Text(
                             _stepTitles[index],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -345,9 +347,9 @@ class _MobileRefractometryInstructionsScreenState
                 children: [
                   Text(
                     'Step ${index + 1} of $_totalPages',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.primary,
+                      color: context.primary,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.1,
                     ),
@@ -355,10 +357,10 @@ class _MobileRefractometryInstructionsScreenState
                   const SizedBox(height: 4),
                   Text(
                     _stepTitles[index],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -400,17 +402,17 @@ class _MobileRefractometryInstructionsScreenState
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: context.textSecondary,
                   fontSize: 14,
                   height: 1.4,
                   fontWeight: FontWeight.w400,

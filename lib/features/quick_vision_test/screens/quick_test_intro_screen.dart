@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/test_session_provider.dart';
 
 /// Introduction screen for quick vision test
@@ -13,10 +13,10 @@ class QuickTestIntroScreen extends StatelessWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(''),
-        backgroundColor: AppColors.transparent,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        surfaceTintColor: AppColors.transparent,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           onPressed: () => Navigator.pop(context),
@@ -43,14 +43,14 @@ class QuickTestIntroScreen extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            AppColors.primary,
-                            AppColors.primary.withValues(alpha: 0.85),
+                            context.primary,
+                            context.primary.withValues(alpha: 0.85),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.25),
+                            color: context.primary.withValues(alpha: 0.25),
                             blurRadius: 15,
                             offset: const Offset(0, 8),
                           ),
@@ -61,12 +61,12 @@ class QuickTestIntroScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.white.withValues(alpha: 0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: const Icon(
                               Icons.speed_rounded,
-                              color: AppColors.white,
+                              color: Colors.white,
                               size: 26,
                             ),
                           ),
@@ -80,7 +80,7 @@ class QuickTestIntroScreen extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.white,
+                                    color: Colors.white,
                                     letterSpacing: -0.3,
                                   ),
                                 ),
@@ -88,9 +88,7 @@ class QuickTestIntroScreen extends StatelessWidget {
                                 Text(
                                   'Fast and effective vision screening.',
                                   style: TextStyle(
-                                    color: AppColors.white.withValues(
-                                      alpha: 0.9,
-                                    ),
+                                    color: Colors.white.withValues(alpha: 0.9),
                                     fontSize: 13,
                                     fontWeight: FontWeight.w400,
                                   ),
@@ -109,7 +107,7 @@ class QuickTestIntroScreen extends StatelessWidget {
                           width: 4,
                           height: 16,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor,
+                            color: context.primary,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -119,7 +117,7 @@ class QuickTestIntroScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: context.textPrimary,
                           ),
                         ),
                       ],
@@ -167,21 +165,17 @@ class QuickTestIntroScreen extends StatelessWidget {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).primaryColor.withValues(alpha: 0.06),
+                        color: context.primary.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withValues(alpha: 0.15),
+                          color: context.primary.withValues(alpha: 0.15),
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.timer_outlined,
-                            color: Theme.of(context).primaryColor,
+                            color: context.primary,
                             size: 20,
                           ),
                           const SizedBox(width: 10),
@@ -189,7 +183,7 @@ class QuickTestIntroScreen extends StatelessWidget {
                             'Total duration: ~6-8 minutes',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: Theme.of(context).primaryColor,
+                              color: context.primary,
                               fontSize: 12,
                             ),
                           ),
@@ -218,16 +212,14 @@ class QuickTestIntroScreen extends StatelessWidget {
                     Navigator.pushNamed(context, '/profile-selection');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
+                    backgroundColor: context.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                     elevation: 4,
-                    shadowColor: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.4),
+                    shadowColor: context.primary.withValues(alpha: 0.4),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -264,11 +256,9 @@ class QuickTestIntroScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,10 +266,10 @@ class QuickTestIntroScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.06),
+              color: context.primary.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 22),
+            child: Icon(icon, color: context.primary, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -294,13 +284,13 @@ class QuickTestIntroScreen extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: context.textPrimary,
                       ),
                     ),
                     Text(
                       duration,
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: context.primary,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -311,9 +301,7 @@ class QuickTestIntroScreen extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: context.textSecondary,
                     fontSize: 12,
                     height: 1.4,
                     fontWeight: FontWeight.w400,

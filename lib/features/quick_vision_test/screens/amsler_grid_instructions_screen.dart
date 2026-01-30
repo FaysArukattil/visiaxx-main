@@ -1,7 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
@@ -117,14 +117,14 @@ class _AmslerGridInstructionsScreenState
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
           title: const Text('Amsler Grid Instructions'),
-          backgroundColor: AppColors.white,
+          backgroundColor: context.cardColor,
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: Icon(Icons.close, color: context.textPrimary),
             onPressed: _showExitConfirmation,
           ),
         ),
@@ -146,7 +146,7 @@ class _AmslerGridInstructionsScreenState
                       Icons.grid_on_rounded,
                       'The Amsler Grid',
                       'This test checks for distortions, wavy lines, or blank spots in your central vision.',
-                      AppColors.primary,
+                      context.primary,
                       animation: const AmslerPathwayAnimation(isCompact: true),
                     ),
                     _buildStep(
@@ -154,10 +154,10 @@ class _AmslerGridInstructionsScreenState
                       Icons.center_focus_strong_rounded,
                       'Keep Eye on Center',
                       'Focus purely on the central black dot. Do not look away from it during the test.',
-                      AppColors.success,
+                      context.success,
                       animation: const StayFocusedAnimation(
                         isCompact: true,
-                        color: AppColors.black,
+                        color: Colors.black,
                       ),
                     ),
                     _buildStep(
@@ -165,7 +165,7 @@ class _AmslerGridInstructionsScreenState
                       Icons.gesture_rounded,
                       'Trace Distortions',
                       'If lines look wavy or broken, trace them on the screen with your finger.',
-                      AppColors.warning,
+                      context.warning,
                       animation: const AmslerGridDrawingAnimation(),
                     ),
                     _buildStep(
@@ -173,7 +173,7 @@ class _AmslerGridInstructionsScreenState
                       Icons.visibility_rounded,
                       'Wear Your Glasses',
                       'If you wear distance correction glasses, please keep them on.',
-                      AppColors.info,
+                      context.info,
                       animation: const WearSpecsAnimation(),
                     ),
                   ],
@@ -188,10 +188,10 @@ class _AmslerGridInstructionsScreenState
                       : 16.0,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.cardColor,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -214,8 +214,8 @@ class _AmslerGridInstructionsScreenState
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _currentPage == index
-                                  ? AppColors.primary
-                                  : AppColors.border,
+                                  ? context.primary
+                                  : context.dividerColor,
                             ),
                           ),
                         ),
@@ -232,8 +232,8 @@ class _AmslerGridInstructionsScreenState
                       child: ElevatedButton(
                         onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
+                          backgroundColor: context.primary,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -279,9 +279,11 @@ class _AmslerGridInstructionsScreenState
       padding: EdgeInsets.all(isLandscape ? 8.0 : 16.0),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.5),
+          ),
         ),
         padding: EdgeInsets.symmetric(
           horizontal: isLandscape ? 16.0 : 20.0,
@@ -299,9 +301,9 @@ class _AmslerGridInstructionsScreenState
                         children: [
                           Text(
                             'Step ${index + 1} of $_totalPages',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.primary,
+                              color: context.primary,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.1,
                             ),
@@ -309,10 +311,10 @@ class _AmslerGridInstructionsScreenState
                           const SizedBox(height: 4),
                           Text(
                             _stepTitles[index],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -337,9 +339,9 @@ class _AmslerGridInstructionsScreenState
                 children: [
                   Text(
                     'Step ${index + 1} of $_totalPages',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.primary,
+                      color: context.primary,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.1,
                     ),
@@ -347,10 +349,10 @@ class _AmslerGridInstructionsScreenState
                   const SizedBox(height: 4),
                   Text(
                     _stepTitles[index],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -392,17 +394,17 @@ class _AmslerGridInstructionsScreenState
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: context.textSecondary,
                   fontSize: 14,
                   height: 1.4,
                   fontWeight: FontWeight.w400,

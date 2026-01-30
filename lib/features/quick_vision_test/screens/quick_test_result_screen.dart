@@ -7,7 +7,7 @@ import 'package:visiaxx/core/providers/network_connectivity_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/widgets/eye_loader.dart';
-import 'package:visiaxx/core/constants/app_colors.dart';
+import 'package:visiaxx/core/extensions/theme_extension.dart';
 import 'package:visiaxx/core/services/review_service.dart';
 import 'package:visiaxx/core/services/test_result_service.dart';
 import 'package:visiaxx/core/services/pdf_export_service.dart';
@@ -190,7 +190,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
-            backgroundColor: AppColors.transparent,
+            backgroundColor: Colors.transparent,
             isDismissible: false,
             builder: (context) => const ReviewDialog(),
           );
@@ -373,21 +373,21 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
     switch (status) {
       case TestStatus.normal:
-        primaryColor = AppColors.success;
-        secondaryColor = AppColors.successDark;
-        textColor = AppColors.textOnPrimary;
+        primaryColor = context.success;
+        secondaryColor = context.success.withValues(alpha: 0.8);
+        textColor = Colors.white;
         statusIcon = Icons.check_circle_rounded;
         break;
       case TestStatus.review:
-        primaryColor = AppColors.warning;
-        secondaryColor = AppColors.warningDark;
-        textColor = AppColors.textOnPrimary;
+        primaryColor = context.warning;
+        secondaryColor = context.warning.withValues(alpha: 0.8);
+        textColor = Colors.white;
         statusIcon = Icons.warning_amber_rounded;
         break;
       case TestStatus.urgent:
-        primaryColor = AppColors.error;
-        secondaryColor = AppColors.errorDark;
-        textColor = AppColors.textOnPrimary;
+        primaryColor = context.error;
+        secondaryColor = context.error.withValues(alpha: 0.8);
+        textColor = Colors.white;
         statusIcon = Icons.error_rounded;
         break;
     }
@@ -418,10 +418,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             height: 96,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.white.withValues(alpha: 0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withValues(alpha: 0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -445,7 +445,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.white.withValues(alpha: 0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -508,17 +508,17 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ? 'Patient'
         : (isFamily ? 'Family Member' : 'Primary Account');
     final badgeColor = isPatient
-        ? AppColors.warning
-        : (isFamily ? AppColors.info : AppColors.primary);
+        ? context.warning
+        : (isFamily ? context.info : context.primary);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.white, // ⚡ Pure white
+        color: context.cardColor, // ⚡ Pure white
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.04), // ⚡ Neutal shadow
+            color: Colors.black.withValues(alpha: 0.04), // ⚡ Neutal shadow
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -531,20 +531,20 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(
+                  color: context.primary.withValues(
                     alpha: 0.1,
                   ), // ⚡ Soft background
                   shape: BoxShape.circle,
                 ),
                 child: CircleAvatar(
                   radius: 28,
-                  backgroundColor: AppColors.transparent,
+                  backgroundColor: Colors.transparent,
                   child: Text(
                     name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900, // ⚡ Stronger weight
-                      color: AppColors.primary, // ⚡ Use primary color
+                      color: context.primary, // ⚡ Use primary color
                     ),
                   ),
                 ),
@@ -568,7 +568,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                           if (sex != null) sex,
                         ].join(' • '),
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: context.textSecondary,
                           fontSize: 13,
                         ),
                       ),
@@ -603,13 +603,13 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Icon(
                 Icons.calendar_today_rounded,
                 size: 14,
-                color: AppColors.textSecondary.withValues(alpha: 0.6),
+                color: context.textSecondary.withValues(alpha: 0.6),
               ),
               const SizedBox(width: 8),
               Text(
                 testDate,
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: context.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -630,20 +630,23 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: AppColors.primaryGradient,
+                colors: [
+                  context.primary,
+                  context.primary.withValues(alpha: 0.7),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.2),
+                  color: context.primary.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Icon(icon, color: AppColors.white, size: 20),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Text(
@@ -669,16 +672,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
+            color: context.primary.withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -694,7 +697,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   'Right Eye',
                   rightResult?.snellenScore ?? 'N/A',
                   rightResult?.status ?? 'N/A',
-                  AppColors.primary,
+                  context.primary,
                 ),
               ),
               Container(
@@ -705,9 +708,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.divider.withValues(alpha: 0.1),
-                      AppColors.divider,
-                      AppColors.divider.withValues(alpha: 0.1),
+                      context.dividerColor.withValues(alpha: 0.1),
+                      context.dividerColor,
+                      context.dividerColor.withValues(alpha: 0.1),
                     ],
                   ),
                 ),
@@ -717,7 +720,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   'Left Eye',
                   leftResult?.snellenScore ?? 'N/A',
                   leftResult?.status ?? 'N/A',
-                  AppColors.secondary,
+                  context.info,
                 ),
               ),
             ],
@@ -761,14 +764,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.info_outline, size: 14, color: AppColors.primary),
+            Icon(Icons.info_outline, size: 14, color: context.primary),
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+                color: context.primary,
               ),
             ),
           ],
@@ -778,7 +781,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           padding: const EdgeInsets.only(left: 22),
           child: Text(
             description,
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 12, color: context.textSecondary),
           ),
         ),
       ],
@@ -840,7 +843,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             fit: BoxFit.scaleDown,
             child: Text(
               status,
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -860,10 +863,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+                color: context.primary,
               ),
             ),
           ),
@@ -872,7 +875,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             fit: BoxFit.scaleDown,
             child: Text(
               label,
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
             ),
           ),
         ],
@@ -886,15 +889,17 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.1),
+          ),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             'No color vision data available',
             style: TextStyle(
-              color: AppColors.grey,
+              color: context.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -907,11 +912,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: context.primary.withValues(alpha: 0.05),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -937,9 +942,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.grey.withValues(alpha: 0.1),
-                      AppColors.grey.withValues(alpha: 0.3),
-                      AppColors.grey.withValues(alpha: 0.1),
+                      context.dividerColor.withValues(alpha: 0.1),
+                      context.dividerColor.withValues(alpha: 0.3),
+                      context.dividerColor.withValues(alpha: 0.1),
                     ],
                   ),
                 ),
@@ -1044,7 +1049,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   : eyeResult.status.displayName,
               style: TextStyle(
                 fontSize: 12,
-                color: isNormal ? AppColors.success : AppColors.warning,
+                color: isNormal ? context.success : context.warning,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
@@ -1094,11 +1099,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey.withValues(alpha: 0.08),
+            color: context.dividerColor.withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -1123,9 +1128,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.grey.withValues(alpha: 0.1),
-                      AppColors.grey.withValues(alpha: 0.3),
-                      AppColors.grey.withValues(alpha: 0.1),
+                      context.dividerColor.withValues(alpha: 0.1),
+                      context.dividerColor.withValues(alpha: 0.3),
+                      context.dividerColor.withValues(alpha: 0.1),
                     ],
                   ),
                 ),
@@ -1178,7 +1183,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   Text(
                     'The markings indicate potential metamorphosis (wavy lines) or scotoma (missing spots). This often signals physical changes in the macula. Please consult an eye care professional.',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                       fontSize: 13,
                       height: 1.5,
                     ),
@@ -1201,16 +1206,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: AppColors.textSecondary,
+            color: context.textSecondary,
           ),
         ),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildLegendItem('Wavy', AppColors.error),
-            _buildLegendItem('Missing', AppColors.warning),
-            _buildLegendItem('Blurry', AppColors.info),
+            _buildLegendItem('Wavy', context.error),
+            _buildLegendItem('Missing', context.warning),
+            _buildLegendItem('Blurry', context.info),
           ],
         ),
       ],
@@ -1228,7 +1233,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         const SizedBox(width: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 11, color: context.textSecondary),
         ),
       ],
     );
@@ -1251,11 +1256,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textTertiary.withValues(alpha: 0.08),
+            color: context.textTertiary.withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -1309,7 +1314,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.1),
+        color: context.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -1317,12 +1322,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, color: AppColors.info, size: 18),
+              Icon(Icons.info_outline, color: context.info, size: 18),
               const SizedBox(width: 8),
               Text(
                 'What This Means',
                 style: TextStyle(
-                  color: AppColors.info,
+                  color: context.info,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -1333,7 +1338,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Text(
             summary,
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: context.textSecondary,
               fontSize: 12,
               height: 1.4,
             ),
@@ -1348,10 +1353,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: AppColors.primary,
+          color: context.primary,
         ),
       ),
     );
@@ -1385,20 +1390,20 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
     switch (result.overallCategory) {
       case 'Excellent':
-        categoryColor = AppColors.success;
+        categoryColor = context.success;
         categoryIcon = Icons.star;
         break;
       case 'Normal':
-        categoryColor = AppColors.info;
+        categoryColor = context.info;
         categoryIcon = Icons.check_circle;
         break;
       case 'Borderline':
-        categoryColor = AppColors.warning;
+        categoryColor = context.warning;
         categoryIcon = Icons.warning_amber;
         break;
       case 'Reduced':
       default:
-        categoryColor = AppColors.error;
+        categoryColor = context.error;
         categoryIcon = Icons.error;
     }
 
@@ -1419,7 +1424,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             children: [
               Text(
                 'Contrast Sensitivity',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                style: TextStyle(color: context.textSecondary, fontSize: 12),
               ),
               const SizedBox(height: 2),
               Text(
@@ -1462,28 +1467,28 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
     switch (result.category) {
       case 'Excellent':
-        categoryColor = AppColors.success;
+        categoryColor = context.success;
         break;
       case 'Normal':
-        categoryColor = AppColors.info;
+        categoryColor = context.info;
         break;
       case 'Borderline':
-        categoryColor = AppColors.warning;
+        categoryColor = context.warning;
         break;
       case 'Reduced':
       default:
-        categoryColor = AppColors.error;
+        categoryColor = context.error;
     }
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.scaffoldBackground,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.textSecondary, size: 24),
+          Icon(icon, color: context.textSecondary, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1499,10 +1504,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 const SizedBox(height: 4),
                 Text(
                   'Last correct triplet: ${result.lastFullTriplet.isNotEmpty ? result.lastFullTriplet : 'N/A'}',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: context.textSecondary, fontSize: 11),
                 ),
               ],
             ),
@@ -1528,7 +1530,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               const SizedBox(height: 4),
               Text(
                 '${result.adjustedScore.toStringAsFixed(2)} log CS',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                style: TextStyle(color: context.textSecondary, fontSize: 11),
               ),
             ],
           ),
@@ -1541,44 +1543,44 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9), // Very light slate
+        color: context.scaffoldBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: context.dividerColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0F172A),
+            decoration: BoxDecoration(
+              color: context.textPrimary,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.gavel_rounded,
-              color: AppColors.white,
+              color: context.cardColor,
               size: 16,
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'MEDICAL DISCLAIMER',
                   style: TextStyle(
-                    color: Color(0xFF0F172A),
+                    color: context.textPrimary,
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
                     letterSpacing: 0.5,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
                   'This vision screening tool does not provide medical diagnosis. It is intended for early detection support. Always visit a licensed ophthalmologist for a comprehensive eye exam and medical advice.',
                   style: TextStyle(
-                    color: Color(0xFF475569),
+                    color: context.textSecondary,
                     fontSize: 12,
                     height: 1.5,
                     fontWeight: FontWeight.w500,
@@ -1612,16 +1614,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: isNormal
-                ? AppColors.success.withValues(alpha: 0.1)
-                : AppColors.warning.withValues(alpha: 0.1),
+            color: isNormal ? context.success : context.warning,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             isNormal ? 'Normal' : 'Review',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isNormal ? AppColors.success : AppColors.warning,
+              color: isNormal
+                  ? Colors.white
+                  : Colors.white, // assuming white on success/warning
             ),
           ),
         ),
@@ -1629,7 +1631,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const SizedBox(height: 8),
           Text(
             '${result.distortionPoints.length} area(s) marked',
-            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 11, color: context.textSecondary),
           ),
         ],
         if (result != null)
@@ -1690,21 +1692,21 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     final status =
         widget.historicalResult?.overallStatus ?? provider.getOverallStatus();
 
-    Color baseColor = const Color(0xFF10B981);
+    Color baseColor = context.success;
     IconData icon = Icons.health_and_safety_rounded;
     String title = 'Medical Consultation Advice';
 
     switch (status) {
       case TestStatus.normal:
-        baseColor = const Color(0xFF10B981);
+        baseColor = context.success;
         icon = Icons.health_and_safety_rounded;
         break;
       case TestStatus.review:
-        baseColor = const Color(0xFFF59E0B);
+        baseColor = context.warning;
         icon = Icons.healing_rounded;
         break;
       case TestStatus.urgent:
-        baseColor = const Color(0xFFEF4444);
+        baseColor = context.error;
         icon = Icons.emergency_rounded;
         title = 'Urgent Consultation Required';
         break;
@@ -1755,7 +1757,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     Text(
                       'Based on your screening results',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1769,14 +1771,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.white.withValues(alpha: 0.5),
+              color: context.cardColor.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               widget.historicalResult?.recommendation ??
                   provider.getRecommendation(),
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: context.textPrimary,
                 height: 1.6,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -1812,9 +1814,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           child: ElevatedButton.icon(
             onPressed: _isGeneratingPdf ? null : _generatePdf,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.transparent,
-              foregroundColor: AppColors.white,
-              shadowColor: AppColors.transparent,
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shadowColor: Colors.transparent,
               padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -1854,7 +1856,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       },
                 icon: Icons.ios_share_rounded,
                 label: 'Share',
-                color: AppColors.primary,
+                color: context.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -1865,7 +1867,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 },
                 icon: Icons.history_rounded,
                 label: 'History',
-                color: AppColors.secondary,
+                color: context.info,
               ),
             ),
           ],
@@ -1882,14 +1884,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           icon: const Icon(Icons.home_rounded),
           label: const Text('Back to Home'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-            foregroundColor: AppColors.primary,
+            backgroundColor: context.primary.withValues(alpha: 0.1),
+            foregroundColor: context.primary,
             minimumSize: const Size(double.infinity, 54),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: context.primary.withValues(alpha: 0.2),
                 width: 1.5,
               ),
             ),
@@ -1957,7 +1959,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
       child: Material(
-        color: AppColors.transparent,
+        color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(16),
@@ -2069,15 +2071,17 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.1),
+          ),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             'No reading test data available',
             style: TextStyle(
-              color: AppColors.grey,
+              color: context.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -2090,11 +2094,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.05),
+            color: context.success.withValues(alpha: 0.05),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -2108,13 +2112,13 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (isGood ? AppColors.success : AppColors.warning)
+                  color: (isGood ? context.success : context.warning)
                       .withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   isGood ? Icons.auto_stories_rounded : Icons.menu_book_rounded,
-                  color: isGood ? AppColors.success : AppColors.warning,
+                  color: isGood ? context.success : context.warning,
                 ),
               ),
               const SizedBox(width: 16),
@@ -2127,7 +2131,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 18,
-                        color: isGood ? AppColors.success : AppColors.warning,
+                        color: isGood ? context.success : context.warning,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -2135,7 +2139,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     Text(
                       'Best Acuity: ${result.bestAcuity}',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2150,17 +2154,17 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.05),
+                  color: context.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   children: [
                     Text(
                       '${result.averageSimilarity.toStringAsFixed(0)}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.primary,
+                        color: context.primary,
                         height: 1,
                       ),
                     ),
@@ -2169,7 +2173,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       'Match',
                       style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.primary.withValues(alpha: 0.7),
+                        color: context.primary.withValues(alpha: 0.7),
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                       ),
@@ -2188,7 +2192,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 height: 10,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: AppColors.border.withValues(alpha: 0.5),
+                  color: context.dividerColor.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
@@ -2203,14 +2207,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          AppColors.success.withValues(alpha: 0.7),
-                          AppColors.success,
+                          context.success.withValues(alpha: 0.7),
+                          context.success,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(5),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.success.withValues(alpha: 0.2),
+                          color: context.success.withValues(alpha: 0.2),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -2236,7 +2240,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Container(
                 width: 1,
                 height: 40,
-                color: AppColors.border.withValues(alpha: 0.1),
+                color: context.dividerColor.withValues(alpha: 0.1),
               ),
               Expanded(
                 child: _buildNewStatItem(
@@ -2258,7 +2262,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         Icon(
           icon,
           size: 18,
-          color: AppColors.textSecondary.withValues(alpha: 0.6),
+          color: context.textSecondary.withValues(alpha: 0.6),
         ),
         const SizedBox(height: 6),
         Text(
@@ -2273,7 +2277,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           label,
           style: TextStyle(
             fontSize: 11,
-            color: AppColors.textSecondary,
+            color: context.textSecondary,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.3,
           ),
@@ -2300,11 +2304,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: context.cardColor,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: context.primary.withValues(alpha: 0.08),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -2318,7 +2322,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 _buildRefractometryEyeBlock(
                   'Right Eye',
                   result.rightEye!,
-                  AppColors.primary,
+                  context.primary,
                   provider,
                 ),
               if (result.rightEye != null && result.leftEye != null)
@@ -2330,7 +2334,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 _buildRefractometryEyeBlock(
                   'Left Eye',
                   result.leftEye!,
-                  AppColors.secondary,
+                  context.info,
                   provider,
                 ),
             ],
@@ -2342,11 +2346,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.05),
+              color: context.warning.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: AppColors.warning.withValues(alpha: 0.2),
-              ),
+              border: Border.all(color: context.warning.withValues(alpha: 0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2355,16 +2357,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   children: [
                     Icon(
                       Icons.analytics_rounded,
-                      color: AppColors.warning,
+                      color: context.warning,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Clinical Observations',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: AppColors.warningDark,
+                        color: context.warning,
                       ),
                     ),
                   ],
@@ -2373,7 +2375,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 Text(
                   result.healthWarnings.join('. '),
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: context.textSecondary,
                     height: 1.5,
                     fontSize: 13,
                   ),
@@ -2440,10 +2442,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: context.scaffoldBackground,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: AppColors.divider.withValues(alpha: 0.5),
+                  color: context.dividerColor.withValues(alpha: 0.5),
                 ),
               ),
               child: Row(
@@ -2457,11 +2459,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Text(
+                  Text(
                     'Accuracy',
                     style: TextStyle(
                       fontSize: 9,
-                      color: AppColors.textTertiary,
+                      color: context.textTertiary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -2505,7 +2507,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           style: const TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.w900,
-            color: AppColors.textTertiary,
+            color: Color(0xFF94A3B8), // Slate 400
             letterSpacing: 0.5,
           ),
         ),
@@ -2514,10 +2516,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           fit: BoxFit.scaleDown,
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
               letterSpacing: -0.5,
             ),
           ),
@@ -2526,7 +2528,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           fullName,
           style: TextStyle(
             fontSize: 8,
-            color: AppColors.textSecondary.withValues(alpha: 0.5),
+            color: context.textSecondary.withValues(alpha: 0.5),
           ),
         ),
       ],
@@ -2601,15 +2603,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           decoration: BoxDecoration(
             color:
                 (condition == 'Healthy Vision'
-                        ? AppColors.success
-                        : AppColors.primary)
+                        ? context.success
+                        : context.primary)
                     .withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color:
                   (condition == 'Healthy Vision'
-                          ? AppColors.success
-                          : AppColors.primary)
+                          ? context.success
+                          : context.primary)
                       .withValues(alpha: 0.1),
             ),
           ),
@@ -2621,8 +2623,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     ? Icons.check_circle_rounded
                     : Icons.info_outline_rounded,
                 color: condition == 'Healthy Vision'
-                    ? AppColors.success
-                    : AppColors.primary,
+                    ? context.success
+                    : context.primary,
                 size: 14,
               ),
               const SizedBox(width: 8),
@@ -2634,8 +2636,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     condition,
                     style: TextStyle(
                       color: condition == 'Healthy Vision'
-                          ? AppColors.successDark
-                          : AppColors.primary,
+                          ? context.success
+                          : context.primary,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
@@ -2645,8 +2647,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       reduction,
                       style: TextStyle(
                         color: condition == 'Healthy Vision'
-                            ? AppColors.success
-                            : AppColors.primary.withValues(alpha: 0.7),
+                            ? context.success
+                            : context.primary.withValues(alpha: 0.7),
                         fontSize: 9,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2661,9 +2663,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           padding: const EdgeInsets.only(left: 4),
           child: Text(
             description,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
               fontWeight: FontWeight.w500,
               height: 1.4,
             ),
@@ -2691,7 +2693,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       s,
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                         height: 1.4,
                       ),
                     ),
@@ -2721,17 +2723,17 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.1),
+            color: context.success.withValues(alpha: 0.1),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
         ],
         border: Border.all(
-          color: AppColors.success.withValues(alpha: 0.2),
+          color: context.success.withValues(alpha: 0.2),
           width: 2,
         ),
       ),
@@ -2744,12 +2746,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
+                  color: context.success.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.verified_user_rounded,
-                  color: AppColors.success,
+                  color: context.success,
                   size: 20,
                 ),
               ),
@@ -2758,20 +2760,20 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'CLINICAL PRESCRIPTION',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 14,
                         letterSpacing: 1.2,
-                        color: AppColors.success,
+                        color: context.success,
                       ),
                     ),
                     Text(
                       'Verified by ${rx.practitionerName}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -2783,12 +2785,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const SizedBox(height: 24),
 
           // Final Prescription Table
-          const Text(
+          Text(
             'Final Prescription',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -2799,12 +2801,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const SizedBox(height: 16),
 
           // Subjective Refraction Sections
-          const Text(
+          Text(
             'Subjective Refraction',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -2814,20 +2816,20 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 child: _buildSimpleRefractionBlock(
                   'RIGHT EYE',
                   rx.rightEyeSubjective,
-                  AppColors.primary,
+                  context.primary,
                 ),
               ),
               Container(
                 width: 1,
                 height: 80,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: AppColors.divider.withValues(alpha: 0.5),
+                color: context.dividerColor.withValues(alpha: 0.5),
               ),
               Expanded(
                 child: _buildSimpleRefractionBlock(
                   'LEFT EYE',
                   rx.leftEyeSubjective,
-                  AppColors.secondary,
+                  context.info,
                 ),
               ),
             ],
@@ -2838,19 +2840,19 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: context.scaffoldBackground,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.divider),
+                border: Border.all(color: context.dividerColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Clinical Notes:',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -2873,9 +2875,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Widget _buildPrescriptionDataTable(FinalPrescriptionData data) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.scaffoldBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.dividerColor),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -2901,7 +2903,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   TableRow _buildRxTableHeader() {
     return TableRow(
-      decoration: const BoxDecoration(color: AppColors.divider),
+      decoration: BoxDecoration(color: context.dividerColor),
       children: [
         _buildRxHeaderCell('EYE'),
         _buildRxHeaderCell('SPH'),
@@ -2917,10 +2919,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w900,
-          color: AppColors.textSecondary,
+          color: context.textSecondary,
         ),
       ),
     );
@@ -2949,10 +2951,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       child: Text(
         value,
         textAlign: TextAlign.center,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: 13,
-          color: AppColors.textPrimary,
+          color: context.textPrimary,
         ),
       ),
     );
@@ -2992,17 +2994,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 11, color: context.textSecondary),
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
             ),
           ),
         ],
