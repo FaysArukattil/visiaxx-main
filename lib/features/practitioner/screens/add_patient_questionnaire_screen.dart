@@ -676,28 +676,14 @@ class _AddPatientQuestionnaireScreenState
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Sex',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        PremiumDropdown<String>(
-                          label: 'Sex',
-                          hintText: 'Select a gender',
-                          value: _selectedSex,
-                          items: const ['Male', 'Female', 'Other'],
-                          itemLabelBuilder: (item) => item,
-                          onChanged: (value) =>
-                              setState(() => _selectedSex = value),
-                        ),
-                      ],
+                    child: PremiumDropdown<String>(
+                      label: 'Sex',
+                      hintText: 'Select a gender',
+                      value: _selectedSex,
+                      items: const ['Male', 'Female', 'Other'],
+                      itemLabelBuilder: (item) => item,
+                      onChanged: (value) =>
+                          setState(() => _selectedSex = value),
                     ),
                   ),
                 ],
@@ -771,16 +757,6 @@ class _AddPatientQuestionnaireScreenState
                 },
               ),
               const SizedBox(height: 16),
-              // Sex
-              const Text(
-                'Sex',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
               PremiumDropdown<String>(
                 label: 'Sex',
                 hintText: 'Select a gender',

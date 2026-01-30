@@ -117,7 +117,7 @@ class PremiumDropdown<T> extends StatelessWidget {
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
-                                    ? AppColors.primary
+                                    ? colorScheme.primary
                                     : AppColors.border.withValues(alpha: 0.5),
                                 width: 1.5,
                               ),
@@ -150,7 +150,11 @@ class PremiumDropdown<T> extends StatelessWidget {
                                           itemSubtitleBuilder!(item),
                                           style: TextStyle(
                                             fontSize: 13,
-                                            color: AppColors.textSecondary,
+                                            color: theme
+                                                .textTheme
+                                                .bodySmall
+                                                ?.color
+                                                ?.withValues(alpha: 0.7),
                                           ),
                                         ),
                                       ],
@@ -158,9 +162,9 @@ class PremiumDropdown<T> extends StatelessWidget {
                                   ),
                                 ),
                                 if (isSelected)
-                                  const Icon(
+                                  Icon(
                                     Icons.check_circle_rounded,
-                                    color: AppColors.primary,
+                                    color: colorScheme.primary,
                                     size: 24,
                                   ),
                               ],
@@ -182,6 +186,7 @@ class PremiumDropdown<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -198,9 +203,9 @@ class PremiumDropdown<T> extends StatelessWidget {
               hintText: hintText,
               filled: true,
               fillColor: theme.cardColor,
-              suffixIcon: const Icon(
+              suffixIcon: Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: AppColors.textSecondary,
+                color: theme.iconTheme.color?.withValues(alpha: 0.7),
                 size: 28,
               ),
               border: OutlineInputBorder(
@@ -219,10 +224,7 @@ class PremiumDropdown<T> extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -237,8 +239,8 @@ class PremiumDropdown<T> extends StatelessWidget {
                 fontSize: 15,
                 fontWeight: value != null ? FontWeight.w600 : FontWeight.normal,
                 color: value != null
-                    ? AppColors.textPrimary
-                    : AppColors.textTertiary,
+                    ? colorScheme.primary
+                    : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
               ),
             ),
           ),

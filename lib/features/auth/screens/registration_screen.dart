@@ -683,7 +683,9 @@ class _RoleCard extends StatelessWidget {
             Icon(
               icon,
               size: 28,
-              color: isSelected ? context.primary : AppColors.textTertiary,
+              color: isSelected
+                  ? context.primary
+                  : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
             ),
             const SizedBox(height: 8),
             Text(
@@ -691,7 +693,9 @@ class _RoleCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? context.primary : AppColors.textSecondary,
+                color: isSelected
+                    ? context.primary
+                    : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
               ),
             ),
           ],
