@@ -13,7 +13,8 @@ import 'package:printing/printing.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:visiaxx/core/services/file_manager_service.dart';
 import '../../../core/services/dashboard_persistence_service.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
+
 import '../../../core/services/patient_service.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../core/widgets/eye_loader.dart';
@@ -635,7 +636,7 @@ class _PractitionerDashboardScreenState
                       icon: const Icon(Icons.clear, size: 18),
                       label: const Text('Clear'),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.error,
+                        foregroundColor: context.error,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 8,
@@ -684,7 +685,7 @@ class _PractitionerDashboardScreenState
                       icon: const Icon(Icons.check, size: 18),
                       label: const Text('Done'),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primary,
+                        foregroundColor: context.primary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 8,
@@ -705,9 +706,9 @@ class _PractitionerDashboardScreenState
                         Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: context.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: context.dividerColor),
                           ),
                           child: Row(
                             children: [
@@ -725,7 +726,7 @@ class _PractitionerDashboardScreenState
                                     ),
                                     decoration: BoxDecoration(
                                       color: isRangeMode
-                                          ? AppColors.primary
+                                          ? context.primary
                                           : Colors.transparent,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -734,8 +735,8 @@ class _PractitionerDashboardScreenState
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: isRangeMode
-                                            ? AppColors.white
-                                            : AppColors.textSecondary,
+                                            ? Colors.white
+                                            : context.textSecondary,
                                         fontWeight: isRangeMode
                                             ? FontWeight.bold
                                             : FontWeight.normal,
@@ -760,7 +761,7 @@ class _PractitionerDashboardScreenState
                                     ),
                                     decoration: BoxDecoration(
                                       color: !isRangeMode
-                                          ? AppColors.primary
+                                          ? context.primary
                                           : Colors.transparent,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -769,8 +770,8 @@ class _PractitionerDashboardScreenState
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: !isRangeMode
-                                            ? AppColors.white
-                                            : AppColors.textSecondary,
+                                            ? Colors.white
+                                            : context.textSecondary,
                                         fontWeight: !isRangeMode
                                             ? FontWeight.bold
                                             : FontWeight.normal,
@@ -788,10 +789,10 @@ class _PractitionerDashboardScreenState
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
+                            color: context.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.3),
+                              color: context.primary.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Column(
@@ -814,7 +815,7 @@ class _PractitionerDashboardScreenState
                                     const SizedBox(width: 12),
                                     Icon(
                                       Icons.arrow_forward,
-                                      color: AppColors.primary.withValues(
+                                      color: context.primary.withValues(
                                         alpha: 0.5,
                                       ),
                                     ),
@@ -850,26 +851,26 @@ class _PractitionerDashboardScreenState
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.success.withValues(
-                                      alpha: 0.1,
-                                    ),
+                                    color: const Color(
+                                      0xFF34C759,
+                                    ).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.info_outline,
                                         size: 16,
-                                        color: AppColors.success,
+                                        color: const Color(0xFF34C759),
                                       ),
                                       const SizedBox(width: 8),
                                       Flexible(
                                         child: Text(
                                           '${_calculateDaysBetween(tempStartDate!, tempEndDate!)} days selected',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: AppColors.success,
+                                            color: const Color(0xFF34C759),
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -886,7 +887,7 @@ class _PractitionerDashboardScreenState
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.background,
+                            color: context.scaffoldBackground,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -894,7 +895,7 @@ class _PractitionerDashboardScreenState
                               Icon(
                                 Icons.lightbulb_outline,
                                 size: 16,
-                                color: AppColors.warning,
+                                color: const Color(0xFFFF9500),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -904,9 +905,9 @@ class _PractitionerDashboardScreenState
                                             ? 'Select the start date of your range'
                                             : 'Select the end date of your range')
                                       : 'Select a single date to view tests',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.textSecondary,
+                                    color: context.textSecondary,
                                   ),
                                 ),
                               ),
@@ -919,26 +920,26 @@ class _PractitionerDashboardScreenState
                           height: 200,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: AppColors.surface,
+                              color: context.surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: context.dividerColor),
                             ),
                             child: Theme(
                               data: Theme.of(context).copyWith(
                                 colorScheme: ColorScheme.light(
-                                  primary: AppColors.primary,
-                                  onPrimary: AppColors.white,
-                                  surface: AppColors.surface,
-                                  onSurface: AppColors.textPrimary,
+                                  primary: context.primary,
+                                  onPrimary: Colors.white,
+                                  surface: context.surface,
+                                  onSurface: context.textPrimary,
                                 ),
                               ),
                               child: CupertinoTheme(
                                 data: CupertinoThemeData(
-                                  primaryColor: AppColors.primary,
+                                  primaryColor: context.primary,
                                   textTheme: CupertinoTextThemeData(
                                     dateTimePickerTextStyle: TextStyle(
                                       fontSize: 18,
-                                      color: AppColors.textPrimary,
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -1012,10 +1013,10 @@ class _PractitionerDashboardScreenState
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primary : AppColors.white,
+          color: isActive ? context.primary : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isActive ? AppColors.primary : AppColors.border,
+            color: isActive ? context.primary : context.dividerColor,
             width: isActive ? 2 : 1,
           ),
         ),
@@ -1027,8 +1028,8 @@ class _PractitionerDashboardScreenState
               style: TextStyle(
                 fontSize: 10,
                 color: isActive
-                    ? AppColors.white.withValues(alpha: 0.8)
-                    : AppColors.textSecondary,
+                    ? Colors.white.withValues(alpha: 0.8)
+                    : context.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1041,10 +1042,10 @@ class _PractitionerDashboardScreenState
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: isActive
-                    ? AppColors.white
+                    ? Colors.white
                     : (date != null
-                          ? AppColors.textPrimary
-                          : AppColors.textTertiary),
+                          ? context.textPrimary
+                          : context.textTertiary),
               ),
             ),
           ],
@@ -1090,12 +1091,12 @@ class _PractitionerDashboardScreenState
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.picture_as_pdf_rounded,
-                        color: AppColors.primary,
+                        color: context.primary,
                         size: 24,
                       ),
                     ),
@@ -1112,12 +1113,9 @@ class _PractitionerDashboardScreenState
                   ],
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Select the report collection you wish to export to your device.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: TextStyle(fontSize: 14, color: context.textSecondary),
                 ),
                 const SizedBox(height: 20),
 
@@ -1150,10 +1148,10 @@ class _PractitionerDashboardScreenState
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Cancel',
                       style: TextStyle(
-                        color: AppColors.textTertiary,
+                        color: context.textTertiary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1185,14 +1183,14 @@ class _PractitionerDashboardScreenState
           decoration: BoxDecoration(
             color: isEnabled
                 ? (isRecommended
-                      ? AppColors.primary.withValues(alpha: 0.05)
-                      : AppColors.surface)
-                : AppColors.background.withValues(alpha: 0.5),
+                      ? context.primary.withValues(alpha: 0.05)
+                      : context.surface)
+                : context.scaffoldBackground.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isRecommended && isEnabled
-                  ? AppColors.primary
-                  : AppColors.border.withValues(alpha: isEnabled ? 1 : 0.5),
+                  ? context.primary
+                  : context.dividerColor.withValues(alpha: isEnabled ? 1 : 0.5),
               width: isRecommended && isEnabled ? 2 : 1,
             ),
           ),
@@ -1202,13 +1200,13 @@ class _PractitionerDashboardScreenState
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isEnabled
-                      ? AppColors.primary.withValues(alpha: 0.1)
-                      : AppColors.textTertiary.withValues(alpha: 0.1),
+                      ? context.primary.withValues(alpha: 0.1)
+                      : context.textTertiary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: isEnabled ? AppColors.primary : AppColors.textTertiary,
+                  color: isEnabled ? context.primary : context.textTertiary,
                   size: 24,
                 ),
               ),
@@ -1226,8 +1224,8 @@ class _PractitionerDashboardScreenState
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
                               color: isEnabled
-                                  ? AppColors.textPrimary
-                                  : AppColors.textTertiary,
+                                  ? context.textPrimary
+                                  : context.textTertiary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1241,13 +1239,13 @@ class _PractitionerDashboardScreenState
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
+                              color: context.primary,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
                               'BEST CHOICE',
                               style: TextStyle(
-                                color: AppColors.white,
+                                color: Colors.white,
                                 fontSize: 8,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 0.5,
@@ -1263,8 +1261,8 @@ class _PractitionerDashboardScreenState
                       style: TextStyle(
                         fontSize: 12,
                         color: isEnabled
-                            ? AppColors.textSecondary
-                            : AppColors.textTertiary,
+                            ? context.textSecondary
+                            : context.textTertiary,
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 2,
@@ -1352,7 +1350,7 @@ class _PractitionerDashboardScreenState
               ),
               title: Row(
                 children: [
-                  Icon(Icons.folder_open, color: AppColors.primary),
+                  Icon(Icons.folder_open, color: context.primary),
                   const SizedBox(width: 12),
                   const Expanded(child: Text('Storage Access')),
                 ],
@@ -1389,9 +1387,9 @@ class _PractitionerDashboardScreenState
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.settings, color: AppColors.warning),
+                  Icon(Icons.settings, color: const Color(0xFFFF9500)),
                   SizedBox(width: 12),
                   Expanded(child: Text('Permission Required')),
                 ],
@@ -1544,10 +1542,7 @@ class _PractitionerDashboardScreenState
               const SizedBox(height: 8),
               Text(
                 choice == 'all' ? 'All reports' : 'Filtered reports',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 12, color: context.textSecondary),
               ),
             ],
           ),
@@ -1754,11 +1749,11 @@ class _PractitionerDashboardScreenState
               width: MediaQuery.of(context).size.width * 0.9,
               constraints: const BoxConstraints(maxWidth: 480),
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: context.surface,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 30,
                     offset: const Offset(0, 15),
                   ),
@@ -1778,23 +1773,25 @@ class _PractitionerDashboardScreenState
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.success.withValues(alpha: 0.1),
+                              color: const Color(
+                                0xFF34C759,
+                              ).withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.check_circle_rounded,
-                              color: AppColors.success,
+                              color: Color(0xFF34C759),
                               size: 52,
                             ),
                           ),
                           const SizedBox(height: 20),
 
-                          const Text(
+                          Text(
                             'Reports Ready',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -1805,7 +1802,7 @@ class _PractitionerDashboardScreenState
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 15,
-                              color: AppColors.textSecondary.withValues(
+                              color: context.textSecondary.withValues(
                                 alpha: 0.8,
                               ),
                               fontWeight: FontWeight.w500,
@@ -1819,10 +1816,12 @@ class _PractitionerDashboardScreenState
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.background,
+                              color: context.scaffoldBackground,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: AppColors.border.withValues(alpha: 0.5),
+                                color: context.dividerColor.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
                             ),
                             child: Column(
@@ -1830,18 +1829,18 @@ class _PractitionerDashboardScreenState
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.folder_open_rounded,
                                       size: 16,
-                                      color: AppColors.primary,
+                                      color: context.primary,
                                     ),
                                     const SizedBox(width: 8),
-                                    const Text(
+                                    Text(
                                       'SAVE LOCATION',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w900,
-                                        color: AppColors.textTertiary,
+                                        color: context.textTertiary,
                                         letterSpacing: 1.2,
                                       ),
                                     ),
@@ -1850,18 +1849,18 @@ class _PractitionerDashboardScreenState
                                 const SizedBox(height: 10),
                                 Text(
                                   folderName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
+                                    color: context.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   path,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
-                                    color: AppColors.textSecondary,
+                                    color: context.textSecondary,
                                     fontFamily: 'monospace',
                                     height: 1.4,
                                   ),
@@ -1910,11 +1909,11 @@ class _PractitionerDashboardScreenState
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 16,
                                       ),
-                                      side: const BorderSide(
-                                        color: AppColors.primary,
+                                      side: BorderSide(
+                                        color: context.primary,
                                         width: 1.5,
                                       ),
-                                      foregroundColor: AppColors.primary,
+                                      foregroundColor: context.primary,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14),
                                       ),
@@ -1941,8 +1940,8 @@ class _PractitionerDashboardScreenState
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: AppColors.white,
+                                      backgroundColor: context.primary,
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 16,
                                       ),
@@ -1975,7 +1974,7 @@ class _PractitionerDashboardScreenState
                                 ),
                                 label: const Text('View in Downloads'),
                                 style: TextButton.styleFrom(
-                                  foregroundColor: AppColors.primary,
+                                  foregroundColor: context.primary,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
                                   ),
@@ -2000,8 +1999,8 @@ class _PractitionerDashboardScreenState
                                 ),
                                 label: const Text('Open Downloads Folder'),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: AppColors.white,
+                                  backgroundColor: context.primary,
+                                  foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 18,
                                   ),
@@ -2037,12 +2036,12 @@ class _PractitionerDashboardScreenState
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.background.withValues(alpha: 0.8),
+                      color: context.scaffoldBackground.withValues(alpha: 0.8),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.close_rounded,
-                      color: AppColors.textTertiary,
+                      color: context.textTertiary,
                       size: 20,
                     ),
                   ),
@@ -2358,7 +2357,7 @@ class _PractitionerDashboardScreenState
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: context.error),
             child: const Text('Remove'),
           ),
         ],
@@ -2416,10 +2415,10 @@ class _PractitionerDashboardScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.scaffoldBackground,
       appBar: AppBar(
         title: const Text('Practitioner Dashboard'),
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         elevation: 0,
         bottom: _isSyncing
             ? PreferredSize(
@@ -2431,9 +2430,9 @@ class _PractitionerDashboardScreenState
                   builder: (context, value, child) {
                     return LinearProgressIndicator(
                       value: value > 0 ? value : null,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppColors.primary,
+                      backgroundColor: context.primary.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        context.primary,
                       ),
                       minHeight: 4,
                     );
@@ -2496,7 +2495,7 @@ class _PractitionerDashboardScreenState
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
+                              color: context.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -2504,7 +2503,7 @@ class _PractitionerDashboardScreenState
                             'We are retrieving clinical data from the cloud',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textTertiary,
+                              color: context.textTertiary,
                             ),
                           ),
                         ],
@@ -2521,9 +2520,7 @@ class _PractitionerDashboardScreenState
                           Icon(
                             Icons.assignment_late_outlined,
                             size: 60,
-                            color: AppColors.textTertiary.withValues(
-                              alpha: 0.3,
-                            ),
+                            color: context.textTertiary.withValues(alpha: 0.3),
                           ),
                           const SizedBox(height: 24),
                           Text(
@@ -2531,7 +2528,7 @@ class _PractitionerDashboardScreenState
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
+                              color: context.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -2539,7 +2536,7 @@ class _PractitionerDashboardScreenState
                             'Try performing a test or checking connection',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textTertiary,
+                              color: context.textTertiary,
                             ),
                           ),
                         ],
@@ -2552,7 +2549,7 @@ class _PractitionerDashboardScreenState
             if (_isFilterLoading)
               Positioned.fill(
                 child: Container(
-                  color: AppColors.background.withValues(alpha: 0.7),
+                  color: context.scaffoldBackground.withValues(alpha: 0.7),
                   child: const Center(child: EyeLoader(size: 60)),
                 ),
               ),
@@ -2568,10 +2565,10 @@ class _PractitionerDashboardScreenState
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       margin: const EdgeInsets.only(bottom: 2),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
+        color: context.primary.withValues(alpha: 0.08),
         border: Border(
           bottom: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: context.primary.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -2589,9 +2586,7 @@ class _PractitionerDashboardScreenState
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   value: value > 0 ? value : null,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.primary,
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(context.primary),
                 ),
               ),
               const SizedBox(width: 16),
@@ -2604,7 +2599,7 @@ class _PractitionerDashboardScreenState
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+                        color: context.primary,
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -2613,7 +2608,7 @@ class _PractitionerDashboardScreenState
                       'Fetching clinical records from clinical cloud storage',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textTertiary,
+                        color: context.textTertiary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -2626,7 +2621,7 @@ class _PractitionerDashboardScreenState
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: context.primary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -2634,7 +2629,7 @@ class _PractitionerDashboardScreenState
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.white,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -2648,18 +2643,18 @@ class _PractitionerDashboardScreenState
   Widget _buildDownloadButton() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(16), // Premium squircle radius
+        color: context.primary,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: context.primary.withValues(alpha: 0.3),
             blurRadius: 15,
             spreadRadius: 2,
             offset: const Offset(0, 6),
           ),
         ],
         border: Border.all(
-          color: AppColors.white.withValues(alpha: 0.2),
+          color: Colors.white.withValues(alpha: 0.2),
           width: 1.5,
         ),
       ),
@@ -2672,7 +2667,7 @@ class _PractitionerDashboardScreenState
             padding: const EdgeInsets.all(14),
             child: const Icon(
               Icons.file_download_outlined,
-              color: AppColors.white,
+              color: Colors.white,
               size: 26,
             ),
           ),
@@ -2693,15 +2688,15 @@ class _PractitionerDashboardScreenState
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
+                  color: context.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.15),
+                    color: context.primary.withValues(alpha: 0.15),
                     width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.05),
+                      color: context.primary.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -2724,18 +2719,18 @@ class _PractitionerDashboardScreenState
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: hasDateFilter
-                      ? AppColors.primary
-                      : AppColors.primary.withValues(alpha: 0.08),
+                      ? context.primary
+                      : context.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: hasDateFilter
-                        ? AppColors.white.withValues(alpha: 0.2)
-                        : AppColors.primary.withValues(alpha: 0.15),
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : context.primary.withValues(alpha: 0.15),
                     width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.05),
+                      color: context.primary.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -2745,7 +2740,7 @@ class _PractitionerDashboardScreenState
                   hasDateFilter
                       ? Icons.date_range
                       : Icons.calendar_today_outlined,
-                  color: hasDateFilter ? AppColors.white : AppColors.primary,
+                  color: hasDateFilter ? Colors.white : context.primary,
                   size: 20,
                 ),
               ),
@@ -2759,10 +2754,10 @@ class _PractitionerDashboardScreenState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.15),
+                color: context.primary.withValues(alpha: 0.15),
                 width: 1.2,
               ),
             ),
@@ -2771,13 +2766,13 @@ class _PractitionerDashboardScreenState
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: context.primary,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(
                     Icons.calendar_month,
                     size: 16,
-                    color: AppColors.white,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -2785,21 +2780,21 @@ class _PractitionerDashboardScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Custom Date Range',
                         style: TextStyle(
                           fontSize: 10,
-                          color: AppColors.textSecondary,
+                          color: context.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         _formatDateRange(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: context.primary,
                         ),
                       ),
                     ],
@@ -2807,7 +2802,7 @@ class _PractitionerDashboardScreenState
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
-                  color: AppColors.error,
+                  color: context.error,
                   onPressed: () {
                     setState(() {
                       _startDate = null;
@@ -2872,12 +2867,12 @@ class _PractitionerDashboardScreenState
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : null,
+            color: isSelected ? context.primary : null,
             borderRadius: BorderRadius.circular(20),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.2),
+                      color: context.primary.withValues(alpha: 0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -2888,7 +2883,7 @@ class _PractitionerDashboardScreenState
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected ? AppColors.white : AppColors.primary,
+              color: isSelected ? Colors.white : context.primary,
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               fontSize: 12,
               letterSpacing: 0.3,
@@ -2915,7 +2910,7 @@ class _PractitionerDashboardScreenState
                 'Total Tests',
                 '$totalTests',
                 Icons.assessment_outlined,
-                AppColors.primary,
+                context.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -2924,7 +2919,7 @@ class _PractitionerDashboardScreenState
                 'Patients',
                 '$uniquePatients',
                 Icons.people_outline,
-                AppColors.primary,
+                context.primary,
               ),
             ),
           ],
@@ -2938,7 +2933,7 @@ class _PractitionerDashboardScreenState
                 'Review',
                 '${statusCounts['review'] ?? statusCounts['Review'] ?? 0}',
                 Icons.visibility_outlined,
-                AppColors.warning,
+                const Color(0xFFFF9500), // Warning color
               ),
             ),
             const SizedBox(width: 12),
@@ -2947,7 +2942,7 @@ class _PractitionerDashboardScreenState
                 'Urgent',
                 '${statusCounts['urgent'] ?? statusCounts['Urgent'] ?? 0}',
                 Icons.warning_amber_rounded,
-                AppColors.error,
+                context.error,
               ),
             ),
           ],
@@ -2988,7 +2983,7 @@ class _PractitionerDashboardScreenState
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.surface,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -3005,9 +3000,9 @@ class _PractitionerDashboardScreenState
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
-              color: AppColors.textSecondary,
+              color: context.textSecondary,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
@@ -3038,16 +3033,16 @@ class _PractitionerDashboardScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3070,7 +3065,7 @@ class _PractitionerDashboardScreenState
                       'Patients grouped by detectable conditions',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -3083,21 +3078,21 @@ class _PractitionerDashboardScreenState
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: context.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.people_alt_rounded,
                       size: 14,
-                      color: AppColors.primary,
+                      color: context.primary,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '$totalPatients',
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      style: TextStyle(
+                        color: context.primary,
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
                       ),
@@ -3124,10 +3119,10 @@ class _PractitionerDashboardScreenState
                       Expanded(
                         child: Text(
                           entry.key,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: context.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -3149,7 +3144,7 @@ class _PractitionerDashboardScreenState
                       Container(
                         height: 12,
                         decoration: BoxDecoration(
-                          color: AppColors.background,
+                          color: context.scaffoldBackground,
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
@@ -3201,11 +3196,11 @@ class _PractitionerDashboardScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -3230,24 +3225,17 @@ class _PractitionerDashboardScreenState
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.1),
+                      color: context.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.clear_all,
-                          size: 14,
-                          color: AppColors.error,
-                        ),
+                        Icon(Icons.clear_all, size: 14, color: context.error),
                         const SizedBox(width: 4),
                         Text(
                           'Clear (${_selectedConditions.length})',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.error,
-                          ),
+                          style: TextStyle(fontSize: 11, color: context.error),
                         ),
                       ],
                     ),
@@ -3258,7 +3246,7 @@ class _PractitionerDashboardScreenState
           const SizedBox(height: 8),
           Text(
             'Tap to select multiple conditions',
-            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 11, color: context.textSecondary),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -3306,16 +3294,12 @@ class _PractitionerDashboardScreenState
             if (isSelected)
               Padding(
                 padding: const EdgeInsets.only(right: 6),
-                child: Icon(
-                  Icons.check_circle,
-                  size: 14,
-                  color: AppColors.white,
-                ),
+                child: Icon(Icons.check_circle, size: 14, color: Colors.white),
               ),
             Text(
               condition,
               style: TextStyle(
-                color: isSelected ? AppColors.white : color,
+                color: isSelected ? Colors.white : color,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 fontSize: 12,
               ),
@@ -3325,14 +3309,14 @@ class _PractitionerDashboardScreenState
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.white.withValues(alpha: 0.25)
+                    ? Colors.white.withValues(alpha: 0.25)
                     : color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '$count',
                 style: TextStyle(
-                  color: isSelected ? AppColors.white : color,
+                  color: isSelected ? Colors.white : color,
                   fontWeight: FontWeight.bold,
                   fontSize: 10,
                 ),
@@ -3347,7 +3331,7 @@ class _PractitionerDashboardScreenState
   Color _getConditionColor(String condition) {
     switch (condition) {
       case 'Normal':
-        return AppColors.success;
+        return const Color(0xFF34C759);
       case 'Myopia':
         return const Color(0xFF2196F3); // Blue
       case 'Hyperopia':
@@ -3368,7 +3352,7 @@ class _PractitionerDashboardScreenState
       case 'Low Contrast Sensitivity':
         return const Color(0xFF3F51B5); // Indigo
       default:
-        return AppColors.primary;
+        return context.primary;
     }
   }
 
@@ -3388,13 +3372,13 @@ class _PractitionerDashboardScreenState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '${searchFilteredResults.length} results',
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: context.primary,
                   fontWeight: FontWeight.w600,
                   fontSize: 11,
                 ),
@@ -3421,7 +3405,7 @@ class _PractitionerDashboardScreenState
                 : null,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: AppColors.background,
+            fillColor: context.scaffoldBackground,
             contentPadding: const EdgeInsets.symmetric(
               vertical: 12,
               horizontal: 16,
@@ -3518,13 +3502,13 @@ class _PractitionerDashboardScreenState
     Color statusColor;
     switch (result.overallStatus) {
       case TestStatus.normal:
-        statusColor = AppColors.success;
+        statusColor = const Color(0xFF34C759);
         break;
       case TestStatus.review:
-        statusColor = AppColors.warning;
+        statusColor = const Color(0xFFFF9500);
         break;
       case TestStatus.urgent:
-        statusColor = AppColors.error;
+        statusColor = context.error;
         break;
     }
 
@@ -3539,25 +3523,25 @@ class _PractitionerDashboardScreenState
           end: Alignment.bottomRight,
           colors: [
             isComprehensive
-                ? AppColors.primary.withValues(alpha: 0.08)
-                : AppColors.surface,
+                ? context.primary.withValues(alpha: 0.08)
+                : context.surface,
             isComprehensive
-                ? AppColors.primary.withValues(alpha: 0.03)
-                : AppColors.surface,
+                ? context.primary.withValues(alpha: 0.03)
+                : context.surface,
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isComprehensive
-              ? AppColors.primary.withValues(alpha: 0.3)
-              : AppColors.border.withValues(alpha: 0.3),
+              ? context.primary.withValues(alpha: 0.3)
+              : context.dividerColor.withValues(alpha: 0.3),
           width: isComprehensive ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: isComprehensive
-                ? AppColors.primary.withValues(alpha: 0.1)
-                : AppColors.black.withValues(alpha: 0.04),
+                ? context.primary.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             spreadRadius: 0,
             offset: const Offset(0, 4),
@@ -3585,14 +3569,14 @@ class _PractitionerDashboardScreenState
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            AppColors.primary,
-                            AppColors.primary.withValues(alpha: 0.7),
+                            context.primary,
+                            context.primary.withValues(alpha: 0.7),
                           ],
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
+                            color: context.primary.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -3606,7 +3590,7 @@ class _PractitionerDashboardScreenState
                               : '?',
                           style: const TextStyle(
                             fontWeight: FontWeight.w900,
-                            color: AppColors.white,
+                            color: Colors.white,
                             fontSize: 20,
                           ),
                         ),
@@ -3621,10 +3605,10 @@ class _PractitionerDashboardScreenState
                             (patient?.fullName ?? result.profileName).isNotEmpty
                                 ? (patient?.fullName ?? result.profileName)
                                 : 'Self',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -3635,7 +3619,7 @@ class _PractitionerDashboardScreenState
                               Icon(
                                 Icons.calendar_today_rounded,
                                 size: 11,
-                                color: AppColors.textSecondary,
+                                color: context.textSecondary,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -3643,9 +3627,9 @@ class _PractitionerDashboardScreenState
                                   DateFormat(
                                     'MMM dd, yyyy • h:mm a',
                                   ).format(result.timestamp),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: AppColors.textSecondary,
+                                    color: context.textSecondary,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
@@ -3661,16 +3645,16 @@ class _PractitionerDashboardScreenState
                       Container(
                         margin: const EdgeInsets.only(left: 8),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: context.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.3),
+                            color: context.primary.withValues(alpha: 0.3),
                           ),
                         ),
                         child: IconButton(
                           onPressed: () => _makePhoneCall(patient.phone!),
                           icon: const Icon(Icons.call_rounded, size: 18),
-                          color: AppColors.primary,
+                          color: context.primary,
                           padding: const EdgeInsets.all(8),
                           constraints: const BoxConstraints(
                             minWidth: 36,
@@ -3707,7 +3691,7 @@ class _PractitionerDashboardScreenState
                     result.overallStatus.label.toUpperCase(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: AppColors.white,
+                      color: Colors.white,
                       fontWeight: FontWeight.w900,
                       fontSize: 10,
                       letterSpacing: 0.5,
@@ -3725,13 +3709,13 @@ class _PractitionerDashboardScreenState
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, Color(0xFF6366F1)],
+                      gradient: LinearGradient(
+                        colors: [context.primary, const Color(0xFF6366F1)],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
+                          color: context.primary.withValues(alpha: 0.3),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -3742,14 +3726,14 @@ class _PractitionerDashboardScreenState
                       children: [
                         const Icon(
                           Icons.verified_rounded,
-                          color: AppColors.white,
+                          color: Colors.white,
                           size: 14,
                         ),
                         const SizedBox(width: 6),
                         const Text(
                           'COMPREHENSIVE EXAMINATION',
                           style: TextStyle(
-                            color: AppColors.white,
+                            color: Colors.white,
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.6,
@@ -3823,19 +3807,19 @@ class _PractitionerDashboardScreenState
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             gradient: isPrimary
-                ? const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFF6366F1)],
+                ? LinearGradient(
+                    colors: [context.primary, const Color(0xFF6366F1)],
                   )
                 : null,
-            color: isPrimary ? null : AppColors.background,
+            color: isPrimary ? null : context.scaffoldBackground,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isPrimary ? Colors.transparent : AppColors.border,
+              color: isPrimary ? Colors.transparent : context.dividerColor,
             ),
             boxShadow: isPrimary
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: context.primary.withValues(alpha: 0.3),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -3849,7 +3833,7 @@ class _PractitionerDashboardScreenState
               Icon(
                 icon,
                 size: 14,
-                color: isPrimary ? AppColors.white : AppColors.textSecondary,
+                color: isPrimary ? Colors.white : context.textSecondary,
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -3858,9 +3842,7 @@ class _PractitionerDashboardScreenState
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isPrimary
-                        ? AppColors.white
-                        : AppColors.textSecondary,
+                    color: isPrimary ? Colors.white : context.textSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -3878,7 +3860,7 @@ class _PractitionerDashboardScreenState
     required VoidCallback onTap,
     bool isDelete = false,
   }) {
-    final color = isDelete ? AppColors.error : AppColors.primary;
+    final color = isDelete ? context.error : context.primary;
 
     return Material(
       color: Colors.transparent,
@@ -3917,18 +3899,18 @@ class _PractitionerDashboardScreenState
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary.withValues(alpha: 0.08),
-            AppColors.primaryLight.withValues(alpha: 0.05),
+            context.primary.withValues(alpha: 0.08),
+            context.primary.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.15),
+          color: context.primary.withValues(alpha: 0.15),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: context.primary.withValues(alpha: 0.05),
             blurRadius: 12,
             spreadRadius: 0,
             offset: const Offset(0, 4),
@@ -3954,7 +3936,7 @@ class _PractitionerDashboardScreenState
                     Container(
                       width: 1,
                       height: 30,
-                      color: AppColors.primary.withValues(alpha: 0.15),
+                      color: context.primary.withValues(alpha: 0.15),
                     ),
                   if (result.visualAcuityLeft != null)
                     _buildDiagnosticItem(
@@ -3969,7 +3951,7 @@ class _PractitionerDashboardScreenState
               Divider(
                 height: 1,
                 thickness: 1,
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: context.primary.withValues(alpha: 0.05),
               ),
           ],
           // Row 2: Refraction Table
@@ -3979,7 +3961,7 @@ class _PractitionerDashboardScreenState
               Divider(
                 height: 1,
                 thickness: 1,
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: context.primary.withValues(alpha: 0.05),
               ),
           ],
           // Row 3: Others (Per-Eye Display)
@@ -4018,7 +4000,7 @@ class _PractitionerDashboardScreenState
                         Container(
                           width: 1,
                           height: 30,
-                          color: AppColors.primary.withValues(alpha: 0.15),
+                          color: context.primary.withValues(alpha: 0.15),
                         ),
                         // Left Eye Color Vision
                         _buildDiagnosticItem(
@@ -4065,7 +4047,7 @@ class _PractitionerDashboardScreenState
                           Container(
                             width: 1,
                             height: 30,
-                            color: AppColors.primary.withValues(alpha: 0.15),
+                            color: context.primary.withValues(alpha: 0.15),
                           ),
                         // Left Eye Contrast
                         if (result.pelliRobson!.leftEye != null)
@@ -4099,7 +4081,7 @@ class _PractitionerDashboardScreenState
                           Container(
                             width: 1,
                             height: 30,
-                            color: AppColors.primary.withValues(alpha: 0.15),
+                            color: context.primary.withValues(alpha: 0.15),
                           ),
                         // Left Eye Amsler
                         if (result.amslerGridLeft != null)
@@ -4127,10 +4109,10 @@ class _PractitionerDashboardScreenState
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 8,
               fontWeight: FontWeight.w800,
-              color: AppColors.textSecondary,
+              color: context.textSecondary,
               letterSpacing: 0.5,
             ),
             textAlign: TextAlign.center,
@@ -4142,16 +4124,16 @@ class _PractitionerDashboardScreenState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 10, color: AppColors.primary),
+                Icon(icon, size: 10, color: context.primary),
                 const SizedBox(width: 4),
               ],
               Flexible(
                 child: Text(
                   value ?? 'N/A',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
+                    color: context.textPrimary,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -4168,7 +4150,7 @@ class _PractitionerDashboardScreenState
   Widget _buildRefractionTable(MobileRefractometryResult result) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      color: AppColors.primary.withValues(alpha: 0.02),
+      color: context.primary.withValues(alpha: 0.02),
       child: Column(
         children: [
           const Padding(
@@ -4199,10 +4181,10 @@ class _TableHeader extends StatelessWidget {
     return Text(
       label,
       textAlign: TextAlign.center,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 8,
         fontWeight: FontWeight.w800,
-        color: AppColors.textSecondary,
+        color: context.textSecondary,
       ),
     );
   }
@@ -4222,10 +4204,10 @@ class _RefractionRow extends StatelessWidget {
             width: 30,
             child: Text(
               eye,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
-                color: AppColors.primary,
+                color: context.primary,
               ),
             ),
           ),
@@ -4246,10 +4228,10 @@ class _TableCell extends StatelessWidget {
     return Text(
       value,
       textAlign: TextAlign.center,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
+        color: context.textPrimary,
       ),
     );
   }

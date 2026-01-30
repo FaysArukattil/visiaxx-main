@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/network_connectivity_provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/bug_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/bug_report_model.dart';
@@ -118,9 +119,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(25),
           topRight: Radius.circular(25),
         ),
@@ -133,7 +134,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.divider,
+              color: context.dividerColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -143,19 +144,19 @@ class _BugReportDialogState extends State<BugReportDialog> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'System Improvement',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1C1E),
+                    color: context.textPrimary,
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.background,
+                    backgroundColor: context.scaffoldBackground,
                     padding: const EdgeInsets.all(8),
                   ),
                 ),
@@ -176,8 +177,8 @@ class _BugReportDialogState extends State<BugReportDialog> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.primary,
-                            AppColors.primary.withValues(alpha: 0.7),
+                            context.primary,
+                            context.primary.withValues(alpha: 0.7),
                           ],
                         ),
                         shape: BoxShape.circle,
@@ -193,20 +194,20 @@ class _BugReportDialogState extends State<BugReportDialog> {
                   Center(
                     child: Text(
                       'Help us improve. Share your technical feedback!',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Describe the issue',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -216,24 +217,24 @@ class _BugReportDialogState extends State<BugReportDialog> {
                     maxLength: 1000,
                     decoration: InputDecoration(
                       hintText: 'What happened? How can we reproduce it?',
-                      hintStyle: const TextStyle(color: AppColors.textTertiary),
+                      hintStyle: TextStyle(color: context.textTertiary),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.divider),
+                        borderSide: BorderSide(color: context.dividerColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.divider),
+                        borderSide: BorderSide(color: context.dividerColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
+                        borderSide: BorderSide(
+                          color: context.primary,
                           width: 2,
                         ),
                       ),
                       filled: true,
-                      fillColor: AppColors.background,
+                      fillColor: context.scaffoldBackground,
                       counterText: '',
                     ),
                   ),
@@ -258,12 +259,12 @@ class _BugReportDialogState extends State<BugReportDialog> {
                               color: AppColors.warning,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Tip for faster fix',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1F1F1F),
+                                color: context.textPrimary,
                               ),
                             ),
                           ],
@@ -306,8 +307,8 @@ class _BugReportDialogState extends State<BugReportDialog> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.white,
+                            backgroundColor: context.primary,
+                            foregroundColor: Colors.white,
                           ),
                           child: _isSubmitting
                               ? const SizedBox(
@@ -315,7 +316,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
                                   height: 20,
                                   child: EyeLoader(
                                     size: 24,
-                                    color: AppColors.white,
+                                    color: Colors.white,
                                   ),
                                 )
                               : const Text(

@@ -49,6 +49,7 @@ class HelpCenterScreen extends StatelessWidget {
             _buildSectionTitle('App Navigation Guide'),
             const SizedBox(height: 16),
             _buildNavigationGuide(
+              context: context,
               title: 'Quick Test',
               icon: Icons.timer_outlined,
               description: 'Fast, preliminary vision screening.',
@@ -59,6 +60,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _buildNavigationGuide(
+              context: context,
               title: 'Full Eye Exam',
               icon: Icons.health_and_safety_outlined,
               description: 'Deep clinical examination.',
@@ -69,6 +71,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _buildNavigationGuide(
+              context: context,
               title: 'Visiaxx TV / Eye Exercises',
               icon: Icons.video_library_outlined,
               description: 'Eye improvement & relaxation tips.',
@@ -79,6 +82,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _buildNavigationGuide(
+              context: context,
               title: 'Eye Care Tips',
               icon: Icons.tips_and_updates_outlined,
               description: 'Daily health & lifestyle advice.',
@@ -89,6 +93,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _buildNavigationGuide(
+              context: context,
               title: 'My Results',
               icon: Icons.assessment_outlined,
               description: 'Your vision records history.',
@@ -99,6 +104,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _buildNavigationGuide(
+              context: context,
               title: 'Consultation',
               icon: Icons.video_call_outlined,
               description: 'Expert professional support.',
@@ -112,6 +118,7 @@ class HelpCenterScreen extends StatelessWidget {
             _buildSectionTitle('Comprehensive test Guide'),
             const SizedBox(height: 16),
             _buildTestGuide(
+              context: context,
               title: 'Visual Acuity Test',
               icon: Icons.visibility_outlined,
               description: 'Sharpness and clarity of vision at a distance.',
@@ -133,6 +140,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
+              context: context,
               title: 'Color Blindness Screening',
               icon: Icons.palette_outlined,
               description: 'Ability to distinguish between different colors.',
@@ -153,6 +161,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
+              context: context,
               title: 'Amsler Grid Assessment',
               icon: Icons.grid_on_outlined,
               description:
@@ -174,6 +183,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
+              context: context,
               title: 'Contrast Sensitivity',
               icon: Icons.contrast_outlined,
               description:
@@ -195,6 +205,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
+              context: context,
               title: 'Reading & Near Vision',
               icon: Icons.chrome_reader_mode_outlined,
               description:
@@ -215,6 +226,7 @@ class HelpCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildTestGuide(
+              context: context,
               title: 'Mobile Refractometry',
               icon: Icons.psychology_outlined,
               description: 'Digital assessment of the eye\'s refractive state.',
@@ -335,6 +347,7 @@ class HelpCenterScreen extends StatelessWidget {
   }
 
   Widget _buildNavigationGuide({
+    required BuildContext context,
     required String title,
     required IconData icon,
     // Unified to Primary Color
@@ -401,6 +414,7 @@ class HelpCenterScreen extends StatelessWidget {
   }
 
   Widget _buildTestGuide({
+    required BuildContext context,
     required String title,
     required IconData icon,
     // Unified to Primary Color
@@ -413,7 +427,7 @@ class HelpCenterScreen extends StatelessWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
@@ -429,10 +443,10 @@ class HelpCenterScreen extends StatelessWidget {
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 24),
+            child: Icon(icon, color: context.primary, size: 24),
           ),
           title: Text(
             title,
@@ -480,11 +494,10 @@ class HelpCenterScreen extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             '• ',
                             style: TextStyle(
-                              color: Colors
-                                  .blue, // Replaced AppColors.primary with a generic blue or context.primary if preferred, but usually bullets should follow theme
+                              color: context.primary,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),

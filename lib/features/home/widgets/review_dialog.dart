@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/network_connectivity_provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/review_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/review_model.dart';
@@ -126,9 +127,9 @@ class _ReviewDialogState extends State<ReviewDialog> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(25),
           topRight: Radius.circular(25),
         ),
@@ -142,7 +143,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.divider,
+              color: context.dividerColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -154,19 +155,19 @@ class _ReviewDialogState extends State<ReviewDialog> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Rate Your Experience',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1C1E),
+                    color: context.textPrimary,
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.background,
+                    backgroundColor: context.scaffoldBackground,
                     padding: const EdgeInsets.all(8),
                   ),
                 ),
@@ -190,8 +191,8 @@ class _ReviewDialogState extends State<ReviewDialog> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.primary,
-                            AppColors.primary.withValues(alpha: 0.7),
+                            context.primary,
+                            context.primary.withValues(alpha: 0.7),
                           ],
                         ),
                         shape: BoxShape.circle,
@@ -209,9 +210,9 @@ class _ReviewDialogState extends State<ReviewDialog> {
                   Center(
                     child: Text(
                       'Your feedback helps us improve Visiaxx',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -235,7 +236,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                             size: 40,
                             color: isFilled
                                 ? AppColors.warning
-                                : AppColors.divider,
+                                : context.dividerColor,
                           ),
                         );
                       }),
@@ -244,12 +245,12 @@ class _ReviewDialogState extends State<ReviewDialog> {
                   const SizedBox(height: 24),
 
                   // Review Text Field
-                  const Text(
+                  Text(
                     'Tell us more',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -259,24 +260,24 @@ class _ReviewDialogState extends State<ReviewDialog> {
                     maxLength: 500,
                     decoration: InputDecoration(
                       hintText: 'Share your experience with Visiaxx...',
-                      hintStyle: const TextStyle(color: AppColors.textTertiary),
+                      hintStyle: TextStyle(color: context.textTertiary),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.divider),
+                        borderSide: BorderSide(color: context.dividerColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.divider),
+                        borderSide: BorderSide(color: context.dividerColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
+                        borderSide: BorderSide(
+                          color: context.primary,
                           width: 2,
                         ),
                       ),
                       filled: true,
-                      fillColor: AppColors.background,
+                      fillColor: context.scaffoldBackground,
                       counterText: '',
                     ),
                   ),
@@ -329,7 +330,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            side: const BorderSide(color: AppColors.divider),
+                            side: BorderSide(color: context.dividerColor),
                           ),
                           child: const Text('Maybe Later'),
                         ),
@@ -343,7 +344,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: context.primary,
                           ),
                           child: _isSubmitting
                               ? const SizedBox(
@@ -351,7 +352,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
                                   height: 20,
                                   child: EyeLoader(
                                     size: 24,
-                                    color: AppColors.white,
+                                    color: Colors.white,
                                   ),
                                 )
                               : const Text(
