@@ -49,7 +49,7 @@ class PremiumDropdown<T> extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: theme.dividerColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -118,7 +118,7 @@ class PremiumDropdown<T> extends StatelessWidget {
                               border: Border.all(
                                 color: isSelected
                                     ? colorScheme.primary
-                                    : AppColors.border.withValues(alpha: 0.5),
+                                    : theme.dividerColor.withValues(alpha: 0.5),
                                 width: 1.5,
                               ),
                             ),
@@ -210,15 +210,19 @@ class PremiumDropdown<T> extends StatelessWidget {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
+                borderSide: BorderSide(
+                  color: theme.brightness == Brightness.light
+                      ? AppColors.border
+                      : AppColors.textTertiary.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
+                borderSide: BorderSide(
+                  color: theme.brightness == Brightness.light
+                      ? AppColors.border
+                      : AppColors.textTertiary.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),
