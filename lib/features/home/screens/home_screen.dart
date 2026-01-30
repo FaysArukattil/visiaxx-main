@@ -429,8 +429,9 @@ class _HomeScreenState extends State<HomeScreen> {
           autoPlay: true,
           autoPlayInterval: const Duration(seconds: 5),
           enlargeCenterPage: true,
-          enlargeFactor: 0.08,
-          viewportFraction: isLandscape ? 0.65 : 0.88,
+          enlargeFactor: 0.1, // Increased slightly for better focus
+          viewportFraction:
+              0.91, // Precisely aligns with 0.045 horizontal padding
           padEnds: true,
           onPageChanged: (index, reason) =>
               setState(() => _currentCarouselIndex = index),
@@ -439,8 +440,10 @@ class _HomeScreenState extends State<HomeScreen> {
           return Builder(
             builder: (BuildContext context) {
               return Container(
-                width: screenWidth * (isLandscape ? 0.65 : 0.88),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: screenWidth * 0.91,
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 0,
+                ), // Removed margin for perfect alignment
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
