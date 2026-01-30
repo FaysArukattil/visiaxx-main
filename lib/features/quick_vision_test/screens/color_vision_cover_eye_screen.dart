@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
@@ -215,14 +216,17 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
-          title: const Text('Test Instructions'),
-          backgroundColor: AppColors.white,
+          title: Text(
+            'Test Instructions',
+            style: TextStyle(color: context.textPrimary),
+          ),
+          backgroundColor: context.scaffoldBackground,
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: Icon(Icons.close, color: context.textPrimary),
             onPressed: _showExitConfirmation,
           ),
         ),
@@ -241,10 +245,10 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                         padding: const EdgeInsets.all(16.0),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: AppColors.white,
+                            color: context.surface,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.5),
+                              color: context.border.withValues(alpha: 0.5),
                             ),
                           ),
                           child: Column(
@@ -263,10 +267,10 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                         shape: BoxShape.circle,
                                         gradient: RadialGradient(
                                           colors: [
-                                            AppColors.primary.withValues(
+                                            context.primary.withValues(
                                               alpha: 0.1,
                                             ),
-                                            AppColors.primary.withValues(
+                                            context.primary.withValues(
                                               alpha: 0.2,
                                             ),
                                           ],
@@ -316,7 +320,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                               width: 35,
                                               height: 45,
                                               decoration: BoxDecoration(
-                                                color: AppColors.primary
+                                                color: context.primary
                                                     .withValues(alpha: 0.8),
                                                 borderRadius: BorderRadius.only(
                                                   topLeft: Radius.circular(
@@ -351,19 +355,19 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                               const SizedBox(height: 12),
                               Text(
                                 'Cover ${widget.eyeToCover[0].toUpperCase()}${widget.eyeToCover.substring(1)} Eye',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1B3A57),
+                                  color: context.primary,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 4),
-                              const Text(
+                              Text(
                                 'Preparation',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF4A90E2),
+                                  color: context.primary.withValues(alpha: 0.7),
                                   fontWeight: FontWeight.w500,
                                 ),
                                 textAlign: TextAlign.center,
@@ -383,10 +387,10 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                               padding: const EdgeInsets.fromLTRB(0, 16, 16, 8),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: AppColors.white,
+                                  color: context.surface,
                                   borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
-                                    color: AppColors.border.withValues(
+                                    color: context.border.withValues(
                                       alpha: 0.5,
                                     ),
                                   ),
@@ -411,7 +415,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                           Icons.straighten_rounded,
                                           'Testing Distance',
                                           'Stand 40 centimeters from screen',
-                                          AppColors.primary,
+                                          context.primary,
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
@@ -423,7 +427,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                           Icons.palette_rounded,
                                           'Color Plates',
                                           'Identify the numbers on colored plates',
-                                          AppColors.success,
+                                          context.success,
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
@@ -435,7 +439,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                           Icons.touch_app_rounded,
                                           'Tap to Respond',
                                           'Tap the button that matches your vision',
-                                          AppColors.warning,
+                                          context.warning,
                                         ),
                                       ],
                                     ),
@@ -467,7 +471,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                         children: [
                                           EyeLoader(
                                             size: 24,
-                                            color: AppColors.white,
+                                            color: Colors.white,
                                             value: _progress,
                                           ),
                                           const SizedBox(width: 12),
@@ -476,7 +480,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
-                                              color: AppColors.white,
+                                              color: Colors.white,
                                             ),
                                           ),
                                         ],
@@ -486,7 +490,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.white,
+                                          color: Colors.white,
                                         ),
                                       ),
                               ),
@@ -509,14 +513,14 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: context.surface,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: AppColors.border.withValues(alpha: 0.5),
+                          color: context.border.withValues(alpha: 0.5),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -539,12 +543,8 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                     shape: BoxShape.circle,
                                     gradient: RadialGradient(
                                       colors: [
-                                        AppColors.primary.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        AppColors.primary.withValues(
-                                          alpha: 0.2,
-                                        ),
+                                        context.primary.withValues(alpha: 0.1),
+                                        context.primary.withValues(alpha: 0.2),
                                       ],
                                     ),
                                   ),
@@ -586,7 +586,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                           width: 45,
                                           height: 55,
                                           decoration: BoxDecoration(
-                                            color: AppColors.primary.withValues(
+                                            color: context.primary.withValues(
                                               alpha: 0.8,
                                             ),
                                             borderRadius: BorderRadius.only(
@@ -622,18 +622,18 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                           const SizedBox(height: 12),
                           Text(
                             'Cover ${widget.eyeToCover[0].toUpperCase()}${widget.eyeToCover.substring(1)} Eye',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1B3A57),
+                              color: context.primary,
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
+                          Text(
                             'Color Vision Test Preparation',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF4A90E2),
+                              color: context.primary.withValues(alpha: 0.7),
                               fontWeight: FontWeight.w500,
                             ),
                             textAlign: TextAlign.center,
@@ -651,10 +651,10 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                       ),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: context.surface,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: AppColors.border.withValues(alpha: 0.5),
+                            color: context.border.withValues(alpha: 0.5),
                           ),
                         ),
                         clipBehavior: Clip.antiAlias,
@@ -676,7 +676,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                   Icons.straighten_rounded,
                                   'Testing Distance',
                                   'Stand 40 centimeters from screen',
-                                  AppColors.primary,
+                                  context.primary,
                                 ),
                                 const Padding(
                                   padding: EdgeInsets.symmetric(vertical: 20),
@@ -686,7 +686,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                   Icons.palette_rounded,
                                   'Color Plates',
                                   'Look at colored plates and identify the number',
-                                  AppColors.success,
+                                  context.success,
                                 ),
                                 const Padding(
                                   padding: EdgeInsets.symmetric(vertical: 20),
@@ -696,7 +696,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                   Icons.touch_app_rounded,
                                   'Tap to Respond',
                                   'Identify the number on the plate and tap the matching button',
-                                  AppColors.warning,
+                                  context.warning,
                                 ),
                               ],
                             ),
@@ -710,10 +710,10 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                   Container(
                     padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
-                      color: AppColors.white,
+                      color: context.surface,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, -4),
                         ),
@@ -726,7 +726,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                         onPressed: _handleContinue,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: eyeColor,
-                          foregroundColor: AppColors.white,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -738,7 +738,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                 children: [
                                   EyeLoader(
                                     size: 32,
-                                    color: AppColors.white,
+                                    color: Colors.white,
                                     value: _progress,
                                   ),
                                   const SizedBox(width: 12),
@@ -747,7 +747,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.white,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ],
@@ -757,7 +757,7 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.white,
+                                  color: Colors.white,
                                 ),
                               ),
                       ),
@@ -796,17 +796,17 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 description,
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: context.textSecondary,
                   fontSize: 14,
                   height: 1.5,
                   fontWeight: FontWeight.w400,
@@ -860,7 +860,7 @@ class __AnimatedProfessionalEyeState extends State<_AnimatedProfessionalEye>
             painter: _EyeInstructionPainter(
               progress: _controller.value,
               color: widget.isActive
-                  ? const Color(0xFF4A90E2)
+                  ? context.primary
                   : Colors.grey.withValues(alpha: 0.3),
               scleraColor: Colors.white,
               pupilColor: widget.isActive

@@ -720,7 +720,7 @@ class _CoverLeftEyeInstructionScreenState
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: context.textPrimary,
+                                  color: Colors.white,
                                 ),
                               ),
                       ),

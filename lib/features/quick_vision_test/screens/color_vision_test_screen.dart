@@ -801,10 +801,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 'Color Vision - ${_currentEye.toUpperCase()} Eye',
                 style: const TextStyle(fontWeight: FontWeight.w900),
               ),
-              backgroundColor: AppColors.white,
+              backgroundColor: context.scaffoldBackground,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.close),
+                icon: Icon(Icons.close, color: context.textPrimary),
                 onPressed: _showExitConfirmation,
               ),
             ),
@@ -826,7 +826,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                       ),
                       Container(
                         width: 1,
-                        color: AppColors.border.withValues(alpha: 0.2),
+                        color: context.border.withValues(alpha: 0.2),
                       ),
                       SizedBox(
                         width: 280,
@@ -883,7 +883,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
   Widget _buildLandscapeOptionsSidePanel() {
     return Container(
-      decoration: const BoxDecoration(color: AppColors.white),
+      decoration: BoxDecoration(color: context.surface),
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -914,7 +914,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   height: 40,
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: context.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
@@ -922,10 +922,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                       Expanded(
                         child: Text(
                           _currentEye.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
+                            color: context.primary,
                             letterSpacing: 0.2,
                           ),
                           textAlign: TextAlign.center,
@@ -944,7 +944,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         visualDensity: VisualDensity.compact,
-                        color: AppColors.primary,
+                        color: context.primary,
                       ),
                     ],
                   ),
@@ -994,7 +994,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     IconData icon, {
     bool isAlert = false,
   }) {
-    final color = isAlert ? AppColors.error : AppColors.primary;
+    final color = isAlert ? context.error : context.primary;
     return Container(
       height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -1028,10 +1028,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.5),
+            color: context.border.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -1043,13 +1043,13 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               'PLATE ${(_currentPlateIndex >= _testPlates.length ? _testPlates.length - 1 : _currentPlateIndex) + 1} OF ${_testPlates.length}',
-              style: const TextStyle(
-                color: AppColors.primary,
+              style: TextStyle(
+                color: context.primary,
                 fontWeight: FontWeight.w900,
                 fontSize: 11,
                 letterSpacing: 0.5,
@@ -1062,8 +1062,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _timeRemaining <= 3
-                  ? AppColors.error.withValues(alpha: 0.08)
-                  : AppColors.primary.withValues(alpha: 0.08),
+                  ? context.error.withValues(alpha: 0.08)
+                  : context.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1071,9 +1071,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 Icon(
                   Icons.timer_outlined,
                   size: 14,
-                  color: _timeRemaining <= 3
-                      ? AppColors.error
-                      : AppColors.primary,
+                  color: _timeRemaining <= 3 ? context.error : context.primary,
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -1082,8 +1080,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                     fontWeight: FontWeight.w900,
                     fontSize: 11,
                     color: _timeRemaining <= 3
-                        ? AppColors.error
-                        : AppColors.primary,
+                        ? context.error
+                        : context.primary,
                   ),
                 ),
               ],
@@ -1167,7 +1165,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             height: 4,
             margin: const EdgeInsets.only(bottom: 0),
             decoration: BoxDecoration(
-              color: AppColors.border.withValues(alpha: 0.4),
+              color: context.border.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -1181,12 +1179,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 Icons.touch_app_rounded,
-                color: AppColors.primary,
+                color: context.primary,
                 size: 20,
               ),
             ),
@@ -1197,7 +1195,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                   letterSpacing: 0.2,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -1262,8 +1260,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppColors.background.withValues(alpha: 0.5),
-            AppColors.white,
+            context.scaffoldBackground.withValues(alpha: 0.5),
+            context.surface,
           ],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -1372,11 +1370,14 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     // Qualitative feedback integrated into individual cards.
 
     return Scaffold(
-      backgroundColor: AppColors.testBackground,
+      backgroundColor: context.scaffoldBackground,
       appBar: AppBar(
-        title: const Text('Color Vision Result'),
+        title: Text(
+          'Color Vision Result',
+          style: TextStyle(color: context.textPrimary),
+        ),
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.testBackground,
+        backgroundColor: context.scaffoldBackground,
         elevation: 0,
       ),
       body: Column(
@@ -1395,14 +1396,12 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color:
-                            (isNormal ? AppColors.success : AppColors.warning)
-                                .withValues(alpha: 0.08),
+                        color: (isNormal ? context.success : context.warning)
+                            .withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color:
-                              (isNormal ? AppColors.success : AppColors.warning)
-                                  .withValues(alpha: 0.15),
+                          color: (isNormal ? context.success : context.warning)
+                              .withValues(alpha: 0.15),
                         ),
                       ),
                       child: Column(
@@ -1411,9 +1410,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color:
-                                  (isNormal
-                                          ? AppColors.success
-                                          : AppColors.warning)
+                                  (isNormal ? context.success : context.warning)
                                       .withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
@@ -1423,8 +1420,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                                   : Icons.info_outline_rounded,
                               size: 40,
                               color: isNormal
-                                  ? AppColors.success
-                                  : AppColors.warning,
+                                  ? context.success
+                                  : context.warning,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1433,7 +1430,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
+                                  color: context.textPrimary,
                                 ),
                             textAlign: TextAlign.center,
                           ),
@@ -1471,8 +1468,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   _proceedToAmslerTest();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
+                  backgroundColor: context.primary,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -1496,7 +1493,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1539,8 +1536,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withValues(alpha: 0.15),
-                AppColors.white.withValues(alpha: 0.05),
+                context.surface.withValues(alpha: 0.15),
+                context.surface.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
@@ -1621,7 +1618,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [
@@ -1656,10 +1653,10 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   children: [
                     Text(
                       eye,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimary,
                       ),
                     ),
                     Text(
@@ -1667,7 +1664,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isNormal ? AppColors.success : AppColors.warning,
+                        color: isNormal ? context.success : context.warning,
                       ),
                     ),
                   ],
@@ -1679,7 +1676,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: (isNormal ? AppColors.success : AppColors.warning)
+                  color: (isNormal ? context.success : context.warning)
                       .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1688,7 +1685,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: isNormal ? AppColors.success : AppColors.warning,
+                    color: isNormal ? context.success : context.warning,
                   ),
                 ),
               ),
@@ -1702,7 +1699,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.bold,
-              color: AppColors.textTertiary,
+              color: context.textSecondary.withValues(alpha: 0.7),
               letterSpacing: 0.5,
             ),
           ),
@@ -1712,7 +1709,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: isNormal ? AppColors.textPrimary : AppColors.warning,
+              color: isNormal ? context.textPrimary : context.warning,
             ),
           ),
         ],
@@ -1778,23 +1775,23 @@ class _PremiumOptionButtonState extends State<_PremiumOptionButton>
   }
 
   Color get _primaryColor {
-    if (!widget.isSelected) return AppColors.primary;
-    if (!widget.showResult) return AppColors.primary;
-    return widget.isCorrect ? AppColors.success : AppColors.error;
+    if (!widget.isSelected) return context.primary;
+    if (!widget.showResult) return context.primary;
+    return widget.isCorrect ? context.success : context.error;
   }
 
   Color get _backgroundColor {
     if (!widget.isSelected) {
       return _isPressed
-          ? AppColors.primary.withValues(alpha: 0.05)
-          : AppColors.white;
+          ? context.primary.withValues(alpha: 0.05)
+          : context.surface;
     }
     if (!widget.showResult) {
-      return AppColors.primary.withValues(alpha: 0.12);
+      return context.primary.withValues(alpha: 0.12);
     }
     return widget.isCorrect
-        ? AppColors.success.withValues(alpha: 0.12)
-        : AppColors.error.withValues(alpha: 0.12);
+        ? context.success.withValues(alpha: 0.12)
+        : context.error.withValues(alpha: 0.12);
   }
 
   @override
@@ -1914,7 +1911,7 @@ class _PremiumOptionButtonState extends State<_PremiumOptionButton>
                             widget.isCorrect
                                 ? Icons.check_rounded
                                 : Icons.close_rounded,
-                            color: AppColors.white,
+                            color: Colors.white,
                             size: 18,
                           ),
                         ),

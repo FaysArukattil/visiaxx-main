@@ -119,8 +119,11 @@ class _ColorVisionInstructionsScreenState
       child: Scaffold(
         backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
-          title: const Text('Color Vision Instructions'),
-          backgroundColor: context.cardColor,
+          title: Text(
+            'Color Vision Instructions',
+            style: TextStyle(color: context.textPrimary),
+          ),
+          backgroundColor: context.scaffoldBackground,
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
@@ -185,7 +188,7 @@ class _ColorVisionInstructionsScreenState
                       : 16.0,
                 ),
                 decoration: BoxDecoration(
-                  color: context.cardColor,
+                  color: context.surface,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
@@ -276,11 +279,9 @@ class _ColorVisionInstructionsScreenState
       padding: EdgeInsets.all(isLandscape ? 8.0 : 16.0),
       child: Container(
         decoration: BoxDecoration(
-          color: context.cardColor,
+          color: context.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: context.dividerColor.withValues(alpha: 0.5),
-          ),
+          border: Border.all(color: context.border.withValues(alpha: 0.5)),
         ),
         padding: EdgeInsets.symmetric(
           horizontal: isLandscape ? 16.0 : 20.0,
@@ -454,7 +455,7 @@ class __AnimatedProfessionalEyeState extends State<_AnimatedProfessionalEye>
           return CustomPaint(
             painter: _EyeInstructionPainter(
               progress: _controller.value,
-              color: const Color(0xFF4A90E2),
+              color: context.primary,
               scleraColor: Colors.white,
               pupilColor: Colors.black,
             ),

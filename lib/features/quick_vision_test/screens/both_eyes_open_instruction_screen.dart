@@ -6,7 +6,7 @@ import 'package:visiaxx/features/quick_vision_test/screens/short_distance_test_s
 import 'package:visiaxx/data/providers/test_session_provider.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
@@ -252,14 +252,14 @@ class _BothEyesOpenInstructionScreenState
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
           title: Text(widget.title),
-          backgroundColor: AppColors.white,
+          backgroundColor: context.surface,
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: Icon(Icons.close, color: context.textPrimary),
             onPressed: _showExitConfirmation,
           ),
         ),
@@ -278,10 +278,10 @@ class _BothEyesOpenInstructionScreenState
                         padding: const EdgeInsets.all(16.0),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: AppColors.white,
+                            color: context.surface,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.5),
+                              color: context.border.withValues(alpha: 0.5),
                             ),
                           ),
                           child: Column(
@@ -300,10 +300,10 @@ class _BothEyesOpenInstructionScreenState
                                         shape: BoxShape.circle,
                                         gradient: RadialGradient(
                                           colors: [
-                                            AppColors.primary.withValues(
+                                            context.primary.withValues(
                                               alpha: 0.1,
                                             ),
-                                            AppColors.primary.withValues(
+                                            context.primary.withValues(
                                               alpha: 0.2,
                                             ),
                                           ],
@@ -325,21 +325,21 @@ class _BothEyesOpenInstructionScreenState
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              const Text(
+                              Text(
                                 'Keep Both Eyes Open',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1B3A57),
+                                  color: context.textPrimary,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 widget.subtitle,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF4A90E2),
+                                  color: context.primary,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 textAlign: TextAlign.center,
@@ -359,10 +359,10 @@ class _BothEyesOpenInstructionScreenState
                               padding: const EdgeInsets.fromLTRB(0, 16, 16, 8),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: AppColors.white,
+                                  color: context.surface,
                                   borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
-                                    color: AppColors.border.withValues(
+                                    color: context.border.withValues(
                                       alpha: 0.5,
                                     ),
                                   ),
@@ -387,7 +387,7 @@ class _BothEyesOpenInstructionScreenState
                                           Icons.phonelink_setup_rounded,
                                           'Device Position',
                                           'Hold device ${widget.targetDistance.toInt()}cm from your eyes',
-                                          AppColors.primary,
+                                          context.primary,
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
@@ -399,7 +399,7 @@ class _BothEyesOpenInstructionScreenState
                                           widget.instructionIcon,
                                           widget.instructionTitle,
                                           widget.instructionDescription,
-                                          AppColors.success,
+                                          context.success,
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
@@ -411,7 +411,7 @@ class _BothEyesOpenInstructionScreenState
                                           Icons.center_focus_strong_rounded,
                                           'Stay Focused',
                                           'Keep your head steady and maintain distance',
-                                          AppColors.warning,
+                                          context.warning,
                                         ),
                                       ],
                                     ),
@@ -429,8 +429,8 @@ class _BothEyesOpenInstructionScreenState
                               child: ElevatedButton(
                                 onPressed: _handleContinue,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: AppColors.white,
+                                  backgroundColor: context.primary,
+                                  foregroundColor: Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
@@ -443,7 +443,7 @@ class _BothEyesOpenInstructionScreenState
                                         children: [
                                           EyeLoader(
                                             size: 24,
-                                            color: AppColors.white,
+                                            color: Colors.white,
                                             value: _progress,
                                           ),
                                           const SizedBox(width: 12),
@@ -452,7 +452,7 @@ class _BothEyesOpenInstructionScreenState
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
-                                              color: AppColors.white,
+                                              color: Colors.white,
                                             ),
                                           ),
                                         ],
@@ -462,7 +462,7 @@ class _BothEyesOpenInstructionScreenState
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.white,
+                                          color: Colors.white,
                                         ),
                                       ),
                               ),
@@ -484,14 +484,14 @@ class _BothEyesOpenInstructionScreenState
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: context.surface,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: AppColors.border.withValues(alpha: 0.5),
+                          color: context.border.withValues(alpha: 0.5),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -514,12 +514,8 @@ class _BothEyesOpenInstructionScreenState
                                     shape: BoxShape.circle,
                                     gradient: RadialGradient(
                                       colors: [
-                                        AppColors.primary.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        AppColors.primary.withValues(
-                                          alpha: 0.2,
-                                        ),
+                                        context.primary.withValues(alpha: 0.1),
+                                        context.primary.withValues(alpha: 0.2),
                                       ],
                                     ),
                                   ),
@@ -552,7 +548,7 @@ class _BothEyesOpenInstructionScreenState
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             border: Border.all(
-                                              color: const Color(0xFF4A90E2),
+                                              color: context.primary,
                                               width: 2,
                                             ),
                                           ),
@@ -565,20 +561,20 @@ class _BothEyesOpenInstructionScreenState
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'Keep Both Eyes Open',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1B3A57),
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             widget.subtitle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF4A90E2),
+                              color: context.primary,
                               fontWeight: FontWeight.w500,
                             ),
                             textAlign: TextAlign.center,
@@ -597,10 +593,10 @@ class _BothEyesOpenInstructionScreenState
                       ),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: context.surface,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: AppColors.border.withValues(alpha: 0.5),
+                            color: context.border.withValues(alpha: 0.5),
                           ),
                         ),
                         clipBehavior: Clip.antiAlias,
@@ -622,7 +618,7 @@ class _BothEyesOpenInstructionScreenState
                                   Icons.phonelink_setup_rounded,
                                   'Device Position',
                                   'Hold device ${widget.targetDistance.toInt()}cm from your eyes',
-                                  AppColors.primary,
+                                  context.primary,
                                 ),
                                 const Padding(
                                   padding: EdgeInsets.symmetric(vertical: 20),
@@ -632,7 +628,7 @@ class _BothEyesOpenInstructionScreenState
                                   widget.instructionIcon,
                                   widget.instructionTitle,
                                   widget.instructionDescription,
-                                  AppColors.success,
+                                  context.success,
                                 ),
                                 const Padding(
                                   padding: EdgeInsets.symmetric(vertical: 20),
@@ -642,7 +638,7 @@ class _BothEyesOpenInstructionScreenState
                                   Icons.center_focus_strong_rounded,
                                   'Stay Focused',
                                   'Keep your head steady and maintain distance',
-                                  AppColors.warning,
+                                  context.warning,
                                 ),
                               ],
                             ),
@@ -656,10 +652,10 @@ class _BothEyesOpenInstructionScreenState
                   Container(
                     padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
-                      color: AppColors.white,
+                      color: context.surface,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, -4),
                         ),
@@ -671,8 +667,8 @@ class _BothEyesOpenInstructionScreenState
                       child: ElevatedButton(
                         onPressed: _handleContinue,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
+                          backgroundColor: context.primary,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -684,7 +680,7 @@ class _BothEyesOpenInstructionScreenState
                                 children: [
                                   EyeLoader(
                                     size: 32,
-                                    color: AppColors.white,
+                                    color: Colors.white,
                                     value: _progress,
                                   ),
                                   const SizedBox(width: 12),
@@ -693,7 +689,7 @@ class _BothEyesOpenInstructionScreenState
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.white,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ],
@@ -703,7 +699,7 @@ class _BothEyesOpenInstructionScreenState
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.white,
+                                  color: Colors.white,
                                 ),
                               ),
                       ),
@@ -752,17 +748,17 @@ class _BothEyesOpenInstructionScreenState
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 description,
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: context.textSecondary,
                   fontSize: 14,
                   height: 1.5,
                   fontWeight: FontWeight.w400,
