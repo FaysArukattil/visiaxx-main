@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
@@ -214,16 +215,16 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         appBar: MediaQuery.of(context).orientation == Orientation.landscape
             ? null
             : AppBar(
                 title: const Text('Test Instructions'),
-                backgroundColor: AppColors.white,
+                backgroundColor: context.surface,
                 elevation: 0,
                 centerTitle: true,
                 leading: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                  icon: Icon(Icons.close, color: context.textPrimary),
                   onPressed: _showExitConfirmation,
                 ),
               ),
@@ -242,14 +243,14 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                         padding: const EdgeInsets.all(24.0),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: AppColors.white,
+                            color: context.surface,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.5),
+                              color: context.border.withValues(alpha: 0.5),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.black.withValues(alpha: 0.03),
+                                color: Colors.black.withValues(alpha: 0.03),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
@@ -264,9 +265,9 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: IconButton(
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.close,
-                                      color: AppColors.textSecondary,
+                                      color: context.textSecondary,
                                     ),
                                     onPressed: _showExitConfirmation,
                                   ),
@@ -286,10 +287,10 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                         shape: BoxShape.circle,
                                         gradient: RadialGradient(
                                           colors: [
-                                            AppColors.primary.withValues(
+                                            context.primary.withValues(
                                               alpha: 0.1,
                                             ),
-                                            AppColors.primary.withValues(
+                                            context.primary.withValues(
                                               alpha: 0.2,
                                             ),
                                           ],
@@ -339,7 +340,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                               width: 40,
                                               height: 50,
                                               decoration: BoxDecoration(
-                                                color: AppColors.primary
+                                                color: context.primary
                                                     .withValues(alpha: 0.8),
                                                 borderRadius: BorderRadius.only(
                                                   topLeft: Radius.circular(
@@ -374,20 +375,20 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 'Cover ${widget.eyeToCover[0].toUpperCase()}${widget.eyeToCover.substring(1)} Eye',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1B3A57),
+                                  color: context.textPrimary,
                                   letterSpacing: 0.5,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 4),
-                              const Text(
+                              Text(
                                 'Amsler Grid Preparation',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Color(0xFF4A90E2),
+                                  color: context.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 textAlign: TextAlign.center,
@@ -408,10 +409,10 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                               padding: const EdgeInsets.fromLTRB(0, 24, 24, 12),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: AppColors.white,
+                                  color: context.surface,
                                   borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
-                                    color: AppColors.border.withValues(
+                                    color: context.border.withValues(
                                       alpha: 0.5,
                                     ),
                                   ),
@@ -436,7 +437,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                           Icons.center_focus_strong_rounded,
                                           'Focus on Center',
                                           'Keep your eye on the central black dot',
-                                          AppColors.primary,
+                                          context.primary,
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
@@ -448,7 +449,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                           Icons.grid_3x3_rounded,
                                           'Check for Distortions',
                                           'Look for wavy, blurry or missing lines',
-                                          AppColors.success,
+                                          context.success,
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
@@ -460,7 +461,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                           Icons.gesture_rounded,
                                           'Trace Findings',
                                           'Use your finger to trace any distortions',
-                                          AppColors.warning,
+                                          context.warning,
                                         ),
                                       ],
                                     ),
@@ -479,7 +480,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                 onPressed: _handleContinue,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: eyeColor,
-                                  foregroundColor: AppColors.white,
+                                  foregroundColor: Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
@@ -492,7 +493,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                         children: [
                                           EyeLoader(
                                             size: 28,
-                                            color: AppColors.white,
+                                            color: Colors.white,
                                             value: _progress,
                                           ),
                                           const SizedBox(width: 12),
@@ -501,7 +502,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                             style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
-                                              color: AppColors.white,
+                                              color: Colors.white,
                                             ),
                                           ),
                                         ],
@@ -511,7 +512,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.white,
+                                          color: Colors.white,
                                         ),
                                       ),
                               ),
@@ -534,14 +535,14 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: context.surface,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: AppColors.border.withValues(alpha: 0.5),
+                          color: context.border.withValues(alpha: 0.5),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -564,12 +565,8 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                     shape: BoxShape.circle,
                                     gradient: RadialGradient(
                                       colors: [
-                                        AppColors.primary.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        AppColors.primary.withValues(
-                                          alpha: 0.2,
-                                        ),
+                                        context.primary.withValues(alpha: 0.1),
+                                        context.primary.withValues(alpha: 0.2),
                                       ],
                                     ),
                                   ),
@@ -611,7 +608,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                           width: 45,
                                           height: 55,
                                           decoration: BoxDecoration(
-                                            color: AppColors.primary.withValues(
+                                            color: context.primary.withValues(
                                               alpha: 0.8,
                                             ),
                                             borderRadius: BorderRadius.only(
@@ -647,18 +644,18 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                           const SizedBox(height: 12),
                           Text(
                             'Cover ${widget.eyeToCover[0].toUpperCase()}${widget.eyeToCover.substring(1)} Eye',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1B3A57),
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
+                          Text(
                             'Amsler Grid Preparation',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF4A90E2),
+                              color: context.primary,
                               fontWeight: FontWeight.w500,
                             ),
                             textAlign: TextAlign.center,
@@ -676,10 +673,10 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                       ),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: context.surface,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: AppColors.border.withValues(alpha: 0.5),
+                            color: context.border.withValues(alpha: 0.5),
                           ),
                         ),
                         clipBehavior: Clip.antiAlias,
@@ -701,7 +698,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                   Icons.center_focus_strong_rounded,
                                   'Focus on Center',
                                   'Keep your eye on the central black dot',
-                                  AppColors.primary,
+                                  context.primary,
                                 ),
                                 const Padding(
                                   padding: EdgeInsets.symmetric(vertical: 20),
@@ -711,7 +708,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                   Icons.grid_3x3_rounded,
                                   'Check for Distortions',
                                   'Look for wavy, blurry or missing lines',
-                                  AppColors.success,
+                                  context.success,
                                 ),
                                 const Padding(
                                   padding: EdgeInsets.symmetric(vertical: 20),
@@ -721,7 +718,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                   Icons.gesture_rounded,
                                   'Trace Findings',
                                   'Use your finger to trace any distortions you see',
-                                  AppColors.warning,
+                                  context.warning,
                                 ),
                               ],
                             ),
@@ -735,10 +732,10 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                   Container(
                     padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
-                      color: AppColors.white,
+                      color: context.surface,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, -4),
                         ),
@@ -751,7 +748,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                         onPressed: _handleContinue,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: eyeColor,
-                          foregroundColor: AppColors.white,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -763,7 +760,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                 children: [
                                   EyeLoader(
                                     size: 32,
-                                    color: AppColors.white,
+                                    color: Colors.white,
                                     value: _progress,
                                   ),
                                   const SizedBox(width: 12),
@@ -772,7 +769,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.white,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ],
@@ -782,7 +779,7 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.white,
+                                  color: Colors.white,
                                 ),
                               ),
                       ),
@@ -821,17 +818,17 @@ class _AmslerGridCoverEyeScreenState extends State<AmslerGridCoverEyeScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
+                  color: context.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 description,
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: context.textSecondary,
                   fontSize: 14,
                   height: 1.5,
                   fontWeight: FontWeight.w400,
@@ -887,10 +884,10 @@ class __AnimatedProfessionalEyeState extends State<_AnimatedProfessionalEye>
               color: widget.isActive
                   ? const Color(0xFF4A90E2)
                   : Colors.grey.withValues(alpha: 0.3),
-              scleraColor: Colors.white,
+              scleraColor: context.surface,
               pupilColor: widget.isActive
-                  ? Colors.black
-                  : Colors.grey.withValues(alpha: 0.5),
+                  ? context.textPrimary
+                  : context.textSecondary.withValues(alpha: 0.5),
             ),
           );
         },

@@ -12,6 +12,7 @@ import 'package:visiaxx/core/utils/distance_helper.dart';
 import 'package:visiaxx/core/widgets/distance_warning_overlay.dart';
 import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/services/distance_detection_service.dart';
@@ -682,18 +683,21 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   Widget _buildManualScaffold() {
     return Scaffold(
-      backgroundColor: AppColors.testBackground,
+      backgroundColor: context.scaffoldBackground,
       appBar: MediaQuery.of(context).orientation == Orientation.landscape
           ? null
           : AppBar(
               title: Text(
                 'Amsler Grid - ${_currentEye.toUpperCase()} Eye',
-                style: const TextStyle(fontWeight: FontWeight.w900),
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: context.textPrimary,
+                ),
               ),
-              backgroundColor: AppColors.white,
+              backgroundColor: context.surface,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.close),
+                icon: Icon(Icons.close, color: context.textPrimary),
                 onPressed: _showExitConfirmation,
               ),
             ),
@@ -753,10 +757,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.5),
+            color: context.border.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -768,26 +772,26 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.15),
+                color: context.primary.withValues(alpha: 0.15),
                 width: 1,
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.visibility_rounded,
                   size: 16,
-                  color: AppColors.primary,
+                  color: context.primary,
                 ),
                 const SizedBox(width: 10),
                 Text(
                   '${_currentEye.toUpperCase()} Eye',
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.primary,
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
                     letterSpacing: 0.3,
@@ -826,8 +830,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withValues(alpha: 0.15),
-                AppColors.white.withValues(alpha: 0.05),
+                Colors.white.withValues(alpha: 0.15),
+                Colors.white.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
@@ -909,7 +913,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         Expanded(
           flex: 1,
           child: Container(
-            color: AppColors.white,
+            color: context.surface,
             padding: const EdgeInsets.all(16),
             child: _buildGridInterface(
               min(
@@ -920,7 +924,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           ),
         ),
         // Vertical Divider
-        Container(width: 1, color: AppColors.border.withValues(alpha: 0.1)),
+        Container(width: 1, color: context.border.withValues(alpha: 0.1)),
         // Right: Controls and Info (Take half)
         Expanded(flex: 1, child: _buildLandscapeControlsSidePanel()),
       ],
@@ -929,7 +933,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   Widget _buildLandscapeControlsSidePanel() {
     return Container(
-      color: AppColors.white,
+      color: context.surface,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         children: [
@@ -937,7 +941,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                icon: Icon(Icons.close, color: context.textSecondary),
                 onPressed: _showExitConfirmation,
                 constraints: const BoxConstraints(),
                 padding: EdgeInsets.zero,
@@ -949,20 +953,20 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 children: [
                   Text(
                     '${_currentEye.toUpperCase()} EYE',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
+                      color: context.primary,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'AMSLER TEST',
                     style: TextStyle(
                       fontSize: 8,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
-                      color: AppColors.textTertiary,
+                      color: context.textSecondary,
                     ),
                   ),
                 ],
@@ -988,12 +992,12 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Mode Selector
-                  const Text(
+                  Text(
                     'MARKING TOOL',
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textTertiary,
+                      color: context.textTertiary,
                       letterSpacing: 1,
                     ),
                   ),
@@ -1001,7 +1005,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.5),
+                      color: context.scaffoldBackground,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
@@ -1043,7 +1047,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: BorderSide(
-                          color: AppColors.error.withValues(alpha: 0.2),
+                          color: context.error.withValues(alpha: 0.2),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
@@ -1116,10 +1120,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       children: [
         Text(
           question,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -1154,13 +1158,13 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         height: 48,
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary
-              : AppColors.primary.withValues(alpha: 0.05),
+              ? context.primary
+              : context.primary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary
-                : AppColors.primary.withValues(alpha: 0.1),
+                ? context.primary
+                : context.primary.withValues(alpha: 0.1),
           ),
         ),
         child: Center(
@@ -1169,7 +1173,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
-              color: isSelected ? Colors.white : AppColors.primary,
+              color: isSelected ? Colors.white : context.primary,
             ),
           ),
         ),
@@ -1204,7 +1208,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                     color: AppColors.white,
                     border: Border(
                       left: BorderSide(
-                        color: AppColors.border.withValues(alpha: 0.3),
+                        color: context.border.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
@@ -1244,15 +1248,15 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.15),
+            color: context.primary.withValues(alpha: 0.15),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.primary.withValues(alpha: 0.1),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -1305,11 +1309,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: context.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withValues(alpha: 0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1346,10 +1350,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: context.primary.withValues(alpha: 0.1),
                     width: 1.5,
                   ),
                 ),
@@ -1379,14 +1383,14 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   _buildActionButton(
                     icon: Icons.undo_rounded,
                     onTap: _undoLastPoint,
-                    color: AppColors.primary,
+                    color: context.primary,
                     tooltip: 'Undo',
                   ),
                   const SizedBox(width: 8),
                   _buildActionButton(
                     icon: Icons.delete_outline_rounded,
                     onTap: _clearPoints,
-                    color: AppColors.error,
+                    color: context.error,
                     tooltip: 'Clear All',
                   ),
                   const SizedBox(width: 12),
@@ -1433,7 +1437,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                     end: Alignment.bottomRight,
                   )
                 : null,
-            color: isSelected ? null : AppColors.surface.withValues(alpha: 0.5),
+            color: isSelected ? null : context.surface,
             borderRadius: BorderRadius.circular(10),
             border: isSelected
                 ? Border.all(color: color.withValues(alpha: 0.4), width: 1.5)
@@ -1464,7 +1468,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 child: Icon(
                   icon,
                   size: 16,
-                  color: isSelected ? AppColors.white : color,
+                  color: isSelected ? Colors.white : color,
                 ),
               ),
               const SizedBox(width: 6),
@@ -1474,7 +1478,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   curve: Curves.easeOutCubic,
                   style: TextStyle(
                     fontSize: 11,
-                    color: isSelected ? AppColors.white : color,
+                    color: isSelected ? Colors.white : color,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.2,
                   ),
@@ -1503,13 +1507,13 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
   Color _getPointColor(String type) {
     switch (type) {
       case 'distortion':
-        return AppColors.error;
+        return context.error;
       case 'missing':
-        return AppColors.warning;
+        return context.warning;
       case 'blurry':
-        return AppColors.info;
+        return context.info;
       default:
-        return AppColors.error;
+        return context.error;
     }
   }
 
@@ -1531,13 +1535,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.05),
+              color: context.primary.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.1),
-              ),
+              border: Border.all(color: context.primary.withValues(alpha: 0.1)),
             ),
-            child: Icon(icon, size: 18, color: AppColors.primary),
+            child: Icon(icon, size: 18, color: context.primary),
           ),
         ),
       ),
@@ -1572,32 +1574,35 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
           onTap();
         },
         borderRadius: BorderRadius.circular(12),
-        splashColor: AppColors.primary.withValues(alpha: 0.4),
-        highlightColor: AppColors.primary.withValues(alpha: 0.2),
+        splashColor: context.primary.withValues(alpha: 0.4),
+        highlightColor: context.primary.withValues(alpha: 0.2),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150), // ✅ Faster (was 300ms)
           curve: Curves.easeOut, // ✅ More responsive curve
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
           decoration: BoxDecoration(
             gradient: selected
-                ? const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFF005FCC)],
+                ? LinearGradient(
+                    colors: [
+                      context.primary,
+                      context.primary.withValues(alpha: 0.8),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
                 : null,
-            color: selected ? null : AppColors.white,
+            color: selected ? null : context.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
-                  ? AppColors.primary.withValues(alpha: 0.5)
-                  : AppColors.border.withValues(alpha: 0.3),
+                  ? context.primary.withValues(alpha: 0.5)
+                  : context.border.withValues(alpha: 0.3),
               width: selected ? 1.5 : 1,
             ),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: context.primary.withValues(alpha: 0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -1608,7 +1613,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             duration: const Duration(milliseconds: 150), // ✅ Faster
             curve: Curves.easeOut,
             style: TextStyle(
-              color: selected ? AppColors.white : AppColors.textSecondary,
+              color: selected ? Colors.white : context.textSecondary,
               fontWeight: FontWeight.w800,
               fontSize: 11,
               letterSpacing: 0.5,
@@ -1622,7 +1627,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
   Widget _buildFallbackGrid() {
     return Container(
-      color: AppColors.white,
+      color: Colors.white,
       child: CustomPaint(painter: _AmslerGridPainter(), size: Size.infinite),
     );
   }
@@ -1633,7 +1638,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.visibility_off, size: 80, color: AppColors.primary),
+          Icon(Icons.visibility_off, size: 80, color: context.primary),
           const SizedBox(height: 24),
           Text(
             'Right Eye Complete!',
@@ -1646,7 +1651,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             'Now let\'s test your left eye.\n\nCover your RIGHT eye and tap Continue when ready.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: context.textSecondary,
               fontSize: 16,
               height: 1.5,
             ),
@@ -1656,6 +1661,13 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
             width: double.infinity,
             child: ElevatedButton(
               onPressed: _switchToLeftEye,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Padding(
                 padding: EdgeInsets.all(16),
                 child: Text('Continue with Left Eye'),
@@ -1678,11 +1690,11 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     // Qualitative feedback has been integrated into cards.
 
     return Scaffold(
-      backgroundColor: AppColors.testBackground,
+      backgroundColor: context.scaffoldBackground,
       appBar: AppBar(
         title: const Text('Amsler Grid Result'),
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.testBackground,
+        backgroundColor: context.scaffoldBackground,
         elevation: 0,
       ),
       body: Column(
@@ -1701,14 +1713,12 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color:
-                            (isNormal ? AppColors.success : AppColors.warning)
-                                .withValues(alpha: 0.08),
+                        color: (isNormal ? context.success : context.warning)
+                            .withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color:
-                              (isNormal ? AppColors.success : AppColors.warning)
-                                  .withValues(alpha: 0.15),
+                          color: (isNormal ? context.success : context.warning)
+                              .withValues(alpha: 0.15),
                         ),
                       ),
                       child: Column(
@@ -1717,9 +1727,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color:
-                                  (isNormal
-                                          ? AppColors.success
-                                          : AppColors.warning)
+                                  (isNormal ? context.success : context.warning)
                                       .withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
@@ -1729,8 +1737,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                                   : Icons.info_outline_rounded,
                               size: 40,
                               color: isNormal
-                                  ? AppColors.success
-                                  : AppColors.warning,
+                                  ? context.success
+                                  : context.warning,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1739,7 +1747,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
+                                  color: context.textPrimary,
                                 ),
                             textAlign: TextAlign.center,
                           ),
@@ -1752,13 +1760,13 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                     _buildEyeSummaryCard(
                       'Right Eye',
                       rightResult,
-                      AppColors.rightEye,
+                      context.primary,
                     ),
                     const SizedBox(height: 16),
                     _buildEyeSummaryCard(
                       'Left Eye',
                       leftResult,
-                      AppColors.leftEye,
+                      context.success,
                     ),
                   ],
                 ),
@@ -1777,8 +1785,8 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   _showContrastTransition();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
+                  backgroundColor: context.primary,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -1804,7 +1812,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1841,26 +1849,26 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
     // Determine severity
     String severityLabel = 'Normal';
-    Color severityColor = AppColors.success;
+    Color severityColor = context.success;
 
     if (!isNormal) {
       final pointCount = result?.distortionPoints.length ?? 0;
       if (pointCount >= 8 || findings.length >= 3) {
         severityLabel = 'Severe';
-        severityColor = AppColors.error;
+        severityColor = context.error;
       } else if (pointCount >= 4 || findings.length >= 2) {
         severityLabel = 'Moderate';
         severityColor = Colors.orange;
       } else {
         severityLabel = 'Mild';
-        severityColor = AppColors.warning;
+        severityColor = context.warning;
       }
     }
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [
@@ -1891,10 +1899,10 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                   children: [
                     Text(
                       eye,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimary,
                       ),
                     ),
                     Text(
@@ -1919,7 +1927,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textTertiary,
+                color: context.textTertiary,
                 letterSpacing: 0.5,
               ),
             ),
@@ -2134,7 +2142,7 @@ class _ActionButtonState extends State<_ActionButton>
           decoration: BoxDecoration(
             color: _isPressed
                 ? widget.color.withValues(alpha: 0.12) // ✅ Fill on press
-                : AppColors.white,
+                : context.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _isPressed
@@ -2235,10 +2243,10 @@ class _ContinueButtonState extends State<_ContinueButton>
             gradient: LinearGradient(
               colors: _isPressed
                   ? [
-                      const Color(0xFF005FCC),
-                      const Color(0xFF004A99),
+                      context.primary.withValues(alpha: 0.9),
+                      context.primary.withValues(alpha: 0.8),
                     ] // ✅ Darker when pressed
-                  : [AppColors.primary, const Color(0xFF005FCC)],
+                  : [context.primary, context.primary.withValues(alpha: 0.85)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -2247,7 +2255,9 @@ class _ContinueButtonState extends State<_ContinueButton>
                 ? [] // ✅ No shadow when pressed
                 : [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.4),
+                      color: context.isDarkMode
+                          ? Colors.black.withValues(alpha: 0.3)
+                          : context.primary.withValues(alpha: 0.15),
                       blurRadius: 12,
                       offset: const Offset(0, 5),
                     ),
@@ -2257,7 +2267,7 @@ class _ContinueButtonState extends State<_ContinueButton>
             child: Text(
               widget.label,
               style: TextStyle(
-                color: AppColors.white,
+                color: Colors.white,
                 fontWeight: FontWeight.w800,
                 fontSize: 15,
                 letterSpacing: 0.3,
@@ -2265,7 +2275,7 @@ class _ContinueButtonState extends State<_ContinueButton>
                     ? null
                     : [
                         Shadow(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: context.textPrimary.withValues(alpha: 0.1),
                           blurRadius: 2,
                         ),
                       ],

@@ -155,9 +155,9 @@ class _AmslerGridInstructionsScreenState
                       'Keep Eye on Center',
                       'Focus purely on the central black dot. Do not look away from it during the test.',
                       context.success,
-                      animation: const StayFocusedAnimation(
+                      animation: StayFocusedAnimation(
                         isCompact: true,
-                        color: Colors.black,
+                        color: context.textPrimary,
                       ),
                     ),
                     _buildStep(
@@ -456,9 +456,10 @@ class __AnimatedProfessionalEyeState extends State<_AnimatedProfessionalEye>
           return CustomPaint(
             painter: _EyeInstructionPainter(
               progress: _controller.value,
-              color: const Color(0xFF4A90E2),
-              scleraColor: Colors.white,
-              pupilColor: Colors.black,
+              color: context.primary,
+              scleraColor: context.surface,
+              pupilColor: context.textPrimary,
+              reflectionColor: context.surface.withValues(alpha: 0.6),
             ),
           );
         },
@@ -472,12 +473,14 @@ class _EyeInstructionPainter extends CustomPainter {
   final Color color;
   final Color scleraColor;
   final Color pupilColor;
+  final Color reflectionColor;
 
   _EyeInstructionPainter({
     required this.progress,
     required this.color,
     required this.scleraColor,
     required this.pupilColor,
+    required this.reflectionColor,
   });
 
   @override
@@ -578,7 +581,7 @@ class _EyeInstructionPainter extends CustomPainter {
       canvas.drawCircle(
         irisCenter + reflectionOffset,
         irisRadius * 0.15,
-        Paint()..color = Colors.white.withValues(alpha: 0.6),
+        Paint()..color = reflectionColor,
       );
 
       canvas.restore();
