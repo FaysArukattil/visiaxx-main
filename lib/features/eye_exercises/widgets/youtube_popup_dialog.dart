@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/exercise_videos.dart';
 
@@ -21,7 +22,7 @@ class YouTubePopupDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -39,7 +40,7 @@ class YouTubePopupDialog extends StatelessWidget {
               alignment: Alignment.topRight,
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: AppColors.textTertiary),
+                icon: Icon(Icons.close, color: context.textTertiary),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -97,12 +98,12 @@ class YouTubePopupDialog extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Title
-            const Text(
+            Text(
               'Visiaxx TV',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -120,9 +121,9 @@ class YouTubePopupDialog extends StatelessWidget {
             Text(
               'Get complete eye exercise tutorials and health tips on our YouTube channel',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: context.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -135,7 +136,7 @@ class YouTubePopupDialog extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: _launchYouTube,
                 icon: const Icon(Icons.play_arrow, size: 24),
-                label: const Text(
+                label: Text(
                   'Visit YouTube Channel',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
@@ -156,7 +157,7 @@ class YouTubePopupDialog extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.verified, size: 16, color: AppColors.primary),
+                Icon(Icons.verified, size: 16, color: context.primary),
                 const SizedBox(width: 6),
                 const Text(
                   '@nurturingvision',
@@ -174,4 +175,3 @@ class YouTubePopupDialog extends StatelessWidget {
     );
   }
 }
-

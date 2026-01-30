@@ -26,6 +26,7 @@ extension ThemeExtension on BuildContext {
   // Status colors - defaults from AppColors
   Color get success => const Color(0xFF34C759);
   Color get warning => const Color(0xFFFF9500);
+  Color get info => const Color(0xFF5AC8FA);
 
   // Divider colors
   Color get dividerColor => Theme.of(this).dividerColor;

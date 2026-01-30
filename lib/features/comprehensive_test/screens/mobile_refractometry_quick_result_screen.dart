@@ -319,14 +319,10 @@ class _MobileRefractometryQuickResultScreenState
                     _buildStatusHeader(overallStatus),
                     const SizedBox(height: 16),
                     if (result.rightEye != null)
-                      _buildEyeCard(
-                        'Right',
-                        result.rightEye!,
-                        AppColors.rightEye,
-                      ),
+                      _buildEyeCard('Right', result.rightEye!, context.primary),
                     if (result.leftEye != null) ...[
                       const SizedBox(height: 12),
-                      _buildEyeCard('Left', result.leftEye!, AppColors.leftEye),
+                      _buildEyeCard('Left', result.leftEye!, context.success),
                     ],
                     const SizedBox(height: 16),
                     _buildClinicalInsights(result),
@@ -590,23 +586,23 @@ class _MobileRefractometryQuickResultScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.05),
+        color: context.warning.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.2)),
+        border: Border.all(color: context.warning.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.analytics_rounded, color: AppColors.warning, size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.analytics_rounded, color: context.warning, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Professional Insights',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
-                  color: AppColors.warningDark,
+                  color: context.warning,
                 ),
               ),
             ],
@@ -637,31 +633,27 @@ class _MobileRefractometryQuickResultScreenState
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary.withValues(alpha: 0.08),
-            AppColors.primary.withValues(alpha: 0.03),
+            context.primary.withValues(alpha: 0.08),
+            context.primary.withValues(alpha: 0.03),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+        border: Border.all(color: context.primary.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.visibility_outlined,
-                color: AppColors.primary,
-                size: 22,
-              ),
+              Icon(Icons.visibility_outlined, color: context.primary, size: 22),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Lens Recommendation',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
-                    color: AppColors.primary,
+                    color: context.primary,
                   ),
                 ),
               ),
@@ -707,12 +699,12 @@ class _MobileRefractometryQuickResultScreenState
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isRecommended
-            ? AppColors.success.withValues(alpha: 0.08)
+            ? context.success.withValues(alpha: 0.08)
             : context.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isRecommended
-              ? AppColors.success.withValues(alpha: 0.3)
+              ? context.success.withValues(alpha: 0.3)
               : context.dividerColor.withValues(alpha: 0.3),
           width: isRecommended ? 1.5 : 1,
         ),
@@ -723,13 +715,13 @@ class _MobileRefractometryQuickResultScreenState
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: isRecommended
-                  ? AppColors.success.withValues(alpha: 0.15)
-                  : AppColors.primary.withValues(alpha: 0.1),
+                  ? context.success.withValues(alpha: 0.15)
+                  : context.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: isRecommended ? AppColors.success : AppColors.primary,
+              color: isRecommended ? context.success : context.primary,
               size: 20,
             ),
           ),
@@ -767,7 +759,7 @@ class _MobileRefractometryQuickResultScreenState
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
-                            color: context.surface,
+                            color: AppColors.white,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -797,9 +789,9 @@ class _MobileRefractometryQuickResultScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.06),
+        color: context.info.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.info.withValues(alpha: 0.2)),
+        border: Border.all(color: context.info.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -808,7 +800,7 @@ class _MobileRefractometryQuickResultScreenState
             children: [
               Icon(
                 Icons.medical_services_rounded,
-                color: AppColors.info,
+                color: context.info,
                 size: 20,
               ),
               const SizedBox(width: 10),
@@ -844,7 +836,7 @@ class _MobileRefractometryQuickResultScreenState
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppColors.info),
+        Icon(icon, size: 18, color: context.info),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -885,13 +877,13 @@ class _MobileRefractometryQuickResultScreenState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.lock_outline, color: AppColors.warning, size: 14),
+                Icon(Icons.lock_outline, color: context.warning, size: 14),
                 const SizedBox(width: 8),
                 Text(
                   'Verify all tables to enable results',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.warningDark,
+                    color: context.warning,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -905,17 +897,14 @@ class _MobileRefractometryQuickResultScreenState
             gradient: LinearGradient(
               colors: isBlocked
                   ? [context.dividerColor, context.dividerColor]
-                  : [
-                      AppColors.primary,
-                      AppColors.primary.withValues(alpha: 0.8),
-                    ],
+                  : [context.primary, context.primary.withValues(alpha: 0.8)],
             ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: isBlocked
                 ? []
                 : [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: context.primary.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -988,14 +977,14 @@ class _MobileRefractometryQuickResultScreenState
           _buildReadOnlyRefractionTable(
             'Right Eye',
             _prescription!.rightEyeSubjective,
-            AppColors.rightEye,
+            context.primary,
           ),
         const SizedBox(height: 16),
         if (result.leftEye != null)
           _buildReadOnlyRefractionTable(
             'Left Eye',
             _prescription!.leftEyeSubjective,
-            AppColors.leftEye,
+            context.success,
           ),
 
         const SizedBox(height: 24),
@@ -1016,13 +1005,13 @@ class _MobileRefractometryQuickResultScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.info.withValues(alpha: 0.1),
+            color: context.info.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+            border: Border.all(color: context.info.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, color: AppColors.info, size: 20),
+              Icon(Icons.info_outline, color: context.info, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -1091,7 +1080,7 @@ class _MobileRefractometryQuickResultScreenState
               children: [
                 TableRow(
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: context.surface,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   children: [
@@ -1112,7 +1101,7 @@ class _MobileRefractometryQuickResultScreenState
                 if (data.add != '0.00' && data.add.isNotEmpty) ...[
                   TableRow(
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: context.surface,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     children: [
@@ -1144,29 +1133,29 @@ class _MobileRefractometryQuickResultScreenState
       decoration: BoxDecoration(
         color: context.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: context.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.primary.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
               ),
             ),
             child: Row(
-              children: const [
-                Icon(Icons.assignment, size: 16, color: AppColors.primary),
-                SizedBox(width: 8),
+              children: [
+                Icon(Icons.assignment, size: 16, color: context.primary),
+                const SizedBox(width: 8),
                 Text(
                   'Prescription for Glasses',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: context.primary,
                   ),
                 ),
               ],

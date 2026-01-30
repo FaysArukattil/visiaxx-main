@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 
 /// Screen showing all individual test options
 class IndividualTestsScreen extends StatelessWidget {
@@ -10,18 +11,18 @@ class IndividualTestsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.scaffoldBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Individual Tests',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: context.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -43,7 +44,7 @@ class IndividualTestsScreen extends StatelessWidget {
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: context.textPrimary,
                           ),
                     ),
                     const SizedBox(height: 8),
@@ -51,7 +52,7 @@ class IndividualTestsScreen extends StatelessWidget {
                       'Choose from our comprehensive vision screening tests',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -83,21 +84,25 @@ class IndividualTestsScreen extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Divider(color: AppColors.border.withValues(alpha: 0.5)),
+              child: Divider(
+                color: context.dividerColor.withValues(alpha: 0.5),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'Vision Tests',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: context.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             Expanded(
-              child: Divider(color: AppColors.border.withValues(alpha: 0.5)),
+              child: Divider(
+                color: context.dividerColor.withValues(alpha: 0.5),
+              ),
             ),
           ],
         ),
@@ -211,26 +216,26 @@ class _IndividualTestCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: AppColors.primary.withValues(alpha: 0.1),
-            highlightColor: AppColors.primary.withValues(alpha: 0.05),
+            splashColor: context.primary.withValues(alpha: 0.1),
+            highlightColor: context.primary.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primary.withValues(alpha: 0.08),
-                    AppColors.primaryLight.withValues(alpha: 0.05),
+                    context.primary.withValues(alpha: 0.08),
+                    context.primary.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: context.primary.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.05),
+                    color: context.primary.withValues(alpha: 0.05),
                     blurRadius: 12,
                     spreadRadius: 0,
                     offset: const Offset(0, 4),
@@ -248,14 +253,10 @@ class _IndividualTestCard extends StatelessWidget {
                       width: iconSize + 14,
                       height: iconSize + 14,
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: context.scaffoldBackground,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(
-                        icon,
-                        color: AppColors.primary,
-                        size: iconSize,
-                      ),
+                      child: Icon(icon, color: context.primary, size: iconSize),
                     ),
                     SizedBox(width: (availableWidth * 0.03).clamp(12.0, 16.0)),
                     Expanded(
@@ -267,7 +268,7 @@ class _IndividualTestCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: titleFontSize,
-                              color: AppColors.primary,
+                              color: context.primary,
                               letterSpacing: -0.3,
                               height: 1.2,
                             ),
@@ -280,7 +281,7 @@ class _IndividualTestCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: descriptionFontSize,
-                              color: AppColors.textSecondary,
+                              color: context.textSecondary,
                               height: 1.4,
                             ),
                             maxLines: 3,
@@ -293,13 +294,13 @@ class _IndividualTestCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.arrow_forward_rounded,
                         size: (availableWidth * 0.038).clamp(16.0, 20.0),
-                        color: AppColors.primary,
+                        color: context.primary,
                       ),
                     ),
                   ],
@@ -343,20 +344,20 @@ class _AddPatientCard extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.success.withValues(alpha: 0.15),
-                    AppColors.success.withValues(alpha: 0.05),
+                    context.success.withValues(alpha: 0.15),
+                    context.success.withValues(alpha: 0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.3),
+                  color: context.success.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.success.withValues(alpha: 0.08),
+                    color: context.success.withValues(alpha: 0.08),
                     blurRadius: 15,
                     offset: const Offset(0, 4),
                   ),
@@ -370,8 +371,8 @@ class _AddPatientCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          AppColors.success,
-                          AppColors.success.withValues(alpha: 0.7),
+                          context.success,
+                          context.success.withValues(alpha: 0.7),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -381,7 +382,7 @@ class _AddPatientCard extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.success.withValues(alpha: 0.35),
+                          color: context.success.withValues(alpha: 0.35),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -390,7 +391,7 @@ class _AddPatientCard extends StatelessWidget {
                     child: Icon(
                       Icons.person_add_alt_1_rounded,
                       size: iconSize,
-                      color: Colors.white,
+                      color: AppColors.white,
                     ),
                   ),
                   SizedBox(width: (availableWidth * 0.03).clamp(12.0, 16.0)),
@@ -403,7 +404,7 @@ class _AddPatientCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: titleFontSize,
-                            color: AppColors.success,
+                            color: context.success,
                             letterSpacing: -0.3,
                             height: 1.2,
                           ),
@@ -416,7 +417,7 @@ class _AddPatientCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: descriptionFontSize,
-                            color: AppColors.textSecondary,
+                            color: context.textSecondary,
                             height: 1.4,
                           ),
                           maxLines: 2,
@@ -429,13 +430,13 @@ class _AddPatientCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.15),
+                      color: context.success.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.add_rounded,
                       size: (availableWidth * 0.038).clamp(16.0, 20.0),
-                      color: AppColors.success,
+                      color: context.success,
                     ),
                   ),
                 ],
