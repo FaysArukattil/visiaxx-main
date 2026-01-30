@@ -1,7 +1,7 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../data/models/pelli_robson_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -101,7 +101,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
     final isPositive =
         result.overallCategory == 'Normal' ||
         result.overallCategory == 'Excellent';
-    final statusColor = isPositive ? AppColors.success : AppColors.warning;
+    final statusColor = isPositive ? context.success : context.warning;
 
     return PopScope(
       canPop: false,
@@ -110,10 +110,10 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
         _showPauseDialog();
       },
       child: Scaffold(
-        backgroundColor: AppColors.testBackground,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
           title: const Text('Contrast Sensitivity Result'),
-          backgroundColor: AppColors.testBackground,
+          backgroundColor: context.scaffoldBackground,
           elevation: 0,
           centerTitle: true,
           automaticallyImplyLeading: false,
@@ -156,10 +156,10 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                             const SizedBox(height: 8),
                             Text(
                               'Test Completed',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimary,
                               ),
                             ),
                             Text(
@@ -204,19 +204,19 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: context.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.border.withValues(alpha: 0.5),
+                            color: context.dividerColor.withValues(alpha: 0.5),
                           ),
                         ),
                         child: Text(
                           result.userSummary,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             height: 1.5,
-                            color: AppColors.textSecondary,
+                            color: context.textSecondary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -235,8 +235,8 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                 child: ElevatedButton(
                   onPressed: _navigateToSummary,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
+                    backgroundColor: context.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -260,7 +260,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -309,10 +309,10 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
   Widget _buildEyeTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: AppColors.primary,
+        color: context.primary,
       ),
     );
   }
@@ -326,31 +326,33 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.3)),
+        boxShadow: context.isDarkMode
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: AppColors.primary),
+              Icon(icon, size: 14, color: context.primary),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textTertiary,
+                    color: context.textTertiary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -361,10 +363,10 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
           const SizedBox(height: 6),
           Text(
             '${metric.adjustedScore.toStringAsFixed(2)} log CS',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -385,13 +387,12 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
     switch (category) {
       case 'Excellent':
       case 'Normal':
-        return AppColors.success;
+        return context.success;
       case 'Borderline':
-        return AppColors.warning;
+        return context.warning;
       case 'Reduced':
       default:
-        return AppColors.error;
+        return context.error;
     }
   }
 }
-

@@ -7,7 +7,6 @@ import 'package:visiaxx/features/quick_vision_test/screens/cover_right_eye_instr
 import 'package:visiaxx/features/quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
 import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_screen.dart';
 import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/services/speech_service.dart';
@@ -23,6 +22,7 @@ import '../../../data/providers/test_session_provider.dart';
 import 'pelli_robson_instructions_screen.dart';
 import '../../quick_vision_test/screens/distance_transition_screen.dart';
 import '../../../core/widgets/distance_warning_overlay.dart';
+import '../../../core/extensions/theme_extension.dart';
 
 /// Pelli-Robson Contrast Sensitivity Test Screen
 /// Clinical-grade test with 8 screens of decreasing contrast triplets
@@ -841,9 +841,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   @override
   Widget build(BuildContext context) {
     if (_showingInstructions) {
-      return const Scaffold(
-        backgroundColor: AppColors.white,
-        body: SizedBox.shrink(),
+      return Scaffold(
+        backgroundColor: context.scaffoldBackground,
+        body: const SizedBox.shrink(),
       );
     }
 
@@ -853,9 +853,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         if (!didPop) _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.white, // Pure white for clinical accuracy
+        backgroundColor: Colors.white, // Pure white for clinical accuracy
         appBar: AppBar(
-          backgroundColor: AppColors.white,
+          backgroundColor: context.surface,
           elevation: 0,
           title: Text(
             'Contrast Test - ${_currentMode == 'short' ? '40cm' : '1m'}',
@@ -892,7 +892,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                         ),
                         Container(
                           width: 1,
-                          color: AppColors.border.withValues(alpha: 0.2),
+                          color: context.dividerColor.withValues(alpha: 0.2),
                         ),
                         SizedBox(
                           width: 300,
@@ -968,7 +968,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               },
               icon: Icons.visibility_rounded,
               label: 'VISIBLE',
-              color: AppColors.success,
+              color: context.success,
             ),
           ),
           const SizedBox(width: 12),
@@ -979,7 +979,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               },
               icon: Icons.visibility_off_rounded,
               label: 'NOT VISIBLE',
-              color: AppColors.error,
+              color: context.error,
             ),
           ),
         ],
@@ -1021,7 +1021,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: isActive ? AppColors.white : color, size: 20),
+              Icon(icon, color: isActive ? Colors.white : color, size: 20),
               const SizedBox(width: 10),
               Flexible(
                 child: Text(
@@ -1029,7 +1029,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
-                    color: isActive ? AppColors.white : color,
+                    color: isActive ? Colors.white : color,
                     letterSpacing: 0.5,
                   ),
                   maxLines: 1,
@@ -1105,11 +1105,11 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isCurrent
-            ? AppColors.primary.withValues(alpha: 0.12) // Slightly more subtle
-            : AppColors.transparent,
+            ? context.primary.withValues(alpha: 0.12) // Slightly more subtle
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         border: isCurrent
-            ? Border.all(color: AppColors.primary, width: 2.5)
+            ? Border.all(color: context.primary, width: 2.5)
             : null,
       ),
       child: Opacity(
@@ -1129,7 +1129,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                     fontSize: fontSize,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Sloan',
-                    color: AppColors.black,
+                    color: Colors.black,
                   ),
                 ),
               );
@@ -1150,7 +1150,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         icon: _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
         label: _isListening ? 'LISTENING' : 'VOICE',
         isActive: _isListening,
-        color: AppColors.primary,
+        color: context.primary,
         onPressed: () {
           if (_isListening) {
             _continuousSpeech.stop();
@@ -1184,17 +1184,19 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: AppColors.black.withValues(alpha: 0.05),
+          color: context.onSurface.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.3),
+          ),
         ),
         child: Text(
           hasRecognized ? _recognizedText : 'Listening...',
           style: TextStyle(
             fontSize: 18,
             color: hasRecognized
-                ? AppColors.textPrimary
-                : AppColors.primary.withValues(alpha: 0.7),
+                ? context.textPrimary
+                : context.primary.withValues(alpha: 0.7),
             fontWeight: FontWeight.bold,
             fontStyle: hasRecognized ? FontStyle.normal : FontStyle.italic,
           ),
@@ -1226,8 +1228,8 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withValues(alpha: 0.15),
-                AppColors.white.withValues(alpha: 0.05),
+                Colors.white.withValues(alpha: 0.15),
+                Colors.white.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
@@ -1296,17 +1298,17 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   Widget _buildLandscapeControlsSidePanel() {
     return Container(
-      color: AppColors.white,
+      color: context.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Column(
         children: [
-          const Text(
+          Text(
             'CONTROLS',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.5,
-              color: AppColors.textTertiary,
+              color: context.textTertiary,
             ),
           ),
           const SizedBox(height: 16),
@@ -1328,7 +1330,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                     },
                     icon: Icons.visibility_rounded,
                     label: 'VISIBLE',
-                    color: AppColors.success,
+                    color: context.success,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1339,7 +1341,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                     },
                     icon: Icons.visibility_off_rounded,
                     label: 'NOT VISIBLE',
-                    color: AppColors.error,
+                    color: context.error,
                   ),
                 ),
               ],
@@ -1356,10 +1358,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.5),
+            color: context.dividerColor.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -1371,22 +1373,18 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.info.withValues(alpha: 0.08),
+              color: context.info.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.grid_view_rounded,
-                  size: 13,
-                  color: AppColors.info,
-                ),
+                Icon(Icons.grid_view_rounded, size: 13, color: context.info),
                 const SizedBox(width: 6),
                 Text(
                   'SCREEN ${_currentScreenIndex + 1}/${PelliRobsonScoring.totalScreens}',
-                  style: const TextStyle(
-                    color: AppColors.info,
+                  style: TextStyle(
+                    color: context.info,
                     fontWeight: FontWeight.w900,
                     fontSize: 10,
                   ),
@@ -1400,22 +1398,22 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.visibility_rounded,
                   size: 13,
-                  color: AppColors.primary,
+                  color: context.primary,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   'EYE: ${_currentEye.toUpperCase()}',
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.primary,
                     fontWeight: FontWeight.w900,
                     fontSize: 10,
                     letterSpacing: 0.4,
