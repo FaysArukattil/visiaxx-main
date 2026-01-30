@@ -1797,15 +1797,15 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)], // Premium blue
+            gradient: LinearGradient(
+              colors: [context.primary, context.primary.withValues(alpha: 0.8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                color: context.primary.withValues(alpha: 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -2903,7 +2903,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   TableRow _buildRxTableHeader() {
     return TableRow(
-      decoration: BoxDecoration(color: context.dividerColor),
+      decoration: BoxDecoration(color: context.primary.withValues(alpha: 0.1)),
       children: [
         _buildRxHeaderCell('EYE'),
         _buildRxHeaderCell('SPH'),

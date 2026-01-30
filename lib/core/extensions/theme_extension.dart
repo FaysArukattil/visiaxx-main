@@ -30,6 +30,10 @@ extension ThemeExtension on BuildContext {
 
   // Divider colors
   Color get dividerColor => Theme.of(this).dividerColor;
+  Color get border => Theme.of(this).dividerColor;
+
+  // Shadow colors
+  Color get shadowColor => Colors.black;
 
   // Check if dark mode
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;

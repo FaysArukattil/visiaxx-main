@@ -2,7 +2,7 @@
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/services/patient_service.dart';
@@ -52,14 +52,19 @@ class _PractitionerProfileSelectionScreenState
   @override
   void initState() {
     super.initState();
-    _loadPatients();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPatients();
+    });
   }
 
   /// Load patients from Firebase
   Future<void> _loadPatients() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        SnackbarUtils.showError(context, 'User not authenticated');
+        setState(() => _isLoading = false);
+      }
       return;
     }
 
@@ -72,7 +77,11 @@ class _PractitionerProfileSelectionScreenState
         });
       }
     } catch (e) {
-      debugPrint('[PractitionerProfile] Error loading patients: $e');
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Error loading patients: $e');
+        setState(() => _isLoading = false);
+      }
+    } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -137,9 +146,9 @@ class _PractitionerProfileSelectionScreenState
 
         return Container(
           height: isLandscape ? size.height * 0.9 : size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: context.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +159,7 @@ class _PractitionerProfileSelectionScreenState
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border.withValues(alpha: 0.3),
+                    color: context.dividerColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -171,9 +180,7 @@ class _PractitionerProfileSelectionScreenState
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.success.withValues(
-                                    alpha: 0.1,
-                                  ),
+                                  color: context.success.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -181,7 +188,7 @@ class _PractitionerProfileSelectionScreenState
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.success,
+                                    color: context.success,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -191,10 +198,10 @@ class _PractitionerProfileSelectionScreenState
                           const SizedBox(height: 8),
                           Text(
                             patient.fullName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -206,13 +213,13 @@ class _PractitionerProfileSelectionScreenState
                       icon: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: AppColors.border.withValues(alpha: 0.1),
+                          color: context.border.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.close,
                           size: 20,
-                          color: AppColors.textPrimary,
+                          color: context.textPrimary,
                         ),
                       ),
                     ),
@@ -265,10 +272,10 @@ class _PractitionerProfileSelectionScreenState
                   MediaQuery.of(context).padding.bottom + 16,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.surface,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: context.shadowColor.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -5),
                     ),
@@ -288,16 +295,16 @@ class _PractitionerProfileSelectionScreenState
                           );
                         },
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.warning),
+                          side: BorderSide(color: context.warning),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Modify',
                           style: TextStyle(
-                            color: AppColors.warning,
+                            color: context.warning,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -312,17 +319,17 @@ class _PractitionerProfileSelectionScreenState
                           _proceedWithPatient(patient, questionnaire);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: context.primary,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Continue with Data',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: context.onPrimary,
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
                           ),
@@ -345,10 +352,10 @@ class _PractitionerProfileSelectionScreenState
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 14,
-            color: AppColors.primary,
+            color: context.primary,
           ),
         ),
         const SizedBox(height: 8),
@@ -363,13 +370,13 @@ class _PractitionerProfileSelectionScreenState
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.border.withValues(alpha: 0.2),
+                      color: context.border.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       'None reported',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                         fontSize: 13,
                       ),
                     ),
@@ -383,12 +390,12 @@ class _PractitionerProfileSelectionScreenState
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.1),
+                          color: context.success.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           item,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -625,10 +632,10 @@ class _PractitionerProfileSelectionScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: context.scaffoldBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.white,
+        backgroundColor: context.scaffoldBackground,
         elevation: 0,
         toolbarHeight: 20,
       ),
@@ -654,10 +661,10 @@ class _PractitionerProfileSelectionScreenState
                 Expanded(
                   child: Text(
                     'Patient Profiles',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                       letterSpacing: -0.8,
                     ),
                   ),
@@ -671,26 +678,26 @@ class _PractitionerProfileSelectionScreenState
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: context.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.primary.withValues(alpha: 0.1),
                         width: 1.5,
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.add_rounded,
                           size: 20,
-                          color: AppColors.primary,
+                          color: context.primary,
                         ),
                         const SizedBox(width: 6),
-                        const Text(
+                        Text(
                           'Add New',
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: context.primary,
                             fontWeight: FontWeight.w800,
                             fontSize: 13,
                             letterSpacing: -0.2,
@@ -727,14 +734,14 @@ class _PractitionerProfileSelectionScreenState
               Container(
                 padding: const EdgeInsets.all(40),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.surface,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: AppColors.border.withValues(alpha: 0.2),
+                    color: context.border.withValues(alpha: 0.2),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
+                      color: context.shadowColor.withValues(alpha: 0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -745,13 +752,13 @@ class _PractitionerProfileSelectionScreenState
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.people_outline_rounded,
                         size: 48,
-                        color: AppColors.primary,
+                        color: context.primary,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -759,10 +766,10 @@ class _PractitionerProfileSelectionScreenState
                       _searchQuery.isEmpty
                           ? 'No patients added yet'
                           : 'No patients match "$_searchQuery"',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -770,7 +777,7 @@ class _PractitionerProfileSelectionScreenState
                       'Add a patient to start vision testing',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                       ),
                     ),
                   ],
@@ -818,9 +825,11 @@ class _PractitionerProfileSelectionScreenState
 
           return Container(
             height: isLandscape ? size.height * 0.95 : size.height * 0.85,
-            decoration: const BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            decoration: BoxDecoration(
+              color: context.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
             ),
             child: Column(
               children: [
@@ -829,7 +838,7 @@ class _PractitionerProfileSelectionScreenState
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border.withValues(alpha: 0.3),
+                    color: context.dividerColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -844,14 +853,14 @@ class _PractitionerProfileSelectionScreenState
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: context.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
                           isEditing
                               ? Icons.edit_rounded
                               : Icons.person_add_rounded,
-                          color: AppColors.primary,
+                          color: context.primary,
                           size: 20,
                         ),
                       ),
@@ -864,10 +873,10 @@ class _PractitionerProfileSelectionScreenState
                               isEditing
                                   ? 'Edit Patient Profile'
                                   : 'Add New Patient',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
-                                color: AppColors.textPrimary,
+                                color: context.textPrimary,
                                 letterSpacing: -0.5,
                               ),
                             ),
@@ -877,7 +886,7 @@ class _PractitionerProfileSelectionScreenState
                                   : 'Register a new patient profile',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: AppColors.textSecondary,
+                                color: context.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -886,8 +895,11 @@ class _PractitionerProfileSelectionScreenState
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, size: 20),
-                        color: AppColors.textSecondary,
+                        icon: Icon(
+                          Icons.close,
+                          size: 20,
+                          color: context.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -920,10 +932,10 @@ class _PractitionerProfileSelectionScreenState
                         : MediaQuery.of(context).padding.bottom + 24),
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.white,
+                    color: context.surface,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
+                        color: context.shadowColor.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, -5),
                       ),
@@ -936,13 +948,13 @@ class _PractitionerProfileSelectionScreenState
                         borderRadius: BorderRadius.circular(16),
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.primary,
-                            AppColors.primary.withValues(alpha: 0.8),
+                            context.primary,
+                            context.primary.withValues(alpha: 0.8),
                           ],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
+                            color: context.primary.withValues(alpha: 0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
@@ -955,7 +967,7 @@ class _PractitionerProfileSelectionScreenState
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
-                          foregroundColor: AppColors.white,
+                          foregroundColor: context.onPrimary,
                           shadowColor: Colors.transparent,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
@@ -966,7 +978,7 @@ class _PractitionerProfileSelectionScreenState
                           isEditing
                               ? 'Update Patient Profile'
                               : 'Save Patient Profile',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
@@ -991,19 +1003,16 @@ class _PractitionerProfileSelectionScreenState
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          color: context.primary,
           borderRadius: BorderRadius.circular(28),
           gradient: LinearGradient(
-            colors: [
-              AppColors.primary,
-              AppColors.primary.withValues(alpha: 0.8),
-            ],
+            colors: [context.primary, context.primary.withValues(alpha: 0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
+              color: context.primary.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -1014,12 +1023,12 @@ class _PractitionerProfileSelectionScreenState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.2),
+                color: context.onPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.person_add_rounded,
-                color: AppColors.white,
+                color: context.onPrimary,
                 size: 32,
               ),
             ),
@@ -1028,10 +1037,10 @@ class _PractitionerProfileSelectionScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Add New Patient',
                     style: TextStyle(
-                      color: AppColors.white,
+                      color: context.onPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
@@ -1041,7 +1050,7 @@ class _PractitionerProfileSelectionScreenState
                   Text(
                     'Register a new profile for testing',
                     style: TextStyle(
-                      color: AppColors.white.withValues(alpha: 0.8),
+                      color: context.onPrimary.withValues(alpha: 0.8),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1052,12 +1061,12 @@ class _PractitionerProfileSelectionScreenState
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.white.withValues(alpha: 0.2),
+                color: context.onPrimary.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.arrow_forward_rounded,
-                color: AppColors.white,
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: context.onPrimary,
                 size: 20,
               ),
             ),
@@ -1073,21 +1082,21 @@ class _PractitionerProfileSelectionScreenState
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.surface,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: AppColors.border.withValues(alpha: 0.2),
+            color: context.border.withValues(alpha: 0.2),
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.04),
+              color: context.primary.withValues(alpha: 0.04),
               blurRadius: 20,
               offset: const Offset(0, 10),
               spreadRadius: -2,
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: context.shadowColor.withValues(alpha: 0.02),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -1103,8 +1112,8 @@ class _PractitionerProfileSelectionScreenState
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.primary,
-                        AppColors.primary.withValues(alpha: 0.8),
+                        context.primary,
+                        context.primary.withValues(alpha: 0.8),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -1112,7 +1121,7 @@ class _PractitionerProfileSelectionScreenState
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: context.primary.withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -1121,10 +1130,10 @@ class _PractitionerProfileSelectionScreenState
                   child: Center(
                     child: Text(
                       patient.firstName[0].toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.white,
+                        color: context.onPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -1139,21 +1148,21 @@ class _PractitionerProfileSelectionScreenState
                       width: 18,
                       height: 18,
                       decoration: BoxDecoration(
-                        color: AppColors.success,
+                        color: context.success,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.white, width: 2),
+                        border: Border.all(color: context.onPrimary, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.success.withValues(alpha: 0.3),
+                            color: context.success.withValues(alpha: 0.3),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.assignment_turned_in,
                         size: 10,
-                        color: AppColors.white,
+                        color: context.onPrimary,
                       ),
                     ),
                   ),
@@ -1166,10 +1175,10 @@ class _PractitionerProfileSelectionScreenState
                 children: [
                   Text(
                     patient.fullName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -1179,7 +1188,7 @@ class _PractitionerProfileSelectionScreenState
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                     ),
                   ),
                 ],
@@ -1190,10 +1199,10 @@ class _PractitionerProfileSelectionScreenState
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.edit_outlined,
                         size: 20,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                       ),
                       onPressed: () {
                         _showAddPatientSheet(patient: patient);
@@ -1203,10 +1212,10 @@ class _PractitionerProfileSelectionScreenState
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline_rounded,
                         size: 20,
-                        color: AppColors.error,
+                        color: context.error,
                       ),
                       onPressed: () {
                         _confirmDeletePatient(patient);
@@ -1220,13 +1229,13 @@ class _PractitionerProfileSelectionScreenState
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: context.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
-                    color: AppColors.primary,
+                    color: context.primary,
                   ),
                 ),
               ],
@@ -1252,7 +1261,7 @@ class _PractitionerProfileSelectionScreenState
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(foregroundColor: context.error),
             child: const Text('Delete'),
           ),
         ],
@@ -1299,39 +1308,27 @@ class _PractitionerProfileSelectionScreenState
                   decoration: InputDecoration(
                     labelText: 'First Name',
                     hintText: 'First name',
-                    labelStyle: const TextStyle(
+                    labelStyle: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: context.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppColors.border,
-                        width: 1.5,
-                      ),
+                      borderSide: BorderSide(color: context.border, width: 1.5),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppColors.border,
-                        width: 1.5,
-                      ),
+                      borderSide: BorderSide(color: context.border, width: 1.5),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary,
-                        width: 2,
-                      ),
+                      borderSide: BorderSide(color: context.primary, width: 2),
                     ),
                     errorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.error,
-                        width: 1,
-                      ),
+                      borderSide: BorderSide(color: context.error, width: 1),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -1357,32 +1354,23 @@ class _PractitionerProfileSelectionScreenState
                   decoration: InputDecoration(
                     labelText: 'Last Name',
                     hintText: 'Last name',
-                    labelStyle: const TextStyle(
+                    labelStyle: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: context.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppColors.border,
-                        width: 1.5,
-                      ),
+                      borderSide: BorderSide(color: context.border, width: 1.5),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppColors.border,
-                        width: 1.5,
-                      ),
+                      borderSide: BorderSide(color: context.border, width: 1.5),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary,
-                        width: 2,
-                      ),
+                      borderSide: BorderSide(color: context.primary, width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -1418,39 +1406,36 @@ class _PractitionerProfileSelectionScreenState
                     decoration: InputDecoration(
                       labelText: 'Age',
                       hintText: 'Enter age',
-                      labelStyle: const TextStyle(
+                      labelStyle: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: context.surface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.border,
+                        borderSide: BorderSide(
+                          color: context.border,
                           width: 1.5,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.border,
+                        borderSide: BorderSide(
+                          color: context.border,
                           width: 1.5,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
+                        borderSide: BorderSide(
+                          color: context.primary,
                           width: 2,
                         ),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.error,
-                          width: 1,
-                        ),
+                        borderSide: BorderSide(color: context.error, width: 1),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -1504,39 +1489,27 @@ class _PractitionerProfileSelectionScreenState
               decoration: InputDecoration(
                 labelText: 'Age',
                 hintText: 'Enter age',
-                labelStyle: const TextStyle(
+                labelStyle: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),
                 filled: true,
-                fillColor: AppColors.surface,
+                fillColor: context.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.border,
-                    width: 1.5,
-                  ),
+                  borderSide: BorderSide(color: context.border, width: 1.5),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.border,
-                    width: 1.5,
-                  ),
+                  borderSide: BorderSide(color: context.border, width: 1.5),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.primary,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: context.primary, width: 2),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.error,
-                    width: 1,
-                  ),
+                  borderSide: BorderSide(color: context.error, width: 1),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -1581,39 +1554,27 @@ class _PractitionerProfileSelectionScreenState
             decoration: InputDecoration(
               labelText: 'Phone Number',
               hintText: '10-digit number',
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+              labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               prefixIcon: const Icon(Icons.phone, size: 20),
               prefixText: '+91 ',
-              prefixStyle: const TextStyle(fontWeight: FontWeight.bold),
+              prefixStyle: TextStyle(fontWeight: FontWeight.bold),
               filled: true,
-              fillColor: AppColors.surface,
+              fillColor: context.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: context.border, width: 1.5),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: context.border, width: 1.5),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: context.primary, width: 2),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.error, width: 1),
+                borderSide: BorderSide(color: context.error, width: 1),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -1641,33 +1602,21 @@ class _PractitionerProfileSelectionScreenState
             decoration: InputDecoration(
               labelText: 'Notes (optional)',
               hintText: 'Any additional notes...',
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+              labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               prefixIcon: const Icon(Icons.note, size: 20),
               filled: true,
-              fillColor: AppColors.surface,
+              fillColor: context.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: context.border, width: 1.5),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.border,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: context.border, width: 1.5),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: context.primary, width: 2),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
