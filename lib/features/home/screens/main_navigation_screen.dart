@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:visiaxx/core/constants/app_colors.dart';
 import 'package:visiaxx/core/services/auth_service.dart';
 import 'package:visiaxx/data/models/user_model.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
@@ -142,7 +141,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: PageView(
         controller: _pageController,
         physics: const BouncingScrollPhysics(),
@@ -181,18 +180,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.primary.withOpacity(0.08),
-              AppColors.primaryLight.withOpacity(0.05),
+              Theme.of(context).primaryColor.withValues(alpha: 0.08),
+              Theme.of(context).primaryColor.withValues(alpha: 0.03),
             ],
           ),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border.all(
-            color: AppColors.primary.withOpacity(0.15),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.05),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               blurRadius: 12,
               spreadRadius: 0,
               offset: const Offset(0, -4),
@@ -261,10 +260,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             width: itemWidth,
                             child: Container(
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.15),
+                                color: Theme.of(
+                                  context,
+                                ).primaryColor.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: AppColors.primary.withOpacity(0.3),
+                                  color: Theme.of(
+                                    context,
+                                  ).primaryColor.withValues(alpha: 0.3),
                                   width: 1.5,
                                 ),
                               ),
@@ -318,12 +321,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     bool isProfile = false,
   }) {
     final isSelected = (_currentIndex == index);
+    final primaryColor = Theme.of(context).primaryColor;
+    final onSurfaceColor = Theme.of(context).colorScheme.onSurface;
 
     return InkWell(
       onTap: () => _goTo(index),
       borderRadius: BorderRadius.circular(16),
-      splashColor: AppColors.primary.withOpacity(0.1),
-      highlightColor: AppColors.primary.withOpacity(0.05),
+      splashColor: primaryColor.withValues(alpha: 0.1),
+      highlightColor: primaryColor.withValues(alpha: 0.05),
       child: Container(
         padding: const EdgeInsets.all(10),
         child: Center(
@@ -338,27 +343,27 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              AppColors.primary,
-                              AppColors.primary.withOpacity(0.85),
+                              primaryColor,
+                              primaryColor.withValues(alpha: 0.85),
                             ],
                           )
                         : null,
                     border: isSelected
                         ? null
                         : Border.all(
-                            color: AppColors.grey.withOpacity(0.4),
+                            color: onSurfaceColor.withValues(alpha: 0.3),
                             width: 1.5,
                           ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.35),
+                              color: primaryColor.withValues(alpha: 0.35),
                               blurRadius: 16,
                               spreadRadius: 0,
                               offset: const Offset(0, 4),
                             ),
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.2),
+                              color: primaryColor.withValues(alpha: 0.2),
                               blurRadius: 8,
                               spreadRadius: -2,
                               offset: const Offset(0, 2),
@@ -372,8 +377,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     curve: Curves.easeInOutCubic,
                     style: TextStyle(
                       color: isSelected
-                          ? AppColors.white
-                          : AppColors.textSecondary.withOpacity(0.5),
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : onSurfaceColor.withValues(alpha: 0.5),
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -382,11 +387,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 )
               : Icon(
                   icon,
-                  key: ValueKey('icon_${index}_$isSelected'),
+                  key: ValueKey('icon_$index'),
                   size: 28,
                   color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textSecondary.withOpacity(0.5),
+                      ? primaryColor
+                      : onSurfaceColor.withValues(alpha: 0.5),
                 ),
         ),
       ),

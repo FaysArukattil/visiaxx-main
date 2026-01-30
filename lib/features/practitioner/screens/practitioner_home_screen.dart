@@ -84,7 +84,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: _isLoading
             ? const Center(child: EyeLoader.fullScreen())
@@ -131,11 +131,11 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                 width: logoWidth,
                 height: logoHeight,
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -147,9 +147,9 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     'assets/images/icons/app_logo.png',
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
+                      return Icon(
                         Icons.remove_red_eye,
-                        color: AppColors.primary,
+                        color: Theme.of(context).primaryColor,
                       );
                     },
                   ),
@@ -167,18 +167,22 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppColors.primary.withOpacity(0.08),
-                      AppColors.primaryLight.withOpacity(0.05),
+                      Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                      Theme.of(context).primaryColor.withValues(alpha: 0.03),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.15),
                     width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.05),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.05),
                       blurRadius: 12,
                       spreadRadius: 0,
                       offset: const Offset(0, 4),
@@ -191,7 +195,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     Icon(
                       Icons.medical_services,
                       size: (screenWidth * 0.04).clamp(14.0, 18.0),
-                      color: AppColors.primary,
+                      color: Theme.of(context).primaryColor,
                     ),
                     SizedBox(width: screenWidth * 0.02),
                     Text(
@@ -199,7 +203,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: (screenWidth * 0.03).clamp(11.0, 13.0),
-                        color: AppColors.primary,
+                        color: Theme.of(context).primaryColor,
                       ),
                     ),
                   ],
@@ -219,7 +223,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: (screenWidth * 0.055).clamp(18.0, 24.0),
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -236,18 +240,26 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            AppColors.primary.withOpacity(0.08),
-                            AppColors.primaryLight.withOpacity(0.05),
+                            Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.08),
+                            Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.03),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.15),
                           width: 1.2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.05),
+                            color: Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.05),
                             blurRadius: 12,
                             spreadRadius: 0,
                             offset: const Offset(0, 4),
@@ -259,7 +271,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                         children: [
                           Icon(
                             Icons.remove_red_eye,
-                            color: AppColors.primary,
+                            color: Theme.of(context).primaryColor,
                             size: (screenWidth * 0.04).clamp(14.0, 18.0),
                           ),
                           SizedBox(width: screenWidth * 0.02),
@@ -272,7 +284,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                                   14.5,
                                 ),
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
+                                color: Theme.of(context).primaryColor,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -334,18 +346,22 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppColors.primary.withValues(alpha: .08),
-                      AppColors.primaryLight.withValues(alpha: 0.05),
+                      Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                      Theme.of(context).primaryColor.withValues(alpha: 0.03),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.15),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.08),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.08),
                       blurRadius: 20,
                       spreadRadius: 0,
                       offset: const Offset(0, 8),
@@ -366,8 +382,12 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                AppColors.primary.withOpacity(0.12),
-                                AppColors.primary.withOpacity(0.02),
+                                Theme.of(
+                                  context,
+                                ).primaryColor.withValues(alpha: 0.12),
+                                Theme.of(
+                                  context,
+                                ).primaryColor.withValues(alpha: 0.02),
                               ],
                             ),
                           ),
@@ -383,8 +403,12 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                AppColors.primaryLight.withOpacity(0.1),
-                                AppColors.primaryLight.withOpacity(0.02),
+                                Theme.of(
+                                  context,
+                                ).primaryColor.withValues(alpha: 0.1),
+                                Theme.of(
+                                  context,
+                                ).primaryColor.withValues(alpha: 0.02),
                               ],
                             ),
                           ),
@@ -454,7 +478,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                       Text(
                         slide['heading'] as String,
                         style: TextStyle(
-                          color: AppColors.primary,
+                          color: Theme.of(context).primaryColor,
                           fontSize: (availableWidth * 0.06).clamp(
                             15.0,
                             20.0,
@@ -471,7 +495,9 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                       Text(
                         slide['content'] as String,
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
                           fontSize: (availableWidth * 0.035).clamp(
                             11.0,
                             13.5,
@@ -492,13 +518,15 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           slide['supportText'] as String,
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: Theme.of(context).primaryColor,
                             fontSize: (availableWidth * 0.028).clamp(
                               9.0,
                               11.0,
@@ -528,7 +556,9 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                             height: (availableWidth * 0.22).clamp(70.0, 110.0),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.primary.withValues(alpha: 0.04),
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withValues(alpha: 0.04),
                             ),
                           ),
                           // Dynamic positioning to prevent overlap on small screens
@@ -571,17 +601,17 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
       width: imageWidth,
       height: imageHeight,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.1),
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
           width: 0.5,
         ),
       ),
@@ -592,10 +622,10 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
               child: Icon(
                 Icons.person,
-                color: AppColors.primary.withValues(alpha: 0.6),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.6),
                 size: imageWidth * 0.4,
               ),
             );
@@ -628,7 +658,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                 Text(
                   slide['heading'] as String,
                   style: TextStyle(
-                    color: AppColors.primary,
+                    color: Theme.of(context).primaryColor,
                     fontSize: (availableWidth * 0.06).clamp(16.0, 24.0),
                     fontWeight: FontWeight.bold,
                     height: 1.1,
@@ -640,7 +670,9 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                 Text(
                   slide['content'] as String,
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: (availableWidth * 0.04).clamp(12.0, 16.0),
                     height: 1.4,
                   ),
@@ -654,13 +686,15 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     slide['supportText'] as String,
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: Theme.of(context).primaryColor,
                       fontSize: (availableWidth * 0.035).clamp(10.0, 13.5),
                       fontWeight: FontWeight.bold,
                     ),
@@ -690,8 +724,8 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
             height: 6,
             decoration: BoxDecoration(
               color: _currentCarouselIndex == index
-                  ? AppColors.primary
-                  : AppColors.divider,
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).dividerColor,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -853,26 +887,30 @@ class _CompactServiceCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: AppColors.primary.withOpacity(0.1),
-            highlightColor: AppColors.primary.withOpacity(0.05),
+            splashColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            highlightColor: Theme.of(
+              context,
+            ).primaryColor.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primary.withOpacity(0.08),
-                    AppColors.primaryLight.withOpacity(0.05),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.05),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.05),
                     blurRadius: 12,
                     spreadRadius: 0,
                     offset: const Offset(0, 4),
@@ -891,12 +929,12 @@ class _CompactServiceCard extends StatelessWidget {
                         width: iconSize + 14,
                         height: iconSize + 14,
                         decoration: BoxDecoration(
-                          color: AppColors.background,
+                          color: Theme.of(context).scaffoldBackgroundColor,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           icon,
-                          color: AppColors.primary,
+                          color: Theme.of(context).primaryColor,
                           size: iconSize,
                         ),
                       ),
@@ -911,7 +949,7 @@ class _CompactServiceCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: titleFontSize,
-                            color: AppColors.primary,
+                            color: Theme.of(context).primaryColor,
                             height: 1.1,
                             letterSpacing: -0.2,
                           ),
@@ -924,7 +962,9 @@ class _CompactServiceCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: subtitleFontSize,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
                             height: 1.1,
                           ),
                           maxLines: 1,
@@ -979,26 +1019,30 @@ class _WideServiceCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: AppColors.primary.withOpacity(0.1),
-            highlightColor: AppColors.primary.withOpacity(0.05),
+            splashColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            highlightColor: Theme.of(
+              context,
+            ).primaryColor.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primary.withOpacity(0.08),
-                    AppColors.primaryLight.withOpacity(0.05),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.05),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.05),
                     blurRadius: 12,
                     spreadRadius: 0,
                     offset: const Offset(0, 4),
@@ -1021,12 +1065,12 @@ class _WideServiceCard extends StatelessWidget {
                         width: iconSize + 14,
                         height: iconSize + 14,
                         decoration: BoxDecoration(
-                          color: AppColors.background,
+                          color: Theme.of(context).scaffoldBackgroundColor,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           icon,
-                          color: AppColors.primary,
+                          color: Theme.of(context).primaryColor,
                           size: iconSize,
                         ),
                       ),
@@ -1043,7 +1087,7 @@ class _WideServiceCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: titleFontSize,
-                              color: AppColors.primary,
+                              color: Theme.of(context).primaryColor,
                               letterSpacing: -0.3,
                               height: 1.2,
                             ),
@@ -1056,7 +1100,9 @@ class _WideServiceCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: subtitleFontSize,
-                              color: AppColors.textSecondary,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                               height: 1.2,
                             ),
                             maxLines: 1,
@@ -1069,7 +1115,9 @@ class _WideServiceCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1078,7 +1126,7 @@ class _WideServiceCard extends StatelessWidget {
                           16.0,
                           20.0,
                         ),
-                        color: AppColors.primary,
+                        color: Theme.of(context).primaryColor,
                       ),
                     ),
                   ],
