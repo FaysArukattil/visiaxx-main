@@ -46,7 +46,9 @@ class ProfileScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Logout'),
           ),
         ],
@@ -70,9 +72,9 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: AppColors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.9,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(25),
             topRight: Radius.circular(25),
           ),
@@ -84,7 +86,7 @@ class ProfileScreen extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: Theme.of(context).dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -96,17 +98,19 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1C1E),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.background,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).scaffoldBackgroundColor,
                       padding: const EdgeInsets.all(8),
                     ),
                   ),
@@ -129,19 +133,11 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.transparent,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'My Profile',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
+        title: const Text('My Profile'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -149,12 +145,14 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            _buildProfileHeader(),
+            _buildProfileHeader(context),
             const SizedBox(height: 32),
             _buildSection(
+              context: context,
               title: 'Account Settings',
               items: [
                 _buildProfileItem(
+                  context: context,
                   icon: Icons.settings_outlined,
                   title: 'Settings',
                   onTap: () {
@@ -170,9 +168,11 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _buildSection(
+              context: context,
               title: 'Health & Wellness',
               items: [
                 _buildProfileItem(
+                  context: context,
                   icon: Icons.tips_and_updates_outlined,
                   title: 'Eye Healthcare Tips',
                   onTap: () {
@@ -188,9 +188,11 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _buildSection(
+              context: context,
               title: 'Information',
               items: [
                 _buildProfileItem(
+                  context: context,
                   icon: Icons.gavel_outlined,
                   title: 'Legal Notice & Terms',
                   onTap: () {
@@ -202,24 +204,26 @@ class ProfileScreen extends StatelessWidget {
                   },
                 ),
                 _buildProfileItem(
+                  context: context,
                   icon: Icons.lightbulb_outline,
                   title: 'Our Vision & Mission',
                   onTap: () {
                     _showOptionDetails(
                       context,
                       'Our Vision & Mission',
-                      _buildVisionMissionContent(),
+                      _buildVisionMissionContent(context),
                     );
                   },
                 ),
                 _buildProfileItem(
+                  context: context,
                   icon: Icons.info_outline,
                   title: 'About Us',
                   onTap: () {
                     _showOptionDetails(
                       context,
                       'About Us',
-                      _buildAboutUsContent(),
+                      _buildAboutUsContent(context),
                     );
                   },
                 ),
@@ -227,9 +231,11 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _buildSection(
+              context: context,
               title: 'Support',
               items: [
                 _buildProfileItem(
+                  context: context,
                   icon: Icons.support_agent,
                   title: 'Contact Us',
                   onTap: () {
@@ -244,15 +250,18 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _buildSection(
+              context: context,
               title: 'Feedback',
               items: [
                 _buildProfileItem(
+                  context: context,
                   icon: Icons.reviews_outlined,
                   title: 'Give us Feedback',
                   subtitle: 'Share your experience',
                   onTap: () => _showReviewDialog(context),
                 ),
                 _buildProfileItem(
+                  context: context,
                   icon: Icons.store_outlined,
                   title: Platform.isIOS
                       ? 'Rate us on App Store'
@@ -285,18 +294,18 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(BuildContext context) {
     return Column(
       children: [
         Container(
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: Theme.of(context).primaryColor,
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -306,7 +315,7 @@ class ProfileScreen extends StatelessWidget {
             child: Text(
               user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'U',
               style: const TextStyle(
-                color: AppColors.white,
+                color: Colors.white,
                 fontSize: 40,
                 fontWeight: FontWeight.bold,
               ),
@@ -316,27 +325,41 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           user.fullName,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1A1C1E),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           user.email,
-          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
         ),
         const SizedBox(height: 2),
         Text(
           user.phone.replaceFirst('+91', '+91 '),
-          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSection({required String title, required List<Widget> items}) {
+  Widget _buildSection({
+    required BuildContext context,
+    required String title,
+    required List<Widget> items,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -354,11 +377,11 @@ class ProfileScreen extends StatelessWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withValues(alpha: 0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -371,6 +394,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileItem({
+    required BuildContext context,
     required IconData icon,
     required String title,
     String? subtitle,
@@ -381,17 +405,19 @@ class ProfileScreen extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: AppColors.primary, size: 22),
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF1A1C1E),
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
       subtitle: subtitle != null
@@ -404,10 +430,10 @@ class ProfileScreen extends StatelessWidget {
               ),
             )
           : null,
-      trailing: const Icon(
+      trailing: Icon(
         Icons.arrow_forward_ios,
         size: 14,
-        color: AppColors.textSecondary,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
       ),
     );
   }
@@ -418,13 +444,15 @@ class ProfileScreen extends StatelessWidget {
       child: ElevatedButton(
         onPressed: () => _handleLogout(context),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.white,
-          foregroundColor: AppColors.error,
+          backgroundColor: Theme.of(context).cardColor,
+          foregroundColor: Theme.of(context).colorScheme.error,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: AppColors.error.withValues(alpha: 0.1)),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+            ),
           ),
         ),
         child: const Row(
@@ -575,6 +603,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         _buildContactDetailItem(
+          context: context,
           icon: Icons.phone_outlined,
           title: 'Phone',
           value: '7208996265',
@@ -594,6 +623,7 @@ class ProfileScreen extends StatelessWidget {
           },
         ),
         _buildContactDetailItem(
+          context: context,
           icon: Icons.chat_outlined,
           title: 'WhatsApp',
           value: '7208996265',
@@ -613,6 +643,7 @@ class ProfileScreen extends StatelessWidget {
           },
         ),
         _buildContactDetailItem(
+          context: context,
           icon: Icons.email_outlined,
           title: 'Email',
           value: 'vnoptocare@gmail.com',
@@ -620,6 +651,7 @@ class ProfileScreen extends StatelessWidget {
           onTap: _launchEmail,
         ),
         _buildContactDetailItem(
+          context: context,
           icon: Icons.location_on_outlined,
           title: 'Office',
           value: 'Vision Optocare, Mumbai',
@@ -638,7 +670,7 @@ class ProfileScreen extends StatelessWidget {
             children: [
               Icon(
                 Icons.report_problem_outlined,
-                color: AppColors.error,
+                color: Theme.of(context).colorScheme.error,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -680,6 +712,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildContactDetailItem({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String value,
@@ -692,10 +725,10 @@ class ProfileScreen extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: AppColors.primary, size: 20),
+        child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
       ),
       title: Text(
         title,
@@ -703,10 +736,10 @@ class ProfileScreen extends StatelessWidget {
       ),
       subtitle: Text(
         value,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF1A1C1E),
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
       trailing: showCopyIcon
@@ -772,17 +805,19 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildVisionMissionContent() {
-    return const Column(
+  Widget _buildVisionMissionContent(BuildContext context) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _AboutSection(
+          context: context,
           title: 'Our Vision',
           content:
               'We envision a world where eye care is universally accessible through AI, tele-optometry, and digital screening €” promoting proactive vision health for all.',
         ),
         SizedBox(height: 24),
         _AboutSection(
+          context: context,
           title: 'Our Mission',
           content:
               'Our mission is to deliver affordable, preventive, and smart eye care through innovative digital platforms.',
@@ -791,17 +826,19 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAboutUsContent() {
+  Widget _buildAboutUsContent(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _AboutSection(
+        _AboutSection(
+          context: context,
           title: 'Who We Are',
           content:
               'Vision Optocare is a forward-thinking digital health startup focused on reshaping how primary eye care is delivered. By merging optometric precision with mobile-first technology, we aim to make vision care more accessible and data-driven across the globe.',
         ),
         const SizedBox(height: 24),
-        const _AboutSection(
+        _AboutSection(
+          context: context,
           title: 'Our Product',
           content:
               'Our flagship solution, the Visiaxx Digital Eye Clinic App, empowers users to conduct clinically approved vision screenings directly from their smartphones. Feature-rich, validated, and user-centric, Visiaxx is your personal eye care companion.',
@@ -812,7 +849,7 @@ class ProfileScreen extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: Theme.of(context).primaryColor,
           ),
         ),
         const SizedBox(height: 16),
@@ -853,7 +890,8 @@ class ProfileScreen extends StatelessWidget {
               'State-of-the-art computer vision algorithms for precise face tracking, distance calibration, and result validation.',
         ),
         const SizedBox(height: 24),
-        const _AboutSection(
+        _AboutSection(
+          context: context,
           title: 'Why It Matters',
           content:
               'With over 80% of vision issues being preventable, millions still go undiagnosed due to lack of access. Visiaxx bridges this gap by enabling early detection, personalized insights, and continuous monitoring of visual health.',
@@ -862,11 +900,13 @@ class ProfileScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+            border: Border.all(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            ),
           ),
-          child: const Column(
+          child: Column(
             children: [
               Text(
                 'We provide an outstanding purchasing experience to our users. Our collection includes a wide variety of frames, sunglasses, and contact lenses.',
@@ -885,7 +925,7 @@ class ProfileScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: Theme.of(context).primaryColor,
                 ),
               ),
             ],
@@ -1027,10 +1067,15 @@ class _LegalSection extends StatelessWidget {
 }
 
 class _AboutSection extends StatelessWidget {
+  final BuildContext context;
   final String title;
   final String content;
 
-  const _AboutSection({required this.title, required this.content});
+  const _AboutSection({
+    required this.context,
+    required this.title,
+    required this.content,
+  });
 
   @override
   Widget build(BuildContext context) {

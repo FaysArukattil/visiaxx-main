@@ -57,6 +57,7 @@ import 'features/individual_tests/screens/standalone_mobile_refractometry_screen
 import 'data/providers/test_session_provider.dart';
 import 'data/providers/eye_exercise_provider.dart';
 import 'data/providers/locale_provider.dart';
+import 'core/providers/theme_provider.dart';
 import 'core/providers/network_connectivity_provider.dart';
 
 // AWS Credentials Manager
@@ -64,20 +65,11 @@ import 'core/services/aws_credentials_manager.dart';
 import 'core/services/session_monitor_service.dart';
 import 'core/services/speech_service.dart';
 
-import 'core/constants/app_colors.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set system UI FIRST
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: AppColors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: AppColors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
+  // main() logic...
+  // Initial system UI will be handled by MaterialApp or after build
 
   // Set orientations
   // Set orientations - Allow all orientations
@@ -183,117 +175,129 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => TestSessionProvider()),
         ChangeNotifierProvider(create: (_) => EyeExerciseProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider<SpeechService>(create: (_) => SpeechService()),
       ],
-      child: MaterialApp(
-        navigatorKey: VisiaxApp.navigatorKey,
-        title: 'Visiaxx - Digital Eye Clinic',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.light,
-        initialRoute: '/',
-        builder: (context, child) {
-          // Add network indicator to all screens
-          return NetworkIndicatorWidget(
-            child: child ?? const SizedBox.shrink(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            navigatorKey: VisiaxApp.navigatorKey,
+            title: 'Visiaxx - Digital Eye Clinic',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme(themeProvider.primaryColor),
+            darkTheme: AppTheme.darkTheme(themeProvider.primaryColor),
+            themeMode: themeProvider.themeMode,
+            initialRoute: '/',
+            builder: (context, child) {
+              // Add network indicator to all screens
+              return NetworkIndicatorWidget(
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
+            routes: {
+              '/': (context) => const SplashScreen(),
+              '/login': (context) => const LoginScreen(),
+              '/register': (context) => const RegistrationScreen(),
+              '/forgot-password': (context) => const ForgotPasswordScreen(),
+              '/home': (context) => const MainNavigationScreen(),
+              '/quick-test': (context) => const QuickTestIntroScreen(),
+              '/profile-selection': (context) => const ProfileSelectionScreen(),
+              '/questionnaire': (context) => const QuestionnaireScreen(),
+              '/test-instructions': (context) => const TestInstructionsScreen(),
+              '/visual-acuity-test': (context) =>
+                  const VisualAcuityTestScreen(),
+              '/color-vision-test': (context) {
+                final args =
+                    ModalRoute.of(context)?.settings.arguments
+                        as Map<String, dynamic>?;
+                return ColorVisionTestScreen(
+                  showInitialInstructions:
+                      args?['showInitialInstructions'] ?? true,
+                );
+              },
+              '/amsler-grid-test': (context) {
+                final args =
+                    ModalRoute.of(context)?.settings.arguments
+                        as Map<String, dynamic>?;
+                return AmslerGridTestScreen(
+                  showInitialInstructions:
+                      args?['showInitialInstructions'] ?? true,
+                );
+              },
+              '/quick-test-result': (context) => const QuickTestResultScreen(),
+              '/my-results': (context) => const MyResultsScreen(),
+              '/speech-logs': (context) => const SpeechLogViewerScreen(),
+              '/practitioner-dashboard': (context) =>
+                  const PractitionerDashboardScreen(),
+              '/practitioner-home': (context) =>
+                  const PractitionerMainNavigationScreen(),
+              '/practitioner-individual-tests': (context) =>
+                  const IndividualTestsScreen(),
+              '/practitioner-profile-selection': (context) {
+                final args =
+                    ModalRoute.of(context)?.settings.arguments
+                        as Map<String, dynamic>?;
+                return PractitionerProfileSelectionScreen(
+                  isComprehensive: args?['comprehensive'] ?? false,
+                  testType: args?['testType'],
+                );
+              },
+              '/cover-left-eye-instruction': (context) =>
+                  const CoverLeftEyeInstructionScreen(),
+              '/cover-right-eye-instruction': (context) =>
+                  const CoverRightEyeInstructionScreen(),
+              '/both-eyes-open-instruction': (context) =>
+                  const BothEyesOpenInstructionScreen(),
+              '/short-distance-test': (context) =>
+                  const ShortDistanceTestScreen(),
+              '/short-distance-quick-result': (context) =>
+                  const ShortDistanceQuickResultScreen(),
+              '/reading-test-instructions': (context) =>
+                  const ReadingTestInstructionsScreen(),
+              '/comprehensive-test': (context) =>
+                  const ComprehensiveIntroScreen(),
+              '/pelli-robson-test': (context) {
+                final args =
+                    ModalRoute.of(context)?.settings.arguments
+                        as Map<String, dynamic>?;
+                return PelliRobsonTestScreen(
+                  showInitialInstructions:
+                      args?['showInitialInstructions'] ?? true,
+                );
+              },
+              '/eye-exercises': (context) => const EyeExerciseReelsScreen(),
+              '/eye-care-tips': (context) => const EyeCareTipsScreen(),
+              '/settings': (context) => const SettingsScreen(),
+              '/mobile-refractometry-test': (context) {
+                final args =
+                    ModalRoute.of(context)?.settings.arguments
+                        as Map<String, dynamic>?;
+                return MobileRefractometryTestScreen(
+                  showInitialInstructions:
+                      args?['showInitialInstructions'] ?? true,
+                );
+              },
+              '/comprehensive-result': (context) =>
+                  const ComprehensiveResultScreen(),
+              '/mobile-refractometry-result': (context) =>
+                  const MobileRefractometryQuickResultScreen(),
+              '/visual-acuity-standalone': (context) =>
+                  const StandaloneVisualAcuityScreen(),
+              '/color-vision-standalone': (context) =>
+                  const StandaloneColorVisionScreen(),
+              '/amsler-grid-standalone': (context) =>
+                  const StandaloneAmslerGridScreen(),
+              '/reading-test-standalone': (context) =>
+                  const StandaloneReadingTestScreen(),
+              '/contrast-sensitivity-standalone': (context) =>
+                  const StandaloneContrastSensitivityScreen(),
+              '/mobile-refractometry-standalone': (context) =>
+                  const StandaloneMobileRefractometryScreen(),
+              '/individual-tests': (context) => const IndividualTestsScreen(),
+              '/add-patient-questionnaire': (context) =>
+                  const AddPatientQuestionnaireScreen(),
+            },
           );
-        },
-        routes: {
-          '/': (context) => const SplashScreen(),
-          '/login': (context) => const LoginScreen(),
-          '/register': (context) => const RegistrationScreen(),
-          '/forgot-password': (context) => const ForgotPasswordScreen(),
-          '/home': (context) => const MainNavigationScreen(),
-          '/quick-test': (context) => const QuickTestIntroScreen(),
-          '/profile-selection': (context) => const ProfileSelectionScreen(),
-          '/questionnaire': (context) => const QuestionnaireScreen(),
-          '/test-instructions': (context) => const TestInstructionsScreen(),
-          '/visual-acuity-test': (context) => const VisualAcuityTestScreen(),
-          '/color-vision-test': (context) {
-            final args =
-                ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
-            return ColorVisionTestScreen(
-              showInitialInstructions: args?['showInitialInstructions'] ?? true,
-            );
-          },
-          '/amsler-grid-test': (context) {
-            final args =
-                ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
-            return AmslerGridTestScreen(
-              showInitialInstructions: args?['showInitialInstructions'] ?? true,
-            );
-          },
-          '/quick-test-result': (context) => const QuickTestResultScreen(),
-          '/my-results': (context) => const MyResultsScreen(),
-          '/speech-logs': (context) => const SpeechLogViewerScreen(),
-          '/practitioner-dashboard': (context) =>
-              const PractitionerDashboardScreen(),
-          '/practitioner-home': (context) =>
-              const PractitionerMainNavigationScreen(),
-          '/practitioner-individual-tests': (context) =>
-              const IndividualTestsScreen(),
-          '/practitioner-profile-selection': (context) {
-            final args =
-                ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
-            return PractitionerProfileSelectionScreen(
-              isComprehensive: args?['comprehensive'] ?? false,
-              testType: args?['testType'],
-            );
-          },
-          '/cover-left-eye-instruction': (context) =>
-              const CoverLeftEyeInstructionScreen(),
-          '/cover-right-eye-instruction': (context) =>
-              const CoverRightEyeInstructionScreen(),
-          '/both-eyes-open-instruction': (context) =>
-              const BothEyesOpenInstructionScreen(),
-          '/short-distance-test': (context) => const ShortDistanceTestScreen(),
-          '/short-distance-quick-result': (context) =>
-              const ShortDistanceQuickResultScreen(),
-          '/reading-test-instructions': (context) =>
-              const ReadingTestInstructionsScreen(),
-          '/comprehensive-test': (context) => const ComprehensiveIntroScreen(),
-          '/pelli-robson-test': (context) {
-            final args =
-                ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
-            return PelliRobsonTestScreen(
-              showInitialInstructions: args?['showInitialInstructions'] ?? true,
-            );
-          },
-          '/eye-exercises': (context) => const EyeExerciseReelsScreen(),
-          '/eye-care-tips': (context) => const EyeCareTipsScreen(),
-          '/settings': (context) => const SettingsScreen(),
-          '/mobile-refractometry-test': (context) {
-            final args =
-                ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
-            return MobileRefractometryTestScreen(
-              showInitialInstructions: args?['showInitialInstructions'] ?? true,
-            );
-          },
-          '/comprehensive-result': (context) =>
-              const ComprehensiveResultScreen(),
-          '/mobile-refractometry-result': (context) =>
-              const MobileRefractometryQuickResultScreen(),
-          '/visual-acuity-standalone': (context) =>
-              const StandaloneVisualAcuityScreen(),
-          '/color-vision-standalone': (context) =>
-              const StandaloneColorVisionScreen(),
-          '/amsler-grid-standalone': (context) =>
-              const StandaloneAmslerGridScreen(),
-          '/reading-test-standalone': (context) =>
-              const StandaloneReadingTestScreen(),
-          '/contrast-sensitivity-standalone': (context) =>
-              const StandaloneContrastSensitivityScreen(),
-          '/mobile-refractometry-standalone': (context) =>
-              const StandaloneMobileRefractometryScreen(),
-          '/individual-tests': (context) => const IndividualTestsScreen(),
-          '/add-patient-questionnaire': (context) =>
-              const AddPatientQuestionnaireScreen(),
         },
       ),
     );

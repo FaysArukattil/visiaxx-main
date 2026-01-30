@@ -1,7 +1,8 @@
 ﻿import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/providers/theme_provider.dart';
+import 'package:provider/provider.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../widgets/bug_report_dialog.dart';
@@ -86,22 +87,21 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.transparent,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Settings',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -157,9 +157,18 @@ class _SettingsScreenState extends State<SettingsScreen>
                       _buildNavigationItem(
                         icon: Icons.palette_outlined,
                         title: 'Theme',
-                        subtitle: 'Light Mode',
+                        subtitle: context.watch<ThemeProvider>().themeModeName,
                         onTap: () {
-                          _showComingSoonDialog('Theme Selection');
+                          _showThemeSelectionDialog();
+                        },
+                      ),
+                      const Divider(height: 1, indent: 68),
+                      _buildNavigationItem(
+                        icon: Icons.color_lens_outlined,
+                        title: 'Color Theme',
+                        subtitle: 'Customize app accent color',
+                        onTap: () {
+                          _showColorSelectionDialog();
                         },
                       ),
                     ],
@@ -215,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
-                            backgroundColor: AppColors.transparent,
+                            backgroundColor: Colors.transparent,
                             builder: (context) => const BugReportDialog(),
                           );
                         },
@@ -242,10 +251,10 @@ class _SettingsScreenState extends State<SettingsScreen>
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           letterSpacing: 0.5,
         ),
       ),
@@ -255,11 +264,11 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _buildSettingsCard({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -283,10 +292,10 @@ class _SettingsScreenState extends State<SettingsScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 24),
+            child: Icon(icon, color: Theme.of(context).primaryColor, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -295,18 +304,20 @@ class _SettingsScreenState extends State<SettingsScreen>
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                     height: 1.3,
                   ),
                 ),
@@ -319,7 +330,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             scale: 0.85,
             child: CupertinoSwitch(
               value: value,
-              activeTrackColor: AppColors.primary,
+              activeTrackColor: Theme.of(context).primaryColor,
               onChanged: onChanged,
             ),
           ),
@@ -333,35 +344,41 @@ class _SettingsScreenState extends State<SettingsScreen>
       margin: const EdgeInsets.symmetric(horizontal: 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.warning.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: AppColors.warning, size: 20),
+          Icon(
+            Icons.info_outline,
+            color: Theme.of(context).colorScheme.error,
+            size: 20,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Notifications are turned off',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1C1E),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Enable them to receive important eye health updates',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                     height: 1.3,
                   ),
                 ),
@@ -374,8 +391,8 @@ class _SettingsScreenState extends State<SettingsScreen>
               await openAppSettings();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
@@ -404,32 +421,36 @@ class _SettingsScreenState extends State<SettingsScreen>
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: AppColors.primary, size: 22),
+        child: Icon(icon, color: Theme.of(context).primaryColor, size: 22),
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
       subtitle: subtitle != null
           ? Text(
               subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textSecondary,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             )
           : null,
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right,
         size: 20,
-        color: AppColors.textSecondary,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
       ),
     );
   }
@@ -438,33 +459,41 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.05),
+        color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+          Icon(
+            Icons.info_outline,
+            color: Theme.of(context).primaryColor,
+            size: 20,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'About Notifications',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'We\'ll send you reminders for eye tests, health tips, and important updates. You can manage these preferences anytime in your device settings.',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                     height: 1.4,
                   ),
                 ),
@@ -482,18 +511,22 @@ class _SettingsScreenState extends State<SettingsScreen>
         children: [
           Text(
             'Visiaxx Digital Eye Clinic',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Version 1.0.0',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -502,33 +535,193 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showComingSoonDialog(String feature) {
-    showDialog(
+    // ... code ...
+  }
+
+  void _showThemeSelectionDialog() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.rocket_launch, color: AppColors.primary),
-            const SizedBox(width: 12),
-            const Text('Coming Soon'),
-          ],
-        ),
-        content: Text(
-          '$feature will be available in a future update. Stay tuned!',
-          style: const TextStyle(fontSize: 14, height: 1.5),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).dividerColor,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            child: const Text('Got it'),
+            const SizedBox(height: 16),
+            const Text(
+              'Select Theme',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            _buildThemeOption(
+              context,
+              'Light Mode',
+              Icons.light_mode_outlined,
+              ThemeMode.light,
+            ),
+            _buildThemeOption(
+              context,
+              'Dark Mode',
+              Icons.dark_mode_outlined,
+              ThemeMode.dark,
+            ),
+            _buildThemeOption(
+              context,
+              'System Default',
+              Icons.settings_brightness_outlined,
+              ThemeMode.system,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeOption(
+    BuildContext context,
+    String title,
+    IconData icon,
+    ThemeMode mode,
+  ) {
+    final themeProvider = context.read<ThemeProvider>();
+    final isSelected = themeProvider.themeMode == mode;
+
+    return ListTile(
+      onTap: () {
+        themeProvider.setThemeMode(mode);
+        Navigator.pop(context);
+      },
+      leading: Icon(
+        icon,
+        color: isSelected
+            ? Theme.of(context).primaryColor
+            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isSelected
+              ? Theme.of(context).primaryColor
+              : Theme.of(context).colorScheme.onSurface,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: Theme.of(context).primaryColor)
+          : null,
+    );
+  }
+
+  void _showColorSelectionDialog() {
+    final colors = [
+      const Color(0xFF007AFF), // Blue (Default)
+      const Color(0xFF5856D6), // Purple
+      const Color(0xFF34C759), // Green
+      const Color(0xFFFF9500), // Orange
+      const Color(0xFFFF3B30), // Red
+      const Color(0xFF5AC8FA), // Light Blue
+      const Color(0xFFFF2D55), // Pink
+      const Color(0xFF8E8E93), // Grey
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
           ),
-        ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).dividerColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Select Accent Color',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 24),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 5,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+              ),
+              itemCount: colors.length,
+              itemBuilder: (context, index) {
+                final color = colors[index];
+                final themeProvider = context.read<ThemeProvider>();
+                final isSelected =
+                    themeProvider.primaryColor.value == color.value;
+
+                return GestureDetector(
+                  onTap: () {
+                    themeProvider.setPrimaryColor(color);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected
+                            ? (Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black)
+                            : Colors.transparent,
+                        width: 3,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, color: Colors.white, size: 20)
+                        : null,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

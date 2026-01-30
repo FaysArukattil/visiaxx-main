@@ -10,7 +10,7 @@ class QuickTestIntroScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(''),
         backgroundColor: AppColors.transparent,
@@ -88,7 +88,9 @@ class QuickTestIntroScreen extends StatelessWidget {
                                 Text(
                                   'Fast and effective vision screening.',
                                   style: TextStyle(
-                                    color: AppColors.white.withValues(alpha: 0.9),
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.9,
+                                    ),
                                     fontSize: 13,
                                     fontWeight: FontWeight.w400,
                                   ),
@@ -107,7 +109,7 @@ class QuickTestIntroScreen extends StatelessWidget {
                           width: 4,
                           height: 16,
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
+                            color: Theme.of(context).primaryColor,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -117,7 +119,7 @@ class QuickTestIntroScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -165,25 +167,29 @@ class QuickTestIntroScreen extends StatelessWidget {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.info.withValues(alpha: 0.06),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: AppColors.info.withValues(alpha: 0.15),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.15),
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.timer_outlined,
-                            color: AppColors.info,
+                            color: Theme.of(context).primaryColor,
                             size: 20,
                           ),
                           const SizedBox(width: 10),
-                          const Text(
+                          Text(
                             'Total duration: ~6-8 minutes',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.info,
+                              color: Theme.of(context).primaryColor,
                               fontSize: 12,
                             ),
                           ),
@@ -212,14 +218,16 @@ class QuickTestIntroScreen extends StatelessWidget {
                     Navigator.pushNamed(context, '/profile-selection');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                     elevation: 4,
-                    shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                    shadowColor: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.4),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -256,9 +264,11 @@ class QuickTestIntroScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,10 +291,10 @@ class QuickTestIntroScreen extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
@@ -301,7 +311,9 @@ class QuickTestIntroScreen extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: 12,
                     height: 1.4,
                     fontWeight: FontWeight.w400,
@@ -315,4 +327,3 @@ class QuickTestIntroScreen extends StatelessWidget {
     );
   }
 }
-

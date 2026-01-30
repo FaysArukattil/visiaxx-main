@@ -10,7 +10,7 @@ class ComprehensiveIntroScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(''),
         backgroundColor: AppColors.transparent,
@@ -88,7 +88,9 @@ class ComprehensiveIntroScreen extends StatelessWidget {
                                 Text(
                                   'Comprehensive vision assessment.',
                                   style: TextStyle(
-                                    color: AppColors.white.withValues(alpha: 0.9),
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.9,
+                                    ),
                                     fontSize: 13,
                                     fontWeight: FontWeight.w400,
                                   ),
@@ -117,7 +119,7 @@ class ComprehensiveIntroScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -281,9 +283,11 @@ class ComprehensiveIntroScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,4 +344,3 @@ class ComprehensiveIntroScreen extends StatelessWidget {
     );
   }
 }
-

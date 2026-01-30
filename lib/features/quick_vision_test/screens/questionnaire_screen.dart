@@ -1,7 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../data/models/questionnaire_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/services/test_pause_handler.dart';
@@ -396,7 +395,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 vertical: isLandscape ? 8 : 24,
               ),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(24),
                 ),
@@ -416,7 +415,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                         child: OutlinedButton(
                           onPressed: _previousStep,
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.border),
+                            side: BorderSide(
+                              color: Theme.of(context).dividerColor,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -446,9 +447,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 0,
-                            backgroundColor: AppColors.primary,
-                            disabledBackgroundColor: AppColors.primary
-                                .withValues(alpha: 0.3),
+                            backgroundColor: Theme.of(context).primaryColor,
+                            disabledBackgroundColor: Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.3),
                           ),
                           child: Padding(
                             padding: EdgeInsets.symmetric(
@@ -458,7 +460,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                               _currentStep == (_needsPatientDetails ? 3 : 2)
                                   ? 'Start Test'
                                   : 'Next Step',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -508,7 +510,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
 
   Widget _buildPatientDetailsStep(bool isLandscape) {
     return Column(
-      key: const ValueKey(-1),
+      key: ValueKey(-1),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStepHeader(
@@ -516,7 +518,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
           'Please provide your details to personalize the test results.',
           isLandscape,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         if (isLandscape)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -529,7 +531,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                   textCapitalization: TextCapitalization.words,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: _buildLabeledInput(
                   label: 'Last Name',
@@ -547,7 +549,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             controller: _firstNameController,
             textCapitalization: TextCapitalization.words,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _buildLabeledInput(
             label: 'Last Name',
             hint: 'Enter last name',
@@ -555,7 +557,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             textCapitalization: TextCapitalization.words,
           ),
         ],
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -572,21 +574,21 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 ],
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16),
             Expanded(
               flex: 3,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Sex',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _buildModernSelector<String>(
                     options: {
                       'Male': 'Male',
@@ -601,7 +603,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         _buildLabeledInput(
           label: 'Phone (Optional)',
           hint: '10-digit mobile number',
@@ -612,7 +614,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             LengthLimitingTextInputFormatter(10),
           ],
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
       ],
     );
   }
@@ -663,12 +665,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Pattern of watering:',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
@@ -702,9 +704,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                     Expanded(
                       child: Text(
                         'Both eyes affected?',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -751,12 +754,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 controller: _headacheDurationController,
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Type of Pain:',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
@@ -787,9 +790,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                     Expanded(
                       child: Text(
                         'AC blowing on face?',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -824,12 +828,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
           followUp: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Color of discharge:',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
@@ -850,9 +854,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                     Expanded(
                       child: Text(
                         'Is it recurring?',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -894,9 +899,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                     Expanded(
                       child: Text(
                         'Is it severe?',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -933,12 +939,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
           followUp: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Which eye was operated on?',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1079,23 +1085,25 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+            border: Border.all(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            ),
           ),
-          child: const Row(
+          child: Row(
             children: [
               Icon(
                 Icons.verified_user_outlined,
-                color: AppColors.primary,
+                color: Theme.of(context).primaryColor,
                 size: 28,
               ),
-              SizedBox(width: 16),
+              const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   'Your privacy is important. This information is shared only with your examining clinician.',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 13,
                     height: 1.4,
                     fontWeight: FontWeight.w500,
@@ -1120,7 +1128,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             style: TextStyle(
               fontSize: isLandscape ? 20 : 28,
               fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -1.0,
             ),
           ),
@@ -1128,9 +1136,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             const SizedBox(height: 12),
             Text(
               subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: AppColors.textSecondary,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
                 height: 1.5,
                 fontWeight: FontWeight.w400,
               ),
@@ -1155,31 +1165,31 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       curve: Curves.easeInOut,
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: value
-              ? AppColors.primary
-              : AppColors.border.withValues(alpha: 0.35),
+              ? Theme.of(context).primaryColor
+              : Theme.of(context).dividerColor.withOpacity(0.35),
           width: value ? 2 : 1,
         ),
         boxShadow: value
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                   spreadRadius: -2,
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
+                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.02),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
+                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1200,14 +1210,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                       duration: const Duration(milliseconds: 300),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: value ? AppColors.primary : Colors.grey[200],
+                        color: value
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).dividerColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: value
                             ? [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.3,
-                                  ),
+                                  color: Theme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1216,7 +1228,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                       ),
                       child: Icon(
                         icon,
-                        color: value ? Colors.white : AppColors.textSecondary,
+                        color: value
+                            ? Colors.white
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
                         size: 24,
                       ),
                     ),
@@ -1233,8 +1249,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                                   style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     color: value
-                                        ? AppColors.primary
-                                        : AppColors.textPrimary,
+                                        ? Theme.of(context).primaryColor
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
                                     fontSize: 16,
                                     letterSpacing: -0.3,
                                   ),
@@ -1249,9 +1267,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -1263,10 +1283,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                       child: Checkbox(
                         value: value,
                         onChanged: (v) => onChanged(v ?? false),
-                        activeColor: AppColors.primary,
+                        activeColor: Theme.of(context).primaryColor,
                         checkColor: Colors.white,
                         side: BorderSide(
-                          color: value ? AppColors.primary : AppColors.border,
+                          color: value
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context).dividerColor,
                           width: 1.5,
                         ),
                         shape: RoundedRectangleBorder(
@@ -1287,11 +1309,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: value
-                      ? AppColors.primary.withValues(alpha: 0.03)
-                      : AppColors.border.withValues(alpha: 0.1),
+                      ? Theme.of(context).primaryColor.withValues(alpha: 0.03)
+                      : Theme.of(context).dividerColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.05),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.05),
                   ),
                 ),
                 child: followUp ?? const SizedBox(),
@@ -1326,18 +1350,22 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                   duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : AppColors.white,
+                    color: isSelected
+                        ? Theme.of(context).primaryColor
+                        : Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isSelected
-                          ? AppColors.primary
-                          : AppColors.border.withValues(alpha: 0.5),
+                          ? Theme.of(context).primaryColor
+                          : Theme.of(context).dividerColor.withOpacity(0.5),
                       width: 1.5,
                     ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.2),
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withOpacity(0.2),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -1350,7 +1378,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                       style: TextStyle(
                         color: isSelected
                             ? Colors.white
-                            : AppColors.textPrimary,
+                            : Theme.of(context).colorScheme.onSurface,
                         fontWeight: isSelected
                             ? FontWeight.w700
                             : FontWeight.w500,
@@ -1378,18 +1406,20 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             duration: const Duration(milliseconds: 300),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary : AppColors.white,
+              color: isSelected
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isSelected
-                    ? AppColors.primary
-                    : AppColors.border.withValues(alpha: 0.5),
+                    ? Theme.of(context).primaryColor
+                    : Theme.of(context).dividerColor.withOpacity(0.5),
                 width: 1.5,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: Theme.of(context).primaryColor.withOpacity(0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -1399,7 +1429,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             child: Text(
               entry.value,
               style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 fontSize: 14,
               ),
@@ -1421,19 +1453,19 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: value
-              ? AppColors.primary
-              : AppColors.border.withValues(alpha: 0.35),
+              ? Theme.of(context).primaryColor
+              : Theme.of(context).dividerColor.withOpacity(0.35),
           width: value ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: value
-                ? AppColors.primary.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.03),
+                ? Theme.of(context).primaryColor.withOpacity(0.08)
+                : Theme.of(context).colorScheme.shadow.withOpacity(0.03),
             blurRadius: 15,
             offset: const Offset(0, 6),
           ),
@@ -1455,8 +1487,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
                             color: value
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
+                                ? Theme.of(context).primaryColor
+                                : Theme.of(context).colorScheme.onSurface,
                             letterSpacing: -0.2,
                           ),
                         ),
@@ -1478,10 +1510,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.03),
+                  color: Theme.of(context).primaryColor.withOpacity(0.03),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.05),
+                    color: Theme.of(context).primaryColor.withOpacity(0.05),
                   ),
                 ),
                 child: followUp ?? const SizedBox(),
@@ -1503,13 +1535,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.08),
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
           shape: BoxShape.circle,
         ),
-        child: const Icon(
+        child: Icon(
           Icons.question_mark_rounded,
           size: 14,
-          color: AppColors.primary,
+          color: Theme.of(context).primaryColor,
         ),
       ),
     );
@@ -1522,8 +1554,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       isScrollControlled: true,
       builder: (context) => Container(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-        decoration: const BoxDecoration(
-          color: AppColors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           boxShadow: [
             BoxShadow(
@@ -1542,7 +1574,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 width: 40,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: AppColors.border.withValues(alpha: 0.5),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -1553,22 +1585,24 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.lightbulb_outline,
-                    color: AppColors.primary,
+                    color: Theme.of(context).primaryColor,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -1577,9 +1611,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             const SizedBox(height: 20),
             Text(
               hint,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 height: 1.6,
                 fontWeight: FontWeight.w400,
               ),
@@ -1590,7 +1624,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: Theme.of(context).primaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -1627,10 +1661,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -1648,25 +1682,30 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             hintText: hint,
             hintStyle: TextStyle(
               fontSize: 13,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
             filled: true,
-            fillColor: AppColors.surface,
+            fillColor: Theme.of(context).cardColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.3),
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.3),
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              borderSide: BorderSide(
+                color: Theme.of(context).primaryColor,
+                width: 2,
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
@@ -1728,19 +1767,21 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 height: nodeSize,
                 decoration: BoxDecoration(
                   color: isActive || isCompleted
-                      ? AppColors.primary
-                      : AppColors.white,
+                      ? Theme.of(context).primaryColor
+                      : Theme.of(context).cardColor,
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isActive || isCompleted
-                        ? AppColors.primary
-                        : AppColors.border.withValues(alpha: 0.5),
+                        ? Theme.of(context).primaryColor
+                        : Theme.of(context).dividerColor.withValues(alpha: 0.5),
                     width: isActive ? (isLandscape ? 2 : 3) : 1,
                   ),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
+                            color: Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.3),
                             blurRadius: isLandscape ? 6 : 10,
                             spreadRadius: 1,
                           ),
@@ -1750,8 +1791,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 child: Icon(
                   getNodeIcon(),
                   color: isActive || isCompleted
-                      ? AppColors.white
-                      : AppColors.textSecondary.withValues(alpha: 0.5),
+                      ? Colors.white
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.5),
                   size: isLandscape
                       ? (isActive ? 16 : 14)
                       : (isActive ? 20 : 18),
@@ -1766,8 +1809,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
                     color: index < _currentStep
-                        ? AppColors.primary
-                        : AppColors.border.withValues(alpha: 0.3),
+                        ? Theme.of(context).primaryColor
+                        : Theme.of(context).dividerColor.withValues(alpha: 0.3),
                   ),
                 ),
             ],
@@ -1800,11 +1843,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
             width: 5,
             height: 20,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: Theme.of(context).primaryColor,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.4),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
                   blurRadius: 6,
                   offset: const Offset(2, 0),
                 ),
@@ -1814,10 +1857,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
           const SizedBox(width: 12),
           Text(
             title.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: AppColors.textSecondary,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
               letterSpacing: 1.5,
             ),
           ),
@@ -1891,7 +1936,7 @@ class _DraggableToggleState extends State<_DraggableToggle> {
         width: toggleWidth,
         height: 48,
         decoration: BoxDecoration(
-          color: AppColors.border.withValues(alpha: 0.15),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Stack(
@@ -1909,7 +1954,7 @@ class _DraggableToggleState extends State<_DraggableToggle> {
                 width: thumbWidth,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -1935,8 +1980,10 @@ class _DraggableToggleState extends State<_DraggableToggle> {
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
                           color: thumbPosition < maxDragPosition / 2
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ),
@@ -1949,8 +1996,10 @@ class _DraggableToggleState extends State<_DraggableToggle> {
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
                           color: thumbPosition >= maxDragPosition / 2
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ),

@@ -264,7 +264,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: Theme.of(context).colorScheme.error,
               foregroundColor: AppColors.white,
             ),
             child: const Text('Remove'),
@@ -336,13 +336,13 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('My Results'),
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: _error != null
           ? _buildErrorState()
@@ -406,10 +406,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: Theme.of(context).scaffoldBackgroundColor,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.1),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -459,18 +459,20 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   ],
                 )
               : null,
-          color: isSelected ? null : AppColors.surface,
+          color: isSelected ? null : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? (color ?? AppColors.primary)
-                : AppColors.border.withValues(alpha: 0.3),
+                ? (color ?? Theme.of(context).primaryColor)
+                : Theme.of(context).dividerColor.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: (color ?? AppColors.primary).withValues(alpha: 0.25),
+                    color: (color ?? Theme.of(context).primaryColor).withValues(
+                      alpha: 0.25,
+                    ),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -518,10 +520,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           colors: [
             isComprehensive
                 ? AppColors.primary.withValues(alpha: 0.08)
-                : AppColors.surface,
+                : Theme.of(context).cardColor,
             isComprehensive
                 ? AppColors.primary.withValues(alpha: 0.03)
-                : AppColors.surface,
+                : Theme.of(context).cardColor,
           ],
         ),
         borderRadius: BorderRadius.circular(20),
@@ -534,8 +536,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         boxShadow: [
           BoxShadow(
             color: isComprehensive
-                ? AppColors.primary.withValues(alpha: 0.1)
-                : AppColors.black.withValues(alpha: 0.04),
+                ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             spreadRadius: 0,
             offset: const Offset(0, 4),
@@ -604,10 +606,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                             result.profileName.isNotEmpty
                                 ? result.profileName
                                 : 'Self',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -626,10 +628,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                                   DateFormat(
                                     'MMM dd, yyyy • h:mm a',
                                   ).format(result.timestamp),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500,
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -708,12 +710,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                           size: 14,
                         ),
                         const SizedBox(width: 6),
-                        const Text(
+                        Text(
                           'COMPREHENSIVE EXAMINATION',
                           style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                             letterSpacing: 0.6,
                           ),
                         ),
@@ -799,12 +801,14 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           color: AppColors.background,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             'No test data available',
             style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -818,18 +822,18 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary.withValues(alpha: 0.08),
-            AppColors.primaryLight.withValues(alpha: 0.05),
+            Theme.of(context).primaryColor.withValues(alpha: 0.08),
+            Theme.of(context).primaryColor.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.15),
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
             blurRadius: 12,
             spreadRadius: 0,
             offset: const Offset(0, 4),
@@ -855,7 +859,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                     Container(
                       width: 1,
                       height: 30,
-                      color: AppColors.primary.withValues(alpha: 0.15),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.15),
                     ),
                   if (result.visualAcuityLeft != null)
                     _buildDiagnosticItem(
@@ -870,7 +876,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               ),
           ],
           // Row 2: Refraction Table
@@ -880,7 +886,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: AppColors.primary.withValues(alpha: 0.05),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               ),
           ],
           // Row 3: Others (Per-Eye Display)
@@ -919,7 +925,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                         Container(
                           width: 1,
                           height: 30,
-                          color: AppColors.primary.withValues(alpha: 0.15),
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withValues(alpha: 0.15),
                         ),
                         // Left Eye Color Vision
                         _buildDiagnosticItem(
@@ -1000,7 +1008,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                           Container(
                             width: 1,
                             height: 30,
-                            color: AppColors.primary.withValues(alpha: 0.15),
+                            color: Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.15),
                           ),
                         // Left Eye Amsler
                         if (result.amslerGridLeft != null)
@@ -1028,10 +1038,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 8,
               fontWeight: FontWeight.w800,
-              color: AppColors.textSecondary,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
               letterSpacing: 0.5,
             ),
             textAlign: TextAlign.center,
@@ -1043,16 +1055,16 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 10, color: AppColors.primary),
+                Icon(icon, size: 10, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 4),
               ],
               Flexible(
                 child: Text(
                   value ?? 'N/A',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -1069,7 +1081,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   Widget _buildRefractionTable(MobileRefractometryResult result) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      color: AppColors.primary.withValues(alpha: 0.02),
+      color: Theme.of(context).primaryColor.withValues(alpha: 0.02),
       child: Column(
         children: [
           const Padding(
@@ -1106,19 +1118,26 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             gradient: isPrimary
-                ? const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFF6366F1)],
+                ? LinearGradient(
+                    colors: [
+                      Theme.of(context).primaryColor,
+                      const Color(0xFF6366F1),
+                    ],
                   )
                 : null,
-            color: isPrimary ? null : AppColors.background,
+            color: isPrimary ? null : Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isPrimary ? Colors.transparent : AppColors.border,
+              color: isPrimary
+                  ? Colors.transparent
+                  : Theme.of(context).dividerColor,
             ),
             boxShadow: isPrimary
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.3),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -1132,7 +1151,11 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               Icon(
                 icon,
                 size: 14,
-                color: isPrimary ? AppColors.white : AppColors.textSecondary,
+                color: isPrimary
+                    ? Colors.white
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -1142,8 +1165,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: isPrimary
-                        ? AppColors.white
-                        : AppColors.textSecondary,
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.onSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1161,7 +1184,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     required VoidCallback onTap,
     bool isDelete = false,
   }) {
-    final color = isDelete ? AppColors.error : AppColors.primary;
+    final color = isDelete
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).primaryColor;
 
     return Material(
       color: Colors.transparent,
@@ -1191,30 +1216,34 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.error_outline,
                 size: 64,
-                color: AppColors.error,
+                color: Theme.of(context).colorScheme.error,
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Error loading results',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _error ?? 'Unknown error',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
                 fontSize: 14,
               ),
             ),
@@ -1250,34 +1279,36 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primary.withValues(alpha: 0.15),
-                    AppColors.primary.withValues(alpha: 0.05),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.15),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.05),
                   ],
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.visibility_outlined,
                 size: 80,
-                color: AppColors.primary,
+                color: Theme.of(context).primaryColor,
               ),
             ),
             const SizedBox(height: 32),
-            const Text(
+            Text(
               'No Results Yet',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No test results found.\nPull down to refresh or start a new test.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
-                color: AppColors.textSecondary,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
                 height: 1.5,
               ),
             ),
@@ -1309,10 +1340,10 @@ class _TableCell extends StatelessWidget {
     return Text(
       value,
       textAlign: TextAlign.center,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -1333,10 +1364,10 @@ class _RefractionRow extends StatelessWidget {
             width: 30,
             child: Text(
               eye,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
-                color: AppColors.primary,
+                color: Theme.of(context).primaryColor,
               ),
             ),
           ),

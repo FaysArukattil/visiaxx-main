@@ -5,6 +5,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/extensions/theme_extension.dart';
 
 /// User home screen with navigation grid and carousel
 class HomeScreen extends StatefulWidget {
@@ -99,13 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showLanguageSelector() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.transparent,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.6,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: context.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
@@ -114,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.divider,
+                color: context.dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -140,8 +141,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.primary.withValues(alpha: 0.1)
-                            : AppColors.background,
+                            ? context.primary.withValues(alpha: 0.1)
+                            : context.scaffoldBackground,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -150,8 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: isSelected
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
+                                ? context.primary
+                                : context.textSecondary,
                           ),
                         ),
                       ),
@@ -162,18 +163,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: isSelected ? AppColors.primary : null,
+                        color: isSelected ? context.primary : null,
                       ),
                     ),
                     subtitle: Text(
                       language['native']!,
-                      style: const TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: context.textSecondary),
                     ),
                     trailing: isSelected
-                        ? const Icon(
-                            Icons.check_circle,
-                            color: AppColors.primary,
-                          )
+                        ? Icon(Icons.check_circle, color: context.primary)
                         : null,
                     onTap: () {
                       setState(() => _selectedLanguage = language['name']!);
@@ -220,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_isConsultationLoading)
             Positioned.fill(
               child: Container(
-                color: AppColors.black.withValues(alpha: 0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 child: const Center(child: EyeLoader.fullScreen()),
               ),
             ),
@@ -254,11 +252,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: logoWidth,
                 height: logoHeight,
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.surface,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -270,10 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'assets/images/icons/app_logo.png',
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.remove_red_eye,
-                        color: AppColors.primary,
-                      );
+                      return Icon(Icons.remove_red_eye, color: context.primary);
                     },
                   ),
                 ),
@@ -287,9 +282,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: screenHeight * 0.008,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.white,
+                    color: context.surface,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: context.dividerColor),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -297,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         Icons.language,
                         size: (screenWidth * 0.04).clamp(14.0, 18.0),
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                       ),
                       SizedBox(width: screenWidth * 0.012),
                       Text(
@@ -305,13 +300,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: (screenWidth * 0.03).clamp(11.0, 13.0),
-                          color: AppColors.textPrimary,
+                          color: context.onSurface,
                         ),
                       ),
                       Icon(
                         Icons.keyboard_arrow_down,
                         size: (screenWidth * 0.04).clamp(14.0, 18.0),
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                       ),
                     ],
                   ),
@@ -331,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: (screenWidth * 0.055).clamp(18.0, 24.0),
-                        color: AppColors.textPrimary,
+                        color: context.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -348,20 +343,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            AppColors.primary.withOpacity(0.08),
-                            AppColors.primaryLight.withOpacity(0.05),
+                            context.primary.withValues(alpha: 0.08),
+                            context.primary.withValues(alpha: 0.03),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(
                           20,
                         ), // Already matches the grid cards
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: context.primary.withValues(alpha: 0.15),
                           width: 1.2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.05),
+                            color: context.primary.withValues(alpha: 0.05),
                             blurRadius: 12,
                             spreadRadius: 0,
                             offset: const Offset(0, 4),
@@ -373,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Icon(
                             Icons.remove_red_eye,
-                            color: AppColors.primary,
+                            color: context.primary,
                             size: (screenWidth * 0.04).clamp(14.0, 18.0),
                           ),
                           SizedBox(width: screenWidth * 0.02),
@@ -387,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   14.5,
                                 ),
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
+                                color: context.primary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -805,8 +800,8 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 6,
             decoration: BoxDecoration(
               color: _currentCarouselIndex == index
-                  ? AppColors.primary
-                  : AppColors.divider,
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).dividerColor,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -955,26 +950,30 @@ class _CompactServiceCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: AppColors.primary.withOpacity(0.1),
-            highlightColor: AppColors.primary.withOpacity(0.05),
+            splashColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            highlightColor: Theme.of(
+              context,
+            ).primaryColor.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primary.withOpacity(0.08),
-                    AppColors.primaryLight.withOpacity(0.05),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.05),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.05),
                     blurRadius: 12,
                     spreadRadius: 0,
                     offset: const Offset(0, 4),
@@ -992,12 +991,12 @@ class _CompactServiceCard extends StatelessWidget {
                       width: iconSize + 14,
                       height: iconSize + 14,
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: Theme.of(context).scaffoldBackgroundColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         icon,
-                        color: AppColors.primary,
+                        color: Theme.of(context).primaryColor,
                         size: iconSize,
                       ),
                     ),
@@ -1011,7 +1010,7 @@ class _CompactServiceCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: titleFontSize,
-                              color: AppColors.primary,
+                              color: Theme.of(context).primaryColor,
                               height: 1.1,
                               letterSpacing: -0.2,
                             ),
@@ -1024,7 +1023,9 @@ class _CompactServiceCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: subtitleFontSize,
-                              color: AppColors.textSecondary,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                               height: 1.1,
                             ),
                             maxLines: 1,
@@ -1080,26 +1081,30 @@ class _WideServiceCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: AppColors.primary.withOpacity(0.1),
-            highlightColor: AppColors.primary.withOpacity(0.05),
+            splashColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            highlightColor: Theme.of(
+              context,
+            ).primaryColor.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primary.withOpacity(0.08),
-                    AppColors.primaryLight.withOpacity(0.05),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.05),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.05),
                     blurRadius: 12,
                     spreadRadius: 0,
                     offset: const Offset(0, 4),
@@ -1121,12 +1126,12 @@ class _WideServiceCard extends StatelessWidget {
                       width: iconSize + 14,
                       height: iconSize + 14,
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: Theme.of(context).scaffoldBackgroundColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         icon,
-                        color: AppColors.primary,
+                        color: Theme.of(context).primaryColor,
                         size: iconSize,
                       ),
                     ),
@@ -1143,7 +1148,7 @@ class _WideServiceCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: titleFontSize,
-                              color: AppColors.primary,
+                              color: Theme.of(context).primaryColor,
                               letterSpacing: -0.3,
                               height: 1.2,
                             ),
@@ -1156,7 +1161,9 @@ class _WideServiceCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: subtitleFontSize,
-                              color: AppColors.textSecondary,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                               height: 1.2,
                             ),
                             maxLines: 1,
@@ -1168,7 +1175,9 @@ class _WideServiceCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1177,7 +1186,7 @@ class _WideServiceCard extends StatelessWidget {
                           16.0,
                           20.0,
                         ),
-                        color: AppColors.primary,
+                        color: Theme.of(context).primaryColor,
                       ),
                     ),
                   ],
