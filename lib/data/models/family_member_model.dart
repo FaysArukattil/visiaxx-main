@@ -9,6 +9,7 @@ class FamilyMemberModel {
   final String relationship;
   final String? phone;
   final DateTime createdAt;
+  final bool isDeleted;
 
   FamilyMemberModel({
     required this.id,
@@ -18,6 +19,7 @@ class FamilyMemberModel {
     required this.relationship,
     this.phone,
     required this.createdAt,
+    this.isDeleted = false,
   });
 
   /// Returns a descriptive string for document naming: Name_Age_Sex_ID
@@ -37,6 +39,7 @@ class FamilyMemberModel {
       relationship: data['relationship'] ?? '',
       phone: data['phone'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isDeleted: data['isDeleted'] ?? false,
     );
   }
 
@@ -50,6 +53,7 @@ class FamilyMemberModel {
       relationship: data['relationship'] ?? '',
       phone: data['phone'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isDeleted: data['isDeleted'] ?? false,
     );
   }
 
@@ -62,6 +66,7 @@ class FamilyMemberModel {
       'relationship': relationship,
       'phone': phone,
       'createdAt': Timestamp.fromDate(createdAt),
+      'isDeleted': isDeleted,
     };
   }
 
@@ -74,6 +79,7 @@ class FamilyMemberModel {
     String? relationship,
     String? phone,
     DateTime? createdAt,
+    bool? isDeleted,
   }) {
     return FamilyMemberModel(
       id: id ?? this.id,
@@ -83,6 +89,7 @@ class FamilyMemberModel {
       relationship: relationship ?? this.relationship,
       phone: phone ?? this.phone,
       createdAt: createdAt ?? this.createdAt,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 

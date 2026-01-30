@@ -17,6 +17,9 @@ class PatientModel {
   final String? latestQuestionnaireId;
   final DateTime? questionnaireUpdatedAt;
 
+  // Soft delete flag
+  final bool isDeleted;
+
   PatientModel({
     required this.id,
     required this.firstName,
@@ -29,6 +32,7 @@ class PatientModel {
     this.hasPreTestQuestions = false,
     this.latestQuestionnaireId,
     this.questionnaireUpdatedAt,
+    this.isDeleted = false,
   });
 
   /// Full name combining first and last name
@@ -62,6 +66,7 @@ class PatientModel {
       latestQuestionnaireId: data['latestQuestionnaireId'],
       questionnaireUpdatedAt: (data['questionnaireUpdatedAt'] as Timestamp?)
           ?.toDate(),
+      isDeleted: data['isDeleted'] ?? false,
     );
   }
 
@@ -80,6 +85,7 @@ class PatientModel {
       latestQuestionnaireId: data['latestQuestionnaireId'],
       questionnaireUpdatedAt: (data['questionnaireUpdatedAt'] as Timestamp?)
           ?.toDate(),
+      isDeleted: data['isDeleted'] ?? false,
     );
   }
 
@@ -97,6 +103,7 @@ class PatientModel {
       'latestQuestionnaireId': latestQuestionnaireId,
       if (questionnaireUpdatedAt != null)
         'questionnaireUpdatedAt': Timestamp.fromDate(questionnaireUpdatedAt!),
+      'isDeleted': isDeleted,
     };
   }
 
@@ -113,6 +120,7 @@ class PatientModel {
     bool? hasPreTestQuestions,
     String? latestQuestionnaireId,
     DateTime? questionnaireUpdatedAt,
+    bool? isDeleted,
   }) {
     return PatientModel(
       id: id ?? this.id,
@@ -128,6 +136,7 @@ class PatientModel {
           latestQuestionnaireId ?? this.latestQuestionnaireId,
       questionnaireUpdatedAt:
           questionnaireUpdatedAt ?? this.questionnaireUpdatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 

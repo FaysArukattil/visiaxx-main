@@ -1574,15 +1574,54 @@ class _PractitionerDashboardScreenState
 
       for (final result in resultsToDownload) {
         try {
-          final pdfBytes = await _pdfService.generatePdfBytes(result);
-          final name = result.profileName.replaceAll(
+          // Find matching patient for current metadata
+          final matchingPatient = _patients.firstWhere(
+            (p) {
+              if (result.profileId == p.id) return true;
+              final rParts = result.profileId.split('_');
+              final pParts = p.id.split('_');
+              if (rParts.length > 1 && pParts.length > 1) {
+                return rParts.last == pParts.last;
+              }
+              return false;
+            },
+            orElse: () => PatientModel(
+              id: 'temp',
+              firstName: '',
+              lastName: '',
+              age: 0,
+              sex: '',
+              createdAt: DateTime.now(),
+            ),
+          );
+
+          final currentName = matchingPatient.id != 'temp'
+              ? matchingPatient.fullName
+              : result.profileName;
+          final currentAge = matchingPatient.id != 'temp'
+              ? matchingPatient.age
+              : result.profileAge;
+          final currentSex = matchingPatient.id != 'temp'
+              ? matchingPatient.sex
+              : result.profileSex;
+
+          // Patch result with current metadata for the PDF service
+          final updatedResult = result.copyWith(
+            profileName: currentName,
+            profileAge: currentAge,
+            profileSex: currentSex,
+          );
+
+          final pdfBytes = await _pdfService.generatePdfBytes(updatedResult);
+          final sanitizedName = currentName.replaceAll(
             RegExp(r'[^a-zA-Z0-9]'),
             '_',
           );
-          final age = result.profileAge?.toString() ?? 'NA';
+          final ageStr = currentAge?.toString() ?? 'NA';
           final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
           final timeStr = DateFormat('HH-mm').format(result.timestamp);
-          final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
+          final filename =
+              'Visiaxx_${sanitizedName}_${ageStr}_${dateStr}_$timeStr.pdf';
 
           final filePath = '${targetDir.path}/$filename';
           final file = File(filePath);
@@ -1637,11 +1676,35 @@ class _PractitionerDashboardScreenState
         String? singlePath;
         if (successCount == 1 && resultsToDownload.length == 1) {
           final result = resultsToDownload.first;
-          final name = result.profileName.replaceAll(
-            RegExp(r'[^a-zA-Z0-9]'),
-            '_',
+          // Find matching patient for the correct name
+          final matchingPatient = _patients.firstWhere(
+            (p) {
+              if (result.profileId == p.id) return true;
+              final rParts = result.profileId.split('_');
+              final pParts = p.id.split('_');
+              if (rParts.length > 1 && pParts.length > 1) {
+                return rParts.last == pParts.last;
+              }
+              return false;
+            },
+            orElse: () => PatientModel(
+              id: 'temp',
+              firstName: '',
+              lastName: '',
+              age: 0,
+              sex: '',
+              createdAt: DateTime.now(),
+            ),
           );
-          final age = result.profileAge?.toString() ?? 'NA';
+          final currentName = matchingPatient.id != 'temp'
+              ? matchingPatient.fullName
+              : result.profileName;
+          final currentAge = matchingPatient.id != 'temp'
+              ? matchingPatient.age
+              : result.profileAge;
+
+          final name = currentName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+          final age = currentAge?.toString() ?? 'NA';
           final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
           final timeStr = DateFormat('HH-mm').format(result.timestamp);
           final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
@@ -2114,14 +2177,42 @@ class _PractitionerDashboardScreenState
         message: 'Generating PDF...',
       );
 
-      final String name = result.profileName.replaceAll(
+      // Find matching patient for current metadata
+      final patient = _patients.firstWhere(
+        (p) {
+          if (result.profileId == p.id) return true;
+          final rParts = result.profileId.split('_');
+          final pParts = p.id.split('_');
+          if (rParts.length > 1 && pParts.length > 1) {
+            return rParts.last == pParts.last;
+          }
+          return false;
+        },
+        orElse: () => PatientModel(
+          id: 'temp',
+          firstName: '',
+          lastName: '',
+          age: 0,
+          sex: '',
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      final currentName = patient.id != 'temp'
+          ? patient.fullName
+          : result.profileName;
+      final currentAge = patient.id != 'temp' ? patient.age : result.profileAge;
+      final currentSex = patient.id != 'temp' ? patient.sex : result.profileSex;
+
+      final String sanitizedName = currentName.replaceAll(
         RegExp(r'[^a-zA-Z0-9]'),
         '_',
       );
-      final age = result.profileAge?.toString() ?? 'NA';
+      final ageStr = currentAge?.toString() ?? 'NA';
       final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
       final timeStr = DateFormat('HH-mm').format(result.timestamp);
-      final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
+      final filename =
+          'Visiaxx_${sanitizedName}_${ageStr}_${dateStr}_$timeStr.pdf';
 
       final baseDir = await _getDownloadDirectory();
       final targetDir = Directory(
@@ -2134,8 +2225,13 @@ class _PractitionerDashboardScreenState
 
       final file = File('${targetDir.path}/$filename');
 
-      // Generate bytes
-      final pdfBytes = await _pdfService.generatePdfBytes(result);
+      // Generate bytes with updated metadata
+      final updatedResult = result.copyWith(
+        profileName: currentName,
+        profileAge: currentAge,
+        profileSex: currentSex,
+      );
+      final pdfBytes = await _pdfService.generatePdfBytes(updatedResult);
       await file.writeAsBytes(pdfBytes);
 
       if (mounted) {
@@ -2159,7 +2255,42 @@ class _PractitionerDashboardScreenState
     try {
       UIUtils.showProgressDialog(context: context, message: 'Preparing PDF...');
 
-      final String filePath = await _pdfService.generateAndDownloadPdf(result);
+      // Find matching patient for current metadata
+      final matchingPatient = _patients.firstWhere(
+        (p) {
+          if (result.profileId == p.id) return true;
+          final rParts = result.profileId.split('_');
+          final pParts = p.id.split('_');
+          if (rParts.length > 1 && pParts.length > 1) {
+            return rParts.last == pParts.last;
+          }
+          return false;
+        },
+        orElse: () => PatientModel(
+          id: 'temp',
+          firstName: '',
+          lastName: '',
+          age: 0,
+          sex: '',
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      final updatedResult = result.copyWith(
+        profileName: matchingPatient.id != 'temp'
+            ? matchingPatient.fullName
+            : result.profileName,
+        profileAge: matchingPatient.id != 'temp'
+            ? matchingPatient.age
+            : result.profileAge,
+        profileSex: matchingPatient.id != 'temp'
+            ? matchingPatient.sex
+            : result.profileSex,
+      );
+
+      final String filePath = await _pdfService.generateAndDownloadPdf(
+        updatedResult,
+      );
 
       if (mounted) {
         UIUtils.hideProgressDialog(context);
@@ -2192,12 +2323,33 @@ class _PractitionerDashboardScreenState
   }
 
   Future<void> _confirmDeleteResult(TestResultModel result) async {
+    // Find matching patient for the correct name
+    final matchingPatient = _patients.firstWhere(
+      (p) {
+        if (result.profileId == p.id) return true;
+        final rParts = result.profileId.split('_');
+        final pParts = p.id.split('_');
+        if (rParts.length > 1 && pParts.length > 1) {
+          return rParts.last == pParts.last;
+        }
+        return false;
+      },
+      orElse: () => PatientModel(
+        id: 'temp',
+        firstName: '',
+        lastName: '',
+        age: 0,
+        sex: '',
+        createdAt: DateTime.now(),
+      ),
+    );
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Remove Result?'),
         content: Text(
-          'Are you sure you want to remove the test result for ${result.profileName}?',
+          'Are you sure you want to remove the test result for ${(matchingPatient.id != 'temp' ? matchingPatient.fullName : result.profileName)}?',
         ),
         actions: [
           TextButton(
@@ -2219,10 +2371,44 @@ class _PractitionerDashboardScreenState
   }
 
   void _showResultDetails(TestResultModel result) {
+    // Find matching patient for current metadata
+    final matchingPatient = _patients.firstWhere(
+      (p) {
+        if (result.profileId == p.id) return true;
+        final rParts = result.profileId.split('_');
+        final pParts = p.id.split('_');
+        if (rParts.length > 1 && pParts.length > 1) {
+          return rParts.last == pParts.last;
+        }
+        return false;
+      },
+      orElse: () => PatientModel(
+        id: 'temp',
+        firstName: '',
+        lastName: '',
+        age: 0,
+        sex: '',
+        createdAt: DateTime.now(),
+      ),
+    );
+
+    final updatedResult = result.copyWith(
+      profileName: matchingPatient.id != 'temp'
+          ? matchingPatient.fullName
+          : result.profileName,
+      profileAge: matchingPatient.id != 'temp'
+          ? matchingPatient.age
+          : result.profileAge,
+      profileSex: matchingPatient.id != 'temp'
+          ? matchingPatient.sex
+          : result.profileSex,
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => QuickTestResultScreen(historicalResult: result),
+        builder: (context) =>
+            QuickTestResultScreen(historicalResult: updatedResult),
       ),
     );
   }
@@ -3255,7 +3441,19 @@ class _PractitionerDashboardScreenState
 
       // Try to find matching patient phone
       final patient = _patients.firstWhere(
-        (p) => p.id == r.profileId || p.fullName == r.profileName,
+        (p) {
+          // 1. Exact match
+          if (r.profileId == p.id) return true;
+          if (p.fullName == r.profileName) return true;
+
+          // 2. Stable ID match (last segment after underscore)
+          final rParts = r.profileId.split('_');
+          final pParts = p.id.split('_');
+          if (rParts.length > 1 && pParts.length > 1) {
+            return rParts.last == pParts.last;
+          }
+          return false;
+        },
         orElse: () => PatientModel(
           id: 'temp',
           firstName: '',
@@ -3282,7 +3480,19 @@ class _PractitionerDashboardScreenState
         delegate: SliverChildBuilderDelegate((context, index) {
           final result = results[index];
           final patient = _patients.firstWhere(
-            (p) => p.id == result.profileId || p.fullName == result.profileName,
+            (p) {
+              // 1. Exact match
+              if (result.profileId == p.id) return true;
+              if (p.fullName == result.profileName) return true;
+
+              // 2. Stable ID match (last segment after underscore)
+              final rParts = result.profileId.split('_');
+              final pParts = p.id.split('_');
+              if (rParts.length > 1 && pParts.length > 1) {
+                return rParts.last == pParts.last;
+              }
+              return false;
+            },
             orElse: () => PatientModel(
               id: result.profileId,
               firstName: result.profileName.split(' ').first,
@@ -3390,8 +3600,9 @@ class _PractitionerDashboardScreenState
                       ),
                       child: Center(
                         child: Text(
-                          result.profileName.isNotEmpty
-                              ? result.profileName[0].toUpperCase()
+                          (patient?.fullName ?? result.profileName).isNotEmpty
+                              ? (patient?.fullName ?? result.profileName)[0]
+                                    .toUpperCase()
                               : '?',
                           style: const TextStyle(
                             fontWeight: FontWeight.w900,
@@ -3407,8 +3618,8 @@ class _PractitionerDashboardScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            result.profileName.isNotEmpty
-                                ? result.profileName
+                            (patient?.fullName ?? result.profileName).isNotEmpty
+                                ? (patient?.fullName ?? result.profileName)
                                 : 'Self',
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,

@@ -494,7 +494,7 @@ class _PractitionerProfileSelectionScreenState
     }
   }
 
-  Future<void> _addPatient() async {
+  Future<void> _addPatient({bool isEditing = false, String? patientId}) async {
     if (_formKey.currentState!.validate()) {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -510,8 +510,10 @@ class _PractitionerProfileSelectionScreenState
         builder: (context) => const Center(child: EyeLoader.fullScreen()),
       );
 
-      final newPatient = PatientModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      final patientData = PatientModel(
+        id: isEditing && patientId != null
+            ? (patientId.contains('_') ? patientId.split('_').last : patientId)
+            : DateTime.now().millisecondsSinceEpoch.toString(),
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim().isEmpty
             ? null
@@ -529,19 +531,29 @@ class _PractitionerProfileSelectionScreenState
 
       try {
         debugPrint(
-          '[PractitionerProfile] Saving patient: ${newPatient.firstName}',
+          '[PractitionerProfile] ${isEditing ? 'Updating' : 'Saving'} patient: ${patientData.firstName}',
         );
 
-        // Save to Firebase
-        final savedId = await _patientService.savePatient(
-          practitionerId: user.uid,
-          patient: newPatient,
-        );
+        String finalId;
+        if (isEditing && patientId != null) {
+          finalId = await _patientService.savePatient(
+            practitionerId: user.uid,
+            patient: patientData,
+            oldIdentity: patientId,
+          );
+        } else {
+          finalId = await _patientService.savePatient(
+            practitionerId: user.uid,
+            patient: patientData,
+          );
+        }
 
-        debugPrint('[PractitionerProfile] ... Patient saved with ID: $savedId');
+        debugPrint(
+          '[PractitionerProfile] ... Patient ${isEditing ? 'updated' : 'saved'} with ID: $finalId',
+        );
 
         // Update local list with Firebase ID
-        final savedPatient = newPatient.copyWith(id: savedId);
+        final savedPatient = patientData.copyWith(id: finalId);
 
         // Close loading dialog
         if (mounted) Navigator.pop(context);
@@ -549,7 +561,23 @@ class _PractitionerProfileSelectionScreenState
         if (!mounted) return;
 
         setState(() {
-          _patients.insert(0, savedPatient);
+          if (isEditing) {
+            final index = _patients.indexWhere((p) => p.id == patientId);
+            if (index != -1) {
+              // Remove old identity if it changed
+              if (patientId != savedPatient.identityString) {
+                _patients.removeAt(index);
+                _patients.insert(
+                  0,
+                  savedPatient,
+                ); // Wait, this should be savedPatient!
+              } else {
+                _patients[index] = savedPatient;
+              }
+            }
+          } else {
+            _patients.insert(0, savedPatient);
+          }
           _clearForm();
         });
 
@@ -561,7 +589,7 @@ class _PractitionerProfileSelectionScreenState
         if (!mounted) return;
         SnackbarUtils.showSuccess(
           context,
-          '${savedPatient.fullName} added successfully',
+          '${savedPatient.fullName} ${isEditing ? 'updated' : 'added'} successfully',
         );
       } catch (e) {
         debugPrint('[PractitionerProfile] Error saving patient: $e');
@@ -762,8 +790,20 @@ class _PractitionerProfileSelectionScreenState
     );
   }
 
-  void _showAddPatientSheet() {
-    _clearForm();
+  void _showAddPatientSheet({PatientModel? patient}) {
+    if (patient != null) {
+      _firstNameController.text = patient.firstName;
+      _lastNameController.text = patient.lastName ?? '';
+      _ageController.text = patient.age.toString();
+      _phoneController.text = patient.phone?.replaceFirst('+91', '') ?? '';
+      _notesController.text = patient.notes ?? '';
+      _selectedSex = patient.sex;
+    } else {
+      _clearForm();
+    }
+
+    final isEditing = patient != null;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -807,8 +847,10 @@ class _PractitionerProfileSelectionScreenState
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
-                          Icons.person_add_rounded,
+                        child: Icon(
+                          isEditing
+                              ? Icons.edit_rounded
+                              : Icons.person_add_rounded,
                           color: AppColors.primary,
                           size: 20,
                         ),
@@ -818,19 +860,23 @@ class _PractitionerProfileSelectionScreenState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Add New Patient',
-                              style: TextStyle(
-                                fontSize: 20,
+                            Text(
+                              isEditing
+                                  ? 'Edit Patient Profile'
+                                  : 'Add New Patient',
+                              style: const TextStyle(
+                                fontSize: 22,
                                 fontWeight: FontWeight.w900,
                                 color: AppColors.textPrimary,
                                 letterSpacing: -0.5,
                               ),
                             ),
-                            const Text(
-                              'Enter clinical details',
+                            Text(
+                              isEditing
+                                  ? 'Update patient details'
+                                  : 'Register a new patient profile',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 13,
                                 color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -855,7 +901,12 @@ class _PractitionerProfileSelectionScreenState
                       24,
                       24 + viewInsets.bottom,
                     ),
-                    child: _buildAddPatientForm(setSheetState, isLandscape),
+                    child: _buildAddPatientForm(
+                      setSheetState,
+                      isLandscape,
+                      isEditing: isEditing,
+                      patientId: patient?.id,
+                    ),
                   ),
                 ),
                 // Fixed Footer
@@ -880,32 +931,46 @@ class _PractitionerProfileSelectionScreenState
                   ),
                   child: Container(
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primary.withValues(alpha: 0.8),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary,
+                            AppColors.primary.withValues(alpha: 0.8),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
                         ],
                       ),
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _addPatient,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.transparent,
-                        foregroundColor: AppColors.white,
-                        shadowColor: AppColors.transparent,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      child: ElevatedButton(
+                        onPressed: () => _addPatient(
+                          isEditing: isEditing,
+                          patientId: patient?.id,
                         ),
-                      ),
-                      child: const Text(
-                        'Save Patient',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: AppColors.white,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          isEditing
+                              ? 'Update Patient Profile'
+                              : 'Save Patient Profile',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     ),
@@ -921,7 +986,7 @@ class _PractitionerProfileSelectionScreenState
 
   Widget _buildAddPatientCard() {
     return GestureDetector(
-      onTap: _showAddPatientSheet,
+      onTap: () => _showAddPatientSheet(),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -1120,17 +1185,51 @@ class _PractitionerProfileSelectionScreenState
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: AppColors.primary,
-              ),
+            Column(
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        size: 20,
+                        color: AppColors.textSecondary,
+                      ),
+                      onPressed: () {
+                        _showAddPatientSheet(patient: patient);
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 20,
+                        color: AppColors.error,
+                      ),
+                      onPressed: () {
+                        _confirmDeletePatient(patient);
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1138,7 +1237,52 @@ class _PractitionerProfileSelectionScreenState
     );
   }
 
-  Widget _buildAddPatientForm(StateSetter setSheetState, bool isLandscape) {
+  Future<void> _confirmDeletePatient(PatientModel patient) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Patient Profile'),
+        content: Text(
+          'Are you sure you want to remove ${patient.fullName}? Previous test results will not be deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      try {
+        await _patientService.deletePatient(user.uid, patient.id);
+        if (mounted) {
+          setState(() {
+            _patients.removeWhere((p) => p.id == patient.id);
+          });
+          SnackbarUtils.showSuccess(context, 'Patient profile removed');
+        }
+      } catch (e) {
+        if (mounted) SnackbarUtils.showError(context, 'Failed to delete: $e');
+      }
+    }
+  }
+
+  Widget _buildAddPatientForm(
+    StateSetter setSheetState,
+    bool isLandscape, {
+    bool isEditing = false,
+    String? patientId,
+  }) {
     return Form(
       key: _formKey,
       child: Column(

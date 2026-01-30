@@ -166,14 +166,17 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     }
   }
 
-  Future<void> _addFamilyMember() async {
+  Future<void> _addFamilyMember({
+    bool isEditing = false,
+    String? memberId,
+  }) async {
     if (_formKey.currentState!.validate()) {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         if (mounted) {
           SnackbarUtils.showError(
             context,
-            'Please log in to add family members',
+            'Please log in to ${isEditing ? 'update' : 'add'} family members',
           );
         }
         return;
@@ -186,8 +189,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         builder: (context) => const Center(child: EyeLoader(size: 60)),
       );
 
-      final newMember = FamilyMemberModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(), // Temporary ID
+      final memberData = FamilyMemberModel(
+        id: isEditing && memberId != null
+            ? (memberId.contains('_') ? memberId.split('_').last : memberId)
+            : DateTime.now().millisecondsSinceEpoch.toString(),
         firstName: _nameController.text.trim(),
         age: int.parse(_ageController.text),
         sex: _selectedSex,
@@ -199,22 +204,50 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       );
 
       try {
-        debugPrint('[ProfileSelection] Saving member: ${newMember.firstName}');
+        debugPrint(
+          '[ProfileSelection] ${isEditing ? 'Updating' : 'Saving'} member: ${memberData.firstName}',
+        );
 
-        // Save to Firebase with 5s timeout for offline resilience
-        final savedId = await _familyMemberService
-            .saveFamilyMember(userId: user.uid, member: newMember)
-            .timeout(const Duration(seconds: 5));
+        String finalId;
+        if (isEditing && memberId != null) {
+          await _familyMemberService
+              .updateFamilyMember(
+                userId: user.uid,
+                memberId: memberId,
+                member: memberData,
+              )
+              .timeout(const Duration(seconds: 5));
+          finalId = memberId;
+        } else {
+          finalId = await _familyMemberService
+              .saveFamilyMember(userId: user.uid, member: memberData)
+              .timeout(const Duration(seconds: 5));
+        }
 
-        debugPrint('[ProfileSelection] Member saved with ID: $savedId');
+        debugPrint(
+          '[ProfileSelection] Member ${isEditing ? 'updated' : 'saved'} with ID: $finalId',
+        );
 
         if (mounted) Navigator.pop(context); // Close loader
 
-        final savedMember = newMember.copyWith(id: savedId);
+        final savedMember = memberData.copyWith(id: finalId);
 
         if (mounted) {
           setState(() {
-            _familyMembers.insert(0, savedMember);
+            if (isEditing) {
+              final index = _familyMembers.indexWhere((m) => m.id == memberId);
+              if (index != -1) {
+                // Remove old identity if it changed
+                if (memberId != savedMember.identityString) {
+                  _familyMembers.removeAt(index);
+                  _familyMembers.insert(0, savedMember);
+                } else {
+                  _familyMembers[index] = savedMember;
+                }
+              }
+            } else {
+              _familyMembers.insert(0, savedMember);
+            }
             _nameController.clear();
             _ageController.clear();
             _phoneController.clear();
@@ -227,11 +260,13 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
 
           SnackbarUtils.showSuccess(
             context,
-            '${savedMember.firstName} added successfully',
+            '${savedMember.firstName} ${isEditing ? 'updated' : 'added'} successfully',
           );
         }
       } catch (e) {
-        debugPrint('[ProfileSelection] Warning: Save timed out or errored: $e');
+        debugPrint(
+          '[ProfileSelection] Warning: Action timed out or errored: $e',
+        );
 
         if (mounted) Navigator.pop(context); // Close loader
 
@@ -240,7 +275,16 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           // It's likely queued in Firestore local persistence
           if (mounted) {
             setState(() {
-              _familyMembers.insert(0, newMember); // Show immediately
+              if (isEditing) {
+                final index = _familyMembers.indexWhere(
+                  (m) => m.id == memberId,
+                );
+                if (index != -1) {
+                  _familyMembers[index] = memberData;
+                }
+              } else {
+                _familyMembers.insert(0, memberData);
+              }
               _nameController.clear();
               _ageController.clear();
               _phoneController.clear();
@@ -258,7 +302,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           }
         } else {
           if (mounted) {
-            SnackbarUtils.showError(context, 'Failed to save: $e');
+            SnackbarUtils.showError(
+              context,
+              'Failed to ${isEditing ? 'update' : 'save'}: $e',
+            );
           }
         }
       }
@@ -599,20 +646,145 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: AppColors.primary,
-              ),
+            Column(
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        size: 20,
+                        color: AppColors.textSecondary,
+                      ),
+                      onPressed: () {
+                        // Handle edit
+                        _showEditMemberSheet(member);
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 20,
+                        color: AppColors.error,
+                      ),
+                      onPressed: () {
+                        // Handle delete
+                        _confirmDeleteMember(member);
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteMember(FamilyMemberModel member) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Profile'),
+        content: Text(
+          'Are you sure you want to remove ${member.firstName}? Previous test results will not be deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      try {
+        await _familyMemberService.deleteFamilyMember(user.uid, member.id);
+        if (mounted) {
+          setState(() {
+            _familyMembers.removeWhere((m) => m.id == member.id);
+          });
+          SnackbarUtils.showSuccess(context, 'Profile removed');
+        }
+      } catch (e) {
+        if (mounted) SnackbarUtils.showError(context, 'Failed to delete: $e');
+      }
+    }
+  }
+
+  void _showEditMemberSheet(FamilyMemberModel member) {
+    _nameController.text = member.firstName;
+    _ageController.text = member.age.toString();
+    _phoneController.text = member.phone?.replaceFirst('+91', '') ?? '';
+    _selectedSex = member.sex;
+    _selectedRelationship = member.relationship;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    child: _buildAddMemberForm(
+                      setSheetState,
+                      isEditing: true,
+                      memberId: member.id,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -662,7 +834,11 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     );
   }
 
-  Widget _buildAddMemberForm(StateSetter setSheetState) {
+  Widget _buildAddMemberForm(
+    StateSetter setSheetState, {
+    bool isEditing = false,
+    String? memberId,
+  }) {
     return Form(
       key: _formKey,
       child: Column(
@@ -687,9 +863,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Add Family Member',
-                      style: TextStyle(
+                    Text(
+                      isEditing ? 'Edit Profile' : 'Add Family Member',
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                         color: AppColors.textPrimary,
@@ -697,7 +873,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                       ),
                     ),
                     Text(
-                      'Register a new family member for vision testing',
+                      isEditing
+                          ? 'Update your family member details'
+                          : 'Register a new family member for vision testing',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
@@ -901,7 +1079,8 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               ],
             ),
             child: ElevatedButton(
-              onPressed: _addFamilyMember,
+              onPressed: () =>
+                  _addFamilyMember(isEditing: isEditing, memberId: memberId),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 foregroundColor: AppColors.white,
@@ -911,9 +1090,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: const Text(
-                'Save Family Profile',
-                style: TextStyle(
+              child: Text(
+                isEditing ? 'Update Family Profile' : 'Save Family Profile',
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
