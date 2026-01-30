@@ -1,9 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:async';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../widgets/instruction_animations.dart';
 
 class ReadingTestInstructionsScreen extends StatefulWidget {
@@ -112,14 +112,14 @@ class _ReadingTestInstructionsScreenState
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.scaffoldBackground,
         appBar: AppBar(
           title: const Text('Reading Test Instructions'),
-          backgroundColor: AppColors.white,
+          backgroundColor: context.surface,
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: Icon(Icons.close, color: context.textPrimary),
             onPressed: _showExitConfirmation,
           ),
         ),
@@ -140,7 +140,7 @@ class _ReadingTestInstructionsScreenState
                       Icons.visibility_rounded,
                       'Optimal Position',
                       'Hold the device at about 40cm (arm\'s length) from your eyes. Keep both eyes open.',
-                      AppColors.primary,
+                      context.primary,
                       animation: const SteadyReadingAnimation(),
                     ),
                     _buildStep(
@@ -148,7 +148,7 @@ class _ReadingTestInstructionsScreenState
                       Icons.record_voice_over_rounded,
                       'Read Aloud',
                       'Read the text displayed on the screen clearly for the clinician or yourself.',
-                      AppColors.success,
+                      context.success,
                       animation: const ReadAloudAnimation(),
                     ),
                     _buildStep(
@@ -156,7 +156,7 @@ class _ReadingTestInstructionsScreenState
                       Icons.thumbs_up_down_rounded,
                       'Identify Result',
                       'Indicate if you can read the text or if it is too blurry by tapping the matching button.',
-                      AppColors.warning,
+                      context.warning,
                       animation: const BlurryReadingAnimation(),
                     ),
                   ],
@@ -171,10 +171,12 @@ class _ReadingTestInstructionsScreenState
                       : 16.0,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: context.surface,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.05),
+                      color: context.isDarkMode
+                          ? Colors.black.withValues(alpha: 0.2)
+                          : Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -196,8 +198,8 @@ class _ReadingTestInstructionsScreenState
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _currentPage == index
-                                  ? AppColors.primary
-                                  : AppColors.border,
+                                  ? context.primary
+                                  : context.dividerColor,
                             ),
                           ),
                         ),
@@ -214,8 +216,8 @@ class _ReadingTestInstructionsScreenState
                       child: ElevatedButton(
                         onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
+                          backgroundColor: context.primary,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -261,9 +263,11 @@ class _ReadingTestInstructionsScreenState
       padding: EdgeInsets.all(isLandscape ? 8.0 : 16.0),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: context.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.5),
+          ),
         ),
         padding: EdgeInsets.symmetric(
           horizontal: isLandscape ? 16.0 : 20.0,
@@ -282,9 +286,9 @@ class _ReadingTestInstructionsScreenState
                         children: [
                           Text(
                             'Step ${index + 1} of $_totalPages',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.primary,
+                              color: context.primary,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.1,
                             ),
@@ -292,10 +296,10 @@ class _ReadingTestInstructionsScreenState
                           const SizedBox(height: 4),
                           Text(
                             _stepTitles[index],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -320,9 +324,9 @@ class _ReadingTestInstructionsScreenState
                 children: [
                   Text(
                     'Step ${index + 1} of $_totalPages',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.primary,
+                      color: context.primary,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.1,
                     ),
@@ -330,10 +334,10 @@ class _ReadingTestInstructionsScreenState
                   const SizedBox(height: 4),
                   Text(
                     _stepTitles[index],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -375,17 +379,17 @@ class _ReadingTestInstructionsScreenState
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: context.textSecondary,
                   fontSize: 14,
                   height: 1.4,
                   fontWeight: FontWeight.w400,

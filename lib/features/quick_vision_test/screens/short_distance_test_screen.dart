@@ -17,6 +17,7 @@ import '../../../data/models/short_distance_result.dart';
 import '../../../core/services/distance_skip_manager.dart';
 import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/widgets/distance_warning_overlay.dart';
+import '../../../core/extensions/theme_extension.dart';
 import 'dart:math' as math;
 
 /// Short distance reading test - both eyes open, 40cm distance
@@ -477,7 +478,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: context.scaffoldBackground,
         body: SafeArea(
           child: Stack(
             children: [
@@ -537,10 +538,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.5),
+            color: context.dividerColor.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -548,22 +549,22 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            icon: Icon(Icons.close, color: context.textPrimary),
             onPressed: _showExitConfirmation,
           ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.primary.withValues(alpha: 0.08),
               shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             child: Text(
               'LEVEL ${_currentScreen + 1}/${TestConstants.shortDistanceSentences.length}',
-              style: const TextStyle(
-                color: AppColors.primary,
+              style: TextStyle(
+                color: context.primary,
                 fontWeight: FontWeight.w900,
                 fontSize: 11,
                 letterSpacing: 0.5,
@@ -574,9 +575,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
-              color:
-                  (_readingCountdown < 10 ? AppColors.error : AppColors.primary)
-                      .withValues(alpha: 0.08),
+              color: (_readingCountdown < 10 ? context.error : context.primary)
+                  .withValues(alpha: 0.08),
               shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -588,16 +588,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                   Icons.timer_outlined,
                   size: 14,
                   color: _readingCountdown < 10
-                      ? AppColors.error
-                      : AppColors.primary,
+                      ? context.error
+                      : context.primary,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${_readingCountdown}s',
                   style: TextStyle(
                     color: _readingCountdown < 10
-                        ? AppColors.error
-                        : AppColors.primary,
+                        ? context.error
+                        : context.primary,
                     fontWeight: FontWeight.w900,
                     fontSize: 11,
                   ),
@@ -632,8 +632,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withValues(alpha: 0.15),
-                AppColors.white.withValues(alpha: 0.05),
+                context.isDarkMode
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.white.withValues(alpha: 0.15),
+                context.isDarkMode
+                    ? Colors.white.withValues(alpha: 0.02)
+                    : Colors.white.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
@@ -706,9 +710,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surface,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.5)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -719,7 +723,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
             style: TextStyle(
               fontSize: sentence.fontSize,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
               height: 1.4,
               letterSpacing: 0.2,
             ),
@@ -731,7 +735,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                 : 'Read the sentence aloud or type below',
             style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary.withValues(alpha: 0.7),
+              color: context.textSecondary.withValues(alpha: 0.7),
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
@@ -748,7 +752,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
+                  color: context.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -758,15 +762,15 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                     _SpeechWaveform(
                       isListening: _isListening,
                       isTalking: _isSpeechActive,
-                      color: AppColors.primary,
+                      color: context.primary,
                     ),
                     const SizedBox(width: 12),
-                    const Text(
+                    Text(
                       'Listening...',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        color: context.primary,
                       ),
                     ),
                   ],
@@ -779,15 +783,15 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.black.withValues(alpha: 0.05),
+                  color: context.onSurface.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   _recognizedText!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: context.textPrimary,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -806,10 +810,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: context.surface,
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withValues(alpha: 0.05),
+                color: context.isDarkMode
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : Colors.black.withValues(alpha: 0.05),
                 blurRadius: 20,
                 offset: const Offset(0, -5),
               ),
@@ -836,7 +842,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                     decoration: InputDecoration(
                       hintText: 'Type what you read...',
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: context.isDarkMode
+                          ? context.onSurface.withValues(alpha: 0.05)
+                          : context.scaffoldBackground,
                       contentPadding: isSmallHeight
                           ? const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -848,7 +856,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                         borderSide: BorderSide.none,
                       ),
                       suffixIcon: IconButton(
-                        icon: const Icon(Icons.send, color: AppColors.primary),
+                        icon: Icon(Icons.send, color: context.primary),
                         onPressed: () =>
                             _processSentence(_inputController.text),
                       ),
@@ -1034,7 +1042,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
             children: [
               Icon(
                 icon,
-                color: isActive ? AppColors.white : color,
+                color: isActive ? Colors.white : color,
                 size: compact ? 18 : 22,
               ),
               const SizedBox(width: 8),
@@ -1044,7 +1052,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                   style: TextStyle(
                     fontSize: compact ? 9 : 11,
                     fontWeight: FontWeight.w900,
-                    color: isActive ? AppColors.white : color,
+                    color: isActive ? Colors.white : color,
                     letterSpacing: 0.1,
                   ),
                   maxLines: 1,
@@ -1060,9 +1068,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   }
 
   Widget _buildTestCompleteView() {
-    return const Scaffold(
-      backgroundColor: AppColors.white,
-      body: Center(child: EyeLoader(size: 80)),
+    return Scaffold(
+      backgroundColor: context.scaffoldBackground,
+      body: const Center(child: EyeLoader(size: 80)),
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../data/models/short_distance_result.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -161,12 +160,12 @@ class _ShortDistanceQuickResultScreenState
             child: Icon(Icons.info_rounded, size: 40, color: context.warning),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Reading Test Completed',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
             ),
           ),
         ],
@@ -181,10 +180,10 @@ class _ShortDistanceQuickResultScreenState
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.3),
+          color: context.dividerColor.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -389,7 +388,7 @@ class _ShortDistanceQuickResultScreenState
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.white.withValues(alpha: 0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
