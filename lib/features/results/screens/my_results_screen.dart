@@ -39,8 +39,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       DashboardPersistenceService();
   final ScrollController _scrollController = ScrollController();
   StreamSubscription<List<TestResultModel>>? _resultsSubscription;
-  bool _isSyncing = false;
-  double _loadingProgress = 0;
+  bool _isInitialLoading = true; // Track first-time load
+  bool _isSyncing = false; // Track background sync
+  double _loadingProgress = 0.0;
+  int _loadedCount = 0; // Track items loaded
+  String _loadingStage =
+      ''; // Track current stage (e.g., "Loading cache...", "Syncing...")
 
   // Pagination
   static const int _itemsPerPage = 10;
@@ -85,6 +89,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         setState(() {
           _results = [];
           _isLoading = false;
+          _isInitialLoading = false;
           _error = 'Please log in to view results';
         });
       }
@@ -93,19 +98,32 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
     setState(() {
       _isLoading = _results.isEmpty;
+      _isInitialLoading = _results.isEmpty;
+      _isSyncing = _results.isNotEmpty;
       _error = null;
       _currentPage = 0;
       _hasMore = true;
+      _loadingProgress = 0.0;
+      _loadedCount = 0;
+      _loadingStage = 'Initializing...';
     });
 
-    // Cancel existing subscription if any
+    // Cancel existing subscription
     await _resultsSubscription?.cancel();
 
-    // 1. FAST LOAD FROM DISK (with local hidden filtering)
+    // STAGE 1: DISK LOAD (0% → 30%)
     try {
+      setState(() {
+        _loadingProgress = 0.05;
+        _loadingStage = 'Loading cached data...';
+      });
+
       final storedResults = await _persistenceService.getStoredResults(
         customKey: 'user_results',
       );
+
+      setState(() => _loadingProgress = 0.15);
+
       final storedHidden = await _persistenceService.getStoredHiddenIds(
         customKey: 'user_results',
       );
@@ -117,33 +135,58 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       if (mounted && filteredResults.isNotEmpty) {
         setState(() {
           _results = filteredResults;
+          _loadedCount = filteredResults.length;
+          _loadingProgress = 0.3;
+          _loadingStage = 'Loaded ${filteredResults.length} from cache';
           _isLoading = false;
           _hasMore = filteredResults.length > _itemsPerPage;
         });
-        debugPrint(
-          '[MyResults] ✅ Loaded ${filteredResults.length} items from disk (filtered: ${storedResults.length - filteredResults.length} hidden)',
-        );
+        debugPrint('[MyResults] ✅ Loaded ${filteredResults.length} from disk');
       }
     } catch (e) {
       debugPrint('[MyResults] ❌ Disk load error: $e');
+      setState(() => _loadingProgress = 0.0);
     }
 
-    debugPrint('[MyResults] 🔄 Starting real-time stream listen...');
+    // STAGE 2: FIRESTORE STREAM (30% → 100%)
+    debugPrint('[MyResults] 🔄 Starting Firestore stream...');
+    setState(() {
+      _loadingProgress = 0.4;
+      _loadingStage = 'Connecting to cloud...';
+    });
+
     _resultsSubscription = _testResultService
         .getTestResultsStream(user.uid)
         .listen(
           (results) {
             _safeSetState(() {
               _results = results;
+              _loadedCount = results.length;
+              _loadingProgress = 1.0;
+              _loadingStage = 'Synced ${results.length} results';
               _isLoading = false;
+              _isInitialLoading = false;
+              _isSyncing = false;
               _hasMore = results.length > _itemsPerPage;
               _error = null;
             });
             debugPrint(
               '[MyResults] ✅ Stream update: ${results.length} results',
             );
-            // Save to disk for next fast load
+
+            // Save to disk
             _persistenceService.saveResults(results, customKey: 'user_results');
+
+            // Hide progress after delay
+            Future.delayed(const Duration(milliseconds: 800), () {
+              if (mounted) {
+                setState(() {
+                  _loadingProgress = 0.0;
+                  _isInitialLoading = false;
+                  _isSyncing = false;
+                });
+              }
+            });
           },
           onError: (e) {
             debugPrint('[MyResults] ❌ Stream error: $e');
@@ -152,6 +195,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 _error = 'Failed to load results';
               }
               _isLoading = false;
+              _isInitialLoading = false;
+              _isSyncing = false;
+              _loadingProgress = 0.0;
             });
           },
         );
@@ -399,9 +445,13 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           : Column(
               children: [
                 _buildFilters(),
-                if (_isSyncing) _buildSyncStatusBanner(),
+
+                // Loading progress bar - RIGHT AFTER FILTERS
+                if (_isInitialLoading || _isSyncing)
+                  _buildLoadingProgressOverlay(),
+
                 Expanded(
-                  child: _filteredResults.isEmpty
+                  child: _filteredResults.isEmpty && !_isInitialLoading
                       ? _buildEmptyState()
                       : RefreshIndicator(
                           onRefresh: _loadResults,
@@ -419,7 +469,6 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                               }
 
                               final result = _filteredResults[index];
-
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
                                 child: _buildModernResultCard(result),
@@ -1397,6 +1446,89 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLoadingProgressOverlay() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            context.primary.withValues(alpha: 0.08),
+            context.primary.withValues(alpha: 0.05),
+          ],
+        ),
+        border: Border(
+          bottom: BorderSide(
+            color: context.primary.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              const EyeLoader(size: 24),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _loadingStage.isEmpty
+                          ? (_loadingProgress < 0.3
+                                ? 'Loading cached data...'
+                                : 'Syncing with cloud...')
+                          : _loadingStage,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: context.primary,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _loadedCount > 0
+                          ? '$_loadedCount ${_loadedCount == 1 ? 'result' : 'results'} loaded'
+                          : 'Please wait...',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.textTertiary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${(_loadingProgress * 100).toInt()}%',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: context.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _loadingProgress > 0 ? _loadingProgress : null,
+              backgroundColor: context.primary.withValues(alpha: 0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(context.primary),
+              minHeight: 6,
+            ),
+          ),
+        ],
       ),
     );
   }
