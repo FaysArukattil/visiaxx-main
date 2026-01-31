@@ -306,54 +306,42 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           style: const TextStyle(height: 1.5),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.error,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSwipeBackground({required bool isLeft}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: isLeft ? Alignment.centerLeft : Alignment.centerRight,
-          end: isLeft ? Alignment.centerRight : Alignment.centerLeft,
-          colors: [context.error, context.error.withValues(alpha: 0.7)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Align(
-        alignment: isLeft ? Alignment.centerLeft : Alignment.centerRight,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          Row(
             children: [
-              Icon(Icons.delete_outline_rounded, color: Colors.white, size: 32),
-              const SizedBox(height: 4),
-              Text(
-                'Delete',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.error,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Remove'),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -437,23 +425,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
-                                child: Dismissible(
-                                  key: Key(result.id),
-                                  direction: DismissDirection.horizontal,
-                                  confirmDismiss: (direction) async {
-                                    return await _confirmDeleteResult(result);
-                                  },
-                                  onDismissed: (direction) {
-                                    _deleteResult(result);
-                                  },
-                                  background: _buildSwipeBackground(
-                                    isLeft: true,
-                                  ),
-                                  secondaryBackground: _buildSwipeBackground(
-                                    isLeft: false,
-                                  ),
-                                  child: _buildModernResultCard(result),
-                                ),
+                                child: _buildModernResultCard(result),
                               );
                             },
                           ),
