@@ -420,6 +420,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.scaffoldBackground,
@@ -429,16 +430,6 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         foregroundColor: context.textPrimary,
-        bottom: _isSyncing
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(4),
-                child: LinearProgressIndicator(
-                  backgroundColor: context.primary.withValues(alpha: 0.1),
-                  valueColor: AlwaysStoppedAnimation<Color>(context.primary),
-                  minHeight: 4,
-                ),
-              )
-            : null,
       ),
       body: _error != null
           ? _buildErrorState()
@@ -455,23 +446,35 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                       ? _buildEmptyState()
                       : RefreshIndicator(
                           onRefresh: _loadResults,
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(16),
-                            itemCount:
-                                _filteredResults.length + (_hasMore ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index >= _filteredResults.length) {
-                                return const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Center(child: EyeLoader(size: 32)),
-                                );
-                              }
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return ListView.builder(
+                                controller: _scrollController,
+                                padding: EdgeInsets.only(
+                                  left: 16,
+                                  right: 16,
+                                  top: 16,
+                                  bottom:
+                                      MediaQuery.of(context).padding.bottom +
+                                      16,
+                                ),
+                                itemCount:
+                                    _filteredResults.length +
+                                    (_hasMore ? 1 : 0),
+                                itemBuilder: (context, index) {
+                                  if (index >= _filteredResults.length) {
+                                    return const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Center(child: EyeLoader(size: 32)),
+                                    );
+                                  }
 
-                              final result = _filteredResults[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _buildModernResultCard(result),
+                                  final result = _filteredResults[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: _buildModernResultCard(result),
+                                  );
+                                },
                               );
                             },
                           ),
@@ -1261,118 +1264,149 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   }
 
   Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: context.error.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.error_outline, size: 64, color: context.error),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Error loading results',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: context.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error ?? 'Unknown error',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: context.textPrimary.withValues(alpha: 0.6),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: _loadResults,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLandscape =
+            MediaQuery.of(context).orientation == Orientation.landscape;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 32,
+            right: 32,
+            top: isLandscape ? 20 : 32,
+            bottom: MediaQuery.of(context).padding.bottom + 32,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isLandscape ? 20 : 24),
+                  decoration: BoxDecoration(
+                    color: context.error.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.error_outline,
+                    size: isLandscape ? 50 : 64,
+                    color: context.error,
+                  ),
                 ),
-              ),
+                SizedBox(height: isLandscape ? 16 : 24),
+                Text(
+                  'Error loading results',
+                  style: TextStyle(
+                    fontSize: isLandscape ? 18 : 20,
+                    fontWeight: FontWeight.w800,
+                    color: context.textPrimary,
+                  ),
+                ),
+                SizedBox(height: isLandscape ? 6 : 8),
+                Text(
+                  _error ?? 'Unknown error',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: context.textPrimary.withValues(alpha: 0.6),
+                    fontSize: isLandscape ? 12 : 14,
+                  ),
+                ),
+                SizedBox(height: isLandscape ? 20 : 32),
+                ElevatedButton.icon(
+                  onPressed: _loadResults,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isLandscape ? 24 : 32,
+                      vertical: isLandscape ? 12 : 16,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.primary.withValues(alpha: 0.15),
-                    context.primary.withValues(alpha: 0.05),
-                  ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Use available height to center content properly
+        final isLandscape =
+            MediaQuery.of(context).orientation == Orientation.landscape;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 32,
+            right: 32,
+            top: isLandscape ? 20 : 32,
+            bottom: MediaQuery.of(context).padding.bottom + 32,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isLandscape ? 24 : 32),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        context.primary.withValues(alpha: 0.15),
+                        context.primary.withValues(alpha: 0.05),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.visibility_outlined,
+                    size: isLandscape ? 60 : 80,
+                    color: context.primary,
+                  ),
                 ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.visibility_outlined,
-                size: 80,
-                color: context.primary,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'No Results Yet',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                color: context.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'No test results found.\nPull down to refresh or start a new test.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/quick-test'),
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Start Quick Test'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+                SizedBox(height: isLandscape ? 20 : 32),
+                Text(
+                  'No Results Yet',
+                  style: TextStyle(
+                    fontSize: isLandscape ? 20 : 24,
+                    fontWeight: FontWeight.w900,
+                    color: context.textPrimary,
+                  ),
                 ),
-              ),
+                SizedBox(height: isLandscape ? 8 : 12),
+                Text(
+                  'No test results found.\nPull down to refresh or start a new test.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: isLandscape ? 13 : 15,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    height: 1.5,
+                  ),
+                ),
+                SizedBox(height: isLandscape ? 20 : 32),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/quick-test'),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('Start Quick Test'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isLandscape ? 24 : 32,
+                      vertical: isLandscape ? 12 : 16,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
