@@ -1,6 +1,5 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/widgets/eye_loader.dart';
@@ -444,18 +443,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppColors.primary.withValues(alpha: .08),
-                      AppColors.primaryLight.withValues(alpha: 0.05),
+                      context.primary.withValues(alpha: .08),
+                      context.primary.withValues(alpha: 0.05),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.15),
+                    color: context.primary.withValues(alpha: 0.15),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.08),
+                      color: context.primary.withValues(alpha: 0.08),
                       blurRadius: 20,
                       spreadRadius: 0,
                       offset: const Offset(0, 8),
@@ -477,8 +476,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                AppColors.primary.withValues(alpha: 0.12),
-                                AppColors.primary.withValues(alpha: 0.02),
+                                context.primary.withValues(alpha: 0.12),
+                                context.primary.withValues(alpha: 0.02),
                               ],
                             ),
                           ),
@@ -494,8 +493,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                AppColors.primaryLight.withValues(alpha: 0.1),
-                                AppColors.primaryLight.withValues(alpha: 0.02),
+                                context.primary.withValues(alpha: 0.1),
+                                context.primary.withValues(alpha: 0.02),
                               ],
                             ),
                           ),
@@ -563,7 +562,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         slide['heading'] as String,
                         style: TextStyle(
-                          color: AppColors.primary,
+                          color: context.primary,
                           fontSize: (availableWidth * 0.06).clamp(
                             15.0,
                             20.0,
@@ -580,7 +579,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         slide['content'] as String,
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: context.textSecondary,
                           fontSize: (availableWidth * 0.035).clamp(
                             11.0,
                             13.5,
@@ -601,13 +600,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: context.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           slide['supportText'] as String,
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: context.primary,
                             fontSize: (availableWidth * 0.028).clamp(
                               9.0,
                               11.0,
@@ -638,7 +637,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             height: (availableWidth * 0.22).clamp(70.0, 110.0),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.primary.withValues(alpha: 0.04),
+                              color: context.primary.withValues(alpha: 0.04),
                             ),
                           ),
                           // Dynamic positioning to prevent overlap on small screens
@@ -681,17 +680,17 @@ class _HomeScreenState extends State<HomeScreen> {
       width: imageWidth,
       height: imageHeight,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.1),
+          color: context.primary.withValues(alpha: 0.1),
           width: 0.5,
         ),
       ),
@@ -702,10 +701,10 @@ class _HomeScreenState extends State<HomeScreen> {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.primary.withValues(alpha: 0.1),
               child: Icon(
                 Icons.person,
-                color: AppColors.primary.withValues(alpha: 0.6),
+                color: context.primary.withValues(alpha: 0.6),
                 size: imageWidth * 0.4,
               ),
             );
@@ -738,7 +737,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   slide['heading'] as String,
                   style: TextStyle(
-                    color: AppColors.primary,
+                    color: context.primary,
                     fontSize: (availableWidth * 0.06).clamp(16.0, 24.0),
                     fontWeight: FontWeight.bold,
                     height: 1.1,
@@ -750,7 +749,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   slide['content'] as String,
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: context.textSecondary,
                     fontSize: (availableWidth * 0.04).clamp(12.0, 16.0),
                     height: 1.4,
                   ),
@@ -764,13 +763,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: context.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     slide['supportText'] as String,
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: context.primary,
                       fontSize: (availableWidth * 0.035).clamp(10.0, 13.5),
                       fontWeight: FontWeight.bold,
                     ),
@@ -800,8 +799,8 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 6,
             decoration: BoxDecoration(
               color: _currentCarouselIndex == index
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(context).dividerColor,
+                  ? context.primary
+                  : context.dividerColor,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -826,12 +825,23 @@ class _HomeScreenState extends State<HomeScreen> {
         (screenHeight * 0.02) + // Spacing before grid
         (screenHeight * 0.02); // Spacing after grid
 
-    final availableGridHeight = (screenHeight - usedHeight).clamp(280.0, 500.0);
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final availableGridHeight = (screenHeight - usedHeight).clamp(
+      isLandscape ? 180.0 : 280.0,
+      500.0,
+    );
 
     // Dynamic spacing and heights based on available grid space
     final cardSpacing = (availableGridHeight * 0.035).clamp(6.0, 12.0);
-    final compactCardHeight = (availableGridHeight * 0.32).clamp(85.0, 115.0);
-    final wideCardHeight = (availableGridHeight * 0.2).clamp(55.0, 72.0);
+    final compactCardHeight = (availableGridHeight * 0.32).clamp(
+      isLandscape ? 65.0 : 85.0,
+      115.0,
+    );
+    final wideCardHeight = (availableGridHeight * 0.2).clamp(
+      isLandscape ? 45.0 : 55.0,
+      72.0,
+    );
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -950,30 +960,26 @@ class _CompactServiceCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-            highlightColor: Theme.of(
-              context,
-            ).primaryColor.withValues(alpha: 0.05),
+            splashColor: context.primary.withValues(alpha: 0.1),
+            highlightColor: context.primary.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Theme.of(context).primaryColor.withValues(alpha: 0.08),
-                    Theme.of(context).primaryColor.withValues(alpha: 0.03),
+                    context.primary.withValues(alpha: 0.08),
+                    context.primary.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
+                  color: context.primary.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.05),
+                    color: context.primary.withValues(alpha: 0.05),
                     blurRadius: 12,
                     spreadRadius: 0,
                     offset: const Offset(0, 4),
@@ -981,58 +987,57 @@ class _CompactServiceCard extends StatelessWidget {
                 ],
               ),
               child: Container(
-                height: height,
+                constraints: BoxConstraints(minHeight: height),
                 padding: EdgeInsets.all(cardPadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: iconSize + 14,
-                      height: iconSize + 14,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
+                    if (height > 60) ...[
+                      Container(
+                        width: iconSize + 14,
+                        height: iconSize + 14,
+                        decoration: BoxDecoration(
+                          color: context.scaffoldBackground,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: context.primary,
+                          size: iconSize,
+                        ),
                       ),
-                      child: Icon(
-                        icon,
-                        color: Theme.of(context).primaryColor,
-                        size: iconSize,
-                      ),
-                    ),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: titleFontSize,
-                              color: Theme.of(context).primaryColor,
-                              height: 1.1,
-                              letterSpacing: -0.2,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                      SizedBox(height: cardPadding * 0.8),
+                    ],
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: titleFontSize,
+                            color: context.primary,
+                            height: 1.1,
+                            letterSpacing: -0.2,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: subtitleFontSize,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.6),
-                              height: 1.1,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: subtitleFontSize,
+                            color: context.textSecondary,
+                            height: 1.1,
                           ),
-                        ],
-                      ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1081,30 +1086,26 @@ class _WideServiceCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-            highlightColor: Theme.of(
-              context,
-            ).primaryColor.withValues(alpha: 0.05),
+            splashColor: context.primary.withValues(alpha: 0.1),
+            highlightColor: context.primary.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Theme.of(context).primaryColor.withValues(alpha: 0.08),
-                    Theme.of(context).primaryColor.withValues(alpha: 0.03),
+                    context.primary.withValues(alpha: 0.08),
+                    context.primary.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
+                  color: context.primary.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.05),
+                    color: context.primary.withValues(alpha: 0.05),
                     blurRadius: 12,
                     spreadRadius: 0,
                     offset: const Offset(0, 4),
@@ -1112,7 +1113,7 @@ class _WideServiceCard extends StatelessWidget {
                 ],
               ),
               child: Container(
-                height: height,
+                constraints: BoxConstraints(minHeight: height),
                 padding: EdgeInsets.symmetric(
                   horizontal: (cardConstraints.maxWidth * 0.04).clamp(
                     12.0,
@@ -1122,22 +1123,27 @@ class _WideServiceCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: iconSize + 14,
-                      height: iconSize + 14,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
+                    if (height > 40) ...[
+                      Container(
+                        width: iconSize + 14,
+                        height: iconSize + 14,
+                        decoration: BoxDecoration(
+                          color: context.scaffoldBackground,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: context.primary,
+                          size: iconSize,
+                        ),
                       ),
-                      child: Icon(
-                        icon,
-                        color: Theme.of(context).primaryColor,
-                        size: iconSize,
+                      SizedBox(
+                        width: (cardConstraints.maxWidth * 0.03).clamp(
+                          8.0,
+                          14.0,
+                        ),
                       ),
-                    ),
-                    SizedBox(
-                      width: (cardConstraints.maxWidth * 0.03).clamp(8.0, 14.0),
-                    ),
+                    ],
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1148,7 +1154,7 @@ class _WideServiceCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: titleFontSize,
-                              color: Theme.of(context).primaryColor,
+                              color: context.primary,
                               letterSpacing: -0.3,
                               height: 1.2,
                             ),
@@ -1161,9 +1167,7 @@ class _WideServiceCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: subtitleFontSize,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.6),
+                              color: context.textSecondary,
                               height: 1.2,
                             ),
                             maxLines: 1,
@@ -1175,9 +1179,7 @@ class _WideServiceCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).primaryColor.withValues(alpha: 0.1),
+                        color: context.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1186,7 +1188,7 @@ class _WideServiceCard extends StatelessWidget {
                           16.0,
                           20.0,
                         ),
-                        color: Theme.of(context).primaryColor,
+                        color: context.primary,
                       ),
                     ),
                   ],
