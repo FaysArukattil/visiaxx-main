@@ -1,4 +1,5 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:visiaxx/core/services/aws_s3_storage_service.dart';
 import 'package:visiaxx/core/services/auth_service.dart';
@@ -7,6 +8,7 @@ import '../../data/models/test_result_model.dart';
 import 'package:intl/intl.dart';
 import 'package:visiaxx/core/services/family_member_service.dart';
 import '../providers/network_connectivity_provider.dart';
+import 'package:visiaxx/core/services/dashboard_persistence_service.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
@@ -77,6 +79,22 @@ class TestResultService {
       }
 
       await testDocRef.set(result.toFirestore());
+
+      // NEW: Update local cache INSTANTLY
+      try {
+        final persistence = DashboardPersistenceService();
+        final stored = await persistence.getStoredResults(
+          customKey: 'user_results',
+        );
+        final updatedResult = result.copyWith(id: customDocId);
+        await persistence.saveResults([
+          updatedResult,
+          ...stored,
+        ], customKey: 'user_results');
+        debugPrint('[TestResultService] ✅ Local cache updated instantly');
+      } catch (e) {
+        debugPrint('[TestResultService] ❌ Cache update failed: $e');
+      }
 
       // Start AWS uploads in background - don't await!
       performBackgroundAWSUploads(
@@ -414,27 +432,83 @@ class TestResultService {
   /// Get test results stream for a user
   Stream<List<TestResultModel>> getTestResultsStream(String userId) {
     debugPrint(
-      '[TestResultService] ðŸ”„ Setting up result stream for: $userId',
+      '[TestResultService] 🔄 Setting up universal collection-group stream for: $userId',
     );
+    final controller = StreamController<List<TestResultModel>>();
 
-    // Better strategy: Listen to both UID path and Identity path if they differ
-    return _firestore
-        .collection(_identifiedResultsCollection)
-        .doc(userId)
-        .collection('tests')
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          final results = snapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return TestResultModel.fromJson(data);
-          }).toList();
-          debugPrint(
-            '[TestResultService] âœ… User stream updated: ${results.length} results',
+    AuthService().getUserData(userId).then((user) {
+      if (user == null) {
+        controller.add([]);
+        controller.close();
+        return;
+      }
+
+      final identity = user.identityString;
+      final roleCol = user.roleCollection;
+
+      List<QueryDocumentSnapshot<Map<String, dynamic>>>? lastTests;
+      List<String>? lastHidden;
+
+      void emit() {
+        if (lastHidden == null || lastTests == null) return;
+
+        final results = lastTests!
+            .where((doc) => !lastHidden!.contains(doc.id))
+            .map((doc) {
+              try {
+                final data = doc.data();
+                data['id'] = doc.id;
+                return TestResultModel.fromJson(data);
+              } catch (e) {
+                debugPrint('[TestResultService] Parse error in stream: $e');
+                return null;
+              }
+            })
+            .where((r) => r != null)
+            .cast<TestResultModel>()
+            .toList();
+
+        controller.add(results);
+      }
+
+      // Single stream using collectionGroup to get self + family tests
+      final subTests = _firestore
+          .collectionGroup('tests')
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .snapshots()
+          .listen(
+            (snap) {
+              lastTests = snap.docs;
+              emit();
+            },
+            onError: (e) =>
+                debugPrint('[TestResultService] Group stream error: $e'),
           );
-          return results;
-        });
+
+      // User Doc: hiddenResultIds
+      final subUser = _firestore
+          .collection(roleCol)
+          .doc(identity)
+          .snapshots()
+          .listen(
+            (snap) {
+              lastHidden = List<String>.from(
+                snap.data()?['hiddenResultIds'] ?? [],
+              );
+              emit();
+            },
+            onError: (e) =>
+                debugPrint('[TestResultService] User sub error: $e'),
+          );
+
+      controller.onCancel = () {
+        subTests.cancel();
+        subUser.cancel();
+      };
+    });
+
+    return controller.stream;
   }
 
   /// Get a stream of all results for a practitioner, including those of patients
@@ -443,7 +517,7 @@ class TestResultService {
     String practitionerId,
   ) {
     debugPrint(
-      '[TestResultService] ðŸ”„ Creating collection group stream for practitioner: $practitionerId',
+      '[TestResultService] 📦 Creating collection group stream for practitioner: $practitionerId',
     );
 
     // IMPORTANT: Collection group queries require a composite index if filtered + ordered.
@@ -455,7 +529,7 @@ class TestResultService {
         .snapshots()
         .map((snapshot) {
           debugPrint(
-            '[TestResultService] ðŸ“¦ Received snapshot with ${snapshot.docs.length} docs',
+            '[TestResultService] 📦 Received snapshot with ${snapshot.docs.length} docs',
           );
 
           final results = snapshot.docs

@@ -7,13 +7,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:visiaxx/core/widgets/download_success_dialog.dart';
 import 'package:visiaxx/core/services/pdf_export_service.dart';
-import 'package:visiaxx/core/constants/app_colors.dart';
 import 'package:visiaxx/core/services/test_result_service.dart';
 import 'package:visiaxx/core/utils/ui_utils.dart';
 import 'package:visiaxx/data/models/test_result_model.dart';
 import 'package:visiaxx/data/models/color_vision_result.dart';
 import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
+import 'package:visiaxx/core/extensions/theme_extension.dart';
+import 'package:visiaxx/core/services/dashboard_persistence_service.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import '../../../core/utils/snackbar_utils.dart';
 
@@ -33,8 +34,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
   final TestResultService _testResultService = TestResultService();
   final PdfExportService _pdfExportService = PdfExportService();
+  final DashboardPersistenceService _persistenceService =
+      DashboardPersistenceService();
   final ScrollController _scrollController = ScrollController();
   StreamSubscription<List<TestResultModel>>? _resultsSubscription;
+  bool _isSyncing = false;
+  double _loadingProgress = 0;
 
   // Pagination
   static const int _itemsPerPage = 10;
@@ -78,7 +83,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     }
 
     setState(() {
-      _isLoading = true;
+      _isLoading = _results.isEmpty;
       _error = null;
       _currentPage = 0;
       _hasMore = true;
@@ -87,7 +92,34 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     // Cancel existing subscription if any
     await _resultsSubscription?.cancel();
 
-    debugPrint('[MyResults] ðŸ”„ Starting real-time stream listen...');
+    // 1. FAST LOAD FROM DISK (with local hidden filtering)
+    try {
+      final storedResults = await _persistenceService.getStoredResults(
+        customKey: 'user_results',
+      );
+      final storedHidden = await _persistenceService.getStoredHiddenIds(
+        customKey: 'user_results',
+      );
+
+      final filteredResults = storedResults
+          .where((r) => !storedHidden.contains(r.id))
+          .toList();
+
+      if (mounted && filteredResults.isNotEmpty) {
+        setState(() {
+          _results = filteredResults;
+          _isLoading = false;
+          _hasMore = filteredResults.length > _itemsPerPage;
+        });
+        debugPrint(
+          '[MyResults] ✅ Loaded ${filteredResults.length} items from disk (filtered: ${storedResults.length - filteredResults.length} hidden)',
+        );
+      }
+    } catch (e) {
+      debugPrint('[MyResults] ❌ Disk load error: $e');
+    }
+
+    debugPrint('[MyResults] 🔄 Starting real-time stream listen...');
 
     _resultsSubscription = _testResultService
         .getTestResultsStream(user.uid)
@@ -101,7 +133,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 _error = null;
               });
               debugPrint(
-                '[MyResults] âœ… Stream update: ${results.length} results',
+                '[MyResults] ✅ Stream update: ${results.length} results',
+              );
+              // Save to disk for next fast load
+              _persistenceService.saveResults(
+                results,
+                customKey: 'user_results',
               );
             }
           },
@@ -120,19 +157,35 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
     // Initial load from cache/server for immediate feedback
     try {
+      setState(() => _isSyncing = true);
+
       final initialResults = await _testResultService.getTestResults(
         user.uid,
         source: Source.serverAndCache,
       );
-      if (mounted && _results.isEmpty && initialResults.isNotEmpty) {
+
+      if (mounted && initialResults.isNotEmpty) {
         setState(() {
           _results = initialResults;
           _isLoading = false;
           _hasMore = initialResults.length > _itemsPerPage;
+          _loadingProgress = 1.0;
         });
+        debugPrint(
+          '[MyResults] ✅ Refreshing with fresh Future results (including family)',
+        );
+
+        // Save full merged list to disk for next instant load
+        await _persistenceService.saveResults(
+          initialResults,
+          customKey: 'user_results',
+        );
       }
+
+      if (mounted) setState(() => _isSyncing = false);
     } catch (e) {
       debugPrint('[MyResults] Initial fetch error: $e');
+      if (mounted) setState(() => _isSyncing = false);
     }
   }
 
@@ -233,12 +286,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
+                color: context.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.delete_outline_rounded,
-                color: AppColors.error,
+                color: context.error,
                 size: 24,
               ),
             ),
@@ -260,8 +313,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: AppColors.white,
+              backgroundColor: context.error,
+              foregroundColor: Colors.white,
             ),
             child: const Text('Remove'),
           ),
@@ -277,7 +330,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         gradient: LinearGradient(
           begin: isLeft ? Alignment.centerLeft : Alignment.centerRight,
           end: isLeft ? Alignment.centerRight : Alignment.centerLeft,
-          colors: [AppColors.error, AppColors.error.withValues(alpha: 0.7)],
+          colors: [context.error, context.error.withValues(alpha: 0.7)],
         ),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -288,16 +341,12 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.delete_outline_rounded,
-                color: AppColors.white,
-                size: 32,
-              ),
+              Icon(Icons.delete_outline_rounded, color: Colors.white, size: 32),
               const SizedBox(height: 4),
               Text(
                 'Delete',
                 style: TextStyle(
-                  color: AppColors.white,
+                  color: Colors.white,
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
@@ -315,9 +364,27 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
 
     try {
       await _testResultService.deleteTestResult(user.uid, result.id);
+
+      // Immediate local hidden list update
+      final currentHidden = await _persistenceService.getStoredHiddenIds(
+        customKey: 'user_results',
+      );
+      if (!currentHidden.contains(result.id)) {
+        await _persistenceService.saveHiddenIds([
+          ...currentHidden,
+          result.id,
+        ], customKey: 'user_results');
+      }
+
       setState(() {
         _results.removeWhere((r) => r.id == result.id);
       });
+
+      // Update local cache for instant feedback
+      await _persistenceService.saveResults(
+        _results,
+        customKey: 'user_results',
+      );
 
       if (mounted) {
         SnackbarUtils.showSuccess(context, 'Result removed successfully');
@@ -332,19 +399,20 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: context.scaffoldBackground,
       appBar: AppBar(
         title: const Text('My Results'),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: context.scaffoldBackground,
         elevation: 0,
         scrolledUnderElevation: 0,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        foregroundColor: context.textPrimary,
       ),
       body: _error != null
           ? _buildErrorState()
           : Column(
               children: [
                 _buildFilters(),
+                if (_isSyncing) _buildSyncStatusBanner(),
                 Expanded(
                   child: _isLoading && _results.isEmpty
                       ? const Center(child: EyeLoader.fullScreen())
@@ -361,9 +429,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                               if (index >= _filteredResults.length) {
                                 return const Padding(
                                   padding: EdgeInsets.all(16),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
+                                  child: Center(child: EyeLoader(size: 32)),
                                 );
                               }
 
@@ -402,10 +468,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: context.scaffoldBackground,
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+            color: context.dividerColor.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -415,23 +481,15 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           Expanded(child: _buildFilterChip('All', 'all')),
           const SizedBox(width: 8),
           Expanded(
-            child: _buildFilterChip(
-              'Normal',
-              'normal',
-              color: AppColors.success,
-            ),
+            child: _buildFilterChip('Normal', 'normal', color: context.success),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _buildFilterChip(
-              'Review',
-              'review',
-              color: AppColors.warning,
-            ),
+            child: _buildFilterChip('Review', 'review', color: context.warning),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _buildFilterChip('Urgent', 'urgent', color: AppColors.error),
+            child: _buildFilterChip('Urgent', 'urgent', color: context.error),
           ),
         ],
       ),
@@ -450,8 +508,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           gradient: isSelected
               ? LinearGradient(
                   colors: [
-                    color ?? AppColors.primary,
-                    (color ?? AppColors.primary).withValues(alpha: 0.8),
+                    color ?? context.primary,
+                    (color ?? context.primary).withValues(alpha: 0.8),
                   ],
                 )
               : null,
@@ -459,16 +517,14 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? (color ?? Theme.of(context).primaryColor)
-                : Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                ? (color ?? context.primary)
+                : context.dividerColor.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: (color ?? Theme.of(context).primaryColor).withValues(
-                      alpha: 0.25,
-                    ),
+                    color: (color ?? context.primary).withValues(alpha: 0.25),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -479,7 +535,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? AppColors.white : AppColors.textSecondary,
+              color: isSelected ? Colors.white : context.textSecondary,
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               fontSize: 12,
               letterSpacing: 0.3,
@@ -496,13 +552,13 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     Color statusColor;
     switch (result.overallStatus) {
       case TestStatus.normal:
-        statusColor = AppColors.success;
+        statusColor = context.success;
         break;
       case TestStatus.review:
-        statusColor = AppColors.warning;
+        statusColor = context.warning;
         break;
       case TestStatus.urgent:
-        statusColor = AppColors.error;
+        statusColor = context.error;
         break;
     }
 
@@ -515,24 +571,24 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           end: Alignment.bottomRight,
           colors: [
             isComprehensive
-                ? AppColors.primary.withValues(alpha: 0.08)
-                : Theme.of(context).cardColor,
+                ? context.primary.withValues(alpha: 0.08)
+                : context.cardColor,
             isComprehensive
-                ? AppColors.primary.withValues(alpha: 0.03)
-                : Theme.of(context).cardColor,
+                ? context.primary.withValues(alpha: 0.03)
+                : context.cardColor,
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isComprehensive
-              ? AppColors.primary.withValues(alpha: 0.3)
-              : AppColors.border.withValues(alpha: 0.3),
+              ? context.primary.withValues(alpha: 0.3)
+              : context.dividerColor.withValues(alpha: 0.3),
           width: isComprehensive ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: isComprehensive
-                ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+                ? context.primary.withValues(alpha: 0.1)
                 : Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             spreadRadius: 0,
@@ -567,14 +623,14 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            AppColors.primary,
-                            AppColors.primary.withValues(alpha: 0.7),
+                            context.primary,
+                            context.primary.withValues(alpha: 0.7),
                           ],
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
+                            color: context.primary.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -587,7 +643,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                               : '?',
                           style: const TextStyle(
                             fontWeight: FontWeight.w900,
-                            color: AppColors.white,
+                            color: Colors.white,
                             fontSize: 20,
                           ),
                         ),
@@ -605,7 +661,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: context.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -616,7 +672,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                               Icon(
                                 Icons.calendar_today_rounded,
                                 size: 11,
-                                color: AppColors.textSecondary,
+                                color: context.textSecondary,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -626,7 +682,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                                   ).format(result.timestamp),
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Theme.of(context).primaryColor,
+                                    color: context.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   maxLines: 1,
@@ -667,7 +723,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                     result.overallStatus.label.toUpperCase(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: AppColors.white,
+                      color: Colors.white,
                       fontWeight: FontWeight.w900,
                       fontSize: 10,
                       letterSpacing: 0.5,
@@ -685,13 +741,13 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, Color(0xFF6366F1)],
+                      gradient: LinearGradient(
+                        colors: [context.primary, const Color(0xFF6366F1)],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
+                          color: context.primary.withValues(alpha: 0.3),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -702,17 +758,22 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                       children: [
                         const Icon(
                           Icons.verified_rounded,
-                          color: AppColors.white,
+                          color: Colors.white,
                           size: 14,
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          'COMPREHENSIVE EXAMINATION',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.6,
+                        Flexible(
+                          child: Text(
+                            'COMPREHENSIVE EXAMINATION',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.6,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -794,7 +855,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: context.scaffoldBackground,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
@@ -802,9 +863,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             'No test data available',
             style: TextStyle(
               fontSize: 12,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.5),
+              color: context.textPrimary.withValues(alpha: 0.5),
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -818,18 +877,18 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).primaryColor.withValues(alpha: 0.08),
-            Theme.of(context).primaryColor.withValues(alpha: 0.05),
+            context.primary.withValues(alpha: 0.08),
+            context.primary.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
+          color: context.primary.withValues(alpha: 0.15),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
+            color: context.primary.withValues(alpha: 0.05),
             blurRadius: 12,
             spreadRadius: 0,
             offset: const Offset(0, 4),
@@ -855,9 +914,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                     Container(
                       width: 1,
                       height: 30,
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.15),
+                      color: context.primary.withValues(alpha: 0.15),
                     ),
                   if (result.visualAcuityLeft != null)
                     _buildDiagnosticItem(
@@ -872,7 +929,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
+                color: context.primary.withValues(alpha: 0.05),
               ),
           ],
           // Row 2: Refraction Table
@@ -882,7 +939,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               Divider(
                 height: 1,
                 thickness: 1,
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
+                color: context.primary.withValues(alpha: 0.05),
               ),
           ],
           // Row 3: Others (Per-Eye Display)
@@ -921,9 +978,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                         Container(
                           width: 1,
                           height: 30,
-                          color: Theme.of(
-                            context,
-                          ).primaryColor.withValues(alpha: 0.15),
+                          color: context.primary.withValues(alpha: 0.15),
                         ),
                         // Left Eye Color Vision
                         _buildDiagnosticItem(
@@ -970,7 +1025,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                           Container(
                             width: 1,
                             height: 30,
-                            color: AppColors.primary.withValues(alpha: 0.15),
+                            color: context.primary.withValues(alpha: 0.15),
                           ),
                         // Left Eye Contrast
                         if (result.pelliRobson!.leftEye != null)
@@ -1004,9 +1059,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                           Container(
                             width: 1,
                             height: 30,
-                            color: Theme.of(
-                              context,
-                            ).primaryColor.withValues(alpha: 0.15),
+                            color: context.primary.withValues(alpha: 0.15),
                           ),
                         // Left Eye Amsler
                         if (result.amslerGridLeft != null)
@@ -1037,9 +1090,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             style: TextStyle(
               fontSize: 8,
               fontWeight: FontWeight.w800,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: context.textPrimary.withValues(alpha: 0.6),
               letterSpacing: 0.5,
             ),
             textAlign: TextAlign.center,
@@ -1051,7 +1102,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 10, color: Theme.of(context).primaryColor),
+                Icon(icon, size: 10, color: context.primary),
                 const SizedBox(width: 4),
               ],
               Flexible(
@@ -1060,7 +1111,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: context.textPrimary,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -1077,7 +1128,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
   Widget _buildRefractionTable(MobileRefractometryResult result) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      color: Theme.of(context).primaryColor.withValues(alpha: 0.02),
+      color: context.primary.withValues(alpha: 0.02),
       child: Column(
         children: [
           const Padding(
@@ -1115,25 +1166,18 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           decoration: BoxDecoration(
             gradient: isPrimary
                 ? LinearGradient(
-                    colors: [
-                      Theme.of(context).primaryColor,
-                      const Color(0xFF6366F1),
-                    ],
+                    colors: [context.primary, const Color(0xFF6366F1)],
                   )
                 : null,
-            color: isPrimary ? null : Theme.of(context).scaffoldBackgroundColor,
+            color: isPrimary ? null : context.scaffoldBackground,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isPrimary
-                  ? Colors.transparent
-                  : Theme.of(context).dividerColor,
+              color: isPrimary ? Colors.transparent : context.dividerColor,
             ),
             boxShadow: isPrimary
                 ? [
                     BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.3),
+                      color: context.primary.withValues(alpha: 0.3),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -1160,9 +1204,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isPrimary
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.onSurface,
+                    color: isPrimary ? Colors.white : context.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1180,9 +1222,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     required VoidCallback onTap,
     bool isDelete = false,
   }) {
-    final color = isDelete
-        ? Theme.of(context).colorScheme.error
-        : Theme.of(context).primaryColor;
+    final color = isDelete ? context.error : context.primary;
 
     return Material(
       color: Colors.transparent,
@@ -1212,16 +1252,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.error.withValues(alpha: 0.1),
+                color: context.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Theme.of(context).colorScheme.error,
-              ),
+              child: Icon(Icons.error_outline, size: 64, color: context.error),
             ),
             const SizedBox(height: 24),
             Text(
@@ -1229,7 +1263,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -1237,9 +1271,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               _error ?? 'Unknown error',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: context.textPrimary.withValues(alpha: 0.6),
                 fontSize: 14,
               ),
             ),
@@ -1275,8 +1307,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Theme.of(context).primaryColor.withValues(alpha: 0.15),
-                    Theme.of(context).primaryColor.withValues(alpha: 0.05),
+                    context.primary.withValues(alpha: 0.15),
+                    context.primary.withValues(alpha: 0.05),
                   ],
                 ),
                 shape: BoxShape.circle,
@@ -1284,7 +1316,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               child: Icon(
                 Icons.visibility_outlined,
                 size: 80,
-                color: Theme.of(context).primaryColor,
+                color: context.primary,
               ),
             ),
             const SizedBox(height: 32),
@@ -1293,7 +1325,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -1325,6 +1357,68 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       ),
     );
   }
+
+  Widget _buildSyncStatusBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: context.primary.withValues(alpha: 0.08),
+        border: Border(
+          bottom: BorderSide(
+            color: context.primary.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: _loadingProgress),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutSine,
+        builder: (context, value, child) {
+          return Row(
+            children: [
+              const EyeLoader(size: 20),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Synchronizing results...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: context.primary,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    Text(
+                      'Updating latest tests for all members',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: context.textTertiary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (value > 0 && value < 1.0)
+                Text(
+                  '${(value * 100).toInt()}%',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: context.primary,
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _TableCell extends StatelessWidget {
@@ -1339,7 +1433,7 @@ class _TableCell extends StatelessWidget {
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: Theme.of(context).colorScheme.onSurface,
+        color: context.textPrimary,
       ),
     );
   }
@@ -1363,7 +1457,7 @@ class _RefractionRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
-                color: Theme.of(context).primaryColor,
+                color: context.primary,
               ),
             ),
           ),
@@ -1385,10 +1479,10 @@ class _TableHeader extends StatelessWidget {
     return Text(
       label,
       textAlign: TextAlign.center,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 8,
         fontWeight: FontWeight.w800,
-        color: AppColors.textSecondary,
+        color: context.textSecondary,
       ),
     );
   }

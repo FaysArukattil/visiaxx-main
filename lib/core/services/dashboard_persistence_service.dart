@@ -12,26 +12,34 @@ class DashboardPersistenceService {
   factory DashboardPersistenceService() => _instance;
   DashboardPersistenceService._internal();
 
-  Future<void> saveResults(List<TestResultModel> results) async {
+  Future<void> saveResults(
+    List<TestResultModel> results, {
+    String? customKey,
+  }) async {
     try {
+      final key = customKey ?? _keyResults;
       final prefs = await SharedPreferences.getInstance();
       final List<Map<String, dynamic>> jsonList = results
           .map((r) => r.toJson())
           .toList();
-      await prefs.setString(_keyResults, json.encode(jsonList));
-      await prefs.setInt(_keyLastSync, DateTime.now().millisecondsSinceEpoch);
+      await prefs.setString(key, json.encode(jsonList));
+      await prefs.setInt(
+        '${key}_last_sync',
+        DateTime.now().millisecondsSinceEpoch,
+      );
       debugPrint(
-        '[DashboardPersistence] ✅ Saved ${results.length} results to disk',
+        '[DashboardPersistence] ✅ Saved ${results.length} results to disk (key: $key)',
       );
     } catch (e) {
       debugPrint('[DashboardPersistence] ❌ Error saving results: $e');
     }
   }
 
-  Future<List<TestResultModel>> getStoredResults() async {
+  Future<List<TestResultModel>> getStoredResults({String? customKey}) async {
     try {
+      final key = customKey ?? _keyResults;
       final prefs = await SharedPreferences.getInstance();
-      final String? resultsJson = prefs.getString(_keyResults);
+      final String? resultsJson = prefs.getString(key);
 
       if (resultsJson == null || resultsJson.isEmpty) {
         return [];
@@ -47,17 +55,41 @@ class DashboardPersistenceService {
     }
   }
 
-  Future<DateTime?> getLastSyncTime() async {
+  Future<DateTime?> getLastSyncTime({String? customKey}) async {
+    final key = customKey ?? _keyResults;
     final prefs = await SharedPreferences.getInstance();
-    final int? lastSync = prefs.getInt(_keyLastSync);
+    final int? lastSync = prefs.getInt('${key}_last_sync');
     if (lastSync == null) return null;
     return DateTime.fromMillisecondsSinceEpoch(lastSync);
+  }
+
+  Future<void> saveHiddenIds(List<String> ids, {String? customKey}) async {
+    try {
+      final key = '${customKey ?? _keyResults}_hidden';
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(key, ids);
+      debugPrint('[DashboardPersistence] ✅ Saved ${ids.length} hidden IDs');
+    } catch (e) {
+      debugPrint('[DashboardPersistence] ❌ Error saving hidden IDs: $e');
+    }
+  }
+
+  Future<List<String>> getStoredHiddenIds({String? customKey}) async {
+    try {
+      final key = '${customKey ?? _keyResults}_hidden';
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getStringList(key) ?? [];
+    } catch (e) {
+      debugPrint('[DashboardPersistence] ❌ Error loading hidden IDs: $e');
+      return [];
+    }
   }
 
   Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyResults);
     await prefs.remove(_keyLastSync);
+    await prefs.remove('${_keyResults}_hidden');
     debugPrint('[DashboardPersistence] 🗑️ Cleared all local data');
   }
 }

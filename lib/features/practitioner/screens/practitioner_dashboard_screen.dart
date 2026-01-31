@@ -1524,7 +1524,7 @@ class _PractitionerDashboardScreenState
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
+              const EyeLoader(size: 32),
               const SizedBox(height: 16),
               Text('Downloading ${resultsToDownload.length} PDFs...'),
               const SizedBox(height: 8),
@@ -2564,15 +2564,7 @@ class _PractitionerDashboardScreenState
         builder: (context, value, child) {
           return Row(
             children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  value: value > 0 ? value : null,
-                  valueColor: AlwaysStoppedAnimation<Color>(context.primary),
-                ),
-              ),
+              const EyeLoader(size: 20),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

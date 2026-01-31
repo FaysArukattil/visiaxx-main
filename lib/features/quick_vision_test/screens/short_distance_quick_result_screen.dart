@@ -5,6 +5,7 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../data/models/short_distance_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class ShortDistanceQuickResultScreen extends StatefulWidget {
   const ShortDistanceQuickResultScreen({super.key});
@@ -82,7 +83,7 @@ class _ShortDistanceQuickResultScreenState
     final result = provider.shortDistance;
 
     if (result == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: EyeLoader(size: 48)));
     }
 
     return PopScope(

@@ -23,6 +23,7 @@ import 'amsler_grid_instructions_screen.dart';
 import '../../../core/utils/navigation_utils.dart';
 import 'distance_calibration_screen.dart';
 import 'amsler_grid_cover_eye_screen.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 /// Amsler Grid Test for detecting macular degeneration
 class AmslerGridTestScreen extends StatefulWidget {
@@ -712,7 +713,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                     child: _eyeSwitchPending
                         ? _buildEyeSwitchView()
                         : (!_testingStarted
-                              ? const Center(child: CircularProgressIndicator())
+                              ? const Center(child: EyeLoader(size: 40))
                               : _buildAdaptiveTestLayout()),
                   ),
                 ],
@@ -722,7 +723,7 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 child: _eyeSwitchPending
                     ? _buildEyeSwitchView()
                     : (!_testingStarted
-                          ? const Center(child: CircularProgressIndicator())
+                          ? const Center(child: EyeLoader(size: 40))
                           : _buildAdaptiveTestLayout()),
               ),
             // Distance indicator
