@@ -8,6 +8,7 @@ import 'package:visiaxx/core/services/advanced_refraction_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/test_constants.dart';
+import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/services/speech_service.dart';
 import '../../../core/services/continuous_speech_manager.dart';
@@ -964,22 +965,22 @@ class _MobileRefractometryTestScreenState
         _showPauseDialog();
       },
       child: Scaffold(
-        backgroundColor: AppColors.testBackground,
+        backgroundColor: context.scaffoldBackground,
         appBar: MediaQuery.of(context).orientation == Orientation.landscape
             ? null
             : AppBar(
-                backgroundColor: AppColors.white,
+                backgroundColor: context.surface,
                 elevation: 0,
                 title: Text(
                   'Mobile Refractometry - ${_currentEye.toUpperCase()} Eye',
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: context.textPrimary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 centerTitle: false,
                 leading: IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                  icon: Icon(Icons.close, color: context.textPrimary),
                   onPressed: () => _showPauseDialog(),
                 ),
               ),
@@ -1081,10 +1082,10 @@ class _MobileRefractometryTestScreenState
                   flex: 1,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.white,
+                      color: context.surface,
                       border: Border(
                         left: BorderSide(
-                          color: AppColors.border.withValues(alpha: 0.3),
+                          color: context.border.withValues(alpha: 0.3),
                         ),
                       ),
                     ),
@@ -1102,16 +1103,16 @@ class _MobileRefractometryTestScreenState
     switch (_currentPhase) {
       case RefractPhase.instruction:
       case RefractPhase.calibration:
-        return const Center(
+        return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              EyeLoader(size: 80),
-              SizedBox(height: 24),
+              const EyeLoader(size: 80),
+              const SizedBox(height: 24),
               Text(
                 'Initializing Test...',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: context.textSecondary,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1160,10 +1161,10 @@ class _MobileRefractometryTestScreenState
         vertical: isLandscape ? 8 : 12,
       ),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.5),
+            color: context.border.withValues(alpha: 0.5),
             width: 1,
           ),
         ),
@@ -1175,17 +1176,17 @@ class _MobileRefractometryTestScreenState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: ShapeDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: context.primary.withValues(alpha: 0.08),
                 shape: ContinuousRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: Text(
                 _getSnellenScore(currentFontSize),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.primary,
+                  color: context.primary,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -1197,13 +1198,13 @@ class _MobileRefractometryTestScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.primary.withValues(alpha: 0.08),
               shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               shadows: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.03),
+                  color: context.primary.withValues(alpha: 0.03),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1211,8 +1212,8 @@ class _MobileRefractometryTestScreenState
             ),
             child: Text(
               'ROUND ${_currentRound + 1}/${TestConstants.mobileRefractometryMaxRounds}',
-              style: const TextStyle(
-                color: AppColors.primary,
+              style: TextStyle(
+                color: context.primary,
                 fontWeight: FontWeight.w900,
                 fontSize: 11,
                 letterSpacing: 0.5,
@@ -1225,13 +1226,13 @@ class _MobileRefractometryTestScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: ShapeDecoration(
-              color: AppColors.success.withValues(alpha: 0.08),
+              color: context.success.withValues(alpha: 0.08),
               shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               shadows: [
                 BoxShadow(
-                  color: AppColors.success.withValues(alpha: 0.03),
+                  color: context.success.withValues(alpha: 0.03),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1239,8 +1240,8 @@ class _MobileRefractometryTestScreenState
             ),
             child: Text(
               '$correctCount/${responses.length}',
-              style: const TextStyle(
-                color: AppColors.success,
+              style: TextStyle(
+                color: context.success,
                 fontWeight: FontWeight.w900,
                 fontSize: 11,
               ),
@@ -1254,7 +1255,7 @@ class _MobileRefractometryTestScreenState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: context.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -1265,13 +1266,13 @@ class _MobileRefractometryTestScreenState
                         _continuousSpeech.shouldBeListening &&
                         !_continuousSpeech.isPausedForTts,
                     isTalking: _isSpeechActive,
-                    color: AppColors.primary,
+                    color: context.primary,
                   ),
                   const SizedBox(width: 8),
-                  const Icon(
+                  Icon(
                     Icons.mic_none_rounded,
                     size: 14,
-                    color: AppColors.primary,
+                    color: context.primary,
                   ),
                 ],
               ),
@@ -1287,9 +1288,7 @@ class _MobileRefractometryTestScreenState
               Icon(
                 Icons.timer_outlined,
                 size: 16,
-                color: _remainingSeconds <= 2
-                    ? AppColors.error
-                    : AppColors.primary,
+                color: _remainingSeconds <= 2 ? context.error : context.primary,
               ),
               const SizedBox(width: 4),
               Text(
@@ -1298,8 +1297,8 @@ class _MobileRefractometryTestScreenState
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: _remainingSeconds <= 2
-                      ? AppColors.error
-                      : AppColors.primary,
+                      ? context.error
+                      : context.primary,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -1315,7 +1314,7 @@ class _MobileRefractometryTestScreenState
         MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Container(
-      color: AppColors.testBackground,
+      color: context.scaffoldBackground,
       width: double.infinity,
       height: double.infinity,
       child: isLandscape
@@ -1374,6 +1373,12 @@ class _MobileRefractometryTestScreenState
                 margin: EdgeInsets.only(
                   right: isLandscape ? 50 : 0, // Room for timer overlap
                   bottom: 0,
+                  left: isLandscape ? 0 : 24, // Added left padding for portrait
+                ),
+                padding: EdgeInsets.only(
+                  right: isLandscape
+                      ? 0
+                      : 24, // Added right padding for portrait
                 ),
                 child: _buildRelaxationImage(
                   isLandscape: isLandscape,
@@ -1405,7 +1410,7 @@ class _MobileRefractometryTestScreenState
           height: finalHeight,
           width: double.infinity,
           decoration: ShapeDecoration(
-            color: AppColors.white,
+            color: context.surface,
             shape: ContinuousRectangleBorder(
               borderRadius: BorderRadius.circular(32),
             ),
@@ -1443,7 +1448,7 @@ class _MobileRefractometryTestScreenState
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: AppColors.white.withValues(alpha: 0.15),
+            color: context.surface.withValues(alpha: 0.15),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
@@ -1461,7 +1466,7 @@ class _MobileRefractometryTestScreenState
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.white.withValues(alpha: 0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
@@ -1474,20 +1479,18 @@ class _MobileRefractometryTestScreenState
                       child: CircularProgressIndicator(
                         value: _relaxationProgressController.value,
                         strokeWidth: 5,
-                        backgroundColor: AppColors.primary.withValues(
-                          alpha: 0.1,
-                        ),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.primary,
+                        backgroundColor: context.primary.withValues(alpha: 0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          context.primary,
                         ),
                       ),
                     ),
                     Text(
                       '$_relaxationCountdown',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w900,
-                        color: AppColors.primary,
+                        color: context.primary,
                         fontFamily: 'Inter',
                         letterSpacing: -1,
                       ),
@@ -1506,13 +1509,16 @@ class _MobileRefractometryTestScreenState
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          'Relax and focus on the distance',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'Relax and focus on the distance',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: context.textPrimary,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
           ),
         ),
       ],
@@ -1540,10 +1546,10 @@ class _MobileRefractometryTestScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: context.surface,
               border: Border(
                 bottom: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.3),
+                  color: context.border.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -1558,17 +1564,17 @@ class _MobileRefractometryTestScreenState
                     vertical: 6,
                   ),
                   decoration: ShapeDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
+                    color: context.primary.withValues(alpha: 0.08),
                     shape: ContinuousRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   child: Text(
                     _getSnellenScore(currentFontSize),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
+                      color: context.primary,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -1582,8 +1588,8 @@ class _MobileRefractometryTestScreenState
                       Icons.timer_outlined,
                       size: 14,
                       color: _remainingSeconds <= 2
-                          ? AppColors.error
-                          : AppColors.primary,
+                          ? context.error
+                          : context.primary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -1594,8 +1600,8 @@ class _MobileRefractometryTestScreenState
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                         color: _remainingSeconds <= 2
-                            ? AppColors.error
-                            : AppColors.primary,
+                            ? context.error
+                            : context.primary,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
@@ -1660,8 +1666,8 @@ class _MobileRefractometryTestScreenState
                           Icons.mic,
                           size: 16,
                           color: _isTestPausedForDistance
-                              ? AppColors.warning
-                              : AppColors.success,
+                              ? context.warning
+                              : context.success,
                         ),
                       if (_continuousSpeech.isActive && !isPractitioner)
                         const SizedBox(width: 6),
@@ -1672,8 +1678,8 @@ class _MobileRefractometryTestScreenState
                               : 'Which way is E pointing?',
                           style: TextStyle(
                             color: _isTestPausedForDistance
-                                ? AppColors.warning
-                                : AppColors.textSecondary,
+                                ? context.warning
+                                : context.textSecondary,
                             fontSize: 13,
                             fontWeight: _isTestPausedForDistance
                                 ? FontWeight.bold
@@ -1707,14 +1713,14 @@ class _MobileRefractometryTestScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.black.withValues(alpha: 0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         _lastDetectedSpeech!,
         style: const TextStyle(
           fontSize: 16,
-          color: AppColors.white,
+          color: Colors.white,
           fontWeight: FontWeight.bold,
         ),
         textAlign: TextAlign.center,
@@ -1726,7 +1732,7 @@ class _MobileRefractometryTestScreenState
     return Container(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: context.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
@@ -1768,15 +1774,15 @@ class _MobileRefractometryTestScreenState
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _handleResponse(EDirection.blurry),
-              icon: const Icon(
+              icon: Icon(
                 Icons.visibility_off_rounded,
                 size: 18,
-                color: AppColors.primary,
+                color: context.primary,
               ),
-              label: const Text(
+              label: Text(
                 "BLURRY / CAN'T SEE CLEARLY",
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: context.primary,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                   letterSpacing: 0.5,
@@ -1785,13 +1791,13 @@ class _MobileRefractometryTestScreenState
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: BorderSide(
-                  color: AppColors.primary.withValues(alpha: 0.5),
+                  color: context.primary.withValues(alpha: 0.5),
                   width: 1.5,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                backgroundColor: AppColors.primary.withValues(alpha: 0.05),
+                backgroundColor: context.primary.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -1813,7 +1819,7 @@ class _MobileRefractometryTestScreenState
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: AppColors.white,
+          color: context.surface,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1858,14 +1864,14 @@ class _MobileRefractometryTestScreenState
                     icon: Icon(
                       Icons.visibility_off_rounded,
                       size: iconSize * 0.6,
-                      color: AppColors.primary,
+                      color: context.primary,
                     ),
                     label: Text(
                       "BLURRY",
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: context.primary,
                         fontWeight: FontWeight.w900,
                         fontSize: (buttonSize < 45) ? 9 : 11,
                       ),
@@ -1875,15 +1881,13 @@ class _MobileRefractometryTestScreenState
                         vertical: (buttonSize < 45) ? 6 : 10,
                       ),
                       side: BorderSide(
-                        color: AppColors.primary.withValues(alpha: 0.5),
+                        color: context.primary.withValues(alpha: 0.5),
                         width: 1,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      backgroundColor: AppColors.primary.withValues(
-                        alpha: 0.05,
-                      ),
+                      backgroundColor: context.primary.withValues(alpha: 0.05),
                     ),
                   ),
                 ),
@@ -1918,8 +1922,8 @@ class _MobileRefractometryTestScreenState
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.white.withValues(alpha: 0.15),
-                AppColors.white.withValues(alpha: 0.05),
+                context.surface.withValues(alpha: 0.15),
+                context.surface.withValues(alpha: 0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
@@ -2083,11 +2087,11 @@ class _DirectionButton extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.primary,
         borderRadius: BorderRadius.circular(size * 0.3),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: context.primary.withValues(alpha: 0.3),
             blurRadius: size * 0.15,
             offset: Offset(0, size * 0.05),
           ),
@@ -2099,7 +2103,7 @@ class _DirectionButton extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(size * 0.3),
           child: Center(
-            child: Icon(_icon, color: AppColors.white, size: iconSize),
+            child: Icon(_icon, color: Colors.white, size: iconSize),
           ),
         ),
       ),

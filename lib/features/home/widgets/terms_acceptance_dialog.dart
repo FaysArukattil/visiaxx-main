@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:visiaxx/core/constants/app_colors.dart';
+import 'package:visiaxx/core/extensions/theme_extension.dart';
 import 'package:visiaxx/core/services/auth_service.dart';
 import 'package:visiaxx/core/utils/snackbar_utils.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
@@ -53,7 +53,7 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
       child: Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 0,
-        backgroundColor: AppColors.transparent,
+        backgroundColor: Colors.transparent,
         insetPadding: EdgeInsets.symmetric(
           horizontal: isLandscape ? 100 : 20,
           vertical: 24,
@@ -61,11 +61,11 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: context.surface,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.primary.withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -82,32 +82,32 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: context.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.description_outlined,
-                      color: AppColors.primary,
+                      color: context.primary,
                       size: 30,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Terms & Conditions',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1C1E),
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Please review and agree to our terms to continue using Visiaxx Digital Eye Clinic.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                     ),
                   ),
 
@@ -120,9 +120,11 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.background,
+                            color: context.scaffoldBackground,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(
+                              color: context.border.withValues(alpha: 0.5),
+                            ),
                           ),
                           child: const Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +174,7 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
                         'View Full Terms & Conditions',
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.primary.withValues(alpha: 0.8),
+                          color: context.primary.withValues(alpha: 0.8),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -180,12 +182,12 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
 
                   const SizedBox(height: 16),
 
-                  const Text(
+                  Text(
                     'By clicking "I Agree", you acknowledge that you have read and accepted all policies and terms.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -197,9 +199,9 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
                     child: ElevatedButton(
                       onPressed: !_isSubmitting ? _handleAccept : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        disabledBackgroundColor: AppColors.primary.withValues(
+                        backgroundColor: context.primary,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: context.primary.withValues(
                           alpha: 0.3,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -212,10 +214,7 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: EyeLoader(
-                                size: 24,
-                                color: AppColors.white,
-                              ),
+                              child: EyeLoader(size: 24, color: Colors.white),
                             )
                           : const Text(
                               'I Agree & Continue',
@@ -235,7 +234,7 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textTertiary,
+                          color: context.textTertiary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -265,18 +264,18 @@ class _TermsPoint extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: context.primary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             content,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.textPrimary,
+              color: context.textPrimary,
               height: 1.4,
             ),
           ),
