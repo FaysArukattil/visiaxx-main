@@ -367,21 +367,26 @@ class FamilyMemberService {
 
       // For each family member, find results that match their name but have wrong profileId
       for (final member in members) {
-        final currentId = member.identityString;
+        final currentId = member.id; // Use member.id instead of identityString
         final memberName = member.firstName;
 
         debugPrint(
           '[FamilyMemberService] 🔍 Checking for orphaned results for: $memberName (current ID: $currentId)',
         );
 
-        // Find results where name matches but profileId is wrong
+        // Find results where name matches but profileId is different
         final orphanedResults = allUserTests.where((doc) {
           final data = doc.data();
           final profileName = data['profileName'];
           final profileId = data['profileId'];
 
           // Match by name but exclude if profileId is already correct
-          return profileName == memberName && profileId != currentId;
+          // IMPORTANT: Also exclude if the current profileId looks like a corrupted duplicate
+          final isDuplicate =
+              currentId.contains(profileId) || profileId.contains(currentId);
+          return profileName == memberName &&
+              profileId != currentId &&
+              !isDuplicate;
         }).toList();
 
         if (orphanedResults.isNotEmpty) {
@@ -409,7 +414,7 @@ class FamilyMemberService {
             // Move to correct path if needed
             if (oldPath.contains('/members/$oldProfileId/tests/')) {
               final newPath = oldPath.replaceFirst(
-                '/members/$oldProfileId/tests kindred/',
+                '/members/$oldProfileId/tests/',
                 '/members/$currentId/tests/',
               );
               debugPrint('[FamilyMemberService]       Moving to: $newPath');

@@ -436,77 +436,130 @@ class TestResultService {
     );
     final controller = StreamController<List<TestResultModel>>();
 
-    AuthService().getUserData(userId).then((user) {
-      if (user == null) {
-        controller.add([]);
-        controller.close();
-        return;
-      }
+    AuthService()
+        .getUserData(userId)
+        .then((user) {
+          if (user == null) {
+            controller.add([]);
+            controller.close();
+            return;
+          }
 
-      final identity = user.identityString;
-      final roleCol = user.roleCollection;
+          final identity = user.identityString;
+          final roleCol = user.roleCollection;
 
-      List<QueryDocumentSnapshot<Map<String, dynamic>>>? lastTests;
-      List<String>? lastHidden;
+          List<QueryDocumentSnapshot<Map<String, dynamic>>> lastTests = [];
+          List<String> lastHidden = [];
+          bool hasInitialTests = false;
+          bool hasInitialHidden = false;
 
-      void emit() {
-        if (lastHidden == null || lastTests == null) return;
-
-        final results = lastTests!
-            .where((doc) => !lastHidden!.contains(doc.id))
-            .map((doc) {
-              try {
-                final data = doc.data();
-                data['id'] = doc.id;
-                return TestResultModel.fromJson(data);
-              } catch (e) {
-                debugPrint('[TestResultService] Parse error in stream: $e');
-                return null;
-              }
-            })
-            .where((r) => r != null)
-            .cast<TestResultModel>()
-            .toList();
-
-        controller.add(results);
-      }
-
-      // Single stream using collectionGroup to get self + family tests
-      final subTests = _firestore
-          .collectionGroup('tests')
-          .where('userId', isEqualTo: userId)
-          .orderBy('timestamp', descending: true)
-          .snapshots()
-          .listen(
-            (snap) {
-              lastTests = snap.docs;
-              emit();
-            },
-            onError: (e) =>
-                debugPrint('[TestResultService] Group stream error: $e'),
-          );
-
-      // User Doc: hiddenResultIds
-      final subUser = _firestore
-          .collection(roleCol)
-          .doc(identity)
-          .snapshots()
-          .listen(
-            (snap) {
-              lastHidden = List<String>.from(
-                snap.data()?['hiddenResultIds'] ?? [],
+          void emit() {
+            // Only emit when BOTH streams have provided initial data
+            if (!hasInitialTests || !hasInitialHidden) {
+              debugPrint(
+                '[TestResultService] ⏳ Waiting for both streams (tests: $hasInitialTests, hidden: $hasInitialHidden)',
               );
-              emit();
-            },
-            onError: (e) =>
-                debugPrint('[TestResultService] User sub error: $e'),
-          );
+              return;
+            }
 
-      controller.onCancel = () {
-        subTests.cancel();
-        subUser.cancel();
-      };
-    });
+            debugPrint(
+              '[TestResultService] 📊 Emitting: ${lastTests.length} total tests, ${lastHidden.length} hidden',
+            );
+
+            final results = lastTests
+                .where((doc) {
+                  final isHidden = lastHidden.contains(doc.id);
+                  if (isHidden) {
+                    debugPrint(
+                      '[TestResultService] 🚫 Filtering out hidden: ${doc.id}',
+                    );
+                  }
+                  return !isHidden;
+                })
+                .map((doc) {
+                  try {
+                    final data = doc.data();
+                    data['id'] = doc.id;
+                    final result = TestResultModel.fromJson(data);
+                    debugPrint(
+                      '[TestResultService] ✅ Including result: ${result.id} - ${result.profileName}',
+                    );
+                    return result;
+                  } catch (e) {
+                    debugPrint(
+                      '[TestResultService] ❌ Parse error in stream: $e',
+                    );
+                    return null;
+                  }
+                })
+                .where((r) => r != null)
+                .cast<TestResultModel>()
+                .toList();
+
+            debugPrint(
+              '[TestResultService] 📤 Emitting ${results.length} results to UI',
+            );
+            controller.add(results);
+          }
+
+          // Single stream using collectionGroup to get self + family tests
+          final subTests = _firestore
+              .collectionGroup('tests')
+              .where('userId', isEqualTo: userId)
+              .orderBy('timestamp', descending: true)
+              .snapshots()
+              .listen(
+                (snap) {
+                  debugPrint(
+                    '[TestResultService] 🔄 Tests stream update: ${snap.docs.length} docs',
+                  );
+                  lastTests = snap.docs;
+                  hasInitialTests = true;
+                  emit();
+                },
+                onError: (e) {
+                  debugPrint('[TestResultService] ❌ Group stream error: $e');
+                  controller.addError(e);
+                },
+              );
+
+          // User Doc: hiddenResultIds
+          final subUser = _firestore
+              .collection(roleCol)
+              .doc(identity)
+              .snapshots()
+              .listen(
+                (snap) {
+                  final newHidden = List<String>.from(
+                    snap.data()?['hiddenResultIds'] ?? [],
+                  );
+                  debugPrint(
+                    '[TestResultService] 🔄 Hidden IDs update: ${newHidden.length} hidden',
+                  );
+                  lastHidden = newHidden;
+                  hasInitialHidden = true;
+                  emit();
+                },
+                onError: (e) {
+                  debugPrint('[TestResultService] ❌ User sub error: $e');
+                  // Even if hidden IDs fail to load, we should still show results
+                  lastHidden = [];
+                  hasInitialHidden = true;
+                  emit();
+                },
+              );
+
+          controller.onCancel = () {
+            debugPrint('[TestResultService] 🛑 Stream cancelled');
+            subTests.cancel();
+            subUser.cancel();
+          };
+        })
+        .catchError((e) {
+          debugPrint('[TestResultService] ❌ getUserData error: $e');
+          controller.addError(e);
+          controller.close();
+        });
 
     return controller.stream;
   }

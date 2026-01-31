@@ -53,10 +53,13 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     _loadResults();
     _scrollController.addListener(_onScroll);
 
-    // Run recovery check ONE TIME to update outdated profile names in old results
-    Future.delayed(const Duration(milliseconds: 2000), () {
-      _runRecoveryIfNeeded();
-    });
+    // Run recovery check AFTER stream is established and has emitted at least once
+    // // This prevents the recovery from interfering with initial data load
+    // Future.delayed(const Duration(seconds: 3), () {
+    //   if (mounted && _results.isNotEmpty) {
+    //     _runRecoveryIfNeeded();
+    //   }
+    // });
   }
 
   @override
@@ -126,76 +129,32 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     }
 
     debugPrint('[MyResults] 🔄 Starting real-time stream listen...');
-
     _resultsSubscription = _testResultService
         .getTestResultsStream(user.uid)
         .listen(
           (results) {
-            if (mounted) {
-              setState(() {
-                _results = results;
-                _isLoading = false;
-                _hasMore = results.length > _itemsPerPage;
-                _error = null;
-              });
-              debugPrint(
-                '[MyResults] ✅ Stream update: ${results.length} results',
-              );
-              // Save to disk for next fast load
-              _persistenceService.saveResults(
-                results,
-                customKey: 'user_results',
-              );
-            }
+            _safeSetState(() {
+              _results = results;
+              _isLoading = false;
+              _hasMore = results.length > _itemsPerPage;
+              _error = null;
+            });
+            debugPrint(
+              '[MyResults] ✅ Stream update: ${results.length} results',
+            );
+            // Save to disk for next fast load
+            _persistenceService.saveResults(results, customKey: 'user_results');
           },
           onError: (e) {
-            debugPrint('[MyResults] â Œ Stream error: $e');
-            if (mounted) {
-              setState(() {
-                if (_results.isEmpty) {
-                  _error = 'Failed to load results';
-                }
-                _isLoading = false;
-              });
-            }
+            debugPrint('[MyResults] ❌ Stream error: $e');
+            _safeSetState(() {
+              if (_results.isEmpty) {
+                _error = 'Failed to load results';
+              }
+              _isLoading = false;
+            });
           },
         );
-
-    // DISABLED: Initial load from cache/server - the stream above already handles this correctly
-    // The future-based fetch was causing issues by overwriting stream results with incomplete data
-    /*
-    try {
-      setState(() => _isSyncing = true);
-
-      final initialResults = await _testResultService.getTestResults(
-        user.uid,
-        source: Source.serverAndCache,
-      );
-
-      if (mounted && initialResults.isNotEmpty) {
-        setState(() {
-          _results = initialResults;
-          _isLoading = false;
-          _hasMore = initialResults.length > _itemsPerPage;
-          _loadingProgress = 1.0;
-        });
-        debugPrint(
-          '[MyResults] ✅ Refreshing with fresh Future results (including family)',
-        );
-
-        // Save full merged list to disk for next instant load
-        await _persistenceService.saveResults(
-          initialResults,
-          customKey: 'user_results',
-        );
-      }
-
-      if (mounted) setState(() => _isSyncing = false);
-    } catch (e) {
-      debugPrint('[MyResults] Initial fetch error: $e');
-      if (mounted) setState(() => _isSyncing = false);
-    }
-    */
   }
 
   Future<void> _loadMoreResults() async {
@@ -227,8 +186,6 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     return filtered.take(endIndex.clamp(0, filtered.length)).toList();
   }
 
-  /// TEMPORARY: Recovery utility to fix orphaned results
-  /// This will run once when the screen loads
   Future<void> _runRecoveryIfNeeded() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -236,24 +193,17 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     try {
       debugPrint('[MyResults] 🔧 Running orphaned results recovery check...');
 
-      // Show loading indicator
-      if (mounted) {
-        setState(() => _isSyncing = true);
-      }
-
+      // DON'T show loading indicator - let stream handle UI updates
       final familyMemberService = FamilyMemberService();
+
+      // Run recovery in background without blocking UI
       await familyMemberService.recoverOrphanedResults(user.uid);
 
-      // Reload results after recovery
-      if (mounted) {
-        setState(() => _isSyncing = false);
-        await _loadResults();
-      }
+      debugPrint('[MyResults] ✅ Recovery check complete');
+
+      // DON'T reload - the stream will automatically pick up any changes
     } catch (e) {
       debugPrint('[MyResults] ⚠️ Recovery check failed: $e');
-      if (mounted) {
-        setState(() => _isSyncing = false);
-      }
     }
   }
 
@@ -1449,6 +1399,20 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         },
       ),
     );
+  }
+
+  DateTime? _lastUpdate;
+  void _safeSetState(VoidCallback fn) {
+    final now = DateTime.now();
+    if (_lastUpdate != null &&
+        now.difference(_lastUpdate!).inMilliseconds < 100) {
+      // Skip update if too soon after last one
+      return;
+    }
+    _lastUpdate = now;
+    if (mounted) {
+      setState(fn);
+    }
   }
 }
 
