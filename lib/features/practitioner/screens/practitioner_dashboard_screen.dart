@@ -2465,35 +2465,6 @@ class _PractitionerDashboardScreenState
                   ),
                 ),
                 _buildRecentResultsList(),
-                if (_allResults.isEmpty && _isSyncing)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 80),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const EyeLoader(size: 60),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Loading Patient Records...',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: context.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'We are retrieving clinical data from the cloud',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: context.textTertiary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 if (_allResults.isEmpty && !_isSyncing && !_isInitialLoading)
                   SliverToBoxAdapter(
                     child: Padding(
@@ -2586,6 +2557,18 @@ class _PractitionerDashboardScreenState
                         fontSize: 11,
                         color: context.textTertiary,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: value > 0 ? value : null,
+                        backgroundColor: context.primary.withValues(alpha: 0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          context.primary,
+                        ),
+                        minHeight: 3,
                       ),
                     ),
                   ],

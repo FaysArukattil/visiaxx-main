@@ -402,9 +402,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                 _buildFilters(),
                 if (_isSyncing) _buildSyncStatusBanner(),
                 Expanded(
-                  child: _isLoading && _results.isEmpty
-                      ? const Center(child: EyeLoader.fullScreen())
-                      : _filteredResults.isEmpty
+                  child: _filteredResults.isEmpty
                       ? _buildEmptyState()
                       : RefreshIndicator(
                           onRefresh: _loadResults,
@@ -1371,6 +1369,18 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                         fontSize: 10,
                         color: context.textTertiary,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: value > 0 ? value : null,
+                        backgroundColor: context.primary.withValues(alpha: 0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          context.primary,
+                        ),
+                        minHeight: 3,
                       ),
                     ),
                   ],

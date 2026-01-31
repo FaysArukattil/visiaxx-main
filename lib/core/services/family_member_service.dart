@@ -170,12 +170,16 @@ class FamilyMemberService {
 
         // 2. Delete old document
         await collectionRef.doc(memberId).delete();
+
+        debugPrint(
+          '[FamilyMemberService] ✅ Migration complete. Results will update via real-time stream.',
+        );
       }
 
       // 3. Save new/updated document
       await collectionRef.doc(newIdentity).set(memberToUpdate.toFirestore());
 
-      debugPrint('[FamilyMemberService] … Member updated: $newIdentity');
+      debugPrint('[FamilyMemberService] ✅ Member updated: $newIdentity');
     } catch (e) {
       debugPrint('[FamilyMemberService]  Œ Error updating member: $e');
       rethrow;
@@ -192,20 +196,54 @@ class FamilyMemberService {
     required String newSex,
   }) async {
     try {
-      // Find all results across the DB using collectionGroup
-      // but filtered by the current user and old member identity
-      final snapshot = await _firestore
-          .collectionGroup('tests')
-          .where('userId', isEqualTo: userId)
-          .where('profileId', isEqualTo: oldIdentity)
-          .get();
+      debugPrint(
+        '[FamilyMemberService] 🔄 Starting migration from $oldIdentity to $newIdentity',
+      );
 
-      if (snapshot.docs.isEmpty) return;
+      // Fetch ALL tests from collectionGroup (no filters = no index needed!)
+      // Then filter by userId AND profileId in memory
+      debugPrint(
+        '[FamilyMemberService] 📡 Fetching all tests from collectionGroup...',
+      );
+      final snapshot = await _firestore.collectionGroup('tests').get();
+
+      debugPrint(
+        '[FamilyMemberService] 📊 Found ${snapshot.docs.length} total tests in database',
+      );
+
+      // Filter in memory: first by userId, then by old profileId
+      final docsToMigrate = snapshot.docs.where((doc) {
+        final data = doc.data();
+        return data['userId'] == userId && data['profileId'] == oldIdentity;
+      }).toList();
+
+      debugPrint(
+        '[FamilyMemberService] 🎯 Filtered to ${docsToMigrate.length} results to migrate for user $userId with profileId $oldIdentity',
+      );
+
+      if (docsToMigrate.isEmpty) {
+        debugPrint(
+          '[FamilyMemberService] ℹ️ No results to migrate for $oldIdentity',
+        );
+        return;
+      }
 
       final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
+      int movedCount = 0;
+      int updatedCount = 0;
+
+      for (final doc in docsToMigrate) {
         final oldPath = doc.reference.path;
         final data = doc.data();
+
+        debugPrint('[FamilyMemberService] 📝 Processing result: ${doc.id}');
+        debugPrint('[FamilyMemberService]    Old path: $oldPath');
+        debugPrint(
+          '[FamilyMemberService]    Old profileId: ${data['profileId']}',
+        );
+        debugPrint(
+          '[FamilyMemberService]    Old profileName: ${data['profileName']}',
+        );
 
         // Update metadata
         data['profileId'] = newIdentity;
@@ -220,24 +258,194 @@ class FamilyMemberService {
             '/members/$oldIdentity/tests/',
             '/members/$newIdentity/tests/',
           );
+          debugPrint('[FamilyMemberService]    ➡️  Moving to: $newPath');
+          debugPrint('[FamilyMemberService]    New profileId: $newIdentity');
+          debugPrint('[FamilyMemberService]    New profileName: $newName');
           batch.set(_firestore.doc(newPath), data);
           batch.delete(doc.reference);
+          movedCount++;
         } else {
           // Just update the fields in place
+          debugPrint('[FamilyMemberService]    ✏️  Updating in place');
+          debugPrint('[FamilyMemberService]    New profileId: $newIdentity');
+          debugPrint('[FamilyMemberService]    New profileName: $newName');
           batch.update(doc.reference, {
             'profileId': newIdentity,
             'profileName': newName,
             'profileAge': newAge,
             'profileSex': newSex,
           });
+          updatedCount++;
         }
       }
+
+      debugPrint(
+        '[FamilyMemberService] 💾 Committing batch: $movedCount moved, $updatedCount updated',
+      );
       await batch.commit();
       debugPrint(
-        '[FamilyMemberService] Migrated ${snapshot.docs.length} family member results',
+        '[FamilyMemberService] ✅ Migration complete! Migrated ${docsToMigrate.length} results (${movedCount} moved, ${updatedCount} updated in-place)',
       );
-    } catch (e) {
-      debugPrint('[FamilyMemberService] Error migrating family tests: $e');
+
+      // VERIFICATION: Check if results are actually accessible with new profileId
+      debugPrint('[FamilyMemberService] 🔍 Verifying migration...');
+      await Future.delayed(
+        const Duration(milliseconds: 1000),
+      ); // Wait for Firestore to process
+
+      final verifySnapshot = await _firestore
+          .collectionGroup('tests')
+          .where('userId', isEqualTo: userId)
+          .where('profileId', isEqualTo: newIdentity)
+          .get();
+
+      debugPrint(
+        '[FamilyMemberService] ✓ Verification: Found ${verifySnapshot.docs.length} results with new profileId: $newIdentity',
+      );
+
+      if (verifySnapshot.docs.length != docsToMigrate.length) {
+        debugPrint(
+          '[FamilyMemberService] ⚠️ WARNING: Expected ${docsToMigrate.length} results but found ${verifySnapshot.docs.length} after migration!',
+        );
+      } else {
+        debugPrint(
+          '[FamilyMemberService] ✓ Verification successful! All results migrated correctly.',
+        );
+      }
+
+      // Check for any orphaned results with old profileId
+      final orphanedSnapshot = await _firestore
+          .collectionGroup('tests')
+          .where('userId', isEqualTo: userId)
+          .where('profileId', isEqualTo: oldIdentity)
+          .get();
+
+      if (orphanedSnapshot.docs.isNotEmpty) {
+        debugPrint(
+          '[FamilyMemberService] ❌ ERROR: Found ${orphanedSnapshot.docs.length} orphaned results still with old profileId: $oldIdentity',
+        );
+        for (final doc in orphanedSnapshot.docs) {
+          debugPrint(
+            '[FamilyMemberService]    Orphaned: ${doc.id} at ${doc.reference.path}',
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[FamilyMemberService] ❌ Error migrating family tests: $e');
+      debugPrint('[FamilyMemberService] Stack trace: $stackTrace');
+    }
+  }
+
+  /// Recovery utility: Find and migrate orphaned results by matching names
+  /// Call this to recover results that were lost during failed migrations
+  Future<void> recoverOrphanedResults(String userId) async {
+    try {
+      debugPrint(
+        '[FamilyMemberService] 🔧 Starting orphaned results recovery for user: $userId',
+      );
+
+      // Get all current family members
+      final members = await getFamilyMembers(userId);
+      debugPrint(
+        '[FamilyMemberService] 👥 Found ${members.length} current family members',
+      );
+
+      // Fetch ALL tests for this user
+      debugPrint('[FamilyMemberService] 📡 Fetching all tests...');
+      final snapshot = await _firestore.collectionGroup('tests').get();
+
+      final allUserTests = snapshot.docs
+          .where((doc) => doc.data()['userId'] == userId)
+          .toList();
+
+      debugPrint(
+        '[FamilyMemberService] 📊 Found ${allUserTests.length} total test results for user',
+      );
+
+      int recoveredCount = 0;
+      final batch = _firestore.batch();
+
+      // For each family member, find results that match their name but have wrong profileId
+      for (final member in members) {
+        final currentId = member.identityString;
+        final memberName = member.firstName;
+
+        debugPrint(
+          '[FamilyMemberService] 🔍 Checking for orphaned results for: $memberName (current ID: $currentId)',
+        );
+
+        // Find results where name matches but profileId is wrong
+        final orphanedResults = allUserTests.where((doc) {
+          final data = doc.data();
+          final profileName = data['profileName'];
+          final profileId = data['profileId'];
+
+          // Match by name but exclude if profileId is already correct
+          return profileName == memberName && profileId != currentId;
+        }).toList();
+
+        if (orphanedResults.isNotEmpty) {
+          debugPrint(
+            '[FamilyMemberService] 🎯 Found ${orphanedResults.length} orphaned results for $memberName',
+          );
+
+          for (final doc in orphanedResults) {
+            final oldPath = doc.reference.path;
+            final data = doc.data();
+            final oldProfileId = data['profileId'];
+
+            debugPrint('[FamilyMemberService]    📝 Recovering: ${doc.id}');
+            debugPrint(
+              '[FamilyMemberService]       Old profileId: $oldProfileId',
+            );
+            debugPrint('[FamilyMemberService]       New profileId: $currentId');
+
+            // Update the data
+            data['profileId'] = currentId;
+            data['profileName'] = member.firstName;
+            data['profileAge'] = member.age;
+            data['profileSex'] = member.sex;
+
+            // Move to correct path if needed
+            if (oldPath.contains('/members/$oldProfileId/tests/')) {
+              final newPath = oldPath.replaceFirst(
+                '/members/$oldProfileId/tests kindred/',
+                '/members/$currentId/tests/',
+              );
+              debugPrint('[FamilyMemberService]       Moving to: $newPath');
+              batch.set(_firestore.doc(newPath), data);
+              batch.delete(doc.reference);
+            } else {
+              debugPrint('[FamilyMemberService]       Updating in place');
+              batch.update(doc.reference, {
+                'profileId': currentId,
+                'profileName': member.firstName,
+                'profileAge': member.age,
+                'profileSex': member.sex,
+              });
+            }
+
+            recoveredCount++;
+          }
+        }
+      }
+
+      if (recoveredCount > 0) {
+        debugPrint(
+          '[FamilyMemberService] 💾 Committing recovery batch for $recoveredCount results...',
+        );
+        await batch.commit();
+        debugPrint(
+          '[FamilyMemberService] ✅ Successfully recovered $recoveredCount orphaned results!',
+        );
+      } else {
+        debugPrint(
+          '[FamilyMemberService] ℹ️ No orphaned results found - all results are correctly linked',
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[FamilyMemberService] ❌ Error during recovery: $e');
+      debugPrint('[FamilyMemberService] Stack trace: $stackTrace');
     }
   }
 
