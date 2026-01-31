@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:visiaxx/core/widgets/download_success_dialog.dart';
 import 'package:visiaxx/core/services/pdf_export_service.dart';
 import 'package:visiaxx/core/services/test_result_service.dart';
+import 'package:visiaxx/core/services/family_member_service.dart';
 import 'package:visiaxx/core/utils/ui_utils.dart';
 import 'package:visiaxx/data/models/test_result_model.dart';
 import 'package:visiaxx/data/models/color_vision_result.dart';
@@ -51,6 +52,11 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     super.initState();
     _loadResults();
     _scrollController.addListener(_onScroll);
+
+    // Run recovery check ONE TIME to update outdated profile names in old results
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      _runRecoveryIfNeeded();
+    });
   }
 
   @override
@@ -155,7 +161,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           },
         );
 
-    // Initial load from cache/server for immediate feedback
+    // DISABLED: Initial load from cache/server - the stream above already handles this correctly
+    // The future-based fetch was causing issues by overwriting stream results with incomplete data
+    /*
     try {
       setState(() => _isSyncing = true);
 
@@ -187,6 +195,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
       debugPrint('[MyResults] Initial fetch error: $e');
       if (mounted) setState(() => _isSyncing = false);
     }
+    */
   }
 
   Future<void> _loadMoreResults() async {
@@ -216,6 +225,36 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     // Apply pagination
     final endIndex = (_currentPage + 1) * _itemsPerPage;
     return filtered.take(endIndex.clamp(0, filtered.length)).toList();
+  }
+
+  /// TEMPORARY: Recovery utility to fix orphaned results
+  /// This will run once when the screen loads
+  Future<void> _runRecoveryIfNeeded() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      debugPrint('[MyResults] 🔧 Running orphaned results recovery check...');
+
+      // Show loading indicator
+      if (mounted) {
+        setState(() => _isSyncing = true);
+      }
+
+      final familyMemberService = FamilyMemberService();
+      await familyMemberService.recoverOrphanedResults(user.uid);
+
+      // Reload results after recovery
+      if (mounted) {
+        setState(() => _isSyncing = false);
+        await _loadResults();
+      }
+    } catch (e) {
+      debugPrint('[MyResults] ⚠️ Recovery check failed: $e');
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
+    }
   }
 
   Future<void> _downloadPdf(TestResultModel result) async {
@@ -394,6 +433,16 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         foregroundColor: context.textPrimary,
+        bottom: _isSyncing
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(4),
+                child: LinearProgressIndicator(
+                  backgroundColor: context.primary.withValues(alpha: 0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(context.primary),
+                  minHeight: 4,
+                ),
+              )
+            : null,
       ),
       body: _error != null
           ? _buildErrorState()
