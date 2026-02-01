@@ -9,13 +9,10 @@ import 'package:visiaxx/features/quick_vision_test/screens/distance_calibration_
 import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
-import '../../../core/services/speech_service.dart';
-import '../../../core/services/continuous_speech_manager.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../core/services/distance_skip_manager.dart';
 import '../../../core/utils/distance_helper.dart';
 import '../../../core/utils/pelli_robson_scoring.dart';
-import '../../../core/utils/pelli_robson_fuzzy_matcher.dart';
 import 'pelli_robson_result_screen.dart';
 import '../../../data/models/pelli_robson_result.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -39,9 +36,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     with WidgetsBindingObserver {
   // Services
   final TtsService _ttsService = TtsService();
-  final SpeechService _speechService = SpeechService();
-  late final ContinuousSpeechManager _continuousSpeech;
-  final PelliRobsonFuzzyMatcher _fuzzyMatcher = PelliRobsonFuzzyMatcher();
   final DistanceDetectionService _distanceService = DistanceDetectionService();
   final DistanceSkipManager _skipManager = DistanceSkipManager();
 
@@ -51,11 +45,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   int _currentScreenIndex = 0;
   int _currentTripletIndex = 0;
   bool _isTestActive = false;
-  bool _isListening = false;
-  bool _showingInstructions = false; // Changed initial to false
+  bool _showingInstructions = false;
   bool _showDistanceCalibration = true;
-  bool _mainInstructionsShown = false; // Track if general PR instructions shown
-
+  bool _mainInstructionsShown = false;
   bool _isTestPausedForDistance = false;
   bool _isPausedForExit =
       false; // … Prevent distance warning during pause dialog
@@ -79,16 +71,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     'both': [],
   };
   DateTime? _tripletStartTime;
-  String _recognizedText = '';
-  bool _speechDetected = false;
-
-  // Timers
-  Timer? _silenceTimer;
-  Timer? _autoAdvanceTimer;
-
   // Constants
-  static const int _silenceThresholdMs = 1500;
-  static const int _autoAdvanceDelayMs = 6000;
 
   @override
   void initState() {
@@ -99,28 +82,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   Future<void> _initServices() async {
     await _ttsService.initialize();
-    await _speechService.initialize();
-
-    // Initialize continuous speech manager
-    _continuousSpeech = ContinuousSpeechManager(_speechService);
-    _continuousSpeech.onFinalResult = _handleVoiceResponse;
-    _continuousSpeech.onSpeechDetected = _handleSpeechDetected;
-    _continuousSpeech.onListeningStateChanged = (isListening) {
-      if (mounted) setState(() => _isListening = isListening);
-    };
-
-    // Check if we are in practitioner mode
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final provider = context.read<TestSessionProvider>();
-        if (provider.profileType == 'patient') {
-          debugPrint(
-            '👨‍⚕️ [PelliRobson] Practitioner mode detected: Silencing Speech globally',
-          );
-          _speechService.setGloballyDisabled(true);
-        }
-      }
-    });
 
     // Start distance monitoring
     _startContinuousDistanceMonitoring();
@@ -205,13 +166,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     setState(() {
       _isTestPausedForDistance = true;
     });
-    // … FIX: Actually stop speech and timers to pause test
-    _continuousSpeech.stop();
-    _autoAdvanceTimer?.cancel();
-    _silenceTimer?.cancel();
-    setState(() => _isListening = false);
 
-    // TTS guidance
     final target = _currentMode == 'short' ? 40.0 : 100.0;
     _ttsService.speak(
       'Test paused. Please adjust your distance to ${target.toInt()} centimeters.',
@@ -225,9 +180,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _isTestPausedForDistance = false;
       _lastShouldPauseTime = null;
     });
-    if (_isTestActive) {
-      _startListeningForTriplet();
-    }
   }
 
   void _showCalibrationScreen() {
@@ -262,82 +214,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _startTest();
   }
 
-  // List of phrases indicating the user cannot see the letters
-  static const List<String> negativePhrases = [
-    'not visible',
-    'nothing',
-    'cannot',
-    "can't",
-    'skip',
-    'none',
-    'cannot see',
-    "can't see",
-    'invisible',
-    'no',
-  ];
-
-  void _handleSpeechDetected(String partialResult) {
-    if (!mounted || !_isTestActive) return;
-
-    final provider = context.read<TestSessionProvider>();
-    if (provider.profileType == 'patient') return;
-
-    setState(() {
-      _recognizedText = partialResult;
-      _speechDetected = partialResult.isNotEmpty;
-    });
-
-    _silenceTimer?.cancel();
-    _silenceTimer = Timer(
-      const Duration(milliseconds: _silenceThresholdMs),
-      () {
-        if (mounted && _isTestActive && _recognizedText.isNotEmpty) {
-          final normalized = _recognizedText.toLowerCase();
-
-          bool isNegativePhrase = false;
-          for (var phrase in negativePhrases) {
-            if (normalized.contains(phrase)) {
-              isNegativePhrase = true;
-              break;
-            }
-          }
-
-          if (isNegativePhrase) {
-            _submitCurrentTriplet('Not visible');
-          } else {
-            _submitCurrentTriplet(_recognizedText);
-          }
-        }
-      },
-    );
-  }
-
-  void _handleVoiceResponse(String result) {
-    if (!mounted || !_isTestActive) return;
-
-    final provider = context.read<TestSessionProvider>();
-    if (provider.profileType == 'patient') return;
-
-    setState(() => _recognizedText = result);
-    if (result.isNotEmpty) {
-      final normalized = result.toLowerCase();
-
-      bool isNegativePhrase = false;
-      for (var phrase in negativePhrases) {
-        if (normalized.contains(phrase)) {
-          isNegativePhrase = true;
-          break;
-        }
-      }
-
-      if (isNegativePhrase) {
-        _submitCurrentTriplet('Not visible');
-      } else {
-        _submitCurrentTriplet(result);
-      }
-    }
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // … FIX: Handle both paused and inactive states
@@ -358,15 +234,10 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   }
 
   void _pauseTest() {
-    _silenceTimer?.cancel();
-    _autoAdvanceTimer?.cancel();
-    // … FIX: Stop continuous speech manager (not just speechService)
-    _continuousSpeech.stop();
     _distanceService.stopMonitoring();
     _ttsService.stop();
     setState(() {
       _isPausedForExit = true;
-      _isListening = false;
     });
   }
 
@@ -376,7 +247,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         _isPausedForExit = false;
       });
       _startContinuousDistanceMonitoring();
-      _startListeningForTriplet();
     }
   }
 
@@ -401,8 +271,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   }
 
   void _startTest() {
-    _fuzzyMatcher.reset();
-
     // … FIX: Stop background monitoring during "Cover Eye" instructions
     _distanceService.stopMonitoring();
 
@@ -420,14 +288,14 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         title: commonTitle,
         subtitle: 'Right Eye: $commonSubtitle',
         ttsMessage: _currentMode == 'short'
-            ? 'Cover your left eye. Focus with your right eye only. Hold the device at 40 centimeters and read the triplets of letters aloud.'
-            : 'Cover your left eye. Focus with your right eye only. Sit at 1 meter from the screen and read the triplets of letters aloud.',
+            ? 'Cover your left eye. Focus with your right eye only. Hold the device at 40 centimeters and use the buttons to identify if you can see the letters clearly.'
+            : 'Cover your left eye. Focus with your right eye only. Sit at 1 meter from the screen and use the buttons to identify if you can see the letters clearly.',
         targetDistance: targetDistance,
         startButtonText: 'Start Right Eye Test',
         instructionTitle: 'Contrast Test',
         instructionDescription:
-            'Read the three letters in each row aloud. The letters will get fainter as you go.',
-        instructionIcon: Icons.record_voice_over,
+            'For each row of three letters, tap "VISIBLE" if you can read them clearly, or "NOT VISIBLE" if you cannot.',
+        instructionIcon: Icons.touch_app_rounded,
         onContinue: () {
           Navigator.of(context).pop();
           // … FIX: Resume monitoring AFTER user confirms they've covered eye
@@ -439,14 +307,15 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         title: commonTitle,
         subtitle: 'Left Eye: $commonSubtitle',
         ttsMessage: _currentMode == 'short'
-            ? 'Cover your right eye. Focus with your left eye only. Hold the device at 40 centimeters and read the triplets of letters aloud.'
-            : 'Cover your right eye. Focus with your left eye only. Sit at 1 meter from the screen and read the triplets of letters aloud.',
+            ? 'Cover your right eye. Focus with your left eye only. Hold the device at 40 centimeters and use the buttons to identify if you can see the letters clearly.'
+            : 'Cover your right eye. Focus with your left eye only. Sit at 1 meter from the screen and use the buttons to identify if you can see the letters clearly.',
+
         targetDistance: targetDistance,
         startButtonText: 'Start Left Eye Test',
         instructionTitle: 'Contrast Test',
         instructionDescription:
-            'Read the three letters in each row aloud. The letters will get fainter as you go.',
-        instructionIcon: Icons.record_voice_over,
+            'For each row of three letters, tap "VISIBLE" if you can read them clearly, or "NOT VISIBLE" if you cannot.',
+        instructionIcon: Icons.touch_app_rounded,
         onContinue: () {
           Navigator.of(context).pop();
           // … FIX: Resume monitoring AFTER user confirms they've covered eye
@@ -461,7 +330,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
   }
 
   void _actuallyStartTest() {
-    // Resume distance monitoring as the test is now active
     _startContinuousDistanceMonitoring();
 
     setState(() {
@@ -470,7 +338,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _currentScreenIndex = 0;
       _currentTripletIndex = 0;
     });
-    _ttsService.speak('Starting contrast test. Read the letters aloud.');
+    _ttsService.speak('Starting contrast test. Use the buttons to respond.');
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && _isTestActive) {
         _showNextTriplet();
@@ -483,7 +351,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       _currentScreenIndex,
     );
     if (_currentTripletIndex >= triplets.length) {
-      // Move to next screen
       _currentTripletIndex = 0;
       _currentScreenIndex++;
 
@@ -494,12 +361,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     }
 
     _tripletStartTime = DateTime.now();
-    _recognizedText = '';
-    _speechDetected = false;
     setState(() {});
 
     _scrollToCurrentTriplet();
-    _startListeningForTriplet();
   }
 
   void _scrollToCurrentTriplet() {
@@ -515,38 +379,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 
-  void _startListeningForTriplet() {
-    final provider = context.read<TestSessionProvider>();
-    if (provider.profileType != 'patient' && !_continuousSpeech.isActive) {
-      _continuousSpeech.start(
-        listenDuration: const Duration(minutes: 10),
-        minConfidence: 0.05,
-        bufferMs: 300,
-      );
-    }
-    setState(() => _isListening = provider.profileType != 'patient');
-
-    // Cancel existing timers
-    _silenceTimer?.cancel();
-    _autoAdvanceTimer?.cancel();
-
-    // Auto-advance timer (6 seconds of no speech)
-    _autoAdvanceTimer = Timer(
-      const Duration(milliseconds: _autoAdvanceDelayMs),
-      () {
-        if (mounted && _isTestActive && !_speechDetected) {
-          _submitCurrentTriplet('');
-        }
-      },
-    );
-  }
-
   void _submitCurrentTriplet(String heardLetters) {
-    _continuousSpeech.stop();
-    _silenceTimer?.cancel();
-    _autoAdvanceTimer?.cancel();
-    setState(() => _isListening = false);
-
     final triplets = PelliRobsonScoring.getTripletsForScreen(
       _currentScreenIndex,
     );
@@ -560,39 +393,31 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         ? DateTime.now().difference(_tripletStartTime!).inMilliseconds
         : 0;
 
-    // Use fuzzy matcher to count correct letters
-    // Special case: If user said 'not visible', they get 0
     final bool isNotVisible = heardLetters == 'Not visible';
-    final matchResult = isNotVisible
-        ? (count: 0, matches: [false, false, false])
-        : _fuzzyMatcher.matchTriplet(heardLetters, triplet.letters);
+    final correctLetters = isNotVisible
+        ? 0
+        : 3; // Assume all correct if visible
 
     final response = TripletResponse(
       tripletCode: triplet.code,
       logCSValue: triplet.logCS,
       expectedLetters: triplet.letters,
-      heardLetters: heardLetters.isEmpty || heardLetters == 'Not visible'
-          ? 'Not visible'
-          : heardLetters,
-      correctLetters: matchResult.count,
+      heardLetters: heardLetters,
+      correctLetters: correctLetters,
       responseTimeMs: responseTime,
-      wasAutoAdvanced: heardLetters.isEmpty,
+      wasAutoAdvanced: false,
     );
 
-    // Add to appropriate map
     if (_currentMode == 'short') {
       _shortResponses[_currentEye]?.add(response);
     } else {
       _longResponses[_currentEye]?.add(response);
     }
 
-    // Visual feedback
     HapticFeedback.lightImpact();
 
-    // Move to next triplet
     _currentTripletIndex++;
 
-    // Small delay before next triplet
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _isTestActive) {
         _showNextTriplet();
@@ -607,7 +432,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
       if (_currentEye == 'right') {
         _transitionToEye('left', 'short');
       } else {
-        // Left eye complete at short distance. Now transition to long distance for Right eye.
         // Left eye complete at short distance. Now transition to long distance for Right eye.
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -786,54 +610,40 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   /// Restart only the current test, preserving other test data
   void _restartCurrentTest() {
-    // Reset only Pelli-Robson test data in provider
     context.read<TestSessionProvider>().resetPelliRobson();
 
-    _silenceTimer?.cancel();
-    _autoAdvanceTimer?.cancel();
-    _speechService.cancel();
     _distanceService.stopMonitoring();
-    _continuousSpeech.stop();
     _ttsService.stop();
-    _fuzzyMatcher.reset();
 
-    // … FIX: Preserve the current mode (short or long) - only restart in that mode
     final preservedMode = _currentMode;
 
     setState(() {
       _currentEye = 'right';
-      _currentMode = preservedMode; // … Keep the current distance mode
+      _currentMode = preservedMode;
       _currentScreenIndex = 0;
       _currentTripletIndex = 0;
       _isTestActive = false;
-      _isListening = false;
       _showingInstructions = false;
       _showDistanceCalibration = true;
-      _mainInstructionsShown = true; // … Skip general instructions on restart
+      _mainInstructionsShown = true;
       _isTestPausedForDistance = false;
       _isPausedForExit = false;
-      // … Only clear responses for the current mode
       if (preservedMode == 'short') {
         _shortResponses.forEach((_, list) => list.clear());
       } else {
         _longResponses.forEach((_, list) => list.clear());
       }
-      _recognizedText = '';
-      _speechDetected = false;
     });
 
-    // Go directly to calibration screen (callbacks already set in _initServices)
     _showCalibrationScreen();
   }
 
   @override
+  @override
   void dispose() {
     _scrollController.dispose();
-    _silenceTimer?.cancel();
-    _autoAdvanceTimer?.cancel();
-    _speechService.setGloballyDisabled(false); // Reset for next session
-    _speechService.dispose();
     _ttsService.dispose();
+    _distanceService.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -892,7 +702,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                                   child: _buildTripletsDisplay(),
                                 ),
                               ),
-                              _buildRecognizedTextIndicator(),
                             ],
                           ),
                         ),
@@ -920,15 +729,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                         ),
                       ),
 
-                      // Recognized text banner (Reading test style)
-                      _buildRecognizedTextIndicator(),
-
                       // Visible / Not Visible buttons
                       if (_isTestActive && !_isTestPausedForDistance)
                         _buildVisibleButtons(),
-
-                      // Integrated Speech indicator
-                      _buildSpeechIndicator(),
 
                       const SizedBox(height: 16),
                     ],
@@ -1152,72 +955,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 
-  Widget _buildSpeechIndicator() {
-    final provider = context.watch<TestSessionProvider>();
-    if (provider.profileType == 'patient') return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: _buildPelliActionButton(
-        icon: _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-        label: _isListening ? 'LISTENING' : 'VOICE',
-        isActive: _isListening,
-        color: context.primary,
-        onPressed: () {
-          if (_isListening) {
-            _continuousSpeech.stop();
-            Future.delayed(const Duration(milliseconds: 200), () {
-              if (mounted && _isTestActive) _startListeningForTriplet();
-            });
-          } else {
-            _startListeningForTriplet();
-          }
-        },
-      ),
-    );
-  }
-
-  /// Optimized recognized text display (Matches reading test requirement for visibility)
-  Widget _buildRecognizedTextIndicator() {
-    final provider = context.read<TestSessionProvider>();
-    if (provider.profileType == 'patient') return const SizedBox.shrink();
-
-    final bool hasRecognized = _recognizedText.isNotEmpty;
-
-    if (!hasRecognized && !_isListening) {
-      return const SizedBox(height: 40);
-    }
-
-    return AnimatedOpacity(
-      opacity: (hasRecognized || _isListening) ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 300),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: context.onSurface.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: context.dividerColor.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Text(
-          hasRecognized ? _recognizedText : 'Listening...',
-          style: TextStyle(
-            fontSize: 18,
-            color: hasRecognized
-                ? context.textPrimary
-                : context.primary.withValues(alpha: 0.7),
-            fontWeight: FontWeight.bold,
-            fontStyle: hasRecognized ? FontStyle.normal : FontStyle.italic,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-
   Widget _buildDistanceIndicator() {
     final target = _currentMode == 'short' ? 40.0 : 100.0;
     final indicatorColor = DistanceHelper.getDistanceColor(
@@ -1360,7 +1097,6 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
             ),
           ),
           const SizedBox(height: 16),
-          _buildSpeechIndicator(),
         ],
       ),
     );
