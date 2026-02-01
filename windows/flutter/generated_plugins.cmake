@@ -14,7 +14,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   permission_handler_windows
   printing
   share_plus
-  speech_to_text_windows
   url_launcher_windows
 )
 

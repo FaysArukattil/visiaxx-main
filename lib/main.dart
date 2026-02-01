@@ -12,7 +12,6 @@ import 'package:visiaxx/features/home/screens/main_navigation_screen.dart';
 import 'package:visiaxx/features/home/screens/settings_screen.dart';
 import 'package:visiaxx/features/practitioner/screens/practitioner_individual_tests_screen.dart';
 import 'package:visiaxx/features/practitioner/screens/practitioner_main_navigation_screen.dart';
-import 'package:visiaxx/features/results/screens/speech_log_viewer_screen.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/screens/splashscreen.dart';
@@ -62,7 +61,6 @@ import 'core/providers/network_connectivity_provider.dart';
 // AWS Credentials Manager
 import 'core/services/aws_credentials_manager.dart';
 import 'core/services/session_monitor_service.dart';
-import 'core/services/speech_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -175,7 +173,6 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => EyeExerciseProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        Provider<SpeechService>(create: (_) => SpeechService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -225,7 +222,6 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               },
               '/quick-test-result': (context) => const QuickTestResultScreen(),
               '/my-results': (context) => const MyResultsScreen(),
-              '/speech-logs': (context) => const SpeechLogViewerScreen(),
               '/practitioner-dashboard': (context) =>
                   const PractitionerDashboardScreen(),
               '/practitioner-home': (context) =>

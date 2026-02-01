@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/user_model.dart';
 import 'session_monitor_service.dart';
 import 'local_storage_service.dart';
-import 'speech_service.dart';
 
 /// Firebase Authentication Service
 class AuthService {
@@ -65,16 +64,6 @@ class AuthService {
           // Save to local cache for offline-first access
           if (userModel != null) {
             await LocalStorageService().saveUserProfile(userModel);
-
-            // Handle session-wide microphone suppression for practitioners
-            if (userModel.role == UserRole.examiner) {
-              debugPrint(
-                '[AuthService] 👨‍⚕️ Practitioner login detected. Silencing Mic globally.',
-              );
-              SpeechService().setGloballyDisabled(true);
-            } else {
-              SpeechService().setGloballyDisabled(false);
-            }
           }
         }
 
@@ -215,16 +204,6 @@ class AuthService {
 
         // Update display name
         await credential.user!.updateDisplayName('$firstName $lastName');
-
-        // Handle session-wide microphone suppression for practitioners
-        if (role == UserRole.examiner) {
-          debugPrint(
-            '[AuthService] 👨‍⚕️ Practitioner registration successful. Silencing Mic globally.',
-          );
-          SpeechService().setGloballyDisabled(true);
-        } else {
-          SpeechService().setGloballyDisabled(false);
-        }
 
         // Send verification email
         await sendEmailVerification();
@@ -442,9 +421,6 @@ class AuthService {
 
     // Clear local cache
     await LocalStorageService().clearUserData();
-
-    // Re-enable microphone for the next user
-    SpeechService().setGloballyDisabled(false);
 
     // Sign out from Firebase Auth
     await _auth.signOut();
