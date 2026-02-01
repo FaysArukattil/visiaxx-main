@@ -10,8 +10,6 @@ import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
-import '../../../core/services/speech_service.dart';
-import '../../../core/services/continuous_speech_manager.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/distance_warning_overlay.dart';
@@ -50,9 +48,7 @@ class _MobileRefractometryTestScreenState
     with WidgetsBindingObserver, TickerProviderStateMixin {
   // Services
   final TtsService _ttsService = TtsService();
-  final SpeechService _speechService = SpeechService();
   final DistanceDetectionService _distanceService = DistanceDetectionService();
-  late ContinuousSpeechManager _continuousSpeech;
 
   // State Management
   RefractPhase _currentPhase = RefractPhase.instruction;
@@ -99,12 +95,6 @@ class _MobileRefractometryTestScreenState
   DateTime? _lastShouldPauseTime;
   static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
 
-  // Voice recognition feedback
-  bool _isSpeechActive = false;
-  String? _lastDetectedSpeech;
-  Timer? _speechActiveTimer;
-  Timer? _speechEraserTimer;
-
   // Age management
   int _patientAge = 30;
 
@@ -112,7 +102,6 @@ class _MobileRefractometryTestScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _continuousSpeech = ContinuousSpeechManager(_speechService);
 
     // Initialize relaxation animation controller
     _relaxationProgressController = AnimationController(
@@ -130,39 +119,11 @@ class _MobileRefractometryTestScreenState
       }
     });
 
-    // Check if we are in practitioner mode
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final provider = context.read<TestSessionProvider>();
-        if (provider.profileType == 'patient') {
-          debugPrint(
-            '👨‍⚕️ [MobileRefract] Practitioner mode detected: Silencing Speech globally',
-          );
-          context.read<SpeechService>().setGloballyDisabled(true);
-        }
-      }
-    });
-
     _initServices();
   }
 
   Future<void> _initServices() async {
     await _ttsService.initialize();
-    await _speechService.initialize();
-
-    _continuousSpeech.onFinalResult = _handleVoiceResponse;
-    _continuousSpeech.onSpeechDetected = _handleSpeechDetected;
-    _continuousSpeech.onListeningStateChanged = (isListening) {
-      if (mounted) setState(() {});
-    };
-
-    _ttsService.onSpeakingStateChanged = (isSpeaking) {
-      if (isSpeaking) {
-        _continuousSpeech.pauseForTts();
-      } else {
-        _continuousSpeech.resumeAfterTts();
-      }
-    };
 
     if (mounted) {
       final provider = context.read<TestSessionProvider>();
@@ -188,13 +149,7 @@ class _MobileRefractometryTestScreenState
     _relaxationProgressController.dispose();
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
-    _speechActiveTimer?.cancel();
-    _speechEraserTimer?.cancel();
-    _continuousSpeech.stop();
     _distanceService.stopMonitoring();
-    context.read<SpeechService>().setGloballyDisabled(
-      false,
-    ); // Reset for next session
     _ttsService.dispose();
     super.dispose();
   }
@@ -213,7 +168,6 @@ class _MobileRefractometryTestScreenState
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
     _distanceService.stopMonitoring();
-    _continuousSpeech.stop();
     setState(() => _isTestPausedForDistance = true);
   }
 
@@ -294,7 +248,6 @@ class _MobileRefractometryTestScreenState
       _isNearMode = targetCm <= 45.0;
     });
 
-    _continuousSpeech.stop();
     _distanceService.stopMonitoring();
 
     _isTransitioning = true;
@@ -387,11 +340,10 @@ class _MobileRefractometryTestScreenState
   void _pauseTestForDistance() {
     setState(() {
       _isTestPausedForDistance = true;
-      _isDistanceOk = false; // Mark distance as not OK when paused
+      _isDistanceOk = false;
     });
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
-    _continuousSpeech.stop();
     HapticFeedback.mediumImpact();
   }
 
@@ -402,14 +354,7 @@ class _MobileRefractometryTestScreenState
       _lastShouldPauseTime = null;
     });
 
-    // No need to restart distance monitoring as it's already running!
-    // Re-initialization (via _startContinuousDistanceMonitoring) causes "Searching..." stall.
-
     if (_currentPhase == RefractPhase.test && _waitingForResponse) {
-      final provider = context.read<TestSessionProvider>();
-      if (provider.profileType != 'patient' && !_continuousSpeech.isActive) {
-        _continuousSpeech.start();
-      }
       _startRoundTimer();
     } else if (_currentPhase == RefractPhase.relaxation) {
       _startRelaxationTimer();
@@ -419,14 +364,10 @@ class _MobileRefractometryTestScreenState
 
   void _startRelaxation() {
     debugPrint('[MobileRefract] Starting relaxation phase');
-    _continuousSpeech.stop();
-    _continuousSpeech.clearAccumulated();
 
     setState(() {
       _currentPhase = RefractPhase.relaxation;
       _relaxationCountdown = TestConstants.mobileRefractometryRelaxationSeconds;
-      _lastDetectedSpeech = null;
-      _isSpeechActive = false;
     });
 
     _ttsService.speak(TtsService.relaxationInstruction);
@@ -540,11 +481,7 @@ class _MobileRefractometryTestScreenState
   }
 
   void _generateNewRound() {
-    _lastDetectedSpeech = null;
-    _isSpeechActive = false;
     _eDisplayStartTime = null;
-    _continuousSpeech
-        .clearAccumulated(); // Explicitly clear buffer for new round
 
     // Generate random direction (different from last)
     final directions = [
@@ -560,22 +497,12 @@ class _MobileRefractometryTestScreenState
       _remainingSeconds = TestConstants.mobileRefractometryTimePerRoundSeconds;
       _waitingForResponse = true;
       _showResult = false;
-      _lastDetectedSpeech = null;
-      _isSpeechActive = false;
     });
 
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) return;
       _eDisplayStartTime = DateTime.now();
       _startRoundTimer();
-      final provider = context.read<TestSessionProvider>();
-      if (provider.profileType != 'patient') {
-        _continuousSpeech.start(
-          listenDuration: const Duration(minutes: 10),
-          minConfidence: 0.15,
-          bufferMs: 1000,
-        );
-      }
     });
   }
 
@@ -593,105 +520,10 @@ class _MobileRefractometryTestScreenState
     });
   }
 
-  void _handleVoiceResponse(String finalResult) {
-    if (!mounted ||
-        _currentPhase != RefractPhase.test ||
-        !_waitingForResponse) {
-      return;
-    }
-
-    final provider = context.read<TestSessionProvider>();
-    if (provider.profileType == 'patient') return;
-
-    // Reject final results arriving too fast after E display (prevent leakage from previous E)
-    if (_eDisplayStartTime != null) {
-      final sinceStart = DateTime.now().difference(_eDisplayStartTime!);
-      if (sinceStart < const Duration(milliseconds: 1500)) {
-        debugPrint(
-          '[MobileRefract] Ignoring final voice result: arrived too fast after rotation (${sinceStart.inMilliseconds}ms)',
-        );
-        return;
-      }
-    }
-
-    final direction = SpeechService.parseDirection(finalResult);
-    if (direction != null) {
-      _handleResponse(EDirection.fromString(direction));
-    }
-  }
-
-  void _handleSpeechDetected(String partialResult) {
-    if (!mounted) return;
-
-    final provider = context.read<TestSessionProvider>();
-    if (provider.profileType == 'patient') return;
-
-    setState(() {
-      _lastDetectedSpeech = partialResult;
-      _isSpeechActive = true;
-    });
-
-    if (_currentPhase == RefractPhase.test && _waitingForResponse) {
-      if (_eDisplayStartTime != null) {
-        final sinceStart = DateTime.now().difference(_eDisplayStartTime!);
-        if (sinceStart < const Duration(milliseconds: 1500)) return;
-      }
-
-      final direction = SpeechService.parseDirection(partialResult);
-      if (direction != null) {
-        _handleResponse(EDirection.fromString(direction));
-        return;
-      }
-
-      final norm = partialResult.toLowerCase();
-      final blurryKeywords = [
-        'blurry',
-        'blur',
-        'bloody',
-        'cannot see',
-        'can\'t see',
-        'kanchi',
-        'cannot see clearly',
-        'can\'t see clearly',
-        'too blurry',
-        'not clear',
-        'nothing',
-        'country',
-        'zero',
-      ];
-
-      for (var keyword in blurryKeywords) {
-        if (norm.contains(keyword)) {
-          _handleResponse(EDirection.blurry);
-          return;
-        }
-      }
-    }
-
-    _speechActiveTimer?.cancel();
-    _speechActiveTimer = Timer(const Duration(milliseconds: 500), () {
-      if (mounted) setState(() => _isSpeechActive = false);
-    });
-
-    _speechEraserTimer?.cancel();
-    _speechEraserTimer = Timer(const Duration(milliseconds: 2500), () {
-      if (mounted) setState(() => _lastDetectedSpeech = null);
-    });
-  }
-
   void _handleResponse(EDirection? response) {
     if (!_waitingForResponse || _showResult) return;
     _waitingForResponse = false;
     _roundTimer?.cancel();
-
-    _continuousSpeech.stop();
-    _continuousSpeech.clearAccumulated(); // Clear immediately after response
-    _speechEraserTimer?.cancel();
-    _speechActiveTimer?.cancel();
-    setState(() {
-      _lastDetectedSpeech = null;
-      _isSpeechActive = false;
-    });
 
     final correct = response == _currentDirection;
     final isCantSee = response == EDirection.blurry;
@@ -752,7 +584,6 @@ class _MobileRefractometryTestScreenState
     setState(() {
       _lastResponse = response;
       _showResult = true;
-      _isSpeechActive = false;
     });
 
     Future.delayed(const Duration(milliseconds: 800), () {
@@ -816,8 +647,6 @@ class _MobileRefractometryTestScreenState
 
   void _calculateResults() {
     _isTransitioning = false;
-    _continuousSpeech.stop();
-    _continuousSpeech.clearAccumulated(); // Clean up before result screen
     setState(() => _currentPhase = RefractPhase.complete);
 
     final rightResults = _processEyeData(_rightEyeResponses);
@@ -996,20 +825,6 @@ class _MobileRefractometryTestScreenState
                   else
                     _buildPortraitLayout(),
 
-                  // Recognized text indicator
-                  Positioned(
-                    bottom: isLandscape
-                        ? 20
-                        : (_currentPhase == RefractPhase.test &&
-                              _waitingForResponse)
-                        ? 150
-                        : 50,
-                    left: isLandscape ? 20 : 0,
-                    right: isLandscape ? null : 0,
-                    width: isLandscape ? 300 : null,
-                    child: Center(child: _buildRecognizedTextIndicator()),
-                  ),
-
                   // Distance warning overlay
                   DistanceWarningOverlay(
                     isVisible:
@@ -1142,8 +957,8 @@ class _MobileRefractometryTestScreenState
         ? _rightEyeResponses
         : _leftEyeResponses;
     final correctCount = responses.where((r) => r['correct'] == true).length;
-    final provider = context.watch<TestSessionProvider>();
-    final isPractitioner = provider.profileType == 'patient';
+    // final provider = context.watch<TestSessionProvider>();
+    // final isPractitioner = provider.profileType == 'patient';
 
     // Get current font size for size indicator if in landscape test phase
     double? currentFontSize;
@@ -1250,36 +1065,7 @@ class _MobileRefractometryTestScreenState
 
           const Spacer(),
 
-          // 4. Speech waveform (Hiden for practitioners)
-          if (!isPractitioner) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: context.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _SpeechWaveform(
-                    isListening:
-                        _continuousSpeech.shouldBeListening &&
-                        !_continuousSpeech.isPausedForTts,
-                    isTalking: _isSpeechActive,
-                    color: context.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.mic_none_rounded,
-                    size: 14,
-                    color: context.primary,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-          ],
-
+          // 4. Timer
           // 5. Timer (Shown in landscape info bar or portrait info bar)
           // Matching VA style timer
           Row(
@@ -1648,83 +1434,25 @@ class _MobileRefractometryTestScreenState
         ),
 
         // Instruction text - MINIMAL HEIGHT
-        Builder(
-          builder: (context) {
-            final provider = context.watch<TestSessionProvider>();
-            final isPractitioner = provider.profileType == 'patient';
-
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_continuousSpeech.isActive && !isPractitioner)
-                        Icon(
-                          Icons.mic,
-                          size: 16,
-                          color: _isTestPausedForDistance
-                              ? context.warning
-                              : context.success,
-                        ),
-                      if (_continuousSpeech.isActive && !isPractitioner)
-                        const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          _isTestPausedForDistance
-                              ? 'Adjust distance'
-                              : 'Which way is E pointing?',
-                          style: TextStyle(
-                            color: _isTestPausedForDistance
-                                ? context.warning
-                                : context.textSecondary,
-                            fontSize: 13,
-                            fontWeight: _isTestPausedForDistance
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Text(
+            _isTestPausedForDistance
+                ? 'Adjust distance'
+                : 'Which way is E pointing?',
+            style: TextStyle(
+              color: _isTestPausedForDistance
+                  ? context.warning
+                  : context.textSecondary,
+              fontSize: 13,
+              fontWeight: _isTestPausedForDistance
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildRecognizedTextIndicator() {
-    final provider = context.read<TestSessionProvider>();
-    if (provider.profileType == 'patient') return const SizedBox.shrink();
-
-    final bool hasRecognized =
-        _lastDetectedSpeech != null && _lastDetectedSpeech!.isNotEmpty;
-
-    if (!hasRecognized) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        _lastDetectedSpeech!,
-        style: const TextStyle(
-          fontSize: 16,
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        textAlign: TextAlign.center,
-      ),
     );
   }
 
@@ -1993,7 +1721,6 @@ class _MobileRefractometryTestScreenState
   void _restartTest() {
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
-    _continuousSpeech.stop();
     _distanceService.stopMonitoring();
 
     setState(() {
@@ -2001,8 +1728,6 @@ class _MobileRefractometryTestScreenState
       _currentBlur = TestConstants.initialBlurLevel;
       _waitingForResponse = false;
       _showResult = false;
-      _lastDetectedSpeech = null;
-      _isSpeechActive = false;
       _isTestPausedForDistance = false;
       _lastShouldPauseTime = null;
 
@@ -2020,12 +1745,11 @@ class _MobileRefractometryTestScreenState
   void _showPauseDialog({String reason = 'back button'}) {
     _roundTimer?.cancel();
     _relaxationTimer?.cancel();
-    _relaxationProgressController.stop(); // … Stop smooth animation
-    _continuousSpeech.stop();
+    _relaxationProgressController.stop();
     _distanceService.stopMonitoring();
 
     setState(() {
-      _isTestPausedForDistance = true; // … Sync with VA behavior
+      _isTestPausedForDistance = true;
     });
 
     showDialog(
@@ -2036,7 +1760,6 @@ class _MobileRefractometryTestScreenState
           setState(() => _isTestPausedForDistance = false);
           _startContinuousDistanceMonitoring();
           if (_currentPhase == RefractPhase.test && _waitingForResponse) {
-            _continuousSpeech.start();
             _startRoundTimer();
           } else if (_currentPhase == RefractPhase.relaxation) {
             _startRelaxationTimer();
@@ -2107,85 +1830,6 @@ class _DirectionButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SpeechWaveform extends StatefulWidget {
-  final bool isListening;
-  final bool isTalking;
-  final Color color;
-
-  const _SpeechWaveform({
-    required this.isListening,
-    required this.isTalking,
-    required this.color,
-  });
-
-  @override
-  State<_SpeechWaveform> createState() => _SpeechWaveformState();
-}
-
-class _SpeechWaveformState extends State<_SpeechWaveform>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.isListening && !widget.isTalking) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(
-          3,
-          (i) => Container(
-            width: 3,
-            height: 8,
-            margin: const EdgeInsets.symmetric(horizontal: 1),
-            decoration: BoxDecoration(
-              color: widget.color.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(3, (index) {
-            final phase = (index * 0.3) + _controller.value;
-            final height =
-                4.0 + (10.0 * (0.5 + 0.5 * math.sin(phase * 2 * math.pi)));
-            return Container(
-              width: 3,
-              height: height,
-              margin: const EdgeInsets.symmetric(horizontal: 1),
-              decoration: BoxDecoration(
-                color: widget.color,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            );
-          }),
-        );
-      },
     );
   }
 }
