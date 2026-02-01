@@ -68,7 +68,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   // Text input
   final TextEditingController _inputController = TextEditingController();
   final FocusNode _inputFocusNode = FocusNode();
-  bool _showKeyboard = false;
 
   // Result feedback
   bool _lastResultCorrect = false;
@@ -225,7 +224,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       _showResult = false;
       _recognizedText = null;
       _readingCountdown = 35;
-      _showKeyboard = false;
       _inputController.clear();
     });
 
@@ -289,7 +287,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       setState(() {
         _isListening = true;
         _recognizedText = 'Listening...';
-        _showKeyboard = false;
       });
 
       _speechService.onResult = (text) {
@@ -408,7 +405,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       _showResult = true;
       _waitingForResponse = false;
       _isListening = false;
-      _showKeyboard = false;
       _lastResultCorrect = isCorrect;
     });
 
@@ -913,69 +909,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.visible, // Ensure it stays on one line
-                  softWrap: false,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLargeActionButton({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required Color color,
-    required VoidCallback onTap,
-    bool compact = false,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(compact ? 16 : 24),
-        splashColor: color.withValues(alpha: 0.8),
-        highlightColor: color,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
-          height: compact ? 56 : 64,
-          decoration: BoxDecoration(
-            color: isActive ? color : color.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(compact ? 16 : 24),
-            border: Border.all(color: color, width: 2.5),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.2),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: isActive ? Colors.white : color,
-                size: compact ? 18 : 22,
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: compact ? 9 : 11,
-                    fontWeight: FontWeight.w900,
-                    color: isActive ? Colors.white : color,
-                    letterSpacing: 0.1,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.visible,
                   softWrap: false,
                 ),
               ),
