@@ -9,7 +9,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/test_constants.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/widgets/test_feedback_overlay.dart';
-import '../../../core/services/speech_service.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/services/distance_detection_service.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -18,7 +17,6 @@ import '../../../core/services/distance_skip_manager.dart';
 import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/widgets/distance_warning_overlay.dart';
 import '../../../core/extensions/theme_extension.dart';
-import 'dart:math' as math;
 
 /// Short distance reading test - both eyes open, 40cm distance
 class ShortDistanceTestScreen extends StatefulWidget {
@@ -32,7 +30,6 @@ class ShortDistanceTestScreen extends StatefulWidget {
 class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     with WidgetsBindingObserver {
   final TtsService _ttsService = TtsService();
-  final SpeechService _speechService = SpeechService();
 
   // Distance monitoring service
   final DistanceDetectionService _distanceService = DistanceDetectionService(
@@ -54,20 +51,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   bool _waitingForResponse = false;
   bool _showResult = false;
   bool _testComplete = false;
+  // ignore: unused_field
   bool _isPausedForExit = false;
 
-  // Voice recognition
-  bool _isListening = false;
-  bool _isSpeechActive = false;
-  Timer? _speechActiveTimer;
-  String? _recognizedText;
-  Timer? _listeningTimer;
-
   final DistanceSkipManager _skipManager = DistanceSkipManager();
-
-  // Text input
-  final TextEditingController _inputController = TextEditingController();
-  final FocusNode _inputFocusNode = FocusNode();
 
   // Result feedback
   bool _lastResultCorrect = false;
@@ -88,13 +75,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _readingCountdownTimer?.cancel();
-    _listeningTimer?.cancel();
-    _speechService.setGloballyDisabled(false); // Reset for next session
-    _speechService.dispose();
     _ttsService.dispose();
     _distanceService.stopMonitoring();
-    _inputController.dispose();
-    _inputFocusNode.dispose();
     super.dispose();
   }
 
@@ -102,7 +84,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _isPausedForExit = true;
-      _speechService.stopListening();
       _distanceService.stopMonitoring();
     } else if (state == AppLifecycleState.resumed) {
       _isPausedForExit = false;
@@ -112,35 +93,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   Future<void> _initServices() async {
     await _ttsService.initialize();
-    await _speechService.initialize();
-
-    _ttsService.onSpeakingStateChanged = (isSpeaking) {
-      if (!mounted) return;
-      if (isSpeaking) {
-        if (_isListening) {
-          _speechService.stopListening();
-        }
-      } else if (_waitingForResponse &&
-          !_showResult &&
-          !_testComplete &&
-          !_isPausedForExit) {
-        _startListening();
-      }
-    };
-
-    // Check if we are in practitioner mode
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final provider = context.read<TestSessionProvider>();
-        if (provider.profileType == 'patient') {
-          debugPrint(
-            '👨‍⚕️ [ShortDistance] Practitioner mode detected: Silencing Speech globally',
-          );
-          _speechService.setGloballyDisabled(true);
-        }
-      }
-    });
-
     _showNextSentence();
   }
 
@@ -178,8 +130,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   void _showExitConfirmation() {
     _isPausedForExit = true;
-    _speechService.stopListening();
-    setState(() => _isListening = false);
+    setState(() {});
 
     showDialog(
       context: context,
@@ -222,9 +173,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     setState(() {
       _waitingForResponse = true;
       _showResult = false;
-      _recognizedText = null;
       _readingCountdown = 35;
-      _inputController.clear();
     });
 
     _startReadingCountdown();
@@ -261,89 +210,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     _processSentence('');
   }
 
-  void _startListening() async {
-    final provider = context.read<TestSessionProvider>();
-    if (_isPausedForExit ||
-        !_isDistanceOk ||
-        provider.profileType == 'patient') {
-      return;
-    }
-
-    // If already listening, restart the session
-    if (_isListening) {
-      _speechService.stopListening();
-      _listeningTimer?.cancel();
-      setState(() {
-        _isListening = false;
-        _isSpeechActive = false;
-        _recognizedText = null;
-      });
-      // Small delay before restarting
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
-
-    final available = await _speechService.initialize();
-    if (available) {
-      setState(() {
-        _isListening = true;
-        _recognizedText = 'Listening...';
-      });
-
-      _speechService.onResult = (text) {
-        _handleVoiceResponse(text, true);
-      };
-      _speechService.onSpeechDetected = (text) {
-        if (mounted) {
-          setState(() {
-            _recognizedText = text;
-            _isSpeechActive = true;
-          });
-
-          _speechActiveTimer?.cancel();
-          _speechActiveTimer = Timer(const Duration(milliseconds: 500), () {
-            if (mounted) setState(() => _isSpeechActive = false);
-          });
-        }
-      };
-      _speechService.onError = (error) {
-        if (mounted) {
-          setState(() {
-            _isListening = false;
-            _isSpeechActive = false;
-            _recognizedText = 'Speech Error: $error';
-          });
-        }
-      };
-
-      await _speechService.startListening();
-
-      _listeningTimer?.cancel();
-      _listeningTimer = Timer(const Duration(seconds: 15), () {
-        if (_isListening && mounted) {
-          _speechService.stopListening();
-          setState(() => _isListening = false);
-        }
-      });
-    }
-  }
-
-  void _handleVoiceResponse(String text, bool isFinal) {
-    if (!mounted || !_waitingForResponse) {
-      return;
-    }
-
-    if (isFinal && text.trim().isNotEmpty) {
-      _processSentence(text);
-    }
-  }
-
   void _processSentence(String userSaid) {
     if (!_waitingForResponse) {
       return;
     }
 
     _readingCountdownTimer?.cancel();
-    _speechService.stopListening();
 
     final sentence = TestConstants.shortDistanceSentences[_currentScreen];
 
@@ -404,7 +276,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     setState(() {
       _showResult = true;
       _waitingForResponse = false;
-      _isListening = false;
       _lastResultCorrect = isCorrect;
     });
 
@@ -652,7 +523,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Pulse-like status circle
               Container(
                 width: 8,
                 height: 8,
@@ -728,7 +598,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           Text(
             context.read<TestSessionProvider>().profileType == 'patient'
                 ? 'Ask the patient to read the sentence below'
-                : 'Read the sentence aloud or type below',
+                : 'Read the sentence and tap the appropriate button below',
             style: TextStyle(
               fontSize: 12,
               color: context.textSecondary.withValues(alpha: 0.7),
@@ -736,63 +606,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          if (_isListening ||
-              (_recognizedText != null &&
-                  _recognizedText != 'Listening...')) ...[
-            const SizedBox(height: 32),
-            if (_isListening &&
-                (_recognizedText == null || _recognizedText == 'Listening...'))
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: context.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _SpeechWaveform(
-                      isListening: _isListening,
-                      isTalking: _isSpeechActive,
-                      color: context.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Listening...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: context.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (_recognizedText != null && _recognizedText != 'Listening...')
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: context.onSurface.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  _recognizedText!,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-          ],
         ],
       ),
     );
@@ -828,7 +641,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Unified controls for ALL users (normal + practitioner)
               Row(
                 children: [
                   Expanded(
@@ -890,7 +702,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
-          // Higher opacity splash for "solid" feel on tap
           splashColor: baseColor.withValues(alpha: 0.8),
           highlightColor: baseColor,
           child: Row(
@@ -908,7 +719,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                     letterSpacing: 0.1,
                   ),
                   maxLines: 1,
-                  overflow: TextOverflow.visible, // Ensure it stays on one line
+                  overflow: TextOverflow.visible,
                   softWrap: false,
                 ),
               ),
@@ -923,87 +734,6 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     return Scaffold(
       backgroundColor: context.scaffoldBackground,
       body: const Center(child: EyeLoader(size: 80)),
-    );
-  }
-}
-
-class _SpeechWaveform extends StatefulWidget {
-  final bool isListening;
-  final bool isTalking;
-  final Color color;
-
-  const _SpeechWaveform({
-    required this.isListening,
-    required this.isTalking,
-    required this.color,
-  });
-
-  @override
-  State<_SpeechWaveform> createState() => _SpeechWaveformState();
-}
-
-class _SpeechWaveformState extends State<_SpeechWaveform>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final shouldAnimate = widget.isListening || widget.isTalking;
-
-    if (!shouldAnimate) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(
-          3,
-          (i) => Container(
-            width: 3,
-            height: 8,
-            margin: const EdgeInsets.symmetric(horizontal: 1),
-            decoration: BoxDecoration(
-              color: widget.color.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(3, (index) {
-            final phase = (index * 0.3) + _controller.value;
-            final height =
-                4.0 + (10.0 * (0.5 + 0.5 * math.sin(phase * 2 * math.pi)));
-            return Container(
-              width: 3,
-              height: height,
-              margin: const EdgeInsets.symmetric(horizontal: 1),
-              decoration: BoxDecoration(
-                color: widget.color,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            );
-          }),
-        );
-      },
     );
   }
 }
