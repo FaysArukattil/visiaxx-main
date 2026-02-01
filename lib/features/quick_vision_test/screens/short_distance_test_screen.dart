@@ -832,114 +832,33 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_showKeyboard)
-                Padding(
-                  padding: EdgeInsets.only(bottom: isSmallHeight ? 8 : 16),
-                  child: TextField(
-                    controller: _inputController,
-                    focusNode: _inputFocusNode,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: 'Type what you read...',
-                      filled: true,
-                      fillColor: context.isDarkMode
-                          ? context.onSurface.withValues(alpha: 0.05)
-                          : context.scaffoldBackground,
-                      contentPadding: isSmallHeight
-                          ? const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.send, color: context.primary),
-                        onPressed: () =>
-                            _processSentence(_inputController.text),
-                      ),
+              // Unified controls for ALL users (normal + practitioner)
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildPremiumActionButton(
+                      icon: Icons.check_circle_outline_rounded,
+                      label: 'CAN READ',
+                      gradient: AppColors.successGradient,
+                      height: isSmallHeight ? 50 : 64,
+                      onTap: () {
+                        final sentence = TestConstants
+                            .shortDistanceSentences[_currentScreen];
+                        _processSentence(sentence.sentence);
+                      },
                     ),
-                    onSubmitted: _processSentence,
                   ),
-                ),
-              Builder(
-                builder: (context) {
-                  final provider = context.watch<TestSessionProvider>();
-                  final isPractitioner = provider.profileType == 'patient';
-
-                  if (isPractitioner) {
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _buildPremiumActionButton(
-                            icon: Icons.check_circle_outline_rounded,
-                            label: 'CAN READ',
-                            gradient: AppColors.successGradient,
-                            height: isSmallHeight ? 50 : 64,
-                            onTap: () {
-                              final sentence = TestConstants
-                                  .shortDistanceSentences[_currentScreen];
-                              _processSentence(sentence.sentence);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildPremiumActionButton(
-                            icon: Icons.highlight_off_rounded,
-                            label: 'CANNOT READ',
-                            gradient: AppColors.errorGradient,
-                            height: isSmallHeight ? 50 : 64,
-                            onTap: () => _processSentence('blurry'),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: _buildLargeActionButton(
-                          icon: Icons.keyboard_rounded,
-                          label: 'KEYBOARD',
-                          isActive: _showKeyboard,
-                          compact: isSmallHeight,
-                          color: AppColors.textSecondary,
-                          onTap: () {
-                            setState(() => _showKeyboard = !_showKeyboard);
-                            if (_showKeyboard) _inputFocusNode.requestFocus();
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: _buildLargeActionButton(
-                          icon: Icons.mic_rounded,
-                          label: _isListening ? 'LISTENING' : 'VOICE',
-                          isActive: _isListening,
-                          compact: isSmallHeight,
-                          color: AppColors.primary,
-                          onTap: _startListening,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: _buildLargeActionButton(
-                          icon: Icons.visibility_off_rounded,
-                          label: 'CANNOT READ',
-                          isActive: false,
-                          compact: isSmallHeight,
-                          color: AppColors.error,
-                          onTap: () => _processSentence('blurry'),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildPremiumActionButton(
+                      icon: Icons.highlight_off_rounded,
+                      label: 'CANNOT READ',
+                      gradient: AppColors.errorGradient,
+                      height: isSmallHeight ? 50 : 64,
+                      onTap: () => _processSentence('blurry'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
