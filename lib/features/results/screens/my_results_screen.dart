@@ -182,11 +182,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
             _persistenceService.saveResults(results, customKey: 'user_results');
 
             // Hide progress after delay
-            Future.delayed(const Duration(milliseconds: 800), () {
+            Future.delayed(const Duration(milliseconds: 1200), () {
               if (mounted) {
                 setState(() {
                   _loadingProgress = 0.0;
-                  _isInitialLoading = false;
                   _isSyncing = false;
                 });
               }
@@ -930,7 +929,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                   _buildLoadingProgressOverlay(),
 
                 Expanded(
-                  child: _filteredResults.isEmpty && !_isInitialLoading
+                  child: _isInitialLoading
+                      ? const SizedBox.shrink() // Show nothing while initial loading (progress bar handles it)
+                      : _filteredResults.isEmpty
                       ? _buildEmptyState()
                       : RefreshIndicator(
                           onRefresh: _loadResults,
