@@ -71,6 +71,13 @@ class _PractitionerDashboardScreenState
   @override
   void initState() {
     super.initState();
+    // Ensure clean state on init
+    _allResults = [];
+    _filteredResults = [];
+    _statistics = {};
+    _hiddenResultIds = [];
+    _patients = [];
+
     _loadDashboardData();
   }
 
@@ -86,32 +93,26 @@ class _PractitionerDashboardScreenState
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    // CRITICAL FIX: Always clear data and show loader on fresh load
     if (_allResults.isEmpty) {
-      setState(() => _isInitialLoading = true);
+      setState(() {
+        _isInitialLoading = true;
+        _filteredResults = [];
+        _statistics = {};
+      });
+    } else {
+      // If we have data, just show sync indicator
+      setState(() {
+        _isSyncing = true;
+        _isInitialLoading = false;
+      });
     }
 
     // Cancel existing subscription if any
     await _resultsSubscription?.cancel();
 
     try {
-      // 1. FAST LOAD FROM DISK
-      debugPrint('[Dashboard] 💾 Loading from disk...');
-      final persistence = DashboardPersistenceService();
-      final storedResults = await persistence.getStoredResults();
-      final lastSync = await persistence.getLastSyncTime();
-
-      if (mounted && storedResults.isNotEmpty) {
-        setState(() {
-          _allResults = storedResults;
-          _applyFilters(storedResults);
-          _isInitialLoading = false;
-        });
-        debugPrint(
-          '[Dashboard] ✅ Loaded ${storedResults.length} items from disk',
-        );
-      }
-
-      // 2. Load Patients & Hidden IDs in parallel
+      // 1. Load Patients & Hidden IDs FIRST (needed for filtering)
       final results = await Future.wait([
         _authService.getUserData(user.uid),
         _patientService.getPatients(user.uid),
@@ -121,32 +122,53 @@ class _PractitionerDashboardScreenState
       _patients = results[1] as List<PatientModel>;
 
       if (mounted && userProfile != null) {
-        setState(() {
-          _hiddenResultIds = userProfile.hiddenResultIds;
-          if (_allResults.isNotEmpty) _applyFilters(_allResults);
-        });
+        _hiddenResultIds = userProfile.hiddenResultIds;
       }
 
-      // 3. INCREMENTAL FETCH FROM FIRESTORE
-      debugPrint('[Dashboard] 🔄 Starting incremental fetch...');
-      List<TestResultModel> fetchedResults;
+      // 2. LOAD FROM DISK (if available)
+      debugPrint('[Dashboard] 💾 Checking disk cache...');
+      final persistence = DashboardPersistenceService();
+      final storedResults = await persistence.getStoredResults();
+      final lastSync = await persistence.getLastSyncTime();
 
-      if (lastSync != null && storedResults.isNotEmpty) {
-        // Step 3a: Show background sync indicator
-        setState(() => _isSyncing = true);
+      bool hasCachedData = storedResults.isNotEmpty;
 
-        // Fetch only new results since last sync
-        fetchedResults = await _resultService.getPractitionerResultsIncremental(
+      if (mounted && hasCachedData) {
+        debugPrint('[Dashboard] ✅ Found ${storedResults.length} cached items');
+        // Only update if we don't have data yet
+        if (_allResults.isEmpty) {
+          setState(() {
+            _allResults = storedResults;
+            _applyFilters(storedResults);
+            _isInitialLoading = false;
+          });
+        }
+      }
+
+      // 3. FETCH FROM FIRESTORE
+      debugPrint('[Dashboard] 🔄 Syncing with cloud...');
+      if (!mounted) return;
+
+      setState(() => _isSyncing = true);
+
+      List<TestResultModel> cloudResults;
+
+      if (lastSync != null && hasCachedData) {
+        // Incremental sync
+        debugPrint(
+          '[Dashboard] 📡 Incremental sync since ${lastSync.toIso8601String()}',
+        );
+        cloudResults = await _resultService.getPractitionerResultsIncremental(
           practitionerId: user.uid,
           since: lastSync,
         );
 
-        if (fetchedResults.isNotEmpty) {
-          // Merge and update
+        if (cloudResults.isNotEmpty) {
+          // Merge with existing
           final Map<String, TestResultModel> resultsMap = {
             for (var r in _allResults) r.id: r,
           };
-          for (var r in fetchedResults) {
+          for (var r in cloudResults) {
             resultsMap[r.id] = r;
           }
           final mergedResults = resultsMap.values.toList();
@@ -156,25 +178,27 @@ class _PractitionerDashboardScreenState
             setState(() {
               _allResults = mergedResults;
               _applyFilters(mergedResults);
+              _isSyncing = false;
             });
           }
           await persistence.saveResults(mergedResults);
+        } else {
+          if (mounted) {
+            setState(() => _isSyncing = false);
+          }
         }
-        setState(() => _isSyncing = false);
       } else {
-        // Step 3b: Full fetch with PROGRESS tracking
-        setState(() {
-          _isSyncing = true;
-          _loadingProgress = 0.05; // Starting
-        });
-
-        debugPrint('[Dashboard] ℹ️ First run. Fetching with progress...');
+        // Full sync with progress
+        debugPrint('[Dashboard] 📥 Full sync with progress...');
         final totalCount = await _resultService.getPractitionerResultsCount(
           user.uid,
         );
 
         if (mounted) {
-          setState(() => _totalToLoad = totalCount);
+          setState(() {
+            _totalToLoad = totalCount;
+            _loadingProgress = 0.1;
+          });
         }
 
         if (totalCount > 0) {
@@ -195,54 +219,17 @@ class _PractitionerDashboardScreenState
             lastDoc = _resultService.lastProcessedDoc;
 
             if (mounted) {
+              final progress = (pagedResults.length / totalCount).clamp(
+                0.0,
+                1.0,
+              );
               setState(() {
-                _loadingProgress = (pagedResults.length / totalCount).clamp(
-                  0.0,
-                  1.0,
-                );
+                _loadingProgress = progress;
                 _allResults = List.from(pagedResults);
                 _applyFilters(_allResults);
               });
             }
             await Future.delayed(const Duration(milliseconds: 100));
-          }
-        }
-
-        if (_allResults.isEmpty) {
-          debugPrint(
-            '[Dashboard] ⚠️ CollectionGroup returned 0. Trying patient-by-patient fallback...',
-          );
-          // FALLBACK: Original logic fetching by patient
-          final allPatientsResults = <TestResultModel>[];
-          final identity = userProfile?.identityString ?? user.uid;
-
-          final patientsCount = _patients.length;
-          if (patientsCount > 0) {
-            for (int i = 0; i < patientsCount; i++) {
-              final p = _patients[i];
-              final snapshot = await FirebaseFirestore.instance
-                  .collection('Practitioners')
-                  .doc(identity)
-                  .collection('patients')
-                  .doc(p.id)
-                  .collection('tests')
-                  .orderBy('timestamp', descending: true)
-                  .get();
-
-              for (var doc in snapshot.docs) {
-                final data = doc.data();
-                data['id'] = doc.id;
-                allPatientsResults.add(TestResultModel.fromJson(data));
-              }
-
-              if (mounted) {
-                setState(() {
-                  _loadingProgress = (i + 1) / patientsCount;
-                  _allResults = List.from(allPatientsResults);
-                  _applyFilters(_allResults);
-                });
-              }
-            }
           }
 
           if (mounted) {
@@ -253,81 +240,127 @@ class _PractitionerDashboardScreenState
             });
           }
           await persistence.saveResults(_allResults);
-          return;
+        } else {
+          // No data in cloud, try fallback
+          debugPrint(
+            '[Dashboard] ⚠️ No cloud data, trying patient-by-patient...',
+          );
+          await _loadFallbackData(user.uid, userProfile);
+        }
+      }
+
+      // 4. Start real-time listeners
+      _setupRealtimeListeners(user.uid);
+    } catch (e) {
+      debugPrint('[Dashboard] ❌ Error: $e');
+      if (mounted) {
+        setState(() {
+          _isInitialLoading = false;
+          _isSyncing = false;
+        });
+        SnackbarUtils.showError(context, 'Sync failed. Using cached data.');
+      }
+    }
+  }
+
+  Future<void> _loadFallbackData(String userId, UserModel? userProfile) async {
+    final allPatientsResults = <TestResultModel>[];
+    final identity = userProfile?.identityString ?? userId;
+
+    final patientsCount = _patients.length;
+    if (patientsCount > 0) {
+      for (int i = 0; i < patientsCount; i++) {
+        final p = _patients[i];
+        final snapshot = await FirebaseFirestore.instance
+            .collection('Practitioners')
+            .doc(identity)
+            .collection('patients')
+            .doc(p.id)
+            .collection('tests')
+            .orderBy('timestamp', descending: true)
+            .get();
+
+        for (var doc in snapshot.docs) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          allPatientsResults.add(TestResultModel.fromJson(data));
         }
 
         if (mounted) {
           setState(() {
-            _isInitialLoading = false;
-            _isSyncing = false;
-          });
-        }
-        await persistence.saveResults(_allResults);
-      }
-
-      // 4. Start Real-time Listeners for updates while on screen
-      _profileSubscription = _authService.getUserStream(user.uid).listen((
-        userProfile,
-      ) {
-        if (mounted && userProfile != null) {
-          setState(() {
-            _hiddenResultIds = userProfile.hiddenResultIds;
+            _loadingProgress = (i + 1) / patientsCount;
+            _allResults = List.from(allPatientsResults);
             _applyFilters(_allResults);
           });
         }
-      });
-
-      _resultsSubscription = _resultService
-          .getPractitionerResultsStream(user.uid)
-          .listen(
-            (streamResults) {
-              if (mounted) {
-                // DEFENSIVE: Merge stream results with existing results to avoid wiping out fallback data
-                // if collectionGroup query has issues but patient-by-patient sync worked.
-                final Map<String, TestResultModel> resultsMap = {
-                  for (var r in _allResults) r.id: r,
-                };
-
-                bool hasAnyChange = false;
-                for (var r in streamResults) {
-                  if (!resultsMap.containsKey(r.id)) {
-                    resultsMap[r.id] = r;
-                    hasAnyChange = true;
-                  }
-                }
-
-                // If stream has fewer items AND we already have data, we might be seeing an inconsistent
-                // collectionGroup vs fallback state. We prioritize keeping the fallback data for now.
-                // However, if stream results are NEWER or DIFFERENT, we should reflect that.
-
-                if (hasAnyChange ||
-                    (streamResults.isNotEmpty &&
-                        streamResults.length != _allResults.length)) {
-                  final mergedResults = resultsMap.values.toList();
-                  mergedResults.sort(
-                    (a, b) => b.timestamp.compareTo(a.timestamp),
-                  );
-
-                  setState(() {
-                    _allResults = mergedResults;
-                    _applyFilters(mergedResults);
-                  });
-                  persistence.saveResults(mergedResults);
-                }
-              }
-            },
-            onError: (error) {
-              debugPrint('[Dashboard] ❌ Stream Error: $error');
-              // Don't show error to user if we already have some data
-            },
-          );
-    } catch (e) {
-      debugPrint('[Dashboard] ❌ Error loading data: $e');
-      if (mounted) {
-        setState(() => _isInitialLoading = false);
-        SnackbarUtils.showError(context, 'Refresh failed. Check connectivity.');
       }
     }
+
+    if (mounted) {
+      setState(() {
+        _isInitialLoading = false;
+        _isSyncing = false;
+        _loadingProgress = 1.0;
+      });
+    }
+
+    final persistence = DashboardPersistenceService();
+    await persistence.saveResults(_allResults);
+  }
+
+  void _setupRealtimeListeners(String userId) {
+    // Listen to profile changes
+    _profileSubscription = _authService.getUserStream(userId).listen((
+      userProfile,
+    ) {
+      if (mounted && userProfile != null) {
+        setState(() {
+          _hiddenResultIds = userProfile.hiddenResultIds;
+          _applyFilters(_allResults);
+        });
+      }
+    });
+
+    // Listen to results stream
+    _resultsSubscription = _resultService
+        .getPractitionerResultsStream(userId)
+        .listen(
+          (streamResults) {
+            if (mounted && streamResults.isNotEmpty) {
+              final Map<String, TestResultModel> resultsMap = {
+                for (var r in _allResults) r.id: r,
+              };
+
+              bool hasChanges = false;
+              for (var r in streamResults) {
+                if (!resultsMap.containsKey(r.id) ||
+                    resultsMap[r.id]!.timestamp != r.timestamp) {
+                  resultsMap[r.id] = r;
+                  hasChanges = true;
+                }
+              }
+
+              if (hasChanges ||
+                  (streamResults.isNotEmpty &&
+                      streamResults.length != _allResults.length)) {
+                final mergedResults = resultsMap.values.toList();
+                mergedResults.sort(
+                  (a, b) => b.timestamp.compareTo(a.timestamp),
+                );
+
+                setState(() {
+                  _allResults = mergedResults;
+                  _applyFilters(mergedResults);
+                });
+
+                DashboardPersistenceService().saveResults(mergedResults);
+              }
+            }
+          },
+          onError: (error) {
+            debugPrint('[Dashboard] ❌ Stream Error: $error');
+          },
+        );
   }
 
   void _applyFilters(List<TestResultModel> allResults) {
@@ -2435,81 +2468,118 @@ class _PractitionerDashboardScreenState
             _endDate = null;
             _searchQuery = '';
             _searchController.clear();
+            _allResults = []; // Clear data on refresh
+            _filteredResults = [];
+            _statistics = {};
           });
           await _loadDashboardData();
         },
-        child: Stack(
-          children: [
-            CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                if (_isSyncing && _totalToLoad > 0)
-                  SliverToBoxAdapter(child: _buildSyncStatusBanner()),
-                SliverPadding(
-                  padding: const EdgeInsets.all(16),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildPeriodSelector(),
-                        const SizedBox(height: 16),
-                        _buildStatisticsCards(),
-                        const SizedBox(height: 20),
-                        _buildTestGraph(),
-                        const SizedBox(height: 20),
-                        _buildConditionBreakdown(),
-                        const SizedBox(height: 20),
-                        _buildRecentResultsHeader(),
-                      ],
-                    ),
-                  ),
-                ),
-                _buildRecentResultsList(),
-                if (_allResults.isEmpty && !_isSyncing && !_isInitialLoading)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 80),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.assignment_late_outlined,
-                            size: 60,
-                            color: context.textTertiary.withValues(alpha: 0.3),
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            'No Patient Records Found',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: context.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Try performing a test or checking connection',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: context.textTertiary,
-                            ),
-                          ),
-                        ],
+        child: _isInitialLoading && _allResults.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const EyeLoader(size: 60),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Loading Dashboard...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: context.textSecondary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
-              ],
-            ),
-            if (_isFilterLoading)
-              Positioned.fill(
-                child: Container(
-                  color: context.scaffoldBackground.withValues(alpha: 0.7),
-                  child: const Center(child: EyeLoader(size: 60)),
+                    if (_totalToLoad > 0) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        '${(_loadingProgress * 100).toInt()}% Complete',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: context.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
+              )
+            : Stack(
+                children: [
+                  CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      if (_isSyncing && _totalToLoad > 0)
+                        SliverToBoxAdapter(child: _buildSyncStatusBanner()),
+                      SliverPadding(
+                        padding: const EdgeInsets.all(16),
+                        sliver: SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildPeriodSelector(),
+                              const SizedBox(height: 16),
+                              _buildStatisticsCards(),
+                              const SizedBox(height: 20),
+                              _buildTestGraph(),
+                              const SizedBox(height: 20),
+                              _buildConditionBreakdown(),
+                              const SizedBox(height: 20),
+                              _buildRecentResultsHeader(),
+                            ],
+                          ),
+                        ),
+                      ),
+                      _buildRecentResultsList(),
+                      if (_allResults.isEmpty &&
+                          !_isSyncing &&
+                          !_isInitialLoading)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 80),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.assignment_late_outlined,
+                                  size: 60,
+                                  color: context.textTertiary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                Text(
+                                  'No Patient Records Found',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Try performing a test or checking connection',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: context.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                    ],
+                  ),
+                  if (_isFilterLoading)
+                    Positioned.fill(
+                      child: Container(
+                        color: context.scaffoldBackground.withValues(
+                          alpha: 0.7,
+                        ),
+                        child: const Center(child: EyeLoader(size: 60)),
+                      ),
+                    ),
+                ],
               ),
-          ],
-        ),
       ),
       floatingActionButton: _buildDownloadButton(),
     );
