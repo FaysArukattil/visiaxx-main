@@ -284,7 +284,7 @@ class FamilyMemberService {
       );
       await batch.commit();
       debugPrint(
-        '[FamilyMemberService] ✅ Migration complete! Migrated ${docsToMigrate.length} results (${movedCount} moved, ${updatedCount} updated in-place)',
+        '[FamilyMemberService] ✅ Migration complete! Migrated ${docsToMigrate.length} results ($movedCount moved, $updatedCount updated in-place)',
       );
 
       // VERIFICATION: Check if results are actually accessible with new profileId

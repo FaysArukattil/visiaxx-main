@@ -1,14 +1,18 @@
-﻿import 'dart:async';
+﻿// ignore_for_file: use_build_context_synchronously
+
+import 'dart:async';
 import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:visiaxx/core/widgets/download_success_dialog.dart';
+import 'package:visiaxx/core/services/file_manager_service.dart';
 import 'package:visiaxx/core/services/pdf_export_service.dart';
 import 'package:visiaxx/core/services/test_result_service.dart';
-import 'package:visiaxx/core/services/family_member_service.dart';
 import 'package:visiaxx/core/utils/ui_utils.dart';
 import 'package:visiaxx/data/models/test_result_model.dart';
 import 'package:visiaxx/data/models/color_vision_result.dart';
@@ -232,40 +236,10 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
     return filtered.take(endIndex.clamp(0, filtered.length)).toList();
   }
 
-  Future<void> _runRecoveryIfNeeded() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      debugPrint('[MyResults] 🔧 Running orphaned results recovery check...');
-
-      // DON'T show loading indicator - let stream handle UI updates
-      final familyMemberService = FamilyMemberService();
-
-      // Run recovery in background without blocking UI
-      await familyMemberService.recoverOrphanedResults(user.uid);
-
-      debugPrint('[MyResults] ✅ Recovery check complete');
-
-      // DON'T reload - the stream will automatically pick up any changes
-    } catch (e) {
-      debugPrint('[MyResults] ⚠️ Recovery check failed: $e');
-    }
-  }
-
   Future<void> _downloadPdf(TestResultModel result) async {
     try {
-      final String filePath = await _pdfExportService.getExpectedFilePath(
-        result,
-      );
-      final File file = File(filePath);
-
-      if (await file.exists()) {
-        if (mounted) {
-          await showDownloadSuccessDialog(context: context, filePath: filePath);
-        }
-        return;
-      }
+      // 1. Check and request storage permissions
+      if (!await _ensureStoragePermission()) return;
 
       if (!mounted) return;
       UIUtils.showProgressDialog(
@@ -273,17 +247,57 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         message: 'Generating PDF...',
       );
 
-      final String generatedPath = await _pdfExportService
-          .generateAndDownloadPdf(result);
+      // 2. Create proper filename
+      final String sanitizedName = result.profileName.isNotEmpty
+          ? result.profileName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')
+          : 'Self';
+      final ageStr = result.profileAge?.toString() ?? 'NA';
+      final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
+      final timeStr = DateFormat('HH-mm').format(result.timestamp);
+      final filename =
+          'Visiaxx_${sanitizedName}_${ageStr}_${dateStr}_$timeStr.pdf';
+
+      // 3. Create organized folder structure
+      final baseDir = await _getDownloadDirectory();
+      final targetDir = Directory('${baseDir.path}/Visiaxx_Reports/My_Reports');
+
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
+      }
+
+      final filePath = '${targetDir.path}/$filename';
+      final file = File(filePath);
+
+      // 4. Generate and save PDF
+      final pdfBytes = await _pdfExportService.generatePdfBytes(result);
+
+      // Write with proper error handling
+      try {
+        await file.writeAsBytes(
+          pdfBytes,
+          mode: FileMode.writeOnly,
+          flush: true,
+        );
+        debugPrint('[MyResults] ✅ PDF saved: $filename');
+      } catch (writeError) {
+        // If file exists, delete and retry
+        if (await file.exists()) {
+          await file.delete();
+        }
+        await file.create(recursive: true);
+        await file.writeAsBytes(pdfBytes, flush: true);
+        debugPrint('[MyResults] ✅ PDF saved (retry): $filename');
+      }
 
       if (mounted) {
         UIUtils.hideProgressDialog(context);
-        await showDownloadSuccessDialog(
-          context: context,
-          filePath: generatedPath,
+        await _showDownloadSuccessDialog(
+          targetDir.path,
+          singleFilePath: file.path,
         );
       }
     } catch (e) {
+      debugPrint('[MyResults] ❌ Download failed: $e');
       if (mounted) {
         UIUtils.hideProgressDialog(context);
         SnackbarUtils.showError(context, 'Failed to generate PDF: $e');
@@ -417,6 +431,480 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         SnackbarUtils.showError(context, 'Failed to delete: $e');
       }
     }
+  }
+
+  Future<bool> _ensureStoragePermission() async {
+    if (!Platform.isAndroid) return true;
+
+    try {
+      final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      final int sdkInt = androidInfo.version.sdkInt;
+
+      debugPrint(
+        '[MyResults] 📱 Checking storage permission (Android SDK: $sdkInt)',
+      );
+
+      // Android 13+ (API 33+): Uses scoped storage automatically
+      if (sdkInt >= 33) {
+        debugPrint('[MyResults] ✅ Android 13+: Scoped storage enabled');
+        return true;
+      }
+
+      // Android 11-12 (API 30-32): Needs MANAGE_EXTERNAL_STORAGE
+      if (sdkInt >= 30) {
+        PermissionStatus status = await Permission.manageExternalStorage.status;
+
+        if (status.isDenied) {
+          final shouldRequest = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.folder_open, color: context.primary),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('Storage Access')),
+                ],
+              ),
+              content: const Text(
+                'Visiaxx needs access to save PDF reports to your Downloads folder.\n\n'
+                'This permission allows the app to:\n'
+                '• Save reports to Downloads/Visiaxx_Reports\n'
+                '• Organize your files for easy access\n\n'
+                'Your files remain private and secure.',
+                style: TextStyle(fontSize: 14, height: 1.5),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Grant Access'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldRequest != true) return false;
+          status = await Permission.manageExternalStorage.request();
+        }
+
+        if (status.isPermanentlyDenied) {
+          final shouldOpen = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  const Icon(Icons.settings, color: Color(0xFFFF9500)),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('Permission Required')),
+                ],
+              ),
+              content: const Text(
+                'Storage permission is required to save PDFs.\n\n'
+                'Please enable it in Settings:\n'
+                '1. Open App Settings\n'
+                '2. Go to Permissions\n'
+                '3. Enable "Files and media" or "All files access"',
+                style: TextStyle(fontSize: 14, height: 1.5),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldOpen == true) {
+            await openAppSettings();
+          }
+          return false;
+        }
+
+        return status.isGranted;
+      }
+      // Android 10 and below (API 29 and below): Uses legacy storage permission
+      else {
+        PermissionStatus status = await Permission.storage.status;
+        if (status.isDenied) {
+          status = await Permission.storage.request();
+        }
+
+        if (status.isPermanentlyDenied) {
+          final shouldOpen = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text('Permission Required'),
+              content: const Text(
+                'Storage permission is needed to download PDFs. '
+                'Please enable it in app settings.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldOpen == true) {
+            await openAppSettings();
+          }
+          return false;
+        }
+
+        return status.isGranted;
+      }
+    } catch (e) {
+      debugPrint('[MyResults] ❌ Permission check error: $e');
+      return false;
+    }
+  }
+
+  Future<Directory> _getDownloadDirectory() async {
+    return await FileManagerService.getDownloadDirectory();
+  }
+
+  Future<void> _openFolder(String folderPath) async {
+    try {
+      final success = await FileManagerService.openFolder(folderPath);
+
+      if (!success && mounted) {
+        SnackbarUtils.showWarning(
+          context,
+          Platform.isAndroid
+              ? 'Files saved! Open Files app → Downloads → Visiaxx_Reports'
+              : 'Files saved! Open Files app to view reports',
+          duration: const Duration(seconds: 5),
+        );
+      } else if (success && mounted) {
+        SnackbarUtils.showSuccess(context, 'Opening file manager...');
+      }
+    } catch (e) {
+      debugPrint('[MyResults] ❌ Error opening folder: $e');
+      if (mounted) {
+        SnackbarUtils.showError(
+          context,
+          'Could not open file manager. Files are saved in Downloads/Visiaxx_Reports',
+        );
+      }
+    }
+  }
+
+  Future<void> _showDownloadSuccessDialog(
+    String path, {
+    required String singleFilePath,
+  }) async {
+    debugPrint('[MyResults] 🎉 Showing success dialog for: $singleFilePath');
+
+    final folderName = path.split(RegExp(r'[/\\]')).last;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              constraints: const BoxConstraints(maxWidth: 480),
+              decoration: BoxDecoration(
+                color: context.surface,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 30,
+                    offset: const Offset(0, 15),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                      child: Column(
+                        children: [
+                          // Success Icon
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF34C759,
+                              ).withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_circle_rounded,
+                              color: Color(0xFF34C759),
+                              size: 52,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          Text(
+                            'Report Ready',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: context.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          Text(
+                            'Your vision test report has been saved',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: context.textSecondary.withValues(
+                                alpha: 0.8,
+                              ),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // Location Card
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: context.scaffoldBackground,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: context.dividerColor.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.folder_open_rounded,
+                                      size: 16,
+                                      color: context.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'SAVE LOCATION',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        color: context.textTertiary,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  folderName,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  path,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: context.textSecondary,
+                                    fontFamily: 'monospace',
+                                    height: 1.4,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // Action Buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    try {
+                                      final file = File(singleFilePath);
+                                      if (await file.exists()) {
+                                        final bytes = await file.readAsBytes();
+                                        await Printing.layoutPdf(
+                                          onLayout: (format) async => bytes,
+                                          name: singleFilePath
+                                              .split(RegExp(r'[/\\]'))
+                                              .last,
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        SnackbarUtils.showError(
+                                          context,
+                                          'Print failed: $e',
+                                        );
+                                      }
+                                    }
+                                  },
+                                  icon: const Icon(
+                                    Icons.print_rounded,
+                                    size: 20,
+                                  ),
+                                  label: const Text('Print'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    side: BorderSide(
+                                      color: context.primary,
+                                      width: 1.5,
+                                    ),
+                                    foregroundColor: context.primary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    textStyle: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    final res = await OpenFilex.open(
+                                      singleFilePath,
+                                    );
+                                    if (res.type != ResultType.done &&
+                                        mounted) {
+                                      SnackbarUtils.showError(
+                                        context,
+                                        'Could not open report',
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: context.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    textStyle: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  child: const Text('Open'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // View in Downloads
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton.icon(
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                await _openFolder(path);
+                              },
+                              icon: const Icon(
+                                Icons.file_download_outlined,
+                                size: 18,
+                              ),
+                              label: const Text('View in Downloads'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: context.primary,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Close Button
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: context.scaffoldBackground.withValues(alpha: 0.8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: context.textTertiary,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -1407,80 +1895,6 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildSyncStatusBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: context.primary.withValues(alpha: 0.08),
-        border: Border(
-          bottom: BorderSide(
-            color: context.primary.withValues(alpha: 0.1),
-            width: 1,
-          ),
-        ),
-      ),
-      child: TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: 0, end: _loadingProgress),
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOutSine,
-        builder: (context, value, child) {
-          return Row(
-            children: [
-              const EyeLoader(size: 20),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Synchronizing results...',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: context.primary,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    Text(
-                      'Updating latest tests for all members',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: context.textTertiary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        value: value > 0 ? value : null,
-                        backgroundColor: context.primary.withValues(alpha: 0.1),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          context.primary,
-                        ),
-                        minHeight: 3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (value > 0 && value < 1.0)
-                Text(
-                  '${(value * 100).toInt()}%',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: context.primary,
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
     );
   }
 
