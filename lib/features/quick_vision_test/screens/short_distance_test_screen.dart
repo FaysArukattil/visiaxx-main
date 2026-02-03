@@ -463,8 +463,28 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                     'no',
                   ],
                   onVoiceResult: (text, isFinal) {
-                    if (isFinal && _waitingForResponse) {
-                      _processSentence(text);
+                    if (_waitingForResponse) {
+                      if (isFinal) {
+                        _processSentence(text);
+                      } else {
+                        // EARLY COMPLETION: If user said ~60% of words correctly,
+                        // trigger success immediately without waiting for finish.
+                        final sentence = TestConstants
+                            .shortDistanceSentences[_currentScreen];
+                        bool hasStrongMatch = FuzzyMatcher.containsKeywords(
+                          sentence.sentence,
+                          text,
+                          keywordThreshold:
+                              0.6, // Higher threshold for early match
+                        );
+
+                        if (hasStrongMatch) {
+                          debugPrint(
+                            '[Reading] ⚡ Early completion triggered with: $text',
+                          );
+                          _processSentence(text);
+                        }
+                      }
                     }
                   },
                 ),

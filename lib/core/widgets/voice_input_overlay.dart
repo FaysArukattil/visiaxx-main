@@ -107,7 +107,8 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
 
   void _startErrorMonitoring() {
     _retryTimer?.cancel();
-    _retryTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+    // Aggressive retry: check every 500ms when active instead of every 2 seconds
+    _retryTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (!mounted || !widget.isActive) {
         timer.cancel();
         return;
@@ -116,7 +117,9 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
       final provider = context.read<VoiceRecognitionProvider>();
       if (provider.state == VoiceRecognitionState.error &&
           _retryCount < _maxRetries) {
-        debugPrint('[VoiceInputOverlay] 🔄 Auto-retrying legacy error...');
+        debugPrint(
+          '[VoiceInputOverlay] 🔄 Quick-retrying initialization error...',
+        );
         _retryCount++;
         _restartRecognition();
       } else if (provider.state == VoiceRecognitionState.listening) {
