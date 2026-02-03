@@ -52,27 +52,21 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
 
-    // Start listening when widget is created and active
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.isActive) {
-        _startListening();
-      }
-    });
+    // Start listening immediately when widget is created and active
+    if (widget.isActive) {
+      _startListening();
+    }
   }
 
   @override
   void didUpdateWidget(VoiceInputOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive != oldWidget.isActive) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          if (widget.isActive) {
-            _startListening();
-          } else {
-            _stopListening();
-          }
-        }
-      });
+      if (widget.isActive) {
+        _startListening();
+      } else {
+        _stopListening();
+      }
     }
   }
 
@@ -81,8 +75,8 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
     final provider = context.read<VoiceRecognitionProvider>();
     if (!provider.isEnabled) return;
 
-    // Small warmup delay to ensure UI is settled and hardware is ready
-    Future.delayed(const Duration(milliseconds: 500), () {
+    // Reduced warmup delay to ensure faster activation
+    Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted || !widget.isActive) return;
 
       provider.startListening(

@@ -257,14 +257,28 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     if (!isBlurry && userSaid.isNotEmpty) {
       similarity = FuzzyMatcher.getSimilarity(sentence.sentence, userSaid);
 
-      // PARTIAL ANSWER FIX: Also check for keyword overlap
-      bool hasKeywords = FuzzyMatcher.containsKeywords(
-        sentence.sentence,
-        userSaid,
-        keywordThreshold: 0.5, // Accept if 50% of important words are there
-      );
+      // Check if user specifically said they can't read it or want to skip
+      final isUnableToReadOrSkip = [
+        'cannot read',
+        'cant read',
+        "can't see",
+        'next',
+        'skip',
+        'no',
+      ].any((variant) => userSaid.toLowerCase().contains(variant));
 
-      isCorrect = (similarity >= 70.0) || hasKeywords;
+      if (isUnableToReadOrSkip) {
+        isBlurry = true; // Treat as blurry/failed for scoring
+      } else {
+        // PARTIAL ANSWER FIX: Also check for keyword overlap
+        bool hasKeywords = FuzzyMatcher.containsKeywords(
+          sentence.sentence,
+          userSaid,
+          keywordThreshold: 0.5, // Accept if 50% of important words are there
+        );
+
+        isCorrect = (similarity >= 70.0) || hasKeywords;
+      }
     }
 
     _handleResult(sentence, userSaid, similarity, isCorrect);
@@ -313,7 +327,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       _lastResultCorrect = isCorrect;
     });
 
-    Future.delayed(const Duration(milliseconds: 1000), () {
+    // STAY "STUCK" LONGER ON FAILURES: 3 seconds if incorrect/blurry, 1 second if correct
+    final nextLevelDelay = isCorrect ? 1000 : 3000;
+
+    Future.delayed(Duration(milliseconds: nextLevelDelay), () {
       if (!mounted) {
         return;
       }
@@ -438,9 +455,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                         .shortDistanceSentences[_currentScreen]
                         .sentence,
                     'blurry',
-                    "can't read",
-                    "cannot read",
+                    'cannot read',
                     "can't see",
+                    'cant read',
+                    'skip',
+                    'next',
+                    'no',
                   ],
                   onVoiceResult: (text, isFinal) {
                     if (isFinal && _waitingForResponse) {
