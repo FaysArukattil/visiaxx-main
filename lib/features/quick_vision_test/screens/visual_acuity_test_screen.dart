@@ -395,6 +395,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // … FIX: Don't process distance updates while pause dialog is showing
     if (_isPausedForExit) return;
 
+    // AUDIO PRIORITY: Skip distance processing if voice recognition is actively listening
+    // This prevents hardware contention and ensures the microphone has full system resources.
+    try {
+      final voiceProvider = context.read<VoiceRecognitionProvider>();
+      if (voiceProvider.isListening && (_showE || _waitingForResponse)) {
+        return;
+      }
+    } catch (_) {}
+
     final shouldPause = DistanceHelper.shouldPauseTestForDistance(
       distance,
       status,
@@ -737,8 +746,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         });
       }
 
-      // Short delay for rotation feel so the user sees a "new" attempt
-      Future.delayed(const Duration(milliseconds: 400), () {
+      // Moderate delay for rotation feel and hardware settling
+      Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) _showTumblingE();
       });
       return;

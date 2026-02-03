@@ -27,7 +27,7 @@ enum VoiceRecognitionState {
 /// Voice Recognition Service for VisiAxx Eye Testing App
 ///
 /// Features:
-/// - Offline-first recognition using device's native STT engine
+/// - Balance between Offline and Cloud recognition using device defaults
 /// - Works across all Android variants (MIUI, OneUI, ColorOS, etc.)
 /// - Uses device's default locale (no forced language)
 /// - Vocabulary matching for test-specific words
@@ -43,6 +43,8 @@ class VoiceRecognitionService {
   // State management
   VoiceRecognitionState _state = VoiceRecognitionState.idle;
   bool _isInitialized = false;
+  bool _isInitializing = false;
+  LocaleName? _systemLocale; // Store the system locale for offline recognition
   String? _lastError;
 
   // Audio level for waveform visualization
@@ -72,7 +74,9 @@ class VoiceRecognitionService {
   /// Returns true if initialization was successful
   Future<bool> initialize() async {
     if (_isInitialized) return true;
+    if (_isInitializing) return false;
 
+    _isInitializing = true;
     try {
       debugPrint('[VoiceRecognition] Checking microphone permission...');
       final status = await Permission.microphone.status;
@@ -93,13 +97,13 @@ class VoiceRecognitionService {
 
       debugPrint('[VoiceRecognition] Initializing system speech engine...');
       // Initialize with a timeout because it can hang if Play Services is buggy
-      final available = await _speech
+      final bool available = await _speech
           .initialize(
             onStatus: _onStatus,
             onError: _onError,
-            debugLogging: true,
+            debugLogging: false, // Reduced log noise as requested
           )
-          .timeout(const Duration(seconds: 5), onTimeout: () => false);
+          .timeout(const Duration(seconds: 10), onTimeout: () => false);
 
       if (!available) {
         debugPrint('[VoiceRecognition] Speech engine NOT AVAILABLE');
@@ -111,12 +115,13 @@ class VoiceRecognitionService {
       _isInitialized = true;
       _updateState(VoiceRecognitionState.idle);
 
-      final systemLocale = await _speech.systemLocale().timeout(
+      _systemLocale = await _speech.systemLocale().timeout(
         const Duration(seconds: 2),
         onTimeout: () => null,
       );
+
       debugPrint(
-        '[VoiceRecognition] Ready! Locale: ${systemLocale?.localeId ?? 'default'}',
+        '[VoiceRecognition] Ready! Locale: ${_systemLocale?.localeId ?? 'default'} (System Defaults)',
       );
       return true;
     } catch (e) {
@@ -124,6 +129,8 @@ class VoiceRecognitionService {
       _lastError = e.toString();
       _updateState(VoiceRecognitionState.error);
       return false;
+    } finally {
+      _isInitializing = false;
     }
   }
 
@@ -142,46 +149,57 @@ class VoiceRecognitionService {
       if (!success) return;
     }
 
-    if (_speech.isListening) {
-      await stopListening();
-    }
+    // Aggressive cleanup before starting
+    try {
+      if (_speech.isListening || _speech.isAvailable) {
+        await _speech.cancel();
+        // Give the OS a moment to truly release the hardware
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    } catch (_) {}
 
     _onResult = onResult;
-    _updateState(VoiceRecognitionState.listening);
 
     try {
       debugPrint(
-        '[VoiceRecognition] Starting listen session with ${vocabularyHints?.length ?? 0} hints...',
+        '[VoiceRecognition] Starting listen session (System Defaults)...',
       );
 
-      // Let speech_to_text auto-detect the best recognition mode
-      // Use standard timing to ensure user has plenty of time to speak
-      await _speech.listen(
-        onResult: _handleResult,
-        listenFor: listenFor ?? const Duration(seconds: 45),
-        pauseFor: pauseFor ?? const Duration(seconds: 5),
-        onSoundLevelChange: (level) {
-          // Sync audio level for waveform animation
-          _audioLevel = ((level + 2) / 12).clamp(0.0, 1.0);
-          _audioLevelController.add(_audioLevel);
-        },
-        cancelOnError: false,
-        partialResults: true,
-      );
+      // Use system defaults as requested.
+      // This allows the OS to decide between offline and cloud automatically.
+      bool started =
+          await _speech.listen(
+            onResult: _handleResult,
+            listenFor: listenFor ?? const Duration(seconds: 45),
+            pauseFor: pauseFor ?? const Duration(seconds: 5),
+            listenOptions: SpeechListenOptions(
+              onDevice: false, // Default behavior (Cloud/Online allowed)
+              cancelOnError: false,
+              partialResults: true,
+            ),
+            onSoundLevelChange: (level) {
+              _audioLevel = ((level + 2) / 12).clamp(0.0, 1.0);
+              _audioLevelController.add(_audioLevel);
+            },
+          ) ??
+          false;
 
-      // Verify if it actually started
-      // Give it a tiny moment to reflect the state
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (!_speech.isListening && _state == VoiceRecognitionState.listening) {
-          debugPrint('[VoiceRecognition] ❌ FAILED TO START listening session');
-          _updateState(VoiceRecognitionState.error);
-          _lastError = 'Could not start listening';
-        } else if (_speech.isListening) {
-          debugPrint('[VoiceRecognition] ✅ Device is now actively listening');
-        }
-      });
+      // SAFETY: If it returns false but is actually listening (common bug), count as success
+      if (!started && _speech.isListening) {
+        debugPrint('[VoiceRecognition] ✅ Engine reported listening via status');
+        started = true;
+      }
+
+      if (started || _speech.isListening) {
+        _updateState(VoiceRecognitionState.listening);
+        debugPrint('[VoiceRecognition] ✅ Started listening!');
+      } else {
+        debugPrint('[VoiceRecognition] ❌ Engine refused session.');
+        _updateState(VoiceRecognitionState.error);
+        _lastError = 'Could not start microphone';
+      }
     } catch (e) {
-      debugPrint('[VoiceRecognition] ❌ EXCEPTION starting listening: $e');
+      debugPrint('[VoiceRecognition] ❌ EXCEPTION: $e');
       _lastError = e.toString();
       _updateState(VoiceRecognitionState.error);
     }
@@ -630,14 +648,16 @@ class VoiceRecognitionService {
     }
 
     final recognizedText = result.recognizedWords;
+    final isFinalResult = result.finalResult; // Null safety fix
+
     debugPrint(
-      '[VoiceRecognition] Result: "$recognizedText" (final: ${result.finalResult})',
+      '[VoiceRecognition] Result: "$recognizedText" (final: $isFinalResult)',
     );
 
-    _onResult?.call(recognizedText, result.finalResult);
+    _onResult?.call(recognizedText, isFinalResult);
 
     // Return to listening state if not final
-    if (!result.finalResult && _state == VoiceRecognitionState.processing) {
+    if (!isFinalResult && _state == VoiceRecognitionState.processing) {
       _updateState(VoiceRecognitionState.listening);
     }
   }
@@ -682,7 +702,12 @@ class VoiceRecognitionService {
   void _updateState(VoiceRecognitionState newState) {
     if (_state != newState) {
       _state = newState;
-      _stateController.add(newState);
+      // Use microtask to ensure we don't trigger builds during builds
+      Future.microtask(() {
+        if (!_stateController.isClosed) {
+          _stateController.add(newState);
+        }
+      });
     }
   }
 

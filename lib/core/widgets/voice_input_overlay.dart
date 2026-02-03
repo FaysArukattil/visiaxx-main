@@ -60,11 +60,15 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
   void didUpdateWidget(VoiceInputOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive != oldWidget.isActive) {
-      if (widget.isActive) {
-        _startListening();
-      } else {
-        _stopListening();
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          if (widget.isActive) {
+            _startListening();
+          } else {
+            _stopListening();
+          }
+        }
+      });
     }
   }
 
@@ -286,11 +290,15 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
                   child: Text(
                     provider.recognizedText.isNotEmpty
                         ? provider.recognizedText
-                        : 'Initializing voice...',
+                        : isError
+                        ? (provider.lastError ?? 'Unknown Error')
+                        : !provider.isInitialized
+                        ? 'Initializing voice...'
+                        : 'Listening...',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: context.textPrimary,
+                      color: isError ? context.error : context.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
