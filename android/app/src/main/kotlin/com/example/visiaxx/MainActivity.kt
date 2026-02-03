@@ -54,10 +54,11 @@ class MainActivity : FlutterActivity() {
             try {
                 // CLEAN START: Forcefully destroy any existing recognizer
                 // to prevent carry-over and address "stuck" states.
-                speechRecognizer?.let {
-                    it.stopListening()
-                    it.cancel()
-                    it.destroy()
+                speechRecognizer?.apply {
+                    setRecognitionListener(null) // Prevent callbacks during destruction
+                    stopListening()
+                    cancel()
+                    destroy()
                 }
                 speechRecognizer = null
 

@@ -140,9 +140,10 @@ class VoiceRecognitionService {
     // 1. Mandatory hardware "cooling" delay to prevent Error 11 (Not Connected)
     // Especially important when switching rapidly between 'E' stimulus items.
     if (!isRetry) {
-      debugPrint('[VoiceRecognition] Hardware breathing room (200ms)...');
-      await cancel();
-      await Future.delayed(const Duration(milliseconds: 200));
+      debugPrint('[VoiceRecognition] Hardware breathing room (300ms)...');
+      // REMOVED redundant cancel() as it causes double-beeps.
+      // Native side already handles cleanup efficiently.
+      await Future.delayed(const Duration(milliseconds: 300));
     }
 
     if (!_isInitialized) {

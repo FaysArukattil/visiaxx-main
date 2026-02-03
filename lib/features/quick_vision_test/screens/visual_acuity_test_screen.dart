@@ -692,16 +692,21 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     // START VOICE RECOGNITION SYNC
     final voiceProvider = context.read<VoiceRecognitionProvider>();
     if (voiceProvider.isEnabled) {
-      voiceProvider.startListening(
-        onResult: (text, isFinal) {
-          if (!mounted || !_waitingForResponse) return;
+      // Add slight delay to ensure UI transition and hardware settling
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!_waitingForResponse || !voiceProvider.isEnabled) return;
 
-          final match = voiceProvider.matchDirection();
-          if (match != null) {
-            _handleVoiceResponse(match);
-          }
-        },
-      );
+        voiceProvider.startListening(
+          onResult: (text, isFinal) {
+            if (!_waitingForResponse) return;
+
+            final match = voiceProvider.matchDirection();
+            if (match != null) {
+              _handleVoiceResponse(match);
+            }
+          },
+        );
+      });
     }
   }
 
@@ -766,7 +771,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
 
       // Moderate delay for rotation feel and hardware settling
-      Future.delayed(const Duration(milliseconds: 1000), () {
+      Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) _showTumblingE();
       });
       return;
