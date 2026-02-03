@@ -89,6 +89,8 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
           }
         }
       },
+      vocabularyHints:
+          widget.vocabulary, // Pass vocabulary hints for better recognition
     );
   }
 

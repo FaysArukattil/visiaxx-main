@@ -147,8 +147,10 @@ class VoiceRecognitionProvider extends ChangeNotifier {
   }
 
   /// Start listening for speech with a result callback
+  /// [vocabularyHints] optional list of expected words to improve recognition
   Future<void> startListening({
     required Function(String recognizedText, bool isFinal) onResult,
+    List<String>? vocabularyHints,
   }) async {
     if (!_isEnabled) {
       debugPrint('[VoiceRecognitionProvider] Cannot start: disabled');
@@ -172,6 +174,7 @@ class VoiceRecognitionProvider extends ChangeNotifier {
         notifyListeners();
         _currentResultCallback?.call(text, isFinal);
       },
+      vocabularyHints: vocabularyHints,
     );
   }
 

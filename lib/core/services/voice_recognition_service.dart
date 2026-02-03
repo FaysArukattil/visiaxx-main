@@ -129,10 +129,12 @@ class VoiceRecognitionService {
 
   /// Start listening for speech
   /// [onResult] is called with recognized text (isFinal indicates if recognition is complete)
+  /// [vocabularyHints] optional list of expected words to improve recognition accuracy
   Future<void> startListening({
     required Function(String recognizedText, bool isFinal) onResult,
     Duration? listenFor,
     Duration? pauseFor,
+    List<String>? vocabularyHints,
   }) async {
     if (!_isInitialized) {
       debugPrint('[VoiceRecognition] Cannot start: not initialized');
@@ -149,11 +151,11 @@ class VoiceRecognitionService {
 
     try {
       debugPrint(
-        '[VoiceRecognition] Starting system-default listen session...',
+        '[VoiceRecognition] Starting listen session with ${vocabularyHints?.length ?? 0} hints...',
       );
 
-      // We do NOT force onDevice: true or specific locale here.
-      // We let the speech_to_text package decide based on device capability.
+      // Let speech_to_text auto-detect the best recognition mode
+      // Use standard timing to ensure user has plenty of time to speak
       await _speech.listen(
         onResult: _handleResult,
         listenFor: listenFor ?? const Duration(seconds: 45),
@@ -255,14 +257,34 @@ class VoiceRecognitionService {
       }
     }
 
-    // Try fuzzy match for common mishearings
+    // Pre-process input to fix common misrecognitions
+    String preprocessedInput = normalizedInput;
+
+    // Fix common misrecognitions for directional words
+    if (preprocessedInput.contains('download')) {
+      preprocessedInput = preprocessedInput.replaceAll('download', 'down');
+    }
+    if (preprocessedInput.contains('upward')) {
+      preprocessedInput = preprocessedInput.replaceAll('upward', 'up');
+    }
+    if (preprocessedInput.contains('downward')) {
+      preprocessedInput = preprocessedInput.replaceAll('downward', 'down');
+    }
+    if (preprocessedInput.contains('leftward')) {
+      preprocessedInput = preprocessedInput.replaceAll('leftward', 'left');
+    }
+    if (preprocessedInput.contains('rightward')) {
+      preprocessedInput = preprocessedInput.replaceAll('rightward', 'right');
+    }
+
+    // Try fuzzy match for common mishearings with expanded variants
     final fuzzyMatches = <String, List<String>>{
-      'left': ['left', 'lift', 'lest', 'let'],
-      'right': ['right', 'write', 'rite', 'wright'],
-      'up': ['up', 'app', 'hub'],
-      'down': ['down', 'town', 'dawn'],
-      'blurry': ['blurry', 'blurred', 'blur', 'blury', 'blaring'],
-      'visible': ['visible', 'I can see', 'visible', 'i see it'],
+      'left': ['left', 'lift', 'lest', 'let', 'laughed', 'cleft', 'leaft'],
+      'right': ['right', 'write', 'rite', 'wright', 'white', 'ride', 'ripe'],
+      'up': ['up', 'app', 'hub', 'uhp', 'uh', 'upper', 'a', 'yup'],
+      'down': ['down', 'town', 'dawn', 'done', 'drown', 'don'],
+      'blurry': ['blurry', 'blurred', 'blur', 'blury', 'blaring', 'bleary'],
+      'visible': ['visible', 'I can see', 'visible', 'i see it', 'visual'],
       'not visible': [
         'not visible',
         'cannot see',
@@ -272,10 +294,27 @@ class VoiceRecognitionService {
       ],
     };
 
+    // First check preprocessed input for exact matches
+    for (final word in vocabulary) {
+      if (preprocessedInput == word.toLowerCase()) {
+        return word;
+      }
+    }
+
+    // Then check for word boundaries in preprocessed input
+    final preprocessedWords = preprocessedInput.split(RegExp(r'\s+'));
+    for (final word in vocabulary) {
+      final normalizedWord = word.toLowerCase();
+      if (preprocessedWords.contains(normalizedWord)) {
+        return word;
+      }
+    }
+
+    // Finally apply fuzzy matching
     for (final entry in fuzzyMatches.entries) {
       if (vocabulary.contains(entry.key)) {
         for (final variant in entry.value) {
-          if (normalizedInput.contains(variant.toLowerCase())) {
+          if (preprocessedInput.contains(variant.toLowerCase())) {
             return entry.key;
           }
         }
