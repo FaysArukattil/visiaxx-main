@@ -50,15 +50,8 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	
-	<!-- ✅ REQUIRED PERMISSIONS - ADDED BELOW -->
+	<!-- REQUIRED PERMISSIONS -->
 	
-	<!-- Microphone Permission (CRITICAL for Speech Recognition) -->
-	<key>NSMicrophoneUsageDescription</key>
-	<string>This app needs microphone access to perform voice-controlled vision tests. Your responses help us measure your visual acuity accurately.</string>
-	
-	<!-- Speech Recognition Permission (CRITICAL for Speech-to-Text) -->
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>This app uses speech recognition to verify your test responses during vision assessments.</string>
 	
 	<!-- Camera Permission (for Distance Detection) -->
 	<key>NSCameraUsageDescription</key>
