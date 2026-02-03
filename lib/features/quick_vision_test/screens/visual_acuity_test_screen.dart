@@ -128,6 +128,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
   Future<void> _initTestFlow() async {
     await _ttsService.initialize();
 
+    // Consolidate permissions (Camera + Microphone) at the start
+    final voiceProvider = context.read<VoiceRecognitionProvider>();
+    if (voiceProvider.isEnabled) {
+      await voiceProvider.initialize();
+    }
+
     if (!mounted) return;
     final provider = context.read<TestSessionProvider>();
 
