@@ -673,41 +673,15 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       return;
     }
 
-    // Start countdown timer for display
-    _eCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted || _isTestPausedForDistance) {
-        // If paused or unmounted, we don't clear the timer here as we want it to survive for resume,
-        // but we stop the countdown from progressing.
-        if (!mounted) timer.cancel();
-        return;
-      }
-      setState(() {
-        _eDisplayCountdown--;
-      });
-      if (_eDisplayCountdown <= 0) {
-        timer.cancel();
-      }
-    });
+    // Use _restartEDisplayTimer() which creates BOTH:
+    // 1. Countdown timer (for UI display)
+    // 2. Timeout action timer (to trigger rotation after 7 seconds)
+    _restartEDisplayTimer();
 
-    // START VOICE RECOGNITION SYNC
-    final voiceProvider = context.read<VoiceRecognitionProvider>();
-    if (voiceProvider.isEnabled) {
-      // Add slight delay to ensure UI transition and hardware settling
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (!_waitingForResponse || !voiceProvider.isEnabled) return;
-
-        voiceProvider.startListening(
-          onResult: (text, isFinal) {
-            if (!_waitingForResponse) return;
-
-            final match = voiceProvider.matchDirection();
-            if (match != null) {
-              _handleVoiceResponse(match);
-            }
-          },
-        );
-      });
-    }
+    // REMOVED: Duplicate voice recognition start
+    // VoiceInputOverlay already manages this lifecycle based on its isActive property
+    // which is set to (_showE && _waitingForResponse)
+    // This eliminates double beeps and activation conflicts
   }
 
   void _handleButtonResponse(EDirection direction) {
@@ -1113,7 +1087,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   isActive: _showE && _waitingForResponse,
                   vocabulary: const ['left', 'right', 'up', 'down', 'blurry'],
                   onVoiceResult: (recognizedText, isFinal) {
-                    if (isFinal && _waitingForResponse) {
+                    // Process immediately when we have a match, don't wait for isFinal
+                    // This ensures faster response time and prevents timeout rotation
+                    if (_waitingForResponse) {
                       _handleVoiceResponse(recognizedText);
                     }
                   },
