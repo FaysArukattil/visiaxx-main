@@ -126,10 +126,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
   /// Decides whether to show calibration or skip straight to the test
   Future<void> _initTestFlow() async {
+    // Collect required providers/context BEFORE async gap
+    final voiceProvider = context.read<VoiceRecognitionProvider>();
+
     await _ttsService.initialize();
 
     // Consolidate permissions (Camera + Microphone) at the start
-    final voiceProvider = context.read<VoiceRecognitionProvider>();
     if (voiceProvider.isEnabled) {
       await voiceProvider.initialize();
     }
@@ -185,8 +187,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
 
-    // Stop distance monitoring
+    // Stop distance monitoring and voice recognition
     _distanceService.stopMonitoring();
+    context.read<VoiceRecognitionProvider>().stopListening();
 
     // Pause relaxation animation if active
     if (_showRelaxation) {
@@ -462,9 +465,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       _isDistanceOk = false; // Mark distance as not OK when paused
     });
 
-    // Cancel timers
+    // Cancel timers and voice recognition
     _eCountdownTimer?.cancel();
     _eDisplayTimer?.cancel();
+    context.read<VoiceRecognitionProvider>().stopListening();
 
     HapticFeedback.mediumImpact();
   }
@@ -685,12 +689,20 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       }
     });
 
-    // Auto-advance if no response within time limit
-    _eDisplayTimer = Timer(Duration(seconds: _eDisplayCountdown), () {
-      if (_waitingForResponse && !_isTestPausedForDistance) {
-        _recordResponse(null, source: 'timer_timeout_no_value');
-      }
-    });
+    // START VOICE RECOGNITION SYNC
+    final voiceProvider = context.read<VoiceRecognitionProvider>();
+    if (voiceProvider.isEnabled) {
+      voiceProvider.startListening(
+        onResult: (text, isFinal) {
+          if (!mounted || !_waitingForResponse) return;
+
+          final match = voiceProvider.matchDirection();
+          if (match != null) {
+            _handleVoiceResponse(match);
+          }
+        },
+      );
+    }
   }
 
   void _handleButtonResponse(EDirection direction) {
@@ -709,12 +721,10 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     debugPrint('[VisualAcuity] 🎤 VOICE INPUT: $recognizedText');
 
-    // The vocabulary filter already matched, so we can directly use the text
-    // It will be one of: left, right, up, down, blurry
-    _recordResponse(recognizedText.toLowerCase(), source: 'voice_input');
+    // Stop listening immediately since we got a valid response
+    context.read<VoiceRecognitionProvider>().stopListening();
 
-    // Clear the recognized text for the next E
-    // This is done in _showTumblingE when new E is displayed
+    _recordResponse(recognizedText.toLowerCase(), source: 'voice_input');
   }
 
   void _recordResponse(String? userResponse, {String source = 'unknown'}) {
@@ -727,6 +737,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       );
       return;
     }
+
+    // Stop voice recognition when a response is recorded
+    context.read<VoiceRecognitionProvider>().stopListening();
     debugPrint(
       '[VisualAcuity] ✅ _recordResponse called from $source with: $userResponse',
     );

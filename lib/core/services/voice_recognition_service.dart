@@ -313,34 +313,43 @@ class VoiceRecognitionService {
   // ... rest of the matching methods remain the same but cleaner ...
   String? matchNumber(String input) {
     final digitMatch = RegExp(r'\b(\d{1,2})\b').firstMatch(input);
-    if (digitMatch != null) return digitMatch.group(1);
+    if (digitMatch != null) {
+      return digitMatch.group(1);
+    }
     if (input.toLowerCase().contains('nothing') ||
-        input.toLowerCase().contains("can't see"))
+        input.toLowerCase().contains("can't see")) {
       return 'nothing';
+    }
     return null;
   }
 
   String? matchLetter(String input) {
     final clean = input.trim().toUpperCase();
-    if (clean.length == 1 && RegExp(r'[A-Z]').hasMatch(clean)) return clean;
+    if (clean.length == 1 && RegExp(r'[A-Z]').hasMatch(clean)) {
+      return clean;
+    }
     return null;
   }
 
   String? matchVisibility(String input) {
     final low = input.toLowerCase();
-    if (low.contains('not') || low.contains('no') || low.contains("can't"))
+    if (low.contains('not') || low.contains('no') || low.contains("can't")) {
       return 'not visible';
-    if (low.contains('yes') || low.contains('visible') || low.contains('see'))
+    }
+    if (low.contains('yes') || low.contains('visible') || low.contains('see')) {
       return 'visible';
+    }
     return null;
   }
 
   String? matchReadingCapability(String input) {
     final low = input.toLowerCase();
-    if (low.contains('not') || low.contains('no') || low.contains("can't"))
+    if (low.contains('not') || low.contains('no') || low.contains("can't")) {
       return 'cannot read';
-    if (low.contains('yes') || low.contains('read') || low.contains('can'))
+    }
+    if (low.contains('yes') || low.contains('read') || low.contains('can')) {
       return 'can read';
+    }
     return null;
   }
 
