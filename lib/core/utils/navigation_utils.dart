@@ -3,17 +3,12 @@ import '../services/auth_service.dart';
 import '../../data/models/user_model.dart';
 
 class NavigationUtils {
-  static Future<void> navigateHome(BuildContext context) async {
+  static Future<void> navigateHome(
+    BuildContext context, {
+    UserRole? preFetchedRole,
+  }) async {
     // ! Robust role check with longer timeout to prevent accidental redirection to user home
-    final role = await AuthService().getCurrentUserRole().timeout(
-      const Duration(seconds: 3),
-      onTimeout: () {
-        debugPrint(
-          '[NavigationUtils] getCurrentUserRole timed out, defaulting to user role',
-        );
-        return UserRole.user;
-      },
-    );
+    final role = preFetchedRole ?? await AuthService().getCurrentUserRole();
 
     if (!context.mounted) return;
 

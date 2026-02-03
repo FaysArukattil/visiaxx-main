@@ -7,6 +7,8 @@ import 'package:visiaxx/features/practitioner/screens/practitioner_home_screen.d
 import 'package:visiaxx/features/home/screens/profile_screen.dart';
 import 'package:visiaxx/features/home/widgets/terms_acceptance_dialog.dart';
 import 'package:visiaxx/core/utils/snackbar_utils.dart';
+import 'package:provider/provider.dart';
+import 'package:visiaxx/core/providers/voice_recognition_provider.dart';
 
 class PractitionerMainNavigationScreen extends StatefulWidget {
   const PractitionerMainNavigationScreen({super.key});
@@ -52,6 +54,10 @@ class _PractitionerMainNavigationScreenState
             _user = user;
             _isLoading = false;
           });
+          // Initialize voice recognition logic efficiently after landing
+          context.read<VoiceRecognitionProvider>().initializeWithUserRole(
+            user.role,
+          );
           _checkTermsAgreement();
         } else if (mounted) {
           setState(() => _isLoading = false);

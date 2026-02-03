@@ -57,6 +57,14 @@
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera to monitor your testing distance and ensure accurate results.</string>
 	
+	<!-- Microphone Permission (for Voice Recognition) -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>VisiAxx needs microphone access to recognize your spoken answers during eye tests for hands-free input.</string>
+	
+	<!-- Speech Recognition Permission -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>VisiAxx uses speech recognition to allow hands-free answering during eye tests.</string>
+	
 	<!-- Photo Library (if you need to save/access images) -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app may save test results and reports to your photo library.</string>

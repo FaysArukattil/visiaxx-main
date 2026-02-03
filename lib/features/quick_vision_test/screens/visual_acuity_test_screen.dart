@@ -27,6 +27,8 @@ import '../../../core/services/distance_skip_manager.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/widgets/test_feedback_overlay.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../../../core/widgets/voice_input_overlay.dart';
+import '../../../core/providers/voice_recognition_provider.dart';
 
 /// Visual Acuity Test using Tumbling E chart with distance monitoring
 /// Implements Visiaxx specification for 1-meter testing
@@ -609,6 +611,13 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _eCountdownTimer?.cancel();
     _relaxationTimer?.cancel();
 
+    // Clear any previously recognized voice text for fresh input
+    try {
+      context.read<VoiceRecognitionProvider>().clearRecognizedText();
+    } catch (_) {
+      // Provider might not be available, ignore
+    }
+
     _currentLevel = _currentLevel.clamp(
       0,
       TestConstants.visualAcuityLevels.length - 1,
@@ -676,6 +685,21 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     // Record response immediately
     _recordResponse(direction.label.toLowerCase(), source: 'manual_button');
+  }
+
+  /// Handle voice recognition input
+  /// Maps recognized direction words to the same response handler as buttons
+  void _handleVoiceResponse(String recognizedText) {
+    if (!_waitingForResponse) return;
+
+    debugPrint('[VisualAcuity] 🎤 VOICE INPUT: $recognizedText');
+
+    // The vocabulary filter already matched, so we can directly use the text
+    // It will be one of: left, right, up, down, blurry
+    _recordResponse(recognizedText.toLowerCase(), source: 'voice_input');
+
+    // Clear the recognized text for the next E
+    // This is done in _showTumblingE when new E is displayed
   }
 
   void _recordResponse(String? userResponse, {String source = 'unknown'}) {
@@ -1049,6 +1073,18 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   _resumeTestAfterDistance();
                 },
               ),
+
+              // Voice Input Overlay - Always visible if enabled, but only active during response
+              if (!_testComplete)
+                VoiceInputOverlay(
+                  isActive: _showE && _waitingForResponse,
+                  vocabulary: const ['left', 'right', 'up', 'down', 'blurry'],
+                  onVoiceResult: (recognizedText, isFinal) {
+                    if (isFinal && _waitingForResponse) {
+                      _handleVoiceResponse(recognizedText);
+                    }
+                  },
+                ),
             ],
           ),
         ),

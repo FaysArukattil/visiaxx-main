@@ -10,7 +10,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     
-    <!-- Audio & Speech Recognition - Removed (preserving gaps) -->
+    <!-- Audio & Speech Recognition -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     
     
     <!-- Camera -->
@@ -68,7 +69,10 @@
         android:name="android.hardware.camera.front" 
         android:required="false"/>
     
-    <!-- Microphone feature - Removed -->
+    <!-- Microphone feature (optional - graceful degradation) -->
+    <uses-feature 
+        android:name="android.hardware.microphone" 
+        android:required="false"/>
     
     
     <!-- Touchscreen (almost universal, but explicit) -->
@@ -129,7 +133,10 @@
             <data android:mimeType="application/pdf"/>
         </intent>
         
-        <!-- Speech Recognition Services - Removed -->
+        <!-- Speech Recognition Services -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
         
         
         <!-- Text processing -->

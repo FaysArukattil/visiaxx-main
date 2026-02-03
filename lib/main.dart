@@ -57,6 +57,7 @@ import 'data/providers/eye_exercise_provider.dart';
 import 'data/providers/locale_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/network_connectivity_provider.dart';
+import 'core/providers/voice_recognition_provider.dart';
 
 // AWS Credentials Manager
 import 'core/services/aws_credentials_manager.dart';
@@ -86,19 +87,22 @@ void main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
-  await AppLogger.initialize();
-  await NotificationService().initialize();
+  // Initialize services in background to not block main thread
+  AppLogger.initialize().then((_) {
+    NotificationService().initialize();
 
-  // Initialize AWS credentials from Firebase Remote Config
-  debugPrint('[VisiAxx] ... Loading AWS credentials...');
-  final awsInitialized = await AWSCredentials.initialize();
-  if (awsInitialized) {
-    debugPrint('[VisiAxx] ... AWS credentials loaded successfully');
-  } else {
-    debugPrint(
-      '[VisiAxx] AWS credentials failed to load - will use Firebase only',
-    );
-  }
+    // Initialize AWS credentials in background
+    debugPrint('[VisiAxx] ... Loading AWS credentials in background...');
+    AWSCredentials.initialize().then((awsInitialized) {
+      if (awsInitialized) {
+        debugPrint('[VisiAxx] ... AWS credentials loaded successfully');
+      } else {
+        debugPrint(
+          '[VisiAxx] AWS credentials failed to load - will use Firebase only',
+        );
+      }
+    });
+  });
 
   runApp(const VisiaxApp());
 }
@@ -173,6 +177,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => EyeExerciseProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => VoiceRecognitionProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

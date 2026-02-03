@@ -109,16 +109,6 @@ class SessionMonitorService with WidgetsBindingObserver {
         '[SessionMonitor] Creating session for: $identityString (Practitioner: $isPractitioner)',
       );
 
-      // If NOT a practitioner, we might want to clear old sessions first
-      // However, usually we let the conflict logic handle it, or we clear it here.
-      // For a clean transition, let's clear the whole node for regular users
-      if (!isPractitioner) {
-        debugPrint(
-          '[SessionMonitor] Regular user login, clearing other sessions...',
-        );
-        await _database.ref('active_sessions/$identityString').remove();
-      }
-
       final sessionId = _generateSessionId();
       final now = DateTime.now();
       final formattedTime =
@@ -134,17 +124,33 @@ class SessionMonitorService with WidgetsBindingObserver {
         isOnline: true,
       );
 
-      // Store session in Firebase Realtime Database using sessionId as a sub-node
       final sessionRef = _database.ref(
         'active_sessions/$identityString/$sessionId',
       );
-      await sessionRef.set(sessionData.toMap());
+
+      // If NOT a practitioner, we clear the node by setting specifically
+      // Using .set() on the user's identity path with the new session ID as the only child
+      // effectively clears other sessions in one atomic operation.
+      if (!isPractitioner) {
+        debugPrint(
+          '[SessionMonitor] Regular user login, setting session (clearing others)...',
+        );
+        await _database.ref('active_sessions/$identityString').set({
+          sessionId: sessionData.toMap(),
+        });
+      } else {
+        // Practitioners can have multiple sessions
+        await sessionRef.set(sessionData.toMap());
+      }
 
       // Use onDisconnect to mark session as "Offline" with a special Kill Signal (-1)
-      await sessionRef.onDisconnect().update({
-        'isOnline': false,
-        'lastActiveMillis': -1,
-      });
+      // Fire and forget onDisconnect to speed up login further
+      unawaited(
+        sessionRef.onDisconnect().update({
+          'isOnline': false,
+          'lastActiveMillis': -1,
+        }),
+      );
 
       // Store session info locally
       await _secureStorage.write(key: _sessionIdKey, value: sessionId);

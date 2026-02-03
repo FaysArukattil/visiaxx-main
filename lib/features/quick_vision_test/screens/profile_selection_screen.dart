@@ -61,8 +61,15 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       final members = await _familyMemberService
           .getFamilyMembers(user.uid)
           .timeout(
-            const Duration(seconds: 2),
-            onTimeout: () => _familyMembers, // Return existing or empty
+            const Duration(
+              seconds: 10,
+            ), // Increased from 2s to handle slower initial loads
+            onTimeout: () {
+              debugPrint(
+                '[ProfileSelection] Family member fetch timed out after 10s',
+              );
+              return _familyMembers;
+            },
           );
       if (mounted) {
         setState(() {
@@ -105,7 +112,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     final userData = await authService
         .getUserData(userId)
         .timeout(
-          const Duration(seconds: 1),
+          const Duration(seconds: 3), // Increased from 1s
           onTimeout: () {
             debugPrint(
               '[ProfileSelection] Lightning Profile fetch timed out, using fallback',
@@ -402,10 +409,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
 
             // Family members list
             if (_isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(48),
-                  child: EyeLoader.fullScreen(),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: EyeLoader(size: 40), // Smaller, non-blocking loader
                 ),
               )
             else if (_familyMembers.isEmpty)

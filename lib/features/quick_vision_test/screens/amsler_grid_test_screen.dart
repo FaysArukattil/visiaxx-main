@@ -24,6 +24,7 @@ import '../../../core/utils/navigation_utils.dart';
 import 'distance_calibration_screen.dart';
 import 'amsler_grid_cover_eye_screen.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/voice_input_overlay.dart';
 
 /// Amsler Grid Test for detecting macular degeneration
 class AmslerGridTestScreen extends StatefulWidget {
@@ -746,6 +747,25 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
                 onSkip: () {
                   _skipManager.recordSkip(DistanceTestType.amslerGrid);
                   _resumeTestAfterDistance();
+                },
+              ),
+
+            // Voice Input Overlay
+            if (!_testComplete)
+              VoiceInputOverlay(
+                isActive: _testingStarted && !_eyeSwitchPending,
+                vocabulary: const [
+                  'straight',
+                  'wavy',
+                  'distorted',
+                  'done',
+                  'yes',
+                  'no',
+                ],
+                onVoiceResult: (text, isFinal) {
+                  if (isFinal && _testingStarted && !_eyeSwitchPending) {
+                    _handleVoiceInput(text);
+                  }
                 },
               ),
           ],
@@ -1963,6 +1983,21 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
         ],
       ),
     );
+  }
+
+  void _handleVoiceInput(String text) {
+    if (text.isEmpty) return;
+    final normalized = text.toLowerCase().trim();
+
+    if (normalized.contains('straight') || normalized == 'yes') {
+      _ttsService.speak('Recorded as straight');
+    } else if (normalized.contains('wavy') ||
+        normalized.contains('distorted') ||
+        normalized == 'no') {
+      _ttsService.speak('Recorded as distorted. Please mark the area.');
+    } else if (normalized.contains('done') || normalized.contains('finish')) {
+      _completeCurrentEye();
+    }
   }
 }
 

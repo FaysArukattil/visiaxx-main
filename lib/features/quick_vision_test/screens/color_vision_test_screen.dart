@@ -23,6 +23,7 @@ import 'distance_calibration_screen.dart';
 
 import 'color_vision_instructions_screen.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/widgets/voice_input_overlay.dart';
 
 /// Clinical-grade Color Vision Test
 /// Tests BOTH eyes separately using Ishihara plates
@@ -839,6 +840,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                     bottom: 12,
                     child: _buildDistanceIndicator(),
                   ),
+                  // Voice Input Overlay (Landscape)
+                  VoiceInputOverlay(
+                    isActive: _showingPlate && !_isShowingResult,
+                    onVoiceResult: (text, isFinal) {
+                      if (isFinal && _showingPlate && !_isShowingResult) {
+                        _handleVoiceAnswer(text);
+                      }
+                    },
+                  ),
                 ],
               );
             }
@@ -871,6 +881,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                     });
                     _ttsService.speak('Resuming test');
                     _restartPlateTimer();
+                  },
+                ),
+                // Voice Input Overlay (Portrait)
+                VoiceInputOverlay(
+                  isActive: _showingPlate && !_isShowingResult,
+                  onVoiceResult: (text, isFinal) {
+                    if (isFinal && _showingPlate && !_isShowingResult) {
+                      _handleVoiceAnswer(text);
+                    }
                   },
                 ),
               ],
@@ -1715,6 +1734,40 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
         ],
       ),
     );
+  }
+
+  void _handleVoiceAnswer(String text) {
+    if (text.isEmpty) return;
+
+    final normalized = text.toLowerCase().trim();
+
+    // Map common spoken words to options
+    if (normalized.contains('nothing') ||
+        normalized == 'none' ||
+        normalized == 'no number') {
+      _submitAnswer('nothing', -1);
+      return;
+    }
+
+    if (normalized.contains('skip') || normalized.contains('don\'t know')) {
+      _submitAnswer('', -1);
+      return;
+    }
+
+    // Try to find a number in the text
+    final numberMatch = RegExp(r'\d+').firstMatch(normalized);
+    if (numberMatch != null) {
+      final numberStr = numberMatch.group(0)!;
+      // Find which option matches this number
+      int matchIndex = -1;
+      for (int i = 0; i < _currentOptions.length; i++) {
+        if (_currentOptions[i] == numberStr) {
+          matchIndex = i;
+          break;
+        }
+      }
+      _submitAnswer(numberStr, matchIndex);
+    }
   }
 }
 

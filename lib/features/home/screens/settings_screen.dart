@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/providers/theme_provider.dart';
+import '../../../core/providers/voice_recognition_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
@@ -169,6 +170,29 @@ class _SettingsScreenState extends State<SettingsScreen>
                         subtitle: 'Customize app accent color',
                         onTap: () {
                           _showColorSelectionDialog();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Test Preferences Section
+                  _buildSectionTitle('Test Preferences'),
+                  const SizedBox(height: 12),
+                  _buildSettingsCard(
+                    children: [
+                      Consumer<VoiceRecognitionProvider>(
+                        builder: (context, voiceProvider, child) {
+                          return _buildToggleItem(
+                            icon: Icons.mic_rounded,
+                            title: 'Voice Recognition',
+                            subtitle: voiceProvider.isEnabled
+                                ? 'Answer tests using voice commands'
+                                : 'Tap to enable voice input during tests',
+                            value: voiceProvider.isEnabled,
+                            onChanged: (value) =>
+                                voiceProvider.setEnabled(value),
+                          );
                         },
                       ),
                     ],

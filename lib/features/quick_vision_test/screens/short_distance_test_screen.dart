@@ -17,6 +17,7 @@ import '../../../core/services/distance_skip_manager.dart';
 import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/widgets/distance_warning_overlay.dart';
 import '../../../core/extensions/theme_extension.dart';
+import '../../../core/widgets/voice_input_overlay.dart';
 
 /// Short distance reading test - both eyes open, 40cm distance
 class ShortDistanceTestScreen extends StatefulWidget {
@@ -393,6 +394,17 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                     isCorrect: _lastResultCorrect,
                     label: _lastResultCorrect ? 'EXCELLENT' : 'NOT CLEAR',
                   ),
+                ),
+
+              // Voice Input Overlay
+              if (!_testComplete)
+                VoiceInputOverlay(
+                  isActive: _waitingForResponse,
+                  onVoiceResult: (text, isFinal) {
+                    if (isFinal && _waitingForResponse) {
+                      _processSentence(text);
+                    }
+                  },
                 ),
             ],
           ),

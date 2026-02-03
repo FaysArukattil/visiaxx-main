@@ -1,4 +1,5 @@
-﻿import 'package:flutter/foundation.dart';
+﻿import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/user_model.dart';
@@ -9,6 +10,12 @@ import 'local_storage_service.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // In-memory cache to prevent redundant fetches during navigation
+  static UserModel? _cachedUser;
+
+  /// Get cached user if available
+  UserModel? get cachedUser => _cachedUser;
 
   /// Current user stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -38,7 +45,7 @@ class AuthService {
         final lookupDoc = await _firestore
             .collection('all_users_lookup')
             .doc(credential.user!.uid)
-            .get();
+            .get(const GetOptions(source: Source.serverAndCache));
 
         UserModel? userModel;
         if (lookupDoc.exists && lookupDoc.data() != null) {
@@ -49,25 +56,36 @@ class AuthService {
           final userDoc = await _firestore
               .collection(collection)
               .doc(identityString)
-              .get();
+              .get(const GetOptions(source: Source.serverAndCache));
           if (userDoc.exists) {
             userModel = UserModel.fromMap(userDoc.data()!, userDoc.id);
 
-            await _firestore.collection(collection).doc(identityString).update({
-              'lastLoginAt': FieldValue.serverTimestamp(),
-            });
-            await _firestore
+            // 3. Background updates
+            _firestore
+                .collection(collection)
+                .doc(identityString)
+                .update({'lastLoginAt': FieldValue.serverTimestamp()})
+                .catchError(
+                  (e) => debugPrint(
+                    '[AuthService] Error updating lastLoginAt: $e',
+                  ),
+                );
+
+            _firestore
                 .collection('all_users_lookup')
                 .doc(credential.user!.uid)
-                .update({'lastLoginAt': FieldValue.serverTimestamp()});
+                .update({'lastLoginAt': FieldValue.serverTimestamp()})
+                .catchError(
+                  (e) => debugPrint('[AuthService] Error updating lookup: $e'),
+                );
           }
-          // Save to local cache for offline-first access
+          // Save to local cache
           if (userModel != null) {
             await LocalStorageService().saveUserProfile(userModel);
           }
         }
 
-        // Check if email is verified
+        // Check verification
         if (!credential.user!.emailVerified) {
           return AuthResult.success(
             user: userModel,
@@ -76,16 +94,22 @@ class AuthService {
           );
         }
 
+        _cachedUser = userModel;
         return AuthResult.success(user: userModel, isVerified: true);
       }
 
       return AuthResult.failure(message: 'Sign in failed');
     } on FirebaseAuthException catch (e) {
+      debugPrint(
+        '[AuthService] FirebaseAuthException: ${e.code} - ${e.message}',
+      );
       return AuthResult.failure(message: _getAuthErrorMessage(e.code));
     } on FirebaseException catch (e) {
+      debugPrint('[AuthService] FirebaseException: ${e.code}');
       return AuthResult.failure(message: _getAuthErrorMessage(e.code));
     } catch (e) {
-      return AuthResult.failure(message: 'An unexpected error occurred: $e');
+      debugPrint('[AuthService] Unexpected error: $e');
+      return AuthResult.failure(message: 'Login error: $e');
     }
   }
 
@@ -262,10 +286,18 @@ class AuthService {
   /// Get user data from Firestore using the lookup system
   Future<UserModel?> getUserData(String uid) async {
     try {
-      // 1. Check local cache FIRST (Fastest)
+      // 0. Check IN-MEMORY cache (Instant)
+      if (_cachedUser != null && _cachedUser!.id == uid) {
+        debugPrint('[AuthService] Returning in-memory cached user');
+        _refreshUserDataInBackground(uid);
+        return _cachedUser;
+      }
+
+      // 1. Check local cache SECOND (Fastest)
       final cachedUser = await LocalStorageService().getUserProfile();
       if (cachedUser != null && cachedUser.id == uid) {
-        debugPrint('[AuthService] ¡ Returning cached user data');
+        debugPrint('[AuthService] Returning local storage cached user');
+        _cachedUser = cachedUser;
         // Still try to refresh in background or later, but return immediately for UI
         _refreshUserDataInBackground(uid);
         return cachedUser;
@@ -275,8 +307,7 @@ class AuthService {
       final lookupDoc = await _firestore
           .collection('all_users_lookup')
           .doc(uid)
-          .get(const GetOptions(source: Source.serverAndCache))
-          .timeout(const Duration(seconds: 2)); // ¡ FAST TIMEOUT
+          .get(const GetOptions(source: Source.serverAndCache));
       if (!lookupDoc.exists || lookupDoc.data() == null) {
         // Check legacy 'users' collection as fallback
         final legacyDoc = await _firestore.collection('users').doc(uid).get();
@@ -293,10 +324,10 @@ class AuthService {
       final doc = await _firestore
           .collection(collection)
           .doc(identityString)
-          .get(const GetOptions(source: Source.serverAndCache))
-          .timeout(const Duration(seconds: 2)); // ¡ FAST TIMEOUT
+          .get(const GetOptions(source: Source.serverAndCache));
       if (doc.exists && doc.data() != null) {
         final user = UserModel.fromMap(doc.data()!, doc.id);
+        _cachedUser = user;
         // Save to cache
         await LocalStorageService().saveUserProfile(user);
         return user;
@@ -420,6 +451,7 @@ class AuthService {
     }
 
     // Clear local cache
+    _cachedUser = null;
     await LocalStorageService().clearUserData();
 
     // Sign out from Firebase Auth
