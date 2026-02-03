@@ -18,6 +18,7 @@ import 'package:visiaxx/core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/widgets/distance_warning_overlay.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/widgets/voice_input_overlay.dart';
+import '../../../core/providers/voice_recognition_provider.dart';
 
 /// Short distance reading test - both eyes open, 40cm distance
 class ShortDistanceTestScreen extends StatefulWidget {
@@ -191,6 +192,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     String textToSpeak =
         'Level ${_currentScreen + 1}. Please read the sentence aloud.';
     _ttsService.speak(textToSpeak);
+
+    // ROBUSTNESS FIX: If TTS is already done or fails to fire its handler,
+    // we ensure the mic turns on after a reasonable fixed delay (max instruction length)
+    Future.delayed(const Duration(milliseconds: 3500), () {
+      if (mounted && _waitingForResponse && !_isSpeechActive) {
+        setState(() {
+          _isSpeechActive = true;
+        });
+      }
+    });
   }
 
   void _startReadingCountdown() {
@@ -225,6 +236,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       return;
     }
 
+    // Explicitly release the voice recognition session for a clean transition to next level
+    try {
+      context.read<VoiceRecognitionProvider>().cancel();
+    } catch (_) {}
+
     _readingCountdownTimer?.cancel();
 
     final sentence = TestConstants.shortDistanceSentences[_currentScreen];
@@ -240,7 +256,15 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
     if (!isBlurry && userSaid.isNotEmpty) {
       similarity = FuzzyMatcher.getSimilarity(sentence.sentence, userSaid);
-      isCorrect = similarity >= 70.0;
+
+      // PARTIAL ANSWER FIX: Also check for keyword overlap
+      bool hasKeywords = FuzzyMatcher.containsKeywords(
+        sentence.sentence,
+        userSaid,
+        keywordThreshold: 0.5, // Accept if 50% of important words are there
+      );
+
+      isCorrect = (similarity >= 70.0) || hasKeywords;
     }
 
     _handleResult(sentence, userSaid, similarity, isCorrect);

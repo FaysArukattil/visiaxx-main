@@ -607,9 +607,17 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
           false; // Reset to ensure no accidental carry-over
       _isDistanceOk = true; // Reset distance status
       _relaxationCountdown = TestConstants.relaxationDurationSeconds;
+      _waitingForResponse =
+          false; // Ensure no voice activation during relaxation
     });
+    // Clear timing guard for next E
+    _eDisplayStartTime = null;
 
-    _eDisplayStartTime = null; // … Reset timing guard for next E
+    // Use cancel() for faster hardware release than stopListening()
+    try {
+      context.read<VoiceRecognitionProvider>().cancel();
+    } catch (_) {}
+
     _ttsService.speak(TtsService.relaxationInstruction);
 
     _relaxationProgressController.reset();
@@ -703,8 +711,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
     debugPrint('[VisualAcuity] 🎤 VOICE INPUT: $recognizedText');
 
-    // Stop listening immediately since we got a valid response
-    context.read<VoiceRecognitionProvider>().stopListening();
+    // Cancel immediately since we got a valid response
+    context.read<VoiceRecognitionProvider>().cancel();
 
     _recordResponse(recognizedText.toLowerCase(), source: 'voice_input');
   }
@@ -720,8 +728,8 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
       return;
     }
 
-    // Stop voice recognition when a response is recorded
-    context.read<VoiceRecognitionProvider>().stopListening();
+    // Cancel voice recognition when a response is recorded
+    context.read<VoiceRecognitionProvider>().cancel();
     debugPrint(
       '[VisualAcuity] ✅ _recordResponse called from $source with: $userResponse',
     );

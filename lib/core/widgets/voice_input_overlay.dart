@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -39,6 +40,9 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
   late AnimationController _waveController;
   Offset _position = Offset.zero;
   bool _isDragging = false;
+  Timer? _retryTimer;
+  int _retryCount = 0;
+  static const int _maxRetries = 3;
 
   @override
   void initState() {
@@ -73,32 +77,63 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
   }
 
   void _startListening() {
+    _retryTimer?.cancel();
     final provider = context.read<VoiceRecognitionProvider>();
     if (!provider.isEnabled) return;
 
-    provider.startListening(
-      onResult: (text, isFinal) {
-        if (widget.onVoiceResult != null) {
-          // If vocabulary is provided, try to match
-          if (widget.vocabulary != null && widget.vocabulary!.isNotEmpty) {
-            final matched = provider.service.matchVocabulary(
-              text,
-              widget.vocabulary!,
-            );
-            if (matched != null) {
-              widget.onVoiceResult!(matched, isFinal);
+    // Small warmup delay to ensure UI is settled and hardware is ready
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted || !widget.isActive) return;
+
+      provider.startListening(
+        onResult: (text, isFinal) {
+          if (widget.onVoiceResult != null) {
+            // If vocabulary is provided, try to match
+            if (widget.vocabulary != null && widget.vocabulary!.isNotEmpty) {
+              final matched = provider.service.matchVocabulary(
+                text,
+                widget.vocabulary!,
+              );
+              if (matched != null) {
+                widget.onVoiceResult!(matched, isFinal);
+              }
+            } else {
+              widget.onVoiceResult!(text, isFinal);
             }
-          } else {
-            widget.onVoiceResult!(text, isFinal);
           }
-        }
-      },
-      vocabularyHints:
-          widget.vocabulary, // Pass vocabulary hints for better recognition
-    );
+        },
+        vocabularyHints:
+            widget.vocabulary, // Pass vocabulary hints for better recognition
+      );
+
+      // Setup auto-retry if it enters an error state
+      _startErrorMonitoring();
+    });
+  }
+
+  void _startErrorMonitoring() {
+    _retryTimer?.cancel();
+    _retryTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (!mounted || !widget.isActive) {
+        timer.cancel();
+        return;
+      }
+
+      final provider = context.read<VoiceRecognitionProvider>();
+      if (provider.state == VoiceRecognitionState.error &&
+          _retryCount < _maxRetries) {
+        debugPrint('[VoiceInputOverlay] 🔄 Auto-retrying legacy error...');
+        _retryCount++;
+        _restartRecognition();
+      } else if (provider.state == VoiceRecognitionState.listening) {
+        _retryCount = 0; // Reset on success
+      }
+    });
   }
 
   void _stopListening() {
+    _retryTimer?.cancel();
+    _retryCount = 0;
     context.read<VoiceRecognitionProvider>().stopListening();
   }
 
@@ -110,6 +145,7 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
   @override
   void dispose() {
     _waveController.dispose();
+    _retryTimer?.cancel();
     super.dispose();
   }
 
