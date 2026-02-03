@@ -103,7 +103,6 @@ class VoiceRecognitionService {
     _isInitializing = true;
     try {
       debugPrint('[VoiceRecognition] Checking permissions...');
-      // Request both camera and microhpone as requested
       final statuses = await [
         Permission.microphone,
         Permission.camera,
@@ -136,7 +135,16 @@ class VoiceRecognitionService {
     Duration? listenFor,
     Duration? pauseFor,
     List<String>? vocabularyHints,
+    bool isRetry = false,
   }) async {
+    // 1. Mandatory hardware "cooling" delay to prevent Error 11 (Not Connected)
+    // Especially important when switching rapidly between 'E' stimulus items.
+    if (!isRetry) {
+      debugPrint('[VoiceRecognition] Hardware breathing room (200ms)...');
+      await cancel();
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
     if (!_isInitialized) {
       final success = await initialize();
       if (!success) return;
@@ -148,7 +156,7 @@ class VoiceRecognitionService {
 
     try {
       debugPrint(
-        '[VoiceRecognition] Requesting Native Start (Strict Offline)...',
+        '[VoiceRecognition] Requesting Native Start (Total Fresh Start)...',
       );
       final success = await _channel.invokeMethod<bool>('startListening');
       if (success == true) {
@@ -193,8 +201,6 @@ class VoiceRecognitionService {
   Future<void> restart({
     required Function(String recognizedText, bool isFinal) onResult,
   }) async {
-    await cancel();
-    await Future.delayed(const Duration(milliseconds: 300));
     await startListening(onResult: onResult);
   }
 
@@ -222,6 +228,9 @@ class VoiceRecognitionService {
         break;
       case 'idle':
         _updateState(VoiceRecognitionState.idle);
+        break;
+      case 'failed':
+        _updateState(VoiceRecognitionState.error);
         break;
     }
   }

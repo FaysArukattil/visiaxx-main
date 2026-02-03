@@ -52,17 +52,22 @@ class MainActivity : FlutterActivity() {
             }
 
             try {
-                if (speechRecognizer != null) {
-                    speechRecognizer?.destroy()
+                // CLEAN START: Forcefully destroy any existing recognizer
+                // to prevent carry-over and address "stuck" states.
+                speechRecognizer?.let {
+                    it.stopListening()
+                    it.cancel()
+                    it.destroy()
                 }
+                speechRecognizer = null
 
+                // Fresh instance for every session
                 speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
                 recognitionIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                     putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                     
-                    // CRITICAL: Force Offline as requested for 3x accuracy
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
                     }
@@ -79,7 +84,6 @@ class MainActivity : FlutterActivity() {
                     override fun onBeginningOfSpeech() {}
                     
                     override fun onRmsChanged(rmsdB: Float) {
-                        // Send audio level back to Flutter for the wave animation
                         runOnUiThread {
                             MethodChannel(flutterEngine?.dartExecutor?.binaryMessenger ?: return@runOnUiThread, CHANNEL)
                                 .invokeMethod("onRmsChanged", rmsdB)
@@ -100,6 +104,10 @@ class MainActivity : FlutterActivity() {
                             val errorMessage = getErrorText(error)
                             MethodChannel(flutterEngine?.dartExecutor?.binaryMessenger ?: return@runOnUiThread, CHANNEL)
                                 .invokeMethod("onError", errorMessage)
+                            
+                            // If it fails immediately, notify Flutter
+                            MethodChannel(flutterEngine?.dartExecutor?.binaryMessenger ?: return@runOnUiThread, CHANNEL)
+                                .invokeMethod("onStatus", "failed")
                         }
                     }
 
