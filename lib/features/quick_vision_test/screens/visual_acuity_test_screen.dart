@@ -528,6 +528,9 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
         timer.cancel();
         // … FALLBACK: Transition phase if animation listener fails
         if (_showRelaxation) {
+          setState(() {
+            _waitingForResponse = true; // Trigger overlay activation
+          });
           _showTumblingE();
         }
       }
@@ -746,7 +749,12 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
       // Moderate delay for rotation feel and hardware settling
       Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _showTumblingE();
+        if (mounted) {
+          setState(() {
+            _waitingForResponse = true; // Trigger restart of overlay
+          });
+          _showTumblingE();
+        }
       });
       return;
     }

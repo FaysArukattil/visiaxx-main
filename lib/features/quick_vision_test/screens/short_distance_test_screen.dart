@@ -54,6 +54,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   bool _testComplete = false;
   // ignore: unused_field
   bool _isPausedForExit = false;
+  bool _isSpeechActive = false;
 
   final DistanceSkipManager _skipManager = DistanceSkipManager();
 
@@ -94,6 +95,13 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   Future<void> _initServices() async {
     await _ttsService.initialize();
+    _ttsService.onSpeakingStateChanged = (isSpeaking) {
+      if (mounted && !isSpeaking && _waitingForResponse) {
+        setState(() {
+          _isSpeechActive = true;
+        });
+      }
+    };
     _showNextSentence();
   }
 
@@ -173,6 +181,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
     setState(() {
       _waitingForResponse = true;
+      _isSpeechActive = false;
       _showResult = false;
       _readingCountdown = 35;
     });
@@ -399,7 +408,16 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
               // Voice Input Overlay
               if (!_testComplete)
                 VoiceInputOverlay(
-                  isActive: _waitingForResponse,
+                  isActive: _isSpeechActive && _waitingForResponse,
+                  vocabulary: [
+                    TestConstants
+                        .shortDistanceSentences[_currentScreen]
+                        .sentence,
+                    'blurry',
+                    "can't read",
+                    "cannot read",
+                    "can't see",
+                  ],
                   onVoiceResult: (text, isFinal) {
                     if (isFinal && _waitingForResponse) {
                       _processSentence(text);
