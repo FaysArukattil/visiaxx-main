@@ -1,7 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
+import 'package:provider/provider.dart';
 import '../extensions/theme_extension.dart';
 import '../utils/navigation_utils.dart';
+import '../providers/voice_recognition_provider.dart';
 
 /// Global service to handle app pause/resume across all test screens
 /// Provides consistent pause dialog and behavior throughout the app
@@ -86,6 +88,13 @@ class TestPauseHandler {
   /// Show the standardized pause dialog
   void showPauseDialog({String? reason}) {
     if (_context == null) return;
+
+    // Pause voice recognition if active
+    try {
+      _context!.read<VoiceRecognitionProvider>().cancel();
+    } catch (e) {
+      debugPrint('[TestPauseHandler] Could not pause voice recognition: $e');
+    }
 
     final description =
         reason ?? 'The test was paused because the app was minimized.';
