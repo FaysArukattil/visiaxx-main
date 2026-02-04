@@ -2,6 +2,8 @@
 import 'dart:ui' as ui;
 import '../extensions/theme_extension.dart';
 import '../services/data_cleanup_service.dart';
+import '../providers/voice_recognition_provider.dart';
+import 'package:provider/provider.dart';
 
 class TestExitConfirmationDialog extends StatefulWidget {
   final VoidCallback onContinue;
@@ -28,6 +30,15 @@ class _TestExitConfirmationDialogState
     extends State<TestExitConfirmationDialog> {
   bool _showConfirmation = false;
   String? _confirmAction; // 'restart' or 'exit'
+
+  @override
+  void initState() {
+    super.initState();
+    // Pause voice recognition immediately when dialog appears
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<VoiceRecognitionProvider>().cancel();
+    });
+  }
 
   void _showConfirm(String action) {
     setState(() {
@@ -136,6 +147,8 @@ class _TestExitConfirmationDialogState
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          _buildVoiceToggle(),
                         ],
                       ),
                     ),
@@ -214,7 +227,10 @@ class _TestExitConfirmationDialogState
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
+                    // Voice Recognition Control
+                    _buildVoiceToggle(),
+                    const SizedBox(height: 24),
                     // Actions
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -269,6 +285,79 @@ class _TestExitConfirmationDialogState
                 ),
         ),
       ),
+    );
+  }
+
+  Widget _buildVoiceToggle() {
+    return Consumer<VoiceRecognitionProvider>(
+      builder: (context, provider, child) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: context.primary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: context.primary.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color:
+                      (provider.isEnabled
+                              ? context.primary
+                              : context.textSecondary)
+                          .withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  provider.isEnabled
+                      ? Icons.mic_rounded
+                      : Icons.mic_off_rounded,
+                  color: provider.isEnabled
+                      ? context.primary
+                      : context.textSecondary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Voice Recognition',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      provider.isEnabled ? 'Enabled' : 'Disabled',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: provider.isEnabled
+                            ? context.primary
+                            : context.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: provider.isEnabled,
+                onChanged: (value) => provider.setEnabled(value),
+                activeColor: context.primary,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
