@@ -97,22 +97,23 @@ class _PractitionerDashboardScreenState
     debugPrint('[Dashboard] 💾 Checking disk cache...');
     final persistence = DashboardPersistenceService();
     final storedResults = await persistence.getStoredResults();
+    final storedHiddenIds = await persistence.getStoredHiddenIds();
 
-    if (mounted && storedResults.isNotEmpty) {
-      debugPrint('[Dashboard] ✅ Found ${storedResults.length} cached items');
+    if (mounted) {
       setState(() {
         _allResults = storedResults;
+        _hiddenResultIds = storedHiddenIds;
         _applyFilters(storedResults);
-        _isInitialLoading = false;
-        _isSyncing =
-            false; // Set to false initially, will be true during cloud sync
-      });
-    } else if (mounted) {
-      setState(() {
-        _isInitialLoading = true;
-        _isSyncing = true; // Will be true during cloud sync
-        _filteredResults = [];
-        _statistics = {};
+
+        if (storedResults.isNotEmpty) {
+          debugPrint(
+            '[Dashboard] ✅ Found ${storedResults.length} cached items and ${storedHiddenIds.length} hidden IDs',
+          );
+          _isInitialLoading = false;
+        } else {
+          _isInitialLoading = true;
+        }
+        _isSyncing = true; // Always start sync if we reach this point
       });
     }
 
@@ -133,7 +134,12 @@ class _PractitionerDashboardScreenState
       _patients = results[1] as List<PatientModel>;
 
       if (mounted && userProfile != null) {
-        _hiddenResultIds = userProfile.hiddenResultIds;
+        setState(() {
+          _hiddenResultIds = userProfile.hiddenResultIds;
+          _applyFilters(_allResults);
+        });
+        // Persist the latest hidden IDs
+        await persistence.saveHiddenIds(userProfile.hiddenResultIds);
       }
 
       final lastSync = await persistence.getLastSyncTime();
@@ -277,6 +283,10 @@ class _PractitionerDashboardScreenState
           _hiddenResultIds = userProfile.hiddenResultIds;
           _applyFilters(_allResults);
         });
+        // Background persist
+        DashboardPersistenceService().saveHiddenIds(
+          userProfile.hiddenResultIds,
+        );
       }
     });
 

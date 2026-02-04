@@ -38,48 +38,20 @@ class PatientService {
       debugPrint('[PatientService] Loading patients for: $practitionerId');
       final path = await _patientsPath(practitionerId);
 
-      // STRATEGY: Try optimized query first. Fallback if index missing.
-      try {
-        final snapshot = await _firestore
-            .collection(path)
-            .where('isDeleted', isEqualTo: false)
-            .orderBy('createdAt', descending: true)
-            .get();
-
-        final patients = snapshot.docs
-            .map((doc) => PatientModel.fromFirestore(doc))
-            .toList();
-
-        if (patients.isNotEmpty) {
-          debugPrint(
-            '[PatientService] ✅ Loaded ${patients.length} patients via optimized query',
-          );
-          return patients;
-        }
-      } catch (e) {
-        if (!e.toString().contains('failed-precondition')) {
-          rethrow; // Rethrow real errors, only handle index errors here
-        }
-        debugPrint(
-          '[PatientService] ⚠️ Index still building, falling back to in-memory filter',
-        );
-      }
-
-      // FALLBACK: Fetch all and filter in memory to handle missing 'isDeleted' field on old data
-      final fallbackSnapshot = await _firestore
+      // STRATEGY: Fetch all patients (ordered by createdAt) and filter deleted ones in memory.
+      // This avoids complex index requirements and potential FAILED_PRECONDITION errors.
+      final snapshot = await _firestore
           .collection(path)
           .orderBy('createdAt', descending: true)
           .get();
 
-      final patients = fallbackSnapshot.docs
+      final patients = snapshot.docs
           .map((doc) => PatientModel.fromFirestore(doc))
-          .where(
-            (p) => !p.isDeleted,
-          ) // Handle documents without the field (default false)
+          .where((p) => !p.isDeleted)
           .toList();
 
       debugPrint(
-        '[PatientService] ✅ Loaded ${patients.length} patients via fallback',
+        '[PatientService] ✅ Loaded ${patients.length} patients (filtered in-memory)',
       );
       return patients;
     } catch (e) {

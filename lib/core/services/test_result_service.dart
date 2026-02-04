@@ -577,36 +577,27 @@ class TestResultService {
       '[TestResultService] 📦 Creating collection group stream for practitioner: $practitionerId',
     );
 
-    // IMPORTANT: Collection group queries require a composite index if filtered + ordered.
-    // If you see no results or an error, check the debug console for a link to create the index.
+    // NOTE: We remove the 'isDeleted' filter from the Firestore query itself
+    // to reduce complex index requirements. We filter it in-memory instead.
     return _firestore
         .collectionGroup('tests')
         .where('userId', isEqualTo: practitionerId)
-        .where(
-          'isDeleted',
-          isEqualTo: false,
-        ) // OPTIMIZATION: Ignore soft-deleted tests
         .orderBy('timestamp', descending: true)
-        .limit(
-          300,
-        ) // SAFETY: Limit to 300 recent tests for high-volume hospitals
+        .limit(300)
         .snapshots()
         .map((snapshot) {
-          debugPrint(
-            '[TestResultService] 📦 Received snapshot with ${snapshot.docs.length} docs',
-          );
-
           final results = snapshot.docs
               .map((doc) {
                 try {
                   final data = doc.data();
                   data['id'] = doc.id;
+                  final model = TestResultModel.fromJson(data);
 
-                  return TestResultModel.fromJson(data);
+                  // Filter deleted items in memory
+                  if (model.isDeleted) return null;
+
+                  return model;
                 } catch (e) {
-                  debugPrint(
-                    '[TestResultService] â Œ Error parsing result ${doc.id}: $e',
-                  );
                   return null;
                 }
               })
@@ -615,7 +606,7 @@ class TestResultService {
               .toList();
 
           debugPrint(
-            '[TestResultService] ✅ Practitioner stream updated with ${results.length} total results',
+            '[TestResultService] ✅ Practitioner stream updated with ${results.length} results (filtered in-memory)',
           );
           return results;
         });
@@ -637,7 +628,6 @@ class TestResultService {
           final snapshot = await _firestore
               .collectionGroup('tests')
               .where('userId', isEqualTo: practitionerId)
-              .where('isDeleted', isEqualTo: false) // Filter deleted
               .where('timestamp', isGreaterThan: Timestamp.fromDate(since))
               .orderBy('timestamp', descending: true)
               .limit(100)
@@ -649,7 +639,8 @@ class TestResultService {
                   try {
                     final data = doc.data();
                     data['id'] = doc.id;
-                    return TestResultModel.fromJson(data);
+                    final model = TestResultModel.fromJson(data);
+                    return model.isDeleted ? null : model;
                   } catch (e) {
                     return null;
                   }
@@ -1018,7 +1009,6 @@ class TestResultService {
         final snapshot = await _firestore
             .collectionGroup('tests')
             .where('userId', isEqualTo: practitionerId)
-            .where('isDeleted', isEqualTo: false)
             .orderBy('timestamp', descending: true)
             .limit(300)
             .get();
@@ -1029,7 +1019,8 @@ class TestResultService {
                 try {
                   final data = doc.data();
                   data['id'] = doc.id;
-                  return TestResultModel.fromJson(data);
+                  final model = TestResultModel.fromJson(data);
+                  return model.isDeleted ? null : model;
                 } catch (e) {
                   return null;
                 }
@@ -1038,16 +1029,16 @@ class TestResultService {
               .cast<TestResultModel>()
               .toList();
           debugPrint(
-            '[TestResultService] ✅ Loaded ${results.length} results via collectionGroup',
+            '[TestResultService] ✅ Loaded ${results.length} results via collectionGroup (filtered in-memory)',
           );
           return results;
         }
       } catch (e) {
         if (!e.toString().contains('failed-precondition')) {
-          rethrow;
+          debugPrint('[TestResultService] Query error: $e');
         }
         debugPrint(
-          '[TestResultService] ⚠️ Dashboard index missing/building, starting patient-by-patient fallback',
+          '[TestResultService] ⚠️ Index missing or error, starting patient-by-patient fallback',
         );
       }
 
@@ -1175,7 +1166,6 @@ class TestResultService {
         final snapshot = await _firestore
             .collectionGroup('tests')
             .where('userId', isEqualTo: practitionerId)
-            .where('isDeleted', isEqualTo: false)
             .count()
             .get();
         return snapshot.count ?? 0;
@@ -1205,7 +1195,6 @@ class TestResultService {
         var query = _firestore
             .collectionGroup('tests')
             .where('userId', isEqualTo: practitionerId)
-            .where('isDeleted', isEqualTo: false)
             .orderBy('timestamp', descending: true)
             .limit(limit);
 
@@ -1221,7 +1210,8 @@ class TestResultService {
                 try {
                   final data = doc.data();
                   data['id'] = doc.id;
-                  return TestResultModel.fromJson(data);
+                  final model = TestResultModel.fromJson(data);
+                  return model.isDeleted ? null : model;
                 } catch (e) {
                   return null;
                 }

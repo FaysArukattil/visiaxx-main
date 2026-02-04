@@ -109,8 +109,14 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           practitionerId,
         );
 
+        // Load hidden IDs to filter cache
+        final hiddenIds = await persistence.getStoredHiddenIds();
+        final filteredResults = results
+            .where((r) => !hiddenIds.contains(r.id))
+            .toList();
+
         // Save cleaned results to cache
-        await persistence.saveResults(results);
+        await persistence.saveResults(filteredResults);
         debugPrint('[PractitionerHomeScreen] ✅ Dashboard full sync complete');
       } else {
         // Cache is recent, but let's do an incremental sync
@@ -122,6 +128,8 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
 
         if (newResults.isNotEmpty) {
           final cached = await persistence.getStoredResults();
+          final hiddenIds = await persistence.getStoredHiddenIds();
+
           final Map<String, TestResultModel> mergedMap = {
             for (var r in cached) r.id: r,
           };
@@ -129,8 +137,11 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
             mergedMap[r.id] = r;
           }
 
-          final merged = mergedMap.values.where((r) => !r.isDeleted).toList()
-            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          final merged =
+              mergedMap.values
+                  .where((r) => !r.isDeleted && !hiddenIds.contains(r.id))
+                  .toList()
+                ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
           await persistence.saveResults(merged);
         }
