@@ -6,6 +6,7 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/family_member_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/family_member_model.dart';
+import 'package:visiaxx/data/providers/family_member_provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/widgets/premium_dropdown.dart';
@@ -20,9 +21,6 @@ class ProfileSelectionScreen extends StatefulWidget {
 }
 
 class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
-  List<FamilyMemberModel> _familyMembers = [];
-  bool _isLoading = true;
-
   // Service
   final FamilyMemberService _familyMemberService = FamilyMemberService();
 
@@ -50,38 +48,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
   }
 
   /// Load family members from Firebase
-  Future<void> _loadFamilyMembers() async {
+  void _loadFamilyMembers() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    try {
-      final members = await _familyMemberService
-          .getFamilyMembers(user.uid)
-          .timeout(
-            const Duration(
-              seconds: 10,
-            ), // Increased from 2s to handle slower initial loads
-            onTimeout: () {
-              debugPrint(
-                '[ProfileSelection] Family member fetch timed out after 10s',
-              );
-              return _familyMembers;
-            },
-          );
-      if (mounted) {
-        setState(() {
-          _familyMembers = members;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('[ProfileSelection] Error loading family members: $e');
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (user != null) {
+      context.read<FamilyMemberProvider>().loadFamilyMembers(user.uid);
     }
   }
 
@@ -240,25 +210,16 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         final savedMember = memberData.copyWith(id: finalId);
 
         if (mounted) {
-          setState(() {
-            if (isEditing) {
-              final index = _familyMembers.indexWhere((m) => m.id == memberId);
-              if (index != -1) {
-                // Remove old identity if it changed
-                if (memberId != savedMember.identityString) {
-                  _familyMembers.removeAt(index);
-                  _familyMembers.insert(0, savedMember);
-                } else {
-                  _familyMembers[index] = savedMember;
-                }
-              }
-            } else {
-              _familyMembers.insert(0, savedMember);
-            }
-            _nameController.clear();
-            _ageController.clear();
-            _phoneController.clear();
-          });
+          // Update provider optimistic UI
+          if (isEditing) {
+            context.read<FamilyMemberProvider>().updateOptimistic(savedMember);
+          } else {
+            context.read<FamilyMemberProvider>().addOptimistic(savedMember);
+          }
+
+          _nameController.clear();
+          _ageController.clear();
+          _phoneController.clear();
 
           // Close bottom sheet
           if (Navigator.canPop(context)) {
@@ -281,21 +242,16 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             e.toString().contains('UNAVAILABLE')) {
           // It's likely queued in Firestore local persistence
           if (mounted) {
-            setState(() {
-              if (isEditing) {
-                final index = _familyMembers.indexWhere(
-                  (m) => m.id == memberId,
-                );
-                if (index != -1) {
-                  _familyMembers[index] = memberData;
-                }
-              } else {
-                _familyMembers.insert(0, memberData);
-              }
-              _nameController.clear();
-              _ageController.clear();
-              _phoneController.clear();
-            });
+            // Update provider optimistic UI
+            if (isEditing) {
+              context.read<FamilyMemberProvider>().updateOptimistic(memberData);
+            } else {
+              context.read<FamilyMemberProvider>().addOptimistic(memberData);
+            }
+
+            _nameController.clear();
+            _ageController.clear();
+            _phoneController.clear();
 
             // Close bottom sheet
             if (Navigator.canPop(context)) {
@@ -331,154 +287,167 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          if (_familyMembers.isEmpty) {
-            setState(() => _isLoading = true);
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            await context.read<FamilyMemberProvider>().loadFamilyMembers(
+              user.uid,
+              forceRefresh: true,
+            );
           }
-          await _loadFamilyMembers();
         },
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          children: [
-            // Hero Section
-            _buildProfileCard(
-              title: 'Test My Vision',
-              subtitle: 'Quickly assess your own eye health',
-              icon: Icons.remove_red_eye_rounded,
-              color: context.primary,
-              onTap: _selectSelf,
-            ),
-            const SizedBox(height: 32),
+        child: Consumer<FamilyMemberProvider>(
+          builder: (context, provider, child) {
+            final familyMembers = provider.familyMembers;
+            final isInitialLoading =
+                provider.isLoading && familyMembers.isEmpty;
 
-            // Family Profiles Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               children: [
-                Expanded(
-                  child: Text(
-                    'Family Profiles',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: context.textPrimary,
-                      letterSpacing: -0.8,
-                    ),
-                  ),
+                // Hero Section
+                _buildProfileCard(
+                  title: 'Test My Vision',
+                  subtitle: 'Quickly assess your own eye health',
+                  icon: Icons.remove_red_eye_rounded,
+                  color: context.primary,
+                  onTap: _selectSelf,
                 ),
-                InkWell(
-                  onTap: _showAddMemberSheet,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: context.primary.withValues(alpha: 0.1),
-                        width: 1.5,
+                const SizedBox(height: 32),
+
+                // Family Profiles Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Family Profiles',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: context.textPrimary,
+                          letterSpacing: -0.8,
+                        ),
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.add_rounded,
-                          size: 20,
-                          color: context.primary,
+                    InkWell(
+                      onTap: _showAddMemberSheet,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Add New',
-                          style: TextStyle(
+                        decoration: BoxDecoration(
+                          color: context.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: context.primary.withValues(alpha: 0.1),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add_rounded,
+                              size: 20,
+                              color: context.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Add New',
+                              style: TextStyle(
+                                color: context.primary,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Family members list
+                if (isInitialLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: EyeLoader(
+                        size: 40,
+                      ), // Smaller, non-blocking loader
+                    ),
+                  )
+                else if (familyMembers.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(40),
+                    decoration: BoxDecoration(
+                      color: context.cardColor,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: context.dividerColor.withValues(alpha: 0.2),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: context.primary.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.family_restroom_rounded,
+                            size: 48,
                             color: context.primary,
-                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Add family profiles to test for specific family members',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add family members to test their vision',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
                             fontSize: 13,
-                            letterSpacing: -0.2,
+                            color: context.textSecondary,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
+                  )
+                else
+                  ...List.generate(
+                    familyMembers.length,
+                    (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildFamilyMemberCard(familyMembers[index]),
+                    ),
                   ),
-                ),
+                const SizedBox(height: 40),
               ],
-            ),
-            const SizedBox(height: 16),
-
-            // Family members list
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(
-                  child: EyeLoader(size: 40), // Smaller, non-blocking loader
-                ),
-              )
-            else if (_familyMembers.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(40),
-                decoration: BoxDecoration(
-                  color: context.cardColor,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: context.dividerColor.withValues(alpha: 0.2),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: context.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.family_restroom_rounded,
-                        size: 48,
-                        color: context.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Add family profiles to test for specific family members',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Add family members to test their vision',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: context.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ...List.generate(
-                _familyMembers.length,
-                (index) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildFamilyMemberCard(_familyMembers[index]),
-                ),
-              ),
-            const SizedBox(height: 40),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -736,9 +705,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
       try {
         await _familyMemberService.deleteFamilyMember(user.uid, member.id);
         if (mounted) {
-          setState(() {
-            _familyMembers.removeWhere((m) => m.id == member.id);
-          });
+          context.read<FamilyMemberProvider>().removeOptimistic(member.id);
           SnackbarUtils.showSuccess(context, 'Profile removed');
         }
       } catch (e) {

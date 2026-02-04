@@ -55,6 +55,8 @@ import 'features/individual_tests/screens/standalone_mobile_refractometry_screen
 import 'data/providers/test_session_provider.dart';
 import 'data/providers/eye_exercise_provider.dart';
 import 'data/providers/locale_provider.dart';
+import 'data/providers/family_member_provider.dart';
+import 'data/providers/patient_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/network_connectivity_provider.dart';
 import 'core/providers/voice_recognition_provider.dart';
@@ -178,6 +180,8 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => VoiceRecognitionProvider()),
+        ChangeNotifierProvider(create: (_) => FamilyMemberProvider()),
+        ChangeNotifierProvider(create: (_) => PatientProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

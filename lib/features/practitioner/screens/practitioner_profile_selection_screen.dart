@@ -12,6 +12,7 @@ import '../../../data/models/questionnaire_model.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/premium_dropdown.dart';
 import '../../../core/widgets/premium_search_bar.dart';
+import 'package:visiaxx/data/providers/patient_provider.dart';
 
 /// Profile selection screen for practitioners
 /// Shows "Add Patient" instead of "Test for Yourself"
@@ -33,8 +34,6 @@ class PractitionerProfileSelectionScreen extends StatefulWidget {
 
 class _PractitionerProfileSelectionScreenState
     extends State<PractitionerProfileSelectionScreen> {
-  List<PatientModel> _patients = [];
-  bool _isLoading = true;
   String _searchQuery = '';
 
   // Service
@@ -52,39 +51,14 @@ class _PractitionerProfileSelectionScreenState
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadPatients();
-    });
+    _loadPatients();
   }
 
   /// Load patients from Firebase
-  Future<void> _loadPatients() async {
+  void _loadPatients() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      if (mounted) {
-        SnackbarUtils.showError(context, 'User not authenticated');
-        setState(() => _isLoading = false);
-      }
-      return;
-    }
-
-    try {
-      final patients = await _patientService.getPatients(user.uid);
-      if (mounted) {
-        setState(() {
-          _patients = patients;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackbarUtils.showError(context, 'Error loading patients: $e');
-        setState(() => _isLoading = false);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (user != null) {
+      context.read<PatientProvider>().fetchPatients(user.uid);
     }
   }
 
@@ -565,28 +539,15 @@ class _PractitionerProfileSelectionScreenState
         // Close loading dialog
         if (mounted) Navigator.pop(context);
 
-        if (!mounted) return;
-
-        setState(() {
+        if (mounted) {
+          // Update provider optimistic UI
           if (isEditing) {
-            final index = _patients.indexWhere((p) => p.id == patientId);
-            if (index != -1) {
-              // Remove old identity if it changed
-              if (patientId != savedPatient.identityString) {
-                _patients.removeAt(index);
-                _patients.insert(
-                  0,
-                  savedPatient,
-                ); // Wait, this should be savedPatient!
-              } else {
-                _patients[index] = savedPatient;
-              }
-            }
+            context.read<PatientProvider>().updateOptimistic(savedPatient);
           } else {
-            _patients.insert(0, savedPatient);
+            context.read<PatientProvider>().addOptimistic(savedPatient);
           }
           _clearForm();
-        });
+        }
 
         // Close bottom sheet if open
         if (Navigator.canPop(context)) {
@@ -619,11 +580,11 @@ class _PractitionerProfileSelectionScreenState
     _selectedSex = 'Male';
   }
 
-  List<PatientModel> get _filteredPatients {
-    if (_searchQuery.isEmpty) return _patients;
+  List<PatientModel> _getFilteredPatients(List<PatientModel> patients) {
+    if (_searchQuery.isEmpty) return patients;
 
     final query = _searchQuery.toLowerCase();
-    return _patients.where((patient) {
+    return patients.where((patient) {
       return patient.firstName.toLowerCase().contains(query) ||
           (patient.lastName?.toLowerCase().contains(query) ?? false);
     }).toList();
@@ -641,157 +602,168 @@ class _PractitionerProfileSelectionScreenState
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          if (_patients.isEmpty) {
-            setState(() => _isLoading = true);
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            await context.read<PatientProvider>().fetchPatients(
+              user.uid,
+              forceRefresh: true,
+            );
           }
-          await _loadPatients();
         },
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          children: [
-            // Hero Section
-            _buildAddPatientCard(),
-            const SizedBox(height: 32),
+        child: Consumer<PatientProvider>(
+          builder: (context, provider, child) {
+            final patients = provider.patients;
+            final isInitialLoading = provider.isLoading && patients.isEmpty;
+            final filteredPatients = _getFilteredPatients(patients);
 
-            // Section Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               children: [
-                Expanded(
-                  child: Text(
-                    'Patient Profiles',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: context.textPrimary,
-                      letterSpacing: -0.8,
-                    ),
-                  ),
-                ),
-                InkWell(
-                  onTap: _showAddPatientSheet,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: context.primary.withValues(alpha: 0.1),
-                        width: 1.5,
+                // Hero Section
+                _buildAddPatientCard(),
+                const SizedBox(height: 32),
+
+                // Section Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Patient Profiles',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: context.textPrimary,
+                          letterSpacing: -0.8,
+                        ),
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.add_rounded,
-                          size: 20,
-                          color: context.primary,
+                    InkWell(
+                      onTap: _showAddPatientSheet,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Add New',
-                          style: TextStyle(
+                        decoration: BoxDecoration(
+                          color: context.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: context.primary.withValues(alpha: 0.1),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add_rounded,
+                              size: 20,
+                              color: context.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Add New',
+                              style: TextStyle(
+                                color: context.primary,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Search bar
+                if (patients.isNotEmpty) ...[
+                  PremiumSearchBar(
+                    hintText: 'Search patients...',
+                    initialValue: _searchQuery,
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                    onClear: () => setState(() => _searchQuery = ''),
+                  ),
+                  const SizedBox(height: 28),
+                ],
+
+                // Patients list
+                if (isInitialLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(48),
+                      child: EyeLoader.fullScreen(),
+                    ),
+                  )
+                else if (filteredPatients.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(40),
+                    decoration: BoxDecoration(
+                      color: context.surface,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: context.border.withValues(alpha: 0.2),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.shadowColor.withValues(alpha: 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: context.primary.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.people_outline_rounded,
+                            size: 48,
                             color: context.primary,
-                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          _searchQuery.isEmpty
+                              ? 'No patients added yet'
+                              : 'No patients match "$_searchQuery"',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add a patient to start vision testing',
+                          style: TextStyle(
                             fontSize: 13,
-                            letterSpacing: -0.2,
+                            color: context.textSecondary,
                           ),
                         ),
                       ],
                     ),
+                  )
+                else
+                  ...List.generate(
+                    filteredPatients.length,
+                    (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildPatientCard(filteredPatients[index]),
+                    ),
                   ),
-                ),
               ],
-            ),
-            const SizedBox(height: 16),
-
-            // Search bar
-            if (_patients.isNotEmpty) ...[
-              PremiumSearchBar(
-                hintText: 'Search patients...',
-                initialValue: _searchQuery,
-                onChanged: (value) => setState(() => _searchQuery = value),
-                onClear: () => setState(() => _searchQuery = ''),
-              ),
-              const SizedBox(height: 28),
-            ],
-
-            // Patients list
-            if (_isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(48),
-                  child: EyeLoader.fullScreen(),
-                ),
-              )
-            else if (_filteredPatients.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(40),
-                decoration: BoxDecoration(
-                  color: context.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: context.border.withValues(alpha: 0.2),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.shadowColor.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: context.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.people_outline_rounded,
-                        size: 48,
-                        color: context.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      _searchQuery.isEmpty
-                          ? 'No patients added yet'
-                          : 'No patients match "$_searchQuery"',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Add a patient to start vision testing',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: context.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ...List.generate(
-                _filteredPatients.length,
-                (index) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildPatientCard(_filteredPatients[index]),
-                ),
-              ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -1275,9 +1247,7 @@ class _PractitionerProfileSelectionScreenState
       try {
         await _patientService.deletePatient(user.uid, patient.id);
         if (mounted) {
-          setState(() {
-            _patients.removeWhere((p) => p.id == patient.id);
-          });
+          context.read<PatientProvider>().removeOptimistic(patient.id);
           SnackbarUtils.showSuccess(context, 'Patient profile removed');
         }
       } catch (e) {

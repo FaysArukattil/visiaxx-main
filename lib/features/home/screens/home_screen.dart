@@ -5,6 +5,9 @@ import '../../../data/models/user_model.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/extensions/theme_extension.dart';
+import 'package:provider/provider.dart';
+import '../../../data/providers/family_member_provider.dart';
+import '../../../data/providers/patient_provider.dart';
 
 /// User home screen with navigation grid and carousel
 class HomeScreen extends StatefulWidget {
@@ -84,6 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
             _user = user;
             _isLoading = false;
           });
+
+          // Trigger pre-fetching in background
+          _preFetchData(user);
         } else if (mounted) {
           setState(() => _isLoading = false);
         }
@@ -93,6 +99,16 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       debugPrint('[HomeScreen] ❌ Error loading user data: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _preFetchData(UserModel user) {
+    if (user.role == UserRole.user) {
+      debugPrint('[HomeScreen] 🚀 Pre-fetching family members...');
+      context.read<FamilyMemberProvider>().loadFamilyMembers(user.id);
+    } else if (user.role == UserRole.examiner) {
+      debugPrint('[HomeScreen] 🚀 Pre-fetching patients...');
+      context.read<PatientProvider>().fetchPatients(user.id);
     }
   }
 
