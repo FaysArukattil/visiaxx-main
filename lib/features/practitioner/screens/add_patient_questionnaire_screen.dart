@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/snackbar_utils.dart';
-import '../../../core/widgets/eye_loader.dart';
 import '../../../core/widgets/premium_dropdown.dart';
 import '../../../core/services/patient_service.dart';
 import '../../../core/services/patient_questionnaire_service.dart';
@@ -52,6 +51,7 @@ class _AddPatientQuestionnaireScreenState
   final _medicationsController = TextEditingController();
   bool _hasRecentSurgery = false;
   final _surgeryDetailsController = TextEditingController();
+  bool _isSaving = false;
 
   // Follow-up controllers
   final _rednessController = TextEditingController();
@@ -230,7 +230,6 @@ class _AddPatientQuestionnaireScreenState
     );
 
     // If data hasn't changed, don't re-save to avoid redundant network calls
-    // Check this BEFORE showing loading dialog to avoid getting stuck
     if (_savedPatient != null &&
         _savedPatient!.firstName == newPatient.firstName &&
         _savedPatient!.lastName == newPatient.lastName &&
@@ -238,7 +237,7 @@ class _AddPatientQuestionnaireScreenState
         _savedPatient!.sex == newPatient.sex &&
         _savedPatient!.phone == newPatient.phone &&
         _savedPatient!.notes == newPatient.notes) {
-      // Data is same, just move to next step
+      // Data is same, just move to next step logic handled by nextStep
       return;
     }
 
@@ -249,12 +248,7 @@ class _AddPatientQuestionnaireScreenState
       return;
     }
 
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: EyeLoader.fullScreen()),
-    );
+    setState(() => _isSaving = true);
 
     try {
       final savedId = await _patientService.savePatient(
@@ -265,8 +259,7 @@ class _AddPatientQuestionnaireScreenState
       _savedPatient = newPatient.copyWith(id: savedId);
       _savedPatientId = savedId;
 
-      // Close loading dialog
-      if (mounted) Navigator.pop(context);
+      if (mounted) setState(() => _isSaving = false);
 
       if (!mounted) return;
       SnackbarUtils.showSuccess(
@@ -274,11 +267,10 @@ class _AddPatientQuestionnaireScreenState
         'Patient saved. Now add pre-test questions.',
       );
     } catch (e) {
-      // Close loading dialog
-      if (mounted) Navigator.pop(context);
-
-      if (!mounted) return;
-      SnackbarUtils.showError(context, 'Failed to save patient: $e');
+      if (mounted) {
+        setState(() => _isSaving = false);
+        SnackbarUtils.showError(context, 'Failed to save patient: $e');
+      }
     }
   }
 
@@ -291,12 +283,7 @@ class _AddPatientQuestionnaireScreenState
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: EyeLoader.fullScreen()),
-    );
+    setState(() => _isSaving = true);
 
     try {
       // Build follow-up objects
@@ -324,8 +311,7 @@ class _AddPatientQuestionnaireScreenState
         questionnaire: questionnaire,
       );
 
-      // Close loading dialog
-      if (mounted) Navigator.pop(context);
+      if (mounted) setState(() => _isSaving = false);
 
       if (!mounted) return;
       SnackbarUtils.showSuccess(
@@ -336,11 +322,10 @@ class _AddPatientQuestionnaireScreenState
       // Navigate back
       Navigator.pop(context, true);
     } catch (e) {
-      // Close loading dialog
-      if (mounted) Navigator.pop(context);
-
-      if (!mounted) return;
-      SnackbarUtils.showError(context, 'Failed to save questionnaire: $e');
+      if (mounted) {
+        setState(() => _isSaving = false);
+        SnackbarUtils.showError(context, 'Failed to save questionnaire: $e');
+      }
     }
   }
 
@@ -1358,13 +1343,24 @@ class _AddPatientQuestionnaireScreenState
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: Text(
-                      _currentStep == 3 ? 'Save Patient' : 'Next',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: _isSaving
+                        ? const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                color: Colors.white,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            _currentStep == 3 ? 'Save Patient' : 'Next',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
               ],

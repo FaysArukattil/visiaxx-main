@@ -93,18 +93,25 @@ class _PractitionerDashboardScreenState
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    // CRITICAL FIX: Always clear data and show loader on fresh load
-    if (_allResults.isEmpty) {
+    // 1. LOAD FROM DISK IMMEDIATELY (if available)
+    debugPrint('[Dashboard] 💾 Checking disk cache...');
+    final persistence = DashboardPersistenceService();
+    final storedResults = await persistence.getStoredResults();
+
+    if (mounted && storedResults.isNotEmpty) {
+      debugPrint('[Dashboard] ✅ Found ${storedResults.length} cached items');
+      setState(() {
+        _allResults = storedResults;
+        _applyFilters(storedResults);
+        _isInitialLoading = false;
+        _isSyncing = true;
+      });
+    } else if (mounted) {
       setState(() {
         _isInitialLoading = true;
+        _isSyncing = true;
         _filteredResults = [];
         _statistics = {};
-      });
-    } else {
-      // If we have data, just show sync indicator
-      setState(() {
-        _isSyncing = true;
-        _isInitialLoading = false;
       });
     }
 
@@ -112,7 +119,7 @@ class _PractitionerDashboardScreenState
     await _resultsSubscription?.cancel();
 
     try {
-      // 1. Load Patients & Hidden IDs FIRST (needed for filtering)
+      // 2. Load Patients & Hidden IDs FIRST (needed for filtering)
       final results = await Future.wait([
         _authService.getUserData(user.uid),
         _patientService.getPatients(user.uid),
@@ -125,25 +132,8 @@ class _PractitionerDashboardScreenState
         _hiddenResultIds = userProfile.hiddenResultIds;
       }
 
-      // 2. LOAD FROM DISK (if available)
-      debugPrint('[Dashboard] 💾 Checking disk cache...');
-      final persistence = DashboardPersistenceService();
-      final storedResults = await persistence.getStoredResults();
       final lastSync = await persistence.getLastSyncTime();
-
-      bool hasCachedData = storedResults.isNotEmpty;
-
-      if (mounted && hasCachedData) {
-        debugPrint('[Dashboard] ✅ Found ${storedResults.length} cached items');
-        // Only update if we don't have data yet
-        if (_allResults.isEmpty) {
-          setState(() {
-            _allResults = storedResults;
-            _applyFilters(storedResults);
-            _isInitialLoading = false;
-          });
-        }
-      }
+      bool hasCachedData = _allResults.isNotEmpty;
 
       // 3. FETCH FROM FIRESTORE
       debugPrint('[Dashboard] 🔄 Syncing with cloud...');
@@ -2476,30 +2466,63 @@ class _PractitionerDashboardScreenState
         },
         child: _isInitialLoading && _allResults.isEmpty
             ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const EyeLoader(size: 60),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Loading Dashboard...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: context.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (_totalToLoad > 0) ...[
-                      const SizedBox(height: 12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildBetterProgressLoader(),
+                      const SizedBox(height: 32),
                       Text(
-                        '${(_loadingProgress * 100).toInt()}% Complete',
+                        'Preparing Your Dashboard',
                         style: TextStyle(
-                          fontSize: 13,
-                          color: context.textTertiary,
+                          fontSize: 18,
+                          color: context.textPrimary,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Synchronizing clinical records...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: context.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (_totalToLoad > 0) ...[
+                        const SizedBox(height: 24),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: SizedBox(
+                            width: 200,
+                            child: LinearProgressIndicator(
+                              value: _loadingProgress > 0
+                                  ? _loadingProgress
+                                  : null,
+                              backgroundColor: context.primary.withValues(
+                                alpha: 0.1,
+                              ),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                context.primary,
+                              ),
+                              minHeight: 6,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '${(_loadingProgress * 100).toInt()}% Complete',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               )
             : Stack(
@@ -2573,9 +2596,24 @@ class _PractitionerDashboardScreenState
                     Positioned.fill(
                       child: Container(
                         color: context.scaffoldBackground.withValues(
-                          alpha: 0.7,
+                          alpha: 0.4,
                         ),
-                        child: const Center(child: EyeLoader(size: 60)),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: context.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 20,
+                                ),
+                              ],
+                            ),
+                            child: const EyeLoader(size: 40),
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -4198,6 +4236,33 @@ class _PractitionerDashboardScreenState
           if (result.leftEye != null) _RefractionRow('Left', result.leftEye!),
         ],
       ),
+    );
+  }
+
+  Widget _buildBetterProgressLoader() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 80,
+          height: 80,
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              context.primary.withValues(alpha: 0.2),
+            ),
+            strokeWidth: 2,
+          ),
+        ),
+        SizedBox(
+          width: 60,
+          height: 60,
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(context.primary),
+            strokeWidth: 4,
+          ),
+        ),
+        const EyeLoader(size: 30),
+      ],
     );
   }
 }

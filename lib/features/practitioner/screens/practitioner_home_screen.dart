@@ -1,7 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:provider/provider.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../data/providers/patient_provider.dart';
 
 class PractitionerHomeScreen extends StatefulWidget {
   const PractitionerHomeScreen({super.key});
@@ -65,6 +67,11 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
             _userName = user.firstName;
             _isLoading = false;
           });
+
+          // Background preload patient list
+          context.read<PatientProvider>().fetchPatients(
+            _authService.currentUserId!,
+          );
         } else if (mounted) {
           setState(() => _isLoading = false);
         }
