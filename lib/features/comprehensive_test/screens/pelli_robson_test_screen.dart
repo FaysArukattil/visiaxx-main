@@ -694,38 +694,76 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         _isSubmitting)
       return;
 
-    final normalized = text.toLowerCase().trim();
-    if (normalized.isEmpty) return;
+    // Sanitize input: lowercase, trim, and remove punctuation (especially apostrophes)
+    final sanitized = text
+        .toLowerCase()
+        .replaceAll(
+          RegExp(r"[^\w\s]"),
+          '',
+        ) // Remove punctuation but keep spaces
+        .replaceAll(RegExp(r"\s+"), ' ') // Collapse extra spaces
+        .trim();
 
-    // 1. Check for "NOT VISIBLE" keywords
-    final notVisibleKeywords = [
-      'blurry',
-      'not visible',
-      'no visible',
-      'can\'t see',
-      'cannot see',
-      'nothing',
-      'none',
-      'not clear',
-      'can\'t read',
-      'cannot read',
+    if (sanitized.isEmpty) return;
+
+    final ultraSanitized = sanitized.replaceAll(' ', '');
+
+    // 1. Precise "NOT VISIBLE" keyword check
+    // We search for failure "stems" to blocking early visible advance
+    final failureStems = [
+      'not',
+      'cant',
+      'cannot',
       'no',
+      'none',
+      'nothing',
+      'blurry',
     ];
+    final words = sanitized.split(' ');
 
-    final isNotVisible = notVisibleKeywords.any(
-      (phrase) => normalized.contains(phrase),
+    // Check for failure intent
+    bool isNotVisible = failureStems.any(
+      (s) => words.contains(s) || ultraSanitized.contains(s),
     );
 
+    // PROTECT "NOD" & "NOW" - If the input is just "nod", it's NOT a "no" failure
+    if (ultraSanitized == 'nod' ||
+        ultraSanitized == 'now' ||
+        ultraSanitized == 'north') {
+      isNotVisible = false;
+    }
+
     if (isNotVisible) {
-      // If we hear "not visible" or "nothing", process immediately as fail
+      // For failure, we can return early if the intention is definitive (like "nothing")
+      // otherwise we wait for "isFinal" to catch phrases like "can't see"
+      if (isFinal ||
+          ['nothing', 'blurry', 'none'].any((w) => words.contains(w))) {
+        _isSubmitting = true;
+        _submitCurrentTriplet('Not visible', correctCount: 0);
+        _ttsService.speak('Not visible');
+        return;
+      }
+      return; // Still a failure stem present - wait for final result
+    }
+
+    // 2. EVERYTHING ELSE IS VISIBLE
+    final triplets = PelliRobsonScoring.getTripletsForScreen(
+      _currentScreenIndex,
+    );
+    if (_currentTripletIndex >= triplets.length) return;
+    final currentTriplet = triplets[_currentTripletIndex].letters.toLowerCase();
+
+    // CONTINUOUS (EARLY) ADVANCE: Only if it matches the current triplet exactly
+    // This allows "VRS" to advance immediately without waiting for silence
+    if (ultraSanitized == currentTriplet) {
       _isSubmitting = true;
-      _submitCurrentTriplet('Not visible', correctCount: 0);
-      _ttsService.speak('Not visible');
+      _submitCurrentTriplet(text, correctCount: 3);
+      _ttsService.speak('Visible');
       return;
     }
 
-    // 2. EVERYTHING ELSE IS VISIBLE - once finalized or confidently read
-    if (isFinal || normalized.length >= 3) {
+    // FALLBACK ADVANCE: Once finalized, if it's not a failure stem, take it as visible
+    if (isFinal) {
       _isSubmitting = true;
       _submitCurrentTriplet(text, correctCount: 3);
       _ttsService.speak('Visible');
