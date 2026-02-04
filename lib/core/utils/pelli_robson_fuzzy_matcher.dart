@@ -48,13 +48,7 @@ class PelliRobsonFuzzyMatcher {
     final alternatives = phoneticAlternatives[target];
     if (alternatives != null) {
       for (final alt in alternatives) {
-        if (normalized == alt || normalized.contains(alt)) {
-          return true;
-        }
-        // Also check if alt contains normalized (for short inputs)
-        if (alt.length > 1 &&
-            normalized.length == 1 &&
-            alt.startsWith(normalized)) {
+        if (normalized == alt) {
           return true;
         }
       }
@@ -70,7 +64,7 @@ class PelliRobsonFuzzyMatcher {
   }
 
   /// Count how many letters in a triplet were correctly identified
-  /// Returns (correctCount, matchedLetters)
+  /// Returns (correctCount, matchesLetters)
   ({int count, List<bool> matches}) matchTriplet(
     String heardPhrase,
     String expectedTriplet,
@@ -79,7 +73,12 @@ class PelliRobsonFuzzyMatcher {
     final letters = expectedTriplet.toUpperCase().split('');
     final matches = <bool>[false, false, false];
 
-    // Try to extract individual words/letters from the heard phrase
+    // 1. HOLISTIC MATCH: Check if the entire normalized phrase matches the triplet
+    if (normalized == expectedTriplet.toUpperCase()) {
+      return (count: 3, matches: [true, true, true]);
+    }
+
+    // 2. PARTIAL EXTRACTION: Try to extract individual words/letters from the heard phrase
     final heardParts = _extractLettersFromPhrase(normalized);
 
     // Match each expected letter
@@ -115,8 +114,9 @@ class PelliRobsonFuzzyMatcher {
         .where((p) => p.isNotEmpty)
         .toList();
 
-    // Also try individual characters if input is short
-    if (phrase.length <= 5) {
+    // For Pelli-Robson, we always want to check individual letters
+    // especially for combined speech like "VRS"
+    if (phrase.length <= 10) {
       final chars = phrase.split('').where((c) => c.trim().isNotEmpty).toList();
       parts.addAll(chars);
     }
@@ -168,4 +168,3 @@ class PelliRobsonFuzzyMatcher {
   String get debugInfo =>
       'Learned patterns: ${learnedPatterns.entries.map((e) => '${e.key}†’${e.value}').join(', ')}';
 }
-

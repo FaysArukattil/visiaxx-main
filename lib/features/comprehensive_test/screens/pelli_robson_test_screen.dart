@@ -20,6 +20,9 @@ import 'pelli_robson_instructions_screen.dart';
 import '../../quick_vision_test/screens/distance_transition_screen.dart';
 import '../../../core/widgets/distance_warning_overlay.dart';
 import '../../../core/extensions/theme_extension.dart';
+import '../../../core/utils/pelli_robson_fuzzy_matcher.dart';
+import '../../../core/providers/voice_recognition_provider.dart';
+import '../../../core/widgets/voice_input_overlay.dart';
 
 /// Pelli-Robson Contrast Sensitivity Test Screen
 /// Clinical-grade test with 8 screens of decreasing contrast triplets
@@ -58,6 +61,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
   // Auto-scrolling
   final ScrollController _scrollController = ScrollController();
+  bool _isSubmitting = false; // Prevent double voice submission
 
   // Results tracking
   final Map<String, List<TripletResponse>> _shortResponses = {
@@ -379,7 +383,7 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     );
   }
 
-  void _submitCurrentTriplet(String heardLetters) {
+  void _submitCurrentTriplet(String heardLetters, {int? correctCount}) {
     final triplets = PelliRobsonScoring.getTripletsForScreen(
       _currentScreenIndex,
     );
@@ -393,10 +397,15 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
         ? DateTime.now().difference(_tripletStartTime!).inMilliseconds
         : 0;
 
-    final bool isNotVisible = heardLetters == 'Not visible';
-    final correctLetters = isNotVisible
-        ? 0
-        : 3; // Assume all correct if visible
+    final bool isNotVisible = heardLetters.toLowerCase() == 'not visible';
+
+    // Use provided correctCount or default to logic (VISIBLE=3, NOT VISIBLE=0)
+    int correctLetters = 0;
+    if (correctCount != null) {
+      correctLetters = correctCount;
+    } else {
+      correctLetters = isNotVisible ? 0 : 3;
+    }
 
     final response = TripletResponse(
       tripletCode: triplet.code,
@@ -418,9 +427,21 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
 
     _currentTripletIndex++;
 
+    // Force voice recognition RESTART to clear the buffer for the next triplet
+    try {
+      final provider = context.read<VoiceRecognitionProvider>();
+      provider.clearRecognizedText();
+      provider.restart();
+    } catch (e) {
+      debugPrint('[PelliRobson] Failed to restart voice: $e');
+    }
+
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted && _isTestActive) {
-        _showNextTriplet();
+      if (mounted) {
+        setState(() => _isSubmitting = false); // Allow next submission
+        if (_isTestActive) {
+          _showNextTriplet();
+        }
       }
     });
   }
@@ -638,7 +659,79 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     _showCalibrationScreen();
   }
 
-  @override
+  List<String> _getTripletVocabulary() {
+    final triplets = PelliRobsonScoring.getTripletsForScreen(
+      _currentScreenIndex,
+    );
+    final vocab = <String>{};
+    for (final t in triplets) {
+      for (final char in t.letters.split('')) {
+        vocab.add(char);
+        // Add phonetic variants for better priming
+        final variants = PelliRobsonFuzzyMatcher.phoneticAlternatives[char];
+        if (variants != null) vocab.addAll(variants);
+      }
+    }
+    vocab.addAll([
+      'blurry',
+      'not visible',
+      'no visible',
+      'can\'t see',
+      'cannot see',
+      'nothing',
+      'none',
+      'not clear',
+      'can\'t read',
+      'cannot read',
+    ]);
+    return vocab.toList();
+  }
+
+  void _handleVoiceAnswer(String text, bool isFinal) {
+    if (!_isTestActive ||
+        _isTestPausedForDistance ||
+        _isPausedForExit ||
+        _isSubmitting)
+      return;
+
+    final normalized = text.toLowerCase().trim();
+    if (normalized.isEmpty) return;
+
+    // 1. Check for "NOT VISIBLE" keywords
+    final notVisibleKeywords = [
+      'blurry',
+      'not visible',
+      'no visible',
+      'can\'t see',
+      'cannot see',
+      'nothing',
+      'none',
+      'not clear',
+      'can\'t read',
+      'cannot read',
+      'no',
+    ];
+
+    final isNotVisible = notVisibleKeywords.any(
+      (phrase) => normalized.contains(phrase),
+    );
+
+    if (isNotVisible) {
+      // If we hear "not visible" or "nothing", process immediately as fail
+      _isSubmitting = true;
+      _submitCurrentTriplet('Not visible', correctCount: 0);
+      _ttsService.speak('Not visible');
+      return;
+    }
+
+    // 2. EVERYTHING ELSE IS VISIBLE - once finalized or confidently read
+    if (isFinal || normalized.length >= 3) {
+      _isSubmitting = true;
+      _submitCurrentTriplet(text, correctCount: 3);
+      _ttsService.speak('Visible');
+    }
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -736,6 +829,19 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
                       const SizedBox(height: 16),
                     ],
                   );
+                },
+              ),
+
+              // Voice Input Overlay
+              VoiceInputOverlay(
+                isActive:
+                    _isTestActive &&
+                    !_isTestPausedForDistance &&
+                    !_isPausedForExit,
+                useStrictMatching: false,
+                vocabulary: _getTripletVocabulary(),
+                onVoiceResult: (text, isFinal) {
+                  _handleVoiceAnswer(text, isFinal);
                 },
               ),
 
