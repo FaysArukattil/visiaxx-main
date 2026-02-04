@@ -30,6 +30,38 @@ class FuzzyMatcher {
         .trim();
   }
 
+  /// Remove common instruction phrases from speech recognition result
+  static String removeInstructions(String text) {
+    if (text.isEmpty) return text;
+
+    // Pattern to match "Level X. Read this sentence aloud" or similar
+    // Longest/most specific first to avoid partial matches leaving scraps
+    final instructionPatterns = [
+      RegExp(r'please\s+read\s+this\s+sentence\s+aloud', caseSensitive: false),
+      RegExp(r'please\s+read\s+the\s+sentence\s+aloud', caseSensitive: false),
+      RegExp(r'read\s+this\s+sentence\s+aloud', caseSensitive: false),
+      RegExp(r'read\s+the\s+sentence\s+aloud', caseSensitive: false),
+      RegExp(r'please\s+read\s+this\s+sentence', caseSensitive: false),
+      RegExp(r'read\s+this\s+sentence', caseSensitive: false),
+      RegExp(r'please\s+read\s+this', caseSensitive: false),
+      RegExp(r'read\s+this\s+aloud', caseSensitive: false),
+      RegExp(r'sentence\s+aloud', caseSensitive: false),
+      RegExp(r'read\s+aloud', caseSensitive: false),
+      RegExp(r'level\s+\d+', caseSensitive: false),
+    ];
+
+    String cleanedText = text;
+    for (final pattern in instructionPatterns) {
+      cleanedText = cleanedText.replaceAll(pattern, '');
+    }
+
+    // Also remove leading/trailing noise and extra whitespace
+    return cleanedText
+        .replaceAll(RegExp(r'^\s*[\.,!?;:]+\s*'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
   /// … NEW: Check if speech contains most/all important words of the target
   /// Useful for "Short Distance Reading" where users say extra words.
   static bool containsKeywords(
@@ -122,4 +154,3 @@ class MatchResult {
         'Passed: $passed (threshold: $threshold%)';
   }
 }
-

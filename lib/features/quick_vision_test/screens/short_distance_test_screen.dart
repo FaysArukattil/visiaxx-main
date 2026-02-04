@@ -62,6 +62,10 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   // Result feedback
   bool _lastResultCorrect = false;
 
+  // Silence detection to force process mid-sentence stops
+  Timer? _silenceTimer;
+  String _lastRecognizedText = '';
+
   // Countdown timer for individual screen
   int _readingCountdown = 35;
   Timer? _readingCountdownTimer;
@@ -78,6 +82,7 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _readingCountdownTimer?.cancel();
+    _silenceTimer?.cancel();
     _ttsService.dispose();
     _distanceService.stopMonitoring();
     super.dispose();
@@ -185,6 +190,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       _isSpeechActive = false;
       _showResult = false;
       _readingCountdown = 35;
+      _lastRecognizedText = '';
+      _silenceTimer?.cancel();
     });
 
     _startReadingCountdown();
@@ -236,52 +243,69 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       return;
     }
 
-    // Explicitly release the voice recognition session for a clean transition to next level
-    try {
-      context.read<VoiceRecognitionProvider>().cancel();
-    } catch (_) {}
+    // ROBUSTNESS FIX: Force stop existing session before final processing or retry
+    _silenceTimer?.cancel();
 
-    _readingCountdownTimer?.cancel();
+    // FILTER INSTRUCTIONS: Strip "Level X. Read this sentence aloud" before processing
+    final cleanedUserSaid = FuzzyMatcher.removeInstructions(userSaid);
 
     final sentence = TestConstants.shortDistanceSentences[_currentScreen];
 
     bool isBlurry =
-        userSaid.toLowerCase().contains('blurry') ||
-        userSaid.toLowerCase().contains("can't read") ||
-        userSaid.toLowerCase().contains("cannot read") ||
-        userSaid.toLowerCase().contains("can't see");
+        cleanedUserSaid.toLowerCase().contains('blurry') ||
+        cleanedUserSaid.toLowerCase().contains("can't read") ||
+        cleanedUserSaid.toLowerCase().contains("cannot read") ||
+        cleanedUserSaid.toLowerCase().contains("can't see");
 
     double similarity = 0.0;
     bool isCorrect = false;
 
-    if (!isBlurry && userSaid.isNotEmpty) {
-      similarity = FuzzyMatcher.getSimilarity(sentence.sentence, userSaid);
+    if (!isBlurry && cleanedUserSaid.isNotEmpty) {
+      similarity = FuzzyMatcher.getSimilarity(
+        sentence.sentence,
+        cleanedUserSaid,
+      );
 
       // Check if user specifically said they can't read it or want to skip
       final isUnableToReadOrSkip = [
-        'cannot read',
-        'cant read',
-        "can't see",
         'next',
         'skip',
         'no',
-      ].any((variant) => userSaid.toLowerCase().contains(variant));
+      ].any((variant) => cleanedUserSaid.toLowerCase().contains(variant));
 
       if (isUnableToReadOrSkip) {
         isBlurry = true; // Treat as blurry/failed for scoring
       } else {
-        // PARTIAL ANSWER FIX: Also check for keyword overlap
+        // PARTIAL ANSWER FIX: Also check for keyword overlap (lenient: ~40% for "2-3 words")
         bool hasKeywords = FuzzyMatcher.containsKeywords(
           sentence.sentence,
-          userSaid,
-          keywordThreshold: 0.5, // Accept if 50% of important words are there
+          cleanedUserSaid,
+          keywordThreshold: 0.4,
         );
 
-        isCorrect = (similarity >= 70.0) || hasKeywords;
+        isCorrect = (similarity >= 60.0) || hasKeywords;
       }
     }
 
-    _handleResult(sentence, userSaid, similarity, isCorrect);
+    if (isCorrect || isBlurry || userSaid.isEmpty) {
+      // Proceed to result handling (success, blurriness, or timeout)
+      _handleResult(sentence, cleanedUserSaid, similarity, isCorrect);
+    } else {
+      // CLEAR AND RESTART: if incorrect and not empty/blurry, let them try again immediately
+      debugPrint(
+        '[Reading] Incorrect reading: "$cleanedUserSaid". Retrying...',
+      );
+
+      final provider = context.read<VoiceRecognitionProvider>();
+      provider.clearRecognizedText();
+
+      // Optionally give brief feedback
+      _ttsService.speak('Not quite right, try again');
+
+      // Keep state as is (_waitingForResponse = true, _isSpeechActive = true)
+      // and restart the mic
+      provider.restart();
+    }
   }
 
   void _handleResult(
@@ -450,10 +474,9 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
               if (!_testComplete)
                 VoiceInputOverlay(
                   isActive: _isSpeechActive && _waitingForResponse,
-                  vocabulary: [
-                    TestConstants
-                        .shortDistanceSentences[_currentScreen]
-                        .sentence,
+                  useStrictMatching:
+                      false, // ALLOW PARTIAL SENTENCES (CRITICAL FIX)
+                  vocabulary: const [
                     'blurry',
                     'cannot read',
                     "can't see",
@@ -464,24 +487,47 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
                   ],
                   onVoiceResult: (text, isFinal) {
                     if (_waitingForResponse) {
+                      // Filter instructions from partial results too
+                      final cleanedText = FuzzyMatcher.removeInstructions(text);
+
                       if (isFinal) {
+                        _silenceTimer?.cancel();
                         _processSentence(text);
-                      } else {
-                        // EARLY COMPLETION: If user said ~60% of words correctly,
-                        // trigger success immediately without waiting for finish.
+                      } else if (cleanedText.isNotEmpty) {
+                        // SILENCE DETECTION: If text stops changing for 1.5s, process it
+                        // Use it as a proxy for "user has finished their attempt"
+                        if (cleanedText != _lastRecognizedText) {
+                          _lastRecognizedText = cleanedText;
+                          _silenceTimer?.cancel();
+                          _silenceTimer = Timer(
+                            const Duration(milliseconds: 1500),
+                            () {
+                              if (mounted && _waitingForResponse) {
+                                debugPrint(
+                                  '[Reading] ⏳ Silence detected, forcing evaluation of: $text',
+                                );
+                                _processSentence(text);
+                              }
+                            },
+                          );
+                        }
+
+                        // EARLY COMPLETION: If user said ~50% of words correctly,
+                        // trigger success immediately without waiting for finish or silence.
                         final sentence = TestConstants
                             .shortDistanceSentences[_currentScreen];
                         bool hasStrongMatch = FuzzyMatcher.containsKeywords(
                           sentence.sentence,
-                          text,
+                          cleanedText,
                           keywordThreshold:
-                              0.6, // Higher threshold for early match
+                              0.6, // Slightly higher for "early" confidence
                         );
 
                         if (hasStrongMatch) {
                           debugPrint(
-                            '[Reading] ⚡ Early completion triggered with: $text',
+                            '[Reading] ⚡ Early completion triggered with: $cleanedText',
                           );
+                          _silenceTimer?.cancel();
                           _processSentence(text);
                         }
                       }

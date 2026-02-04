@@ -24,11 +24,16 @@ class VoiceInputOverlay extends StatefulWidget {
   /// Optional vocabulary for matching
   final List<String>? vocabulary;
 
+  /// Whether to only trigger [onVoiceResult] if the text matches vocabulary.
+  /// Defaults to true to maintain existing behavior for directional tests.
+  final bool useStrictMatching;
+
   const VoiceInputOverlay({
     super.key,
     this.isActive = true,
     this.onVoiceResult,
     this.vocabulary,
+    this.useStrictMatching = true,
   });
 
   @override
@@ -88,8 +93,12 @@ class _VoiceInputOverlayState extends State<VoiceInputOverlay>
                 text,
                 widget.vocabulary!,
               );
+
               if (matched != null) {
                 widget.onVoiceResult!(matched, isFinal);
+              } else if (!widget.useStrictMatching) {
+                // If not strict, pass raw text if no match found
+                widget.onVoiceResult!(text, isFinal);
               }
             } else {
               widget.onVoiceResult!(text, isFinal);
