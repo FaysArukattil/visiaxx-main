@@ -30,6 +30,7 @@ class AuthService {
   bool get isLoggedIn => _auth.currentUser != null;
 
   /// Sign in with email and password
+  /// OPTIMIZED: Uses cache-first reads and defers non-critical updates
   Future<AuthResult> signInWithEmail({
     required String email,
     required String password,
@@ -41,47 +42,71 @@ class AuthService {
       );
 
       if (credential.user != null) {
-        // 1. Find user metadata (collection path) from lookup
-        final lookupDoc = await _firestore
-            .collection('all_users_lookup')
-            .doc(credential.user!.uid)
-            .get(const GetOptions(source: Source.serverAndCache));
+        // OPTIMIZATION: Try cache first, fallback to server
+        // This speeds up login significantly for returning users
+        DocumentSnapshot<Map<String, dynamic>>? lookupDoc;
+        try {
+          lookupDoc = await _firestore
+              .collection('all_users_lookup')
+              .doc(credential.user!.uid)
+              .get(const GetOptions(source: Source.cache));
+        } catch (_) {
+          // Cache miss, fetch from server
+          lookupDoc = await _firestore
+              .collection('all_users_lookup')
+              .doc(credential.user!.uid)
+              .get(const GetOptions(source: Source.server));
+        }
 
         UserModel? userModel;
         if (lookupDoc.exists && lookupDoc.data() != null) {
           final collection = lookupDoc.data()!['collection'] as String;
           final identityString = lookupDoc.data()!['identityString'] as String;
 
-          // 2. Get full data from the role-specific collection
-          final userDoc = await _firestore
-              .collection(collection)
-              .doc(identityString)
-              .get(const GetOptions(source: Source.serverAndCache));
+          // OPTIMIZATION: Cache-first for user doc too
+          DocumentSnapshot<Map<String, dynamic>>? userDoc;
+          try {
+            userDoc = await _firestore
+                .collection(collection)
+                .doc(identityString)
+                .get(const GetOptions(source: Source.cache));
+          } catch (_) {
+            userDoc = await _firestore
+                .collection(collection)
+                .doc(identityString)
+                .get(const GetOptions(source: Source.server));
+          }
+
           if (userDoc.exists) {
             userModel = UserModel.fromMap(userDoc.data()!, userDoc.id);
 
-            // 3. Background updates
-            _firestore
-                .collection(collection)
-                .doc(identityString)
-                .update({'lastLoginAt': FieldValue.serverTimestamp()})
-                .catchError(
-                  (e) => debugPrint(
-                    '[AuthService] Error updating lastLoginAt: $e',
+            // OPTIMIZATION: Fire-and-forget background updates (no await)
+            unawaited(
+              _firestore
+                  .collection(collection)
+                  .doc(identityString)
+                  .update({'lastLoginAt': FieldValue.serverTimestamp()})
+                  .catchError(
+                    (e) => debugPrint(
+                      '[AuthService] Error updating lastLoginAt: $e',
+                    ),
                   ),
-                );
+            );
 
-            _firestore
-                .collection('all_users_lookup')
-                .doc(credential.user!.uid)
-                .update({'lastLoginAt': FieldValue.serverTimestamp()})
-                .catchError(
-                  (e) => debugPrint('[AuthService] Error updating lookup: $e'),
-                );
+            unawaited(
+              _firestore
+                  .collection('all_users_lookup')
+                  .doc(credential.user!.uid)
+                  .update({'lastLoginAt': FieldValue.serverTimestamp()})
+                  .catchError(
+                    (e) =>
+                        debugPrint('[AuthService] Error updating lookup: $e'),
+                  ),
+            );
           }
-          // Save to local cache
+          // OPTIMIZATION: Save to cache in background
           if (userModel != null) {
-            await LocalStorageService().saveUserProfile(userModel);
+            unawaited(LocalStorageService().saveUserProfile(userModel));
           }
         }
 

@@ -1,7 +1,10 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/dashboard_persistence_service.dart';
+import '../../../core/services/test_result_service.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../data/providers/patient_provider.dart';
 
@@ -72,6 +75,9 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
           context.read<PatientProvider>().fetchPatients(
             _authService.currentUserId!,
           );
+
+          // OPTIMIZATION: Background preload dashboard data
+          unawaited(_preloadDashboardData(_authService.currentUserId!));
         } else if (mounted) {
           setState(() => _isLoading = false);
         }
@@ -81,6 +87,62 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
     } catch (e) {
       debugPrint('[PractitionerHomeScreen] ❌ Error loading user data: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// OPTIMIZATION: Preload dashboard data in background for instant dashboard access
+  Future<void> _preloadDashboardData(String practitionerId) async {
+    try {
+      debugPrint('[PractitionerHomeScreen] 🔄 Preloading dashboard data...');
+      final persistence = DashboardPersistenceService();
+      final resultService = TestResultService();
+
+      // Check if we have recent cache
+      final lastSync = await persistence.getLastSyncTime();
+      final now = DateTime.now();
+
+      // Only full sync if cache is older than 5 minutes or missing
+      if (lastSync == null || now.difference(lastSync).inMinutes > 5) {
+        // Incremental sync if we have some data
+        if (lastSync != null) {
+          final newResults = await resultService
+              .getPractitionerResultsIncremental(
+                practitionerId: practitionerId,
+                since: lastSync,
+              );
+          if (newResults.isNotEmpty) {
+            final cached = await persistence.getStoredResults();
+            final Map<String, dynamic> mergedMap = {
+              for (var r in cached) r.id: r,
+            };
+            for (var r in newResults) {
+              mergedMap[r.id] = r;
+            }
+            final merged = mergedMap.values.toList()
+              ..sort(
+                (a, b) => (b as dynamic).timestamp.compareTo(
+                  (a as dynamic).timestamp,
+                ),
+              );
+            await persistence.saveResults(merged.cast());
+          }
+        } else {
+          // Full sync for first time
+          final results = await resultService.getPractitionerPatientResults(
+            practitionerId,
+          );
+          if (results.isNotEmpty) {
+            await persistence.saveResults(results);
+          }
+        }
+        debugPrint('[PractitionerHomeScreen] ✅ Dashboard preload complete');
+      } else {
+        debugPrint(
+          '[PractitionerHomeScreen] ⏭️ Cache is recent, skipping preload',
+        );
+      }
+    } catch (e) {
+      debugPrint('[PractitionerHomeScreen] ⚠️ Dashboard preload error: $e');
     }
   }
 

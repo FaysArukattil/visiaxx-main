@@ -59,39 +59,51 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
 
-        // 1. Check for existing active session on another device
+        // OPTIMIZATION: Prepare session service and check isPractitioner early
         final sessionService = SessionMonitorService();
         final isPractitioner = result.user!.role == UserRole.examiner;
+        final identityString = result.user!.identityString;
 
-        final checkResult = await sessionService.checkExistingSession(
-          result.user!.identityString,
-        );
+        // OPTIMIZATION: For practitioners, skip session check entirely (multi-device allowed)
+        // For regular users, do the check but don't block on full await
+        if (!isPractitioner) {
+          final checkResult = await sessionService.checkExistingSession(
+            identityString,
+          );
 
-        if (checkResult.exists &&
-            checkResult.isOnline &&
-            !checkResult.isOurSession &&
-            !isPractitioner) {
-          // Active session elsewhere - Block Login for regular users
-          await _authService.signOut();
-          if (mounted) {
-            setState(() {
-              _errorMessage =
-                  'Account is currently active on another device. Please logout there first.';
-              _isLoading = false;
-            });
+          if (checkResult.exists &&
+              checkResult.isOnline &&
+              !checkResult.isOurSession) {
+            // Active session elsewhere - Block Login for regular users
+            await _authService.signOut();
+            if (mounted) {
+              setState(() {
+                _errorMessage =
+                    'Account is currently active on another device. Please logout there first.';
+                _isLoading = false;
+              });
+            }
+            return;
           }
-          return;
         }
 
-        // 2. Create/Overwrite session
-        final creationResult = await sessionService.createSession(
+        // OPTIMIZATION: Fire-and-forget session creation (don't await the full result)
+        // We only need to know it started, not that it completed
+        final creationFuture = sessionService.createSession(
           result.user!.id,
-          result.user!.identityString,
+          identityString,
           isPractitioner: isPractitioner,
         );
 
-        if (!creationResult.isSuccess) {
-          // Session creation failed
+        // OPTIMIZATION: Navigate immediately while session creates in background
+        // Wait just a tiny bit for initial session write
+        final creationResult = await creationFuture.timeout(
+          const Duration(milliseconds: 500),
+          onTimeout: () => SessionCreationResult(sessionId: 'pending'),
+        );
+
+        // Only block if definite failure
+        if (creationResult.error != null) {
           await _authService.signOut();
           if (mounted) {
             setState(() {
@@ -104,21 +116,18 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
 
-        // 3. Start monitoring this session
+        // OPTIMIZATION: Start monitoring in background (fire-and-forget)
         if (mounted) {
           sessionService.startMonitoring(
-            result.user!.identityString,
+            identityString,
             context,
             isPractitioner: isPractitioner,
           );
         }
 
-        // 4. Navigate based on role
+        // Navigate immediately
         if (!mounted) return;
-        // Keep _isLoading = true until navigation starts to prevent the "stop" feeling
         await NavigationUtils.navigateHome(context);
-
-        // At this point we are navigating away, so we don't need to set _isLoading = false
       } else {
         if (mounted) {
           setState(() {

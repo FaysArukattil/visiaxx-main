@@ -4,6 +4,7 @@ import '../../../core/extensions/theme_extension.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'dart:async';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -100,102 +101,116 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (_authService.isLoggedIn) {
       final userId = _authService.currentUserId;
-      UserModel? user;
-      if (userId != null) {
-        // 1. Fetch user data with a small retry/timeout
+      if (userId == null) {
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      // OPTIMIZATION: Try local cache first for instant UI
+      UserModel? user = await LocalStorageService().getUserProfile();
+
+      // Verify cached user matches current auth
+      if (user != null && user.id != userId) {
+        user = null; // Cache is stale
+      }
+
+      // OPTIMIZATION: If no valid cache, fetch from network with timeout
+      if (user == null) {
         try {
           user = await _authService
               .getUserData(userId)
-              .timeout(const Duration(seconds: 3));
+              .timeout(const Duration(seconds: 2));
         } catch (e) {
-          debugPrint('[SplashScreen]  ï¸ Failed to fetch user data: $e');
-          // Fallthrough to login if we can't get user data
+          debugPrint('[SplashScreen] ⚠️ Failed to fetch user data: $e');
         }
+      }
 
-        if (user != null && mounted) {
-          // 2. STRICTOR CHECK: Verify if we still own the active session
-          final sessionService = SessionMonitorService();
+      if (user == null) {
+        if (mounted) Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
 
-          try {
-            final checkResult = await sessionService
-                .checkExistingSession(user.identityString)
-                .timeout(const Duration(seconds: 3));
+      final isPractitioner = user.role == UserRole.examiner;
 
-            final isPractitioner = user.role == UserRole.examiner;
+      // OPTIMIZATION: For practitioners, skip session conflict check (multi-device allowed)
+      if (!isPractitioner) {
+        final sessionService = SessionMonitorService();
+        try {
+          final checkResult = await sessionService
+              .checkExistingSession(user.identityString)
+              .timeout(const Duration(seconds: 2));
 
-            if (checkResult.exists &&
-                !checkResult.isOurSession &&
-                !isPractitioner) {
-              debugPrint(
-                '[SplashScreen] š¨ Session stolen by another device. Forcing logout.',
-              );
+          if (checkResult.exists && !checkResult.isOurSession) {
+            debugPrint(
+              '[SplashScreen] 🚨 Session stolen by another device. Forcing logout.',
+            );
 
-              sessionService.markKickedOut();
+            sessionService.markKickedOut();
 
-              if (mounted) {
-                await showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (ctx) => AlertDialog(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    title: Row(
-                      children: [
-                        const Icon(
-                          Icons.warning_amber_rounded,
-                          color: AppColors.warning,
-                          size: 28,
+            if (mounted) {
+              await showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (ctx) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.warning,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Logged Out',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Logged Out',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                    content: Text(
-                      'Your account is currently active on: ${checkResult.sessionData?.deviceInfo ?? 'Another Device'}.\n\nYou have been logged out on this device.',
-                      style: const TextStyle(fontSize: 15),
-                    ),
-                    actions: [
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('OK'),
                       ),
                     ],
                   ),
-                );
-              }
-
-              await _authService.signOut();
-              if (!mounted) return;
-              Navigator.pushReplacementNamed(context, '/login');
-              return;
+                  content: Text(
+                    'Your account is currently active on: ${checkResult.sessionData?.deviceInfo ?? 'Another Device'}.\n\nYou have been logged out on this device.',
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                  actions: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
             }
 
+            await _authService.signOut();
             if (!mounted) return;
+            Navigator.pushReplacementNamed(context, '/login');
+            return;
+          }
+
+          // Start monitoring in background
+          if (mounted) {
             sessionService.startMonitoring(
               user.identityString,
               context,
-              isPractitioner: isPractitioner,
+              isPractitioner: false,
             );
-          } catch (e) {
-            debugPrint('[SplashScreen]  ï¸ Session check error: $e');
-            // If we can't check session due to network, but user data was fetched,
-            // we could potentially proceed or go to login.
-            // Given the user request, let's go to login to be safe.
-            Navigator.pushReplacementNamed(context, '/login');
-            return;
           }
-        } else {
-          // user is null or not mounted after fetch
-          if (mounted) {
-            Navigator.pushReplacementNamed(context, '/login');
-            return;
-          }
+        } catch (e) {
+          debugPrint('[SplashScreen] ⚠️ Session check error: $e');
+          // On timeout/error, proceed anyway (better UX than blocking)
+        }
+      } else {
+        // Practitioners: just start monitoring, no conflict check
+        if (mounted) {
+          SessionMonitorService().startMonitoring(
+            user.identityString,
+            context,
+            isPractitioner: true,
+          );
         }
       }
 
