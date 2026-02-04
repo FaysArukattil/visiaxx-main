@@ -112,6 +112,70 @@ class FuzzyMatcher {
     return (matchesCount / targetWords.length) >= keywordThreshold;
   }
 
+  /// Convert spoken number words to digit strings (e.g., "eight" -> "8")
+  static String? parseSpokenNumber(String text) {
+    if (text.isEmpty) return null;
+    final normalized = text.toLowerCase().trim();
+
+    // Direct mapping for common numbers in Ishihara plates
+    final numberMap = {
+      'zero': '0',
+      'nothing': 'nothing',
+      'none': 'nothing',
+      'one': '1',
+      'two': '2',
+      'three': '3',
+      'four': '4',
+      'five': '5',
+      'six': '6',
+      'seven': '7',
+      'eight': '8',
+      'nine': '9',
+      'ten': '10',
+      'twelve': '12',
+      'fifteen': '15',
+      'sixteen': '16',
+      'twenty': '20',
+      'twenty six': '26',
+      'twenty nine': '29',
+      'thirty': '30',
+      'thirty five': '35',
+      'forty': '40',
+      'forty two': '42',
+      'forty five': '45',
+      'fifty': '50',
+      'fifty seven': '57',
+      'seventy': '70',
+      'seventy three': '73',
+      'seventy four': '74',
+      'ninety': '90',
+      'ninety six': '96',
+      'ninety seven': '97',
+    };
+
+    // Check for exact word match
+    if (numberMap.containsKey(normalized)) {
+      return numberMap[normalized];
+    }
+
+    // Check if the text contains any of these words
+    for (final entry in numberMap.entries) {
+      if (normalized == entry.key ||
+          normalized.contains(' ${entry.key}') ||
+          normalized.contains('${entry.key} ')) {
+        return entry.value;
+      }
+    }
+
+    // Fallback to digit regex if no word match
+    final digitMatch = RegExp(r'\d+').firstMatch(normalized);
+    if (digitMatch != null) {
+      return digitMatch.group(0);
+    }
+
+    return null;
+  }
+
   /// Get match result with details
   static MatchResult getMatchResult(
     String expected,

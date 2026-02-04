@@ -23,6 +23,8 @@ import 'distance_calibration_screen.dart';
 
 import 'color_vision_instructions_screen.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/utils/fuzzy_matcher.dart';
+import '../../../core/providers/voice_recognition_provider.dart';
 import '../../../core/widgets/voice_input_overlay.dart';
 
 /// Clinical-grade Color Vision Test
@@ -843,6 +845,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                   // Voice Input Overlay (Landscape)
                   VoiceInputOverlay(
                     isActive: _showingPlate && !_isShowingResult,
+                    useStrictMatching: false,
+                    vocabulary: _getExpandedVocabulary(),
                     onVoiceResult: (text, isFinal) {
                       if (isFinal && _showingPlate && !_isShowingResult) {
                         _handleVoiceAnswer(text);
@@ -886,6 +890,8 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
                 // Voice Input Overlay (Portrait)
                 VoiceInputOverlay(
                   isActive: _showingPlate && !_isShowingResult,
+                  useStrictMatching: false,
+                  vocabulary: _getExpandedVocabulary(),
                   onVoiceResult: (text, isFinal) {
                     if (isFinal && _showingPlate && !_isShowingResult) {
                       _handleVoiceAnswer(text);
@@ -1736,16 +1742,71 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
     );
   }
 
+  List<String> _getExpandedVocabulary() {
+    if (_currentOptions.isEmpty) return [];
+
+    final result = <String>[..._currentOptions];
+    final numberToWord = {
+      '0': 'zero',
+      '1': 'one',
+      '2': 'two',
+      '3': 'three',
+      '4': 'four',
+      '5': 'five',
+      '6': 'six',
+      '7': 'seven',
+      '8': 'eight',
+      '9': 'nine',
+      '10': 'ten',
+      '12': 'twelve',
+      '15': 'fifteen',
+      '16': 'sixteen',
+      '20': 'twenty',
+      '26': 'twenty six',
+      '29': 'twenty nine',
+      '30': 'thirty',
+      '35': 'thirty five',
+      '40': 'forty',
+      '42': 'forty two',
+      '45': 'forty five',
+      '50': 'fifty',
+      '57': 'fifty seven',
+      '70': 'seventy',
+      '73': 'seventy three',
+      '74': 'seventy four',
+      '90': 'ninety',
+      '96': 'ninety six',
+      '97': 'ninety seven',
+    };
+
+    for (final opt in _currentOptions) {
+      if (opt.toLowerCase() == 'nothing') {
+        result.addAll(['none', 'nothing', 'no number']);
+      } else if (numberToWord.containsKey(opt)) {
+        result.add(numberToWord[opt]!);
+      }
+    }
+    return result;
+  }
+
   void _handleVoiceAnswer(String text) {
     if (text.isEmpty) return;
 
     final normalized = text.toLowerCase().trim();
 
-    // Map common spoken words to options
+    // Map common spoken words to "nothing"
     if (normalized.contains('nothing') ||
         normalized == 'none' ||
         normalized == 'no number') {
-      _submitAnswer('nothing', -1);
+      // Find index of 'nothing' in options to highlight button
+      int nothingIndex = -1;
+      for (int i = 0; i < _currentOptions.length; i++) {
+        if (_currentOptions[i].toLowerCase() == 'nothing') {
+          nothingIndex = i;
+          break;
+        }
+      }
+      _submitAnswer('nothing', nothingIndex);
       return;
     }
 
@@ -1754,20 +1815,43 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
       return;
     }
 
-    // Try to find a number in the text
-    final numberMatch = RegExp(r'\d+').firstMatch(normalized);
-    if (numberMatch != null) {
-      final numberStr = numberMatch.group(0)!;
+    // Try to find a number (digit or word) in the text
+    final parsedNumber = FuzzyMatcher.parseSpokenNumber(normalized);
+
+    if (parsedNumber != null) {
       // Find which option matches this number
       int matchIndex = -1;
+      String finalAnswer = parsedNumber;
+
       for (int i = 0; i < _currentOptions.length; i++) {
-        if (_currentOptions[i] == numberStr) {
+        final option = _currentOptions[i].toLowerCase();
+        if (option == parsedNumber.toLowerCase() ||
+            (parsedNumber == 'nothing' && option == 'nothing')) {
           matchIndex = i;
+          finalAnswer = _currentOptions[i];
           break;
         }
       }
-      _submitAnswer(numberStr, matchIndex);
+
+      // ONLY submit if it matches one of the 4 options
+      if (matchIndex != -1) {
+        _submitAnswer(finalAnswer, matchIndex);
+        return;
+      }
     }
+
+    // If we reach here, it's either junk or a number NOT in our options
+    // CLEAR AND RESTART: if no match found, let them try again immediately
+    debugPrint('[ColorVision] Unrecognized answer: "$text". Retrying...');
+
+    final provider = context.read<VoiceRecognitionProvider>();
+    provider.clearRecognizedText();
+
+    // Give brief feedback
+    _ttsService.speak('Try again');
+
+    // Keep state as is (_showingPlate = true) and restart the mic
+    provider.restart();
   }
 }
 
