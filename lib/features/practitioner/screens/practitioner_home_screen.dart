@@ -7,6 +7,7 @@ import '../../../core/services/dashboard_persistence_service.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../data/providers/patient_provider.dart';
+import '../../../data/models/test_result_model.dart';
 
 class PractitionerHomeScreen extends StatefulWidget {
   const PractitionerHomeScreen({super.key});
@@ -121,24 +122,17 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
 
         if (newResults.isNotEmpty) {
           final cached = await persistence.getStoredResults();
-          final Map<String, dynamic> mergedMap = {
+          final Map<String, TestResultModel> mergedMap = {
             for (var r in cached) r.id: r,
           };
           for (var r in newResults) {
             mergedMap[r.id] = r;
           }
 
-          final merged =
-              mergedMap.values
-                  .where((r) => !(r as dynamic).isDeleted) // Extra safety check
-                  .toList()
-                ..sort(
-                  (a, b) => (b as dynamic).timestamp.compareTo(
-                    (a as dynamic).timestamp,
-                  ),
-                );
+          final merged = mergedMap.values.where((r) => !r.isDeleted).toList()
+            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
-          await persistence.saveResults(merged.cast());
+          await persistence.saveResults(merged);
         }
         debugPrint(
           '[PractitionerHomeScreen] ⏭️ Dashboard incremental sync complete',

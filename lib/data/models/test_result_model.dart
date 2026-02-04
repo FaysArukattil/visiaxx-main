@@ -45,6 +45,7 @@ class TestResultModel {
   final String recommendation;
   final String? pdfUrl;
   final bool isFlagged;
+  final bool isDeleted; // Soft-delete support
   final PractitionerNotes? practitionerNotes;
 
   TestResultModel({
@@ -71,6 +72,7 @@ class TestResultModel {
     required this.recommendation,
     this.pdfUrl,
     this.isFlagged = false,
+    this.isDeleted = false,
     this.practitionerNotes,
   });
 
@@ -134,6 +136,7 @@ class TestResultModel {
       recommendation: data['recommendation'] ?? '',
       pdfUrl: data['pdfUrl'],
       isFlagged: data['isFlagged'] ?? false,
+      isDeleted: data['isDeleted'] ?? false,
       practitionerNotes: data['practitionerNotes'] != null
           ? PractitionerNotes.fromMap(data['practitionerNotes'])
           : null,
@@ -165,6 +168,7 @@ class TestResultModel {
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,
       'isFlagged': isFlagged,
+      'isDeleted': isDeleted,
       'practitionerNotes': practitionerNotes?.toJson(),
     };
   }
@@ -192,6 +196,7 @@ class TestResultModel {
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,
       'isFlagged': isFlagged,
+      'isDeleted': isDeleted,
       'practitionerNotes': practitionerNotes?.toMap(),
     };
   }
@@ -321,6 +326,7 @@ class TestResultModel {
     String? recommendation,
     String? pdfUrl,
     bool? isFlagged,
+    bool? isDeleted,
     PractitionerNotes? practitionerNotes,
   }) {
     return TestResultModel(
@@ -348,6 +354,7 @@ class TestResultModel {
       recommendation: recommendation ?? this.recommendation,
       pdfUrl: pdfUrl ?? this.pdfUrl,
       isFlagged: isFlagged ?? this.isFlagged,
+      isDeleted: isDeleted ?? this.isDeleted,
       practitionerNotes: practitionerNotes ?? this.practitionerNotes,
     );
   }

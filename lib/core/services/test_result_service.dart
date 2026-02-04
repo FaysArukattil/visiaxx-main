@@ -1085,7 +1085,8 @@ class TestResultService {
             for (final tDoc in pTests.docs) {
               final data = tDoc.data();
               data['id'] = tDoc.id;
-              results.add(TestResultModel.fromJson(data));
+              final res = TestResultModel.fromJson(data);
+              if (!res.isDeleted) results.add(res);
             }
 
             // Path 2: IdentifiedResults (for patients with their own accounts)
@@ -1099,9 +1100,10 @@ class TestResultService {
             for (final tDoc in iTests.docs) {
               final data = tDoc.data();
               data['id'] = tDoc.id;
-              // Prevent duplicates
-              if (!results.any((r) => r.id == tDoc.id)) {
-                results.add(TestResultModel.fromJson(data));
+              final res = TestResultModel.fromJson(data);
+              // Prevent duplicates and filter deleted
+              if (!res.isDeleted && !results.any((r) => r.id == tDoc.id)) {
+                results.add(res);
               }
             }
           } catch (e) {

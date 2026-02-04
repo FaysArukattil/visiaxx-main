@@ -349,9 +349,9 @@ class _PractitionerDashboardScreenState
       }
     }
 
-    // NEW: Always filter out hidden results first
+    // NEW: Always filter out hidden and deleted results first
     var filtered = allResults
-        .where((r) => !_hiddenResultIds.contains(r.id))
+        .where((r) => !r.isDeleted && !_hiddenResultIds.contains(r.id))
         .toList();
 
     // Apply custom date range if set (this overrides period filter)
