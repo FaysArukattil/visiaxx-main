@@ -41,8 +41,8 @@ class PatientProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      debugPrint('[PatientProvider] Error loading patients: $e');
-      _errorMessage = e.toString();
+      debugPrint('[PatientProvider] ❌ Error loading patients: $e');
+      _errorMessage = 'Failed to load patients. Please check your connection.';
       _isLoading = false;
       notifyListeners();
     }

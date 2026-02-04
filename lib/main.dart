@@ -143,14 +143,20 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
     // Add overlay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final overlayState = Overlay.of(context);
-        overlayState.insert(overlay);
+        try {
+          final overlayState = Overlay.maybeOf(context);
+          if (overlayState != null) {
+            overlayState.insert(overlay);
 
-        // Remove after animation is cached (500ms should be enough)
-        Future.delayed(const Duration(milliseconds: 500), () {
-          overlay.remove();
-          debugPrint('[VisiAxx] ... Eye animation preloaded');
-        });
+            // Remove after animation is cached (500ms should be enough)
+            Future.delayed(const Duration(milliseconds: 500), () {
+              overlay.remove();
+              debugPrint('[VisiAxx] ... Eye animation preloaded');
+            });
+          }
+        } catch (e) {
+          debugPrint('[VisiAxx] Preload skipped: Overlay not ready');
+        }
       }
     });
   }

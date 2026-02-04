@@ -9,14 +9,18 @@ import 'package:intl/intl.dart';
 import 'package:visiaxx/core/services/family_member_service.dart';
 import '../providers/network_connectivity_provider.dart';
 import 'package:visiaxx/core/services/dashboard_persistence_service.dart';
+import '../../data/models/patient_model.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AWSS3StorageService _awsStorageService = AWSS3StorageService();
 
-  /// New organized collection path
   static const String _identifiedResultsCollection = 'IdentifiedResults';
+
+  // Short-term in-memory cache to prevent redundant loops on startup
+  static List<TestResultModel>? _fallbackCache;
+  static DateTime? _lastCacheTime;
 
   /// Save a complete test result to Firestore and AWS
   Future<String> saveTestResult({
@@ -578,7 +582,14 @@ class TestResultService {
     return _firestore
         .collectionGroup('tests')
         .where('userId', isEqualTo: practitionerId)
+        .where(
+          'isDeleted',
+          isEqualTo: false,
+        ) // OPTIMIZATION: Ignore soft-deleted tests
         .orderBy('timestamp', descending: true)
+        .limit(
+          300,
+        ) // SAFETY: Limit to 300 recent tests for high-volume hospitals
         .snapshots()
         .map((snapshot) {
           debugPrint(
@@ -620,35 +631,47 @@ class TestResultService {
       debugPrint(
         '[TestResultService] 🔄 Fetching incremental results for $practitionerId since $since',
       );
+      try {
+        // 1. Try optimized query
+        try {
+          final snapshot = await _firestore
+              .collectionGroup('tests')
+              .where('userId', isEqualTo: practitionerId)
+              .where('isDeleted', isEqualTo: false) // Filter deleted
+              .where('timestamp', isGreaterThan: Timestamp.fromDate(since))
+              .orderBy('timestamp', descending: true)
+              .limit(100)
+              .get();
 
-      final snapshot = await _firestore
-          .collectionGroup('tests')
-          .where('userId', isEqualTo: practitionerId)
-          .where('timestamp', isGreaterThan: Timestamp.fromDate(since))
-          .orderBy('timestamp', descending: true)
-          .get();
+          if (snapshot.docs.isNotEmpty) {
+            final results = snapshot.docs
+                .map((doc) {
+                  try {
+                    final data = doc.data();
+                    data['id'] = doc.id;
+                    return TestResultModel.fromJson(data);
+                  } catch (e) {
+                    return null;
+                  }
+                })
+                .where((r) => r != null)
+                .cast<TestResultModel>()
+                .toList();
+            return results;
+          }
+        } catch (e) {
+          if (!e.toString().contains('failed-precondition')) rethrow;
+          debugPrint(
+            '[TestResultService] Incremental index missing, falling back',
+          );
+        }
 
-      final results = snapshot.docs
-          .map((doc) {
-            try {
-              final data = doc.data();
-              data['id'] = doc.id;
-              return TestResultModel.fromJson(data);
-            } catch (e) {
-              debugPrint(
-                '[TestResultService] ❌ Error parsing result ${doc.id}: $e',
-              );
-              return null;
-            }
-          })
-          .where((r) => r != null)
-          .cast<TestResultModel>()
-          .toList();
-
-      debugPrint(
-        '[TestResultService] ✅ Incremental fetch complete: ${results.length} new results',
-      );
-      return results;
+        // 2. Fallback: Full sync if incremental fails (replaces incremental with a full poll since it's rare)
+        return await getPractitionerPatientResults(practitionerId);
+      } catch (e) {
+        debugPrint('[TestResultService] Incremental fetch error: $e');
+        return [];
+      }
     } catch (e) {
       debugPrint('[TestResultService] ❌ Incremental fetch ERROR: $e');
       return [];
@@ -981,41 +1004,135 @@ class TestResultService {
   }
 
   /// Get all test results for a practitioner's patients
+  /// OPTIMIZED: Uses collectionGroup for O(1) fetch, with O(N) fallback if index building
   Future<List<TestResultModel>> getPractitionerPatientResults(
     String practitionerId,
   ) async {
     try {
-      final authService = AuthService();
-      final practitioner = await authService.getUserData(practitionerId);
-      if (practitioner == null) return [];
+      debugPrint(
+        '[TestResultService] 📦 Fetching results for: $practitionerId',
+      );
 
-      final identity = practitioner.identityString;
+      // 1. Try optimized collectionGroup query
+      try {
+        final snapshot = await _firestore
+            .collectionGroup('tests')
+            .where('userId', isEqualTo: practitionerId)
+            .where('isDeleted', isEqualTo: false)
+            .orderBy('timestamp', descending: true)
+            .limit(300)
+            .get();
 
-      // Get all patient IDs linked to this practitioner
-      final patientsSnapshot = await _firestore
-          .collection('Practitioners')
-          .doc(identity)
-          .collection('patients')
-          .get();
-
-      final patientIds = patientsSnapshot.docs.map((d) => d.id).toList();
-
-      if (patientIds.isEmpty) return [];
-
-      // Get results for each patient
-      final List<TestResultModel> allResults = [];
-
-      for (final patientId in patientIds) {
-        final results = await getTestResults(patientId);
-        allResults.addAll(results);
+        if (snapshot.docs.isNotEmpty) {
+          final results = snapshot.docs
+              .map((doc) {
+                try {
+                  final data = doc.data();
+                  data['id'] = doc.id;
+                  return TestResultModel.fromJson(data);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .where((r) => r != null)
+              .cast<TestResultModel>()
+              .toList();
+          debugPrint(
+            '[TestResultService] ✅ Loaded ${results.length} results via collectionGroup',
+          );
+          return results;
+        }
+      } catch (e) {
+        if (!e.toString().contains('failed-precondition')) {
+          rethrow;
+        }
+        debugPrint(
+          '[TestResultService] ⚠️ Dashboard index missing/building, starting patient-by-patient fallback',
+        );
       }
 
-      // Sort by timestamp descending
-      allResults.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      // 2. FALLBACK: Patient-by-Patient lookup (Slow but 100% reliable without composite indexes)
+      if (_fallbackCache != null &&
+          _lastCacheTime != null &&
+          DateTime.now().difference(_lastCacheTime!).inSeconds < 30) {
+        debugPrint('[TestResultService] 🚀 Using in-memory fallback cache');
+        return _fallbackCache!;
+      }
 
-      return allResults;
+      final List<TestResultModel> allResults = [];
+      final auth = AuthService();
+      final pData = await auth.getUserData(practitionerId);
+
+      if (pData != null) {
+        final pPath = 'Practitioners/${pData.identityString}/patients';
+        final pDocs = await _firestore.collection(pPath).get();
+
+        // Optimized: Parallel fetch for all patients to significantly speed up slow connections
+        final List<Future<List<TestResultModel>>>
+        fetchFutures = pDocs.docs.map((pDoc) async {
+          final patient = PatientModel.fromFirestore(pDoc);
+          final List<TestResultModel> results = [];
+
+          try {
+            // Path 1: Practitioner-specific patient tests
+            final pTests = await _firestore
+                .collection(pPath)
+                .doc(patient.id)
+                .collection('tests')
+                .orderBy('timestamp', descending: true)
+                .get(const GetOptions(source: Source.serverAndCache));
+
+            for (final tDoc in pTests.docs) {
+              final data = tDoc.data();
+              data['id'] = tDoc.id;
+              results.add(TestResultModel.fromJson(data));
+            }
+
+            // Path 2: IdentifiedResults (for patients with their own accounts)
+            final iTests = await _firestore
+                .collection('IdentifiedResults')
+                .doc(patient.identityString)
+                .collection('tests')
+                .orderBy('timestamp', descending: true)
+                .get(const GetOptions(source: Source.serverAndCache));
+
+            for (final tDoc in iTests.docs) {
+              final data = tDoc.data();
+              data['id'] = tDoc.id;
+              // Prevent duplicates
+              if (!results.any((r) => r.id == tDoc.id)) {
+                results.add(TestResultModel.fromJson(data));
+              }
+            }
+          } catch (e) {
+            debugPrint(
+              '[TestResultService] ⚠️ Fallback fetch error for patient ${patient.id}: $e',
+            );
+          }
+          return results;
+        }).toList();
+
+        final resultsLists = await Future.wait(fetchFutures);
+        for (final list in resultsLists) {
+          allResults.addAll(list);
+        }
+      }
+
+      // Sort and deduplicate if necessary
+      allResults.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      final finalResults = allResults.take(300).toList();
+
+      // Update cache
+      _fallbackCache = finalResults;
+      _lastCacheTime = DateTime.now();
+
+      debugPrint(
+        '[TestResultService] ✅ Loaded ${finalResults.length} results via fallback',
+      );
+      return finalResults;
     } catch (e) {
-      throw Exception('Failed to get practitioner patient results: $e');
+      debugPrint('[TestResultService] ❌ Sync Error: $e');
+      return [];
     }
   }
 
@@ -1051,12 +1168,23 @@ class TestResultService {
   /// Get total count of results for a practitioner using Firestore aggregation
   Future<int> getPractitionerResultsCount(String practitionerId) async {
     try {
-      final snapshot = await _firestore
-          .collectionGroup('tests')
-          .where('userId', isEqualTo: practitionerId)
-          .count()
-          .get();
-      return snapshot.count ?? 0;
+      // 1. Try optimized query
+      try {
+        final snapshot = await _firestore
+            .collectionGroup('tests')
+            .where('userId', isEqualTo: practitionerId)
+            .where('isDeleted', isEqualTo: false)
+            .count()
+            .get();
+        return snapshot.count ?? 0;
+      } catch (e) {
+        if (!e.toString().contains('failed-precondition')) rethrow;
+        debugPrint('[TestResultService] Count index building, using fallback');
+      }
+
+      // 2. Fallback: Just get the full list and count it (since sync will do this anyway)
+      final results = await getPractitionerPatientResults(practitionerId);
+      return results.length;
     } catch (e) {
       debugPrint('[TestResultService] count error: $e');
       return 0;
@@ -1070,37 +1198,49 @@ class TestResultService {
     DocumentSnapshot? startAfter,
   }) async {
     try {
-      var query = _firestore
-          .collectionGroup('tests')
-          .where('userId', isEqualTo: practitionerId)
-          .orderBy('timestamp', descending: true)
-          .limit(limit);
+      // 1. Try optimized query
+      try {
+        var query = _firestore
+            .collectionGroup('tests')
+            .where('userId', isEqualTo: practitionerId)
+            .where('isDeleted', isEqualTo: false)
+            .orderBy('timestamp', descending: true)
+            .limit(limit);
 
-      if (startAfter != null) {
-        query = query.startAfterDocument(startAfter);
+        if (startAfter != null) {
+          query = query.startAfterDocument(startAfter);
+        }
+
+        final snapshot = await query.get();
+        if (snapshot.docs.isNotEmpty) {
+          _lastProcessedDoc = snapshot.docs.last;
+          return snapshot.docs
+              .map((doc) {
+                try {
+                  final data = doc.data();
+                  data['id'] = doc.id;
+                  return TestResultModel.fromJson(data);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .where((r) => r != null)
+              .cast<TestResultModel>()
+              .toList();
+        }
+        return [];
+      } catch (e) {
+        if (!e.toString().contains('failed-precondition')) rethrow;
+        debugPrint('[TestResultService] Paged index building, using fallback');
       }
 
-      final snapshot = await query.get();
-      _lastProcessedDoc = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
-
-      final results = snapshot.docs
-          .map((doc) {
-            try {
-              final data = doc.data();
-              data['id'] = doc.id;
-              return TestResultModel.fromJson(data);
-            } catch (e) {
-              debugPrint('[TestResultService] parse error: $e');
-              return null;
-            }
-          })
-          .where((r) => r != null)
-          .cast<TestResultModel>()
-          .toList();
-
-      return results;
+      // 2. Fallback: If paged fails, return the full set (usually small enough for fallback)
+      if (startAfter == null) {
+        return await getPractitionerPatientResults(practitionerId);
+      }
+      return [];
     } catch (e) {
-      debugPrint('[TestResultService] paged fetch error: $e');
+      debugPrint('[TestResultService] paged error: $e');
       return [];
     }
   }

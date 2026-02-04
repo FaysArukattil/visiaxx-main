@@ -104,12 +104,13 @@ class _PractitionerDashboardScreenState
         _allResults = storedResults;
         _applyFilters(storedResults);
         _isInitialLoading = false;
-        _isSyncing = true;
+        _isSyncing =
+            false; // Set to false initially, will be true during cloud sync
       });
     } else if (mounted) {
       setState(() {
         _isInitialLoading = true;
-        _isSyncing = true;
+        _isSyncing = true; // Will be true during cloud sync
         _filteredResults = [];
         _statistics = {};
       });
@@ -119,6 +120,9 @@ class _PractitionerDashboardScreenState
     await _resultsSubscription?.cancel();
 
     try {
+      // Ensure we have current role/identity resolved
+      await _authService.getCurrentUserRole();
+
       // 2. Load Patients & Hidden IDs FIRST (needed for filtering)
       final results = await Future.wait([
         _authService.getUserData(user.uid),
@@ -231,11 +235,21 @@ class _PractitionerDashboardScreenState
           }
           await persistence.saveResults(_allResults);
         } else {
-          // No data in cloud, try fallback
+          // No data in cloud or index building, try optimized parallel fallback
           debugPrint(
-            '[Dashboard] ⚠️ No cloud data, trying patient-by-patient...',
+            '[Dashboard] ⚠️ Cloud data/index check failed, using parallel fallback...',
           );
-          await _loadFallbackData(user.uid, userProfile);
+          final results = await _resultService.getPractitionerPatientResults(
+            user.uid,
+          );
+          if (mounted) {
+            setState(() {
+              _allResults = results;
+              _applyFilters(results);
+              _isInitialLoading = false;
+              _isSyncing = false;
+            });
+          }
         }
       }
 
@@ -251,51 +265,6 @@ class _PractitionerDashboardScreenState
         SnackbarUtils.showError(context, 'Sync failed. Using cached data.');
       }
     }
-  }
-
-  Future<void> _loadFallbackData(String userId, UserModel? userProfile) async {
-    final allPatientsResults = <TestResultModel>[];
-    final identity = userProfile?.identityString ?? userId;
-
-    final patientsCount = _patients.length;
-    if (patientsCount > 0) {
-      for (int i = 0; i < patientsCount; i++) {
-        final p = _patients[i];
-        final snapshot = await FirebaseFirestore.instance
-            .collection('Practitioners')
-            .doc(identity)
-            .collection('patients')
-            .doc(p.id)
-            .collection('tests')
-            .orderBy('timestamp', descending: true)
-            .get();
-
-        for (var doc in snapshot.docs) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          allPatientsResults.add(TestResultModel.fromJson(data));
-        }
-
-        if (mounted) {
-          setState(() {
-            _loadingProgress = (i + 1) / patientsCount;
-            _allResults = List.from(allPatientsResults);
-            _applyFilters(_allResults);
-          });
-        }
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isInitialLoading = false;
-        _isSyncing = false;
-        _loadingProgress = 1.0;
-      });
-    }
-
-    final persistence = DashboardPersistenceService();
-    await persistence.saveResults(_allResults);
   }
 
   void _setupRealtimeListeners(String userId) {

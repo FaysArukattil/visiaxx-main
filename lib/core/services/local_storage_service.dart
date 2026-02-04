@@ -6,6 +6,7 @@ import '../../data/models/user_model.dart';
 /// Service to handle local persistence for offline-first resilience
 class LocalStorageService {
   static const String _userKey = 'current_user_profile';
+  static const String _metadataPrefix = 'user_metadata_';
   static const String _awsKey = 'aws_credentials';
   static final LocalStorageService _instance = LocalStorageService._internal();
 
@@ -38,6 +39,28 @@ class LocalStorageService {
   Future<void> clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userKey);
+  }
+
+  /// Save user metadata (identityString and collection) for faster login lookup
+  Future<void> saveUserMetadata(
+    String uid,
+    Map<String, String> metadata,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('$_metadataPrefix$uid', jsonEncode(metadata));
+  }
+
+  /// Get user metadata if it exists
+  Future<Map<String, String>?> getUserMetadata(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('$_metadataPrefix$uid');
+    if (jsonString == null) return null;
+    try {
+      final Map<String, dynamic> data = jsonDecode(jsonString);
+      return data.map((key, value) => MapEntry(key, value.toString()));
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Save AWS credentials to local storage

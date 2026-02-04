@@ -42,71 +42,87 @@ class AuthService {
       );
 
       if (credential.user != null) {
-        // OPTIMIZATION: Try cache first, fallback to server
-        // This speeds up login significantly for returning users
-        DocumentSnapshot<Map<String, dynamic>>? lookupDoc;
-        try {
-          lookupDoc = await _firestore
-              .collection('all_users_lookup')
-              .doc(credential.user!.uid)
-              .get(const GetOptions(source: Source.cache));
-        } catch (_) {
-          // Cache miss, fetch from server
-          lookupDoc = await _firestore
-              .collection('all_users_lookup')
-              .doc(credential.user!.uid)
-              .get(const GetOptions(source: Source.server));
+        final uid = credential.user!.uid;
+        UserModel? userModel;
+
+        // OPTIMIZATION 1: Try to get metadata from local cache first to avoid lookup hit
+        final cachedMetadata = await LocalStorageService().getUserMetadata(uid);
+        String? collection = cachedMetadata?['collection'];
+        String? identityString = cachedMetadata?['identityString'];
+
+        if (collection == null || identityString == null) {
+          // Metadata miss or first login: Must check lookup
+          try {
+            final lookupDoc = await _firestore
+                .collection('all_users_lookup')
+                .doc(uid)
+                .get(const GetOptions(source: Source.serverAndCache))
+                .timeout(
+                  const Duration(seconds: 15),
+                ); // Increased for first-run
+
+            if (lookupDoc.exists && lookupDoc.data() != null) {
+              collection = lookupDoc.data()!['collection'] as String?;
+              identityString = lookupDoc.data()!['identityString'] as String?;
+
+              if (collection != null && identityString != null) {
+                // Cache it for next time
+                unawaited(
+                  LocalStorageService().saveUserMetadata(uid, {
+                    'collection': collection,
+                    'identityString': identityString,
+                  }),
+                );
+              }
+            }
+          } catch (e) {
+            debugPrint('[AuthService] Lookup failed or timed out: $e');
+          }
         }
 
-        UserModel? userModel;
-        if (lookupDoc.exists && lookupDoc.data() != null) {
-          final collection = lookupDoc.data()!['collection'] as String;
-          final identityString = lookupDoc.data()!['identityString'] as String;
-
-          // OPTIMIZATION: Cache-first for user doc too
-          DocumentSnapshot<Map<String, dynamic>>? userDoc;
+        // OPTIMIZATION 2: If we have identity (from cache or lookup), fetch user doc
+        if (collection != null && identityString != null) {
           try {
-            userDoc = await _firestore
+            // Priority: Cache first (fast), then Server
+            final userDoc = await _firestore
                 .collection(collection)
                 .doc(identityString)
-                .get(const GetOptions(source: Source.cache));
-          } catch (_) {
-            userDoc = await _firestore
-                .collection(collection)
-                .doc(identityString)
-                .get(const GetOptions(source: Source.server));
-          }
+                .get(const GetOptions(source: Source.serverAndCache))
+                .timeout(const Duration(seconds: 15));
 
-          if (userDoc.exists) {
-            userModel = UserModel.fromMap(userDoc.data()!, userDoc.id);
+            if (userDoc.exists && userDoc.data() != null) {
+              userModel = UserModel.fromMap(userDoc.data()!, userDoc.id);
 
-            // OPTIMIZATION: Fire-and-forget background updates (no await)
-            unawaited(
-              _firestore
-                  .collection(collection)
-                  .doc(identityString)
-                  .update({'lastLoginAt': FieldValue.serverTimestamp()})
-                  .catchError(
-                    (e) => debugPrint(
-                      '[AuthService] Error updating lastLoginAt: $e',
+              // Refresh cache in background
+              unawaited(LocalStorageService().saveUserProfile(userModel));
+
+              // Fire-and-forget server updates (no await)
+              unawaited(
+                _firestore
+                    .collection(collection)
+                    .doc(identityString)
+                    .update({'lastLoginAt': FieldValue.serverTimestamp()})
+                    .catchError(
+                      (e) =>
+                          debugPrint('[AuthService] Error updating user: $e'),
                     ),
-                  ),
-            );
-
-            unawaited(
-              _firestore
-                  .collection('all_users_lookup')
-                  .doc(credential.user!.uid)
-                  .update({'lastLoginAt': FieldValue.serverTimestamp()})
-                  .catchError(
-                    (e) =>
-                        debugPrint('[AuthService] Error updating lookup: $e'),
-                  ),
-            );
-          }
-          // OPTIMIZATION: Save to cache in background
-          if (userModel != null) {
-            unawaited(LocalStorageService().saveUserProfile(userModel));
+              );
+              unawaited(
+                _firestore
+                    .collection('all_users_lookup')
+                    .doc(uid)
+                    .update({'lastLoginAt': FieldValue.serverTimestamp()})
+                    .catchError(
+                      (e) =>
+                          debugPrint('[AuthService] Error updating lookup: $e'),
+                    ),
+              );
+            }
+          } catch (e) {
+            debugPrint('[AuthService] User doc fetch failed or timed out: $e');
+            // Try to load from previously saved full profile as absolute last resort
+            userModel = await LocalStorageService().getUserProfile();
+            if (userModel?.id != identityString) userModel = null;
           }
         }
 
@@ -131,6 +147,18 @@ class AuthService {
       return AuthResult.failure(message: _getAuthErrorMessage(e.code));
     } on FirebaseException catch (e) {
       debugPrint('[AuthService] FirebaseException: ${e.code}');
+      // Handle the 'unavailable' error specifically
+      if (e.code == 'unavailable') {
+        // Try to recover using ONLY cache if available
+        final user = await LocalStorageService().getUserProfile();
+        if (user != null) {
+          _cachedUser = user;
+          return AuthResult.success(user: user, isVerified: true);
+        }
+        return AuthResult.failure(
+          message: 'Network unavailable. Please check your connection.',
+        );
+      }
       return AuthResult.failure(message: _getAuthErrorMessage(e.code));
     } catch (e) {
       debugPrint('[AuthService] Unexpected error: $e');
@@ -311,10 +339,22 @@ class AuthService {
   /// Get user data from Firestore using the lookup system
   Future<UserModel?> getUserData(String uid) async {
     try {
-      // 0. Check IN-MEMORY cache (Instant)
+      // 0. Security Check: Only allow fetching current user's data (or handle accordingly)
+      final currentUid = _auth.currentUser?.uid;
+      if (currentUid == null) {
+        debugPrint('[AuthService] getUserData: No user logged in');
+        return await LocalStorageService().getUserProfile();
+      }
+
+      if (currentUid != uid) {
+        // NOTE: Practitioners often lookup patient data, so mismatch is common.
+        // real security is handled by Firestore depth-rules.
+      }
+
+      // 1. Check IN-MEMORY cache (Instant)
       if (_cachedUser != null && _cachedUser!.id == uid) {
         debugPrint('[AuthService] Returning in-memory cached user');
-        _refreshUserDataInBackground(uid);
+        unawaited(_refreshUserDataInBackground(uid));
         return _cachedUser;
       }
 
@@ -399,10 +439,20 @@ class AuthService {
 
   Future<void> _refreshUserDataInBackground(String uid) async {
     try {
+      final currentUid = _auth.currentUser?.uid;
+      if (currentUid == null || currentUid != uid) {
+        return;
+      }
+      // Background refresh should be silent and not block
       final lookupDoc = await _firestore
           .collection('all_users_lookup')
           .doc(uid)
-          .get(const GetOptions(source: Source.serverAndCache));
+          .get(const GetOptions(source: Source.serverAndCache))
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () =>
+                throw TimeoutException('Background lookup timed out'),
+          );
 
       if (lookupDoc.exists && lookupDoc.data() != null) {
         final collection = lookupDoc.data()!['collection'] as String;

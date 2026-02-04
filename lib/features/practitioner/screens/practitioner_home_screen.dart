@@ -103,42 +103,45 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
 
       // Only full sync if cache is older than 5 minutes or missing
       if (lastSync == null || now.difference(lastSync).inMinutes > 5) {
-        // Incremental sync if we have some data
-        if (lastSync != null) {
-          final newResults = await resultService
-              .getPractitionerResultsIncremental(
-                practitionerId: practitionerId,
-                since: lastSync,
-              );
-          if (newResults.isNotEmpty) {
-            final cached = await persistence.getStoredResults();
-            final Map<String, dynamic> mergedMap = {
-              for (var r in cached) r.id: r,
-            };
-            for (var r in newResults) {
-              mergedMap[r.id] = r;
-            }
-            final merged = mergedMap.values.toList()
-              ..sort(
-                (a, b) => (b as dynamic).timestamp.compareTo(
-                  (a as dynamic).timestamp,
-                ),
-              );
-            await persistence.saveResults(merged.cast());
-          }
-        } else {
-          // Full sync for first time
-          final results = await resultService.getPractitionerPatientResults(
-            practitionerId,
-          );
-          if (results.isNotEmpty) {
-            await persistence.saveResults(results);
-          }
-        }
-        debugPrint('[PractitionerHomeScreen] ✅ Dashboard preload complete');
+        // Full sync is now VERY fast (O(1) collection hit)
+        final results = await resultService.getPractitionerPatientResults(
+          practitionerId,
+        );
+
+        // Save cleaned results to cache
+        await persistence.saveResults(results);
+        debugPrint('[PractitionerHomeScreen] ✅ Dashboard full sync complete');
       } else {
+        // Cache is recent, but let's do an incremental sync
+        final newResults = await resultService
+            .getPractitionerResultsIncremental(
+              practitionerId: practitionerId,
+              since: lastSync,
+            );
+
+        if (newResults.isNotEmpty) {
+          final cached = await persistence.getStoredResults();
+          final Map<String, dynamic> mergedMap = {
+            for (var r in cached) r.id: r,
+          };
+          for (var r in newResults) {
+            mergedMap[r.id] = r;
+          }
+
+          final merged =
+              mergedMap.values
+                  .where((r) => !(r as dynamic).isDeleted) // Extra safety check
+                  .toList()
+                ..sort(
+                  (a, b) => (b as dynamic).timestamp.compareTo(
+                    (a as dynamic).timestamp,
+                  ),
+                );
+
+          await persistence.saveResults(merged.cast());
+        }
         debugPrint(
-          '[PractitionerHomeScreen] ⏭️ Cache is recent, skipping preload',
+          '[PractitionerHomeScreen] ⏭️ Dashboard incremental sync complete',
         );
       }
     } catch (e) {

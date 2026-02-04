@@ -10,12 +10,26 @@ class PatientService {
   /// Get the organized collection path for patients under a practitioner
   Future<String> _patientsPath(String practitionerId) async {
     final authService = AuthService();
-    final practitioner = await authService.getUserData(practitionerId);
-    if (practitioner == null) {
-      // Fallback for safety, though it shouldn't be hit with correct usage
-      return 'Practitioners/$practitionerId/patients';
+
+    // Check for cached user profile first - it's fastest and has the identityString
+    final cachedUser = await authService.getUserData(practitionerId);
+    if (cachedUser != null && cachedUser.identityString.isNotEmpty) {
+      return 'Practitioners/${cachedUser.identityString}/patients';
     }
-    return 'Practitioners/${practitioner.identityString}/patients';
+
+    // If not in cache, we try one more time to get metadata specifically
+    await authService
+        .getCurrentUserRole(); // This will trigger lookup if needed
+    final userAgain = await authService.getUserData(practitionerId);
+    if (userAgain != null && userAgain.identityString.isNotEmpty) {
+      return 'Practitioners/${userAgain.identityString}/patients';
+    }
+
+    // CRITICAL: Falling back to UID is usually wrong as data is keyed by identityString
+    // throw if we can't find it to trigger a retry or error state rather than showing "0 data"
+    throw Exception(
+      'Could not resolve practitioner identity for path: $practitionerId',
+    );
   }
 
   /// Get all patients for a practitioner
@@ -24,21 +38,53 @@ class PatientService {
       debugPrint('[PatientService] Loading patients for: $practitionerId');
       final path = await _patientsPath(practitionerId);
 
-      final snapshot = await _firestore
+      // STRATEGY: Try optimized query first. Fallback if index missing.
+      try {
+        final snapshot = await _firestore
+            .collection(path)
+            .where('isDeleted', isEqualTo: false)
+            .orderBy('createdAt', descending: true)
+            .get();
+
+        final patients = snapshot.docs
+            .map((doc) => PatientModel.fromFirestore(doc))
+            .toList();
+
+        if (patients.isNotEmpty) {
+          debugPrint(
+            '[PatientService] ✅ Loaded ${patients.length} patients via optimized query',
+          );
+          return patients;
+        }
+      } catch (e) {
+        if (!e.toString().contains('failed-precondition')) {
+          rethrow; // Rethrow real errors, only handle index errors here
+        }
+        debugPrint(
+          '[PatientService] ⚠️ Index still building, falling back to in-memory filter',
+        );
+      }
+
+      // FALLBACK: Fetch all and filter in memory to handle missing 'isDeleted' field on old data
+      final fallbackSnapshot = await _firestore
           .collection(path)
           .orderBy('createdAt', descending: true)
           .get();
 
-      final patients = snapshot.docs
+      final patients = fallbackSnapshot.docs
           .map((doc) => PatientModel.fromFirestore(doc))
-          .where((p) => !p.isDeleted)
+          .where(
+            (p) => !p.isDeleted,
+          ) // Handle documents without the field (default false)
           .toList();
 
-      debugPrint('[PatientService] … Loaded ${patients.length} patients');
+      debugPrint(
+        '[PatientService] ✅ Loaded ${patients.length} patients via fallback',
+      );
       return patients;
     } catch (e) {
-      debugPrint('[PatientService] Œ Error loading patients: $e');
-      rethrow;
+      debugPrint('[PatientService] ❌ Error loading patients: $e');
+      throw Exception('Failed to load patients: $e');
     }
   }
 
@@ -116,17 +162,45 @@ class PatientService {
     }
   }
 
-  /// Delete a patient
+  /// Delete a patient (Cascading Soft-Delete)
   Future<void> deletePatient(String practitionerId, String patientId) async {
     try {
-      debugPrint('[PatientService] Soft deleting patient: $patientId');
+      debugPrint(
+        '[PatientService] Soft deleting patient and tests: $patientId',
+      );
       final path = await _patientsPath(practitionerId);
+      final batch = _firestore.batch();
 
-      await _firestore.collection(path).doc(patientId).update({
+      // 1. Soft-delete the patient document
+      batch.update(_firestore.collection(path).doc(patientId), {
         'isDeleted': true,
       });
 
-      debugPrint('[PatientService] … Soft deleted patient: $patientId');
+      // 2. Soft-delete all test results for this patient (Subcollection)
+      final testsSnapshot = await _firestore
+          .collection(path)
+          .doc(patientId)
+          .collection('tests')
+          .get();
+
+      for (final testDoc in testsSnapshot.docs) {
+        batch.update(testDoc.reference, {'isDeleted': true});
+      }
+
+      // 3. Soft-delete any test results in collectionGroup (Identify results)
+      // Note: This matches results that might have been mirrored
+      final groupSnapshot = await _firestore
+          .collectionGroup('tests')
+          .where('userId', isEqualTo: practitionerId)
+          .where('profileId', isEqualTo: patientId)
+          .get();
+
+      for (final doc in groupSnapshot.docs) {
+        batch.update(doc.reference, {'isDeleted': true});
+      }
+
+      await batch.commit();
+      debugPrint('[PatientService] … Soft delete complete');
     } catch (e) {
       debugPrint('[PatientService]  Œ Error deleting patient: $e');
       rethrow;
