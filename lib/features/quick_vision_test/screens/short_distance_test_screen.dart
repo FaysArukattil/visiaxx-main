@@ -145,6 +145,11 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
 
   void _showExitConfirmation() {
     _isPausedForExit = true;
+    // Pause all test activities
+    _readingCountdownTimer?.cancel();
+    _silenceTimer?.cancel();
+    _ttsService.stop();
+    _isSpeechActive = false;
     setState(() {});
 
     showDialog(
@@ -156,6 +161,12 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
           title: 'Exit Reading Test?',
           onContinue: () {
             _isPausedForExit = false;
+            // Resume test - restart timer if we were in a test
+            if (_waitingForResponse) {
+              _startReadingCountdown();
+              _isSpeechActive = true;
+            }
+            setState(() {});
           },
           onRestart: () {
             _isPausedForExit = false;
@@ -360,8 +371,8 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
       _lastResultCorrect = isCorrect;
     });
 
-    // STAY "STUCK" LONGER ON FAILURES: 3 seconds if incorrect/blurry, 1 second if correct
-    final nextLevelDelay = isCorrect ? 1000 : 3000;
+    // Stay a bit longer on failures for user to see the feedback
+    final nextLevelDelay = isCorrect ? 1000 : 1500;
 
     Future.delayed(Duration(milliseconds: nextLevelDelay), () {
       if (!mounted) {

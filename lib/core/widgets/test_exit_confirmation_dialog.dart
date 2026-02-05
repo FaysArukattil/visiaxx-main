@@ -600,6 +600,7 @@ class _TestExitConfirmationDialogState
                 )
               : Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
                       width: 56,
@@ -648,61 +649,64 @@ class _TestExitConfirmationDialogState
                       ),
                     ),
                     const SizedBox(height: 32),
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: _hideConfirm,
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              foregroundColor: context.textSecondary,
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (isSaveAndExit) {
+                              if (mounted) {
+                                Navigator.pop(context);
+                                widget.onSaveAndExit?.call();
+                              }
+                            } else if (isExit) {
+                              await DataCleanupService.cleanupTestData(context);
+                              if (mounted) {
+                                Navigator.pop(context);
+                                widget.onExit();
+                              }
+                            } else {
+                              Navigator.pop(context);
+                              widget.onRestart();
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isSaveAndExit
+                                ? context.success
+                                : (isExit ? context.error : context.warning),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            child: const Text(
-                              'No, Go Back',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          child: Text(
+                            isSaveAndExit
+                                ? 'Yes, Save & Exit'
+                                : (isExit ? 'Yes, Exit' : 'Yes, Restart'),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              if (isSaveAndExit) {
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                  widget.onSaveAndExit?.call();
-                                }
-                              } else if (isExit) {
-                                await DataCleanupService.cleanupTestData(
-                                  context,
-                                );
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                  widget.onExit();
-                                }
-                              } else {
-                                Navigator.pop(context);
-                                widget.onRestart();
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isSaveAndExit
-                                  ? context.success
-                                  : (isExit ? context.error : context.warning),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: _hideConfirm,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            foregroundColor: context.textSecondary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Text(
-                              isSaveAndExit
-                                  ? 'Yes, Save & Exit'
-                                  : (isExit ? 'Yes, Exit' : 'Yes, Restart'),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          ),
+                          child: const Text(
+                            'No, Go Back',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
                             ),
                           ),
                         ),
