@@ -9,6 +9,8 @@ class TestExitConfirmationDialog extends StatefulWidget {
   final VoidCallback onContinue;
   final VoidCallback onRestart;
   final VoidCallback onExit;
+  final VoidCallback? onSaveAndExit;
+  final bool hasCompletedTests;
   final String title;
   final String content;
 
@@ -17,6 +19,8 @@ class TestExitConfirmationDialog extends StatefulWidget {
     required this.onContinue,
     required this.onRestart,
     required this.onExit,
+    this.onSaveAndExit,
+    this.hasCompletedTests = false,
     this.title = 'Exit Test?',
     this.content = 'Your progress will be lost. What would you like to do?',
   });
@@ -172,11 +176,24 @@ class _TestExitConfirmationDialogState
                             icon: Icons.refresh_rounded,
                             label: 'Restart Test',
                           ),
+                          // Show Save & Exit if there are completed tests
+                          if (widget.hasCompletedTests &&
+                              widget.onSaveAndExit != null) ...[
+                            const SizedBox(height: 8),
+                            _buildButton(
+                              onPressed: () => _showConfirm('saveAndExit'),
+                              icon: Icons.save_rounded,
+                              label: 'Save & Exit',
+                              isSaveExit: true,
+                            ),
+                          ],
                           const SizedBox(height: 8),
                           _buildButton(
                             onPressed: () => _showConfirm('exit'),
                             icon: Icons.logout_rounded,
-                            label: 'Exit Test',
+                            label: widget.hasCompletedTests
+                                ? 'Exit Without Saving'
+                                : 'Exit Test',
                             isError: true,
                           ),
                         ],
@@ -270,10 +287,36 @@ class _TestExitConfirmationDialogState
                           ),
                         ),
                         const SizedBox(height: 12),
+                        // Show Save & Exit if there are completed tests
+                        if (widget.hasCompletedTests &&
+                            widget.onSaveAndExit != null)
+                          OutlinedButton.icon(
+                            onPressed: () => _showConfirm('saveAndExit'),
+                            icon: const Icon(Icons.save_rounded, size: 20),
+                            label: const Text('Save & Exit'),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: context.success.withValues(alpha: 0.3),
+                                width: 1.5,
+                              ),
+                              foregroundColor: context.success,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        if (widget.hasCompletedTests &&
+                            widget.onSaveAndExit != null)
+                          const SizedBox(height: 12),
                         TextButton.icon(
                           onPressed: () => _showConfirm('exit'),
                           icon: const Icon(Icons.logout_rounded, size: 20),
-                          label: const Text('Exit & Lose Progress'),
+                          label: Text(
+                            widget.hasCompletedTests
+                                ? 'Exit Without Saving'
+                                : 'Exit & Lose Progress',
+                          ),
                           style: TextButton.styleFrom(
                             foregroundColor: context.error,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -367,6 +410,7 @@ class _TestExitConfirmationDialogState
     required String label,
     bool isPrimary = false,
     bool isError = false,
+    bool isSaveExit = false,
   }) {
     if (isPrimary) {
       return ElevatedButton.icon(
@@ -385,7 +429,9 @@ class _TestExitConfirmationDialogState
       );
     }
 
-    final color = isError ? context.error : context.warning;
+    final color = isSaveExit
+        ? context.success
+        : (isError ? context.error : context.warning);
 
     return OutlinedButton.icon(
       onPressed: onPressed,
@@ -403,10 +449,15 @@ class _TestExitConfirmationDialogState
 
   Widget _buildConfirmationView() {
     final isExit = _confirmAction == 'exit';
-    final actionTitle = isExit ? 'Exit Test?' : 'Restart Test?';
-    final actionSub = isExit
-        ? 'Are you sure you want to end this session? All progress will be lost.'
-        : 'Are you sure you want to start over? Current progress will be reset.';
+    final isSaveAndExit = _confirmAction == 'saveAndExit';
+    final actionTitle = isSaveAndExit
+        ? 'Save & Exit?'
+        : (isExit ? 'Exit Test?' : 'Restart Test?');
+    final actionSub = isSaveAndExit
+        ? 'Completed tests will be saved. The current test in progress will not be saved.'
+        : (isExit
+              ? 'Are you sure you want to end this session? All progress will be lost.'
+              : 'Are you sure you want to start over? Current progress will be reset.');
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
 
@@ -441,15 +492,24 @@ class _TestExitConfirmationDialogState
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: (isExit ? context.error : context.warning)
-                                  .withValues(alpha: 0.1),
+                              color:
+                                  (isSaveAndExit
+                                          ? context.success
+                                          : (isExit
+                                                ? context.error
+                                                : context.warning))
+                                      .withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              isExit
-                                  ? Icons.dangerous_rounded
-                                  : Icons.help_outline_rounded,
-                              color: isExit ? context.error : context.warning,
+                              isSaveAndExit
+                                  ? Icons.save_rounded
+                                  : (isExit
+                                        ? Icons.dangerous_rounded
+                                        : Icons.help_outline_rounded),
+                              color: isSaveAndExit
+                                  ? context.success
+                                  : (isExit ? context.error : context.warning),
                               size: 24,
                             ),
                           ),
@@ -483,7 +543,12 @@ class _TestExitConfirmationDialogState
                         children: [
                           ElevatedButton(
                             onPressed: () async {
-                              if (isExit) {
+                              if (isSaveAndExit) {
+                                if (mounted) {
+                                  Navigator.pop(context);
+                                  widget.onSaveAndExit?.call();
+                                }
+                              } else if (isExit) {
                                 await DataCleanupService.cleanupTestData(
                                   context,
                                 );
@@ -497,9 +562,9 @@ class _TestExitConfirmationDialogState
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isExit
-                                  ? context.error
-                                  : context.warning,
+                              backgroundColor: isSaveAndExit
+                                  ? context.success
+                                  : (isExit ? context.error : context.warning),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               minimumSize: const Size(double.infinity, 50),
@@ -508,7 +573,9 @@ class _TestExitConfirmationDialogState
                               ),
                             ),
                             child: Text(
-                              isExit ? 'Yes, Exit' : 'Yes, Restart',
+                              isSaveAndExit
+                                  ? 'Yes, Save & Exit'
+                                  : (isExit ? 'Yes, Exit' : 'Yes, Restart'),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -538,15 +605,24 @@ class _TestExitConfirmationDialogState
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: (isExit ? context.error : context.warning)
-                            .withValues(alpha: 0.1),
+                        color:
+                            (isSaveAndExit
+                                    ? context.success
+                                    : (isExit
+                                          ? context.error
+                                          : context.warning))
+                                .withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        isExit
-                            ? Icons.dangerous_rounded
-                            : Icons.help_outline_rounded,
-                        color: isExit ? context.error : context.warning,
+                        isSaveAndExit
+                            ? Icons.save_rounded
+                            : (isExit
+                                  ? Icons.dangerous_rounded
+                                  : Icons.help_outline_rounded),
+                        color: isSaveAndExit
+                            ? context.success
+                            : (isExit ? context.error : context.warning),
                         size: 28,
                       ),
                     ),
@@ -591,7 +667,12 @@ class _TestExitConfirmationDialogState
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () async {
-                              if (isExit) {
+                              if (isSaveAndExit) {
+                                if (mounted) {
+                                  Navigator.pop(context);
+                                  widget.onSaveAndExit?.call();
+                                }
+                              } else if (isExit) {
                                 await DataCleanupService.cleanupTestData(
                                   context,
                                 );
@@ -605,9 +686,9 @@ class _TestExitConfirmationDialogState
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isExit
-                                  ? context.error
-                                  : context.warning,
+                              backgroundColor: isSaveAndExit
+                                  ? context.success
+                                  : (isExit ? context.error : context.warning),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               elevation: 0,
@@ -616,7 +697,9 @@ class _TestExitConfirmationDialogState
                               ),
                             ),
                             child: Text(
-                              isExit ? 'Yes, Exit' : 'Yes, Restart',
+                              isSaveAndExit
+                                  ? 'Yes, Save & Exit'
+                                  : (isExit ? 'Yes, Exit' : 'Yes, Restart'),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),

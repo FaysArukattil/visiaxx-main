@@ -1755,23 +1755,32 @@ class _MobileRefractometryTestScreenState
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => TestExitConfirmationDialog(
-        onContinue: () {
-          setState(() => _isTestPausedForDistance = false);
-          _startContinuousDistanceMonitoring();
-          if (_currentPhase == RefractPhase.test && _waitingForResponse) {
-            _startRoundTimer();
-          } else if (_currentPhase == RefractPhase.relaxation) {
-            _startRelaxationTimer();
-          }
-        },
-        onRestart: () {
-          _restartTest();
-        },
-        onExit: () async {
-          await NavigationUtils.navigateHome(context);
-        },
-      ),
+      builder: (dialogContext) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          onContinue: () {
+            setState(() => _isTestPausedForDistance = false);
+            _startContinuousDistanceMonitoring();
+            if (_currentPhase == RefractPhase.test && _waitingForResponse) {
+              _startRoundTimer();
+            } else if (_currentPhase == RefractPhase.relaxation) {
+              _startRelaxationTimer();
+            }
+          },
+          onRestart: () {
+            _restartTest();
+          },
+          onExit: () async {
+            await NavigationUtils.navigateHome(context);
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () {
+                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+                }
+              : null,
+        );
+      },
     );
   }
 }

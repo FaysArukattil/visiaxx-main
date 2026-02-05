@@ -282,17 +282,26 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => TestExitConfirmationDialog(
-        onContinue: () {
-          _resumeTestFromDialog();
-        },
-        onRestart: () {
-          _restartCurrentTest();
-        },
-        onExit: () async {
-          await NavigationUtils.navigateHome(context);
-        },
-      ),
+      builder: (dialogContext) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          onContinue: () {
+            _resumeTestFromDialog();
+          },
+          onRestart: () {
+            _restartCurrentTest();
+          },
+          onExit: () async {
+            await NavigationUtils.navigateHome(context);
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () {
+                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+                }
+              : null,
+        );
+      },
     ).then((_) {
       if (mounted && _isPausedForExit) {
         _resumeTestFromDialog();

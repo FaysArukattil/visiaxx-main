@@ -248,6 +248,29 @@ class TestSessionProvider extends ChangeNotifier {
     return quickTestsComplete;
   }
 
+  /// Check if at least one test has been fully completed (for partial save on exit)
+  bool get hasAnyCompletedTest {
+    // Visual Acuity requires both eyes to be considered complete
+    final hasVA = _visualAcuityRight != null && _visualAcuityLeft != null;
+    // Color Vision is a single test
+    final hasColorVision = _colorVision != null;
+    // Amsler requires both eyes to be considered complete
+    final hasAmsler = _amslerGridRight != null && _amslerGridLeft != null;
+    // Short distance / Reading test
+    final hasShortDistance = _shortDistance != null;
+    // Pelli-Robson (comprehensive only)
+    final hasPelliRobson = _pelliRobson != null;
+    // Mobile Refractometry (comprehensive only)
+    final hasRefractometry = _mobileRefractometry != null;
+
+    return hasVA ||
+        hasColorVision ||
+        hasAmsler ||
+        hasShortDistance ||
+        hasPelliRobson ||
+        hasRefractometry;
+  }
+
   /// Get test duration in seconds
   int get testDurationSeconds {
     if (_testStartTime == null) return 0;

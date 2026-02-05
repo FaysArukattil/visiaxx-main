@@ -150,20 +150,29 @@ class _ShortDistanceTestScreenState extends State<ShortDistanceTestScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => TestExitConfirmationDialog(
-        title: 'Exit Reading Test?',
-        onContinue: () {
-          _isPausedForExit = false;
-        },
-        onRestart: () {
-          _isPausedForExit = false;
-          _resetTest();
-        },
-        onExit: () {
-          _distanceService.stopMonitoring();
-          Navigator.of(context).pop();
-        },
-      ),
+      builder: (dialogContext) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          title: 'Exit Reading Test?',
+          onContinue: () {
+            _isPausedForExit = false;
+          },
+          onRestart: () {
+            _isPausedForExit = false;
+            _resetTest();
+          },
+          onExit: () {
+            _distanceService.stopMonitoring();
+            Navigator.of(context).pop();
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () {
+                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+                }
+              : null,
+        );
+      },
     );
   }
 
