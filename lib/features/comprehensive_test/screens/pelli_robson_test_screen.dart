@@ -691,8 +691,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     if (!_isTestActive ||
         _isTestPausedForDistance ||
         _isPausedForExit ||
-        _isSubmitting)
+        _isSubmitting) {
       return;
+    }
 
     // Sanitize input: lowercase, trim, and remove punctuation (especially apostrophes)
     final sanitized = text
