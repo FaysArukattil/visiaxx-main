@@ -224,22 +224,31 @@ class _BothEyesOpenInstructionScreenState
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => TestExitConfirmationDialog(
-        onContinue: () {
-          setState(() => _isPaused = false);
-        },
-        onRestart: () {
-          setState(() {
-            _isPaused = false;
-            _countdown = 3;
-          });
-          _startCountdown();
-          _ttsService.speak(widget.ttsMessage, speechRate: 0.5);
-        },
-        onExit: () async {
-          await NavigationUtils.navigateHome(context);
-        },
-      ),
+      builder: (context) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          onContinue: () {
+            setState(() => _isPaused = false);
+          },
+          onRestart: () {
+            setState(() {
+              _isPaused = false;
+              _countdown = 3;
+            });
+            _startCountdown();
+            _ttsService.speak(widget.ttsMessage, speechRate: 0.5);
+          },
+          onExit: () async {
+            await NavigationUtils.navigateHome(context);
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () {
+                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+                }
+              : null,
+        );
+      },
     );
   }
 

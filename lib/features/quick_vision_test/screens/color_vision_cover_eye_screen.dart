@@ -7,6 +7,8 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../../../data/providers/test_session_provider.dart';
+import 'package:provider/provider.dart';
 
 class ColorVisionCoverEyeScreen extends StatefulWidget {
   final String eyeToCover; // 'left' or 'right'
@@ -156,23 +158,32 @@ class _ColorVisionCoverEyeScreenState extends State<ColorVisionCoverEyeScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => TestExitConfirmationDialog(
-        onContinue: () {
-          setState(() => _isPaused = false);
-          _startCountdown();
-        },
-        onRestart: () {
-          setState(() {
-            _isPaused = false;
-            _countdown = 3;
-          });
-          _startCountdown();
-          _initializeTts();
-        },
-        onExit: () async {
-          await NavigationUtils.navigateHome(context);
-        },
-      ),
+      builder: (context) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          onContinue: () {
+            setState(() => _isPaused = false);
+            _startCountdown();
+          },
+          onRestart: () {
+            setState(() {
+              _isPaused = false;
+              _countdown = 3;
+            });
+            _startCountdown();
+            _initializeTts();
+          },
+          onExit: () async {
+            await NavigationUtils.navigateHome(context);
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () {
+                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+                }
+              : null,
+        );
+      },
     );
   }
 

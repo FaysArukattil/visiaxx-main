@@ -45,27 +45,36 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (dialogContext) => TestExitConfirmationDialog(
-            onContinue: () {
-              // Just close the dialog
-            },
-            onRestart: () {
-              // For comprehensive results, "Restart" could mean restarting the whole process
-              // or just the last test. Usually, going back to comprehensive-test is safer.
-              provider.reset();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/comprehensive-test',
-                (route) => false,
-              );
-            },
-            onExit: () async {
-              await _navigateHome();
-              if (mounted) {
+          builder: (dialogContext) {
+            final provider = context.read<TestSessionProvider>();
+            return TestExitConfirmationDialog(
+              onContinue: () {
+                // Just close the dialog
+              },
+              onRestart: () {
+                // For comprehensive results, "Restart" could mean restarting the whole process
+                // or just the last test. Usually, going back to comprehensive-test is safer.
                 provider.reset();
-              }
-            },
-          ),
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/comprehensive-test',
+                  (route) => false,
+                );
+              },
+              onExit: () async {
+                await _navigateHome();
+                if (mounted) {
+                  provider.reset();
+                }
+              },
+              hasCompletedTests: provider.hasAnyCompletedTest,
+              onSaveAndExit: provider.hasAnyCompletedTest
+                  ? () {
+                      Navigator.of(dialogContext).pop();
+                    }
+                  : null,
+            );
+          },
         );
       },
       child: Scaffold(

@@ -228,23 +228,33 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (dialogContext) => TestExitConfirmationDialog(
-              onContinue: () {},
-              onRestart: () {
-                provider.resetKeepProfile();
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/quick-test',
-                  (route) => false,
-                );
-              },
-              onExit: () async {
-                await _navigateHome();
-                if (mounted) {
-                  provider.reset();
-                }
-              },
-            ),
+            builder: (dialogContext) {
+              final provider = context.read<TestSessionProvider>();
+              return TestExitConfirmationDialog(
+                onContinue: () {},
+                onRestart: () {
+                  provider.resetKeepProfile();
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/quick-test',
+                    (route) => false,
+                  );
+                },
+                onExit: () async {
+                  await _navigateHome();
+                  if (mounted) {
+                    provider.reset();
+                  }
+                },
+                hasCompletedTests: provider.hasAnyCompletedTest,
+                onSaveAndExit: provider.hasAnyCompletedTest
+                    ? () {
+                        Navigator.of(dialogContext).pop();
+                        // Already on results screen, just stay or refresh
+                      }
+                    : null,
+              );
+            },
           );
         }
       },

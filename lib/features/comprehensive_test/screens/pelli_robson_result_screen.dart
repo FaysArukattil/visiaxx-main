@@ -55,21 +55,33 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => TestExitConfirmationDialog(
-        onContinue: () {
-          _resumeFromDialog();
-        },
-        onRestart: () {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/pelli-robson-test',
-            (route) => false,
-          );
-        },
-        onExit: () async {
-          await NavigationUtils.navigateHome(context);
-        },
-      ),
+      builder: (dialogContext) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          onContinue: () {
+            _resumeFromDialog();
+          },
+          onRestart: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/pelli-robson-test',
+              (route) => false,
+            );
+          },
+          onExit: () async {
+            await NavigationUtils.navigateHome(context);
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () {
+                  Navigator.pushReplacementNamed(
+                    context,
+                    '/comprehensive-test-result',
+                  );
+                }
+              : null,
+        );
+      },
     ).then((_) {
       if (mounted && _isPausedForExit) {
         _resumeFromDialog();

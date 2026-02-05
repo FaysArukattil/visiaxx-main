@@ -6,6 +6,8 @@ import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../widgets/instruction_animations.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../data/providers/test_session_provider.dart';
+import 'package:provider/provider.dart';
 
 class DistanceTransitionScreen extends StatefulWidget {
   final String title;
@@ -91,23 +93,32 @@ class _DistanceTransitionScreenState extends State<DistanceTransitionScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => TestExitConfirmationDialog(
-        onContinue: () {
-          setState(() => _isPaused = false);
-        },
-        onRestart: () {
-          setState(() {
-            _isPaused = false;
-            _progress = 0.0;
-            _secondsRemaining = _totalSeconds;
-          });
-          _startTimer();
-          _ttsService.speak(widget.instruction, speechRate: 0.5);
-        },
-        onExit: () async {
-          await NavigationUtils.navigateHome(context);
-        },
-      ),
+      builder: (context) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          onContinue: () {
+            setState(() => _isPaused = false);
+          },
+          onRestart: () {
+            setState(() {
+              _isPaused = false;
+              _progress = 0.0;
+              _secondsRemaining = _totalSeconds;
+            });
+            _startTimer();
+            _ttsService.speak(widget.instruction, speechRate: 0.5);
+          },
+          onExit: () async {
+            await NavigationUtils.navigateHome(context);
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () {
+                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+                }
+              : null,
+        );
+      },
     );
   }
 

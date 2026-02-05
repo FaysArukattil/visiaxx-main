@@ -54,20 +54,29 @@ class _ShortDistanceQuickResultScreenState
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => TestExitConfirmationDialog(
-        title: 'Exit Reading Test Results?',
-        onContinue: () {
-          _startCountdown();
-        },
-        onRestart: () {
-          Navigator.of(context).pop();
-          Navigator.pushReplacementNamed(context, '/short-distance-test');
-        },
-        onExit: () {
-          Navigator.of(context).pop();
-          Navigator.pushReplacementNamed(context, '/home');
-        },
-      ),
+      builder: (context) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          title: 'Exit Reading Test Results?',
+          onContinue: () {
+            _startCountdown();
+          },
+          onRestart: () {
+            Navigator.of(context).pop();
+            Navigator.pushReplacementNamed(context, '/short-distance-test');
+          },
+          onExit: () {
+            Navigator.of(context).pop();
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () {
+                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+                }
+              : null,
+        );
+      },
     );
   }
 

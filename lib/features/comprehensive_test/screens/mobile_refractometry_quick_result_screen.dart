@@ -279,22 +279,34 @@ class _MobileRefractometryQuickResultScreenState
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (dialogContext) => TestExitConfirmationDialog(
-            onContinue: () {
-              // Just close the dialog
-            },
-            onRestart: () {
-              context.read<TestSessionProvider>().resetKeepProfile();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/mobile-refractometry-test',
-                (route) => false,
-              );
-            },
-            onExit: () {
-              NavigationUtils.navigateHome(context);
-            },
-          ),
+          builder: (dialogContext) {
+            final provider = context.read<TestSessionProvider>();
+            return TestExitConfirmationDialog(
+              onContinue: () {
+                // Just close the dialog
+              },
+              onRestart: () {
+                context.read<TestSessionProvider>().resetKeepProfile();
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/mobile-refractometry-test',
+                  (route) => false,
+                );
+              },
+              onExit: () {
+                NavigationUtils.navigateHome(context);
+              },
+              hasCompletedTests: provider.hasAnyCompletedTest,
+              onSaveAndExit: provider.hasAnyCompletedTest
+                  ? () {
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/comprehensive-test-result',
+                      );
+                    }
+                  : null,
+            );
+          },
         );
       },
       child: Scaffold(

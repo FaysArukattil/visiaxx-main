@@ -5,6 +5,8 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../../../data/providers/test_session_provider.dart';
+import 'package:provider/provider.dart';
 import '../widgets/color_vision_response_animation.dart';
 import '../../results/widgets/wear_specs_animation.dart';
 import '../widgets/instruction_animations.dart';
@@ -90,21 +92,30 @@ class _ColorVisionInstructionsScreenState
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => TestExitConfirmationDialog(
-        onContinue: () {
-          _playCurrentStepTts();
-        },
-        onRestart: () {
-          setState(() {
-            _currentPage = 0;
-          });
-          _pageController.jumpToPage(0);
-          _playCurrentStepTts();
-        },
-        onExit: () async {
-          await NavigationUtils.navigateHome(context);
-        },
-      ),
+      builder: (context) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          onContinue: () {
+            _playCurrentStepTts();
+          },
+          onRestart: () {
+            setState(() {
+              _currentPage = 0;
+            });
+            _pageController.jumpToPage(0);
+            _playCurrentStepTts();
+          },
+          onExit: () async {
+            await NavigationUtils.navigateHome(context);
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () {
+                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+                }
+              : null,
+        );
+      },
     );
   }
 
