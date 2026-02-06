@@ -3,9 +3,15 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/shadow_test_provider.dart';
+import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/shadow_test_result.dart';
+import '../../../core/services/test_result_service.dart';
+import '../../../core/services/pdf_export_service.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/eye_loader.dart';
+import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ShadowTestResultScreen extends StatefulWidget {
   const ShadowTestResultScreen({super.key});
@@ -15,15 +21,55 @@ class ShadowTestResultScreen extends StatefulWidget {
 }
 
 class _ShadowTestResultScreenState extends State<ShadowTestResultScreen> {
+  final TestResultService _testResultService = TestResultService();
   bool _isGeneratingPdf = false;
+  bool _hasSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _saveResultsToFirebase();
+    });
+  }
+
+  Future<void> _saveResultsToFirebase() async {
+    if (_hasSaved) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final sessionProvider = context.read<TestSessionProvider>();
+      final resultModel = sessionProvider.buildTestResult(user.uid);
+
+      await _testResultService.saveTestResult(
+        userId: user.uid,
+        result: resultModel,
+      );
+
+      if (mounted) {
+        setState(() => _hasSaved = true);
+        SnackbarUtils.showSuccess(context, 'Results saved successfully!');
+      }
+    } catch (e) {
+      debugPrint('[ShadowTestResult] Save error: $e');
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Failed to save results: $e');
+      }
+    }
+  }
 
   Future<void> _downloadPDF(ShadowTestResult result) async {
     setState(() => _isGeneratingPdf = true);
     try {
-      // Note: We'll need to update PdfExportService to handle ShadowTestResult
-      // For now, we'll simulate the call or use a placeholder if not yet implemented
-      // final path = await pdfService.generateShadowTestPdf(result);
-      await Future.delayed(const Duration(seconds: 2)); // Simulate
+      final sessionProvider = context.read<TestSessionProvider>();
+      final resultModel = sessionProvider.buildTestResult(
+        FirebaseAuth.instance.currentUser?.uid ?? '',
+      );
+
+      final pdfService = PdfExportService();
+      await pdfService.generateAndDownloadPdf(resultModel);
 
       if (mounted) {
         SnackbarUtils.showSuccess(
@@ -55,13 +101,10 @@ class _ShadowTestResultScreenState extends State<ShadowTestResultScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.home_rounded),
-            onPressed: () {
+            onPressed: () async {
               provider.setState(ShadowTestState.initial);
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
+              context.read<TestSessionProvider>().reset();
+              await NavigationUtils.navigateHome(context);
             },
           ),
         ],
@@ -69,18 +112,22 @@ class _ShadowTestResultScreenState extends State<ShadowTestResultScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildRiskHeader(context, result),
+            _buildStandardHeader(context, result),
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  _buildPatientInfoCard(context.read<TestSessionProvider>()),
+                  const SizedBox(height: 24),
                   _buildResultsGrid(context, result),
                   const SizedBox(height: 24),
                   _buildClinicalSummary(context, result),
                   const SizedBox(height: 32),
-                  _buildActionButtons(context, result),
-                  const SizedBox(height: 48),
+                  _buildDisclaimer(),
+                  const SizedBox(height: 32),
+                  _buildStandardActionButtons(context, result),
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -90,7 +137,7 @@ class _ShadowTestResultScreenState extends State<ShadowTestResultScreen> {
     );
   }
 
-  Widget _buildRiskHeader(BuildContext context, ShadowTestResult result) {
+  Widget _buildStandardHeader(BuildContext context, ShadowTestResult result) {
     Color riskColor;
     IconData riskIcon;
 
@@ -98,11 +145,11 @@ class _ShadowTestResultScreenState extends State<ShadowTestResultScreen> {
       case 'CRITICAL':
       case 'VERY HIGH':
         riskColor = context.error;
-        riskIcon = Icons.warning_rounded;
+        riskIcon = Icons.error_rounded;
         break;
       case 'HIGH':
         riskColor = context.warning;
-        riskIcon = Icons.error_outline_rounded;
+        riskIcon = Icons.warning_amber_rounded;
         break;
       case 'MODERATE':
         riskColor = context.info;
@@ -115,43 +162,153 @@ class _ShadowTestResultScreenState extends State<ShadowTestResultScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [riskColor, riskColor.withValues(alpha: 0.8)],
         ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: riskColor.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
-              color: Colors.white24,
               shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.2),
             ),
-            child: Icon(riskIcon, size: 48, color: Colors.white),
+            child: Icon(riskIcon, size: 44, color: Colors.white),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Text(
             '${result.overallRisk} RISK',
             style: const TextStyle(
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
               color: Colors.white,
-              letterSpacing: 2,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            result.requiresReferral
-                ? 'Specialist Referral Recommended'
-                : 'Routine Monitoring Recommended',
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.calendar_today_rounded,
+                  size: 14,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  DateFormat('MMM dd, yyyy • h:mm a').format(DateTime.now()),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPatientInfoCard(TestSessionProvider provider) {
+    final name = provider.profileName.isEmpty ? 'User' : provider.profileName;
+    final isPatient = provider.profileType == 'patient';
+    final badgeText = isPatient
+        ? 'Patient'
+        : (provider.profileType == 'family'
+              ? 'Family Member'
+              : 'Primary Account');
+    final badgeColor = isPatient
+        ? context.warning
+        : (provider.profileType == 'family' ? context.info : context.primary);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: context.primary.withValues(alpha: 0.1),
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : 'U',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: context.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (provider.profileAge != null)
+                  Text(
+                    '${provider.profileAge} years • ${provider.profileSex ?? ""}',
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              badgeText,
+              style: TextStyle(
+                color: badgeColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
             ),
           ),
         ],
@@ -279,7 +436,41 @@ class _ShadowTestResultScreenState extends State<ShadowTestResultScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, ShadowTestResult result) {
+  Widget _buildDisclaimer() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.border.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: 16,
+            color: context.textSecondary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'This test is a screening tool. It does not replace a clinical examination. Consult an ophthalmologist for a definitive diagnosis.',
+              style: TextStyle(
+                fontSize: 11,
+                color: context.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStandardActionButtons(
+    BuildContext context,
+    ShadowTestResult result,
+  ) {
     return Column(
       children: [
         SizedBox(
@@ -291,13 +482,17 @@ class _ShadowTestResultScreenState extends State<ShadowTestResultScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Icon(Icons.picture_as_pdf_rounded),
             label: const Text('Download PDF Report'),
             style: ElevatedButton.styleFrom(
               backgroundColor: context.primary,
               foregroundColor: Colors.white,
+              elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -305,9 +500,42 @@ class _ShadowTestResultScreenState extends State<ShadowTestResultScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Retake Test'),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  final provider = context.read<ShadowTestProvider>();
+                  provider.setState(ShadowTestState.initial);
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retake'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: context.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => NavigationUtils.navigateHome(context),
+                icon: const Icon(Icons.home_rounded),
+                label: const Text('Home'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: context.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

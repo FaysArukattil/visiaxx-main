@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'dart:async';
 import '../../core/services/shadow_test_camera_service.dart';
 import '../../core/services/shadow_detection_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../models/shadow_test_result.dart';
-import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import './test_session_provider.dart';
 
 enum ShadowTestState {
   initial,
@@ -36,6 +37,7 @@ class ShadowTestProvider extends ChangeNotifier {
 
   bool _isCapturing = false;
   String? _errorMessage;
+  bool _isFlashOn = false;
 
   // Getters
   ShadowTestState get state => _state;
@@ -48,17 +50,15 @@ class ShadowTestProvider extends ChangeNotifier {
   ShadowTestResult? get finalResult => _finalResult;
   bool get isCapturing => _isCapturing;
   String? get errorMessage => _errorMessage;
+  bool get isFlashOn => _isFlashOn;
   CameraController? get cameraController => _cameraService.controller;
 
   Future<void> initializeCamera() async {
     try {
       _errorMessage = null;
       await _cameraService.initialize();
-
-      _cameraService.startImageStream((faces, imageSize) {
-        _processEyeDetection(faces, imageSize);
-      });
-
+      _isReadyForCapture = true; // Enable manual capture
+      _readinessFeedback = 'Ready to capture ${_currentEye.toUpperCase()} eye';
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Failed to initialize camera: $e';
@@ -66,20 +66,19 @@ class ShadowTestProvider extends ChangeNotifier {
     }
   }
 
-  void _processEyeDetection(List<Face> faces, Size imageSize) {
-    if (faces.isEmpty) {
-      _isEyeDetected = false;
-      _readinessFeedback = 'No eyes detected';
-      _isReadyForCapture = false;
-    } else {
-      _isEyeDetected = true;
-      _readinessFeedback = 'Eyes detected. Hold steady.';
-      _isReadyForCapture = true;
-    }
+  // Auto-detection loop removed as per user request to use manual capture only.
+
+  Future<void> toggleFlashlight() async {
+    _isFlashOn = !_isFlashOn;
+    await _cameraService.setFlashMode(
+      _isFlashOn ? FlashMode.torch : FlashMode.off,
+    );
     notifyListeners();
   }
 
-  Future<void> captureAndAnalyze() async {
+  // _processEyeDetection method removed as it's no longer used due to manual capture only.
+
+  Future<void> captureAndAnalyze(TestSessionProvider sessionProvider) async {
     if (_isCapturing || !_isReadyForCapture) return;
 
     _isCapturing = true;
@@ -106,9 +105,16 @@ class ShadowTestProvider extends ChangeNotifier {
         _rightEyeGrading = grading;
         _currentEye = 'left';
         _state = ShadowTestState.leftEyeCapture;
+        _readinessFeedback = 'Ready to capture LEFT eye';
       } else {
         _leftEyeGrading = grading;
         await _generateFinalResult();
+
+        // Push result to global test session
+        if (_finalResult != null) {
+          sessionProvider.setShadowTestResult(_finalResult!);
+        }
+
         _state = ShadowTestState.result;
       }
     } catch (e) {
@@ -142,12 +148,8 @@ class ShadowTestProvider extends ChangeNotifier {
       _rightEyeGrading = null;
       _leftEyeGrading = null;
       _finalResult = null;
-      _cameraService.turnOffFlashlight();
-    } else if (newState == ShadowTestState.rightEyeCapture ||
-        newState == ShadowTestState.leftEyeCapture) {
-      _cameraService.turnOnFlashlight();
-    } else {
-      _cameraService.turnOffFlashlight();
+      _isFlashOn = false;
+      _cameraService.setFlashMode(FlashMode.off);
     }
     notifyListeners();
   }

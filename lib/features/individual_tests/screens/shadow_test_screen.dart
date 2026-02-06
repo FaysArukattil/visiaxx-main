@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/shadow_test_provider.dart';
+import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/eye_loader.dart';
 
 class ShadowTestScreen extends StatefulWidget {
@@ -25,6 +26,15 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<ShadowTestProvider>();
     final controller = provider.cameraController;
+
+    // Handle navigation to results
+    if (provider.state == ShadowTestState.result) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/shadow-test-result');
+        }
+      });
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -51,6 +61,46 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
             child: IconButton(
               icon: const Icon(Icons.close, color: Colors.white, size: 32),
               onPressed: () => Navigator.pop(context),
+            ),
+          ),
+
+          // Flashlight Toggle Button
+          Positioned(
+            top: 60,
+            right: 20,
+            child: Column(
+              children: [
+                IconButton(
+                  onPressed: () => provider.toggleFlashlight(),
+                  icon: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: provider.isFlashOn
+                          ? context.primary.withValues(alpha: 0.8)
+                          : Colors.black45,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white24, width: 1),
+                    ),
+                    child: Icon(
+                      provider.isFlashOn
+                          ? Icons.flashlight_on_rounded
+                          : Icons.flashlight_off_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  provider.isFlashOn ? 'Flash On' : 'Flash Off',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -122,14 +172,15 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
             ),
             child: provider.isCapturing
                 ? null
-                : Icon(
-                    provider.isReadyForCapture
-                        ? Icons.check_circle_rounded
-                        : Icons.visibility_rounded,
-                    color: provider.isReadyForCapture
-                        ? context.success
-                        : Colors.white54,
-                    size: 48,
+                : const Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.remove_red_eye_outlined,
+                        color: Colors.white54,
+                        size: 48,
+                      ),
+                    ],
                   ),
           ),
         ),
@@ -137,78 +188,66 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
         const Spacer(),
 
         // Feedback and Capture Action
-        _buildFeedbackPanel(context, provider),
-        const SizedBox(height: 48),
-      ],
-    );
-  }
-
-  Widget _buildFeedbackPanel(
-    BuildContext context,
-    ShadowTestProvider provider,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.black87,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 40.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                provider.isEyeDetected ? Icons.lens : Icons.lens_outlined,
-                color: provider.isEyeDetected ? context.success : Colors.grey,
-                size: 12,
-              ),
-              const SizedBox(width: 12),
               Text(
                 provider.readinessFeedback,
                 style: TextStyle(
                   color: provider.isReadyForCapture
                       ? Colors.white
                       : Colors.white70,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  shadows: const [
+                    Shadow(
+                      blurRadius: 10,
+                      color: Colors.black,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: provider.isReadyForCapture && !provider.isCapturing
+                    ? () {
+                        final sessionProvider = context
+                            .read<TestSessionProvider>();
+                        provider.captureAndAnalyze(sessionProvider);
+                      }
+                    : null,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 4),
+                    color: provider.isReadyForCapture
+                        ? context.primary
+                        : Colors.white24,
+                  ),
+                  child: provider.isCapturing
+                      ? const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        )
+                      : Center(
+                          child: Icon(
+                            Icons.camera_alt_rounded,
+                            color: provider.isReadyForCapture
+                                ? Colors.white
+                                : Colors.white38,
+                            size: 32,
+                          ),
+                        ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: provider.isReadyForCapture && !provider.isCapturing
-                  ? () => provider.captureAndAnalyze()
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.primary,
-                disabledBackgroundColor: Colors.white10,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                'Capture Shadow',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          if (provider.errorMessage != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              provider.errorMessage!,
-              style: TextStyle(color: context.error, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

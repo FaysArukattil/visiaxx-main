@@ -20,7 +20,8 @@ class ShadowTestCameraService {
       enableClassification: false,
       enableTracking: true,
       enableLandmarks: true,
-      performanceMode: FaceDetectorMode.fast,
+      performanceMode: FaceDetectorMode.accurate,
+      minFaceSize: 0.05,
     ),
   );
 
@@ -55,7 +56,9 @@ class ShadowTestCameraService {
         backCamera,
         ResolutionPreset.high,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.yuv420
+            : ImageFormatGroup.bgra8888,
       );
 
       await _controller!.initialize();
@@ -217,12 +220,34 @@ class ShadowTestCameraService {
       metadata: InputImageMetadata(
         size: Size(image.width.toDouble(), image.height.toDouble()),
         rotation: imageRotation,
-        format: InputImageFormat.nv21,
+        format: Platform.isAndroid
+            ? InputImageFormat.yuv420
+            : InputImageFormat.bgra8888,
         bytesPerRow: image.planes[0].bytesPerRow,
       ),
     );
 
     return await _faceDetector.processImage(inputImage);
+  }
+
+  Future<List<Face>> processImageFromFile(String path) async {
+    try {
+      final inputImage = InputImage.fromFilePath(path);
+      return await _faceDetector.processImage(inputImage);
+    } catch (e) {
+      AppLogger.log('$_tag: Error processing image file: $e', isError: true);
+      return [];
+    }
+  }
+
+  Future<void> setFlashMode(FlashMode mode) async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    try {
+      await _controller!.setFlashMode(mode);
+      _isFlashlightOn = mode == FlashMode.torch;
+    } catch (e) {
+      AppLogger.log('$_tag: Error setting flash mode: $e', isError: true);
+    }
   }
 
   InputImageRotation _getImageRotation() {
