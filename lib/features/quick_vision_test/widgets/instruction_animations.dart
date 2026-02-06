@@ -1854,3 +1854,370 @@ class _KeyboardTypingAnimationState extends State<KeyboardTypingAnimation>
     );
   }
 }
+
+/// Animation showing a dim room requirement (Bright to Dim transition)
+class DimLightingAnimation extends StatefulWidget {
+  final bool isCompact;
+  const DimLightingAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<DimLightingAnimation> createState() => _DimLightingAnimationState();
+}
+
+class _DimLightingAnimationState extends State<DimLightingAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _brightness;
+  late Animation<double> _switchPos;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+
+    _brightness = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 30), // Stay bright
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.2), weight: 20), // Turn off
+      TweenSequenceItem(tween: Tween(begin: 0.2, end: 0.2), weight: 40), // Stay dim
+      TweenSequenceItem(tween: Tween(begin: 0.2, end: 1.0), weight: 10), // Reset
+    ]).animate(_controller);
+
+    _switchPos = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.0), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 10),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 10),
+    ]).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final color = Color.lerp(
+          Colors.white,
+          const Color(0xFF121212),
+          1 - _brightness.value,
+        )!;
+
+        return Container(
+          height: widget.isCompact ? 200 : 240,
+          padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Light bulb
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (_brightness.value > 0.5)
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.warning.withValues(alpha: 0.3),
+                              blurRadius: 40,
+                              spreadRadius: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    Icon(
+                      _brightness.value > 0.5
+                          ? Icons.lightbulb_rounded
+                          : Icons.lightbulb_outline_rounded,
+                      size: widget.isCompact ? 60 : 80,
+                      color: _brightness.value > 0.5
+                          ? AppColors.warning
+                          : Colors.grey.shade700,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Switch
+                Container(
+                  width: 40,
+                  height: 70,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Stack(
+                    children: [
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 200),
+                        top: _switchPos.value * 30,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Animation showing side illumination (Professional Eye version)
+class SideIlluminationAnimation extends StatefulWidget {
+  final bool isCompact;
+  const SideIlluminationAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<SideIlluminationAnimation> createState() =>
+      _SideIlluminationAnimationState();
+}
+
+class _SideIlluminationAnimationState extends State<SideIlluminationAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return CustomPaint(
+              size: const Size(200, 160),
+              painter: _ProfessionalSideIlluminationPainter(
+                progress: _controller.value,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfessionalSideIlluminationPainter extends CustomPainter {
+  final double progress;
+
+  _ProfessionalSideIlluminationPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    
+    // 1. Draw Professional Eye (Front Facing)
+    final eyePos = center + const Offset(0, -10);
+    final eyeWidth = 100.0;
+    final eyeHeight = 60.0;
+    
+    final eyePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    
+    final borderPaint = Paint()
+      ..color = AppColors.textPrimary
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    // Eye shape
+    final eyePath = Path();
+    eyePath.moveTo(eyePos.dx - eyeWidth / 2, eyePos.dy);
+    eyePath.quadraticBezierTo(
+      eyePos.dx, 
+      eyePos.dy - eyeHeight / 2 - 10, 
+      eyePos.dx + eyeWidth / 2, 
+      eyePos.dy
+    );
+    eyePath.quadraticBezierTo(
+      eyePos.dx, 
+      eyePos.dy + eyeHeight / 2 + 10, 
+      eyePos.dx - eyeWidth / 2, 
+      eyePos.dy
+    );
+    
+    canvas.drawPath(eyePath, eyePaint);
+    canvas.drawPath(eyePath, borderPaint);
+
+    // Iris
+    final irisPaint = Paint()
+      ..color = Colors.brown.shade700
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(eyePos, 22, irisPaint);
+
+    // Pupil
+    final pupilPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(eyePos, 10, pupilPaint);
+
+    // Reflection (Catchlight)
+    canvas.drawCircle(
+      eyePos - const Offset(4, 4), 
+      3, 
+      Paint()..color = Colors.white.withValues(alpha: 0.8)
+    );
+
+    // 2. Smartphone/Flashlight coming from the side
+    // Loop the flashlight movement
+    final t = progress;
+    final flashlightAlpha = t < 0.1 ? t / 0.1 : (t > 0.9 ? (1 - t) / 0.1 : 1.0);
+    
+    final double angle = math.pi / 6; // 30 degrees from horizontal = 60 degrees from optical axis
+    final double dist = 100.0;
+    final flashlightCenter = eyePos + Offset(
+      -math.cos(angle) * dist,
+      math.sin(angle) * dist * 0.2
+    );
+
+    canvas.save();
+    canvas.translate(flashlightCenter.dx, flashlightCenter.dy);
+    canvas.rotate(-math.pi / 4); // Angle of the phone itself
+
+    final phonePaint = Paint()
+      ..color = AppColors.textPrimary.withValues(alpha: flashlightAlpha)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    final phoneFill = Paint()
+      ..color = AppColors.surface.withValues(alpha: flashlightAlpha)
+      ..style = PaintingStyle.fill;
+
+    final phoneRect = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(-12, -25, 24, 50),
+      const Radius.circular(4),
+    );
+    canvas.drawRRect(phoneRect, phoneFill);
+    canvas.drawRRect(phoneRect, phonePaint);
+
+    // Flash light beam
+    final flashPos = const Offset(0, -18);
+    final flashPaint = Paint()
+      ..color = AppColors.warning.withValues(alpha: flashlightAlpha)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(flashPos, 4, flashPaint);
+
+    // Light beam towards eye
+    if (flashlightAlpha > 0.5) {
+      final beamPaint = Paint()
+        ..shader = ui.Gradient.linear(
+          flashPos,
+          const Offset(50, 40),
+          [
+            AppColors.warning.withValues(alpha: 0.4),
+            AppColors.warning.withValues(alpha: 0.0),
+          ],
+        );
+      
+      final beamPath = Path();
+      beamPath.moveTo(flashPos.dx, flashPos.dy);
+      beamPath.lineTo(60, 20);
+      beamPath.lineTo(40, 60);
+      beamPath.close();
+      canvas.drawPath(beamPath, beamPaint);
+    }
+    canvas.restore();
+
+    // 3. Shadow on the eye (Anatomically representation of Van Herick)
+    if (flashlightAlpha > 0.8) {
+      final shadowPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.4)
+        ..style = PaintingStyle.fill;
+      
+      // Represent a slit of light and a shadow on the nasal side
+      final slitWidth = 4.0;
+      canvas.drawRect(
+        Rect.fromLTWH(eyePos.dx - 18, eyePos.dy - 12, slitWidth, 24),
+        Paint()..color = AppColors.warning.withValues(alpha: 0.5)
+      );
+      
+      // Shadow (the "Van Herick space")
+      canvas.drawRect(
+        Rect.fromLTWH(eyePos.dx - 14, eyePos.dy - 12, 8, 24),
+        shadowPaint
+      );
+    }
+
+    // Label
+    final textPainter = TextPainter(
+      text: const TextSpan(
+        text: "SIDE ILLUMINATION (60\u00B0)",
+        style: TextStyle(
+          color: AppColors.primary,
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(center.dx - textPainter.width / 2, size.height - 20),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ProfessionalSideIlluminationPainter oldDelegate) => true;
+}

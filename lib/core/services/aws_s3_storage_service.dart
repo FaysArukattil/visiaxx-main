@@ -14,7 +14,9 @@ class AWSS3StorageService {
     _initializeClient(); // Attempt to initialize if not already
     final configured = AWSCredentials.isConfigured;
     if (!configured) {
-      debugPrint('[AWS S3]  ï¸ isAvailable: FALSE (Credentials not configured)');
+      debugPrint(
+        '[AWS S3]  ï¸ isAvailable: FALSE (Credentials not configured)',
+      );
     }
     // Removed: if (_client == null) { debugPrint('[AWS S3] Œ isAvailable: FALSE (Client is NULL)'); }
     return _client != null && configured;
@@ -220,6 +222,74 @@ class AWSS3StorageService {
       } else {
         debugPrint('[AWS S3] Œ Upload failed: $e');
       }
+      return null;
+    }
+  }
+
+  /// Upload Shadow Test image to S3
+  Future<String?> uploadShadowTestImage({
+    required String userId,
+    required String identityString,
+    required String roleCollection,
+    required String testCategory,
+    required String testId,
+    required String eye, // 'right' or 'left'
+    required File imageFile,
+    String? memberIdentityString, // Optional for family members
+  }) async {
+    if (!isAvailable) {
+      debugPrint('[AWS S3] Service not available, skipping upload');
+      return null;
+    }
+
+    try {
+      final dateStr = DateTime.now().toIso8601String().split('T')[0];
+      final fileName = 'shadow_${testId}_$eye.png';
+
+      String basePath = '$roleCollection/$identityString';
+      if (memberIdentityString != null && memberIdentityString.isNotEmpty) {
+        basePath += '/members/$memberIdentityString';
+      }
+
+      final objectName = '$basePath/$dateStr/$testCategory/images/$fileName';
+      final bucket = AWSCredentials.bucketName;
+
+      debugPrint('[AWS S3] –¼ï¸  SHADOW IMAGE UPLOAD START:');
+      if (!await imageFile.exists()) {
+        debugPrint('[AWS S3]  Œ ERROR: Image file missing');
+        return null;
+      }
+
+      final bytes = await imageFile.readAsBytes();
+      if (bytes.isEmpty) {
+        debugPrint('[AWS S3]  Œ ERROR: Image file is empty');
+        return null;
+      }
+
+      final stream = Stream.value(bytes);
+
+      await _client!
+          .putObject(
+            bucket,
+            objectName,
+            stream,
+            size: bytes.length,
+            metadata: {
+              'Content-Type': 'image/png',
+              'user-id': userId,
+              'test-id': testId,
+              'eye': eye,
+              'test-type': 'shadow_test',
+              'upload-date': DateTime.now().toIso8601String(),
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final url = await getPresignedUrl(objectName);
+      debugPrint('[AWS S3] … SHADOW IMAGE UPLOAD SUCCESS: $url');
+      return url;
+    } catch (e) {
+      debugPrint('[AWS S3]  Œ Shadow Image Upload failed: $e');
       return null;
     }
   }
@@ -442,4 +512,3 @@ class AWSS3StorageService {
     }
   }
 }
-

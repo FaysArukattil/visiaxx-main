@@ -7,6 +7,7 @@ import 'amsler_grid_result.dart';
 import 'short_distance_result.dart';
 import 'pelli_robson_result.dart';
 import 'refraction_prescription_model.dart';
+import 'shadow_test_result.dart';
 
 /// Test result status
 enum TestStatus {
@@ -40,6 +41,7 @@ class TestResultModel {
   final AmslerGridResult? amslerGridLeft;
   final PelliRobsonResult? pelliRobson;
   final MobileRefractometryResult? mobileRefractometry;
+  final ShadowTestResult? shadowTest;
   final RefractionPrescriptionModel? refractionPrescription;
   final TestStatus overallStatus;
   final String recommendation;
@@ -67,6 +69,7 @@ class TestResultModel {
     this.amslerGridLeft,
     this.pelliRobson,
     this.mobileRefractometry,
+    this.shadowTest,
     this.refractionPrescription,
     required this.overallStatus,
     required this.recommendation,
@@ -124,7 +127,10 @@ class TestResultModel {
           : null,
 
       mobileRefractometry: data['mobileRefractometry'] != null
-          ? MobileRefractometryResult.fromMap(data['mobileRefractometry'])
+          ? MobileRefractometryResult.fromJson(data['mobileRefractometry'])
+          : null,
+      shadowTest: data['shadowTest'] != null
+          ? ShadowTestResult.fromJson(data['shadowTest'])
           : null,
       refractionPrescription: data['refractionPrescription'] != null
           ? RefractionPrescriptionModel.fromMap(data['refractionPrescription'])
@@ -190,8 +196,11 @@ class TestResultModel {
       'amslerGridRight': amslerGridRight?.toMap(),
       'amslerGridLeft': amslerGridLeft?.toMap(),
       'pelliRobson': pelliRobson?.toMap(),
-      'mobileRefractometry': mobileRefractometry?.toMap(),
-      'refractionPrescription': refractionPrescription?.toMap(),
+      if (mobileRefractometry != null)
+        'mobileRefractometry': mobileRefractometry!.toJson(),
+      if (shadowTest != null) 'shadowTest': shadowTest!.toJson(),
+      if (refractionPrescription != null)
+        'refractionPrescription': refractionPrescription!.toMap(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
       'pdfUrl': pdfUrl,
@@ -223,8 +232,18 @@ class TestResultModel {
     AmslerGridResult? amslerLeft,
     PelliRobsonResult? pelliRobson,
     MobileRefractometryResult? mobileRefractometry,
+    ShadowTestResult? shadowTest,
   }) {
     // Check for URGENT conditions (severe/bilateral issues)
+    if (shadowTest != null && shadowTest.overallRisk == 'CRITICAL') {
+      return TestStatus.urgent;
+    }
+
+    if (amslerRight != null &&
+        amslerRight.needsAttention &&
+        amslerRight.distortionPoints.length > 10) {
+      return TestStatus.urgent;
+    }
     // Urgent if: Both eyes have Amsler distortions OR either eye has extensive distortions
     final rightDistortions = amslerRight?.distortionPoints.length ?? 0;
     final leftDistortions = amslerLeft?.distortionPoints.length ?? 0;
@@ -255,6 +274,11 @@ class TestResultModel {
       return TestStatus.urgent;
     }
 
+    // Check for Mobile Refractometry critical alerts
+    if (mobileRefractometry != null && mobileRefractometry.criticalAlert) {
+      return TestStatus.urgent;
+    }
+
     // Check for REVIEW conditions (moderate concerns)
     // Review if: Any Amsler distortions (but not urgent level)
     if ((amslerRight?.hasDistortions ?? false) ||
@@ -273,13 +297,12 @@ class TestResultModel {
     }
 
     // Review if: Pelli-Robson shows reduced contrast sensitivity
-    if (pelliRobson != null && pelliRobson.needsReferral) {
+    if (pelliRobson != null && pelliRobson.needsReferral)
       return TestStatus.review;
-    }
-
-    // Check for Mobile Refractometry critical alerts
-    if (mobileRefractometry != null && mobileRefractometry.criticalAlert) {
-      return TestStatus.urgent;
+    if (shadowTest != null &&
+        (shadowTest.overallRisk == 'VERY HIGH' ||
+            shadowTest.overallRisk == 'HIGH')) {
+      return TestStatus.review;
     }
 
     // Review if Mobile Refractometry has health warnings
@@ -321,6 +344,7 @@ class TestResultModel {
     AmslerGridResult? amslerGridLeft,
     PelliRobsonResult? pelliRobson,
     MobileRefractometryResult? mobileRefractometry,
+    ShadowTestResult? shadowTest,
     RefractionPrescriptionModel? refractionPrescription,
     TestStatus? overallStatus,
     String? recommendation,
@@ -348,6 +372,7 @@ class TestResultModel {
       amslerGridLeft: amslerGridLeft ?? this.amslerGridLeft,
       pelliRobson: pelliRobson ?? this.pelliRobson,
       mobileRefractometry: mobileRefractometry ?? this.mobileRefractometry,
+      shadowTest: shadowTest ?? this.shadowTest,
       refractionPrescription:
           refractionPrescription ?? this.refractionPrescription,
       overallStatus: overallStatus ?? this.overallStatus,

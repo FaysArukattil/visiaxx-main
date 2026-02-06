@@ -134,6 +134,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         case 'mobile_refractometry':
           Navigator.pushNamed(context, '/mobile-refractometry-standalone');
           break;
+        case 'shadow_test':
+          Navigator.pushNamed(context, '/shadow-test-intro');
+          break;
         default:
           Navigator.pushNamed(context, '/questionnaire');
       }

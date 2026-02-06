@@ -430,6 +430,71 @@ class TestResultService {
       }
     }
 
+    // Upload Left Eye Amsler Grid Image (from previous chunk)
+    // ... (lines 404-431)
+
+    // Upload Right Eye Shadow Test Image
+    if (result.shadowTest?.rightEye.imagePath != null) {
+      final localPath = result.shadowTest!.rightEye.imagePath!;
+      final file = File(localPath);
+
+      if (await file.exists()) {
+        debugPrint(
+          '[TestResultService] “¤ Uploading right eye shadow image...',
+        );
+        final awsUrl = await _awsStorageService.uploadShadowTestImage(
+          userId: userId,
+          identityString: identityString,
+          roleCollection: roleCollection,
+          testCategory: testCategory,
+          testId: testId,
+          eye: 'right',
+          imageFile: file,
+          memberIdentityString: memberId,
+        );
+
+        if (awsUrl != null) {
+          updatedResult = updatedResult.copyWith(
+            shadowTest: updatedResult.shadowTest!.copyWith(
+              rightEye: updatedResult.shadowTest!.rightEye.copyWith(
+                awsImageUrl: awsUrl,
+              ),
+            ),
+          );
+        }
+      }
+    }
+
+    // Upload Left Eye Shadow Test Image
+    if (result.shadowTest?.leftEye.imagePath != null) {
+      final localPath = result.shadowTest!.leftEye.imagePath!;
+      final file = File(localPath);
+
+      if (await file.exists()) {
+        debugPrint('[TestResultService] “¤ Uploading left eye shadow image...');
+        final awsUrl = await _awsStorageService.uploadShadowTestImage(
+          userId: userId,
+          identityString: identityString,
+          roleCollection: roleCollection,
+          testCategory: testCategory,
+          testId: testId,
+          eye: 'left',
+          imageFile: file,
+          memberIdentityString: memberId,
+        );
+
+        if (awsUrl != null) {
+          updatedResult = updatedResult.copyWith(
+            shadowTest: updatedResult.shadowTest!.copyWith(
+              leftEye: updatedResult.shadowTest!.leftEye.copyWith(
+                awsImageUrl: awsUrl,
+              ),
+            ),
+          );
+        }
+      }
+    }
+
     return updatedResult;
   }
 
@@ -1259,6 +1324,8 @@ class TestResultService {
         return 'ContrastSensitivity';
       case 'mobile_refractometry':
         return 'MobileRefractometry';
+      case 'shadow_test':
+        return 'ShadowTest';
       default:
         // Capitalize default
         if (testType.isEmpty) return 'UnknownTest';

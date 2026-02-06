@@ -12,6 +12,7 @@ import '../../data/models/test_result_model.dart';
 import '../../data/models/pelli_robson_result.dart';
 import '../models/short_distance_result.dart';
 import '../models/refraction_prescription_model.dart';
+import '../models/shadow_test_result.dart';
 
 /// Provider for managing test session state
 class TestSessionProvider extends ChangeNotifier {
@@ -35,6 +36,7 @@ class TestSessionProvider extends ChangeNotifier {
   ShortDistanceResult? _shortDistance;
   PelliRobsonResult? _pelliRobson;
   MobileRefractometryResult? _mobileRefractometry;
+  ShadowTestResult? _shadowTestResult;
   RefractionPrescriptionModel? _refractionPrescription;
 
   // Current test state
@@ -78,6 +80,7 @@ class TestSessionProvider extends ChangeNotifier {
   String? get currentTestId => _currentTestId;
   RefractionPrescriptionModel? get refractionPrescription =>
       _refractionPrescription;
+  ShadowTestResult? get shadowTestResult => _shadowTestResult;
 
   /// Set profile for self-testing
   void selectSelfProfile(
@@ -212,6 +215,14 @@ class TestSessionProvider extends ChangeNotifier {
     );
   }
 
+  void setShadowTestResult(ShadowTestResult result) {
+    _shadowTestResult = result;
+    notifyListeners();
+    debugPrint(
+      '… [TestSessionProvider] Shadow Test result saved: ${result.overallRisk}',
+    );
+  }
+
   /// Get overall test status
   TestStatus getOverallStatus() {
     return TestResultModel.calculateOverallStatus(
@@ -222,6 +233,7 @@ class TestSessionProvider extends ChangeNotifier {
       amslerLeft: _amslerGridLeft,
       pelliRobson: _pelliRobson,
       mobileRefractometry: _mobileRefractometry,
+      shadowTest: _shadowTestResult,
     );
   }
 
@@ -262,13 +274,16 @@ class TestSessionProvider extends ChangeNotifier {
     final hasPelliRobson = _pelliRobson != null;
     // Mobile Refractometry (comprehensive only)
     final hasRefractometry = _mobileRefractometry != null;
+    // Shadow Test
+    final hasShadowTest = _shadowTestResult != null;
 
     return hasVA ||
         hasColorVision ||
         hasAmsler ||
         hasShortDistance ||
         hasPelliRobson ||
-        hasRefractometry;
+        hasRefractometry ||
+        hasShadowTest;
   }
 
   /// Get test duration in seconds
@@ -313,6 +328,7 @@ class TestSessionProvider extends ChangeNotifier {
       amslerGridLeft: _amslerGridLeft,
       pelliRobson: _pelliRobson,
       mobileRefractometry: _mobileRefractometry,
+      shadowTest: _shadowTestResult,
       refractionPrescription: _refractionPrescription,
       overallStatus: getOverallStatus(),
       recommendation: getRecommendation(),
@@ -367,6 +383,7 @@ class TestSessionProvider extends ChangeNotifier {
     _amslerGridLeft = null;
     _pelliRobson = null;
     _mobileRefractometry = null;
+    _shadowTestResult = null;
     _refractionPrescription = null;
     notifyListeners();
   }

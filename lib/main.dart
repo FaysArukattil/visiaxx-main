@@ -50,6 +50,10 @@ import 'features/individual_tests/screens/standalone_amsler_grid_screen.dart';
 import 'features/individual_tests/screens/standalone_reading_test_screen.dart';
 import 'features/individual_tests/screens/standalone_contrast_sensitivity_screen.dart';
 import 'features/individual_tests/screens/standalone_mobile_refractometry_screen.dart';
+import 'features/individual_tests/screens/shadow_test_intro_screen.dart';
+import 'features/individual_tests/screens/shadow_test_screen.dart';
+import 'features/individual_tests/screens/shadow_test_result_screen.dart';
+import 'data/providers/shadow_test_provider.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -188,6 +192,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => VoiceRecognitionProvider()),
         ChangeNotifierProvider(create: (_) => FamilyMemberProvider()),
         ChangeNotifierProvider(create: (_) => PatientProvider()),
+        ChangeNotifierProvider(create: (_) => ShadowTestProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -304,6 +309,10 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/mobile-refractometry-standalone': (context) =>
                   const StandaloneMobileRefractometryScreen(),
               '/individual-tests': (context) => const IndividualTestsScreen(),
+              '/shadow-test-intro': (context) => const ShadowTestIntroScreen(),
+              '/shadow-test-main': (context) => const ShadowTestScreen(),
+              '/shadow-test-result': (context) =>
+                  const ShadowTestResultScreen(),
               '/add-patient-questionnaire': (context) =>
                   const AddPatientQuestionnaireScreen(),
             },

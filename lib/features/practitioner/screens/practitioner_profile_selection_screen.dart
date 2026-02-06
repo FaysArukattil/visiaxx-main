@@ -454,6 +454,9 @@ class _PractitionerProfileSelectionScreenState
         case 'mobile_refractometry':
           route = '/mobile-refractometry-standalone';
           break;
+        case 'shadow_test':
+          route = '/shadow-test-intro';
+          break;
         default:
           route = '/home'; // Safeguard
       }

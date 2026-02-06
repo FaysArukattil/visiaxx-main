@@ -110,6 +110,21 @@ class AppLogger {
       debugPrint('[AppLogger] Clear error: $e');
     }
   }
+
+  /// Generic log method
+  static void log(String message, {String? tag, bool isError = false}) {
+    final timestamp = DateTime.now().toIso8601String();
+    final logTag = tag != null ? '[$tag] ' : '';
+    final logMessage = '$logTag$message';
+
+    if (isError) {
+      _logger?.e(logMessage);
+      _writeToFile('[$timestamp] [ERROR] $logMessage');
+    } else {
+      _logger?.i(logMessage);
+      _writeToFile('[$timestamp] [INFO] $logMessage');
+    }
+  }
 }
 
 /// Custom file output for Logger
@@ -127,4 +142,3 @@ class FileOutput extends LogOutput {
     }
   }
 }
-

@@ -15,6 +15,7 @@ import '../../data/models/color_vision_result.dart';
 import '../../data/models/mobile_refractometry_result.dart';
 import '../../data/models/pelli_robson_result.dart';
 import '../../data/models/refraction_prescription_model.dart';
+import '../../data/models/shadow_test_result.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -208,6 +209,21 @@ class PdfExportService {
       );
     }
 
+    // Shadow Test images
+    Uint8List? shadowRightBytes;
+    Uint8List? shadowLeftBytes;
+
+    if (result.shadowTest != null) {
+      shadowRightBytes = await _getImageBytes(
+        result.shadowTest!.rightEye.imagePath,
+        result.shadowTest!.rightEye.awsImageUrl,
+      );
+      shadowLeftBytes = await _getImageBytes(
+        result.shadowTest!.leftEye.imagePath,
+        result.shadowTest!.leftEye.awsImageUrl,
+      );
+    }
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -262,6 +278,16 @@ class PdfExportService {
           // Mobile Refractometry Section - DETAILED
           if (result.mobileRefractometry != null) ...[
             _buildMobileRefractometryDetailedSection(result),
+            pw.SizedBox(height: 12),
+          ],
+
+          // Shadow Test Section - DETAILED
+          if (result.shadowTest != null) ...[
+            _buildShadowTestDetailedSection(
+              result,
+              rightImageBytes: shadowRightBytes,
+              leftImageBytes: shadowLeftBytes,
+            ),
             pw.SizedBox(height: 12),
           ],
 
@@ -1641,6 +1667,158 @@ class PdfExportService {
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  /// SHADOW TEST - DETAILED
+  pw.Widget _buildShadowTestDetailedSection(
+    TestResultModel result, {
+    Uint8List? rightImageBytes,
+    Uint8List? leftImageBytes,
+  }) {
+    if (result.shadowTest == null) return pw.SizedBox();
+    final st = result.shadowTest!;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(height: 6),
+        _buildSectionHeader('VAN HERICK SHADOW TEST (ANGLE ASSESSMENT)'),
+        pw.SizedBox(height: 10),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              child: _buildEyeShadowDetail(
+                'RIGHT EYE (OD)',
+                st.rightEye,
+                rightImageBytes,
+                PdfColors.blueGrey700,
+              ),
+            ),
+            pw.SizedBox(width: 20),
+            pw.Expanded(
+              child: _buildEyeShadowDetail(
+                'LEFT EYE (OS)',
+                st.leftEye,
+                leftImageBytes,
+                PdfColors.blueGrey700,
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 12),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.blueGrey50,
+            borderRadius: pw.BorderRadius.circular(6),
+            border: pw.Border.all(color: PdfColors.blueGrey100, width: 0.5),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'CLINICAL INTERPRETATION',
+                style: pw.TextStyle(
+                  fontSize: 7,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blueGrey700,
+                ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                st.interpretation,
+                style: pw.TextStyle(
+                  fontSize: 8.5,
+                  color: PdfColors.blueGrey900,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Text(
+                'RISK ASSESSMENT: ${st.overallRisk}',
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                  color: st.requiresReferral
+                      ? PdfColors.red700
+                      : PdfColors.green700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildEyeShadowDetail(
+    String label,
+    EyeGrading eye,
+    Uint8List? imageBytes,
+    PdfColor color,
+  ) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          label,
+          style: pw.TextStyle(
+            fontSize: 7,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.grey600,
+          ),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: pw.BoxDecoration(
+            color: eye.grade.grade <= 2 ? PdfColors.red50 : PdfColors.green50,
+            borderRadius: pw.BorderRadius.circular(4),
+          ),
+          child: pw.Text(
+            'VAN HERICK GRADE: ${eye.grade.grade}',
+            style: pw.TextStyle(
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+              color: eye.grade.grade <= 2
+                  ? PdfColors.red700
+                  : PdfColors.green700,
+            ),
+          ),
+        ),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          'Status: ${eye.grade.angleStatus}',
+          style: const pw.TextStyle(fontSize: 7.5),
+        ),
+        pw.Text(
+          'Shadow Ratio: ${eye.shadowRatio?.toStringAsFixed(2) ?? "N/A"}',
+          style: const pw.TextStyle(fontSize: 7.5),
+        ),
+        pw.SizedBox(height: 8),
+        if (imageBytes != null)
+          pw.Container(
+            height: 100,
+            width: double.infinity,
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey200),
+            ),
+            child: pw.Image(pw.MemoryImage(imageBytes), fit: pw.BoxFit.cover),
+          )
+        else
+          pw.Container(
+            height: 100,
+            width: double.infinity,
+            decoration: pw.BoxDecoration(color: PdfColors.grey100),
+            child: pw.Center(
+              child: pw.Text(
+                'IMAGE NOT AVAILABLE',
+                style: pw.TextStyle(fontSize: 6, color: PdfColors.grey400),
+              ),
+            ),
+          ),
       ],
     );
   }

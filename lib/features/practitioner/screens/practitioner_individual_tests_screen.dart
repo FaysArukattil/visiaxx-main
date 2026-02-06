@@ -158,6 +158,15 @@ class IndividualTestsScreen extends StatelessWidget {
           onTap: () => _handleTestSelection(context, 'mobile_refractometry'),
           screenWidth: screenWidth,
         ),
+        SizedBox(height: cardSpacing),
+        _IndividualTestCard(
+          icon: Icons.wb_sunny_outlined,
+          title: 'Van Herick Shadow Test',
+          description:
+              'Assess anterior chamber depth and glaucoma risk using shadow analysis',
+          onTap: () => _handleTestSelection(context, 'shadow_test'),
+          screenWidth: screenWidth,
+        ),
       ],
     );
   }
