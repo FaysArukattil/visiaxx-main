@@ -22,6 +22,7 @@ import 'package:visiaxx/data/models/color_vision_result.dart';
 import 'package:visiaxx/data/models/pelli_robson_result.dart';
 import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
 import 'package:visiaxx/data/models/refraction_prescription_model.dart';
+import 'package:visiaxx/data/models/shadow_test_result.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
 /// Comprehensive results screen displaying all test data
@@ -343,6 +344,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                         Icons.phone_android_rounded,
                       ),
                       _buildRefractometryCard(provider),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Shadow Test Results (Cataract Screening)
+                    if (_shouldShowSection(provider, 'shadow_test')) ...[
+                      _buildSectionTitle(
+                        'Cataract Screening (Shadow Test)',
+                        Icons.wb_sunny_rounded,
+                      ),
+                      _buildShadowTestCard(provider),
                       const SizedBox(height: 20),
                     ],
 
@@ -768,13 +779,17 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     );
   }
 
-  Widget _buildClinicalInfoSection(String title, String description) {
+  Widget _buildClinicalInfoSection(
+    String title,
+    String description, {
+    IconData? icon,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(Icons.info_outline, size: 14, color: context.primary),
+            Icon(icon ?? Icons.info_outline, size: 14, color: context.primary),
             const SizedBox(width: 8),
             Text(
               title,
@@ -1927,6 +1942,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           return _hasPelliRobsonResults(provider);
         case 'mobile_refractometry':
           return _hasRefractometryResults(provider);
+        case 'shadow_test':
+          return _hasShadowTestData(provider);
         default:
           return false;
       }
@@ -1951,6 +1968,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         return _hasPelliRobsonResults(provider);
       case 'mobile_refractometry':
         return _hasRefractometryResults(provider);
+      case 'shadow_test':
+        return _hasShadowTestData(provider);
       default:
         return false;
     }
@@ -3041,5 +3060,231 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         widget.historicalResult?.amslerGridLeft != null ||
         provider.amslerGridRight != null ||
         provider.amslerGridLeft != null;
+  }
+
+  bool _hasShadowTestData(TestSessionProvider provider) {
+    return widget.historicalResult?.shadowTest != null ||
+        provider.shadowTestResult != null;
+  }
+
+  Widget _buildShadowTestCard(TestSessionProvider provider) {
+    final result =
+        widget.historicalResult?.shadowTest ?? provider.shadowTestResult;
+    if (result == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: context.primary.withValues(alpha: 0.1),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Professional Results Grid
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildShadowEyeResult(
+                  'Right Eye',
+                  result.rightEye,
+                  context.primary,
+                ),
+              ),
+              Container(
+                width: 1.5,
+                height: 120,
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      context.dividerColor.withValues(alpha: 0.1),
+                      context.dividerColor.withValues(alpha: 0.3),
+                      context.dividerColor.withValues(alpha: 0.1),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: _buildShadowEyeResult(
+                  'Left Eye',
+                  result.leftEye,
+                  context.info,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 48, thickness: 1),
+
+          // Clinical Interpretation Section
+          _buildClinicalInfoSection(
+            'Professional Interpretation',
+            result.interpretation,
+            icon: Icons.analytics_rounded,
+          ),
+          const SizedBox(height: 16),
+
+          // Clinical Finding/Conclusion Section
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color:
+                  (result.requiresReferral ? context.warning : context.success)
+                      .withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color:
+                    (result.requiresReferral
+                            ? context.warning
+                            : context.success)
+                        .withValues(alpha: 0.2),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  result.requiresReferral
+                      ? Icons.warning_amber_rounded
+                      : Icons.check_circle_outline_rounded,
+                  color: result.requiresReferral
+                      ? context.warning
+                      : context.success,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Conclusion',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: result.requiresReferral
+                              ? context.warning
+                              : context.success,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        result.conclusion,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: result.requiresReferral
+                              ? context.warning.withValues(alpha: 0.9)
+                              : context.success.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShadowEyeResult(String label, EyeGrading grading, Color color) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w900,
+            fontSize: 13,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Image visualization
+        if (grading.awsImageUrl != null || grading.imagePath != null)
+          Container(
+            height: 80,
+            width: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: grading.awsImageUrl != null
+                  ? Image.network(
+                      grading.awsImageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildFallbackImage(),
+                    )
+                  : Image.file(
+                      File(grading.imagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildFallbackImage(),
+                    ),
+            ),
+          )
+        else
+          _buildFallbackImage(),
+        const SizedBox(height: 12),
+        // Professional Stats
+        _buildShadowStatItem('Grade', grading.grade.grade.toString(), color),
+        _buildShadowStatItem('Status', grading.grade.angleStatus, color),
+        _buildShadowStatItem('Ratio', grading.grade.ratio, color),
+      ],
+    );
+  }
+
+  Widget _buildShadowStatItem(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: context.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFallbackImage() {
+    return Container(
+      height: 80,
+      width: 80,
+      decoration: BoxDecoration(
+        color: context.dividerColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        Icons.visibility_off_rounded,
+        color: context.textTertiary,
+        size: 24,
+      ),
+    );
   }
 }

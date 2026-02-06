@@ -5,6 +5,7 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/shadow_test_provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 
 class ShadowTestScreen extends StatefulWidget {
   const ShadowTestScreen({super.key});
@@ -19,6 +20,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ShadowTestProvider>().initializeCamera();
+      context.read<TestSessionProvider>().startIndividualTest('shadow_test');
     });
   }
 
@@ -31,7 +33,12 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
     if (provider.state == ShadowTestState.result) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          Navigator.pushReplacementNamed(context, '/shadow-test-result');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const QuickTestResultScreen(),
+            ),
+          );
         }
       });
     }

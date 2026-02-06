@@ -52,7 +52,6 @@ import 'features/individual_tests/screens/standalone_contrast_sensitivity_screen
 import 'features/individual_tests/screens/standalone_mobile_refractometry_screen.dart';
 import 'features/individual_tests/screens/shadow_test_intro_screen.dart';
 import 'features/individual_tests/screens/shadow_test_screen.dart';
-import 'features/individual_tests/screens/shadow_test_result_screen.dart';
 import 'data/providers/shadow_test_provider.dart';
 
 // Providers
@@ -311,8 +310,6 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/individual-tests': (context) => const IndividualTestsScreen(),
               '/shadow-test-intro': (context) => const ShadowTestIntroScreen(),
               '/shadow-test-main': (context) => const ShadowTestScreen(),
-              '/shadow-test-result': (context) =>
-                  const ShadowTestResultScreen(),
               '/add-patient-questionnaire': (context) =>
                   const AddPatientQuestionnaireScreen(),
             },

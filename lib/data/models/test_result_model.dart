@@ -169,6 +169,7 @@ class TestResultModel {
       'amslerGridLeft': amslerGridLeft?.toMap(),
       'pelliRobson': pelliRobson?.toMap(),
       'mobileRefractometry': mobileRefractometry?.toJson(),
+      'shadowTest': shadowTest?.toJson(),
       'refractionPrescription': refractionPrescription?.toJson(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
@@ -235,7 +236,9 @@ class TestResultModel {
     ShadowTestResult? shadowTest,
   }) {
     // Check for URGENT conditions (severe/bilateral issues)
-    if (shadowTest != null && shadowTest.overallRisk == 'CRITICAL') {
+    if (shadowTest != null &&
+        (shadowTest.overallRisk == 'CRITICAL' ||
+            shadowTest.overallRisk == 'VERY HIGH')) {
       return TestStatus.urgent;
     }
 
@@ -300,8 +303,8 @@ class TestResultModel {
     if (pelliRobson != null && pelliRobson.needsReferral)
       return TestStatus.review;
     if (shadowTest != null &&
-        (shadowTest.overallRisk == 'VERY HIGH' ||
-            shadowTest.overallRisk == 'HIGH')) {
+        (shadowTest.overallRisk == 'HIGH' ||
+            shadowTest.overallRisk == 'MODERATE')) {
       return TestStatus.review;
     }
 
