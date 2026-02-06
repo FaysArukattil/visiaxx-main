@@ -1359,7 +1359,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         result.colorVision != null ||
         result.pelliRobson != null ||
         result.amslerGridRight != null ||
-        result.amslerGridLeft != null;
+        result.amslerGridLeft != null ||
+        result.shadowTest != null;
 
     if (!hasVA && !hasRefraction && !hasOthers) {
       return Container(
@@ -1547,7 +1548,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                       ],
                     ),
                     if (result.amslerGridRight != null ||
-                        result.amslerGridLeft != null)
+                        result.amslerGridLeft != null ||
+                        result.shadowTest != null)
                       const SizedBox(height: 8),
                   ],
                   // Amsler Grid - Per Eye
@@ -1580,6 +1582,38 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                                 : 'NORMAL',
                             icon: Icons.grid_on,
                           ),
+                      ],
+                    ),
+                    if (result.amslerGridRight != null ||
+                        result.amslerGridLeft != null)
+                      const SizedBox(height: 8),
+                  ],
+                  // Shadow Test - Per Eye
+                  if (result.shadowTest != null) ...[
+                    if (result.colorVision != null ||
+                        result.pelliRobson != null ||
+                        result.amslerGridRight != null ||
+                        result.amslerGridLeft != null)
+                      const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Right Eye Shadow
+                        _buildDiagnosticItem(
+                          'SHADOW (RIGHT)',
+                          'G${result.shadowTest!.rightEye.grade.grade}',
+                          icon: Icons.wb_sunny_outlined,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: context.primary.withValues(alpha: 0.15),
+                        ),
+                        // Left Eye Shadow
+                        _buildDiagnosticItem(
+                          'SHADOW (LEFT)',
+                          'G${result.shadowTest!.leftEye.grade.grade}',
+                          icon: Icons.wb_sunny_outlined,
+                        ),
                       ],
                     ),
                   ],

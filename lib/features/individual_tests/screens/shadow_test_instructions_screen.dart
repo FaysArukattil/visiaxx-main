@@ -274,7 +274,7 @@ class _ShadowTestInstructionsScreenState
                 ? Row(
                     children: [
                       Expanded(
-                        flex: 5,
+                        flex: 6,
                         child: SingleChildScrollView(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,53 +308,64 @@ class _ShadowTestInstructionsScreenState
                         ),
                       ),
                       if (animation != null) ...[
-                        const SizedBox(width: 24),
+                        const SizedBox(width: 16),
                         Expanded(
-                          flex: 5,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 200),
-                            child: Center(child: animation),
+                          flex: 4,
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 180),
+                              child: animation,
+                            ),
                           ),
                         ),
                       ],
                     ],
                   )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Step ${index + 1} of $_totalPages',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: context.primary,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _stepTitles[index],
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: context.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildModernInstructionItem(
-                        icon,
-                        title,
-                        description,
-                        color,
-                      ),
-                      if (animation != null)
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 24.0),
-                            child: Center(child: animation),
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Step ${index + 1} of $_totalPages',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.primary,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.1,
                           ),
                         ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          _stepTitles[index],
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildModernInstructionItem(
+                          icon,
+                          title,
+                          description,
+                          color,
+                        ),
+                        if (animation != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 24.0),
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 250,
+                                  maxWidth: 250,
+                                ),
+                                child: animation,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
           ),
         );

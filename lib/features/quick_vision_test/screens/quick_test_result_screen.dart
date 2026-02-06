@@ -349,10 +349,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
                     // Shadow Test Results (Cataract Screening)
                     if (_shouldShowSection(provider, 'shadow_test')) ...[
-                      _buildSectionTitle(
-                        'Cataract Screening (Shadow Test)',
-                        Icons.wb_sunny_rounded,
-                      ),
+                      _buildSectionTitle('Shadow Test', Icons.wb_sunny_rounded),
                       _buildShadowTestCard(provider),
                       const SizedBox(height: 20),
                     ],
@@ -3092,7 +3089,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
+              Flexible(
                 child: _buildShadowEyeResult(
                   'Right Eye',
                   result.rightEye,
@@ -3100,9 +3097,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                 ),
               ),
               Container(
-                width: 1.5,
-                height: 120,
-                margin: const EdgeInsets.symmetric(horizontal: 12),
+                width: 1,
+                height: 100,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -3115,7 +3112,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   ),
                 ),
               ),
-              Expanded(
+              Flexible(
                 child: _buildShadowEyeResult(
                   'Left Eye',
                   result.leftEye,
@@ -3243,6 +3240,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         const SizedBox(height: 12),
         // Professional Stats
         _buildShadowStatItem('Grade', grading.grade.grade.toString(), color),
+        Text(
+          grading.grade.glaucomaRisk,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: color.withValues(alpha: 0.8),
+          ),
+        ),
+        const SizedBox(height: 4),
         _buildShadowStatItem('Status', grading.grade.angleStatus, color),
         _buildShadowStatItem('Ratio', grading.grade.ratio, color),
       ],
