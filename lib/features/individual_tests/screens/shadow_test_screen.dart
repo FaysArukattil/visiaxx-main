@@ -139,122 +139,130 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
   }
 
   Widget _buildOverlay(BuildContext context, ShadowTestProvider provider) {
-    return Column(
-      children: [
-        const SizedBox(height: 100),
-        // Instructions
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: Colors.black45,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white24),
-          ),
-          child: Text(
-            'Testing ${provider.currentEye.toUpperCase()} Eye',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        final isLandscape = orientation == Orientation.landscape;
 
-        const Spacer(),
-
-        // Eye detection guide
-        Center(
-          child: Container(
-            width: 280,
-            height: 280,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: provider.isReadyForCapture
-                    ? context.success
-                    : Colors.white54,
-                width: 3,
+        return Column(
+          children: [
+            SizedBox(height: isLandscape ? 40 : 100),
+            // Instructions
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.white24),
               ),
-            ),
-            child: provider.isCapturing
-                ? null
-                : const Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.remove_red_eye_outlined,
-                        color: Colors.white54,
-                        size: 48,
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-
-        const Spacer(),
-
-        // Feedback and Capture Action
-        Padding(
-          padding: const EdgeInsets.only(bottom: 40.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                provider.readinessFeedback,
-                style: TextStyle(
-                  color: provider.isReadyForCapture
-                      ? Colors.white
-                      : Colors.white70,
-                  fontSize: 18,
+              child: Text(
+                'Testing ${provider.currentEye.toUpperCase()} Eye',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  shadows: const [
-                    Shadow(
-                      blurRadius: 10,
-                      color: Colors.black,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              GestureDetector(
-                onTap: provider.isReadyForCapture && !provider.isCapturing
-                    ? () {
-                        final sessionProvider = context
-                            .read<TestSessionProvider>();
-                        provider.captureAndAnalyze(sessionProvider);
-                      }
-                    : null,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
+            ),
+
+            const Spacer(),
+
+            // Eye detection guide
+            Center(
+              child: Container(
+                width: isLandscape ? 200 : 280,
+                height: isLandscape ? 200 : 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
                     color: provider.isReadyForCapture
-                        ? context.primary
-                        : Colors.white24,
+                        ? context.success
+                        : Colors.white54,
+                    width: 3,
                   ),
-                  child: provider.isCapturing
-                      ? const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        )
-                      : Center(
-                          child: Icon(
-                            Icons.camera_alt_rounded,
-                            color: provider.isReadyForCapture
-                                ? Colors.white
-                                : Colors.white38,
-                            size: 32,
-                          ),
-                        ),
                 ),
+                child: provider.isCapturing
+                    ? null
+                    : const Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.remove_red_eye_outlined,
+                            color: Colors.white54,
+                            size: 48,
+                          ),
+                        ],
+                      ),
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+
+            const Spacer(),
+
+            // Feedback and Capture Action
+            Padding(
+              padding: EdgeInsets.only(bottom: isLandscape ? 20.0 : 40.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    provider.readinessFeedback,
+                    style: TextStyle(
+                      color: provider.isReadyForCapture
+                          ? Colors.white
+                          : Colors.white70,
+                      fontSize: isLandscape ? 16 : 18,
+                      fontWeight: FontWeight.bold,
+                      shadows: const [
+                        Shadow(
+                          blurRadius: 10,
+                          color: Colors.black,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: isLandscape ? 12 : 24),
+                  GestureDetector(
+                    onTap: provider.isReadyForCapture && !provider.isCapturing
+                        ? () {
+                            final sessionProvider = context
+                                .read<TestSessionProvider>();
+                            provider.captureAndAnalyze(sessionProvider);
+                          }
+                        : null,
+                    child: Container(
+                      width: isLandscape ? 64 : 80,
+                      height: isLandscape ? 64 : 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                        color: provider.isReadyForCapture
+                            ? context.primary
+                            : Colors.white24,
+                      ),
+                      child: provider.isCapturing
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            )
+                          : Center(
+                              child: Icon(
+                                Icons.camera_alt_rounded,
+                                color: provider.isReadyForCapture
+                                    ? Colors.white
+                                    : Colors.white38,
+                                size: isLandscape ? 28 : 32,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

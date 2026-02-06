@@ -140,7 +140,7 @@ class _ShadowTestInstructionsScreenState
                       'Remove Specs',
                       'Please remove your spectacles or any eye-wear for measurement accuracy.',
                       context.primary,
-                      animation: const RemoveGlassesAnimation(),
+                      animation: const RemoveGlassesAnimation(isCompact: true),
                     ),
                     _buildStep(
                       1,
@@ -148,7 +148,7 @@ class _ShadowTestInstructionsScreenState
                       'Dim Environment',
                       'Find a dimly lit room. Bright lights can interfere with shadow depth detection.',
                       context.warning,
-                      animation: const DimLightingAnimation(),
+                      animation: const DimLightingAnimation(isCompact: true),
                     ),
                     _buildStep(
                       2,
@@ -156,7 +156,9 @@ class _ShadowTestInstructionsScreenState
                       'Side Illumination',
                       'The examiner should use the smartphone flashlight from the side to create the shadow.',
                       context.info,
-                      animation: const SideIlluminationAnimation(),
+                      animation: const SideIlluminationAnimation(
+                        isCompact: true,
+                      ),
                     ),
                     _buildStep(
                       3,
@@ -164,7 +166,7 @@ class _ShadowTestInstructionsScreenState
                       'Look at Camera',
                       'Look directly at the camera lens. Don\'t move eyes frequently and blink normally.',
                       context.success,
-                      animation: const StayFocusedAnimation(),
+                      animation: const StayFocusedAnimation(isCompact: true),
                     ),
                   ],
                 ),
@@ -220,8 +222,8 @@ class _ShadowTestInstructionsScreenState
                 const SizedBox(height: 16),
               ],
               SizedBox(
-                width: isLandscape ? 200 : double.infinity,
-                height: isLandscape ? 48 : 56,
+                width: isLandscape ? 180 : double.infinity,
+                height: isLandscape ? 44 : 56,
                 child: ElevatedButton(
                   onPressed: _handleNext,
                   style: ElevatedButton.styleFrom(
@@ -234,7 +236,7 @@ class _ShadowTestInstructionsScreenState
                   child: Text(
                     _currentPage < _totalPages - 1 ? 'Next' : 'Start Test',
                     style: TextStyle(
-                      fontSize: isLandscape ? 16 : 18,
+                      fontSize: isLandscape ? 15 : 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -308,12 +310,12 @@ class _ShadowTestInstructionsScreenState
                         ),
                       ),
                       if (animation != null) ...[
-                        const SizedBox(width: 16),
-                        Expanded(
+                        const SizedBox(width: 12),
+                        Flexible(
                           flex: 4,
                           child: Center(
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 180),
+                              constraints: const BoxConstraints(maxHeight: 160),
                               child: animation,
                             ),
                           ),

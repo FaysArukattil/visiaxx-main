@@ -1710,11 +1710,11 @@ class PdfExportService {
         ),
         pw.SizedBox(height: 12),
         pw.Container(
-          padding: const pw.EdgeInsets.all(10),
+          padding: const pw.EdgeInsets.all(12),
           decoration: pw.BoxDecoration(
             color: PdfColors.blueGrey50,
-            borderRadius: pw.BorderRadius.circular(6),
-            border: pw.Border.all(color: PdfColors.blueGrey100, width: 0.5),
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: PdfColors.blueGrey100, width: 0.8),
           ),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -1722,29 +1722,77 @@ class PdfExportService {
               pw.Text(
                 'CLINICAL INTERPRETATION',
                 style: pw.TextStyle(
-                  fontSize: 7,
+                  fontSize: 7.5,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.blueGrey700,
+                  letterSpacing: 0.5,
                 ),
               ),
-              pw.SizedBox(height: 4),
+              pw.SizedBox(height: 6),
               pw.Text(
                 st.interpretation,
                 style: pw.TextStyle(
-                  fontSize: 8.5,
+                  fontSize: 9,
                   color: PdfColors.blueGrey900,
+                  lineSpacing: 1.2,
                 ),
               ),
-              pw.SizedBox(height: 8),
+              pw.SizedBox(height: 12),
               pw.Text(
-                'RISK ASSESSMENT: ${st.overallRisk}',
+                'CLINICAL RECOMMENDATION',
                 style: pw.TextStyle(
-                  fontSize: 8,
+                  fontSize: 7.5,
                   fontWeight: pw.FontWeight.bold,
                   color: st.requiresReferral
                       ? PdfColors.red700
                       : PdfColors.green700,
+                  letterSpacing: 0.5,
                 ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Container(
+                width: double.infinity,
+                padding: const pw.EdgeInsets.all(8),
+                decoration: pw.BoxDecoration(
+                  color: st.requiresReferral
+                      ? PdfColors.red50
+                      : PdfColors.green50,
+                  borderRadius: pw.BorderRadius.circular(4),
+                ),
+                child: pw.Text(
+                  st.conclusion.toUpperCase(),
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                    color: st.requiresReferral
+                        ? PdfColors.red800
+                        : PdfColors.green800,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'OVERALL RISK: ',
+                    style: pw.TextStyle(
+                      fontSize: 8,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                  pw.Text(
+                    st.overallRisk,
+                    style: pw.TextStyle(
+                      fontSize: 9,
+                      fontWeight: pw.FontWeight.bold,
+                      color: st.requiresReferral
+                          ? PdfColors.red700
+                          : PdfColors.green700,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1791,11 +1839,22 @@ class PdfExportService {
         pw.SizedBox(height: 4),
         pw.Text(
           'Status: ${eye.grade.angleStatus}',
-          style: const pw.TextStyle(fontSize: 7.5),
+          style: pw.TextStyle(
+            fontSize: 7.5,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.blueGrey800,
+          ),
         ),
         pw.Text(
-          'Shadow Ratio: ${eye.shadowRatio?.toStringAsFixed(2) ?? "N/A"}',
-          style: const pw.TextStyle(fontSize: 7.5),
+          'Risk: ${eye.grade.glaucomaRisk}',
+          style: pw.TextStyle(
+            fontSize: 7.5,
+            color: eye.grade.grade <= 2 ? PdfColors.red700 : PdfColors.green700,
+          ),
+        ),
+        pw.Text(
+          'Shadow Ratio: ${eye.shadowRatio?.toStringAsFixed(2) ?? "N/A"} (${eye.grade.ratio})',
+          style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
         ),
         pw.SizedBox(height: 8),
         if (imageBytes != null)
