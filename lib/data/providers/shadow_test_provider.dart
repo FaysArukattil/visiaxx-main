@@ -66,6 +66,11 @@ class ShadowTestProvider extends ChangeNotifier {
       _state = ShadowTestState.initial;
 
       await _cameraService.initialize();
+
+      // Automatically turn on flash for the test
+      _isFlashOn = true;
+      await _cameraService.setFlashMode(FlashMode.torch);
+
       _isReadyForCapture = true; // Enable manual capture
       _readinessFeedback = 'Ready to capture ${_currentEye.toUpperCase()} eye';
       notifyListeners();
@@ -136,6 +141,10 @@ class ShadowTestProvider extends ChangeNotifier {
         if (_finalResult != null) {
           sessionProvider.setShadowTestResult(_finalResult!);
         }
+
+        // Turn off flash once test is complete
+        _isFlashOn = false;
+        await _cameraService.setFlashMode(FlashMode.off);
 
         _state = ShadowTestState.result;
       }

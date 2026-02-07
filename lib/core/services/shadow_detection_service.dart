@@ -251,67 +251,44 @@ class ShadowDetectionService {
       }
 
       final grayscale = img.grayscale(image);
-      final width = grayscale.width;
-      final height = grayscale.height;
-      final centerX = width ~/ 2;
-      final centerY = height ~/ 2;
 
-      // Check 1: Central region (pupil candidate) must be DARK
-      final centerBrightness = _calculateAverageBrightnessInRegion(
-        grayscale,
-        centerX - width ~/ 10,
-        centerY - height ~/ 10,
-        width ~/ 5,
-        height ~/ 5,
-      );
+      // Step 1: Find the actual pupil center (handles misalignment)
+      final pupilCenter = _findPupilCenter(grayscale);
+      final cx = pupilCenter.dx.toInt();
+      final cy = pupilCenter.dy.toInt();
 
-      // Typical pupil should be dark, but allow higher threshold for flash reflections (< 100 on 255 scale)
-      final isCenterDark = centerBrightness < 100;
+      AppLogger.log('$_tag: Found pupil candidate at ($cx, $cy)', tag: _tag);
 
-      // Check 2: Look for radial brightness gradient (dark center, brighter edges)
-      final hasRadialGradient = _checkRadialBrightnessGradient(
-        grayscale,
-        centerX,
-        centerY,
-      );
+      // Step 2: Calculate individual feature scores
+      final radialScore = _calculateRadialGradientScore(grayscale, cx, cy);
+      final circularScore = _calculateCircularPatternScore(grayscale, cx, cy);
+      final contrastScore = _calculateContrastScore(grayscale, cx, cy);
 
-      // Check 3: Look for circular pattern (pupil/iris edge) with higher threshold
-      final hasCircularPattern = _detectCircularPattern(
-        grayscale,
-        centerX,
-        centerY,
-      );
-
-      // Check 4: Check for appropriate contrast in center region
-      final hasSufficientContrast = _checkCenterContrast(
-        grayscale,
-        centerX,
-        centerY,
-      );
-
-      final passedChecks = [
-        isCenterDark,
-        hasRadialGradient,
-        hasCircularPattern,
-        hasSufficientContrast,
-      ].where((v) => v).length;
+      // Step 3: Combined Weighted Signature Score (Total: 100)
+      // Radial Gradient is the most specific eye feature (45%)
+      // Circularity indicates the iris/pupil shape (30%)
+      // Contrast indicates the pupil presence (25%)
+      final totalScore =
+          (radialScore * 0.45) +
+          (circularScore * 0.30) +
+          (contrastScore * 0.25);
 
       AppLogger.log(
-        '$_tag: Eye validation - darkCenter: $isCenterDark, radial: $hasRadialGradient, circular: $hasCircularPattern, contrast: $hasSufficientContrast',
+        '$_tag: Eye Signature - Radial: ${radialScore.toStringAsFixed(1)}, Circular: ${circularScore.toStringAsFixed(1)}, Contrast: ${contrastScore.toStringAsFixed(1)}, Total: ${totalScore.toStringAsFixed(1)}',
         tag: _tag,
       );
 
-      // Relaxed logic: Require at least 3 out of 4 checks to pass
-      // This allows for flash reflections which might make the center not "dark"
-      final isValid = passedChecks >= 3;
+      // Threshold for acceptance: 60/100 is typically a clear eye structure
+      final isValid = totalScore >= 60;
 
       if (!isValid) {
         String feedback = 'No eye detected. ';
-        if (!isCenterDark) {
-          feedback += 'Please center your eye correctly.';
+        if (totalScore < 30) {
+          feedback += 'Please position your eye clearly within the guide.';
+        } else if (radialScore < 40) {
+          feedback += 'Position your eye inside the circle and stay centered.';
         } else {
-          feedback +=
-              'Please position your eye within the circle and try again.';
+          feedback += 'Ensure smooth lighting and avoid blocking the eye.';
         }
 
         return EyeValidationResult(isValid: false, message: feedback);
@@ -334,39 +311,123 @@ class ShadowDetectionService {
     }
   }
 
-  /// Check for radial brightness gradient (dark center, brighter edges)
-  bool _checkRadialBrightnessGradient(img.Image image, int cx, int cy) {
-    final minDim = (image.width < image.height ? image.width : image.height);
-    final innerRadius = minDim ~/ 8; // Center region (pupil area)
-    final middleRadius = minDim ~/ 4; // Middle region (iris area)
-    final outerRadius = minDim ~/ 3; // Outer region (sclera area)
+  /// Finds the likely center of the pupil by scanning for the darkest robust region
+  Offset _findPupilCenter(img.Image image) {
+    final width = image.width;
+    final height = image.height;
 
-    final innerBrightness = _calculateCircularRegionBrightness(
+    // Scan the central 50% of the image
+    final startX = width ~/ 4;
+    final endX = (width * 3) ~/ 4;
+    final startY = height ~/ 4;
+    final endY = (height * 3) ~/ 4;
+
+    int minBrightness = 255;
+    int bestX = width ~/ 2;
+    int bestY = height ~/ 2;
+
+    // Use a small sliding window to find the darkest cluster (pupil)
+    // This ignores single pixel noise or reflections
+    final windowSize = width ~/ 15;
+
+    for (int y = startY; y < endY; y += windowSize ~/ 2) {
+      for (int x = startX; x < endX; x += windowSize ~/ 2) {
+        final brightness = _calculateAverageBrightnessInRegion(
+          image,
+          x,
+          y,
+          windowSize,
+          windowSize,
+        );
+
+        if (brightness < minBrightness) {
+          minBrightness = brightness.toInt();
+          bestX = x + windowSize ~/ 2;
+          bestY = y + windowSize ~/ 2;
+        }
+      }
+    }
+
+    return Offset(bestX.toDouble(), bestY.toDouble());
+  }
+
+  /// Calculates a score (0-100) based on the dark-center-bright-outer profile
+  double _calculateRadialGradientScore(img.Image image, int cx, int cy) {
+    final minDim = (image.width < image.height ? image.width : image.height);
+    final innerRadius = minDim ~/ 10;
+    final outerRadius = minDim ~/ 5;
+
+    final innerB = _calculateCircularRegionBrightness(
       image,
       cx,
       cy,
       0,
       innerRadius,
     );
-    final middleBrightness = _calculateCircularRegionBrightness(
+    final outerB = _calculateCircularRegionBrightness(
       image,
       cx,
       cy,
       innerRadius,
-      middleRadius,
-    );
-    final outerBrightness = _calculateCircularRegionBrightness(
-      image,
-      cx,
-      cy,
-      middleRadius,
       outerRadius,
     );
 
-    // Eye pattern: center should be darker than outer regions
-    // Allow some tolerance (center could be medium due to flash reflection)
-    return innerBrightness < outerBrightness + 30 &&
-        middleBrightness < outerBrightness + 20;
+    // Ideal eye: inner (pupil) is much darker than outer (iris/sclera)
+    final diff = outerB - innerB;
+
+    if (diff > 40) return 100;
+    if (diff < 5) return 0;
+    return (diff - 5) * (100 / 35);
+  }
+
+  /// Calculates a score (0-100) based on circular edge detection
+  double _calculateCircularPatternScore(img.Image image, int cx, int cy) {
+    final minDim = (image.width < image.height ? image.width : image.height);
+    final r = minDim ~/ 6;
+
+    const numSamples = 24;
+    int matches = 0;
+
+    for (int i = 0; i < numSamples; i++) {
+      final angle = (i / numSamples) * 2 * math.pi;
+      final x = (cx + r * math.cos(angle)).toInt().clamp(1, image.width - 2);
+      final y = (cy + r * math.sin(angle)).toInt().clamp(1, image.height - 2);
+
+      final left = image.getPixel(x - 1, y).r.toInt();
+      final right = image.getPixel(x + 1, y).r.toInt();
+      final top = image.getPixel(x, y - 1).r.toInt();
+      final bottom = image.getPixel(x, y + 1).r.toInt();
+
+      final gradient = ((right - left).abs() + (bottom - top).abs()) ~/ 2;
+      // Circular edges of eye/iris are typically sharp
+      if (gradient > 20) matches++;
+    }
+
+    return (matches / numSamples) * 100;
+  }
+
+  /// Calculates a score (0-100) based on local contrast
+  double _calculateContrastScore(img.Image image, int cx, int cy) {
+    final minDim = (image.width < image.height ? image.width : image.height);
+    final size = minDim ~/ 6;
+
+    int minVal = 255;
+    int maxVal = 0;
+
+    for (int y = cy - size; y < cy + size; y++) {
+      for (int x = cx - size; x < cx + size; x++) {
+        if (x < 0 || x >= image.width || y < 0 || y >= image.height) continue;
+        final val = image.getPixel(x, y).r.toInt();
+        if (val > 230) continue; // Ignore flash reflections
+        if (val < minVal) minVal = val;
+        if (val > maxVal) maxVal = val;
+      }
+    }
+
+    final diff = maxVal - minVal;
+    if (diff > 100) return 100;
+    if (diff < 20) return 0;
+    return (diff - 20) * (100 / 80);
   }
 
   double _calculateCircularRegionBrightness(
@@ -380,12 +441,12 @@ class ShadowDetectionService {
     int count = 0;
 
     for (
-      int y = (cy - outerR).clamp(0, image.height);
+      int y = (cy - outerR).clamp(0, image.height - 1);
       y < (cy + outerR).clamp(0, image.height);
       y++
     ) {
       for (
-        int x = (cx - outerR).clamp(0, image.width);
+        int x = (cx - outerR).clamp(0, image.width - 1);
         x < (cx + outerR).clamp(0, image.width);
         x++
       ) {
@@ -393,78 +454,17 @@ class ShadowDetectionService {
         final dy = y - cy;
         final dist = (dx * dx + dy * dy);
         if (dist >= innerR * innerR && dist <= outerR * outerR) {
-          total += image.getPixel(x, y).r.toInt();
-          count++;
+          final val = image.getPixel(x, y).r.toInt();
+          // Ignore bright flash highlights (reflections)
+          if (val < 235) {
+            total += val;
+            count++;
+          }
         }
       }
     }
 
-    return count > 0 ? total / count : 0.0;
-  }
-
-  /// Detect circular patterns using edge detection on concentric rings
-  bool _detectCircularPattern(img.Image image, int cx, int cy) {
-    final minDim = (image.width < image.height ? image.width : image.height);
-    final searchRadius = minDim ~/ 4;
-
-    // Sample points around circles at different radii
-    int edgeCount = 0;
-    const radii = [0.15, 0.25, 0.35]; // Proportions of search radius
-
-    for (final radiusProp in radii) {
-      final r = (searchRadius * radiusProp).toInt();
-      if (r < 3) continue;
-
-      const numSamples = 16;
-      int localEdges = 0;
-
-      for (int i = 0; i < numSamples; i++) {
-        final angle = (i / numSamples) * 2 * 3.14159;
-        final x = (cx + r * math.cos(angle)).toInt().clamp(1, image.width - 2);
-        final y = (cy + r * math.sin(angle)).toInt().clamp(1, image.height - 2);
-
-        // Simple gradient magnitude
-        final left = image.getPixel(x - 1, y).r.toInt();
-        final right = image.getPixel(x + 1, y).r.toInt();
-        final top = image.getPixel(x, y - 1).r.toInt();
-        final bottom = image.getPixel(x, y + 1).r.toInt();
-
-        final gradient = ((right - left).abs() + (bottom - top).abs()) ~/ 2;
-        if (gradient > 15) localEdges++;
-      }
-
-      // Expect at least 30% of samples to show edges for circular structure
-      if (localEdges >= numSamples * 0.3) edgeCount++;
-    }
-
-    // At least 2 of 3 radii should show circular edge patterns
-    return edgeCount >= 2;
-  }
-
-  /// Check for sufficient contrast in the center region
-  bool _checkCenterContrast(img.Image image, int cx, int cy) {
-    final minDim = (image.width < image.height ? image.width : image.height);
-    final regionSize = minDim ~/ 5;
-
-    int minVal = 255;
-    int maxVal = 0;
-
-    final startX = (cx - regionSize).clamp(0, image.width);
-    final endX = (cx + regionSize).clamp(0, image.width);
-    final startY = (cy - regionSize).clamp(0, image.height);
-    final endY = (cy + regionSize).clamp(0, image.height);
-
-    for (int y = startY; y < endY; y++) {
-      for (int x = startX; x < endX; x++) {
-        final val = image.getPixel(x, y).r.toInt();
-        if (val < minVal) minVal = val;
-        if (val > maxVal) maxVal = val;
-      }
-    }
-
-    final contrast = maxVal - minVal;
-    // Eyes typically have high contrast (pupil vs iris/sclera)
-    return contrast > 80;
+    return count > 0 ? total / count : (count == 0 ? 0.0 : 255.0);
   }
 
   double _calculateAverageBrightnessInRegion(
@@ -484,8 +484,12 @@ class ShadowDetectionService {
 
     for (int j = startY; j < endY; j++) {
       for (int i = startX; i < endX; i++) {
-        total += image.getPixel(i, j).r.toInt();
-        count++;
+        final val = image.getPixel(i, j).r.toInt();
+        // Ignore highlights
+        if (val < 235) {
+          total += val;
+          count++;
+        }
       }
     }
     return count > 0 ? total / count : 255.0;
