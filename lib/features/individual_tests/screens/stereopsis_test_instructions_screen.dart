@@ -5,6 +5,8 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../data/providers/test_session_provider.dart';
+import '../../quick_vision_test/widgets/instruction_animations.dart';
+import '../../../core/constants/app_colors.dart';
 
 class StereopsisTestInstructionsScreen extends StatefulWidget {
   const StereopsisTestInstructionsScreen({super.key});
@@ -18,21 +20,19 @@ class _StereopsisTestInstructionsScreenState
     extends State<StereopsisTestInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 4;
+  final int _totalPages = 3;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
-    'Special Glasses',
-    'Viewing Distance',
-    'Both Eyes Open',
-    'Identify 3D Circle',
+    'Wear 3D Glasses',
+    'Maintain Distance',
+    'Identify 3D Ball',
   ];
 
   final List<String> _ttsMessages = [
-    'Please wear the special red and cyan anaglyph glasses for this test.',
+    'Please wear the special red and blue anaglyph glasses for this test.',
     'Position yourself at arm\'s length, about 40 centimeters from the screen.',
-    'Keep both eyes open and relaxed throughout the test.',
-    'You will see 4 circles. Tap on the one that appears to pop out in 3D.',
+    'You will see 4 balls. Tap on the one that appears to pop out in 3D.',
   ];
 
   @override
@@ -131,34 +131,26 @@ class _StereopsisTestInstructionsScreenState
                     _buildStep(
                       0,
                       Icons.threed_rotation_rounded,
-                      'Wear 3D Glasses',
-                      'Put on the special red-cyan (anaglyph) glasses. The red lens goes over your LEFT eye, cyan over your RIGHT eye.',
+                      '3D Glasses',
+                      'Put on the special red-blue anaglyph glasses. The red lens goes over your LEFT eye, blue over your RIGHT eye.',
                       context.primary,
-                      animation: const _RedCyanGlassesAnimation(),
+                      animation: const _Wear3DGlassesAnimation(),
                     ),
                     _buildStep(
                       1,
                       Icons.straighten_rounded,
-                      'Maintain Distance',
+                      '40cm Distance',
                       'Position yourself about 40cm (arm\'s length) from the screen for optimal 3D effect.',
                       context.warning,
-                      animation: const _DistanceAnimation(),
+                      animation: const DistanceAnimation(isCompact: false),
                     ),
                     _buildStep(
                       2,
-                      Icons.visibility_rounded,
-                      'Both Eyes Open',
-                      'Keep both eyes open and relaxed. Do not squint or close one eye.',
-                      context.info,
-                      animation: const _BothEyesAnimation(),
-                    ),
-                    _buildStep(
-                      3,
                       Icons.touch_app_rounded,
-                      'Tap the 3D Circle',
-                      'You will see 4 circles. ONE will appear to "pop out" with visible red and cyan separation. Tap that circle.',
+                      '3D Effect',
+                      'You will see 4 balls. ONE will appear to "pop out" in 3D. Tap that ball to respond.',
                       context.success,
-                      animation: const _CircleSelectionAnimation(),
+                      animation: const _Grid3DBallAnimation(),
                     ),
                   ],
                 ),
@@ -407,26 +399,44 @@ class _StereopsisTestInstructionsScreenState
   }
 }
 
-// Animation for red-cyan glasses
-class _RedCyanGlassesAnimation extends StatefulWidget {
-  const _RedCyanGlassesAnimation();
+// Animation showing user wearing 3D glasses (Red/Blue)
+class _Wear3DGlassesAnimation extends StatefulWidget {
+  const _Wear3DGlassesAnimation();
 
   @override
-  State<_RedCyanGlassesAnimation> createState() =>
-      _RedCyanGlassesAnimationState();
+  State<_Wear3DGlassesAnimation> createState() =>
+      _Wear3DGlassesAnimationState();
 }
 
-class _RedCyanGlassesAnimationState extends State<_RedCyanGlassesAnimation>
+class _Wear3DGlassesAnimationState extends State<_Wear3DGlassesAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 2),
       vsync: this,
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 2000),
+    );
+
+    _slideAnimation = Tween<double>(begin: 100, end: 0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
+      ),
+    );
+
+    _controller.repeat(reverse: false);
   }
 
   @override
@@ -437,192 +447,173 @@ class _RedCyanGlassesAnimationState extends State<_RedCyanGlassesAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
-          size: const Size(200, 120),
-          painter: _GlassesPainter(_controller.value),
-        );
-      },
+    const faceSize = 100.0;
+    const eyeSize = 15.0;
+
+    return Center(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // Face
+              Container(
+                width: faceSize,
+                height: faceSize,
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.warning, width: 3),
+                ),
+                child: Stack(
+                  children: [
+                    // Left Eye
+                    Positioned(
+                      top: faceSize * 0.35,
+                      left: faceSize * 0.25,
+                      child: Container(
+                        width: eyeSize,
+                        height: eyeSize,
+                        decoration: const BoxDecoration(
+                          color: AppColors.textPrimary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    // Right Eye
+                    Positioned(
+                      top: faceSize * 0.35,
+                      right: faceSize * 0.25,
+                      child: Container(
+                        width: eyeSize,
+                        height: eyeSize,
+                        decoration: const BoxDecoration(
+                          color: AppColors.textPrimary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 3D Glasses sliding in
+              Transform.translate(
+                offset: Offset(0, _slideAnimation.value - 10),
+                child: Opacity(
+                  opacity: _fadeAnimation.value,
+                  child: CustomPaint(
+                    size: const Size(120, 40),
+                    painter: _RedBlueGlassesPainter(),
+                  ),
+                ),
+              ),
+
+              // Checkmark when done
+              if (_controller.value > 0.8)
+                Positioned(
+                  top: -10,
+                  right: -10,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
 
-class _GlassesPainter extends CustomPainter {
-  final double progress;
-  _GlassesPainter(this.progress);
-
+class _RedBlueGlassesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final centerY = size.height / 2;
-    final glassRadius = size.width * 0.2;
+    final framePaint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+
+    final redLensPaint = Paint()
+      ..color = Colors.red.withValues(alpha: 0.5)
+      ..style = PaintingStyle.fill;
+
+    final blueLensPaint = Paint()
+      ..color = Colors.blue.withValues(alpha: 0.5)
+      ..style = PaintingStyle.fill;
 
     // Left lens (RED)
-    final leftCenter = Offset(size.width * 0.3, centerY);
-    final redPaint = Paint()
-      ..color = Colors.red.withValues(alpha: 0.6 + progress * 0.3)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(leftCenter, glassRadius, redPaint);
-    canvas.drawCircle(
-      leftCenter,
-      glassRadius,
-      Paint()
-        ..color = Colors.red.shade900
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
+    final leftLens = Rect.fromLTWH(10, 5, 35, 30);
+    canvas.drawRect(leftLens, redLensPaint);
+    canvas.drawRect(leftLens, framePaint);
 
-    // Right lens (CYAN)
-    final rightCenter = Offset(size.width * 0.7, centerY);
-    final cyanPaint = Paint()
-      ..color = Colors.cyan.withValues(alpha: 0.6 + progress * 0.3)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(rightCenter, glassRadius, cyanPaint);
-    canvas.drawCircle(
-      rightCenter,
-      glassRadius,
-      Paint()
-        ..color = Colors.cyan.shade900
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
+    // Right lens (BLUE)
+    final rightLens = Rect.fromLTWH(75, 5, 35, 30);
+    canvas.drawRect(rightLens, blueLensPaint);
+    canvas.drawRect(rightLens, framePaint);
 
     // Bridge
-    final bridgePaint = Paint()
-      ..color = Colors.grey.shade800
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
-    canvas.drawLine(
-      Offset(leftCenter.dx + glassRadius, centerY),
-      Offset(rightCenter.dx - glassRadius, centerY),
-      bridgePaint,
-    );
+    canvas.drawLine(const Offset(45, 20), const Offset(75, 20), framePaint);
 
-    // Temple arms
-    canvas.drawLine(
-      Offset(leftCenter.dx - glassRadius, centerY),
-      Offset(0, centerY - 10),
-      bridgePaint,
-    );
-    canvas.drawLine(
-      Offset(rightCenter.dx + glassRadius, centerY),
-      Offset(size.width, centerY - 10),
-      bridgePaint,
-    );
+    // Arms
+    canvas.drawLine(const Offset(10, 20), const Offset(0, 15), framePaint);
+    canvas.drawLine(const Offset(110, 20), const Offset(120, 15), framePaint);
   }
 
   @override
-  bool shouldRepaint(covariant _GlassesPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// Distance animation
-class _DistanceAnimation extends StatelessWidget {
-  const _DistanceAnimation();
+// 2x2 Grid of Balls with 3D Effect and Tap Interaction
+class _Grid3DBallAnimation extends StatefulWidget {
+  const _Grid3DBallAnimation();
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.phone_android, size: 60, color: context.primary),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(width: 80, height: 2, color: context.primary),
-            const SizedBox(width: 8),
-            Text(
-              '40cm',
-              style: TextStyle(
-                color: context.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(width: 80, height: 2, color: context.primary),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Icon(Icons.person, size: 60, color: context.textSecondary),
-      ],
-    );
-  }
+  State<_Grid3DBallAnimation> createState() => _Grid3DBallAnimationState();
 }
 
-// Both eyes animation
-class _BothEyesAnimation extends StatelessWidget {
-  const _BothEyesAnimation();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildEye(context, 'L'),
-        const SizedBox(width: 40),
-        _buildEye(context, 'R'),
-      ],
-    );
-  }
-
-  Widget _buildEye(BuildContext context, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            border: Border.all(color: context.primary, width: 3),
-          ),
-          child: Center(
-            child: Container(
-              width: 25,
-              height: 25,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.primary,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            color: context.textSecondary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Circle selection animation
-class _CircleSelectionAnimation extends StatefulWidget {
-  const _CircleSelectionAnimation();
-
-  @override
-  State<_CircleSelectionAnimation> createState() =>
-      _CircleSelectionAnimationState();
-}
-
-class _CircleSelectionAnimationState extends State<_CircleSelectionAnimation>
+class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  int _targetIndex = 0;
+  bool _isTapping = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 2),
       vsync: this,
-    )..repeat(reverse: true);
+      duration: const Duration(seconds: 4),
+    )..repeat();
+
+    _controller.addListener(() {
+      final progress = _controller.value;
+      // Cycle target index every 1s
+      final newIndex = (progress * 4).floor();
+      if (newIndex != _targetIndex) {
+        setState(() {
+          _targetIndex = newIndex;
+          _isTapping = false;
+        });
+      }
+
+      // Trigger tap effect in the second half of each second
+      final subProgress = (progress * 4) % 1.0;
+      if (subProgress > 0.5 && !_isTapping) {
+        setState(() => _isTapping = true);
+      }
+    });
   }
 
   @override
@@ -633,70 +624,130 @@ class _CircleSelectionAnimationState extends State<_CircleSelectionAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Wrap(
-          spacing: 20,
-          runSpacing: 20,
-          alignment: WrapAlignment.center,
+    return Center(
+      child: SizedBox(
+        width: 160,
+        height: 160,
+        child: Stack(
           children: [
-            _buildCircle(context, false, 0),
-            _buildCircle(context, true, _controller.value), // This one pops out
-            _buildCircle(context, false, 0),
-            _buildCircle(context, false, 0),
+            Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildBall(0),
+                    const SizedBox(width: 20),
+                    _buildBall(1),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildBall(2),
+                    const SizedBox(width: 20),
+                    _buildBall(3),
+                  ],
+                ),
+              ],
+            ),
+            // Finger animation
+            _buildFinger(),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildCircle(BuildContext context, bool hasDepth, double progress) {
-    final separation = hasDepth ? 4.0 + progress * 4 : 0.0;
+  Widget _buildBall(int index) {
+    final isTarget = index == _targetIndex;
+    final subProgress = (_controller.value * 4) % 1.0;
+    // Oscillate depth for the target ball
+    final depth = isTarget
+        ? 4.0 + 4.0 * (1.0 - (subProgress - 0.5).abs() * 2)
+        : 0.0;
 
-    return SizedBox(
+    return Container(
       width: 60,
       height: 60,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Cyan layer
-          Transform.translate(
-            offset: Offset(-separation, 0),
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.cyan.withValues(alpha: hasDepth ? 0.6 : 0.2),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isTarget && _isTapping
+              ? AppColors.success
+              : Colors.transparent,
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Blue layer (shifted left)
+            Transform.translate(
+              offset: Offset(-depth, 0),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.blue.withValues(alpha: isTarget ? 0.4 : 0.1),
+                ),
               ),
             ),
-          ),
-          // Red layer
-          Transform.translate(
-            offset: Offset(separation, 0),
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.red.withValues(alpha: hasDepth ? 0.6 : 0.2),
+            // Red layer (shifted right)
+            Transform.translate(
+              offset: Offset(depth, 0),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red.withValues(alpha: isTarget ? 0.4 : 0.1),
+                ),
               ),
             ),
-          ),
-          // Main circle
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey.shade700,
-              border: hasDepth
-                  ? Border.all(color: context.primary, width: 2)
-                  : null,
+            // Main ball
+            Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [Colors.grey, Colors.black],
+                  center: Alignment(-0.3, -0.3),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFinger() {
+    // Calculate ball position for finger to target
+    final row = _targetIndex ~/ 2;
+    final col = _targetIndex % 2;
+    final targetPos = Offset(30.0 + col * 80.0, 30.0 + row * 80.0);
+
+    final subProgress = (_controller.value * 4) % 1.0;
+    // Finger moves from bottom to ball and back
+    final fingerOffset = subProgress < 0.5
+        ? targetPos + Offset(20, 100 * (1.0 - subProgress * 2))
+        : targetPos + Offset(20, 100 * (subProgress - 0.5) * 2);
+
+    return Positioned(
+      left: fingerOffset.dx,
+      top: fingerOffset.dy,
+      child: Transform.rotate(
+        angle: -0.3,
+        child: Icon(
+          Icons.touch_app,
+          size: 40,
+          color: _isTapping ? AppColors.success : Colors.grey,
+        ),
       ),
     );
   }
