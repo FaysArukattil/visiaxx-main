@@ -172,6 +172,10 @@ class ShadowTestProvider extends ChangeNotifier {
     );
   }
 
+  Future<void> reset() async {
+    await initializeCamera();
+  }
+
   void setState(ShadowTestState newState) {
     _state = newState;
     if (newState == ShadowTestState.initial) {

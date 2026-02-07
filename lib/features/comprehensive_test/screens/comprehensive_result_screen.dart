@@ -52,15 +52,51 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                 // Just close the dialog
               },
               onRestart: () {
-                // For comprehensive results, "Restart" could mean restarting the whole process
-                // or just the last test. Usually, going back to comprehensive-test is safer.
-                provider.reset();
+                final testType = provider.individualTestType;
+                final isIndividual = provider.isIndividualTest;
+
+                provider.resetKeepProfile();
+
+                String routeName = '/comprehensive-test';
+                Object? arguments;
+
+                if (isIndividual && testType != null) {
+                  switch (testType) {
+                    case 'visual_acuity':
+                      routeName = '/visual-acuity-test';
+                      break;
+                    case 'color_vision':
+                      routeName = '/color-vision-test';
+                      arguments = {'showInitialInstructions': true};
+                      break;
+                    case 'amsler_grid':
+                      routeName = '/amsler-grid-test';
+                      arguments = {'showInitialInstructions': true};
+                      break;
+                    case 'reading_test':
+                    case 'short_distance_test':
+                      routeName = '/short-distance-test';
+                      break;
+                    case 'contrast_sensitivity':
+                      routeName = '/pelli-robson-test';
+                      break;
+                    case 'shadow_test':
+                      routeName = '/shadow-test-main';
+                      break;
+                    case 'mobile_refractometry':
+                      routeName = '/mobile-refractometry-test';
+                      break;
+                  }
+                }
+
                 Navigator.pushNamedAndRemoveUntil(
                   context,
-                  '/comprehensive-test',
+                  routeName,
                   (route) => false,
+                  arguments: arguments,
                 );
               },
+
               onExit: () async {
                 await _navigateHome();
                 if (mounted) {

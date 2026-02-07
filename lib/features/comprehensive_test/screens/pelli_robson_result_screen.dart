@@ -62,6 +62,7 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
             _resumeFromDialog();
           },
           onRestart: () {
+            provider.resetKeepProfile();
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/pelli-robson-test',

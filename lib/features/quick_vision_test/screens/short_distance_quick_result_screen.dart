@@ -62,8 +62,12 @@ class _ShortDistanceQuickResultScreenState
             _startCountdown();
           },
           onRestart: () {
-            Navigator.of(context).pop();
-            Navigator.pushReplacementNamed(context, '/short-distance-test');
+            provider.resetKeepProfile();
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/short-distance-test',
+              (route) => false,
+            );
           },
           onExit: () {
             Navigator.of(context).pop();

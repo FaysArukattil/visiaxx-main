@@ -362,13 +362,17 @@ class TestSessionProvider extends ChangeNotifier {
 
   /// Reset the test session but keep the profile/patient info (useful for restarting)
   void resetKeepProfile() {
+    final bool isComp = _isComprehensiveTest;
+    final bool isIndiv = _isIndividualTest;
+    final String? indivType = _individualTestType;
+
     resetAllResults();
     _currentEye = 'right';
     _isTestInProgress = false;
     _testStartTime = null;
-    _isComprehensiveTest = false;
-    _isIndividualTest = false;
-    _individualTestType = null;
+    _isComprehensiveTest = isComp;
+    _isIndividualTest = isIndiv;
+    _individualTestType = indivType;
     _currentTestId = null;
 
     notifyListeners();

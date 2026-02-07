@@ -286,7 +286,7 @@ class _MobileRefractometryQuickResultScreenState
                 // Just close the dialog
               },
               onRestart: () {
-                context.read<TestSessionProvider>().resetKeepProfile();
+                provider.resetKeepProfile();
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   '/mobile-refractometry-test',
