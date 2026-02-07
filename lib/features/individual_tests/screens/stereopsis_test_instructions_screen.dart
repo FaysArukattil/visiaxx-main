@@ -435,7 +435,7 @@ class _Wear3DGlassesAnimationState extends State<_Wear3DGlassesAnimation>
       duration: const Duration(milliseconds: 2000),
     );
 
-    _slideAnimation = Tween<double>(begin: 100, end: 0).animate(
+    _slideAnimation = Tween<double>(begin: widget.height * 0.4, end: 0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
@@ -453,6 +453,20 @@ class _Wear3DGlassesAnimationState extends State<_Wear3DGlassesAnimation>
   }
 
   @override
+  void didUpdateWidget(_Wear3DGlassesAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.height != widget.height) {
+      _slideAnimation = Tween<double>(begin: widget.height * 0.4, end: 0)
+          .animate(
+            CurvedAnimation(
+              parent: _controller,
+              curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+            ),
+          );
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -460,125 +474,129 @@ class _Wear3DGlassesAnimationState extends State<_Wear3DGlassesAnimation>
 
   @override
   Widget build(BuildContext context) {
-    const faceSize = 100.0;
-    const eyeSize = 15.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final h = constraints.maxHeight;
+        final faceSize = h * 0.45;
+        final eyeSize = faceSize * 0.15;
 
-    return Center(
-      child: Container(
-        width: double.infinity,
-        height: 240,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.2),
-            width: 2,
+        return Container(
+          width: double.infinity,
+          height: widget.height,
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.2),
+              width: 2,
+            ),
           ),
-        ),
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                // Face
-                Container(
-                  width: faceSize,
-                  height: faceSize,
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.warning, width: 3),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Left Eye
-                      Positioned(
-                        top: faceSize * 0.35,
-                        left: faceSize * 0.25,
-                        child: Container(
-                          width: eyeSize,
-                          height: eyeSize,
-                          decoration: const BoxDecoration(
-                            color: AppColors.textPrimary,
-                            shape: BoxShape.circle,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  // Face
+                  Container(
+                    width: faceSize,
+                    height: faceSize,
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.warning, width: 3),
+                    ),
+                    child: Stack(
+                      children: [
+                        // Left Eye
+                        Positioned(
+                          top: faceSize * 0.35,
+                          left: faceSize * 0.25,
+                          child: Container(
+                            width: eyeSize,
+                            height: eyeSize,
+                            decoration: const BoxDecoration(
+                              color: AppColors.textPrimary,
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
-                      // Right Eye
-                      Positioned(
-                        top: faceSize * 0.35,
-                        right: faceSize * 0.25,
-                        child: Container(
-                          width: eyeSize,
-                          height: eyeSize,
-                          decoration: const BoxDecoration(
-                            color: AppColors.textPrimary,
-                            shape: BoxShape.circle,
+                        // Right Eye
+                        Positioned(
+                          top: faceSize * 0.35,
+                          right: faceSize * 0.25,
+                          child: Container(
+                            width: eyeSize,
+                            height: eyeSize,
+                            decoration: const BoxDecoration(
+                              color: AppColors.textPrimary,
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
-                      // Smile
-                      Positioned(
-                        bottom: faceSize * 0.25,
-                        left: faceSize * 0.30,
-                        child: Container(
-                          width: faceSize * 0.40,
-                          height: faceSize * 0.20,
-                          decoration: const BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: AppColors.textPrimary,
-                                width: 3,
+                        // Smile
+                        Positioned(
+                          bottom: faceSize * 0.25,
+                          left: faceSize * 0.30,
+                          child: Container(
+                            width: faceSize * 0.40,
+                            height: faceSize * 0.20,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: AppColors.textPrimary,
+                                  width: 3,
+                                ),
+                              ),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(20),
+                                bottomRight: Radius.circular(20),
                               ),
                             ),
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
-                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 3D Glasses sliding in
-                Transform.translate(
-                  offset: Offset(0, _slideAnimation.value - 10),
-                  child: Opacity(
-                    opacity: _fadeAnimation.value,
-                    child: CustomPaint(
-                      size: const Size(120, 40),
-                      painter: _RedBlueGlassesPainter(),
+                      ],
                     ),
                   ),
-                ),
 
-                // Checkmark when done
-                if (_controller.value > 0.8)
-                  Positioned(
-                    top: -10,
-                    right: -10,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.success,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 20,
+                  // 3D Glasses sliding in
+                  Transform.translate(
+                    offset: Offset(0, _slideAnimation.value - 10),
+                    child: Opacity(
+                      opacity: _fadeAnimation.value,
+                      child: CustomPaint(
+                        size: Size(faceSize * 1.2, faceSize * 0.4),
+                        painter: _RedBlueGlassesPainter(),
                       ),
                     ),
                   ),
-              ],
-            );
-          },
-        ),
-      ),
+
+                  // Checkmark when done
+                  if (_controller.value > 0.8)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.success,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -671,76 +689,84 @@ class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        height: 240,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.2),
-            width: 2,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final h = constraints.maxHeight;
+        final ballSize = h * 0.3; // Responsive ball size
+        final spacing = h * 0.1; // Responsive spacing
+
+        return Container(
+          width: double.infinity,
+          height: widget.height,
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.2),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildBall(0),
-                    const SizedBox(width: 20),
-                    _buildBall(1),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildBall(2),
-                    const SizedBox(width: 20),
-                    _buildBall(3),
-                  ],
-                ),
-              ],
-            ),
-            // Finger animation
-            _buildFinger(),
-          ],
-        ),
-      ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildBall(0, ballSize),
+                      SizedBox(width: spacing),
+                      _buildBall(1, ballSize),
+                    ],
+                  ),
+                  SizedBox(height: spacing),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildBall(2, ballSize),
+                      SizedBox(width: spacing),
+                      _buildBall(3, ballSize),
+                    ],
+                  ),
+                ],
+              ),
+              // Finger animation
+              _buildFinger(ballSize, spacing, constraints),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildBall(int index) {
+  Widget _buildBall(int index, double size) {
     final isTarget = index == _targetIndex;
     final subProgress = (_controller.value * 4) % 1.0;
 
-    // Inclusive depth cues: Scaling and Shadow expansion
     final oscillation = (1.0 - (subProgress - 0.5).abs() * 2);
     final scale = isTarget ? 1.0 + 0.15 * oscillation : 1.0;
-    final depth = isTarget ? 4.0 + 4.0 * oscillation : 0.0;
-    final shadowBlur = isTarget ? 10.0 * oscillation : 0.0;
+    final depth = isTarget ? (size * 0.08) * oscillation : 0.0;
+    final shadowBlur = isTarget ? (size * 0.15) * oscillation : 0.0;
+
+    final innerSize = size * 0.6;
 
     return Transform.scale(
       scale: scale,
       child: Container(
-        width: 60,
-        height: 60,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(size * 0.2),
           border: Border.all(
             color: isTarget && _isTapping
                 ? AppColors.success
@@ -752,7 +778,7 @@ class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.2 * oscillation),
                 blurRadius: shadowBlur,
-                offset: Offset(0, 4 * oscillation),
+                offset: Offset(0, depth),
               ),
           ],
         ),
@@ -760,24 +786,24 @@ class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Blue layer (shifted left)
+              // Blue layer
               Transform.translate(
                 offset: Offset(-depth, 0),
                 child: Container(
-                  width: 40,
-                  height: 40,
+                  width: innerSize * 1.1,
+                  height: innerSize * 1.1,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.blue.withValues(alpha: isTarget ? 0.4 : 0.1),
                   ),
                 ),
               ),
-              // Red layer (shifted right)
+              // Red layer
               Transform.translate(
                 offset: Offset(depth, 0),
                 child: Container(
-                  width: 40,
-                  height: 40,
+                  width: innerSize * 1.1,
+                  height: innerSize * 1.1,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.red.withValues(alpha: isTarget ? 0.4 : 0.1),
@@ -786,8 +812,8 @@ class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
               ),
               // Main ball
               Container(
-                width: 36,
-                height: 36,
+                width: innerSize,
+                height: innerSize,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -803,29 +829,38 @@ class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
     );
   }
 
-  Widget _buildFinger() {
-    // Calculate ball position for finger to target
+  Widget _buildFinger(
+    double ballSize,
+    double spacing,
+    BoxConstraints constraints,
+  ) {
+    final centerX = constraints.maxWidth / 2;
+    final centerY = constraints.maxHeight / 2;
+
     final row = _targetIndex ~/ 2;
     final col = _targetIndex % 2;
 
-    // grid is centered in 180x180 box. Balls are 60x60 with 20 padding.
-    // Top-left ball center is at (50, 50)
-    final targetPos = Offset(50.0 + col * 80.0, 50.0 + row * 80.0);
+    // Calculate ball center positions relative to container center
+    final ballTotalSize = ballSize + spacing;
+    final targetX =
+        centerX + (col == 0 ? -ballTotalSize / 2 : ballTotalSize / 2);
+    final targetY =
+        centerY + (row == 0 ? -ballTotalSize / 2 : ballTotalSize / 2);
 
     final subProgress = (_controller.value * 4) % 1.0;
-    // Finger moves from bottom to ball and back
-    final fingerOffset = subProgress < 0.5
-        ? targetPos + Offset(20, 100 * (1.0 - subProgress * 2))
-        : targetPos + Offset(20, 100 * (subProgress - 0.5) * 2);
+    final slideDistance = constraints.maxHeight * 0.4;
+    final currentY = subProgress < 0.5
+        ? targetY + slideDistance * (1.0 - subProgress * 2)
+        : targetY + slideDistance * (subProgress - 0.5) * 2;
 
     return Positioned(
-      left: fingerOffset.dx,
-      top: fingerOffset.dy,
+      left: targetX + (ballSize * 0.2),
+      top: currentY,
       child: Transform.rotate(
         angle: -0.3,
         child: Icon(
           Icons.touch_app,
-          size: 40,
+          size: ballSize * 0.6,
           color: _isTapping ? AppColors.success : Colors.grey,
         ),
       ),
