@@ -20,6 +20,9 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
   @override
   void initState() {
     super.initState();
+    // Reset state IMMEDIATELY and synchronously before the first build
+    context.read<ShadowTestProvider>().setState(ShadowTestState.initial);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ShadowTestProvider>().initializeCamera();
       context.read<TestSessionProvider>().startIndividualTest('shadow_test');
