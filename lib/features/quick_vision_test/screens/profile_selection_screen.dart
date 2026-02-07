@@ -137,6 +137,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         case 'shadow_test':
           Navigator.pushNamed(context, '/shadow-test-intro');
           break;
+        case 'stereopsis':
+          Navigator.pushNamed(context, '/stereopsis-test-intro');
+          break;
         default:
           Navigator.pushNamed(context, '/questionnaire');
       }

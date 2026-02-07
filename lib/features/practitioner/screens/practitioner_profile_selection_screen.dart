@@ -457,6 +457,9 @@ class _PractitionerProfileSelectionScreenState
         case 'shadow_test':
           route = '/shadow-test-intro';
           break;
+        case 'stereopsis':
+          route = '/stereopsis-test-intro';
+          break;
         default:
           route = '/home'; // Safeguard
       }

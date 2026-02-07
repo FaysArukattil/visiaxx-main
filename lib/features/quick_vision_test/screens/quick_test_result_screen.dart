@@ -23,6 +23,7 @@ import 'package:visiaxx/data/models/pelli_robson_result.dart';
 import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
 import 'package:visiaxx/data/models/refraction_prescription_model.dart';
 import 'package:visiaxx/data/models/shadow_test_result.dart';
+import 'package:visiaxx/data/models/stereopsis_result.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
 /// Comprehensive results screen displaying all test data
@@ -268,6 +269,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       case 'mobile_refractometry':
                         routeName = '/mobile-refractometry-test';
                         break;
+                      case 'stereopsis':
+                        routeName = '/stereopsis-test-intro';
+                        break;
                     }
                   }
 
@@ -389,6 +393,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                     if (_shouldShowSection(provider, 'shadow_test')) ...[
                       _buildSectionTitle('Shadow Test', Icons.wb_sunny_rounded),
                       _buildShadowTestCard(provider),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Stereopsis Test Results (Depth Perception)
+                    if (_shouldShowSection(provider, 'stereopsis')) ...[
+                      _buildSectionTitle(
+                        'Stereopsis (3D Vision)',
+                        Icons.threed_rotation_rounded,
+                      ),
+                      _buildStereopsisCard(provider),
                       const SizedBox(height: 20),
                     ],
 
@@ -1979,6 +1993,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           return _hasRefractometryResults(provider);
         case 'shadow_test':
           return _hasShadowTestData(provider);
+        case 'stereopsis':
+          return _hasStereopsisData(provider);
         default:
           return false;
       }
@@ -2005,6 +2021,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         return _hasRefractometryResults(provider);
       case 'shadow_test':
         return _hasShadowTestData(provider);
+      case 'stereopsis':
+        return _hasStereopsisData(provider);
       default:
         return false;
     }
@@ -3100,6 +3118,146 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   bool _hasShadowTestData(TestSessionProvider provider) {
     return widget.historicalResult?.shadowTest != null ||
         provider.shadowTestResult != null;
+  }
+
+  bool _hasStereopsisData(TestSessionProvider provider) {
+    return widget.historicalResult?.stereopsis != null ||
+        provider.stereopsis != null;
+  }
+
+  Widget _buildStereopsisCard(TestSessionProvider provider) {
+    final result = widget.historicalResult?.stereopsis ?? provider.stereopsis;
+    if (result == null) return const SizedBox.shrink();
+
+    final gradeColor = switch (result.grade) {
+      StereopsisGrade.excellent => context.success,
+      StereopsisGrade.good => context.success.withValues(alpha: 0.8),
+      StereopsisGrade.fair => context.warning,
+      StereopsisGrade.poor => context.error.withValues(alpha: 0.8),
+      StereopsisGrade.none => context.error,
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: context.primary.withValues(alpha: 0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Result header with grade
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: gradeColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  result.stereopsisPresent
+                      ? Icons.check_circle_rounded
+                      : Icons.warning_amber_rounded,
+                  color: gradeColor,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result.grade.label,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: gradeColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      result.grade.description,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 32),
+
+          // Score stats
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem('Score', '${result.score}/${result.totalRounds}'),
+              _buildStatItem(
+                'Accuracy',
+                '${result.percentage.toStringAsFixed(0)}%',
+              ),
+              _buildStatItem(
+                'Status',
+                result.stereopsisPresent ? 'Present' : 'Absent',
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Recommendation box
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color:
+                  (result.stereopsisPresent ? context.success : context.warning)
+                      .withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color:
+                    (result.stereopsisPresent
+                            ? context.success
+                            : context.warning)
+                        .withValues(alpha: 0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  result.stereopsisPresent
+                      ? Icons.sentiment_satisfied_rounded
+                      : Icons.sentiment_dissatisfied_rounded,
+                  color: result.stereopsisPresent
+                      ? context.success
+                      : context.warning,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    result.recommendation,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildShadowTestCard(TestSessionProvider provider) {

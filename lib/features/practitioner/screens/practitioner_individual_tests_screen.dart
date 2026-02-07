@@ -167,6 +167,15 @@ class IndividualTestsScreen extends StatelessWidget {
           onTap: () => _handleTestSelection(context, 'shadow_test'),
           screenWidth: screenWidth,
         ),
+        SizedBox(height: cardSpacing),
+        _IndividualTestCard(
+          icon: Icons.threed_rotation_rounded,
+          title: 'Stereopsis Test',
+          description:
+              'Assess depth perception and binocular vision using 3D anaglyph patterns',
+          onTap: () => _handleTestSelection(context, 'stereopsis'),
+          screenWidth: screenWidth,
+        ),
       ],
     );
   }

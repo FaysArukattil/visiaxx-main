@@ -52,7 +52,10 @@ import 'features/individual_tests/screens/standalone_contrast_sensitivity_screen
 import 'features/individual_tests/screens/standalone_mobile_refractometry_screen.dart';
 import 'features/individual_tests/screens/shadow_test_intro_screen.dart';
 import 'features/individual_tests/screens/shadow_test_screen.dart';
+import 'features/individual_tests/screens/stereopsis_test_instructions_screen.dart';
+import 'features/individual_tests/screens/stereopsis_test_screen.dart';
 import 'data/providers/shadow_test_provider.dart';
+import 'data/providers/stereopsis_provider.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -192,6 +195,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => FamilyMemberProvider()),
         ChangeNotifierProvider(create: (_) => PatientProvider()),
         ChangeNotifierProvider(create: (_) => ShadowTestProvider()),
+        ChangeNotifierProvider(create: (_) => StereopsisProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -312,6 +316,9 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/shadow-test-main': (context) => const ShadowTestScreen(),
               '/add-patient-questionnaire': (context) =>
                   const AddPatientQuestionnaireScreen(),
+              '/stereopsis-test-intro': (context) =>
+                  const StereopsisTestInstructionsScreen(),
+              '/stereopsis-test': (context) => const StereopsisTestScreen(),
             },
           );
         },

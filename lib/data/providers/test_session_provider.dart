@@ -13,6 +13,7 @@ import '../../data/models/pelli_robson_result.dart';
 import '../models/short_distance_result.dart';
 import '../models/refraction_prescription_model.dart';
 import '../models/shadow_test_result.dart';
+import '../models/stereopsis_result.dart';
 
 /// Provider for managing test session state
 class TestSessionProvider extends ChangeNotifier {
@@ -37,6 +38,7 @@ class TestSessionProvider extends ChangeNotifier {
   PelliRobsonResult? _pelliRobson;
   MobileRefractometryResult? _mobileRefractometry;
   ShadowTestResult? _shadowTestResult;
+  StereopsisResult? _stereopsis;
   RefractionPrescriptionModel? _refractionPrescription;
 
   // Current test state
@@ -81,6 +83,7 @@ class TestSessionProvider extends ChangeNotifier {
   RefractionPrescriptionModel? get refractionPrescription =>
       _refractionPrescription;
   ShadowTestResult? get shadowTestResult => _shadowTestResult;
+  StereopsisResult? get stereopsis => _stereopsis;
 
   /// Set profile for self-testing
   void selectSelfProfile(
@@ -223,6 +226,15 @@ class TestSessionProvider extends ChangeNotifier {
     );
   }
 
+  /// Set Stereopsis result
+  void setStereopsisResult(StereopsisResult result) {
+    _stereopsis = result;
+    notifyListeners();
+    debugPrint(
+      '… [TestSessionProvider] Stereopsis result saved: ${result.grade.label}',
+    );
+  }
+
   /// Get overall test status
   TestStatus getOverallStatus() {
     return TestResultModel.calculateOverallStatus(
@@ -234,6 +246,7 @@ class TestSessionProvider extends ChangeNotifier {
       pelliRobson: _pelliRobson,
       mobileRefractometry: _mobileRefractometry,
       shadowTest: _shadowTestResult,
+      stereopsis: _stereopsis,
     );
   }
 
@@ -276,6 +289,8 @@ class TestSessionProvider extends ChangeNotifier {
     final hasRefractometry = _mobileRefractometry != null;
     // Shadow Test
     final hasShadowTest = _shadowTestResult != null;
+    // Stereopsis
+    final hasStereopsis = _stereopsis != null;
 
     return hasVA ||
         hasColorVision ||
@@ -283,7 +298,8 @@ class TestSessionProvider extends ChangeNotifier {
         hasShortDistance ||
         hasPelliRobson ||
         hasRefractometry ||
-        hasShadowTest;
+        hasShadowTest ||
+        hasStereopsis;
   }
 
   /// Get test duration in seconds
@@ -329,6 +345,7 @@ class TestSessionProvider extends ChangeNotifier {
       pelliRobson: _pelliRobson,
       mobileRefractometry: _mobileRefractometry,
       shadowTest: _shadowTestResult,
+      stereopsis: _stereopsis,
       refractionPrescription: _refractionPrescription,
       overallStatus: getOverallStatus(),
       recommendation: getRecommendation(),
@@ -388,6 +405,7 @@ class TestSessionProvider extends ChangeNotifier {
     _pelliRobson = null;
     _mobileRefractometry = null;
     _shadowTestResult = null;
+    _stereopsis = null;
     _refractionPrescription = null;
     notifyListeners();
   }
