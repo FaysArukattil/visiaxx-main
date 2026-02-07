@@ -3935,7 +3935,8 @@ class _PractitionerDashboardScreenState
         result.colorVision != null ||
         result.pelliRobson != null ||
         result.amslerGridRight != null ||
-        result.amslerGridLeft != null;
+        result.amslerGridLeft != null ||
+        result.shadowTest != null;
 
     if (!hasVA && !hasRefraction && !hasOthers) return const SizedBox.shrink();
 
@@ -4138,6 +4139,33 @@ class _PractitionerDashboardScreenState
                                 : 'NORMAL',
                             icon: Icons.grid_on,
                           ),
+                      ],
+                    ),
+                    if (result.shadowTest != null) const SizedBox(height: 8),
+                  ],
+                  // Shadow Test - Per Eye
+                  if (result.shadowTest != null) ...[
+                    Row(
+                      children: [
+                        // Right Eye Shadow
+                        _buildDiagnosticItem(
+                          'SHADOW (RIGHT)',
+                          result.shadowTest!.rightEye.grade.angleStatus
+                              .toUpperCase(),
+                          icon: Icons.wb_sunny_rounded,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: context.primary.withValues(alpha: 0.15),
+                        ),
+                        // Left Eye Shadow
+                        _buildDiagnosticItem(
+                          'SHADOW (LEFT)',
+                          result.shadowTest!.leftEye.grade.angleStatus
+                              .toUpperCase(),
+                          icon: Icons.wb_sunny_rounded,
+                        ),
                       ],
                     ),
                   ],
