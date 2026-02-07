@@ -26,13 +26,13 @@ class _StereopsisTestInstructionsScreenState
   final List<String> _stepTitles = [
     'Wear 3D Glasses',
     'Maintain Distance',
-    'Identify 3D Ball',
+    'Select 3D Ball',
   ];
 
   final List<String> _ttsMessages = [
     'Please wear the special red and blue anaglyph glasses for this test.',
     'Position yourself at arm\'s length, about 40 centimeters from the screen.',
-    'You will see 4 balls. Tap on the one that appears to pop out in 3D.',
+    'You will see 4 balls. Select the one you can see in 3D.',
   ];
 
   @override
@@ -120,39 +120,51 @@ class _StereopsisTestInstructionsScreenState
           child: Column(
             children: [
               Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const BouncingScrollPhysics(),
-                  onPageChanged: (page) {
-                    setState(() => _currentPage = page);
-                    _playCurrentStepTts();
+                child: OrientationBuilder(
+                  builder: (context, orientation) {
+                    final isLandscape = orientation == Orientation.landscape;
+                    return PageView(
+                      controller: _pageController,
+                      physics: const BouncingScrollPhysics(),
+                      onPageChanged: (page) {
+                        setState(() => _currentPage = page);
+                        _playCurrentStepTts();
+                      },
+                      children: [
+                        _buildStep(
+                          0,
+                          Icons.threed_rotation_rounded,
+                          '3D Glasses',
+                          'Put on the special red-blue anaglyph glasses. The red lens goes over your LEFT eye, blue over your RIGHT eye.',
+                          context.primary,
+                          animation: _Wear3DGlassesAnimation(
+                            height: isLandscape ? 170 : 240,
+                          ),
+                        ),
+                        _buildStep(
+                          1,
+                          Icons.straighten_rounded,
+                          '40cm Distance',
+                          'Position yourself about 40cm (arm\'s length) from the screen for optimal 3D effect.',
+                          context.warning,
+                          animation: DistanceAnimation(
+                            isCompact: isLandscape,
+                            distanceText: '40 cm',
+                          ),
+                        ),
+                        _buildStep(
+                          2,
+                          Icons.touch_app_rounded,
+                          'Select the one you can see in 3D',
+                          'You will see 4 balls. ONE will appear to "pop out" in 3D. Tap that ball to respond.',
+                          context.success,
+                          animation: _Grid3DBallAnimation(
+                            height: isLandscape ? 170 : 240,
+                          ),
+                        ),
+                      ],
+                    );
                   },
-                  children: [
-                    _buildStep(
-                      0,
-                      Icons.threed_rotation_rounded,
-                      '3D Glasses',
-                      'Put on the special red-blue anaglyph glasses. The red lens goes over your LEFT eye, blue over your RIGHT eye.',
-                      context.primary,
-                      animation: const _Wear3DGlassesAnimation(),
-                    ),
-                    _buildStep(
-                      1,
-                      Icons.straighten_rounded,
-                      '40cm Distance',
-                      'Position yourself about 40cm (arm\'s length) from the screen for optimal 3D effect.',
-                      context.warning,
-                      animation: const DistanceAnimation(isCompact: false),
-                    ),
-                    _buildStep(
-                      2,
-                      Icons.touch_app_rounded,
-                      '3D Effect',
-                      'You will see 4 balls. ONE will appear to "pop out" in 3D. Tap that ball to respond.',
-                      context.success,
-                      animation: const _Grid3DBallAnimation(),
-                    ),
-                  ],
                 ),
               ),
               _buildBottomBar(),
@@ -401,7 +413,8 @@ class _StereopsisTestInstructionsScreenState
 
 // Animation showing user wearing 3D glasses (Red/Blue)
 class _Wear3DGlassesAnimation extends StatefulWidget {
-  const _Wear3DGlassesAnimation();
+  final double height;
+  const _Wear3DGlassesAnimation({this.height = 240});
 
   @override
   State<_Wear3DGlassesAnimation> createState() =>
@@ -451,87 +464,120 @@ class _Wear3DGlassesAnimationState extends State<_Wear3DGlassesAnimation>
     const eyeSize = 15.0;
 
     return Center(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              // Face
-              Container(
-                width: faceSize,
-                height: faceSize,
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.warning, width: 3),
-                ),
-                child: Stack(
-                  children: [
-                    // Left Eye
-                    Positioned(
-                      top: faceSize * 0.35,
-                      left: faceSize * 0.25,
-                      child: Container(
-                        width: eyeSize,
-                        height: eyeSize,
-                        decoration: const BoxDecoration(
-                          color: AppColors.textPrimary,
-                          shape: BoxShape.circle,
+      child: Container(
+        width: double.infinity,
+        height: 240,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.2),
+            width: 2,
+          ),
+        ),
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                // Face
+                Container(
+                  width: faceSize,
+                  height: faceSize,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.warning, width: 3),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Left Eye
+                      Positioned(
+                        top: faceSize * 0.35,
+                        left: faceSize * 0.25,
+                        child: Container(
+                          width: eyeSize,
+                          height: eyeSize,
+                          decoration: const BoxDecoration(
+                            color: AppColors.textPrimary,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
-                    ),
-                    // Right Eye
-                    Positioned(
-                      top: faceSize * 0.35,
-                      right: faceSize * 0.25,
-                      child: Container(
-                        width: eyeSize,
-                        height: eyeSize,
-                        decoration: const BoxDecoration(
-                          color: AppColors.textPrimary,
-                          shape: BoxShape.circle,
+                      // Right Eye
+                      Positioned(
+                        top: faceSize * 0.35,
+                        right: faceSize * 0.25,
+                        child: Container(
+                          width: eyeSize,
+                          height: eyeSize,
+                          decoration: const BoxDecoration(
+                            color: AppColors.textPrimary,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 3D Glasses sliding in
-              Transform.translate(
-                offset: Offset(0, _slideAnimation.value - 10),
-                child: Opacity(
-                  opacity: _fadeAnimation.value,
-                  child: CustomPaint(
-                    size: const Size(120, 40),
-                    painter: _RedBlueGlassesPainter(),
+                      // Smile
+                      Positioned(
+                        bottom: faceSize * 0.25,
+                        left: faceSize * 0.30,
+                        child: Container(
+                          width: faceSize * 0.40,
+                          height: faceSize * 0.20,
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: AppColors.textPrimary,
+                                width: 3,
+                              ),
+                            ),
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
 
-              // Checkmark when done
-              if (_controller.value > 0.8)
-                Positioned(
-                  top: -10,
-                  right: -10,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.success,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 20,
+                // 3D Glasses sliding in
+                Transform.translate(
+                  offset: Offset(0, _slideAnimation.value - 10),
+                  child: Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: CustomPaint(
+                      size: const Size(120, 40),
+                      painter: _RedBlueGlassesPainter(),
                     ),
                   ),
                 ),
-            ],
-          );
-        },
+
+                // Checkmark when done
+                if (_controller.value > 0.8)
+                  Positioned(
+                    top: -10,
+                    right: -10,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.success,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -577,7 +623,8 @@ class _RedBlueGlassesPainter extends CustomPainter {
 
 // 2x2 Grid of Balls with 3D Effect and Tap Interaction
 class _Grid3DBallAnimation extends StatefulWidget {
-  const _Grid3DBallAnimation();
+  final double height;
+  const _Grid3DBallAnimation({this.height = 240});
 
   @override
   State<_Grid3DBallAnimation> createState() => _Grid3DBallAnimationState();
@@ -625,12 +672,29 @@ class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: SizedBox(
-        width: 160,
-        height: 160,
+      child: Container(
+        width: double.infinity,
+        height: 240,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.2),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
         child: Stack(
+          alignment: Alignment.center,
           children: [
             Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -662,65 +726,78 @@ class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
   Widget _buildBall(int index) {
     final isTarget = index == _targetIndex;
     final subProgress = (_controller.value * 4) % 1.0;
-    // Oscillate depth for the target ball
-    final depth = isTarget
-        ? 4.0 + 4.0 * (1.0 - (subProgress - 0.5).abs() * 2)
-        : 0.0;
 
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isTarget && _isTapping
-              ? AppColors.success
-              : Colors.transparent,
-          width: 2,
-        ),
-      ),
-      child: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Blue layer (shifted left)
-            Transform.translate(
-              offset: Offset(-depth, 0),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.blue.withValues(alpha: isTarget ? 0.4 : 0.1),
-                ),
+    // Inclusive depth cues: Scaling and Shadow expansion
+    final oscillation = (1.0 - (subProgress - 0.5).abs() * 2);
+    final scale = isTarget ? 1.0 + 0.15 * oscillation : 1.0;
+    final depth = isTarget ? 4.0 + 4.0 * oscillation : 0.0;
+    final shadowBlur = isTarget ? 10.0 * oscillation : 0.0;
+
+    return Transform.scale(
+      scale: scale,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isTarget && _isTapping
+                ? AppColors.success
+                : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: [
+            if (isTarget)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2 * oscillation),
+                blurRadius: shadowBlur,
+                offset: Offset(0, 4 * oscillation),
               ),
-            ),
-            // Red layer (shifted right)
-            Transform.translate(
-              offset: Offset(depth, 0),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.red.withValues(alpha: isTarget ? 0.4 : 0.1),
-                ),
-              ),
-            ),
-            // Main ball
-            Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [Colors.grey, Colors.black],
-                  center: Alignment(-0.3, -0.3),
-                ),
-              ),
-            ),
           ],
+        ),
+        child: Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Blue layer (shifted left)
+              Transform.translate(
+                offset: Offset(-depth, 0),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.blue.withValues(alpha: isTarget ? 0.4 : 0.1),
+                  ),
+                ),
+              ),
+              // Red layer (shifted right)
+              Transform.translate(
+                offset: Offset(depth, 0),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.red.withValues(alpha: isTarget ? 0.4 : 0.1),
+                  ),
+                ),
+              ),
+              // Main ball
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Colors.grey, Colors.black],
+                    center: Alignment(-0.3, -0.3),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -730,7 +807,10 @@ class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
     // Calculate ball position for finger to target
     final row = _targetIndex ~/ 2;
     final col = _targetIndex % 2;
-    final targetPos = Offset(30.0 + col * 80.0, 30.0 + row * 80.0);
+
+    // grid is centered in 180x180 box. Balls are 60x60 with 20 padding.
+    // Top-left ball center is at (50, 50)
+    final targetPos = Offset(50.0 + col * 80.0, 50.0 + row * 80.0);
 
     final subProgress = (_controller.value * 4) % 1.0;
     // Finger moves from bottom to ball and back

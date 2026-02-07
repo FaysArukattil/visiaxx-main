@@ -87,7 +87,12 @@ class _LightingAnimationState extends State<LightingAnimation>
 /// Animation showing the 40cm distance requirement
 class DistanceAnimation extends StatefulWidget {
   final bool isCompact;
-  const DistanceAnimation({super.key, this.isCompact = false});
+  final String? distanceText;
+  const DistanceAnimation({
+    super.key,
+    this.isCompact = false,
+    this.distanceText,
+  });
 
   @override
   State<DistanceAnimation> createState() => _DistanceAnimationState();
@@ -175,7 +180,7 @@ class _DistanceAnimationState extends State<DistanceAnimation>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    widget.isCompact ? '40 cm' : '1 m',
+                    widget.distanceText ?? (widget.isCompact ? '40 cm' : '1 m'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
