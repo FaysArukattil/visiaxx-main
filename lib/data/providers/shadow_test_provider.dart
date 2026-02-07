@@ -67,6 +67,20 @@ class ShadowTestProvider extends ChangeNotifier {
 
       await _cameraService.initialize();
 
+      // Add listener to camera controller to trigger UI updates when camera state changes
+      // This is critical for release mode where timing is different than debug mode
+      final controller = _cameraService.controller;
+      if (controller != null) {
+        controller.addListener(() {
+          // Trigger UI rebuild when camera value changes (e.g., preview becomes available)
+          notifyListeners();
+        });
+      }
+
+      // Small delay to ensure camera preview is fully ready before updating UI
+      // This is important for release mode where initialization timing differs
+      await Future.delayed(const Duration(milliseconds: 200));
+
       // Automatically turn on flash for the test
       _isFlashOn = true;
       await _cameraService.setFlashMode(FlashMode.torch);

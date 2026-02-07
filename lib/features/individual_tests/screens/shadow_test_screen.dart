@@ -17,16 +17,44 @@ class ShadowTestScreen extends StatefulWidget {
 }
 
 class _ShadowTestScreenState extends State<ShadowTestScreen> {
+  // Local reference to camera controller to ensure reliable UI updates in release mode
+  CameraController? _localController;
+  bool _isCameraReady = false;
+
   @override
   void initState() {
     super.initState();
     // Reset state IMMEDIATELY and synchronously before the first build
     context.read<ShadowTestProvider>().setState(ShadowTestState.initial);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ShadowTestProvider>().initializeCamera();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<ShadowTestProvider>().initializeCamera();
       context.read<TestSessionProvider>().startIndividualTest('shadow_test');
+
+      // Get the controller and add local listener for reliable release mode updates
+      final controller = context.read<ShadowTestProvider>().cameraController;
+      if (controller != null && mounted) {
+        controller.addListener(_onCameraUpdate);
+        setState(() {
+          _localController = controller;
+          _isCameraReady = controller.value.isInitialized;
+        });
+      }
     });
+  }
+
+  void _onCameraUpdate() {
+    if (mounted && _localController != null) {
+      setState(() {
+        _isCameraReady = _localController!.value.isInitialized;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _localController?.removeListener(_onCameraUpdate);
+    super.dispose();
   }
 
   void _showExitConfirmation() {
@@ -62,7 +90,8 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ShadowTestProvider>();
-    final controller = provider.cameraController;
+    // Use local controller for reliable release mode updates
+    final controller = _localController;
 
     // Handle navigation to results
     if (provider.state == ShadowTestState.result) {
@@ -88,13 +117,24 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // Camera Preview
+            // Camera Preview - Using explicit sizing for release mode compatibility
             if (controller != null && controller.value.isInitialized)
-              Center(
-                child: AspectRatio(
-                  aspectRatio: 1 / controller.value.aspectRatio,
-                  child: CameraPreview(controller),
-                ),
+              Positioned.fill(
+                child: controller.value.previewSize != null
+                    ? OverflowBox(
+                        alignment: Alignment.center,
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: controller.value.previewSize!.height,
+                            height: controller.value.previewSize!.width,
+                            child: CameraPreview(controller),
+                          ),
+                        ),
+                      )
+                    : CameraPreview(
+                        controller,
+                      ), // Fallback if previewSize is null
               )
             else
               const Center(child: EyeLoader()),
