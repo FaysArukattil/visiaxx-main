@@ -335,52 +335,59 @@ class _StayFocusedAnimationState extends State<StayFocusedAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: widget.isCompact ? 200 : 240,
-      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: widget.color.withValues(alpha: 0.2),
-          width: 2,
-        ),
-      ),
-      child: Center(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            double size = widget.isCompact ? 80 : 120;
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: widget.color.withValues(
-                        alpha: 1 - _controller.value,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: widget.color.withValues(alpha: 0.2),
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  double size = widget.isCompact ? 80 : 120;
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: size,
+                        height: size,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: widget.color.withValues(
+                              alpha: 1 - _controller.value,
+                            ),
+                            width:
+                                (widget.isCompact ? 2 : 3) +
+                                (5 * _controller.value),
+                          ),
+                        ),
                       ),
-                      width:
-                          (widget.isCompact ? 2 : 3) + (5 * _controller.value),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: widget.isCompact ? 8 : 12,
-                  height: widget.isCompact ? 8 : 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: widget.color,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+                      Container(
+                        width: widget.isCompact ? 8 : 12,
+                        height: widget.isCompact ? 8 : 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: widget.color,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1879,10 +1886,22 @@ class _DimLightingAnimationState extends State<DimLightingAnimation>
     )..repeat();
 
     _brightness = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 30), // Stay bright
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.2), weight: 20), // Turn off
-      TweenSequenceItem(tween: Tween(begin: 0.2, end: 0.2), weight: 40), // Stay dim
-      TweenSequenceItem(tween: Tween(begin: 0.2, end: 1.0), weight: 10), // Reset
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 1.0),
+        weight: 30,
+      ), // Stay bright
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 0.2),
+        weight: 20,
+      ), // Turn off
+      TweenSequenceItem(
+        tween: Tween(begin: 0.2, end: 0.2),
+        weight: 40,
+      ), // Stay dim
+      TweenSequenceItem(
+        tween: Tween(begin: 0.2, end: 1.0),
+        weight: 10,
+      ), // Reset
     ]).animate(_controller);
 
     _switchPos = TweenSequence<double>([
@@ -1901,97 +1920,107 @@ class _DimLightingAnimationState extends State<DimLightingAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final color = Color.lerp(
-          Colors.white,
-          const Color(0xFF121212),
-          1 - _brightness.value,
-        )!;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final color = Color.lerp(
+              Colors.white,
+              const Color(0xFF121212),
+              1 - _brightness.value,
+            )!;
 
-        return Container(
-          height: widget.isCompact ? 200 : 240,
-          padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              width: 2,
-            ),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Light bulb
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (_brightness.value > 0.5)
+            return Container(
+              padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Light bulb
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (_brightness.value > 0.5)
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.warning.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    blurRadius: 40,
+                                    spreadRadius: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          Icon(
+                            _brightness.value > 0.5
+                                ? Icons.lightbulb_rounded
+                                : Icons.lightbulb_outline_rounded,
+                            size: widget.isCompact ? 60 : 80,
+                            color: _brightness.value > 0.5
+                                ? AppColors.warning
+                                : Colors.grey.shade700,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Switch
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 40,
+                        height: 70,
+                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.warning.withValues(alpha: 0.3),
-                              blurRadius: 40,
-                              spreadRadius: 20,
+                          color: Colors.grey.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Stack(
+                          children: [
+                            AnimatedPositioned(
+                              duration: const Duration(milliseconds: 200),
+                              top: _switchPos.value * 30,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
-                        ),
-                      ),
-                    Icon(
-                      _brightness.value > 0.5
-                          ? Icons.lightbulb_rounded
-                          : Icons.lightbulb_outline_rounded,
-                      size: widget.isCompact ? 60 : 80,
-                      color: _brightness.value > 0.5
-                          ? AppColors.warning
-                          : Colors.grey.shade700,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // Switch
-                Container(
-                  width: 40,
-                  height: 70,
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Stack(
-                    children: [
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 200),
-                        top: _switchPos.value * 30,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -2029,30 +2058,36 @@ class _SideIlluminationAnimationState extends State<SideIlluminationAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: widget.isCompact ? 200 : 240,
-      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-          width: 2,
-        ),
-      ),
-      child: Center(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return CustomPaint(
-              size: const Size(200, 160),
-              painter: _ProfessionalSideIlluminationPainter(
-                progress: _controller.value,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.2),
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return CustomPaint(
+                    size: const Size(200, 160),
+                    painter: _ProfessionalSideIlluminationPainter(
+                      progress: _controller.value,
+                    ),
+                  );
+                },
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -2065,16 +2100,16 @@ class _ProfessionalSideIlluminationPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    
+
     // 1. Draw Professional Eye (Front Facing)
     final eyePos = center + const Offset(0, -10);
     final eyeWidth = 100.0;
     final eyeHeight = 60.0;
-    
+
     final eyePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
-    
+
     final borderPaint = Paint()
       ..color = AppColors.textPrimary
       ..style = PaintingStyle.stroke
@@ -2084,18 +2119,18 @@ class _ProfessionalSideIlluminationPainter extends CustomPainter {
     final eyePath = Path();
     eyePath.moveTo(eyePos.dx - eyeWidth / 2, eyePos.dy);
     eyePath.quadraticBezierTo(
-      eyePos.dx, 
-      eyePos.dy - eyeHeight / 2 - 10, 
-      eyePos.dx + eyeWidth / 2, 
-      eyePos.dy
+      eyePos.dx,
+      eyePos.dy - eyeHeight / 2 - 10,
+      eyePos.dx + eyeWidth / 2,
+      eyePos.dy,
     );
     eyePath.quadraticBezierTo(
-      eyePos.dx, 
-      eyePos.dy + eyeHeight / 2 + 10, 
-      eyePos.dx - eyeWidth / 2, 
-      eyePos.dy
+      eyePos.dx,
+      eyePos.dy + eyeHeight / 2 + 10,
+      eyePos.dx - eyeWidth / 2,
+      eyePos.dy,
     );
-    
+
     canvas.drawPath(eyePath, eyePaint);
     canvas.drawPath(eyePath, borderPaint);
 
@@ -2113,22 +2148,22 @@ class _ProfessionalSideIlluminationPainter extends CustomPainter {
 
     // Reflection (Catchlight)
     canvas.drawCircle(
-      eyePos - const Offset(4, 4), 
-      3, 
-      Paint()..color = Colors.white.withValues(alpha: 0.8)
+      eyePos - const Offset(4, 4),
+      3,
+      Paint()..color = Colors.white.withValues(alpha: 0.8),
     );
 
     // 2. Smartphone/Flashlight coming from the side
     // Loop the flashlight movement
     final t = progress;
     final flashlightAlpha = t < 0.1 ? t / 0.1 : (t > 0.9 ? (1 - t) / 0.1 : 1.0);
-    
-    final double angle = math.pi / 6; // 30 degrees from horizontal = 60 degrees from optical axis
+
+    final double angle =
+        math.pi /
+        6; // 30 degrees from horizontal = 60 degrees from optical axis
     final double dist = 100.0;
-    final flashlightCenter = eyePos + Offset(
-      -math.cos(angle) * dist,
-      math.sin(angle) * dist * 0.2
-    );
+    final flashlightCenter =
+        eyePos + Offset(-math.cos(angle) * dist, math.sin(angle) * dist * 0.2);
 
     canvas.save();
     canvas.translate(flashlightCenter.dx, flashlightCenter.dy);
@@ -2160,15 +2195,11 @@ class _ProfessionalSideIlluminationPainter extends CustomPainter {
     // Light beam towards eye
     if (flashlightAlpha > 0.5) {
       final beamPaint = Paint()
-        ..shader = ui.Gradient.linear(
-          flashPos,
-          const Offset(50, 40),
-          [
-            AppColors.warning.withValues(alpha: 0.4),
-            AppColors.warning.withValues(alpha: 0.0),
-          ],
-        );
-      
+        ..shader = ui.Gradient.linear(flashPos, const Offset(50, 40), [
+          AppColors.warning.withValues(alpha: 0.4),
+          AppColors.warning.withValues(alpha: 0.0),
+        ]);
+
       final beamPath = Path();
       beamPath.moveTo(flashPos.dx, flashPos.dy);
       beamPath.lineTo(60, 20);
@@ -2183,18 +2214,18 @@ class _ProfessionalSideIlluminationPainter extends CustomPainter {
       final shadowPaint = Paint()
         ..color = Colors.black.withValues(alpha: 0.4)
         ..style = PaintingStyle.fill;
-      
+
       // Represent a slit of light and a shadow on the nasal side
       final slitWidth = 4.0;
       canvas.drawRect(
         Rect.fromLTWH(eyePos.dx - 18, eyePos.dy - 12, slitWidth, 24),
-        Paint()..color = AppColors.warning.withValues(alpha: 0.5)
+        Paint()..color = AppColors.warning.withValues(alpha: 0.5),
       );
-      
+
       // Shadow (the "Van Herick space")
       canvas.drawRect(
         Rect.fromLTWH(eyePos.dx - 14, eyePos.dy - 12, 8, 24),
-        shadowPaint
+        shadowPaint,
       );
     }
 
@@ -2219,5 +2250,7 @@ class _ProfessionalSideIlluminationPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ProfessionalSideIlluminationPainter oldDelegate) => true;
+  bool shouldRepaint(
+    covariant _ProfessionalSideIlluminationPainter oldDelegate,
+  ) => true;
 }

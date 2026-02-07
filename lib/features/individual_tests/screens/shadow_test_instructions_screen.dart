@@ -184,10 +184,7 @@ class _ShadowTestInstructionsScreenState
       builder: (context, orientation) {
         final isLandscape = orientation == Orientation.landscape;
         return Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: isLandscape ? 12 : 20,
-          ),
+          padding: EdgeInsets.all(isLandscape ? 12.0 : 16.0),
           decoration: BoxDecoration(
             color: context.cardColor,
             boxShadow: [
@@ -222,13 +219,14 @@ class _ShadowTestInstructionsScreenState
                 const SizedBox(height: 16),
               ],
               SizedBox(
-                width: isLandscape ? 180 : double.infinity,
-                height: isLandscape ? 44 : 56,
+                width: double.infinity,
+                height: isLandscape ? 48 : 56,
                 child: ElevatedButton(
                   onPressed: _handleNext,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.primary,
                     foregroundColor: Colors.white,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -236,7 +234,7 @@ class _ShadowTestInstructionsScreenState
                   child: Text(
                     _currentPage < _totalPages - 1 ? 'Next' : 'Start Test',
                     style: TextStyle(
-                      fontSize: isLandscape ? 15 : 18,
+                      fontSize: isLandscape ? 16 : 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -262,7 +260,7 @@ class _ShadowTestInstructionsScreenState
         final isLandscape = orientation == Orientation.landscape;
 
         return Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(isLandscape ? 8.0 : 16.0),
           child: Container(
             decoration: BoxDecoration(
               color: context.cardColor,
@@ -271,13 +269,18 @@ class _ShadowTestInstructionsScreenState
                 color: context.dividerColor.withValues(alpha: 0.5),
               ),
             ),
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.symmetric(
+              horizontal: isLandscape ? 16.0 : 20.0,
+              vertical: isLandscape ? 12.0 : 16.0,
+            ),
             child: isLandscape
                 ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                        flex: 6,
+                        flex: 4,
                         child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -287,6 +290,7 @@ class _ShadowTestInstructionsScreenState
                                   fontSize: 12,
                                   color: context.primary,
                                   fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.1,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -310,64 +314,53 @@ class _ShadowTestInstructionsScreenState
                         ),
                       ),
                       if (animation != null) ...[
-                        const SizedBox(width: 12),
-                        Flexible(
-                          flex: 4,
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 160),
-                              child: animation,
-                            ),
-                          ),
-                        ),
+                        const SizedBox(width: 16),
+                        Expanded(flex: 6, child: Center(child: animation)),
                       ],
                     ],
                   )
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Step ${index + 1} of $_totalPages',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: context.primary,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _stepTitles[index],
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: context.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildModernInstructionItem(
-                          icon,
-                          title,
-                          description,
-                          color,
-                        ),
-                        if (animation != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 24.0),
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxHeight: 250,
-                                  maxWidth: 250,
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Step ${index + 1} of $_totalPages',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: context.primary,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.1,
                                 ),
-                                child: animation,
                               ),
-                            ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _stepTitles[index],
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildModernInstructionItem(
+                                icon,
+                                title,
+                                description,
+                                color,
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                           ),
-                      ],
-                    ),
+                        ),
+                      ),
+                      if (animation != null)
+                        Expanded(child: Center(child: animation)),
+                    ],
                   ),
           ),
         );

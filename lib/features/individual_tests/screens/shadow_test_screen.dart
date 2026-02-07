@@ -142,32 +142,39 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
     return OrientationBuilder(
       builder: (context, orientation) {
         final isLandscape = orientation == Orientation.landscape;
+        final safeArea = MediaQuery.of(context).padding;
 
-        return Column(
+        return Stack(
           children: [
-            SizedBox(height: isLandscape ? 40 : 100),
-            // Instructions
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.black45,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: Text(
-                'Testing ${provider.currentEye.toUpperCase()} Eye',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+            // Instructions at the top
+            Positioned(
+              top: isLandscape ? 20 : 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Text(
+                    'Testing ${provider.currentEye.toUpperCase()} Eye',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ),
 
-            const Spacer(),
-
-            // Eye detection guide
+            // Eye detection guide circle in the center
             Center(
               child: Container(
                 width: isLandscape ? 200 : 280,
@@ -196,14 +203,36 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
               ),
             ),
 
-            const Spacer(),
-
-            // Feedback and Capture Action
-            Padding(
-              padding: EdgeInsets.only(bottom: isLandscape ? 20.0 : 40.0),
+            // Feedback and Capture Action at the bottom
+            Positioned(
+              bottom: isLandscape ? 12 : 40 + safeArea.bottom,
+              left: 0,
+              right: 0,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (provider.errorMessage != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.error, width: 1),
+                      ),
+                      child: Text(
+                        provider.errorMessage!,
+                        style: TextStyle(
+                          color: context.error,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   Text(
                     provider.readinessFeedback,
                     style: TextStyle(
@@ -221,7 +250,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                       ],
                     ),
                   ),
-                  SizedBox(height: isLandscape ? 12 : 24),
+                  SizedBox(height: isLandscape ? 10 : 20),
                   GestureDetector(
                     onTap: provider.isReadyForCapture && !provider.isCapturing
                         ? () {

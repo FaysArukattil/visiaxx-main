@@ -56,6 +56,15 @@ class ShadowTestProvider extends ChangeNotifier {
   Future<void> initializeCamera() async {
     try {
       _errorMessage = null;
+      // Reset test state to ensure fresh session
+      _currentEye = 'right';
+      _rightEyeGrading = null;
+      _leftEyeGrading = null;
+      _finalResult = null;
+      _isFlashOn = false;
+      _isCapturing = false;
+      _state = ShadowTestState.initial;
+
       await _cameraService.initialize();
       _isReadyForCapture = true; // Enable manual capture
       _readinessFeedback = 'Ready to capture ${_currentEye.toUpperCase()} eye';
@@ -91,6 +100,19 @@ class ShadowTestProvider extends ChangeNotifier {
       // Image capture (Flashlight managed by state)
       final imagePath = await _cameraService.captureImage();
       if (imagePath == null) throw Exception('Failed to capture image');
+
+      // Validate that the image contains an eye
+      final validationResult = await _detectionService.validateEyeImage(
+        imagePath,
+      );
+
+      if (!validationResult.isValid) {
+        _errorMessage = validationResult.message;
+        _readinessFeedback = 'Please retake the image';
+        _isCapturing = false;
+        notifyListeners();
+        return;
+      }
 
       // Analyze image
       final analysis = await _detectionService.analyzeEyeImage(imagePath);

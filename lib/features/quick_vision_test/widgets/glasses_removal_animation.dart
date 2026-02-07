@@ -52,137 +52,156 @@ class _RemoveGlassesAnimationState extends State<RemoveGlassesAnimation>
 
   @override
   Widget build(BuildContext context) {
-    final containerHeight = widget.isCompact ? 200.0 : 240.0;
     final faceSize = widget.isCompact ? 80.0 : 100.0;
     final eyeSize = widget.isCompact ? 12.0 : 15.0;
     final glassesScale = widget.isCompact ? 0.8 : 1.0;
 
-    return Container(
-      height: containerHeight,
-      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.info.withValues(alpha: 0.2),
-          width: 2,
-        ),
-      ),
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Face (always visible) - centered
-              Positioned.fill(
-                child: Center(
-                  child: Container(
-                    width: faceSize,
-                    height: faceSize,
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.warning, width: 3),
-                    ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.info.withValues(alpha: 0.2),
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return SizedBox(
+                    width: 200,
+                    height: 160,
                     child: Stack(
+                      clipBehavior: Clip.none,
                       children: [
-                        // Eyes
-                        Positioned(
-                          top: faceSize * 0.35,
-                          left: faceSize * 0.25,
-                          child: Container(
-                            width: eyeSize,
-                            height: eyeSize,
-                            decoration: const BoxDecoration(
-                              color: AppColors.textPrimary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: faceSize * 0.35,
-                          right: faceSize * 0.25,
-                          child: Container(
-                            width: eyeSize,
-                            height: eyeSize,
-                            decoration: const BoxDecoration(
-                              color: AppColors.textPrimary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                        // Smile
-                        Positioned(
-                          bottom: faceSize * 0.25,
-                          left: faceSize * 0.30,
-                          child: Container(
-                            width: faceSize * 0.40,
-                            height: faceSize * 0.20,
-                            decoration: const BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: AppColors.textPrimary,
+                        // Face (always visible) - centered
+                        Positioned.fill(
+                          child: Center(
+                            child: Container(
+                              width: faceSize,
+                              height: faceSize,
+                              decoration: BoxDecoration(
+                                color: AppColors.warning.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.warning,
                                   width: 3,
                                 ),
                               ),
-                              borderRadius: BorderRadius.only(
-                                bottomLeft: Radius.circular(20),
-                                bottomRight: Radius.circular(20),
+                              child: Stack(
+                                children: [
+                                  // Eyes
+                                  Positioned(
+                                    top: faceSize * 0.35,
+                                    left: faceSize * 0.25,
+                                    child: Container(
+                                      width: eyeSize,
+                                      height: eyeSize,
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.textPrimary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: faceSize * 0.35,
+                                    right: faceSize * 0.25,
+                                    child: Container(
+                                      width: eyeSize,
+                                      height: eyeSize,
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.textPrimary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                  // Smile
+                                  Positioned(
+                                    bottom: faceSize * 0.25,
+                                    left: faceSize * 0.30,
+                                    child: Container(
+                                      width: faceSize * 0.40,
+                                      height: faceSize * 0.20,
+                                      decoration: const BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: AppColors.textPrimary,
+                                            width: 3,
+                                          ),
+                                        ),
+                                        borderRadius: BorderRadius.only(
+                                          bottomLeft: Radius.circular(20),
+                                          bottomRight: Radius.circular(20),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
+
+                        // Glasses sliding AWAY - positioned relative to center
+                        Positioned.fill(
+                          child: Center(
+                            child: Transform.translate(
+                              offset: Offset(0, _slideAnimation.value - 10),
+                              child: Opacity(
+                                opacity: _fadeAnimation.value,
+                                child: Transform.scale(
+                                  scale: glassesScale,
+                                  child: CustomPaint(
+                                    size: const Size(120, 40),
+                                    painter: _GlassesPainter(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // X mark when glasses are removed
+                        if (_controller.value > 0.7)
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: Opacity(
+                              opacity: ((_controller.value - 0.7) / 0.3).clamp(
+                                0.0,
+                                1.0,
+                              ),
+                              child: Container(
+                                padding: EdgeInsets.all(
+                                  widget.isCompact ? 3 : 4,
+                                ),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.error,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  color: AppColors.surface,
+                                  size: widget.isCompact ? 16 : 20,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
-
-              // Glasses sliding AWAY - positioned relative to center
-              Positioned.fill(
-                child: Center(
-                  child: Transform.translate(
-                    offset: Offset(0, _slideAnimation.value - 10),
-                    child: Opacity(
-                      opacity: _fadeAnimation.value,
-                      child: Transform.scale(
-                        scale: glassesScale,
-                        child: CustomPaint(
-                          size: const Size(120, 40),
-                          painter: _GlassesPainter(),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // X mark when glasses are removed
-              if (_controller.value > 0.7)
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Opacity(
-                    opacity: ((_controller.value - 0.7) / 0.3).clamp(0.0, 1.0),
-                    child: Container(
-                      padding: EdgeInsets.all(widget.isCompact ? 3 : 4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.error,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.close,
-                        color: AppColors.surface,
-                        size: widget.isCompact ? 16 : 20,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -232,4 +251,3 @@ class _GlassesPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
