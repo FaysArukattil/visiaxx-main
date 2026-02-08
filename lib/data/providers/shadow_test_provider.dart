@@ -36,6 +36,7 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
   ShadowTestResult? _finalResult;
 
   bool _isCapturing = false;
+  bool _isCameraStarting = false;
   String? _errorMessage;
   bool _isFlashOn = false;
 
@@ -49,11 +50,14 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
   EyeGrading? get leftEyeGrading => _leftEyeGrading;
   ShadowTestResult? get finalResult => _finalResult;
   bool get isCapturing => _isCapturing;
+  bool get isCameraStarting => _isCameraStarting;
   String? get errorMessage => _errorMessage;
   bool get isFlashOn => _isFlashOn;
   CameraController? get cameraController => _cameraService.controller;
 
   Future<void> initializeCamera() async {
+    _isCameraStarting = true;
+    notifyListeners();
     try {
       _errorMessage = null;
       _currentEye = 'right';
@@ -206,6 +210,7 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
       _startEyeDetection(); // Recover by restarting detection
     } finally {
       _isCapturing = false;
+      _isCameraStarting = false;
       notifyListeners();
     }
   }
@@ -238,6 +243,7 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> stopCamera() async {
     _isFlashOn = false;
+    _isCameraStarting = false;
     await _cameraService.setFlashMode(FlashMode.off);
     await _cameraService.turnOffFlashlight();
     await _cameraService.dispose();

@@ -2125,6 +2125,96 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
     }
   }
 
+  void _showZoomedImage(String? imagePath, String? imageUrl, String label) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.9),
+      builder: (context) => Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              boundaryMargin: const EdgeInsets.all(20),
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Hero(
+                tag: 'zoomed_eye_$label',
+                child: imagePath != null
+                    ? Image.file(File(imagePath), fit: BoxFit.contain)
+                    : Image.network(
+                        imageUrl!,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 40,
+            right: 20,
+            child: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _sharePdfReport(TestResultModel result) async {
     try {
       UIUtils.showProgressDialog(context: context, message: 'Preparing PDF...');
@@ -3409,26 +3499,33 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         const SizedBox(height: 12),
         // Image visualization
         if (grading.awsImageUrl != null || grading.imagePath != null)
-          Container(
-            height: 80,
-            width: 80,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withValues(alpha: 0.2)),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(11),
-              child: grading.awsImageUrl != null
-                  ? Image.network(
-                      grading.awsImageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _buildFallbackImage(),
-                    )
-                  : Image.file(
-                      File(grading.imagePath!),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _buildFallbackImage(),
-                    ),
+          GestureDetector(
+            onTap: () =>
+                _showZoomedImage(grading.imagePath, grading.awsImageUrl, label),
+            child: Hero(
+              tag: 'zoomed_eye_$label',
+              child: Container(
+                height: 80,
+                width: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withValues(alpha: 0.2)),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: grading.awsImageUrl != null
+                      ? Image.network(
+                          grading.awsImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => _buildFallbackImage(),
+                        )
+                      : Image.file(
+                          File(grading.imagePath!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => _buildFallbackImage(),
+                        ),
+                ),
+              ),
             ),
           )
         else

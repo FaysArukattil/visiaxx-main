@@ -133,7 +133,9 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
         body: Stack(
           children: [
             // Camera Preview - Using explicit sizing for release mode compatibility
-            if (controller != null && controller.value.isInitialized)
+            if (controller != null &&
+                controller.value.isInitialized &&
+                !provider.isCameraStarting)
               Positioned.fill(
                 child: controller.value.previewSize != null
                     ? OverflowBox(
@@ -147,8 +149,8 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                           ),
                         ),
                       )
-                    : CameraPreview(
-                        controller,
+                    : const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
                       ), // Fallback if previewSize is null
               )
             else
@@ -312,7 +314,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
 
             // Feedback and Capture Action at the bottom
             Positioned(
-              bottom: isLandscape ? 12 : 40 + safeArea.bottom,
+              bottom: isLandscape ? 8 : 28 + safeArea.bottom,
               left: 24,
               right: 24,
               child: Column(
@@ -320,10 +322,10 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                 children: [
                   if (provider.errorMessage != null)
                     Container(
-                      margin: const EdgeInsets.only(bottom: 20),
+                      margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 12,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
                         color: context.error.withValues(alpha: 0.2),
@@ -337,33 +339,33 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                         provider.errorMessage!,
                         style: TextStyle(
                           color: context.error,
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ),
 
-                  // Feedback Card
+                  // Feedback Card - Refined to be more compact
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(20),
                     child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 20,
+                          horizontal: 20,
+                          vertical: 14,
                         ),
                         decoration: BoxDecoration(
                           color: provider.isReadyForCapture
-                              ? context.success.withValues(alpha: 0.15)
-                              : Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(24),
+                              ? context.success.withValues(alpha: 0.12)
+                              : Colors.white.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: provider.isReadyForCapture
-                                ? context.success.withValues(alpha: 0.4)
-                                : Colors.white.withValues(alpha: 0.15),
-                            width: 1.5,
+                                ? context.success.withValues(alpha: 0.35)
+                                : Colors.white.withValues(alpha: 0.12),
+                            width: 1.2,
                           ),
                         ),
                         child: Column(
@@ -375,20 +377,20 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                               style: TextStyle(
                                 color: provider.isReadyForCapture
                                     ? context.success
-                                    : Colors.white.withValues(alpha: 0.5),
-                                fontSize: 13,
+                                    : Colors.white.withValues(alpha: 0.4),
+                                fontSize: 11,
                                 fontWeight: FontWeight.w900,
-                                letterSpacing: 2.0,
+                                letterSpacing: 1.5,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
                             Text(
                               provider.readinessFeedback,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: -0.2,
+                                letterSpacing: -0.1,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -398,7 +400,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
                   // Capture Action
                   GestureDetector(
@@ -410,16 +412,16 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                           }
                         : null,
                     child: Container(
-                      width: isLandscape ? 72 : 88,
-                      height: isLandscape ? 72 : 88,
+                      width: isLandscape ? 64 : 76,
+                      height: isLandscape ? 64 : 76,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         boxShadow: [
                           if (provider.isReadyForCapture)
                             BoxShadow(
-                              color: context.primary.withValues(alpha: 0.4),
-                              blurRadius: 20,
-                              spreadRadius: 2,
+                              color: context.primary.withValues(alpha: 0.35),
+                              blurRadius: 16,
+                              spreadRadius: 1,
                             ),
                         ],
                         gradient: LinearGradient(
@@ -433,22 +435,22 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                               : [Colors.white24, Colors.white12],
                         ),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          width: 4,
+                          color: Colors.white.withValues(alpha: 0.7),
+                          width: 3.5,
                         ),
                       ),
                       child: provider.isCapturing
                           ? const Center(
                               child: CircularProgressIndicator(
                                 color: Colors.white,
-                                strokeWidth: 3,
+                                strokeWidth: 2.5,
                               ),
                             )
                           : Center(
                               child: Icon(
                                 Icons.camera_alt_rounded,
                                 color: Colors.white,
-                                size: isLandscape ? 32 : 36,
+                                size: isLandscape ? 28 : 32,
                               ),
                             ),
                     ),
