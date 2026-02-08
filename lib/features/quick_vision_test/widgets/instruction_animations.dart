@@ -56,19 +56,18 @@ class _BlinkReadingAnimationState extends State<BlinkReadingAnimation>
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
       ),
       child: Stack(
-        alignment: Alignment.center,
         children: [
-          // Head Silhouette
+          // Head Figure (Circular)
           Center(
             child: Container(
-              width: 160,
-              height: 200,
+              width: 150,
+              height: 150,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.all(Radius.elliptical(80, 100)),
+                color: AppColors.warning.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  width: 2,
+                  color: AppColors.warning.withValues(alpha: 0.6),
+                  width: 3,
                 ),
               ),
             ),
@@ -113,86 +112,93 @@ class _BlinkReadingAnimationState extends State<BlinkReadingAnimation>
               final t = _controller.value;
               double blinkFactor = 1.0;
               if ((t > 0.2 && t < 0.3) || (t > 0.7 && t < 0.8)) {
-                // Smooth blink curve
-                double localT;
-                if (t < 0.5) {
-                  localT = (t - 0.2) / 0.1;
-                } else {
-                  localT = (t - 0.7) / 0.1;
-                }
+                double localT = t < 0.5 ? (t - 0.2) / 0.1 : (t - 0.7) / 0.1;
                 blinkFactor = Curves.easeInOut.transform(
                   1.0 - math.sin(localT * math.pi),
                 );
               }
 
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildEye(blinkFactor),
-                      const SizedBox(width: 40),
-                      _buildEye(blinkFactor),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Animated Mouth (Reading Aloud)
-                  AnimatedBuilder(
-                    animation: _controller,
-                    builder: (context, child) {
-                      final t = _controller.value;
-                      // Mouth moves rapidly to simulate speech
-                      final mouthOpenFactor =
-                          (math.sin(t * math.pi * 10).abs() * 0.6) + 0.2;
-                      return Container(
-                        width: 30,
-                        height: 4 + (8 * mouthOpenFactor),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.5),
-                            width: 1,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+              final mouthOpenFactor =
+                  (math.sin(t * math.pi * 10).abs() * 0.6) + 0.2;
+
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildEye(blinkFactor),
+                        const SizedBox(width: 20),
+                        _buildEye(blinkFactor),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    // Animated Mouth (Reading Aloud)
+                    Container(
+                      width: 24,
+                      height: 4 + (6 * mouthOpenFactor),
+                      decoration: BoxDecoration(
+                        color: AppColors.textPrimary.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),
 
-          // Counter HUD
+          // Massive Pulsating Blink Counter HUD
           Positioned(
-            bottom: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.remove_red_eye_rounded,
-                    size: 16,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'BLINKS: $_blinkCount',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
-                      fontSize: 14,
-                      letterSpacing: 1.1,
+            bottom: 20,
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 300),
+              tween: Tween(begin: 1.0, end: 1.2),
+              key: ValueKey(_blinkCount),
+              builder: (context, scale, child) {
+                return Transform.scale(
+                  scale: scale,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.success,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.success.withValues(alpha: 0.4),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.visibility_rounded,
+                          size: 20,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '$_blinkCount',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            fontSize: 22,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
+              curve: Curves.elasticOut,
             ),
           ),
 

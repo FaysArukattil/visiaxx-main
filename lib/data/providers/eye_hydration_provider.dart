@@ -8,12 +8,14 @@ import '../models/eye_hydration_result.dart';
 
 class EyeHydrationProvider extends ChangeNotifier {
   // Constants for blink detection
-  static const double PROB_THRESHOLD = 0.22;
-  static const double PROB_RECOVER = 0.8;
-  static const int MIN_BLINK_DURATION_MS = 60; // Slightly more inclusive
+  // Constants for blink detection
+  static const double PROB_THRESHOLD = 0.35; // More sensitive to partial blinks
+  static const double PROB_RECOVER = 0.5; // Easier recovery for next blink
+  static const int MIN_BLINK_DURATION_MS = 60;
   static const int MAX_BLINK_DURATION_MS =
-      700; // More inclusive for slow blinks
-  static const int MIN_BETWEEN_BLINKS_MS = 250;
+      600; // Slightly tighter for real blinks
+  static const int MIN_BETWEEN_BLINKS_MS =
+      300; // Prevent double counting on sensitive threshold
 
   bool _isTestRunning = false;
   int _blinkCount = 0;
@@ -31,7 +33,6 @@ class EyeHydrationProvider extends ChangeNotifier {
 
   bool _isProcessing = false;
   bool _inBlinkState = false;
-  DateTime? _blinkStartTime;
   DateTime? _lastBlinkTime;
 
   double _currentLeftProb = 1.0;
@@ -69,7 +70,6 @@ class EyeHydrationProvider extends ChangeNotifier {
     _testStartTime = DateTime.now();
     _finalResult = null;
     _inBlinkState = false;
-    _blinkStartTime = null;
     _lastBlinkTime = null;
 
     _startImageStream();
@@ -167,36 +167,29 @@ class EyeHydrationProvider extends ChangeNotifier {
 
     if (isClosed) {
       if (!_inBlinkState) {
-        _inBlinkState = true;
-        _blinkStartTime = now;
+        // COUNT ON CLOSURE - More responsive feel
+        bool isDuplicate = false;
+        if (_lastBlinkTime != null) {
+          if (now.difference(_lastBlinkTime!).inMilliseconds <
+              MIN_BETWEEN_BLINKS_MS) {
+            isDuplicate = true;
+          }
+        }
+
+        if (!isDuplicate) {
+          _blinkCount++;
+          _lastBlinkTime = now;
+          _inBlinkState = true;
+          debugPrint('👁️ Blink detected on closure! Count: $_blinkCount');
+        } else {
+          // Still mark as in blink state to avoid re-triggering immediately
+          _inBlinkState = true;
+        }
       }
     } else if (isOpened) {
-      if (_inBlinkState && _blinkStartTime != null) {
-        int duration = now.difference(_blinkStartTime!).inMilliseconds;
-        if (duration >= MIN_BLINK_DURATION_MS &&
-            duration <= MAX_BLINK_DURATION_MS) {
-          bool isDuplicate = false;
-          if (_lastBlinkTime != null) {
-            if (now.difference(_lastBlinkTime!).inMilliseconds <
-                MIN_BETWEEN_BLINKS_MS) {
-              isDuplicate = true;
-            }
-          }
-
-          if (!isDuplicate) {
-            _blinkCount++;
-            _lastBlinkTime = now;
-            debugPrint(
-              '👁️ Blink detected! Count: $_blinkCount (Duration: ${duration}ms)',
-            );
-          } else {
-            debugPrint('🚫 Blink ignored (too close to previous)');
-          }
-        } else {
-          debugPrint('⏳ Blink ignored (invalid duration: ${duration}ms)');
-        }
+      if (_inBlinkState) {
+        // Reset blink state once eyes are sufficiently open again
         _inBlinkState = false;
-        _blinkStartTime = null;
       }
     }
     notifyListeners();
