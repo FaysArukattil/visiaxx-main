@@ -8,7 +8,6 @@ import '../models/eye_hydration_result.dart';
 
 class EyeHydrationProvider extends ChangeNotifier {
   // Constants for blink detection
-  // Constants for blink detection
   static const double PROB_THRESHOLD =
       0.45; // Ultra-sensitive (catch shallow blinks)
   static const double PROB_RECOVER =
@@ -18,6 +17,10 @@ class EyeHydrationProvider extends ChangeNotifier {
       600; // Slightly tighter for real blinks
   static const int MIN_BETWEEN_BLINKS_MS =
       300; // Prevent double counting on sensitive threshold
+
+  // Broadcast stream for blink events to trigger animations
+  final _blinkStreamController = StreamController<void>.broadcast();
+  Stream<void> get blinkStream => _blinkStreamController.stream;
 
   bool _isTestRunning = false;
   int _blinkCount = 0;
@@ -182,6 +185,10 @@ class EyeHydrationProvider extends ChangeNotifier {
           _blinkCount++;
           _lastBlinkTime = now;
           _inBlinkState = true;
+
+          // Notify stream to trigger animations
+          _blinkStreamController.add(null);
+
           debugPrint('👁️ Blink detected on closure! Count: $_blinkCount');
         } else {
           // Still mark as in blink state to avoid re-triggering immediately

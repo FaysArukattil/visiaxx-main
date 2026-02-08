@@ -264,10 +264,11 @@ class _PremiumEyePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final eyeWidth = size.width * 0.9;
-    final eyeHeight = size.height * 0.6;
+    final eyeWidth = size.width * 0.95;
+    final baseEyeHeight = size.height * 0.52;
 
-    final currentHeight = eyeHeight * blinkFactor.clamp(0.0, 1.0);
+    // Smooth factor for height - ensure it reaches 0 for full closure
+    final currentHeight = baseEyeHeight * blinkFactor.clamp(0.0, 1.0);
 
     final eyePath = Path();
     eyePath.moveTo(center.dx - eyeWidth / 2, center.dy);
@@ -285,7 +286,7 @@ class _PremiumEyePainter extends CustomPainter {
     );
     eyePath.close();
 
-    // Sclera
+    // 1. Draw Sclera
     canvas.drawPath(
       eyePath,
       Paint()
@@ -293,46 +294,65 @@ class _PremiumEyePainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
-    // Border
+    // 2. Draw Subtle Inner Shadow/Stroke
     canvas.drawPath(
       eyePath,
       Paint()
-        ..color = irisColor.withValues(alpha: 0.2)
+        ..color = irisColor.withValues(alpha: 0.15)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
 
-    if (blinkFactor > 0.1) {
+    if (blinkFactor > 0.05) {
       canvas.save();
       canvas.clipPath(eyePath);
 
-      final irisRadius = size.height * 0.35;
+      final irisRadius = (size.width / 2) * 0.55;
 
-      // Iris
+      // 3. Draw Iris
+      final irisPaint = Paint()
+        ..shader = RadialGradient(
+          colors: [irisColor.withValues(alpha: 0.8), irisColor],
+        ).createShader(Rect.fromCircle(center: center, radius: irisRadius));
+
+      canvas.drawCircle(center, irisRadius, irisPaint);
+
+      // 4. Draw Pupil
       canvas.drawCircle(
         center,
-        irisRadius,
-        Paint()
-          ..shader = RadialGradient(
-            colors: [irisColor.withValues(alpha: 0.8), irisColor],
-          ).createShader(Rect.fromCircle(center: center, radius: irisRadius)),
-      );
-
-      // Pupil
-      canvas.drawCircle(
-        center,
-        irisRadius * 0.45,
+        irisRadius * 0.42,
         Paint()..color = Colors.black,
       );
 
-      // Reflection
+      // 5. High-quality Reflections
       canvas.drawCircle(
         center + Offset(irisRadius * 0.3, -irisRadius * 0.3),
-        irisRadius * 0.15,
-        Paint()..color = Colors.white.withValues(alpha: 0.6),
+        irisRadius * 0.16,
+        Paint()..color = Colors.white.withValues(alpha: 0.45),
       );
 
       canvas.restore();
+    }
+
+    // 6. Draw eyelids/lashes line when closing or closed
+    if (blinkFactor < 0.4) {
+      final lashesPaint = Paint()
+        ..color = irisColor.withValues(alpha: 0.8 * (1.0 - blinkFactor))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.0
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawArc(
+        Rect.fromCenter(
+          center: center,
+          width: eyeWidth * 0.8,
+          height: size.height * 0.1,
+        ),
+        0.1,
+        math.pi - 0.2,
+        false,
+        lashesPaint,
+      );
     }
   }
 

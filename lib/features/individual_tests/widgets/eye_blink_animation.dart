@@ -1,108 +1,111 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../../core/constants/app_colors.dart';
 
-class EyeBlinkAnimation extends StatelessWidget {
+class EyeBlinkAnimation extends StatefulWidget {
   final double size;
-  final double blinkProbability; // 1.0 = fully open, 0.0 = fully closed
   final bool isFaceDetected;
-  final bool autoBlink; // For use in instructions
+  final Stream<void>? blinkStream; // Optional stream to trigger blinks
 
   const EyeBlinkAnimation({
     super.key,
     this.size = 120,
-    this.blinkProbability = 1.0,
     this.isFaceDetected = true,
-    this.autoBlink = false,
+    this.blinkStream,
   });
 
   @override
-  Widget build(BuildContext context) {
-    if (autoBlink) {
-      return _AutoBlinkingEye(size: size);
-    }
-
-    final themeColor = isFaceDetected
-        ? Theme.of(context).primaryColor
-        : Colors.grey;
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: _PremiumEyePainterWidget(
-        progress: blinkProbability,
-        color: themeColor,
-      ),
-    );
-  }
+  State<EyeBlinkAnimation> createState() => _EyeBlinkAnimationState();
 }
 
-class _AutoBlinkingEye extends StatefulWidget {
-  final double size;
-  const _AutoBlinkingEye({required this.size});
-
-  @override
-  State<_AutoBlinkingEye> createState() => _AutoBlinkingEyeState();
-}
-
-class _AutoBlinkingEyeState extends State<_AutoBlinkingEye>
+class _EyeBlinkAnimationState extends State<EyeBlinkAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  StreamSubscription? _subscription;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    )..repeat();
+      duration: const Duration(milliseconds: 250), // Rapid but smooth blink
+    );
+
+    // Initial state is open (1.0)
+    _controller.value = 1.0;
+
+    _setupStream();
+  }
+
+  void _setupStream() {
+    _subscription?.cancel();
+    if (widget.blinkStream != null) {
+      _subscription = widget.blinkStream!.listen((_) {
+        _triggerBlink();
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(EyeBlinkAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.blinkStream != oldWidget.blinkStream) {
+      _setupStream();
+    }
+  }
+
+  void _triggerBlink() {
+    if (!mounted) return;
+
+    // Play a smooth 60fps animation: Open -> Closed -> Open
+    // 0.0 is closed, 1.0 is open
+    _controller
+        .animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeIn,
+        )
+        .then((_) {
+          if (mounted) {
+            _controller.animateTo(
+              1.0,
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+            );
+          }
+        });
   }
 
   @override
   void dispose() {
+    _subscription?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = widget.isFaceDetected
+        ? Theme.of(context).primaryColor
+        : Colors.grey;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        double progress = 1.0;
-        final t = _controller.value;
-
-        // Simulating a blink at t=0.5
-        if (t > 0.45 && t < 0.55) {
-          final blinkT = (t - 0.45) / 0.1;
-          progress = (math.sin(blinkT * math.pi)).abs();
-          progress = 1.0 - progress;
-        }
-
-        return _PremiumEyePainterWidget(
-          progress: progress,
-          color: Theme.of(context).primaryColor,
+        return SizedBox(
+          width: widget.size,
+          height: widget.size,
+          child: CustomPaint(
+            painter: _PremiumEyePainter(
+              openFactor: _controller.value,
+              color: themeColor,
+              scleraColor: Colors.white,
+              pupilColor: AppColors.black,
+            ),
+          ),
         );
       },
-    );
-  }
-}
-
-class _PremiumEyePainterWidget extends StatelessWidget {
-  final double progress;
-  final Color color;
-
-  const _PremiumEyePainterWidget({required this.progress, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _PremiumEyePainter(
-        openFactor: progress.clamp(0.0, 1.0),
-        color: color,
-        scleraColor: Colors.white,
-        pupilColor: AppColors.black,
-      ),
     );
   }
 }
@@ -126,8 +129,8 @@ class _PremiumEyePainter extends CustomPainter {
     final eyeWidth = size.width * 0.95;
     final baseEyeHeight = size.height * 0.52;
 
-    // Smooth factor for height
-    final currentHeight = baseEyeHeight * openFactor;
+    // Smooth factor for height - ensure it reaches 0 for full closure
+    final currentHeight = baseEyeHeight * openFactor.clamp(0.0, 1.0);
 
     final eyePath = Path();
     eyePath.moveTo(center.dx - eyeWidth / 2, center.dy);
@@ -162,7 +165,7 @@ class _PremiumEyePainter extends CustomPainter {
         ..strokeWidth = 1.5,
     );
 
-    if (openFactor > 0.1) {
+    if (openFactor > 0.05) {
       canvas.save();
       canvas.clipPath(eyePath);
 
@@ -176,7 +179,7 @@ class _PremiumEyePainter extends CustomPainter {
 
       canvas.drawCircle(center, irisRadius, irisPaint);
 
-      // 4. Draw Pupil with subtle pulse (not needed here but looks premium)
+      // 4. Draw Pupil
       canvas.drawCircle(center, irisRadius * 0.42, Paint()..color = pupilColor);
 
       // 5. High-quality Reflections
@@ -196,16 +199,22 @@ class _PremiumEyePainter extends CustomPainter {
       );
 
       canvas.restore();
-    } else {
-      // 6. Draw Closed Eye Line (Lashes)
+    }
+
+    // Draw eyelids/lashes line when closing or closed
+    if (openFactor < 0.4) {
       final lashesPaint = Paint()
-        ..color = color.withValues(alpha: 0.6)
+        ..color = color.withValues(alpha: 0.8 * (1.0 - openFactor))
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5
+        ..strokeWidth = 3.0
         ..strokeCap = StrokeCap.round;
 
       canvas.drawArc(
-        Rect.fromCenter(center: center, width: eyeWidth * 0.7, height: 10),
+        Rect.fromCenter(
+          center: center,
+          width: eyeWidth * 0.8,
+          height: size.height * 0.1,
+        ),
         0.1,
         math.pi - 0.2,
         false,

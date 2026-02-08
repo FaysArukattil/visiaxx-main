@@ -236,7 +236,7 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
           child: Center(
             child: EyeBlinkAnimation(
               size: size * 0.8,
-              blinkProbability: provider.currentBlinkProbability,
+              blinkStream: provider.blinkStream,
               isFaceDetected: provider.faceDetected,
             ),
           ),
