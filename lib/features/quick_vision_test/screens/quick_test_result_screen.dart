@@ -3375,7 +3375,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Flexible(
+              Expanded(
                 child: _buildShadowEyeResult(
                   'Right Eye',
                   result.rightEye,
@@ -3384,8 +3384,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               ),
               Container(
                 width: 1,
-                height: 100,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
+                height: 120,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -3398,7 +3398,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   ),
                 ),
               ),
-              Flexible(
+              Expanded(
                 child: _buildShadowEyeResult(
                   'Left Eye',
                   result.leftEye,
@@ -3505,14 +3505,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             child: Hero(
               tag: 'zoomed_eye_$label',
               child: Container(
-                height: 80,
-                width: 80,
+                height: 100,
+                width: 100,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: color.withValues(alpha: 0.2)),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(11),
+                  borderRadius: BorderRadius.circular(15),
                   child: grading.awsImageUrl != null
                       ? Image.network(
                           grading.awsImageUrl!,
@@ -3574,16 +3574,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   Widget _buildFallbackImage() {
     return Container(
-      height: 80,
-      width: 80,
+      height: 100,
+      width: 100,
       decoration: BoxDecoration(
         color: context.dividerColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(
         Icons.visibility_off_rounded,
         color: context.textTertiary,
-        size: 24,
+        size: 32,
       ),
     );
   }
