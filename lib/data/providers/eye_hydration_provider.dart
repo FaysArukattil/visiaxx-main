@@ -9,9 +9,11 @@ import '../models/eye_hydration_result.dart';
 class EyeHydrationProvider extends ChangeNotifier {
   // Constants for blink detection
   // Constants for blink detection
-  static const double PROB_THRESHOLD = 0.35; // More sensitive to partial blinks
-  static const double PROB_RECOVER = 0.5; // Easier recovery for next blink
-  static const int MIN_BLINK_DURATION_MS = 60;
+  static const double PROB_THRESHOLD =
+      0.45; // Ultra-sensitive (catch shallow blinks)
+  static const double PROB_RECOVER =
+      0.6; // Low recovery point for shallow blink cycles
+  static const int MIN_BLINK_DURATION_MS = 50; // More inclusive
   static const int MAX_BLINK_DURATION_MS =
       600; // Slightly tighter for real blinks
   static const int MIN_BETWEEN_BLINKS_MS =

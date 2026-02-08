@@ -24,13 +24,15 @@ class _BlinkReadingAnimationState extends State<BlinkReadingAnimation>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(
+        milliseconds: 4000,
+      ), // Slower for smoother observation
     )..repeat();
 
     _controller.addListener(() {
       final t = _controller.value;
-      // Blink happens twice in one cycle: 0.2-0.3 and 0.7-0.8
-      bool isClosed = (t > 0.2 && t < 0.3) || (t > 0.7 && t < 0.8);
+      // Precise blink windows for a slower cycle
+      bool isClosed = (t > 0.25 && t < 0.35) || (t > 0.75 && t < 0.85);
       if (isClosed && !_lastIsClosed) {
         setState(() => _blinkCount++);
       }
@@ -111,8 +113,15 @@ class _BlinkReadingAnimationState extends State<BlinkReadingAnimation>
             builder: (context, child) {
               final t = _controller.value;
               double blinkFactor = 1.0;
-              if ((t > 0.2 && t < 0.3) || (t > 0.7 && t < 0.8)) {
-                double localT = t < 0.5 ? (t - 0.2) / 0.1 : (t - 0.7) / 0.1;
+              // Smooth blink timing with full range
+              if ((t > 0.22 && t < 0.38) || (t > 0.72 && t < 0.88)) {
+                double localT;
+                if (t < 0.5) {
+                  localT = (t - 0.22) / 0.16;
+                } else {
+                  localT = (t - 0.72) / 0.16;
+                }
+                // Sina curve for natural eyelid motion
                 blinkFactor = Curves.easeInOut.transform(
                   1.0 - math.sin(localT * math.pi),
                 );
@@ -258,7 +267,7 @@ class _PremiumEyePainter extends CustomPainter {
     final eyeWidth = size.width * 0.9;
     final eyeHeight = size.height * 0.6;
 
-    final currentHeight = eyeHeight * blinkFactor.clamp(0.01, 1.0);
+    final currentHeight = eyeHeight * blinkFactor.clamp(0.0, 1.0);
 
     final eyePath = Path();
     eyePath.moveTo(center.dx - eyeWidth / 2, center.dy);
