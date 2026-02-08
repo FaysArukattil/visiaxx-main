@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
+import 'dart:ui' as ui;
 import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/shadow_test_provider.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -75,12 +76,25 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
             shadowProvider.initializeCamera();
           },
           onExit: () async {
-            await NavigationUtils.navigateHome(context);
+            // Ensure flash is off before navigating away
+            final shadowProvider = context.read<ShadowTestProvider>();
+            await shadowProvider.stopCamera();
+            if (mounted) {
+              await NavigationUtils.navigateHome(context);
+            }
           },
           hasCompletedTests: provider.hasAnyCompletedTest,
           onSaveAndExit: provider.hasAnyCompletedTest
-              ? () {
-                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+              ? () async {
+                  // Ensure flash is off before navigating away
+                  final shadowProvider = context.read<ShadowTestProvider>();
+                  await shadowProvider.stopCamera();
+                  if (mounted) {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/quick-test-result',
+                    );
+                  }
                 }
               : null,
         );
@@ -235,22 +249,32 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
               left: 0,
               right: 0,
               child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black45,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white24),
-                  ),
-                  child: Text(
-                    'Testing ${provider.currentEye.toUpperCase()} Eye',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        'Testing ${provider.currentEye.toUpperCase()} Eye',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -289,51 +313,94 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
             // Feedback and Capture Action at the bottom
             Positioned(
               bottom: isLandscape ? 12 : 40 + safeArea.bottom,
-              left: 0,
-              right: 0,
+              left: 24,
+              right: 24,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (provider.errorMessage != null)
                     Container(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: const EdgeInsets.only(bottom: 20),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.error, width: 1),
+                        color: context.error.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: context.error.withValues(alpha: 0.5),
+                          width: 1.5,
+                        ),
                       ),
                       child: Text(
                         provider.errorMessage!,
                         style: TextStyle(
                           color: context.error,
                           fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ),
-                  Text(
-                    provider.readinessFeedback,
-                    style: TextStyle(
-                      color: provider.isReadyForCapture
-                          ? Colors.white
-                          : Colors.white70,
-                      fontSize: isLandscape ? 16 : 18,
-                      fontWeight: FontWeight.bold,
-                      shadows: const [
-                        Shadow(
-                          blurRadius: 10,
-                          color: Colors.black,
-                          offset: Offset(0, 2),
+
+                  // Feedback Card
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 20,
                         ),
-                      ],
+                        decoration: BoxDecoration(
+                          color: provider.isReadyForCapture
+                              ? context.success.withValues(alpha: 0.15)
+                              : Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: provider.isReadyForCapture
+                                ? context.success.withValues(alpha: 0.4)
+                                : Colors.white.withValues(alpha: 0.15),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              provider.isReadyForCapture
+                                  ? 'READY TO CAPTURE'
+                                  : 'POSITIONING...',
+                              style: TextStyle(
+                                color: provider.isReadyForCapture
+                                    ? context.success
+                                    : Colors.white.withValues(alpha: 0.5),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              provider.readinessFeedback,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.2,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                  SizedBox(height: isLandscape ? 10 : 20),
+
+                  const SizedBox(height: 32),
+
+                  // Capture Action
                   GestureDetector(
                     onTap: provider.isReadyForCapture && !provider.isCapturing
                         ? () {
@@ -343,28 +410,45 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                           }
                         : null,
                     child: Container(
-                      width: isLandscape ? 64 : 80,
-                      height: isLandscape ? 64 : 80,
+                      width: isLandscape ? 72 : 88,
+                      height: isLandscape ? 72 : 88,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        color: provider.isReadyForCapture
-                            ? context.primary
-                            : Colors.white24,
+                        boxShadow: [
+                          if (provider.isReadyForCapture)
+                            BoxShadow(
+                              color: context.primary.withValues(alpha: 0.4),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                        ],
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: provider.isReadyForCapture
+                              ? [
+                                  context.primary,
+                                  context.primary.withValues(alpha: 0.8),
+                                ]
+                              : [Colors.white24, Colors.white12],
+                        ),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          width: 4,
+                        ),
                       ),
                       child: provider.isCapturing
                           ? const Center(
                               child: CircularProgressIndicator(
                                 color: Colors.white,
+                                strokeWidth: 3,
                               ),
                             )
                           : Center(
                               child: Icon(
                                 Icons.camera_alt_rounded,
-                                color: provider.isReadyForCapture
-                                    ? Colors.white
-                                    : Colors.white38,
-                                size: isLandscape ? 28 : 32,
+                                color: Colors.white,
+                                size: isLandscape ? 32 : 36,
                               ),
                             ),
                     ),

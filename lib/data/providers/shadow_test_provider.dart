@@ -237,8 +237,10 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> stopCamera() async {
-    await _cameraService.dispose();
     _isFlashOn = false;
+    await _cameraService.setFlashMode(FlashMode.off);
+    await _cameraService.turnOffFlashlight();
+    await _cameraService.dispose();
     notifyListeners();
   }
 
