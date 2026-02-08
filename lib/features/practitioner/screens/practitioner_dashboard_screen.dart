@@ -3936,7 +3936,8 @@ class _PractitionerDashboardScreenState
         result.pelliRobson != null ||
         result.amslerGridRight != null ||
         result.amslerGridLeft != null ||
-        result.shadowTest != null;
+        result.shadowTest != null ||
+        result.stereopsis != null;
 
     if (!hasVA && !hasRefraction && !hasOthers) return const SizedBox.shrink();
 
@@ -4165,6 +4166,29 @@ class _PractitionerDashboardScreenState
                           result.shadowTest!.leftEye.grade.angleStatus
                               .toUpperCase(),
                           icon: Icons.wb_sunny_rounded,
+                        ),
+                      ],
+                    ),
+                    if (result.stereopsis != null) const SizedBox(height: 8),
+                  ],
+                  // Stereopsis Test
+                  if (result.stereopsis != null) ...[
+                    Row(
+                      children: [
+                        _buildDiagnosticItem(
+                          'STEREOPSIS (3D)',
+                          result.stereopsis!.grade.label.toUpperCase(),
+                          icon: Icons.view_in_ar,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: context.primary.withValues(alpha: 0.15),
+                        ),
+                        _buildDiagnosticItem(
+                          'STEREO SCORE',
+                          '${result.stereopsis!.score}/${result.stereopsis!.totalRounds}',
+                          icon: Icons.stars_rounded,
                         ),
                       ],
                     ),
