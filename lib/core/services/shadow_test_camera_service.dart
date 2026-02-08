@@ -51,10 +51,16 @@ class ShadowTestCameraService {
         orElse: () => _cameras!.first,
       );
 
+      // Dispose previous controller if any to prevent hardware locks
+      if (_controller != null) {
+        await _controller?.dispose();
+        _controller = null;
+      }
+
       // Initialize camera controller
       _controller = CameraController(
         backCamera,
-        ResolutionPreset.high,
+        ResolutionPreset.medium, // Medium resolution is faster for analysis
         enableAudio: false,
         imageFormatGroup: Platform.isAndroid
             ? ImageFormatGroup.yuv420
@@ -79,14 +85,28 @@ class ShadowTestCameraService {
 
   Future<void> toggleFlashlight() async {
     try {
-      if (_isFlashlightOn) {
-        await TorchLight.disableTorch();
-        _isFlashlightOn = false;
-        AppLogger.log('$_tag: Flashlight turned off', tag: _tag);
+      if (_controller != null && _controller!.value.isInitialized) {
+        // Use camera controller for flash if available - more reliable during active camera session
+        final newMode = _isFlashlightOn ? FlashMode.off : FlashMode.torch;
+        await _controller!.setFlashMode(newMode);
+        _isFlashlightOn = !_isFlashlightOn;
+        AppLogger.log(
+          '$_tag: Flashlight toggled via camera controller: $_isFlashlightOn',
+          tag: _tag,
+        );
       } else {
-        await TorchLight.enableTorch();
-        _isFlashlightOn = true;
-        AppLogger.log('$_tag: Flashlight turned on', tag: _tag);
+        // Fallback to TorchLight package
+        if (_isFlashlightOn) {
+          await TorchLight.disableTorch();
+          _isFlashlightOn = false;
+        } else {
+          await TorchLight.enableTorch();
+          _isFlashlightOn = true;
+        }
+        AppLogger.log(
+          '$_tag: Flashlight toggled via TorchLight: $_isFlashlightOn',
+          tag: _tag,
+        );
       }
     } catch (e) {
       AppLogger.log(
@@ -94,21 +114,16 @@ class ShadowTestCameraService {
         tag: _tag,
         isError: true,
       );
-      // Fallback to camera flash if torch doesn't work
+      // Last ditch effort: try TorchLight if camera failed, or vice versa
       try {
-        if (_controller != null) {
-          await _controller!.setFlashMode(
-            _isFlashlightOn ? FlashMode.off : FlashMode.torch,
-          );
-          _isFlashlightOn = !_isFlashlightOn;
+        if (_isFlashlightOn) {
+          await TorchLight.disableTorch();
+          _isFlashlightOn = false;
+        } else {
+          await TorchLight.enableTorch();
+          _isFlashlightOn = true;
         }
-      } catch (flashError) {
-        AppLogger.log(
-          '$_tag: Camera flash also failed: $flashError',
-          tag: _tag,
-          isError: true,
-        );
-      }
+      } catch (_) {}
     }
   }
 
@@ -156,19 +171,36 @@ class ShadowTestCameraService {
 
   Future<void> dispose() async {
     try {
-      if (_isFlashlightOn) {
-        await turnOffFlashlight();
+      AppLogger.log('$_tag: Disposing camera service', tag: _tag);
+
+      // 1. Force flash off through all possible channels
+      if (_controller != null && _controller!.value.isInitialized) {
+        try {
+          await _controller!.setFlashMode(FlashMode.off);
+        } catch (_) {}
       }
+      try {
+        await TorchLight.disableTorch();
+      } catch (_) {}
+      _isFlashlightOn = false;
+
+      // 2. Stop stream if active
       if (_controller != null && _controller!.value.isStreamingImages) {
-        await _controller!.stopImageStream();
+        try {
+          await _controller!.stopImageStream();
+        } catch (_) {}
       }
+
+      // 3. Dispose controller
       await _controller?.dispose();
       _controller = null;
+
+      // 4. Close face detector (ML Kit)
       await _faceDetector.close();
-      AppLogger.log('$_tag: Camera service disposed', tag: _tag);
+      AppLogger.log('$_tag: Camera service disposed successfully', tag: _tag);
     } catch (e) {
       AppLogger.log(
-        '$_tag: Error disposing camera: $e',
+        '$_tag: Error during camera service disposal: $e',
         tag: _tag,
         isError: true,
       );

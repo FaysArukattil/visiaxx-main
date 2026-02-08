@@ -65,6 +65,8 @@ class ShadowTestProvider extends ChangeNotifier {
       _isCapturing = false;
       _state = ShadowTestState.initial;
 
+      // Close previous detector if any before re-initializing
+      await _cameraService.dispose();
       await _cameraService.initialize();
 
       // Add listener to camera controller to trigger UI updates when camera state changes
@@ -194,18 +196,22 @@ class ShadowTestProvider extends ChangeNotifier {
     _state = newState;
     if (newState == ShadowTestState.initial) {
       _currentEye = 'right';
-      _rightEyeGrading = null;
-      _leftEyeGrading = null;
-      _finalResult = null;
       _isFlashOn = false;
       _cameraService.setFlashMode(FlashMode.off);
+      _cameraService.turnOffFlashlight();
     }
+    notifyListeners();
+  }
+
+  Future<void> stopCamera() async {
+    await _cameraService.dispose();
+    _isFlashOn = false;
     notifyListeners();
   }
 
   @override
   void dispose() {
-    _cameraService.dispose();
+    stopCamera();
     super.dispose();
   }
 }

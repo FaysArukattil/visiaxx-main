@@ -54,6 +54,8 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
   @override
   void dispose() {
     _localController?.removeListener(_onCameraUpdate);
+    // Mandatory teardown to prevent camera/flash from staying on
+    context.read<ShadowTestProvider>().stopCamera();
     super.dispose();
   }
 
@@ -69,9 +71,10 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
           },
           onRestart: () {
             provider.resetKeepProfile();
-            // Start the test again
-            context.read<ShadowTestProvider>().reset();
-            provider.startIndividualTest('shadow_test');
+            // Start the test again with a clean state
+            final shadowProvider = context.read<ShadowTestProvider>();
+            shadowProvider.setState(ShadowTestState.initial);
+            shadowProvider.initializeCamera();
           },
           onExit: () async {
             await NavigationUtils.navigateHome(context);
