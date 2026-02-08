@@ -176,33 +176,43 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Row(
+    return Column(
       children: [
         Expanded(
-          flex: 4,
-          child: Column(
+          child: Row(
             children: [
-              Expanded(child: _buildReadingContent(provider)),
-              _buildActionButtons(provider),
+              // Main reading area
+              Expanded(flex: 5, child: _buildReadingContent(provider)),
+              // Sidebar with controls and feedback
+              Container(
+                width: 220,
+                decoration: BoxDecoration(
+                  color: context.cardColor,
+                  border: Border(
+                    left: BorderSide(
+                      color: context.dividerColor.withValues(alpha: 0.1),
+                    ),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      _buildAnimationHeader(provider, size: 70),
+                      const SizedBox(height: 12),
+                      _buildBlinkCounterPremium(provider, isCompact: true),
+                      const SizedBox(height: 8),
+                      _buildDetectionWarning(provider),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        Container(
-          width: 200,
-          color: context.cardColor,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildAnimationHeader(provider, size: 80),
-              _buildBlinkCounterPremium(provider, isCompact: true),
-              const SizedBox(height: 10),
-              _buildDetectionWarning(provider),
-              const Spacer(),
-              _buildActionButtons(provider, isCompact: true),
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
+        // Full width bottom button
+        _buildActionButtons(provider),
       ],
     );
   }
