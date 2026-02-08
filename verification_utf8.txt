@@ -1,0 +1,8 @@
+﻿Analyzing visiaxx-main...                                       
+
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\core\widgets\test_exit_confirmation_dialog.dart:398:17 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3425:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3425:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3430:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3430:45 - unnecessary_underscores
+

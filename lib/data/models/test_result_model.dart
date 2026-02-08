@@ -309,8 +309,9 @@ class TestResultModel {
     }
 
     // Review if: Pelli-Robson shows reduced contrast sensitivity
-    if (pelliRobson != null && pelliRobson.needsReferral)
+    if (pelliRobson != null && pelliRobson.needsReferral) {
       return TestStatus.review;
+    }
     if (shadowTest != null &&
         (shadowTest.overallRisk == 'HIGH' ||
             shadowTest.overallRisk == 'MODERATE')) {

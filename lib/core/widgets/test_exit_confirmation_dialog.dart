@@ -395,7 +395,7 @@ class _TestExitConfirmationDialogState
               Switch.adaptive(
                 value: provider.isEnabled,
                 onChanged: (value) => provider.setEnabled(value),
-                activeColor: context.primary,
+                activeTrackColor: context.primary,
               ),
             ],
           ),

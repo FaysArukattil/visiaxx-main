@@ -1,0 +1,6 @@
+﻿Analyzing visiaxx-main...                                       
+
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3425:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3431:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3431:45 - unnecessary_underscores
+

@@ -1,0 +1,21 @@
+﻿Analyzing visiaxx-main...                                       
+
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\core\services\shadow_detection_service.dart:2:8 - unnecessary_import
+   info - Statements in an if should be enclosed in a block - lib\core\services\shadow_detection_service.dart:219:7 - curly_braces_in_flow_control_structures
+warning - Unused import: 'package:flutter/foundation.dart' - lib\core\services\shadow_test_camera_service.dart:4:8 - unused_import
+   info - Statements in an if should be enclosed in a block - lib\core\services\shadow_test_camera_service.dart:227:9 - curly_braces_in_flow_control_structures
+  error - The getter 'isCapturing' isn't defined for the type 'CameraValue' - lib\core\services\shadow_test_camera_service.dart:228:30 - undefined_getter
+warning - The declaration '_getImageRotation' isn't referenced - lib\core\services\shadow_test_camera_service.dart:311:22 - unused_element
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\core\widgets\test_exit_confirmation_dialog.dart:398:17 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\data\models\test_result_model.dart:313:7 - curly_braces_in_flow_control_structures
+   info - The private field _isEyeDetected could be 'final' - lib\data\providers\shadow_test_provider.dart:29:8 - prefer_final_fields
+warning - The value of the field '_isCameraReady' isn't used - lib\features\individual_tests\screens\shadow_test_screen.dart:22:8 - unused_field
+   info - Don't use 'BuildContext's across async gaps - lib\features\individual_tests\screens\shadow_test_screen.dart:32:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\individual_tests\screens\shadow_test_screen.dart:35:26 - use_build_context_synchronously
+warning - Unused import: '../../../../core/extensions/theme_extension.dart' - lib\features\individual_tests\widgets\analysis_loading_widget.dart:2:8 - unused_import
+   info - Use a 'SizedBox' to add whitespace to a layout - lib\features\individual_tests\widgets\camera_capture_widget.dart:39:18 - sized_box_for_whitespace
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3425:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3425:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3430:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\quick_vision_test\screens\quick_test_result_screen.dart:3430:45 - unnecessary_underscores
+

@@ -19,7 +19,6 @@ class ShadowTestScreen extends StatefulWidget {
 class _ShadowTestScreenState extends State<ShadowTestScreen> {
   // Local reference to camera controller to ensure reliable UI updates in release mode
   CameraController? _localController;
-  bool _isCameraReady = false;
 
   @override
   void initState() {
@@ -28,16 +27,17 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
     context.read<ShadowTestProvider>().setState(ShadowTestState.initial);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await context.read<ShadowTestProvider>().initializeCamera();
+      final shadowProvider = context.read<ShadowTestProvider>();
+      await shadowProvider.initializeCamera();
+      if (!mounted) return;
       context.read<TestSessionProvider>().startIndividualTest('shadow_test');
 
       // Get the controller and add local listener for reliable release mode updates
-      final controller = context.read<ShadowTestProvider>().cameraController;
-      if (controller != null && mounted) {
+      final controller = shadowProvider.cameraController;
+      if (controller != null) {
         controller.addListener(_onCameraUpdate);
         setState(() {
           _localController = controller;
-          _isCameraReady = controller.value.isInitialized;
         });
       }
     });
@@ -45,9 +45,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
 
   void _onCameraUpdate() {
     if (mounted && _localController != null) {
-      setState(() {
-        _isCameraReady = _localController!.value.isInitialized;
-      });
+      setState(() {});
     }
   }
 

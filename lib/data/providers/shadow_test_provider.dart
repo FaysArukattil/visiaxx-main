@@ -16,7 +16,7 @@ enum ShadowTestState {
   result,
 }
 
-class ShadowTestProvider extends ChangeNotifier {
+class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
   static const String _tag = 'ShadowTestProvider';
 
   final ShadowTestCameraService _cameraService = ShadowTestCameraService();
@@ -26,7 +26,7 @@ class ShadowTestProvider extends ChangeNotifier {
   String _currentEye = 'right';
 
   // Detection feedback
-  bool _isEyeDetected = false;
+  final bool _isEyeDetected = false;
   String _readinessFeedback = 'Positioning...';
   bool _isReadyForCapture = false;
 
@@ -56,7 +56,6 @@ class ShadowTestProvider extends ChangeNotifier {
   Future<void> initializeCamera() async {
     try {
       _errorMessage = null;
-      // Reset test state to ensure fresh session
       _currentEye = 'right';
       _rightEyeGrading = null;
       _leftEyeGrading = null;
@@ -65,35 +64,64 @@ class ShadowTestProvider extends ChangeNotifier {
       _isCapturing = false;
       _state = ShadowTestState.initial;
 
-      // Close previous detector if any before re-initializing
       await _cameraService.dispose();
+
+      // Register lifecycle observer if not already
+      WidgetsBinding.instance.removeObserver(this);
+      WidgetsBinding.instance.addObserver(this);
+
       await _cameraService.initialize();
 
-      // Add listener to camera controller to trigger UI updates when camera state changes
-      // This is critical for release mode where timing is different than debug mode
       final controller = _cameraService.controller;
       if (controller != null) {
         controller.addListener(() {
-          // Trigger UI rebuild when camera value changes (e.g., preview becomes available)
           notifyListeners();
         });
+
+        // Start eye detection stream to fulfill "Only Works for Eyes" requirement
+        _startEyeDetection();
       }
 
-      // Small delay to ensure camera preview is fully ready before updating UI
-      // This is important for release mode where initialization timing differs
       await Future.delayed(const Duration(milliseconds: 200));
 
       // Automatically turn on flash for the test
       _isFlashOn = true;
       await _cameraService.setFlashMode(FlashMode.torch);
 
-      _isReadyForCapture = true; // Enable manual capture
-      _readinessFeedback = 'Ready to capture ${_currentEye.toUpperCase()} eye';
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Failed to initialize camera: $e';
       notifyListeners();
     }
+  }
+
+  void _startEyeDetection() {
+    _readinessFeedback = 'Positioning eye...';
+    _isReadyForCapture = false;
+
+    _cameraService.startSearchingForEyes((faces, size, isIrisManual) {
+      // Check if eye is centered and valid
+      final eyeDetected = _cameraService.isEyeInCenter(
+        faces,
+        size,
+        isIrisManual: isIrisManual,
+      );
+
+      if (faces.isNotEmpty || isIrisManual) {
+        AppLogger.log(
+          '$_tag: Detected ${faces.length} faces. Manual Iris: $isIrisManual. Toggle: $eyeDetected',
+          tag: _tag,
+        );
+      }
+
+      if (eyeDetected != _isReadyForCapture) {
+        _isReadyForCapture = eyeDetected;
+        _readinessFeedback = eyeDetected
+            ? 'Eye detected. Ready to capture ${_currentEye.toUpperCase()} eye'
+            : 'Align eye in the circle';
+        notifyListeners();
+      }
+    });
   }
 
   // Auto-detection loop removed as per user request to use manual capture only.
@@ -118,24 +146,29 @@ class ShadowTestProvider extends ChangeNotifier {
     try {
       AppLogger.log('$_tag: Capturing image for $_currentEye eye', tag: _tag);
 
-      // Image capture (Flashlight managed by state)
+      // Stop searching before capture to avoid resource contention
+      _cameraService.stopSearchingForEyes();
+
+      // Capture image
       final imagePath = await _cameraService.captureImage();
       if (imagePath == null) throw Exception('Failed to capture image');
 
-      // Validate that the image contains an eye
-      final validationResult = await _detectionService.validateEyeImage(
-        imagePath,
-      );
-
-      if (!validationResult.isValid) {
-        _errorMessage = validationResult.message;
-        _readinessFeedback = 'Please retake the image';
+      // Check image quality (ShadowDetectionService refactored)
+      final quality = await _detectionService.checkImageQuality(imagePath);
+      if (!quality.isGood) {
+        _errorMessage = quality.message;
+        _readinessFeedback = 'Please retake. ${quality.message}';
         _isCapturing = false;
+        _startEyeDetection(); // Restart detection loop
         notifyListeners();
         return;
       }
 
-      // Analyze image
+      // Transition to analyzing state in UI
+      _state = ShadowTestState.analyzing;
+      notifyListeners();
+
+      // Analyze image clinically
       final analysis = await _detectionService.analyzeEyeImage(imagePath);
 
       final grading = EyeGrading(
@@ -148,12 +181,11 @@ class ShadowTestProvider extends ChangeNotifier {
         _rightEyeGrading = grading;
         _currentEye = 'left';
         _state = ShadowTestState.leftEyeCapture;
-        _readinessFeedback = 'Ready to capture LEFT eye';
+        _startEyeDetection(); // Restart for next eye
       } else {
         _leftEyeGrading = grading;
         await _generateFinalResult();
 
-        // Push result to global test session
         if (_finalResult != null) {
           sessionProvider.setShadowTestResult(_finalResult!);
         }
@@ -171,6 +203,7 @@ class ShadowTestProvider extends ChangeNotifier {
         tag: _tag,
         isError: true,
       );
+      _startEyeDetection(); // Recover by restarting detection
     } finally {
       _isCapturing = false;
       notifyListeners();
@@ -210,7 +243,23 @@ class ShadowTestProvider extends ChangeNotifier {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    AppLogger.log('$_tag: Lifecycle state changed to: $state', tag: _tag);
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // Release camera immediately when app goes to background
+      stopCamera();
+    } else if (state == AppLifecycleState.resumed) {
+      // If we were in the middle of a test, we might need to re-initialize
+      // but usually the user will see the "loading" or "camera error"
+      // and can tap reset. For now, we prioritze safety (releasing)
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     stopCamera();
     super.dispose();
   }

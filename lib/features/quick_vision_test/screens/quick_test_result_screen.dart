@@ -3422,12 +3422,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   ? Image.network(
                       grading.awsImageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildFallbackImage(),
+                      errorBuilder: (_, _, _) => _buildFallbackImage(),
                     )
                   : Image.file(
                       File(grading.imagePath!),
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildFallbackImage(),
+                      errorBuilder: (_, _, _) => _buildFallbackImage(),
                     ),
             ),
           )

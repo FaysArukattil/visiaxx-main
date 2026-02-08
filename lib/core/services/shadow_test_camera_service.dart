@@ -1,11 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
 import 'package:torch_light/torch_light.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:image/image.dart' as img;
+import 'package:flutter/foundation.dart';
 import '../utils/app_logger.dart';
 
 class ShadowTestCameraService {
@@ -25,6 +28,7 @@ class ShadowTestCameraService {
     ),
   );
 
+  Timer? _searchTimer;
   bool _isProcessingImage = false;
 
   Future<void> initialize() async {
@@ -184,18 +188,22 @@ class ShadowTestCameraService {
       } catch (_) {}
       _isFlashlightOn = false;
 
-      // 2. Stop stream if active
+      // 2. Stop search timer
+      _searchTimer?.cancel();
+      _searchTimer = null;
+
+      // 3. Stop stream if active (if any left)
       if (_controller != null && _controller!.value.isStreamingImages) {
         try {
           await _controller!.stopImageStream();
         } catch (_) {}
       }
 
-      // 3. Dispose controller
+      // 4. Dispose controller
       await _controller?.dispose();
       _controller = null;
 
-      // 4. Close face detector (ML Kit)
+      // 5. Close face detector (ML Kit)
       await _faceDetector.close();
       AppLogger.log('$_tag: Camera service disposed successfully', tag: _tag);
     } catch (e) {
@@ -207,59 +215,209 @@ class ShadowTestCameraService {
     }
   }
 
-  void startImageStream(Function(List<Face>, Size) onFaceDetected) {
-    if (_controller == null || !_controller!.value.isInitialized) return;
+  /// Starts a periodic capture loop to check for eyes.
+  /// Much more stable than raw image stream on Android.
+  void startSearchingForEyes(Function(List<Face>, Size, bool) onDetected) {
+    _searchTimer?.cancel();
+    _searchTimer = Timer.periodic(const Duration(milliseconds: 600), (
+      timer,
+    ) async {
+      if (_isProcessingImage ||
+          _controller == null ||
+          !_controller!.value.isInitialized) {
+        return;
+      }
 
-    _controller!.startImageStream((CameraImage image) async {
-      if (_isProcessingImage) return;
+      // Check for 'taking picture' or 'closed' status
+      if (_controller!.value.isTakingPicture) return;
+
       _isProcessingImage = true;
-
       try {
-        final faces = await _processCameraImage(image);
-        onFaceDetected(
-          faces,
-          Size(image.width.toDouble(), image.height.toDouble()),
-        );
+        final image = await _controller!.takePicture();
+        final faces = await processImageFromFile(image.path);
+
+        // Get dimensions from preview
+        final size = _controller!.value.previewSize != null
+            ? Size(
+                _controller!.value.previewSize!.height,
+                _controller!.value.previewSize!.width,
+              )
+            : const Size(720, 1280);
+
+        final isIrisManual =
+            faces.isEmpty && await _detectIrisManual(image.path);
+        onDetected(faces, size, isIrisManual);
+
+        // Cleanup temp file
+        final file = File(image.path);
+        if (await file.exists()) await file.delete();
       } catch (e) {
-        AppLogger.log(
-          '$_tag: Error in image stream: $e',
-          tag: _tag,
-          isError: true,
-        );
+        final errorStr = e.toString().toLowerCase();
+        final isFatal =
+            errorStr.contains('camera is closed') ||
+            errorStr.contains('failed to submit capture request') ||
+            errorStr.contains('imagecaptureexception');
+
+        if (isFatal) {
+          AppLogger.log(
+            '$_tag: Fatal camera error in search loop. Stopping timer: $e',
+            tag: _tag,
+          );
+          stopSearchingForEyes();
+        } else {
+          AppLogger.log('$_tag: Transient error in search loop: $e', tag: _tag);
+        }
       } finally {
         _isProcessingImage = false;
       }
     });
   }
 
-  Future<void> stopImageStream() async {
-    if (_controller != null && _controller!.value.isStreamingImages) {
-      await _controller!.stopImageStream();
+  void stopSearchingForEyes() {
+    _searchTimer?.cancel();
+    _searchTimer = null;
+  }
+
+  // Image stream processing removed due to PlatformException(InputImageConverterError)
+  // on certain Android devices. Using startSearchingForEyes (takePicture) instead.
+
+  /// Checks if detected faces contain eyes that are within a central ROI
+  bool isEyeInCenter(
+    List<Face> faces,
+    Size imageSize, {
+    bool isIrisManual = false,
+  }) {
+    if (isIrisManual) return true;
+    if (faces.isEmpty) return false;
+
+    final face = faces.first;
+    final faceBox = face.boundingBox;
+    final centerX = imageSize.width / 2;
+    final centerY = imageSize.height / 2;
+
+    // Check for eye landmarks (ML Kit provides these if FaceDetectorOptions allows)
+    final leftEye = face.landmarks[FaceLandmarkType.leftEye];
+    final rightEye = face.landmarks[FaceLandmarkType.rightEye];
+
+    AppLogger.log(
+      '$_tag: Face detected at ${faceBox.center}. Size: ${faceBox.width}x${faceBox.height}. Image: $imageSize',
+      tag: _tag,
+    );
+
+    // LANDMARK-FIRST LOGIC:
+    // If we have eye landmarks, use them as the primary indicator.
+    // We check if either eye is reasonably near the center.
+    if (leftEye != null || rightEye != null) {
+      final leftPos = leftEye?.position;
+      final rightPos = rightEye?.position;
+
+      final isLeftCentered =
+          leftPos != null &&
+          (leftPos.x.toDouble() - centerX).abs() < (imageSize.width * 0.3) &&
+          (leftPos.y.toDouble() - centerY).abs() < (imageSize.height * 0.3);
+
+      final isRightCentered =
+          rightPos != null &&
+          (rightPos.x.toDouble() - centerX).abs() < (imageSize.width * 0.3) &&
+          (rightPos.y.toDouble() - centerY).abs() < (imageSize.height * 0.3);
+
+      if (isLeftCentered || isRightCentered) {
+        AppLogger.log('$_tag: Eye landmark detected near center', tag: _tag);
+        return true;
+      }
+    }
+
+    // FALLBACK LOGIC:
+    // If landmarks are missing (common when very close), use the bounding box.
+    // We allow the face center to be further off-center (40% tolerance)
+    // because if we are zoomed in on one eye, the "face" center will be shifted.
+    final isFaceMostlyCentered =
+        (faceBox.center.dx - centerX).abs() < (imageSize.width * 0.4) &&
+        (faceBox.center.dy - centerY).abs() < (imageSize.height * 0.4);
+
+    final isFaceLargeEnough = faceBox.width > (imageSize.width * 0.25);
+
+    final result = isFaceMostlyCentered && isFaceLargeEnough;
+    if (result) {
+      AppLogger.log('$_tag: Face detected near center (fallback)', tag: _tag);
+    }
+    return result;
+  }
+
+  /// Manual fallback for iris detection when face recognition fails.
+  /// Decodes the image and checks if the central ROI contains a high-contrast
+  /// dark region (the iris/pupil).
+  Future<bool> _detectIrisManual(String path) async {
+    try {
+      final File file = File(path);
+      if (!await file.exists()) return false;
+
+      final bytes = await file.readAsBytes();
+      final image = await compute(_checkIrisInIsolate, bytes);
+      return image;
+    } catch (e) {
+      AppLogger.log('$_tag: Manual iris detection error: $e', tag: _tag);
+      return false;
     }
   }
 
-  Future<List<Face>> _processCameraImage(CameraImage image) async {
-    final WriteBuffer allBytes = WriteBuffer();
-    for (final Plane plane in image.planes) {
-      allBytes.putUint8List(plane.bytes);
+  /// Static helper for isolate-based iris detection.
+  static bool _checkIrisInIsolate(Uint8List bytes) {
+    try {
+      img.Image? image = img.decodeImage(bytes);
+      if (image == null) return false;
+
+      // Resize for fast processing
+      final small = img.copyResize(image, width: 200);
+      final width = small.width;
+      final height = small.height;
+
+      final centerX = width ~/ 2;
+      final centerY = height ~/ 2;
+      final roiSize = width ~/ 4; // 25% of width
+
+      int darkPixels = 0;
+      int totalPixels = 0;
+      double totalBrightness = 0;
+
+      // Sample center ROI
+      for (int y = centerY - roiSize; y < centerY + roiSize; y++) {
+        for (int x = centerX - roiSize; x < centerX + roiSize; x++) {
+          if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+          final pixel = small.getPixel(x, y);
+          final luminance =
+              (0.299 * pixel.r + 0.587 * pixel.g + 0.114 * pixel.b).toDouble();
+
+          totalBrightness += luminance;
+          if (luminance < 60) {
+            // Threshold for dark pupil/iris
+            darkPixels++;
+          }
+          totalPixels++;
+        }
+      }
+
+      if (totalPixels == 0) return false;
+
+      final avgBrightness = totalBrightness / totalPixels;
+      final darkPercentage = darkPixels / totalPixels;
+
+      // An eye in extreme close-up should have a significant dark center
+      // and reasonably low average brightness compared to skin.
+      // Thresholds: >15% dark pixels and <130 avg brightness.
+      final isIrisPresent = darkPercentage > 0.15 && avgBrightness < 130;
+
+      if (isIrisPresent) {
+        AppLogger.log(
+          'ShadowTestCameraService: Manual iris fallback detected! (Dark: ${darkPercentage.toStringAsFixed(2)}, Bright: ${avgBrightness.toStringAsFixed(0)})',
+        );
+      }
+
+      return isIrisPresent;
+    } catch (_) {
+      return false;
     }
-    final bytes = allBytes.done().buffer.asUint8List();
-
-    final imageRotation = _getImageRotation();
-
-    final inputImage = InputImage.fromBytes(
-      bytes: bytes,
-      metadata: InputImageMetadata(
-        size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: imageRotation,
-        format: Platform.isAndroid
-            ? InputImageFormat.yuv420
-            : InputImageFormat.bgra8888,
-        bytesPerRow: image.planes[0].bytesPerRow,
-      ),
-    );
-
-    return await _faceDetector.processImage(inputImage);
   }
 
   Future<List<Face>> processImageFromFile(String path) async {
@@ -279,24 +437,6 @@ class ShadowTestCameraService {
       _isFlashlightOn = mode == FlashMode.torch;
     } catch (e) {
       AppLogger.log('$_tag: Error setting flash mode: $e', isError: true);
-    }
-  }
-
-  InputImageRotation _getImageRotation() {
-    if (_controller == null) return InputImageRotation.rotation0deg;
-
-    final rotation = _controller!.description.sensorOrientation;
-    switch (rotation) {
-      case 0:
-        return InputImageRotation.rotation90deg;
-      case 90:
-        return InputImageRotation.rotation180deg;
-      case 180:
-        return InputImageRotation.rotation270deg;
-      case 270:
-        return InputImageRotation.rotation0deg;
-      default:
-        return InputImageRotation.rotation0deg;
     }
   }
 
