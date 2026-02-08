@@ -56,6 +56,9 @@ import 'features/individual_tests/screens/stereopsis_test_instructions_screen.da
 import 'features/individual_tests/screens/stereopsis_test_screen.dart';
 import 'data/providers/shadow_test_provider.dart';
 import 'data/providers/stereopsis_provider.dart';
+import 'data/providers/eye_hydration_provider.dart';
+import 'features/individual_tests/screens/eye_hydration_instructions_screen.dart';
+import 'features/individual_tests/screens/eye_hydration_test_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -196,6 +199,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => PatientProvider()),
         ChangeNotifierProvider(create: (_) => ShadowTestProvider()),
         ChangeNotifierProvider(create: (_) => StereopsisProvider()),
+        ChangeNotifierProvider(create: (_) => EyeHydrationProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -319,6 +323,10 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/stereopsis-test-intro': (context) =>
                   const StereopsisTestInstructionsScreen(),
               '/stereopsis-test': (context) => const StereopsisTestScreen(),
+              '/eye-hydration-test-intro': (context) =>
+                  const EyeHydrationInstructionsScreen(),
+              '/eye-hydration-test': (context) =>
+                  const EyeHydrationTestScreen(),
             },
           );
         },

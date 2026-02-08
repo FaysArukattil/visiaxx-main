@@ -24,6 +24,7 @@ import '../../../data/models/test_result_model.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../data/models/color_vision_result.dart';
 import '../../../data/models/mobile_refractometry_result.dart';
+import '../../../data/models/eye_hydration_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
@@ -447,6 +448,8 @@ class _PractitionerDashboardScreenState
       'Macular Issue': <String>{},
       'Vision Impairment': <String>{},
       'Low Contrast Sensitivity': <String>{},
+      'Dryness Risk': <String>{},
+      'Blink Monitoring': <String>{},
     };
     final uniquePatients = <String>{};
 
@@ -549,6 +552,14 @@ class _PractitionerDashboardScreenState
 
     if (result.pelliRobson != null && result.pelliRobson!.needsReferral) {
       conditions.add('Low Contrast Sensitivity');
+    }
+
+    if (result.eyeHydration != null) {
+      if (result.eyeHydration!.status == EyeHydrationStatus.dryness) {
+        conditions.add('Dryness Risk');
+      } else if (result.eyeHydration!.status == EyeHydrationStatus.suspicious) {
+        conditions.add('Blink Monitoring');
+      }
     }
 
     if (conditions.isEmpty) conditions.add('Normal');

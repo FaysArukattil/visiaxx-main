@@ -24,6 +24,7 @@ import 'package:visiaxx/data/models/mobile_refractometry_result.dart';
 import 'package:visiaxx/data/models/refraction_prescription_model.dart';
 import 'package:visiaxx/data/models/shadow_test_result.dart';
 import 'package:visiaxx/data/models/stereopsis_result.dart';
+import 'package:visiaxx/data/models/eye_hydration_result.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
 /// Comprehensive results screen displaying all test data
@@ -403,6 +404,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                         Icons.threed_rotation_rounded,
                       ),
                       _buildStereopsisCard(provider),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Eye Hydration Results
+                    if (_shouldShowSection(provider, 'eye_hydration')) ...[
+                      _buildSectionTitle(
+                        'Eye Hydration',
+                        Icons.opacity_rounded,
+                      ),
+                      _buildEyeHydrationCard(provider),
                       const SizedBox(height: 20),
                     ],
 
@@ -1995,6 +2006,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           return _hasShadowTestData(provider);
         case 'stereopsis':
           return _hasStereopsisData(provider);
+        case 'eye_hydration':
+          return _hasEyeHydrationData(provider);
         default:
           return false;
       }
@@ -2023,6 +2036,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         return _hasShadowTestData(provider);
       case 'stereopsis':
         return _hasStereopsisData(provider);
+      case 'eye_hydration':
+        return _hasEyeHydrationData(provider);
       default:
         return false;
     }
@@ -3215,6 +3230,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         provider.stereopsis != null;
   }
 
+  bool _hasEyeHydrationData(TestSessionProvider provider) {
+    return widget.historicalResult?.eyeHydration != null ||
+        provider.eyeHydration != null;
+  }
+
   Widget _buildStereopsisCard(TestSessionProvider provider) {
     final result = widget.historicalResult?.stereopsis ?? provider.stereopsis;
     if (result == null) return const SizedBox.shrink();
@@ -3584,6 +3604,124 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         Icons.visibility_off_rounded,
         color: context.textTertiary,
         size: 32,
+      ),
+    );
+  }
+
+  Widget _buildEyeHydrationCard(TestSessionProvider provider) {
+    final result =
+        widget.historicalResult?.eyeHydration ?? provider.eyeHydration;
+    if (result == null) return const SizedBox.shrink();
+
+    final statusColor = switch (result.status) {
+      EyeHydrationStatus.normal => context.success,
+      EyeHydrationStatus.suspicious => context.warning,
+      EyeHydrationStatus.dryness => context.error,
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: context.primary.withValues(alpha: 0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  result.status == EyeHydrationStatus.normal
+                      ? Icons.check_circle_rounded
+                      : Icons.warning_amber_rounded,
+                  color: statusColor,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result.status.label,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Blink Rate Assessment',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem(
+                'Blink Rate',
+                '${result.averageBlinksPerMinute.toStringAsFixed(1)} BPM',
+              ),
+              _buildStatItem('Duration', '${result.totalTestTime.inSeconds}s'),
+              _buildStatItem('Total Blinks', '${result.blinkCount}'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  result.status == EyeHydrationStatus.normal
+                      ? Icons.sentiment_satisfied_rounded
+                      : Icons.info_outline_rounded,
+                  color: statusColor,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    result.recommendations.isNotEmpty
+                        ? result.recommendations.first
+                        : 'No specific findings.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -176,6 +176,15 @@ class IndividualTestsScreen extends StatelessWidget {
           onTap: () => _handleTestSelection(context, 'stereopsis'),
           screenWidth: screenWidth,
         ),
+        SizedBox(height: cardSpacing),
+        _IndividualTestCard(
+          icon: Icons.opacity_rounded,
+          title: 'Eye Hydration',
+          description:
+              'Screen for blink rate and dry eye symptoms during natural reading',
+          onTap: () => _handleTestSelection(context, 'eye_hydration'),
+          screenWidth: screenWidth,
+        ),
       ],
     );
   }

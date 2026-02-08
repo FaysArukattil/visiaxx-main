@@ -9,6 +9,7 @@ import 'pelli_robson_result.dart';
 import 'refraction_prescription_model.dart';
 import 'shadow_test_result.dart';
 import 'stereopsis_result.dart';
+import 'eye_hydration_result.dart';
 
 /// Test result status
 enum TestStatus {
@@ -44,6 +45,7 @@ class TestResultModel {
   final MobileRefractometryResult? mobileRefractometry;
   final ShadowTestResult? shadowTest;
   final StereopsisResult? stereopsis;
+  final EyeHydrationResult? eyeHydration;
   final RefractionPrescriptionModel? refractionPrescription;
   final TestStatus overallStatus;
   final String recommendation;
@@ -73,6 +75,7 @@ class TestResultModel {
     this.mobileRefractometry,
     this.shadowTest,
     this.stereopsis,
+    this.eyeHydration,
     this.refractionPrescription,
     required this.overallStatus,
     required this.recommendation,
@@ -138,6 +141,9 @@ class TestResultModel {
       stereopsis: data['stereopsis'] != null
           ? StereopsisResult.fromJson(data['stereopsis'])
           : null,
+      eyeHydration: data['eyeHydration'] != null
+          ? EyeHydrationResult.fromJson(data['eyeHydration'])
+          : null,
       refractionPrescription: data['refractionPrescription'] != null
           ? RefractionPrescriptionModel.fromMap(data['refractionPrescription'])
           : null,
@@ -177,6 +183,7 @@ class TestResultModel {
       'mobileRefractometry': mobileRefractometry?.toJson(),
       'shadowTest': shadowTest?.toJson(),
       'stereopsis': stereopsis?.toJson(),
+      'eyeHydration': eyeHydration?.toJson(),
       'refractionPrescription': refractionPrescription?.toJson(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
@@ -208,6 +215,7 @@ class TestResultModel {
         'mobileRefractometry': mobileRefractometry!.toJson(),
       if (shadowTest != null) 'shadowTest': shadowTest!.toJson(),
       if (stereopsis != null) 'stereopsis': stereopsis!.toJson(),
+      if (eyeHydration != null) 'eyeHydration': eyeHydration!.toJson(),
       if (refractionPrescription != null)
         'refractionPrescription': refractionPrescription!.toMap(),
       'overallStatus': overallStatus.name,
@@ -243,6 +251,7 @@ class TestResultModel {
     MobileRefractometryResult? mobileRefractometry,
     ShadowTestResult? shadowTest,
     StereopsisResult? stereopsis,
+    EyeHydrationResult? eyeHydration,
   }) {
     // Check for URGENT conditions (severe/bilateral issues)
     if (shadowTest != null &&
@@ -323,6 +332,12 @@ class TestResultModel {
       return TestStatus.review;
     }
 
+    // Review if: Eye hydration is low
+    if (eyeHydration != null &&
+        eyeHydration.status == EyeHydrationStatus.dryness) {
+      return TestStatus.review;
+    }
+
     // Review if Mobile Refractometry has health warnings
     if (mobileRefractometry != null &&
         mobileRefractometry.healthWarnings.isNotEmpty) {
@@ -393,6 +408,7 @@ class TestResultModel {
       mobileRefractometry: mobileRefractometry ?? this.mobileRefractometry,
       shadowTest: shadowTest ?? this.shadowTest,
       stereopsis: stereopsis ?? this.stereopsis,
+      eyeHydration: eyeHydration ?? this.eyeHydration,
       refractionPrescription:
           refractionPrescription ?? this.refractionPrescription,
       overallStatus: overallStatus ?? this.overallStatus,

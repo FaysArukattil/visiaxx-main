@@ -460,6 +460,9 @@ class _PractitionerProfileSelectionScreenState
         case 'stereopsis':
           route = '/stereopsis-test-intro';
           break;
+        case 'eye_hydration':
+          route = '/eye-hydration-test-intro';
+          break;
         default:
           route = '/home'; // Safeguard
       }
