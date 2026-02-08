@@ -149,10 +149,10 @@ class _EyeHydrationInstructionsScreenState
                     _buildStep(
                       2,
                       Icons.auto_stories_rounded,
-                      'Read Naturally',
-                      'A short article will appear. Simply read it at your normal pace. No need to stare or blink forcefully.',
+                      'Read Aloud Naturally',
+                      'A short article will appear. Read it aloud at your normal pace. No need to stare—just blink naturally as you read.',
                       context.success,
-                      animation: _ReadingAnimation(),
+                      animation: const BlinkReadingAnimation(),
                     ),
                   ],
                 ),
@@ -388,38 +388,6 @@ class _EyeHydrationInstructionsScreenState
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReadingAnimation extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 200,
-      height: 150,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < 4; i++)
-            Container(
-              height: 8,
-              color: Theme.of(context).dividerColor,
-              margin: const EdgeInsets.only(bottom: 8),
-              width: 140.0 + (i % 2 == 0 ? 20 : -20),
-            ),
-          const Spacer(),
-          const Icon(
-            Icons.remove_red_eye_rounded,
-            size: 32,
-            color: Colors.blue,
           ),
         ],
       ),

@@ -87,7 +87,10 @@ class DistanceDetectionService {
         _cameraController = null;
       }
 
-      final cameras = await availableCameras();
+      final cameras = await availableCameras().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw TimeoutException('availableCameras timed out'),
+      );
       if (cameras.isEmpty) {
         onError?.call('No cameras available');
         return null;
@@ -107,10 +110,17 @@ class DistanceDetectionService {
             : ImageFormatGroup.bgra8888,
       );
 
-      await _cameraController!.initialize();
+      debugPrint('[DistanceService] Starting camera initialize');
+      await _cameraController!.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Camera initialization timed out');
+        },
+      );
       debugPrint('[DistanceService] Camera initialized');
       return _cameraController;
     } catch (e) {
+      debugPrint('[DistanceService] Camera initialization error: $e');
       onError?.call('Failed to initialize camera: $e');
       return null;
     }

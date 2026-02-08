@@ -134,16 +134,22 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
       toleranceCm: 5.0,
       onCalibrationComplete: () {
         setState(() => _showDistanceCalibration = false);
-        _initializeCamera().then((_) {
-          final provider = context.read<EyeHydrationProvider>();
-          provider.startTest(_controller!);
+        // Add a small delay to ensure previous camera is fully released
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _initializeCamera().then((_) {
+            final provider = context.read<EyeHydrationProvider>();
+            provider.startTest(_controller!);
+          });
         });
       },
       onSkip: () {
         setState(() => _showDistanceCalibration = false);
-        _initializeCamera().then((_) {
-          final provider = context.read<EyeHydrationProvider>();
-          provider.startTest(_controller!);
+        // Add a small delay to ensure previous camera is fully released
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _initializeCamera().then((_) {
+            final provider = context.read<EyeHydrationProvider>();
+            provider.startTest(_controller!);
+          });
         });
       },
     );

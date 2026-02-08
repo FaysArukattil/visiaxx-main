@@ -50,6 +50,8 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
   bool _isInitializing = true;
   bool _hasError = false;
   String? _errorMessage;
+  bool _showFailsafeButtons = false;
+  Timer? _initializationTimer;
 
   // Distance state
   double _currentDistance = 0;
@@ -75,6 +77,13 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
     );
 
     _initializeCamera();
+
+    // Show failsafe buttons after 7 seconds if still initializing
+    _initializationTimer = Timer(const Duration(seconds: 7), () {
+      if (mounted && _isInitializing) {
+        setState(() => _showFailsafeButtons = true);
+      }
+    });
   }
 
   Future<void> _initializeCamera() async {
@@ -236,6 +245,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
 
   @override
   void dispose() {
+    _initializationTimer?.cancel();
     _disposeCamera();
     _distanceService.dispose();
     _ttsService.dispose();
@@ -311,6 +321,32 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
               fontSize: 16,
             ),
           ),
+          if (_showFailsafeButtons) ...[
+            const SizedBox(height: 40),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _initializeCamera,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: _onSkipPressed,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Skip Calibration'),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

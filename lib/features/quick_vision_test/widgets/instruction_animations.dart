@@ -3,6 +3,330 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import '../../../core/constants/app_colors.dart';
 
+/// Premium animation for Step 3 of Eye Hydration Test
+/// Shows a person reading, eyes blinking, and a counter incrementing
+class BlinkReadingAnimation extends StatefulWidget {
+  final bool isCompact;
+  const BlinkReadingAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<BlinkReadingAnimation> createState() => _BlinkReadingAnimationState();
+}
+
+class _BlinkReadingAnimationState extends State<BlinkReadingAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  int _blinkCount = 0;
+  bool _lastIsClosed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat();
+
+    _controller.addListener(() {
+      final t = _controller.value;
+      // Blink happens twice in one cycle: 0.2-0.3 and 0.7-0.8
+      bool isClosed = (t > 0.2 && t < 0.3) || (t > 0.7 && t < 0.8);
+      if (isClosed && !_lastIsClosed) {
+        setState(() => _blinkCount++);
+      }
+      _lastIsClosed = isClosed;
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: widget.isCompact ? 200 : 250,
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Head Silhouette
+          Center(
+            child: Container(
+              width: 160,
+              height: 200,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.all(Radius.elliptical(80, 100)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+
+          // Background - Paragraph visual
+          Positioned(
+            left: 25,
+            right: 25,
+            top: 45,
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: 0.5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: List.generate(6, (i) {
+                      final isActive = (i == (_controller.value * 6).floor());
+                      return Container(
+                        height: 6,
+                        width: i == 5 ? 100 : double.infinity,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? AppColors.primary.withValues(alpha: 0.4)
+                              : AppColors.border.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      );
+                    }),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Face & Eyes
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final t = _controller.value;
+              double blinkFactor = 1.0;
+              if ((t > 0.2 && t < 0.3) || (t > 0.7 && t < 0.8)) {
+                // Smooth blink curve
+                double localT;
+                if (t < 0.5) {
+                  localT = (t - 0.2) / 0.1;
+                } else {
+                  localT = (t - 0.7) / 0.1;
+                }
+                blinkFactor = Curves.easeInOut.transform(
+                  1.0 - math.sin(localT * math.pi),
+                );
+              }
+
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildEye(blinkFactor),
+                      const SizedBox(width: 40),
+                      _buildEye(blinkFactor),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Animated Mouth (Reading Aloud)
+                  AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, child) {
+                      final t = _controller.value;
+                      // Mouth moves rapidly to simulate speech
+                      final mouthOpenFactor =
+                          (math.sin(t * math.pi * 10).abs() * 0.6) + 0.2;
+                      return Container(
+                        width: 30,
+                        height: 4 + (8 * mouthOpenFactor),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+
+          // Counter HUD
+          Positioned(
+            bottom: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.remove_red_eye_rounded,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'BLINKS: $_blinkCount',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primary,
+                      fontSize: 14,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // "Reading" scanning line
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Positioned(
+                left: 10 + (_controller.value * 180),
+                top: 30,
+                bottom: 30,
+                child: Container(
+                  width: 2,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.success.withValues(alpha: 0),
+                        AppColors.success,
+                        AppColors.success.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEye(double factor) {
+    return SizedBox(
+      width: 60,
+      height: 35,
+      child: CustomPaint(
+        painter: _PremiumEyePainter(
+          blinkFactor: factor,
+          irisColor: AppColors.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _PremiumEyePainter extends CustomPainter {
+  final double blinkFactor;
+  final Color irisColor;
+
+  _PremiumEyePainter({required this.blinkFactor, required this.irisColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final eyeWidth = size.width * 0.9;
+    final eyeHeight = size.height * 0.6;
+
+    final currentHeight = eyeHeight * blinkFactor.clamp(0.01, 1.0);
+
+    final eyePath = Path();
+    eyePath.moveTo(center.dx - eyeWidth / 2, center.dy);
+    eyePath.quadraticBezierTo(
+      center.dx,
+      center.dy - currentHeight,
+      center.dx + eyeWidth / 2,
+      center.dy,
+    );
+    eyePath.quadraticBezierTo(
+      center.dx,
+      center.dy + currentHeight,
+      center.dx - eyeWidth / 2,
+      center.dy,
+    );
+    eyePath.close();
+
+    // Sclera
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill,
+    );
+
+    // Border
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = irisColor.withValues(alpha: 0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    if (blinkFactor > 0.1) {
+      canvas.save();
+      canvas.clipPath(eyePath);
+
+      final irisRadius = size.height * 0.35;
+
+      // Iris
+      canvas.drawCircle(
+        center,
+        irisRadius,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [irisColor.withValues(alpha: 0.8), irisColor],
+          ).createShader(Rect.fromCircle(center: center, radius: irisRadius)),
+      );
+
+      // Pupil
+      canvas.drawCircle(
+        center,
+        irisRadius * 0.45,
+        Paint()..color = Colors.black,
+      );
+
+      // Reflection
+      canvas.drawCircle(
+        center + Offset(irisRadius * 0.3, -irisRadius * 0.3),
+        irisRadius * 0.15,
+        Paint()..color = Colors.white.withValues(alpha: 0.6),
+      );
+
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PremiumEyePainter oldDelegate) =>
+      oldDelegate.blinkFactor != blinkFactor ||
+      oldDelegate.irisColor != irisColor;
+}
+
 /// Animation showing a well-lit room requirement
 class LightingAnimation extends StatefulWidget {
   final bool isCompact;
