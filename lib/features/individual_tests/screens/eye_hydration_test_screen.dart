@@ -25,7 +25,12 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
+
+    // Do NOT initialize camera here if showing distance calibration
+    // It will be initialized in _onCalibrationComplete
+    if (!_showDistanceCalibration) {
+      _initializeCamera();
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -124,22 +129,22 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
   }
 
   Widget _buildDistanceCalibrationView() {
-    if (!_isInitialized) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return DistanceCalibrationScreen(
       targetDistanceCm: 40.0,
       toleranceCm: 5.0,
       onCalibrationComplete: () {
         setState(() => _showDistanceCalibration = false);
-        final provider = context.read<EyeHydrationProvider>();
-        provider.startTest(_controller!);
+        _initializeCamera().then((_) {
+          final provider = context.read<EyeHydrationProvider>();
+          provider.startTest(_controller!);
+        });
       },
       onSkip: () {
         setState(() => _showDistanceCalibration = false);
-        final provider = context.read<EyeHydrationProvider>();
-        provider.startTest(_controller!);
+        _initializeCamera().then((_) {
+          final provider = context.read<EyeHydrationProvider>();
+          provider.startTest(_controller!);
+        });
       },
     );
   }
@@ -317,7 +322,7 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
                 context.read<TestSessionProvider>().setEyeHydrationResult(
                   result,
                 );
-                Navigator.pushReplacementNamed(context, '/quick-test-results');
+                Navigator.pushReplacementNamed(context, '/quick-test-result');
               } else {
                 debugPrint('❌ Error: Final result is NULL');
                 Navigator.of(context).pop();

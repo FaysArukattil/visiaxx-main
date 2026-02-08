@@ -10,8 +10,9 @@ class EyeHydrationProvider extends ChangeNotifier {
   // Constants for blink detection
   static const double PROB_THRESHOLD = 0.22;
   static const double PROB_RECOVER = 0.8;
-  static const int MIN_BLINK_DURATION_MS = 80;
-  static const int MAX_BLINK_DURATION_MS = 600;
+  static const int MIN_BLINK_DURATION_MS = 60; // Slightly more inclusive
+  static const int MAX_BLINK_DURATION_MS =
+      700; // More inclusive for slow blinks
   static const int MIN_BETWEEN_BLINKS_MS = 250;
 
   bool _isTestRunning = false;
@@ -83,8 +84,14 @@ class EyeHydrationProvider extends ChangeNotifier {
       try {
         final faces = await _processImage(image);
         if (faces.isNotEmpty) {
+          if (!_faceDetected) {
+            debugPrint('🙂 Face detected');
+          }
           _analyzeFace(faces.first);
         } else {
+          if (_faceDetected) {
+            debugPrint('❓ Face lost');
+          }
           _faceDetected = false;
           notifyListeners();
         }
@@ -166,7 +173,6 @@ class EyeHydrationProvider extends ChangeNotifier {
     } else if (isOpened) {
       if (_inBlinkState && _blinkStartTime != null) {
         int duration = now.difference(_blinkStartTime!).inMilliseconds;
-
         if (duration >= MIN_BLINK_DURATION_MS &&
             duration <= MAX_BLINK_DURATION_MS) {
           bool isDuplicate = false;
@@ -180,7 +186,14 @@ class EyeHydrationProvider extends ChangeNotifier {
           if (!isDuplicate) {
             _blinkCount++;
             _lastBlinkTime = now;
+            debugPrint(
+              '👁️ Blink detected! Count: $_blinkCount (Duration: ${duration}ms)',
+            );
+          } else {
+            debugPrint('🚫 Blink ignored (too close to previous)');
           }
+        } else {
+          debugPrint('⏳ Blink ignored (invalid duration: ${duration}ms)');
         }
         _inBlinkState = false;
         _blinkStartTime = null;
