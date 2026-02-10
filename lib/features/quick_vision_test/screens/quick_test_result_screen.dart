@@ -241,8 +241,6 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                   final testType = provider.individualTestType;
                   final isIndividual = provider.isIndividualTest;
 
-                  provider.resetKeepProfile();
-
                   String routeName = '/quick-test';
                   Object? arguments;
 
@@ -275,8 +273,17 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       case 'stereopsis':
                         routeName = '/stereopsis-test-intro';
                         break;
+                      case 'eye_hydration':
+                        routeName = '/eye-hydration-test-intro';
+                        break;
+                      case 'visual_field':
+                        routeName = '/visual-field-test-intro';
+                        break;
                     }
                   }
+
+                  // Reset AFTER starting navigation to avoid blank screen
+                  provider.resetKeepProfile();
 
                   Navigator.pushNamedAndRemoveUntil(
                     context,
@@ -3781,7 +3788,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           children: [
             if (resultRight != null || resultLeft != null) ...[
               Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (resultRight != null)
                     Expanded(

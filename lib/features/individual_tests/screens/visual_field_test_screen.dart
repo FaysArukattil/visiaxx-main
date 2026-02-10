@@ -36,9 +36,14 @@ class _VisualFieldScreenState extends State<VisualFieldScreen> {
         return TestExitConfirmationDialog(
           onContinue: () => Navigator.pop(dialogContext),
           onRestart: () {
+            final sessionProvider = context.read<TestSessionProvider>();
+            sessionProvider.resetKeepProfile();
             context.read<VisualFieldProvider>().reset();
-            context.read<VisualFieldProvider>().startTest();
-            Navigator.pop(dialogContext);
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/visual-field-test-intro',
+              (route) => false,
+            );
           },
           onExit: () async {
             await NavigationUtils.navigateHome(context);

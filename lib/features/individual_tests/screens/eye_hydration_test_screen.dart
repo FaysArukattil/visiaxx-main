@@ -80,12 +80,11 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
         return TestExitConfirmationDialog(
           onContinue: () {},
           onRestart: () {
-            Navigator.pushReplacement(
+            provider.resetKeepProfile();
+            Navigator.pushNamedAndRemoveUntil(
               context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    const EyeHydrationTestScreen(skipCalibration: true),
-              ),
+              '/eye-hydration-test-intro',
+              (route) => false,
             );
           },
           onExit: () async => await NavigationUtils.navigateHome(context),
