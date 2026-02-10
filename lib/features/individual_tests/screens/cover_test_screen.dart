@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,6 +8,8 @@ import '../../../data/providers/cover_test_provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/cover_test_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
+import '../../../core/utils/navigation_utils.dart';
 
 class CoverTestScreen extends StatefulWidget {
   const CoverTestScreen({super.key});
@@ -79,44 +82,87 @@ class _CoverTestScreenState extends State<CoverTestScreen>
     super.dispose();
   }
 
+  void _showExitConfirmation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final provider = context.read<TestSessionProvider>();
+        return TestExitConfirmationDialog(
+          onContinue: () {
+            // Just close the dialog
+          },
+          onRestart: () {
+            provider.resetKeepProfile();
+            // Go back to the instructions screen for a full restart
+            Navigator.pushReplacementNamed(context, '/cover-test-intro');
+          },
+          onExit: () async {
+            if (mounted) {
+              await NavigationUtils.navigateHome(context);
+            }
+          },
+          hasCompletedTests: provider.hasAnyCompletedTest,
+          onSaveAndExit: provider.hasAnyCompletedTest
+              ? () async {
+                  if (mounted) {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/quick-test-result',
+                    );
+                  }
+                }
+              : null,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => CoverTestProvider(),
       child: Consumer<CoverTestProvider>(
         builder: (context, provider, child) {
-          return Scaffold(
-            backgroundColor: context.scaffoldBackground,
-            appBar: AppBar(
-              title: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'Cover-Uncover Test',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              actions: [
-                if (provider.currentStep != CoverTestStep.instructions &&
-                    provider.currentStep != CoverTestStep.result)
-                  IconButton(
-                    icon: Icon(
-                      _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                      color: context.primary,
-                    ),
-                    onPressed: _toggleFlash,
+          return PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              _showExitConfirmation();
+            },
+            child: Scaffold(
+              backgroundColor: context.scaffoldBackground,
+              appBar: AppBar(
+                title: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Cover-Uncover Test',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-              ],
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new,
-                  color: context.textPrimary,
                 ),
-                onPressed: () => Navigator.pop(context),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                actions: [
+                  if (provider.currentStep != CoverTestStep.instructions &&
+                      provider.currentStep != CoverTestStep.result)
+                    IconButton(
+                      icon: Icon(
+                        _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                        color: context.primary,
+                      ),
+                      onPressed: _toggleFlash,
+                    ),
+                ],
+                leading: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios_new,
+                    color: context.textPrimary,
+                  ),
+                  onPressed: _showExitConfirmation,
+                ),
               ),
+              body: SafeArea(child: _buildCurrentState(provider)),
             ),
-            body: SafeArea(child: _buildCurrentState(provider)),
           );
         },
       ),
@@ -404,69 +450,104 @@ class _CoverTestScreenState extends State<CoverTestScreen>
   Widget _buildMovementOptions(CoverTestProvider provider) {
     return Column(
       children: [
-        // Row 1: Outward, Inward
-        Row(
-          children: [
-            _buildMovementButton(provider, EyeMovement.outward),
-            const SizedBox(width: 12),
-            _buildMovementButton(provider, EyeMovement.inward),
-          ],
+        // D-Pad Layout - Horizontal Compact
+        Center(
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              children: [
+                // Top: Upward (Centered, 50% width)
+                Row(
+                  children: [
+                    const Spacer(),
+                    Expanded(
+                      flex: 2,
+                      child: _buildDPadButton(provider, EyeMovement.upward),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Middle: Inward | Outward
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: _buildDPadButton(provider, EyeMovement.inward),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildDPadButton(provider, EyeMovement.outward),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Bottom: Downward (Centered, 50% width)
+                Row(
+                  children: [
+                    const Spacer(),
+                    Expanded(
+                      flex: 2,
+                      child: _buildDPadButton(provider, EyeMovement.downward),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 12),
-        // Row 2: Downward, Upward
-        Row(
-          children: [
-            _buildMovementButton(provider, EyeMovement.downward),
-            const SizedBox(width: 12),
-            _buildMovementButton(provider, EyeMovement.upward),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Row 3: No Movement
-        _buildMovementButton(provider, EyeMovement.none, isFullWidth: true),
+        // No Movement Button
+        _buildDPadButton(provider, EyeMovement.none, isFullWidth: true),
       ],
     );
   }
 
-  Widget _buildMovementButton(
+  Widget _buildDPadButton(
     CoverTestProvider provider,
     EyeMovement movement, {
     bool isFullWidth = false,
   }) {
-    return Expanded(
-      flex: isFullWidth ? 0 : 1,
-      child: SizedBox(
-        width: isFullWidth ? double.infinity : null,
-        child: InkWell(
-          onTap: () => provider.recordObservation(movement),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-            decoration: BoxDecoration(
-              color: context.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: context.dividerColor.withValues(alpha: 0.1),
-              ),
+    return Material(
+      color: context.surface,
+      borderRadius: BorderRadius.circular(12),
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () async {
+          await HapticFeedback.mediumImpact();
+          provider.recordObservation(movement);
+        },
+        splashColor: context.primary.withValues(alpha: 0.15),
+        highlightColor: context.primary.withValues(alpha: 0.1),
+        child: Container(
+          width: isFullWidth ? double.infinity : null,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: context.dividerColor.withValues(alpha: 0.1),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _getMovementIcon(movement),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    movement.label,
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+            children: [
+              _getMovementIcon(movement),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  movement.label,
+                  style: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

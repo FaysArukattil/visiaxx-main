@@ -280,6 +280,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       case 'visual_field':
                         routeName = '/visual-field-test-intro';
                         break;
+                      case 'cover_test':
+                        routeName = '/cover-test-intro';
+                        break;
                     }
                   }
 
