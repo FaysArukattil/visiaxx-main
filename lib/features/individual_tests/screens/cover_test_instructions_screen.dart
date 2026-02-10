@@ -443,15 +443,50 @@ class _AlignmentAnimationState extends State<_AlignmentAnimation>
         animation: _controller,
         builder: (context, child) {
           final progress = _controller.value;
-          // Animate eye deviation
-          double deviation = 0;
-          if (progress < 0.5) {
-            deviation = (progress * 2) * 15; // Move out
-          } else {
-            deviation = 15 - (progress - 0.5) * 2 * 15; // Move back
+
+          double leftEyeDeviation = 0;
+          double rightEyeOpacity = 0;
+
+          // Phase 1: Normal alignment (0.0 - 0.2)
+          if (progress < 0.2) {
+            leftEyeDeviation = 0;
+            rightEyeOpacity = 0;
+          }
+          // Phase 2: Left eye deviates OUT (0.2 - 0.4)
+          else if (progress < 0.4) {
+            double t = (progress - 0.2) / 0.2;
+            leftEyeDeviation = t * 15;
+            rightEyeOpacity = 0;
+          }
+          // Phase 3: Cover Right Eye (0.4 - 0.5) -> Left eye moves IN to fixate
+          else if (progress < 0.5) {
+            double t = (progress - 0.4) / 0.1;
+            leftEyeDeviation = 15 - (t * 15); // Move back to center
+            rightEyeOpacity = t; // Cover animation
+          }
+          // Phase 4: Hold with Right covered (0.5 - 0.7)
+          else if (progress < 0.7) {
+            leftEyeDeviation = 0;
+            rightEyeOpacity = 1;
+          }
+          // Phase 5: Uncover Right Eye (0.7 - 0.8) -> Left eye deviates OUT again
+          else if (progress < 0.8) {
+            double t = (progress - 0.7) / 0.1;
+            leftEyeDeviation = t * 15;
+            rightEyeOpacity = 1 - t;
+          }
+          // Phase 6: Reset (0.8 - 1.0)
+          else {
+            leftEyeDeviation = 15;
+            rightEyeOpacity = 0;
           }
 
-          return CustomPaint(painter: _AlignmentPainter(deviation: deviation));
+          return CustomPaint(
+            painter: _AlignmentPainter(
+              deviation: leftEyeDeviation,
+              occluderOpacity: rightEyeOpacity,
+            ),
+          );
         },
       ),
     );
@@ -460,41 +495,51 @@ class _AlignmentAnimationState extends State<_AlignmentAnimation>
 
 class _AlignmentPainter extends CustomPainter {
   final double deviation;
+  final double occluderOpacity;
 
-  _AlignmentPainter({required this.deviation});
+  _AlignmentPainter({required this.deviation, required this.occluderOpacity});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    final eyeSpacing = 60.0;
-    final eyeSize = 25.0;
-    final pupilSize = 10.0;
+    final eyeSpacing = 70.0;
+    final eyeWidth = 70.0;
+    final eyeHeight = 35.0;
 
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
+    // Draw Right Eye (The one being covered)
+    _drawRealisticEye(
+      canvas,
+      center.translate(-eyeSpacing, 0),
+      eyeWidth,
+      eyeHeight,
+      0,
+      AppColors.primary,
+    );
 
-    final borderPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+    // Draw Right Eye Occluder
+    if (occluderOpacity > 0) {
+      final occluderPaint = Paint()
+        ..color = AppColors.primary.withValues(alpha: occluderOpacity * 0.8)
+        ..style = PaintingStyle.fill;
+      final rect = Rect.fromCenter(
+        center: center.translate(-eyeSpacing, -5),
+        width: 80,
+        height: 100,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(12)),
+        occluderPaint,
+      );
+    }
 
-    final pupilPaint = Paint()
-      ..color = AppColors.textPrimary
-      ..style = PaintingStyle.fill;
-
-    // Draw Right Eye (Normal)
-    canvas.drawCircle(center.translate(-eyeSpacing, 0), eyeSize, paint);
-    canvas.drawCircle(center.translate(-eyeSpacing, 0), eyeSize, borderPaint);
-    canvas.drawCircle(center.translate(-eyeSpacing, 0), pupilSize, pupilPaint);
-
-    // Draw Left Eye (Deviating)
-    canvas.drawCircle(center.translate(eyeSpacing, 0), eyeSize, paint);
-    canvas.drawCircle(center.translate(eyeSpacing, 0), eyeSize, borderPaint);
-    canvas.drawCircle(
-      center.translate(eyeSpacing + deviation, 0),
-      pupilSize,
-      pupilPaint,
+    // Draw Left Eye (Deviating/Refixating)
+    _drawRealisticEye(
+      canvas,
+      center.translate(eyeSpacing, 0),
+      eyeWidth,
+      eyeHeight,
+      deviation,
+      AppColors.primary,
     );
 
     // Draw guide lines
@@ -515,8 +560,76 @@ class _AlignmentPainter extends CustomPainter {
     );
   }
 
+  void _drawRealisticEye(
+    Canvas canvas,
+    Offset eyeCenter,
+    double width,
+    double height,
+    double irisXOffset,
+    Color themeColor,
+  ) {
+    final eyePath = Path();
+    eyePath.moveTo(eyeCenter.dx - width / 2, eyeCenter.dy);
+    eyePath.quadraticBezierTo(
+      eyeCenter.dx,
+      eyeCenter.dy - height,
+      eyeCenter.dx + width / 2,
+      eyeCenter.dy,
+    );
+    eyePath.quadraticBezierTo(
+      eyeCenter.dx,
+      eyeCenter.dy + height,
+      eyeCenter.dx - width / 2,
+      eyeCenter.dy,
+    );
+    eyePath.close();
+
+    // Sclera
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill,
+    );
+
+    // Border
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = themeColor.withValues(alpha: 0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    canvas.save();
+    canvas.clipPath(eyePath);
+
+    // Iris (The black/colored part that moves)
+    final irisCenter = eyeCenter + Offset(irisXOffset * 0.5, 0);
+    final irisRadius = height * 0.6;
+    canvas.drawCircle(irisCenter, irisRadius, Paint()..color = themeColor);
+
+    // Pupil
+    canvas.drawCircle(
+      irisCenter,
+      irisRadius * 0.45,
+      Paint()..color = Colors.black,
+    );
+
+    // Reflection
+    canvas.drawCircle(
+      irisCenter + Offset(irisRadius * 0.3, -irisRadius * 0.3),
+      irisRadius * 0.15,
+      Paint()..color = Colors.white.withValues(alpha: 0.4),
+    );
+
+    canvas.restore();
+  }
+
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _AlignmentPainter oldDelegate) =>
+      oldDelegate.deviation != deviation ||
+      oldDelegate.occluderOpacity != occluderOpacity;
 }
 
 class _CoverProcedureAnimation extends StatefulWidget {
@@ -537,7 +650,7 @@ class _CoverProcedureAnimationState extends State<_CoverProcedureAnimation>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4000),
+      duration: const Duration(milliseconds: 5000),
     )..repeat();
   }
 
@@ -562,8 +675,54 @@ class _CoverProcedureAnimationState extends State<_CoverProcedureAnimation>
         builder: (context, child) {
           final progress = _controller.value;
 
+          double rightIrisOffset = 0;
+          double leftIrisOffset = 0;
+          double occluderX = 0;
+          double occluderOpacity = 0;
+
+          // Clinical Logic in Animation:
+          // 0.0 - 0.2: Cover Right -> Watch Left for movement
+          if (progress < 0.2) {
+            occluderX = -70.0;
+            occluderOpacity = (progress / 0.2);
+            leftIrisOffset = -(occluderOpacity * 8); // Subtle refixation IN
+          }
+          // 0.2 - 0.4: Uncover Right -> Watch Right for recovery
+          else if (progress < 0.4) {
+            occluderX = -70.0;
+            double t = (progress - 0.2) / 0.2;
+            occluderOpacity = 1 - t;
+            rightIrisOffset = (1 - t) * 10; // Moves back as uncovered
+            leftIrisOffset = -8 + (t * 8); // Left returns
+          }
+          // 0.4 - 0.6: Cover Left -> Watch Right for movement
+          else if (progress < 0.6) {
+            occluderX = 70.0;
+            double t = (progress - 0.4) / 0.2;
+            occluderOpacity = t;
+            rightIrisOffset = -(t * 8); // Subtle refixation IN
+          }
+          // 0.6 - 0.8: Uncover Left -> Watch Left for recovery
+          else if (progress < 0.8) {
+            occluderX = 70.0;
+            double t = (progress - 0.6) / 0.2;
+            occluderOpacity = 1 - t;
+            leftIrisOffset = (1 - t) * 10; // Moves back as uncovered
+            rightIrisOffset = -8 + (t * 8); // Right returns
+          }
+          // 0.8 - 1.0: Reset
+          else {
+            occluderOpacity = 0;
+          }
+
           return CustomPaint(
-            painter: _CoverProcedurePainter(progress: progress),
+            painter: _CoverProcedurePainter(
+              progress: progress,
+              leftIrisOffset: leftIrisOffset,
+              rightIrisOffset: rightIrisOffset,
+              occluderX: occluderX,
+              occluderOpacity: occluderOpacity,
+            ),
           );
         },
       ),
@@ -573,77 +732,142 @@ class _CoverProcedureAnimationState extends State<_CoverProcedureAnimation>
 
 class _CoverProcedurePainter extends CustomPainter {
   final double progress;
+  final double leftIrisOffset;
+  final double rightIrisOffset;
+  final double occluderX;
+  final double occluderOpacity;
 
-  _CoverProcedurePainter({required this.progress});
+  _CoverProcedurePainter({
+    required this.progress,
+    required this.leftIrisOffset,
+    required this.rightIrisOffset,
+    required this.occluderX,
+    required this.occluderOpacity,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    final eyeSpacing = 60.0;
-    final eyeSize = 25.0;
-    final pupilSize = 10.0;
-
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final borderPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    final pupilPaint = Paint()
-      ..color = AppColors.textPrimary
-      ..style = PaintingStyle.fill;
+    final eyeSpacing = 70.0;
+    final eyeWidth = 70.0;
+    final eyeHeight = 35.0;
 
     // Draw Eyes
-    canvas.drawCircle(center.translate(-eyeSpacing, 0), eyeSize, paint);
-    canvas.drawCircle(center.translate(-eyeSpacing, 0), eyeSize, borderPaint);
-    canvas.drawCircle(center.translate(-eyeSpacing, 0), pupilSize, pupilPaint);
+    _drawRealisticEye(
+      canvas,
+      center.translate(-eyeSpacing, 0),
+      eyeWidth,
+      eyeHeight,
+      rightIrisOffset,
+      AppColors.primary,
+    );
 
-    canvas.drawCircle(center.translate(eyeSpacing, 0), eyeSize, paint);
-    canvas.drawCircle(center.translate(eyeSpacing, 0), eyeSize, borderPaint);
-    canvas.drawCircle(center.translate(eyeSpacing, 0), pupilSize, pupilPaint);
+    _drawRealisticEye(
+      canvas,
+      center.translate(eyeSpacing, 0),
+      eyeWidth,
+      eyeHeight,
+      leftIrisOffset,
+      AppColors.primary,
+    );
 
-    // Draw Occluder (Hand or card)
-    final occluderPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.8)
-      ..style = PaintingStyle.fill;
+    // Draw Occluder
+    if (occluderOpacity > 0) {
+      final occluderPaint = Paint()
+        ..color = AppColors.primary.withValues(alpha: occluderOpacity * 0.8)
+        ..style = PaintingStyle.fill;
 
-    double occluderX = 0;
-    double opacity = 0;
+      final occluderRect = Rect.fromCenter(
+        center: center.translate(occluderX, -5),
+        width: 80,
+        height: 100,
+      );
 
-    // Cycle through cover/uncover on each eye
-    if (progress < 0.25) {
-      // Cover Right Eye
-      occluderX = -eyeSpacing;
-      opacity = (progress / 0.25);
-    } else if (progress < 0.5) {
-      // Uncover Right Eye
-      occluderX = -eyeSpacing;
-      opacity = 1 - ((progress - 0.25) / 0.25);
-    } else if (progress < 0.75) {
-      // Cover Left Eye
-      occluderX = eyeSpacing;
-      opacity = ((progress - 0.5) / 0.25);
-    } else {
-      // Uncover Left Eye
-      occluderX = eyeSpacing;
-      opacity = 1 - ((progress - 0.75) / 0.25);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(occluderRect, const Radius.circular(12)),
+        occluderPaint,
+      );
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(occluderRect, const Radius.circular(12)),
+        Paint()
+          ..color = Colors.white.withValues(alpha: occluderOpacity * 0.3)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
     }
+  }
 
-    final occluderRect = Rect.fromCenter(
-      center: center.translate(occluderX, -10),
-      width: 60,
-      height: 80,
+  void _drawRealisticEye(
+    Canvas canvas,
+    Offset eyeCenter,
+    double width,
+    double height,
+    double irisXOffset,
+    Color themeColor,
+  ) {
+    final eyePath = Path();
+    eyePath.moveTo(eyeCenter.dx - width / 2, eyeCenter.dy);
+    eyePath.quadraticBezierTo(
+      eyeCenter.dx,
+      eyeCenter.dy - height,
+      eyeCenter.dx + width / 2,
+      eyeCenter.dy,
+    );
+    eyePath.quadraticBezierTo(
+      eyeCenter.dx,
+      eyeCenter.dy + height,
+      eyeCenter.dx - width / 2,
+      eyeCenter.dy,
+    );
+    eyePath.close();
+
+    // Sclera
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill,
     );
 
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(occluderRect, const Radius.circular(10)),
-      occluderPaint..color = occluderPaint.color.withValues(alpha: opacity),
+    // Border
+    canvas.drawPath(
+      eyePath,
+      Paint()
+        ..color = themeColor.withValues(alpha: 0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
     );
+
+    canvas.save();
+    canvas.clipPath(eyePath);
+
+    // Iris (The moving part)
+    final irisCenter = eyeCenter + Offset(irisXOffset, 0);
+    final irisRadius = height * 0.6;
+    canvas.drawCircle(irisCenter, irisRadius, Paint()..color = themeColor);
+
+    // Pupil
+    canvas.drawCircle(
+      irisCenter,
+      irisRadius * 0.45,
+      Paint()..color = Colors.black,
+    );
+
+    // Reflection
+    canvas.drawCircle(
+      irisCenter + Offset(irisRadius * 0.3, -irisRadius * 0.3),
+      irisRadius * 0.15,
+      Paint()..color = Colors.white.withValues(alpha: 0.4),
+    );
+
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _CoverProcedurePainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.leftIrisOffset != leftIrisOffset ||
+      oldDelegate.rightIrisOffset != rightIrisOffset ||
+      oldDelegate.occluderOpacity != occluderOpacity;
 }

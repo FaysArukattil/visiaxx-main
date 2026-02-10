@@ -402,52 +402,74 @@ class _CoverTestScreenState extends State<CoverTestScreen>
   }
 
   Widget _buildMovementOptions(CoverTestProvider provider) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      alignment: WrapAlignment.center,
-      children: EyeMovement.values.map((movement) {
-        return InkWell(
+    return Column(
+      children: [
+        // Row 1: Outward, Inward
+        Row(
+          children: [
+            _buildMovementButton(provider, EyeMovement.outward),
+            const SizedBox(width: 12),
+            _buildMovementButton(provider, EyeMovement.inward),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Row 2: Downward, Upward
+        Row(
+          children: [
+            _buildMovementButton(provider, EyeMovement.downward),
+            const SizedBox(width: 12),
+            _buildMovementButton(provider, EyeMovement.upward),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Row 3: No Movement
+        _buildMovementButton(provider, EyeMovement.none, isFullWidth: true),
+      ],
+    );
+  }
+
+  Widget _buildMovementButton(
+    CoverTestProvider provider,
+    EyeMovement movement, {
+    bool isFullWidth = false,
+  }) {
+    return Expanded(
+      flex: isFullWidth ? 0 : 1,
+      child: SizedBox(
+        width: isFullWidth ? double.infinity : null,
+        child: InkWell(
           onTap: () => provider.recordObservation(movement),
           borderRadius: BorderRadius.circular(12),
-          child: LayoutBuilder(
-            builder: (context, c) {
-              return Container(
-                width: (c.maxWidth - 12) / 2,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: context.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: context.dividerColor.withValues(alpha: 0.1),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            decoration: BoxDecoration(
+              color: context.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: context.dividerColor.withValues(alpha: 0.1),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _getMovementIcon(movement),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    movement.label,
+                    style: TextStyle(
+                      color: context.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _getMovementIcon(movement),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        movement.label,
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+              ],
+            ),
           ),
-        );
-      }).toList(),
+        ),
+      ),
     );
   }
 
