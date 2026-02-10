@@ -16,6 +16,8 @@ import '../../data/models/mobile_refractometry_result.dart';
 import '../../data/models/pelli_robson_result.dart';
 import '../../data/models/refraction_prescription_model.dart';
 import '../../data/models/shadow_test_result.dart';
+import '../../data/models/stereopsis_result.dart';
+import '../../data/models/eye_hydration_result.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -288,6 +290,18 @@ class PdfExportService {
               rightImageBytes: shadowRightBytes,
               leftImageBytes: shadowLeftBytes,
             ),
+            pw.SizedBox(height: 12),
+          ],
+
+          // Eye Hydration Section - DETAILED
+          if (result.eyeHydration != null) ...[
+            _buildEyeHydrationDetailedSection(result),
+            pw.SizedBox(height: 12),
+          ],
+
+          // Stereopsis Section - DETAILED
+          if (result.stereopsis != null) ...[
+            _buildStereopsisDetailedSection(result),
             pw.SizedBox(height: 12),
           ],
 
@@ -1901,6 +1915,209 @@ class PdfExportService {
     }
 
     return 'Abnormal findings detected - Professional eye examination recommended';
+  }
+
+  /// EYE HYDRATION - DETAILED
+  pw.Widget _buildEyeHydrationDetailedSection(TestResultModel result) {
+    if (result.eyeHydration == null) return pw.SizedBox();
+    final EyeHydrationResult hydration = result.eyeHydration!;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(height: 6),
+        _buildSectionHeader('EYE HYDRATION & BLINK ANALYTICS'),
+        pw.SizedBox(height: 10),
+        pw.Row(
+          children: [
+            pw.Expanded(
+              child: _buildMetricTile(
+                'BLINK RATE',
+                '${hydration.averageBlinksPerMinute.toStringAsFixed(1)} BPM',
+                'AVERAGE PER MINUTE',
+              ),
+            ),
+            pw.SizedBox(width: 12),
+            pw.Expanded(
+              child: _buildMetricTile(
+                'BLINK COUNT',
+                '${hydration.blinkCount}',
+                'TOTAL DETECTED',
+              ),
+            ),
+            pw.SizedBox(width: 12),
+            pw.Expanded(
+              child: _buildMetricTile(
+                'DURATION',
+                '${hydration.totalTestTime.inSeconds}s',
+                'TEST TIME',
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 12),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: hydration.status == EyeHydrationStatus.normal
+                ? PdfColors.green50
+                : (hydration.status == EyeHydrationStatus.suspicious
+                      ? PdfColors.orange50
+                      : PdfColors.red50),
+            borderRadius: pw.BorderRadius.circular(6),
+            border: pw.Border.all(
+              color: hydration.status == EyeHydrationStatus.normal
+                  ? PdfColors.green100
+                  : (hydration.status == EyeHydrationStatus.suspicious
+                        ? PdfColors.orange100
+                        : PdfColors.red100),
+              width: 0.5,
+            ),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                children: [
+                  pw.Text(
+                    'STATUS: ${hydration.status.label.toUpperCase()}',
+                    style: pw.TextStyle(
+                      fontSize: 8,
+                      fontWeight: pw.FontWeight.bold,
+                      color: hydration.status == EyeHydrationStatus.normal
+                          ? PdfColors.green800
+                          : (hydration.status == EyeHydrationStatus.suspicious
+                                ? PdfColors.orange800
+                                : PdfColors.red800),
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(
+                hydration.status.description,
+                style: pw.TextStyle(
+                  fontSize: 7.5,
+                  color: PdfColors.blueGrey800,
+                  lineSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (hydration.recommendations.isNotEmpty) ...[
+          pw.SizedBox(height: 12),
+          pw.Text(
+            'TARGETED RECOMMENDATIONS',
+            style: pw.TextStyle(
+              fontSize: 7,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.blueGrey700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          ...hydration.recommendations.map(
+            (rec) => pw.Bullet(
+              text: rec,
+              style: const pw.TextStyle(fontSize: 8),
+              bulletSize: 2,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// STEREOPSIS - DETAILED
+  pw.Widget _buildStereopsisDetailedSection(TestResultModel result) {
+    if (result.stereopsis == null) return pw.SizedBox();
+    final StereopsisResult stereo = result.stereopsis!;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(height: 6),
+        _buildSectionHeader('STEREOPSIS (DEPTH PERCEPTION)'),
+        pw.SizedBox(height: 10),
+        pw.Row(
+          children: [
+            pw.Expanded(
+              child: _buildMetricTile(
+                'SCORE',
+                '${stereo.score}/${stereo.totalRounds}',
+                'SUCCESSFUL TRIALS',
+              ),
+            ),
+            pw.SizedBox(width: 12),
+            pw.Expanded(
+              child: _buildMetricTile(
+                'ACCURACY',
+                '${stereo.percentage.toStringAsFixed(0)}%',
+                'RESPONSE RATE',
+              ),
+            ),
+            pw.SizedBox(width: 12),
+            pw.Expanded(
+              child: _buildMetricTile(
+                'GRADE',
+                stereo.grade.label.toUpperCase(),
+                'DEPTH QUALITY',
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 12),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: stereo.stereopsisPresent
+                ? PdfColors.green50
+                : PdfColors.red50,
+            borderRadius: pw.BorderRadius.circular(6),
+            border: pw.Border.all(
+              color: stereo.stereopsisPresent
+                  ? PdfColors.green100
+                  : PdfColors.red100,
+              width: 0.5,
+            ),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'CLINICAL FINDING: ${stereo.grade.description}',
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                  color: stereo.stereopsisPresent
+                      ? PdfColors.green800
+                      : PdfColors.red800,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(
+                stereo.recommendation,
+                style: pw.TextStyle(
+                  fontSize: 7.5,
+                  color: PdfColors.blueGrey800,
+                  lineSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Text(
+          'Note: Stereopsis refers to the brain\'s ability to perceive depth and 3D structures from two slightly different images from each eye.',
+          style: pw.TextStyle(
+            fontSize: 6,
+            color: PdfColors.grey400,
+            fontStyle: pw.FontStyle.italic,
+          ),
+        ),
+      ],
+    );
   }
 
   /// OVERALL ASSESSMENT
