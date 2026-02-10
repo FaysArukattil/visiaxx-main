@@ -19,6 +19,7 @@ import '../../data/models/shadow_test_result.dart';
 import '../../data/models/stereopsis_result.dart';
 import '../../data/models/visual_field_result.dart';
 import '../../data/models/eye_hydration_result.dart';
+import '../../data/models/cover_test_result.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -311,6 +312,12 @@ class PdfExportService {
           // Stereopsis Section - DETAILED
           if (result.stereopsis != null) ...[
             _buildStereopsisDetailedSection(result),
+            pw.SizedBox(height: 12),
+          ],
+
+          // Cover Test Section - DETAILED
+          if (result.coverTest != null) ...[
+            _buildCoverTestDetailedSection(result),
             pw.SizedBox(height: 12),
           ],
 
@@ -2842,6 +2849,116 @@ class PdfExportService {
           ],
         ),
       ),
+    );
+  }
+
+  pw.Widget _buildCoverTestDetailedSection(TestResultModel result) {
+    final ct = result.coverTest;
+    if (ct == null) return pw.SizedBox();
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(height: 6),
+        _buildSectionHeader('BINOCULAR VISION (COVER TEST)'),
+        pw.SizedBox(height: 8),
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.blueGrey50, width: 0.5),
+          defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.blueGrey50),
+              children: [
+                _buildTableCell('EYE', isHeader: true),
+                _buildTableCell('ALIGNMENT STATUS', isHeader: true),
+                _buildTableCell('DESCRIPTION', isHeader: true),
+              ],
+            ),
+            pw.TableRow(
+              children: [
+                _buildTableCell('OD (Right Eye)'),
+                _buildTableCell(
+                  ct.rightEyeStatus.label,
+                  color: ct.rightEyeStatus == AlignmentStatus.normal
+                      ? PdfColors.green700
+                      : PdfColors.orange700,
+                ),
+                _buildTableCell(ct.rightEyeStatus.description),
+              ],
+            ),
+            pw.TableRow(
+              children: [
+                _buildTableCell('OS (Left Eye)'),
+                _buildTableCell(
+                  ct.leftEyeStatus.label,
+                  color: ct.leftEyeStatus == AlignmentStatus.normal
+                      ? PdfColors.green700
+                      : PdfColors.orange700,
+                ),
+                _buildTableCell(ct.leftEyeStatus.description),
+              ],
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 12),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(8),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey50,
+            borderRadius: pw.BorderRadius.circular(4),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'CLINICAL INTERPRETATION: ',
+                    style: pw.TextStyle(
+                      fontSize: 7,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blueGrey800,
+                    ),
+                  ),
+                  pw.Expanded(
+                    child: pw.Text(
+                      ct.overallInterpretation,
+                      style: const pw.TextStyle(
+                        fontSize: 7,
+                        color: PdfColors.blueGrey700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 4),
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'RECOMMENDATION: ',
+                    style: pw.TextStyle(
+                      fontSize: 7,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blueGrey800,
+                    ),
+                  ),
+                  pw.Expanded(
+                    child: pw.Text(
+                      ct.recommendation,
+                      style: const pw.TextStyle(
+                        fontSize: 7,
+                        color: PdfColors.blueGrey700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

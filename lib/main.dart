@@ -58,10 +58,14 @@ import 'data/providers/shadow_test_provider.dart';
 import 'data/providers/stereopsis_provider.dart';
 import 'data/providers/eye_hydration_provider.dart';
 import 'data/providers/visual_field_provider.dart';
+import 'data/providers/cover_test_provider.dart';
 import 'features/individual_tests/screens/eye_hydration_instructions_screen.dart';
 import 'features/individual_tests/screens/eye_hydration_test_screen.dart';
 import 'features/individual_tests/screens/visual_field_instructions_screen.dart';
 import 'features/individual_tests/screens/visual_field_test_screen.dart';
+import 'features/individual_tests/screens/cover_test_instructions_screen.dart';
+import 'features/individual_tests/screens/cover_test_screen.dart';
+import 'features/individual_tests/screens/cover_test_result_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -204,6 +208,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => StereopsisProvider()),
         ChangeNotifierProvider(create: (_) => EyeHydrationProvider()),
         ChangeNotifierProvider(create: (_) => VisualFieldProvider()),
+        ChangeNotifierProvider(create: (_) => CoverTestProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -334,6 +339,15 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/visual-field-test-intro': (context) =>
                   const VisualFieldInstructionsScreen(),
               '/visual-field-test': (context) => const VisualFieldScreen(),
+              '/cover-test-intro': (context) =>
+                  const CoverTestInstructionsScreen(),
+              '/cover-test-screen': (context) => const CoverTestScreen(),
+              '/cover-test-result': (context) {
+                final args =
+                    ModalRoute.of(context)?.settings.arguments
+                        as Map<String, dynamic>;
+                return CoverTestResultScreen(result: args['result']);
+              },
             },
           );
         },

@@ -26,6 +26,7 @@ import 'package:visiaxx/data/models/shadow_test_result.dart';
 import 'package:visiaxx/data/models/stereopsis_result.dart';
 import 'package:visiaxx/data/models/eye_hydration_result.dart';
 import 'package:visiaxx/data/models/visual_field_result.dart';
+import 'package:visiaxx/data/models/cover_test_result.dart';
 import 'package:visiaxx/features/quick_vision_test/widgets/visual_field_sensitivity_map.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
@@ -433,6 +434,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                         Icons.track_changes_rounded,
                       ),
                       _buildVisualFieldCard(provider),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Cover Test Results
+                    if (_shouldShowSection(provider, 'cover_test')) ...[
+                      _buildSectionTitle(
+                        'Cover Test (Alignment)',
+                        Icons.remove_red_eye_rounded,
+                      ),
+                      _buildCoverTestCard(provider),
                       const SizedBox(height: 20),
                     ],
 
@@ -2029,6 +2040,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           return _hasEyeHydrationData(provider);
         case 'visual_field':
           return _hasVisualFieldData(provider);
+        case 'cover_test':
+          return _hasCoverTestData(provider);
         default:
           return false;
       }
@@ -2061,6 +2074,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         return _hasEyeHydrationData(provider);
       case 'visual_field':
         return _hasVisualFieldData(provider);
+      case 'cover_test':
+        return _hasCoverTestData(provider);
       default:
         return false;
     }
@@ -3248,6 +3263,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         provider.shadowTestResult != null;
   }
 
+  bool _hasCoverTestData(TestSessionProvider provider) {
+    return widget.historicalResult?.coverTest != null ||
+        provider.coverTest != null;
+  }
+
   bool _hasStereopsisData(TestSessionProvider provider) {
     return widget.historicalResult?.stereopsis != null ||
         provider.stereopsis != null;
@@ -3399,6 +3419,171 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCoverTestCard(TestSessionProvider provider) {
+    final result = widget.historicalResult?.coverTest ?? provider.coverTest;
+    if (result == null) return const SizedBox.shrink();
+
+    final isNormal = !result.hasDeviation;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: context.primary.withValues(alpha: 0.1),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (isNormal ? context.success : context.warning)
+                      .withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isNormal
+                      ? Icons.check_circle_outline
+                      : Icons.warning_amber_rounded,
+                  color: isNormal ? context.success : context.warning,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isNormal ? 'Alignment Normal' : 'Deviation Detected',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      result.overallInterpretation,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 16),
+          _buildCoverTestDetailRow('Right Eye', result.rightEyeStatus),
+          const SizedBox(height: 12),
+          _buildCoverTestDetailRow('Left Eye', result.leftEyeStatus),
+          if (result.recommendation.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.primary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: context.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Recommendation',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: context.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '• ',
+                        style: TextStyle(
+                          color: context.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          result.recommendation,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.textPrimary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoverTestDetailRow(String eye, AlignmentStatus status) {
+    final isNormal = status == AlignmentStatus.normal;
+    return Row(
+      children: [
+        Text(
+          eye,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: context.textPrimary,
+          ),
+        ),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: (isNormal ? context.success : context.warning).withValues(
+              alpha: 0.1,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            status.label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: isNormal ? context.success : context.warning,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

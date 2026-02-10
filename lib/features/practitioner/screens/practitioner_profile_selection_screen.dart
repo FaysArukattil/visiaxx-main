@@ -466,6 +466,9 @@ class _PractitionerProfileSelectionScreenState
         case 'visual_field':
           route = '/visual-field-test-intro';
           break;
+        case 'cover_test':
+          route = '/cover-test-intro';
+          break;
         default:
           route = '/home'; // Safeguard
       }

@@ -194,6 +194,15 @@ class IndividualTestsScreen extends StatelessWidget {
           onTap: () => _handleTestSelection(context, 'visual_field'),
           screenWidth: screenWidth,
         ),
+        SizedBox(height: cardSpacing),
+        _IndividualTestCard(
+          icon: Icons.visibility_outlined,
+          title: 'Cover-Uncover Test',
+          description:
+              'Assess eye alignment and detect strabismus through cover test',
+          onTap: () => _handleTestSelection(context, 'cover_test'),
+          screenWidth: screenWidth,
+        ),
       ],
     );
   }

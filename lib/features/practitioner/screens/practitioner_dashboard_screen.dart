@@ -26,6 +26,7 @@ import '../../../data/models/color_vision_result.dart';
 import '../../../data/models/mobile_refractometry_result.dart';
 import '../../../data/models/eye_hydration_result.dart';
 import '../../../data/models/visual_field_result.dart';
+import '../../../data/models/cover_test_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
@@ -449,6 +450,7 @@ class _PractitionerDashboardScreenState
       'Macular Issue': <String>{},
       'Vision Impairment': <String>{},
       'Low Contrast Sensitivity': <String>{},
+      'Ocular Deviation': <String>{},
       'Urgent Consultation': <String>{},
       'Monitoring Advised': <String>{},
     };
@@ -561,6 +563,10 @@ class _PractitionerDashboardScreenState
       } else if (result.eyeHydration!.status == EyeHydrationStatus.suspicious) {
         conditions.add('Monitoring Advised');
       }
+    }
+
+    if (result.coverTest != null && result.coverTest!.hasDeviation) {
+      conditions.add('Ocular Deviation');
     }
 
     if (conditions.isEmpty) conditions.add('Normal');

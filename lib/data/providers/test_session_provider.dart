@@ -16,6 +16,7 @@ import '../models/shadow_test_result.dart';
 import '../models/stereopsis_result.dart';
 import '../models/eye_hydration_result.dart';
 import '../models/visual_field_result.dart';
+import '../models/cover_test_result.dart';
 
 /// Provider for managing test session state
 class TestSessionProvider extends ChangeNotifier {
@@ -45,6 +46,7 @@ class TestSessionProvider extends ChangeNotifier {
   VisualFieldResult? _visualFieldRight;
   VisualFieldResult? _visualFieldLeft;
   VisualFieldResult? _visualField;
+  CoverTestResult? _coverTest;
   RefractionPrescriptionModel? _refractionPrescription;
 
   // Current test state
@@ -94,6 +96,7 @@ class TestSessionProvider extends ChangeNotifier {
   VisualFieldResult? get visualFieldRight => _visualFieldRight;
   VisualFieldResult? get visualFieldLeft => _visualFieldLeft;
   VisualFieldResult? get visualField => _visualField;
+  CoverTestResult? get coverTest => _coverTest;
 
   /// Set profile for self-testing
   void selectSelfProfile(
@@ -269,6 +272,15 @@ class TestSessionProvider extends ChangeNotifier {
     );
   }
 
+  /// Set Cover Test result
+  void setCoverTestResult(CoverTestResult result) {
+    _coverTest = result;
+    notifyListeners();
+    debugPrint(
+      '… [TestSessionProvider] Cover Test result saved: ${result.hasDeviation ? "Deviation detected" : "Normal"}',
+    );
+  }
+
   /// Get overall test status
   TestStatus getOverallStatus() {
     return TestResultModel.calculateOverallStatus(
@@ -285,6 +297,7 @@ class TestSessionProvider extends ChangeNotifier {
       visualFieldRight: _visualFieldRight,
       visualFieldLeft: _visualFieldLeft,
       visualField: _visualField,
+      coverTest: _coverTest,
     );
   }
 
@@ -334,6 +347,7 @@ class TestSessionProvider extends ChangeNotifier {
         _visualField != null ||
         _visualFieldRight != null ||
         _visualFieldLeft != null;
+    final hasCoverTest = _coverTest != null;
 
     return hasVA ||
         hasColorVision ||
@@ -344,7 +358,8 @@ class TestSessionProvider extends ChangeNotifier {
         hasShadowTest ||
         hasStereopsis ||
         hasEyeHydration ||
-        hasVisualField;
+        hasVisualField ||
+        hasCoverTest;
   }
 
   /// Get test duration in seconds
@@ -395,6 +410,7 @@ class TestSessionProvider extends ChangeNotifier {
       visualFieldRight: _visualFieldRight,
       visualFieldLeft: _visualFieldLeft,
       visualField: _visualField,
+      coverTest: _coverTest,
       refractionPrescription: _refractionPrescription,
       overallStatus: getOverallStatus(),
       recommendation: getRecommendation(),
@@ -459,6 +475,7 @@ class TestSessionProvider extends ChangeNotifier {
     _visualFieldRight = null;
     _visualFieldLeft = null;
     _visualField = null;
+    _coverTest = null;
     _refractionPrescription = null;
     notifyListeners();
   }
