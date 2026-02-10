@@ -42,6 +42,8 @@ class TestSessionProvider extends ChangeNotifier {
   ShadowTestResult? _shadowTestResult;
   StereopsisResult? _stereopsis;
   EyeHydrationResult? _eyeHydration;
+  VisualFieldResult? _visualFieldRight;
+  VisualFieldResult? _visualFieldLeft;
   VisualFieldResult? _visualField;
   RefractionPrescriptionModel? _refractionPrescription;
 
@@ -89,6 +91,8 @@ class TestSessionProvider extends ChangeNotifier {
   ShadowTestResult? get shadowTestResult => _shadowTestResult;
   StereopsisResult? get stereopsis => _stereopsis;
   EyeHydrationResult? get eyeHydration => _eyeHydration;
+  VisualFieldResult? get visualFieldRight => _visualFieldRight;
+  VisualFieldResult? get visualFieldLeft => _visualFieldLeft;
   VisualFieldResult? get visualField => _visualField;
 
   /// Set profile for self-testing
@@ -252,10 +256,16 @@ class TestSessionProvider extends ChangeNotifier {
   }
 
   void setVisualFieldResult(VisualFieldResult result) {
-    _visualField = result;
+    if (result.eye == VisualFieldEye.right) {
+      _visualFieldRight = result;
+    } else if (result.eye == VisualFieldEye.left) {
+      _visualFieldLeft = result;
+    } else {
+      _visualField = result;
+    }
     notifyListeners();
     debugPrint(
-      '… [TestSessionProvider] Visual Field result saved: ${result.overallSensitivity}',
+      '… [TestSessionProvider] Visual Field result saved for ${result.eye?.label ?? "unknown"}: ${result.overallSensitivity}',
     );
   }
 
@@ -272,6 +282,8 @@ class TestSessionProvider extends ChangeNotifier {
       shadowTest: _shadowTestResult,
       stereopsis: _stereopsis,
       eyeHydration: _eyeHydration,
+      visualFieldRight: _visualFieldRight,
+      visualFieldLeft: _visualFieldLeft,
       visualField: _visualField,
     );
   }
@@ -318,7 +330,10 @@ class TestSessionProvider extends ChangeNotifier {
     // Stereopsis
     final hasStereopsis = _stereopsis != null;
     final hasEyeHydration = _eyeHydration != null;
-    final hasVisualField = _visualField != null;
+    final hasVisualField =
+        _visualField != null ||
+        _visualFieldRight != null ||
+        _visualFieldLeft != null;
 
     return hasVA ||
         hasColorVision ||
@@ -377,6 +392,8 @@ class TestSessionProvider extends ChangeNotifier {
       shadowTest: _shadowTestResult,
       stereopsis: _stereopsis,
       eyeHydration: _eyeHydration,
+      visualFieldRight: _visualFieldRight,
+      visualFieldLeft: _visualFieldLeft,
       visualField: _visualField,
       refractionPrescription: _refractionPrescription,
       overallStatus: getOverallStatus(),
@@ -439,6 +456,8 @@ class TestSessionProvider extends ChangeNotifier {
     _shadowTestResult = null;
     _stereopsis = null;
     _eyeHydration = null;
+    _visualFieldRight = null;
+    _visualFieldLeft = null;
     _visualField = null;
     _refractionPrescription = null;
     notifyListeners();

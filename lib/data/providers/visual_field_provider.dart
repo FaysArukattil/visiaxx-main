@@ -8,6 +8,8 @@ class VisualFieldProvider extends ChangeNotifier {
   final List<Stimulus> _stimuli = [];
   final List<Stimulus> _results = [];
   Stimulus? _activeStimulus;
+  bool _hasFeedback = false;
+  VisualFieldEye _selectedEye = VisualFieldEye.right;
 
   bool get isTestActive => _isTestActive;
   Stimulus? get activeStimulus => _activeStimulus;
@@ -15,12 +17,20 @@ class VisualFieldProvider extends ChangeNotifier {
       _stimuli.isEmpty ? 0 : (_currentStimulusIndex / _stimuli.length);
   bool get isComplete =>
       _currentStimulusIndex >= _stimuli.length && _stimuli.isNotEmpty;
+  bool get hasFeedback => _hasFeedback;
   List<Stimulus> get results => List.unmodifiable(_results);
+  VisualFieldEye get selectedEye => _selectedEye;
 
   double get overallSensitivity =>
       totalCount > 0 ? (detectedCount / totalCount) : 0.0;
 
-  void startTest() {
+  void setEye(VisualFieldEye eye) {
+    _selectedEye = eye;
+    notifyListeners();
+  }
+
+  void startTest({VisualFieldEye? eye}) {
+    if (eye != null) _selectedEye = eye;
     _stimuli.clear();
     _results.clear();
     _currentStimulusIndex = 0;
@@ -102,7 +112,16 @@ class VisualFieldProvider extends ChangeNotifier {
 
   void recordDetection() {
     if (_isTestActive && _activeStimulus != null) {
+      _hasFeedback = true;
+      notifyListeners();
+
       _recordResponse(true);
+
+      // Reset feedback after a short delay
+      Future.delayed(const Duration(milliseconds: 150), () {
+        _hasFeedback = false;
+        notifyListeners();
+      });
     }
   }
 
@@ -167,6 +186,7 @@ class VisualFieldProvider extends ChangeNotifier {
   VisualFieldResult createResult() {
     return VisualFieldResult(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
+      eye: _selectedEye,
       quadrantSensitivity: getQuadrantResults(),
       totalStimuli: totalCount,
       detectedStimuli: detectedCount,

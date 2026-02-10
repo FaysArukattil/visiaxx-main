@@ -17,6 +17,7 @@ import '../../data/models/pelli_robson_result.dart';
 import '../../data/models/refraction_prescription_model.dart';
 import '../../data/models/shadow_test_result.dart';
 import '../../data/models/stereopsis_result.dart';
+import '../../data/models/visual_field_result.dart';
 import '../../data/models/eye_hydration_result.dart';
 
 /// Service for generating PDF reports of test results
@@ -296,6 +297,14 @@ class PdfExportService {
           // Eye Hydration Section - DETAILED
           if (result.eyeHydration != null) ...[
             _buildEyeHydrationDetailedSection(result),
+            pw.SizedBox(height: 12),
+          ],
+
+          // Visual Field Section - DETAILED
+          if (result.visualFieldRight != null ||
+              result.visualFieldLeft != null ||
+              result.visualField != null) ...[
+            _buildVisualFieldDetailedSection(result),
             pw.SizedBox(height: 12),
           ],
 
@@ -2603,6 +2612,236 @@ class PdfExportService {
           ],
         ),
       ],
+    );
+  }
+
+  pw.Widget _buildVisualFieldDetailedSection(TestResultModel result) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(height: 6),
+        _buildSectionHeader('PERIPHERAL VISUAL FIELD ASSESSMENT'),
+        pw.SizedBox(height: 10),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            if (result.visualFieldRight != null)
+              pw.Expanded(
+                child: _buildVisualFieldEyeDetail(
+                  'RIGHT EYE (OD)',
+                  result.visualFieldRight!,
+                ),
+              ),
+            if (result.visualFieldRight != null &&
+                result.visualFieldLeft != null)
+              pw.SizedBox(width: 20),
+            if (result.visualFieldLeft != null)
+              pw.Expanded(
+                child: _buildVisualFieldEyeDetail(
+                  'LEFT EYE (OS)',
+                  result.visualFieldLeft!,
+                ),
+              ),
+            if (result.visualField != null &&
+                result.visualFieldRight == null &&
+                result.visualFieldLeft == null)
+              pw.Expanded(
+                child: _buildVisualFieldEyeDetail(
+                  'OVERALL RESULT',
+                  result.visualField!,
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildVisualFieldEyeDetail(String label, VisualFieldResult res) {
+    final statusColor = res.overallSensitivity >= 0.8
+        ? PdfColors.green800
+        : (res.overallSensitivity >= 0.5
+              ? PdfColors.orange800
+              : PdfColors.red800);
+
+    return pw.Column(
+      children: [
+        pw.Text(
+          label,
+          style: pw.TextStyle(
+            fontSize: 7,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.grey600,
+          ),
+        ),
+        pw.SizedBox(height: 8),
+        // Visual Field Map in PDF
+        pw.Container(
+          width: 100,
+          height: 100,
+          decoration: pw.BoxDecoration(
+            color: PdfColors.black,
+            borderRadius: pw.BorderRadius.circular(4),
+          ),
+          child: pw.Stack(
+            children: [
+              // Grid Lines
+              pw.Positioned.fill(
+                child: pw.CustomPaint(
+                  painter: (canvas, size) {
+                    final paint = PdfColor.fromInt(0xFF333333);
+                    // Circles
+                    canvas.setStrokeColor(paint);
+                    canvas.setLineWidth(0.5);
+                    canvas.drawEllipse(
+                      size.x / 2,
+                      size.y / 2,
+                      size.x / 3,
+                      size.y / 3,
+                    );
+                    canvas.strokePath();
+                    canvas.drawEllipse(
+                      size.x / 2,
+                      size.y / 2,
+                      size.x / 6,
+                      size.y / 6,
+                    );
+                    canvas.strokePath();
+                    // Lines
+                    canvas.drawLine(size.x / 2, 0, size.x / 2, size.y);
+                    canvas.strokePath();
+                    canvas.drawLine(0, size.y / 2, size.x, size.y / 2);
+                    canvas.strokePath();
+                  },
+                ),
+              ),
+              // Stimuli dots
+              ...res.stimuliResults.map((s) {
+                return pw.Positioned(
+                  left: s.position.dx * 100 - 1.5,
+                  top: s.position.dy * 100 - 1.5,
+                  child: pw.Container(
+                    width: 3,
+                    height: 3,
+                    decoration: pw.BoxDecoration(
+                      color: s.isDetected
+                          ? PdfColors.green300
+                          : PdfColors.red300,
+                      shape: pw.BoxShape.circle,
+                    ),
+                  ),
+                );
+              }).toList(),
+              // Central Fixation
+              pw.Center(
+                child: pw.Container(
+                  width: 4,
+                  height: 4,
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.white, width: 0.5),
+                    shape: pw.BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          decoration: pw.BoxDecoration(
+            color: res.overallSensitivity >= 0.8
+                ? PdfColors.green50
+                : (res.overallSensitivity >= 0.5
+                      ? PdfColors.orange50
+                      : PdfColors.red50),
+            borderRadius: pw.BorderRadius.circular(4),
+          ),
+          child: pw.Text(
+            '${(res.overallSensitivity * 100).toStringAsFixed(0)}% SENSITIVITY',
+            style: pw.TextStyle(
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+              color: statusColor,
+            ),
+          ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Column(
+          children: [
+            pw.Row(
+              children: [
+                _buildPdfQuadrantItem(
+                  VisualFieldQuadrant.topRight.label,
+                  res.quadrantSensitivity[VisualFieldQuadrant.topRight] ?? 0,
+                ),
+                pw.SizedBox(width: 6),
+                _buildPdfQuadrantItem(
+                  VisualFieldQuadrant.topLeft.label,
+                  res.quadrantSensitivity[VisualFieldQuadrant.topLeft] ?? 0,
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 6),
+            pw.Row(
+              children: [
+                _buildPdfQuadrantItem(
+                  VisualFieldQuadrant.bottomRight.label,
+                  res.quadrantSensitivity[VisualFieldQuadrant.bottomRight] ?? 0,
+                ),
+                pw.SizedBox(width: 6),
+                _buildPdfQuadrantItem(
+                  VisualFieldQuadrant.bottomLeft.label,
+                  res.quadrantSensitivity[VisualFieldQuadrant.bottomLeft] ?? 0,
+                ),
+              ],
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 6),
+        pw.Text(
+          res.interpretation,
+          textAlign: pw.TextAlign.center,
+          style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildPdfQuadrantItem(String label, double value) {
+    return pw.Expanded(
+      child: pw.Container(
+        padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        decoration: pw.BoxDecoration(
+          color: PdfColors.grey50,
+          borderRadius: pw.BorderRadius.circular(4),
+          border: pw.Border.all(color: PdfColors.grey100, width: 0.5),
+        ),
+        child: pw.Column(
+          children: [
+            pw.FittedBox(
+              fit: pw.BoxFit.scaleDown,
+              child: pw.Text(
+                label.toUpperCase(),
+                style: pw.TextStyle(
+                  fontSize: 6,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey600,
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 2),
+            pw.Text(
+              '${(value * 100).toStringAsFixed(0)}%',
+              style: pw.TextStyle(
+                fontSize: 12,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey900,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

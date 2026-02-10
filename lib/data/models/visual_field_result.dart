@@ -12,6 +12,15 @@ enum VisualFieldQuadrant {
   const VisualFieldQuadrant(this.label);
 }
 
+/// Eye being tested
+enum VisualFieldEye {
+  right('Right Eye'),
+  left('Left Eye');
+
+  final String label;
+  const VisualFieldEye(this.label);
+}
+
 /// A single stimulus point in the visual field test
 class Stimulus {
   final Offset position;
@@ -55,6 +64,7 @@ class Stimulus {
 /// Result model for the Visual Field Test
 class VisualFieldResult {
   final String id;
+  final VisualFieldEye? eye;
   final Map<VisualFieldQuadrant, double> quadrantSensitivity;
   final int totalStimuli;
   final int detectedStimuli;
@@ -63,6 +73,7 @@ class VisualFieldResult {
 
   VisualFieldResult({
     required this.id,
+    this.eye,
     required this.quadrantSensitivity,
     required this.totalStimuli,
     required this.detectedStimuli,
@@ -73,6 +84,7 @@ class VisualFieldResult {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'eye': eye?.name,
       'quadrantSensitivity': quadrantSensitivity.map(
         (key, value) => MapEntry(key.name, value),
       ),
@@ -97,6 +109,12 @@ class VisualFieldResult {
 
     return VisualFieldResult(
       id: json['id'] ?? '',
+      eye: json['eye'] != null
+          ? VisualFieldEye.values.firstWhere(
+              (e) => e.name == json['eye'],
+              orElse: () => VisualFieldEye.right,
+            )
+          : null,
       quadrantSensitivity: sensitivityMap,
       totalStimuli: json['totalStimuli'] ?? 0,
       detectedStimuli: json['detectedStimuli'] ?? 0,

@@ -47,7 +47,9 @@ class TestResultModel {
   final ShadowTestResult? shadowTest;
   final StereopsisResult? stereopsis;
   final EyeHydrationResult? eyeHydration;
-  final VisualFieldResult? visualField;
+  final VisualFieldResult? visualFieldRight;
+  final VisualFieldResult? visualFieldLeft;
+  final VisualFieldResult? visualField; // Keeping for compatibility
   final RefractionPrescriptionModel? refractionPrescription;
   final TestStatus overallStatus;
   final String recommendation;
@@ -78,6 +80,8 @@ class TestResultModel {
     this.shadowTest,
     this.stereopsis,
     this.eyeHydration,
+    this.visualFieldRight,
+    this.visualFieldLeft,
     this.visualField,
     this.refractionPrescription,
     required this.overallStatus,
@@ -147,6 +151,12 @@ class TestResultModel {
       eyeHydration: data['eyeHydration'] != null
           ? EyeHydrationResult.fromJson(data['eyeHydration'])
           : null,
+      visualFieldRight: data['visualFieldRight'] != null
+          ? VisualFieldResult.fromJson(data['visualFieldRight'])
+          : null,
+      visualFieldLeft: data['visualFieldLeft'] != null
+          ? VisualFieldResult.fromJson(data['visualFieldLeft'])
+          : null,
       visualField: data['visualField'] != null
           ? VisualFieldResult.fromJson(data['visualField'])
           : null,
@@ -190,6 +200,8 @@ class TestResultModel {
       'shadowTest': shadowTest?.toJson(),
       'stereopsis': stereopsis?.toJson(),
       'eyeHydration': eyeHydration?.toJson(),
+      'visualFieldRight': visualFieldRight?.toJson(),
+      'visualFieldLeft': visualFieldLeft?.toJson(),
       'visualField': visualField?.toJson(),
       'refractionPrescription': refractionPrescription?.toJson(),
       'overallStatus': overallStatus.name,
@@ -223,6 +235,9 @@ class TestResultModel {
       if (shadowTest != null) 'shadowTest': shadowTest!.toJson(),
       if (stereopsis != null) 'stereopsis': stereopsis!.toJson(),
       if (eyeHydration != null) 'eyeHydration': eyeHydration!.toJson(),
+      if (visualFieldRight != null)
+        'visualFieldRight': visualFieldRight!.toJson(),
+      if (visualFieldLeft != null) 'visualFieldLeft': visualFieldLeft!.toJson(),
       if (visualField != null) 'visualField': visualField!.toJson(),
       if (refractionPrescription != null)
         'refractionPrescription': refractionPrescription!.toMap(),
@@ -260,6 +275,8 @@ class TestResultModel {
     ShadowTestResult? shadowTest,
     StereopsisResult? stereopsis,
     EyeHydrationResult? eyeHydration,
+    VisualFieldResult? visualFieldRight,
+    VisualFieldResult? visualFieldLeft,
     VisualFieldResult? visualField,
   }) {
     // Check for URGENT conditions (severe/bilateral issues)
@@ -348,6 +365,12 @@ class TestResultModel {
     }
 
     // Review if: Visual Field has significant defects
+    if (visualFieldRight != null && visualFieldRight.overallSensitivity < 0.8) {
+      return TestStatus.review;
+    }
+    if (visualFieldLeft != null && visualFieldLeft.overallSensitivity < 0.8) {
+      return TestStatus.review;
+    }
     if (visualField != null && visualField.overallSensitivity < 0.8) {
       return TestStatus.review;
     }
@@ -395,6 +418,8 @@ class TestResultModel {
     StereopsisResult? stereopsis,
     RefractionPrescriptionModel? refractionPrescription,
     TestStatus? overallStatus,
+    VisualFieldResult? visualFieldRight,
+    VisualFieldResult? visualFieldLeft,
     VisualFieldResult? visualField,
     String? recommendation,
     String? pdfUrl,
@@ -424,6 +449,8 @@ class TestResultModel {
       shadowTest: shadowTest ?? this.shadowTest,
       stereopsis: stereopsis ?? this.stereopsis,
       eyeHydration: eyeHydration ?? this.eyeHydration,
+      visualFieldRight: visualFieldRight ?? this.visualFieldRight,
+      visualFieldLeft: visualFieldLeft ?? this.visualFieldLeft,
       visualField: visualField ?? this.visualField,
       refractionPrescription:
           refractionPrescription ?? this.refractionPrescription,

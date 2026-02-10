@@ -6,7 +6,6 @@ import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../quick_vision_test/widgets/instruction_animations.dart';
-import '../../quick_vision_test/widgets/glasses_removal_animation.dart';
 
 class VisualFieldInstructionsScreen extends StatefulWidget {
   const VisualFieldInstructionsScreen({super.key});
@@ -20,21 +19,14 @@ class _VisualFieldInstructionsScreenState
     extends State<VisualFieldInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 4;
+  final int _totalPages = 2;
   final TtsService _ttsService = TtsService();
 
-  final List<String> _stepTitles = [
-    'Vision Correction',
-    'Cover One Eye',
-    'Fixed Gaze',
-    'Test Procedure',
-  ];
+  final List<String> _stepTitles = ['Fixed Gaze', 'Response Method'];
 
   final List<String> _ttsMessages = [
-    'Please remove your spectacles or contact lenses for this test.',
-    'Use your hand or an eye patch to completely cover one eye. We will test them one by one.',
-    'Keep your gaze fixed on the center orange dot throughout the test. Do not look directly at the appearing dots.',
-    'Faint dots will appear in your peripheral vision. Tap the bottom area immediately when you see one.',
+    'Keep your gaze fixed on the center white plus icon throughout the test. Do not look directly at the appearing dots.',
+    'Dots will appear in your peripheral vision. Tap the bottom area immediately when you see one. Let\'s practice.',
   ];
 
   @override
@@ -132,33 +124,16 @@ class _VisualFieldInstructionsScreenState
                   children: [
                     _buildStep(
                       0,
-                      Icons.visibility_off_rounded,
-                      'Remove Specs',
-                      'Remove spectacles or contact lenses for the most accurate results.',
-                      context.primary,
-                      animation: const RemoveGlassesAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      1,
-                      Icons.front_hand_rounded,
-                      'Cover Eye',
-                      'Cover one eye completely. You can use your hand or an eye patch.',
-                      context.warning,
-                      animation: const CoverEyeAnimation(isCompact: true),
-                    ),
-                    _buildStep(
-                      2,
                       Icons.center_focus_strong_rounded,
                       'Fixed Gaze',
-                      'Keep your eyes fixed on the center orange crosshair throughout the test.',
-                      context.info,
-                      animation: const StayFocusedAnimation(
+                      'Keep your eyes fixed on the center white plus icon throughout the test.',
+                      context.primary,
+                      animation: const PulsatingFixationAnimation(
                         isCompact: true,
-                        color: Colors.orange,
                       ),
                     ),
                     _buildStep(
-                      3,
+                      1,
                       Icons.track_changes_rounded,
                       'Detect Dots',
                       'Tap the bottom area as soon as you see a faint dot in your peripheral vision.',

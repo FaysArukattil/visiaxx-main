@@ -25,6 +25,8 @@ import 'package:visiaxx/data/models/refraction_prescription_model.dart';
 import 'package:visiaxx/data/models/shadow_test_result.dart';
 import 'package:visiaxx/data/models/stereopsis_result.dart';
 import 'package:visiaxx/data/models/eye_hydration_result.dart';
+import 'package:visiaxx/data/models/visual_field_result.dart';
+import 'package:visiaxx/features/quick_vision_test/widgets/visual_field_sensitivity_map.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
 /// Comprehensive results screen displaying all test data
@@ -3251,7 +3253,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
   bool _hasVisualFieldData(TestSessionProvider provider) {
     return widget.historicalResult?.visualField != null ||
-        provider.visualField != null;
+        widget.historicalResult?.visualFieldRight != null ||
+        widget.historicalResult?.visualFieldLeft != null ||
+        provider.visualField != null ||
+        provider.visualFieldRight != null ||
+        provider.visualFieldLeft != null;
   }
 
   Widget _buildStereopsisCard(TestSessionProvider provider) {
@@ -3746,17 +3752,19 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   Widget _buildVisualFieldCard(TestSessionProvider provider) {
-    final result = widget.historicalResult?.visualField ?? provider.visualField;
-    if (result == null) return const SizedBox.shrink();
+    final resultRight =
+        widget.historicalResult?.visualFieldRight ?? provider.visualFieldRight;
+    final resultLeft =
+        widget.historicalResult?.visualFieldLeft ?? provider.visualFieldLeft;
+    final resultOld =
+        widget.historicalResult?.visualField ?? provider.visualField;
 
-    final statusColor = result.overallSensitivity >= 0.8
-        ? context.success
-        : result.overallSensitivity >= 0.5
-        ? context.warning
-        : context.error;
+    if (resultRight == null && resultLeft == null && resultOld == null) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
@@ -3768,115 +3776,200 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  result.overallSensitivity >= 0.8
-                      ? Icons.check_circle_rounded
-                      : Icons.info_outline_rounded,
-                  color: statusColor,
-                  size: 32,
-                ),
+      child: IntrinsicHeight(
+        child: Column(
+          children: [
+            if (resultRight != null || resultLeft != null) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (resultRight != null)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: _buildVisualFieldEyeSection(
+                          'Right Eye',
+                          resultRight,
+                          context.primary,
+                        ),
+                      ),
+                    ),
+                  if (resultRight != null && resultLeft != null)
+                    VerticalDivider(
+                      width: 1,
+                      thickness: 1,
+                      color: context.dividerColor.withValues(alpha: 0.1),
+                    ),
+                  if (resultLeft != null)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: _buildVisualFieldEyeSection(
+                          'Left Eye',
+                          resultLeft,
+                          context.info,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${(result.overallSensitivity * 100).toStringAsFixed(0)}% Score',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Peripheral Sensitivity',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: context.textSecondary,
-                      ),
-                    ),
-                  ],
+            ] else if (resultOld != null) ...[
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: _buildVisualFieldEyeSection(
+                  'Visual Field Result',
+                  resultOld,
+                  context.primary,
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVisualFieldEyeSection(
+    String label,
+    VisualFieldResult result,
+    Color color,
+  ) {
+    final statusColor = result.overallSensitivity >= 0.8
+        ? context.success
+        : result.overallSensitivity >= 0.5
+        ? context.warning
+        : context.error;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+            letterSpacing: 1.2,
           ),
-          const Divider(height: 32),
-          // Quadrant stats
-          Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            children: result.quadrantSensitivity.entries.map((entry) {
-              return Container(
-                width: (MediaQuery.of(context).size.width - 100) / 2,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: context.dividerColor.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.key.label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: context.textSecondary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${(entry.value * 100).toStringAsFixed(0)}%',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+        ),
+        const SizedBox(height: 20),
+        VisualFieldSensitivityMap(result: result, size: 160),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+          child: Text(
+            '${(result.overallSensitivity * 100).toStringAsFixed(0)}% Score',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: statusColor,
             ),
-            child: Row(
+          ),
+        ),
+        const SizedBox(height: 16),
+        Column(
+          children: [
+            Row(
               children: [
-                Icon(Icons.analytics_outlined, color: statusColor, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    result.interpretation,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.textSecondary,
-                      height: 1.4,
-                    ),
-                  ),
+                _buildQuadrantItem(
+                  context,
+                  VisualFieldQuadrant.topRight.label,
+                  result.quadrantSensitivity[VisualFieldQuadrant.topRight] ?? 0,
+                ),
+                const SizedBox(width: 8),
+                _buildQuadrantItem(
+                  context,
+                  VisualFieldQuadrant.topLeft.label,
+                  result.quadrantSensitivity[VisualFieldQuadrant.topLeft] ?? 0,
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildQuadrantItem(
+                  context,
+                  VisualFieldQuadrant.bottomRight.label,
+                  result.quadrantSensitivity[VisualFieldQuadrant.bottomRight] ??
+                      0,
+                ),
+                const SizedBox(width: 8),
+                _buildQuadrantItem(
+                  context,
+                  VisualFieldQuadrant.bottomLeft.label,
+                  result.quadrantSensitivity[VisualFieldQuadrant.bottomLeft] ??
+                      0,
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          result.interpretation,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 11,
+            color: context.textSecondary,
+            height: 1.3,
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuadrantItem(BuildContext context, String label, double value) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: context.dividerColor.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: context.textSecondary,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${(value * 100).toStringAsFixed(0)}%',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: context.textPrimary,
+                height: 1.0,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Sensitivity',
+              style: TextStyle(
+                fontSize: 9,
+                color: context.textSecondary.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

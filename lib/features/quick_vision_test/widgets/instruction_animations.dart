@@ -2657,7 +2657,7 @@ class _VisualFieldProcedureAnimationState
       width: double.infinity,
       padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Colors.black,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: AppColors.primary.withValues(alpha: 0.1),
@@ -2709,15 +2709,8 @@ class _VisualFieldProcedureAnimationState
                           ),
                         ),
 
-                        // Fixation Point
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: Colors.orange,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+                        // Fixation Point (White + icon)
+                        const Icon(Icons.add, color: Colors.white, size: 20),
 
                         // Peripheral Stimuli
                         if (t < 0.15) _buildDot(Offset(-40, -40), (t / 0.15)),
@@ -2785,11 +2778,11 @@ class _VisualFieldProcedureAnimationState
           width: 12,
           height: 12,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.primary,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: AppColors.primary.withValues(alpha: 0.6),
                 blurRadius: 8,
               ),
             ],
@@ -2843,6 +2836,67 @@ class _GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Animation for Step 1 of Visual Field instructions
+/// Shows a pulsating white "+" icon on a black background
+class PulsatingFixationAnimation extends StatefulWidget {
+  final bool isCompact;
+  const PulsatingFixationAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<PulsatingFixationAnimation> createState() =>
+      _PulsatingFixationAnimationState();
+}
+
+class _PulsatingFixationAnimationState extends State<PulsatingFixationAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: 1.0 + (_controller.value * 0.3),
+              child: Opacity(
+                opacity: 0.7 + (_controller.value * 0.3),
+                child: const Icon(Icons.add, color: Colors.white, size: 60),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
 /// Animation showing user covering one eye

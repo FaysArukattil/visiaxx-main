@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -139,15 +140,7 @@ class _VisualFieldScreenState extends State<VisualFieldScreen> {
               ),
               // Center crosshair
               Center(
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 24),
-                ),
+                child: const Icon(Icons.add, color: Colors.white, size: 30),
               ),
               // Active Stimulus
               if (provider.activeStimulus != null)
@@ -169,16 +162,16 @@ class _VisualFieldScreenState extends State<VisualFieldScreen> {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(
-                    alpha: stimulus.intensity * 0.8,
-                  ), // Slightly dimmed for realism
+                  color: AppColors.primary.withValues(
+                    alpha: stimulus.intensity * 0.9,
+                  ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.white.withValues(
-                        alpha: stimulus.intensity * 0.3,
+                      color: AppColors.primary.withValues(
+                        alpha: stimulus.intensity * 0.4,
                       ),
-                      blurRadius: 4,
+                      blurRadius: 6,
                       spreadRadius: 1,
                     ),
                   ],
@@ -195,21 +188,29 @@ class _VisualFieldScreenState extends State<VisualFieldScreen> {
     VisualFieldProvider provider,
   ) {
     return GestureDetector(
-      onTapDown: (_) => provider.recordDetection(),
-      child: Container(
+      onTapDown: (_) {
+        HapticFeedback.lightImpact();
+        provider.recordDetection();
+      },
+      child: AnimatedContainer(
+        duration: 100.ms,
         width: double.infinity,
         height: 120,
         margin: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.grey.shade900,
+          color: provider.hasFeedback
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.grey.shade900,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: AppColors.visualFieldColor.withValues(alpha: 0.5),
+            color: provider.hasFeedback
+                ? AppColors.primary
+                : AppColors.primary.withValues(alpha: 0.3),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.visualFieldColor.withValues(alpha: 0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -218,11 +219,7 @@ class _VisualFieldScreenState extends State<VisualFieldScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.touch_app,
-              size: 40,
-              color: AppColors.visualFieldColor,
-            ),
+            const Icon(Icons.touch_app, size: 40, color: AppColors.primary),
             const SizedBox(height: 8),
             const Text(
               'TAP HERE WHEN YOU SEE A DOT',
