@@ -2618,3 +2618,399 @@ class _ProfessionalSideIlluminationPainter extends CustomPainter {
     covariant _ProfessionalSideIlluminationPainter oldDelegate,
   ) => true;
 }
+
+/// Animation for Visual Field Procedure
+/// Shows a phone screen with a central gaze point and peripheral stimuli
+class VisualFieldProcedureAnimation extends StatefulWidget {
+  final bool isCompact;
+  const VisualFieldProcedureAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<VisualFieldProcedureAnimation> createState() =>
+      _VisualFieldProcedureAnimationState();
+}
+
+class _VisualFieldProcedureAnimationState
+    extends State<VisualFieldProcedureAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      width: double.infinity,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final t = _controller.value;
+
+            // Simulation of a test sequence
+            // t: 0.0 - 0.2: Dot 1
+            // t: 0.2 - 0.4: Pause
+            // t: 0.4 - 0.6: Dot 2
+            // t: 0.6 - 0.8: Pause
+            // t: 0.8 - 1.0: Dot 3
+
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                // Phone Frame
+                Container(
+                  width: widget.isCompact ? 140 : 160,
+                  height: widget.isCompact ? 180 : 200,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Background Grid (subtle)
+                        Positioned.fill(
+                          child: Opacity(
+                            opacity: 0.1,
+                            child: CustomPaint(painter: _GridPainter()),
+                          ),
+                        ),
+
+                        // Fixation Point
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: Colors.orange,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+
+                        // Peripheral Stimuli
+                        if (t < 0.15) _buildDot(Offset(-40, -40), (t / 0.15)),
+                        if (t > 0.3 && t < 0.45)
+                          _buildDot(Offset(50, 20), ((t - 0.3) / 0.15)),
+                        if (t > 0.6 && t < 0.75)
+                          _buildDot(Offset(-20, 60), ((t - 0.6) / 0.15)),
+
+                        // Tap indicator at the bottom (Response area)
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color:
+                                  ((t > 0.1 && t < 0.2) ||
+                                      (t > 0.4 && t < 0.5) ||
+                                      (t > 0.7 && t < 0.8))
+                                  ? AppColors.success.withValues(alpha: 0.3)
+                                  : Colors.white.withValues(alpha: 0.05),
+                              border: Border(
+                                top: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                "TAP HERE",
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Hand Icon tapping
+                if ((t > 0.1 && t < 0.2) ||
+                    (t > 0.4 && t < 0.5) ||
+                    (t > 0.7 && t < 0.8))
+                  _buildTappingHand(t),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDot(Offset offset, double progress) {
+    return Transform.translate(
+      offset: offset,
+      child: Opacity(
+        opacity: (1.0 - progress).clamp(0.0, 1.0),
+        child: Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.6),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTappingHand(double t) {
+    // Determine which dot we are tapping for
+    double tapProgress = 0;
+    if (t > 0.1 && t < 0.2) tapProgress = (t - 0.1) / 0.1;
+    if (t > 0.4 && t < 0.5) tapProgress = (t - 0.4) / 0.1;
+    if (t > 0.7 && t < 0.8) tapProgress = (t - 0.7) / 0.1;
+
+    return Positioned(
+      bottom: widget.isCompact ? 10 : 20,
+      right: widget.isCompact ? 40 : 60,
+      child: Transform.scale(
+        scale: 1.0 - (0.1 * math.sin(tapProgress * math.pi)),
+        child: const Icon(
+          Icons.touch_app_rounded,
+          color: AppColors.success,
+          size: 40,
+        ),
+      ),
+    );
+  }
+}
+
+class _GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 1.0;
+
+    // Draw crosshair lines
+    canvas.drawLine(
+      Offset(size.width / 2, 0),
+      Offset(size.width / 2, size.height),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(0, size.height / 2),
+      Offset(size.width, size.height / 2),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Animation showing user covering one eye
+class CoverEyeAnimation extends StatefulWidget {
+  final bool isCompact;
+  const CoverEyeAnimation({super.key, this.isCompact = false});
+
+  @override
+  State<CoverEyeAnimation> createState() => _CoverEyeAnimationState();
+}
+
+class _CoverEyeAnimationState extends State<CoverEyeAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: widget.isCompact ? 200 : 240,
+      width: double.infinity,
+      padding: EdgeInsets.all(widget.isCompact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final t = _controller.value;
+            // 0.0 to 0.4: move hand to left eye
+            // 0.4 to 0.5: hold
+            // 0.5 to 0.9: move hand away (optional switching or just hide)
+            // Let's do a simple loop: hand covers eye, then fades out.
+
+            double handX = -35;
+            double handY = 80 * (1 - t * 2).clamp(0, 1); // Simple move up
+            double handOpacity = 1.0;
+
+            if (t < 0.3) {
+              // Move hand to eye
+              handY = 60 * (1 - t / 0.3);
+              handOpacity = (t / 0.1).clamp(0, 1);
+            } else if (t < 0.7) {
+              // Stay on eye
+              handY = 0;
+              handOpacity = 1.0;
+            } else {
+              // Fade and move away
+              handY = -20 * ((t - 0.7) / 0.3);
+              handOpacity = (1 - (t - 0.7) / 0.3).clamp(0, 1);
+            }
+
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                // Head Figure
+                Container(
+                  width: widget.isCompact ? 100 : 120,
+                  height: widget.isCompact ? 100 : 120,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.4),
+                      width: 3,
+                    ),
+                  ),
+                ),
+
+                // Eyes
+                Positioned(
+                  top: widget.isCompact ? 35 : 45,
+                  left: widget.isCompact ? -25 : -35,
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.visibility_rounded,
+                          size: 25,
+                          color: AppColors.primary.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(width: 30),
+                        Icon(
+                          Icons.visibility_rounded,
+                          size: 25,
+                          color: AppColors.primary.withValues(alpha: 0.6),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Hand covering
+                Transform.translate(
+                  offset: Offset(handX, handY),
+                  child: Opacity(
+                    opacity: handOpacity,
+                    child: Container(
+                      width: 50,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.front_hand_rounded,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Instructions Label
+                Positioned(
+                  bottom: -10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.info,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      "COVER ONE EYE",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

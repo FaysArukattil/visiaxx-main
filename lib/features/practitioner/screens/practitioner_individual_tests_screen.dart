@@ -185,6 +185,15 @@ class IndividualTestsScreen extends StatelessWidget {
           onTap: () => _handleTestSelection(context, 'eye_hydration'),
           screenWidth: screenWidth,
         ),
+        SizedBox(height: cardSpacing),
+        _IndividualTestCard(
+          icon: Icons.track_changes_outlined,
+          title: 'Visual Field',
+          description:
+              'Test your peripheral vision sensitivity across four quadrants',
+          onTap: () => _handleTestSelection(context, 'visual_field'),
+          screenWidth: screenWidth,
+        ),
       ],
     );
   }

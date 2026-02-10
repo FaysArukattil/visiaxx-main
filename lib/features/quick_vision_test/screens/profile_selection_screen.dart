@@ -143,6 +143,9 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
         case 'eye_hydration':
           Navigator.pushNamed(context, '/eye-hydration-test-intro');
           break;
+        case 'visual_field':
+          Navigator.pushNamed(context, '/visual-field-test-intro');
+          break;
         default:
           Navigator.pushNamed(context, '/questionnaire');
       }

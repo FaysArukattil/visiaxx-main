@@ -15,6 +15,7 @@ import '../models/refraction_prescription_model.dart';
 import '../models/shadow_test_result.dart';
 import '../models/stereopsis_result.dart';
 import '../models/eye_hydration_result.dart';
+import '../models/visual_field_result.dart';
 
 /// Provider for managing test session state
 class TestSessionProvider extends ChangeNotifier {
@@ -41,6 +42,7 @@ class TestSessionProvider extends ChangeNotifier {
   ShadowTestResult? _shadowTestResult;
   StereopsisResult? _stereopsis;
   EyeHydrationResult? _eyeHydration;
+  VisualFieldResult? _visualField;
   RefractionPrescriptionModel? _refractionPrescription;
 
   // Current test state
@@ -87,6 +89,7 @@ class TestSessionProvider extends ChangeNotifier {
   ShadowTestResult? get shadowTestResult => _shadowTestResult;
   StereopsisResult? get stereopsis => _stereopsis;
   EyeHydrationResult? get eyeHydration => _eyeHydration;
+  VisualFieldResult? get visualField => _visualField;
 
   /// Set profile for self-testing
   void selectSelfProfile(
@@ -239,11 +242,20 @@ class TestSessionProvider extends ChangeNotifier {
   }
 
   /// Set Eye Hydration result
+
   void setEyeHydrationResult(EyeHydrationResult result) {
     _eyeHydration = result;
     notifyListeners();
     debugPrint(
       '… [TestSessionProvider] Eye Hydration result saved: ${result.status.label}',
+    );
+  }
+
+  void setVisualFieldResult(VisualFieldResult result) {
+    _visualField = result;
+    notifyListeners();
+    debugPrint(
+      '… [TestSessionProvider] Visual Field result saved: ${result.overallSensitivity}',
     );
   }
 
@@ -260,6 +272,7 @@ class TestSessionProvider extends ChangeNotifier {
       shadowTest: _shadowTestResult,
       stereopsis: _stereopsis,
       eyeHydration: _eyeHydration,
+      visualField: _visualField,
     );
   }
 
@@ -305,6 +318,7 @@ class TestSessionProvider extends ChangeNotifier {
     // Stereopsis
     final hasStereopsis = _stereopsis != null;
     final hasEyeHydration = _eyeHydration != null;
+    final hasVisualField = _visualField != null;
 
     return hasVA ||
         hasColorVision ||
@@ -314,7 +328,8 @@ class TestSessionProvider extends ChangeNotifier {
         hasRefractometry ||
         hasShadowTest ||
         hasStereopsis ||
-        hasEyeHydration;
+        hasEyeHydration ||
+        hasVisualField;
   }
 
   /// Get test duration in seconds
@@ -362,6 +377,7 @@ class TestSessionProvider extends ChangeNotifier {
       shadowTest: _shadowTestResult,
       stereopsis: _stereopsis,
       eyeHydration: _eyeHydration,
+      visualField: _visualField,
       refractionPrescription: _refractionPrescription,
       overallStatus: getOverallStatus(),
       recommendation: getRecommendation(),
@@ -423,6 +439,7 @@ class TestSessionProvider extends ChangeNotifier {
     _shadowTestResult = null;
     _stereopsis = null;
     _eyeHydration = null;
+    _visualField = null;
     _refractionPrescription = null;
     notifyListeners();
   }

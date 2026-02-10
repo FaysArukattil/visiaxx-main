@@ -66,6 +66,7 @@ class AppColors {
   static const Color distanceOk = Color(0xFF34C759);
   static const Color distanceWarning = Color(0xFFFF9500);
   static const Color distanceError = Color(0xFFFF3B30);
+  static const Color visualFieldColor = Color(0xFF5856D6);
 
   // Gradient Colors
   static const List<Color> primaryGradient = [

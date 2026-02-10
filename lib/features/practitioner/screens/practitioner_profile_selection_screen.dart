@@ -463,6 +463,9 @@ class _PractitionerProfileSelectionScreenState
         case 'eye_hydration':
           route = '/eye-hydration-test-intro';
           break;
+        case 'visual_field':
+          route = '/visual-field-test-intro';
+          break;
         default:
           route = '/home'; // Safeguard
       }
