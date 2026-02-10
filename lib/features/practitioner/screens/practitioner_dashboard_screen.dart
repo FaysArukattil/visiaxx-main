@@ -3963,7 +3963,8 @@ class _PractitionerDashboardScreenState
         result.eyeHydration != null ||
         result.visualFieldRight != null ||
         result.visualFieldLeft != null ||
-        result.visualField != null;
+        result.visualField != null ||
+        result.coverTest != null;
 
     if (!hasVA && !hasRefraction && !hasOthers) return const SizedBox.shrink();
 
@@ -4299,6 +4300,32 @@ class _PractitionerDashboardScreenState
                               result.visualField!,
                             ),
                           ),
+                      ],
+                    ),
+                  ],
+
+                  // Cover-Uncover Test - Per Eye
+                  if (result.coverTest != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Right Eye Alignment
+                        _buildDiagnosticItem(
+                          'ALIGNMENT (RIGHT)',
+                          result.coverTest!.rightEyeStatus.label.toUpperCase(),
+                          icon: Icons.visibility_rounded,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: context.primary.withValues(alpha: 0.15),
+                        ),
+                        // Left Eye Alignment
+                        _buildDiagnosticItem(
+                          'ALIGNMENT (LEFT)',
+                          result.coverTest!.leftEyeStatus.label.toUpperCase(),
+                          icon: Icons.visibility_rounded,
+                        ),
                       ],
                     ),
                   ],

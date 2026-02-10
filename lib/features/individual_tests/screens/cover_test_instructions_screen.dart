@@ -7,7 +7,6 @@ import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../data/providers/test_session_provider.dart';
 import 'cover_test_screen.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../quick_vision_test/widgets/instruction_animations.dart';
 
 class CoverTestInstructionsScreen extends StatefulWidget {
   const CoverTestInstructionsScreen({super.key});
@@ -21,19 +20,17 @@ class _CoverTestInstructionsScreenState
     extends State<CoverTestInstructionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 3;
+  final int _totalPages = 2;
   final TtsService _ttsService = TtsService();
 
   final List<String> _stepTitles = [
-    'Binocular Vision',
+    'Test Overview & Setup',
     'Clinical Procedure',
-    'Positioning',
   ];
 
   final List<String> _ttsMessages = [
-    'The cover-uncover test assesses eye alignment to detect strabismus or latent deviations.',
-    'You will observe the patient\'s eyes through the camera as you cover and uncover each eye in four distinct steps.',
-    'Ensure the patient is comfortably positioned and the face is clearly visible in the camera frame.',
+    'The cover-uncover test assesses eye alignment. Hold the device at eye level and ensure the face is centered.',
+    'Follow the prompts to cover and uncover each eye. Observe any eye movement carefully.',
   ];
 
   @override
@@ -137,8 +134,8 @@ class _CoverTestInstructionsScreenState
                         _buildStep(
                           0,
                           Icons.visibility_rounded,
-                          'Eye Alignment',
-                          'This test detects manifest (tropia) and latent (phoria) deviations by observing eye movement during the cover/uncover process.',
+                          'Overview & Setup',
+                          'This test detects eye deviations. Hold the device steady at eye level and ensure the patient\'s face is well-lit and centered.',
                           context.primary,
                           animation: _AlignmentAnimation(
                             height: isLandscape ? 170 : 240,
@@ -152,17 +149,6 @@ class _CoverTestInstructionsScreenState
                           context.warning,
                           animation: _CoverProcedureAnimation(
                             height: isLandscape ? 170 : 240,
-                          ),
-                        ),
-                        _buildStep(
-                          2,
-                          Icons.camera_front_rounded,
-                          'Camera Positioning',
-                          'Hold the device steady at eye level. Ensure the patient\'s face is well-lit and centered within the guide markers.',
-                          context.success,
-                          animation: DistanceAnimation(
-                            isCompact: isLandscape,
-                            distanceText: 'Eye Level',
                           ),
                         ),
                       ],

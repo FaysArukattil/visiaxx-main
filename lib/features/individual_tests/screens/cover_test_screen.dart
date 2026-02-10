@@ -6,7 +6,7 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/cover_test_provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/cover_test_result.dart';
-import 'cover_test_result_screen.dart';
+import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 
 class CoverTestScreen extends StatefulWidget {
   const CoverTestScreen({super.key});
@@ -168,7 +168,11 @@ class _CoverTestScreenState extends State<CoverTestScreen>
   Widget _buildCurrentState(CoverTestProvider provider) {
     switch (provider.currentStep) {
       case CoverTestStep.instructions:
-        return _buildInstructions(provider);
+        // Auto-start since we already came from the instructions screen
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          provider.startTest();
+        });
+        return Center(child: CircularProgressIndicator(color: context.primary));
       case CoverTestStep.result:
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final sessionProvider = Provider.of<TestSessionProvider>(
@@ -179,10 +183,14 @@ class _CoverTestScreenState extends State<CoverTestScreen>
             sessionProvider.profileId,
             sessionProvider.profileName,
           );
+
+          // Save to TestSessionProvider
+          sessionProvider.setCoverTestResult(result);
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => CoverTestResultScreen(result: result),
+              builder: (context) => const QuickTestResultScreen(),
             ),
           );
         });
@@ -190,96 +198,6 @@ class _CoverTestScreenState extends State<CoverTestScreen>
       default:
         return _buildTestPhase(provider);
     }
-  }
-
-  Widget _buildInstructions(CoverTestProvider provider) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(Icons.info_outline, color: context.primary),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'How to perform this test',
-            style: TextStyle(
-              color: context.textPrimary,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _instructionItem(
-            Icons.camera_alt_outlined,
-            'The back camera will be used to observe the patient\'s eyes.',
-          ),
-          _instructionItem(
-            Icons.flash_on_outlined,
-            'Use the flash icon in the top right if more light is needed.',
-          ),
-          _instructionItem(
-            Icons.visibility_outlined,
-            'Observe the movement of either the covered or uncovered eye as guided.',
-          ),
-          _instructionItem(
-            Icons.touch_app_outlined,
-            'Record your clinical observation after each step.',
-          ),
-          const Flexible(child: SizedBox(height: 24)),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: provider.startTest,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                'Start Assessment',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1),
-    );
-  }
-
-  Widget _instructionItem(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: context.textSecondary, size: 20),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: context.textSecondary,
-                fontSize: 15,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildTestPhase(CoverTestProvider provider) {

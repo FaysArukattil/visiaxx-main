@@ -65,7 +65,6 @@ import 'features/individual_tests/screens/visual_field_instructions_screen.dart'
 import 'features/individual_tests/screens/visual_field_test_screen.dart';
 import 'features/individual_tests/screens/cover_test_instructions_screen.dart';
 import 'features/individual_tests/screens/cover_test_screen.dart';
-import 'features/individual_tests/screens/cover_test_result_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -342,12 +341,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/cover-test-intro': (context) =>
                   const CoverTestInstructionsScreen(),
               '/cover-test-screen': (context) => const CoverTestScreen(),
-              '/cover-test-result': (context) {
-                final args =
-                    ModalRoute.of(context)?.settings.arguments
-                        as Map<String, dynamic>;
-                return CoverTestResultScreen(result: args['result']);
-              },
+              '/cover-test-result': (context) => const QuickTestResultScreen(),
             },
           );
         },
