@@ -61,11 +61,11 @@ class EyeHydrationProvider extends ChangeNotifier {
   }
 
   final List<String> readingContent = [
-    "The World of Ancient Discoveries",
-    "Archaeology is the study of human activity through the recovery and analysis of material culture. The archaeological record consists of artifacts, architecture, biofacts or ecofacts and cultural landscapes.",
-    "Ancient civilizations often left behind complex structures that tell stories of their daily lives, beliefs, and social hierarchies. From the pyramids of Giza to the Terracotta Army in China, these discoveries provide a window into the past.",
-    "Modern technology, such as LiDAR and ground-penetrating radar, has revolutionized how archaeologists find and map historical sites without disturbing the earth. This helps preserve the sites for future generations.",
-    "Understanding our history helps us appreciate the journey of humanity and the different cultures that have shaped our world today. It reminds us that while technology changes, human nature remains remarkably consistent across millennia.",
+    "The Wonders of Our Digital World",
+    "Technology has changed the way we live and work. We use our smartphones and computers for almost everything. While these tools make our lives easier, it is important to take care of our eyes.",
+    "When we look at screens for a long time, we often forget to blink. This can make our eyes feel tired or dry. Taking small breaks every twenty minutes is a great way to stay fresh.",
+    "Spending time outdoors and looking at distant objects also helps. Natural light is good for our overall health. Balance is the key to enjoying all the benefits of the digital age.",
+    "Remember to stay hydrated and get enough sleep. Tiny habits like these make a big difference in how we feel. Your eyes are precious, so give them the rest they deserve today.",
   ];
 
   Future<void> startTest(CameraController controller) async {
@@ -76,6 +76,7 @@ class EyeHydrationProvider extends ChangeNotifier {
     _finalResult = null;
     _inBlinkState = false;
     _lastBlinkTime = null;
+    _isProcessing = false;
 
     _startImageStream();
     notifyListeners();

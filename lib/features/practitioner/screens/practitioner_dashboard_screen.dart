@@ -448,8 +448,8 @@ class _PractitionerDashboardScreenState
       'Macular Issue': <String>{},
       'Vision Impairment': <String>{},
       'Low Contrast Sensitivity': <String>{},
-      'Dryness Risk': <String>{},
-      'Blink Monitoring': <String>{},
+      'Urgent Consultation': <String>{},
+      'Monitoring Advised': <String>{},
     };
     final uniquePatients = <String>{};
 
@@ -556,9 +556,9 @@ class _PractitionerDashboardScreenState
 
     if (result.eyeHydration != null) {
       if (result.eyeHydration!.status == EyeHydrationStatus.dryness) {
-        conditions.add('Dryness Risk');
+        conditions.add('Urgent Consultation');
       } else if (result.eyeHydration!.status == EyeHydrationStatus.suspicious) {
-        conditions.add('Blink Monitoring');
+        conditions.add('Monitoring Advised');
       }
     }
 
@@ -3408,6 +3408,10 @@ class _PractitionerDashboardScreenState
         return const Color(0xFF607D8B); // Blue Grey
       case 'Low Contrast Sensitivity':
         return const Color(0xFF3F51B5); // Indigo
+      case 'Urgent Consultation':
+        return const Color(0xFFF44336); // Red
+      case 'Monitoring Advised':
+        return const Color(0xFFFF9800); // Orange
       default:
         return context.primary;
     }
@@ -3948,7 +3952,8 @@ class _PractitionerDashboardScreenState
         result.amslerGridRight != null ||
         result.amslerGridLeft != null ||
         result.shadowTest != null ||
-        result.stereopsis != null;
+        result.stereopsis != null ||
+        result.eyeHydration != null;
 
     if (!hasVA && !hasRefraction && !hasOthers) return const SizedBox.shrink();
 
@@ -4087,7 +4092,10 @@ class _PractitionerDashboardScreenState
                     ),
                     if (result.pelliRobson != null ||
                         result.amslerGridRight != null ||
-                        result.amslerGridLeft != null)
+                        result.amslerGridLeft != null ||
+                        result.shadowTest != null ||
+                        result.stereopsis != null ||
+                        result.eyeHydration != null)
                       const SizedBox(height: 8),
                   ],
                   // Contrast Sensitivity - Per Eye
@@ -4118,7 +4126,10 @@ class _PractitionerDashboardScreenState
                       ],
                     ),
                     if (result.amslerGridRight != null ||
-                        result.amslerGridLeft != null)
+                        result.amslerGridLeft != null ||
+                        result.shadowTest != null ||
+                        result.stereopsis != null ||
+                        result.eyeHydration != null)
                       const SizedBox(height: 8),
                   ],
                   // Amsler Grid - Per Eye
@@ -4153,7 +4164,10 @@ class _PractitionerDashboardScreenState
                           ),
                       ],
                     ),
-                    if (result.shadowTest != null) const SizedBox(height: 8),
+                    if (result.shadowTest != null ||
+                        result.stereopsis != null ||
+                        result.eyeHydration != null)
+                      const SizedBox(height: 8),
                   ],
                   // Shadow Test - Per Eye
                   if (result.shadowTest != null) ...[
@@ -4180,7 +4194,9 @@ class _PractitionerDashboardScreenState
                         ),
                       ],
                     ),
-                    if (result.stereopsis != null) const SizedBox(height: 8),
+                    if (result.stereopsis != null ||
+                        result.eyeHydration != null)
+                      const SizedBox(height: 8),
                   ],
                   // Stereopsis Test
                   if (result.stereopsis != null) ...[
@@ -4200,6 +4216,29 @@ class _PractitionerDashboardScreenState
                           'STEREO SCORE',
                           '${result.stereopsis!.score}/${result.stereopsis!.totalRounds}',
                           icon: Icons.stars_rounded,
+                        ),
+                      ],
+                    ),
+                    if (result.eyeHydration != null) const SizedBox(height: 8),
+                  ],
+                  // Eye Hydration Test
+                  if (result.eyeHydration != null) ...[
+                    Row(
+                      children: [
+                        _buildDiagnosticItem(
+                          'BLINK RATE',
+                          '${result.eyeHydration!.averageBlinksPerMinute.toStringAsFixed(1)} BPM',
+                          icon: Icons.opacity_rounded,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: context.primary.withValues(alpha: 0.15),
+                        ),
+                        _buildDiagnosticItem(
+                          'STATUS',
+                          result.eyeHydration!.status.label.toUpperCase(),
+                          icon: Icons.health_and_safety_rounded,
                         ),
                       ],
                     ),

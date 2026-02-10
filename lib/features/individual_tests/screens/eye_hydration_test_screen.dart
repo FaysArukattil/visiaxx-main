@@ -11,7 +11,8 @@ import '../../quick_vision_test/screens/distance_calibration_screen.dart';
 import '../widgets/eye_blink_animation.dart';
 
 class EyeHydrationTestScreen extends StatefulWidget {
-  const EyeHydrationTestScreen({super.key});
+  final bool skipCalibration;
+  const EyeHydrationTestScreen({super.key, this.skipCalibration = false});
 
   @override
   State<EyeHydrationTestScreen> createState() => _EyeHydrationTestScreenState();
@@ -25,11 +26,18 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
   @override
   void initState() {
     super.initState();
+    _showDistanceCalibration = !widget.skipCalibration;
 
     // Do NOT initialize camera here if showing distance calibration
     // It will be initialized in _onCalibrationComplete
     if (!_showDistanceCalibration) {
-      _initializeCamera();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _initializeCamera().then((_) {
+          if (mounted && _controller != null) {
+            context.read<EyeHydrationProvider>().startTest(_controller!);
+          }
+        });
+      });
     }
   }
 
@@ -75,7 +83,8 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => const EyeHydrationTestScreen(),
+                builder: (context) =>
+                    const EyeHydrationTestScreen(skipCalibration: true),
               ),
             );
           },
@@ -162,8 +171,9 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
 
     return Column(
       children: [
-        _buildAnimationHeader(provider),
-        _buildBlinkCounterPremium(provider),
+        _buildAnimationHeader(provider, size: 70),
+        const SizedBox(height: 12),
+        _buildBlinkCounterPremium(provider, isCompact: true),
         _buildDetectionWarning(provider),
         Expanded(child: _buildReadingContent(provider)),
         _buildActionButtons(provider),
@@ -185,7 +195,7 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
               Expanded(flex: 5, child: _buildReadingContent(provider)),
               // Sidebar with controls and feedback
               Container(
-                width: 220,
+                width: 180,
                 decoration: BoxDecoration(
                   color: context.cardColor,
                   border: Border(
@@ -277,11 +287,11 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
 
   Widget _buildReadingContent(EyeHydrationProvider provider) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.cardColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: context.dividerColor.withValues(alpha: 0.1)),
       ),
       child: SingleChildScrollView(
@@ -305,9 +315,9 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
                     child: Text(
                       para,
                       style: TextStyle(
-                        fontSize: 17,
+                        fontSize: 18,
                         color: context.textSecondary,
-                        height: 1.6,
+                        height: 1.5,
                       ),
                     ),
                   ),

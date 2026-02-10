@@ -300,6 +300,12 @@ class TestResultModel {
       return TestStatus.urgent;
     }
 
+    // Urgent if: Eye hydration is very low (dryness risk)
+    if (eyeHydration != null &&
+        eyeHydration.status == EyeHydrationStatus.dryness) {
+      return TestStatus.urgent;
+    }
+
     // Check for REVIEW conditions (moderate concerns)
     // Review if: Any Amsler distortions (but not urgent level)
     if ((amslerRight?.hasDistortions ?? false) ||
@@ -329,12 +335,6 @@ class TestResultModel {
 
     // Review if: Stereopsis is absent
     if (stereopsis != null && !stereopsis.stereopsisPresent) {
-      return TestStatus.review;
-    }
-
-    // Review if: Eye hydration is low
-    if (eyeHydration != null &&
-        eyeHydration.status == EyeHydrationStatus.dryness) {
       return TestStatus.review;
     }
 

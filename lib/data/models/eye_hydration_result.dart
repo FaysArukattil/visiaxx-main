@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 enum EyeHydrationStatus {
   normal('Normal', 'Healthy blink rate and eye hydration levels.'),
   dryness(
-    'Potential Dryness',
-    'Low blink rate and excessive staring detected.',
+    'Urgent Consultation',
+    'Low blink rate and excessive staring detected. Screen break and eye care consultation required.',
   ),
   suspicious(
     'Monitoring Advised',
