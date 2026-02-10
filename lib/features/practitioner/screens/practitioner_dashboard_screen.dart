@@ -25,6 +25,7 @@ import '../../../data/models/patient_model.dart';
 import '../../../data/models/color_vision_result.dart';
 import '../../../data/models/mobile_refractometry_result.dart';
 import '../../../data/models/eye_hydration_result.dart';
+import '../../../data/models/visual_field_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
@@ -3953,7 +3954,10 @@ class _PractitionerDashboardScreenState
         result.amslerGridLeft != null ||
         result.shadowTest != null ||
         result.stereopsis != null ||
-        result.eyeHydration != null;
+        result.eyeHydration != null ||
+        result.visualFieldRight != null ||
+        result.visualFieldLeft != null ||
+        result.visualField != null;
 
     if (!hasVA && !hasRefraction && !hasOthers) return const SizedBox.shrink();
 
@@ -4243,6 +4247,55 @@ class _PractitionerDashboardScreenState
                       ],
                     ),
                   ],
+                  // Visual Field Assessment - Per Eye
+                  if (result.visualFieldRight != null ||
+                      result.visualFieldLeft != null ||
+                      result.visualField != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Right Eye Visual Field
+                        if (result.visualFieldRight != null)
+                          _buildDiagnosticItem(
+                            'V.FIELD (RIGHT)',
+                            '${(result.visualFieldRight!.overallSensitivity * 100).toStringAsFixed(0)}% SENSIT.',
+                            icon: Icons.track_changes_rounded,
+                            extra: _buildDashboardQuadrantDetails(
+                              result.visualFieldRight!,
+                            ),
+                          ),
+                        if (result.visualFieldRight != null &&
+                            result.visualFieldLeft != null)
+                          Container(
+                            width: 1,
+                            height: 60,
+                            color: context.primary.withValues(alpha: 0.15),
+                          ),
+                        // Left Eye Visual Field
+                        if (result.visualFieldLeft != null)
+                          _buildDiagnosticItem(
+                            'V.FIELD (LEFT)',
+                            '${(result.visualFieldLeft!.overallSensitivity * 100).toStringAsFixed(0)}% SENSIT.',
+                            icon: Icons.track_changes_rounded,
+                            extra: _buildDashboardQuadrantDetails(
+                              result.visualFieldLeft!,
+                            ),
+                          ),
+                        // Old format/Overall fallback
+                        if (result.visualField != null &&
+                            result.visualFieldRight == null &&
+                            result.visualFieldLeft == null)
+                          _buildDiagnosticItem(
+                            'PERIPHERAL FIELD',
+                            '${(result.visualField!.overallSensitivity * 100).toStringAsFixed(0)}% SENSITIVITY',
+                            icon: Icons.track_changes_rounded,
+                            extra: _buildDashboardQuadrantDetails(
+                              result.visualField!,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -4251,7 +4304,12 @@ class _PractitionerDashboardScreenState
     );
   }
 
-  Widget _buildDiagnosticItem(String label, String? value, {IconData? icon}) {
+  Widget _buildDiagnosticItem(
+    String label,
+    String? value, {
+    IconData? icon,
+    Widget? extra,
+  }) {
     return Expanded(
       child: Column(
         children: [
@@ -4272,14 +4330,14 @@ class _PractitionerDashboardScreenState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 10, color: context.primary),
+                Icon(icon, size: 14, color: context.primary),
                 const SizedBox(width: 4),
               ],
               Flexible(
                 child: Text(
                   value ?? 'N/A',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w900,
                     color: context.textPrimary,
                   ),
@@ -4290,7 +4348,78 @@ class _PractitionerDashboardScreenState
               ),
             ],
           ),
+          if (extra != null) ...[const SizedBox(height: 6), extra],
         ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardQuadrantDetails(VisualFieldResult result) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            _buildMiniQuadrant(
+              'U.T',
+              result.quadrantSensitivity[VisualFieldQuadrant.topRight] ?? 0,
+            ),
+            const SizedBox(width: 4),
+            _buildMiniQuadrant(
+              'U.N',
+              result.quadrantSensitivity[VisualFieldQuadrant.topLeft] ?? 0,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            _buildMiniQuadrant(
+              'L.T',
+              result.quadrantSensitivity[VisualFieldQuadrant.bottomRight] ?? 0,
+            ),
+            const SizedBox(width: 4),
+            _buildMiniQuadrant(
+              'L.N',
+              result.quadrantSensitivity[VisualFieldQuadrant.bottomLeft] ?? 0,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMiniQuadrant(String label, double value) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        decoration: BoxDecoration(
+          color: context.primary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: context.primary.withValues(alpha: 0.1),
+            width: 0.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 7,
+                fontWeight: FontWeight.w900,
+                color: context.textSecondary,
+              ),
+            ),
+            Text(
+              '${(value * 100).toStringAsFixed(0)}%',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                color: context.textPrimary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
