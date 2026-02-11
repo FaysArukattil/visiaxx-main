@@ -24,6 +24,21 @@ class CoverTestProvider extends ChangeNotifier {
   bool get isRecording => _isRecording;
   String? get currentVideoPath => _currentVideoPath;
 
+  String get currentPhaseLabel {
+    switch (_currentStep) {
+      case CoverTestStep.coverRight:
+        return 'Covering Right Eye';
+      case CoverTestStep.uncoverRight:
+        return 'Uncovering Right Eye';
+      case CoverTestStep.coverLeft:
+        return 'Covering Left Eye';
+      case CoverTestStep.uncoverLeft:
+        return 'Uncovering Left Eye';
+      default:
+        return '';
+    }
+  }
+
   void startTest() {
     _currentStep = CoverTestStep.coverRight;
     _observations.clear();
@@ -36,9 +51,12 @@ class CoverTestProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setRecording(bool value, {String? path}) {
+  void setRecording(bool value, {String? path, bool clearPath = false}) {
     _isRecording = value;
-    if (path != null) {
+    if (clearPath) {
+      _currentVideoPath = null;
+      debugPrint('[CoverTest] 📽️ Provider: Video path cleared');
+    } else if (path != null) {
       _currentVideoPath = path;
       debugPrint('[CoverTest] 📽️ Provider: Video path set to $path');
     }

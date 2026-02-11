@@ -108,6 +108,14 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
     }
     if (_cameraController!.value.isRecordingVideo) return;
 
+    // Check if we already have a video for this phase
+    if (provider.currentVideoPath != null) {
+      final confirmed = await _showReRecordingConfirmation(provider);
+      if (!confirmed) return;
+      // Clear existing video before starting new one
+      provider.setRecording(false, clearPath: true);
+    }
+
     // Optimistic UI update
     provider.setRecording(true);
 
@@ -144,6 +152,48 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
         SnackbarUtils.showError(context, 'Failed to start recording');
       }
     }
+  }
+
+  Future<bool> _showReRecordingConfirmation(CoverTestProvider provider) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: context.primary, size: 28),
+            const SizedBox(width: 12),
+            const Text('Overwrite Video?'),
+          ],
+        ),
+        content: Text(
+          'Should this remove the current captured video of ${provider.currentPhaseLabel}?',
+          style: TextStyle(color: context.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Remove & Re-record'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   Future<void> _stopRecording(CoverTestProvider provider) async {
