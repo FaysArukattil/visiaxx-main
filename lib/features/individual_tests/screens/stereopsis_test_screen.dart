@@ -6,6 +6,9 @@ import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../data/providers/stereopsis_provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 
+/// Data class for each stereopsis test image
+// Image class is now in StereopsisProvider
+
 class StereopsisTestScreen extends StatefulWidget {
   const StereopsisTestScreen({super.key});
 
@@ -17,10 +20,9 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
   @override
   void initState() {
     super.initState();
-    // Reset state synchronously before first build
-    context.read<StereopsisProvider>().reset();
-
+    // Defer to avoid setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<StereopsisProvider>().reset();
       context.read<TestSessionProvider>().startIndividualTest('stereopsis');
     });
   }
@@ -32,9 +34,7 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
       builder: (dialogContext) {
         final provider = context.read<TestSessionProvider>();
         return TestExitConfirmationDialog(
-          onContinue: () {
-            // Just close the dialog
-          },
+          onContinue: () {},
           onRestart: () {
             provider.resetKeepProfile();
             context.read<StereopsisProvider>().reset();
@@ -61,7 +61,6 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
     stereopsisProvider.submitAnswer(perceived3D);
 
     if (stereopsisProvider.isTestComplete) {
-      // Store result and navigate to result screen
       final result = stereopsisProvider.createResult();
       sessionProvider.setStereopsisResult(result);
       Navigator.pushReplacementNamed(context, '/quick-test-result');
@@ -77,10 +76,10 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
         _showExitConfirmation();
       },
       child: Scaffold(
-        backgroundColor: Colors.grey.shade900,
+        backgroundColor: Colors.black,
         appBar: AppBar(
           title: const Text('Stereopsis Test'),
-          backgroundColor: Colors.grey.shade900,
+          backgroundColor: Colors.black,
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
@@ -91,13 +90,20 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
         body: SafeArea(
           child: Consumer<StereopsisProvider>(
             builder: (context, provider, child) {
+              if (provider.testImages.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final currentImage = provider.currentImage;
+              final description =
+                  'Image ${provider.currentRound + 1} of ${provider.totalRounds}';
+
               return Column(
                 children: [
                   // Progress indicator
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
-                      vertical: 16,
+                      vertical: 12,
                     ),
                     child: Column(
                       children: [
@@ -105,7 +111,7 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Round ${provider.currentRound + 1} of ${provider.totalRounds}',
+                              description,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -125,7 +131,7 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
                         const SizedBox(height: 8),
                         LinearProgressIndicator(
                           value: provider.progress,
-                          backgroundColor: Colors.grey.shade700,
+                          backgroundColor: Colors.grey.shade800,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             context.primary,
                           ),
@@ -138,35 +144,56 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Text(
-                      'Does this ball appear in 3D?',
+                      'Does this image appear in 3D?',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 18, // Reduced from 20
+                        fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(height: 4), // Reduced from 8
+                  const SizedBox(height: 4),
                   Text(
-                    'Tap the button that matches your perception',
+                    'Look through your red-cyan glasses',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 13, // Reduced from 14
+                      fontSize: 13,
                       fontStyle: FontStyle.italic,
                     ),
                     textAlign: TextAlign.center,
                   ),
 
-                  // Single Circle View
+                  // Anaglyph 3D Image
                   Expanded(
-                    child: Center(
-                      child: provider.is3DInCurrentRound
-                          ? _StereopsisCircle(
-                              arc: provider.currentArc,
-                              hasDepth: true,
-                            )
-                          : const _StereopsisCircle(hasDepth: false),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          currentImage.assetPath,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stack) {
+                            return Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.broken_image_outlined,
+                                    color: Colors.white54,
+                                    size: 64,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Image not found',
+                                    style: TextStyle(color: Colors.white54),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
 
@@ -177,8 +204,8 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
                       children: [
                         Expanded(
                           child: _buildChoiceButton(
-                            label: 'APPEARS FLAT',
-                            icon: Icons.unfold_less_rounded,
+                            label: 'FLAT',
+                            icon: Icons.crop_square_rounded,
                             onPressed: () => _handleAnswer(false),
                             color: Colors.grey.shade700,
                           ),
@@ -186,7 +213,7 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: _buildChoiceButton(
-                            label: 'PERCEIVED 3D',
+                            label: '3D',
                             icon: Icons.view_in_ar_rounded,
                             onPressed: () => _handleAnswer(true),
                             color: context.primary,
@@ -211,135 +238,30 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
     required Color color,
   }) {
     return SizedBox(
-      height: 48, // Further reduced height to prevent overflow
+      height: 48,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
-          padding: EdgeInsets.zero, // Remove internal padding
+          padding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
         child: Row(
-          // Changed from Column to Row for more horizontal space/less vertical
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 18),
+            Icon(icon, size: 20),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
           ],
         ),
       ),
     );
   }
-}
-
-/// Anaglyph circle widget with dynamic 3D depth effect
-class _StereopsisCircle extends StatelessWidget {
-  final bool hasDepth;
-  final int arc;
-
-  const _StereopsisCircle({this.hasDepth = false, this.arc = 400});
-
-  @override
-  Widget build(BuildContext context) {
-    // Aggressive separation for better 3D effect perception
-    // ARC 400 -> 16px, ARC 200 -> 8px, ARC 100 -> 4px, ARC 40 -> 2px
-    final double separation = hasDepth ? (arc / 25.0).clamp(1.5, 20.0) : 0.0;
-
-    return Center(
-      child: CustomPaint(
-        size: const Size(200, 200),
-        painter: _AnaglyphBallPainter(separation: separation),
-      ),
-    );
-  }
-}
-
-class _AnaglyphBallPainter extends CustomPainter {
-  final double separation;
-
-  _AnaglyphBallPainter({required this.separation});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.42;
-
-    // Background shadow
-    if (separation > 2) {
-      final shadowPaint = Paint()
-        ..color = Colors.black.withValues(alpha: 0.5)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 12 + separation);
-      canvas.drawCircle(
-        center + Offset(0, 8 + separation),
-        radius,
-        shadowPaint,
-      );
-    }
-
-    // Save layer to handle blending modes correctly
-    canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
-
-    // 1. Right Eye Layer (Cyan)
-    final cyanPaint = Paint()
-      ..shader =
-          RadialGradient(
-            colors: [
-              const Color(0xFF00FFFF),
-              const Color(0xFF00AAAA),
-              Colors.black,
-            ],
-            stops: const [0.0, 0.7, 1.0],
-            center: const Alignment(-0.35, -0.35),
-          ).createShader(
-            Rect.fromCircle(
-              center: center.translate(-separation, 0),
-              radius: radius,
-            ),
-          );
-    canvas.drawCircle(center.translate(-separation, 0), radius, cyanPaint);
-
-    // 2. Left Eye Layer (Red)
-    final redPaint = Paint()
-      ..blendMode = BlendMode
-          .screen // Combine Red + Cyan -> White highlights
-      ..shader =
-          RadialGradient(
-            colors: [
-              const Color(0xFFFF0000),
-              const Color(0xFFAA0000),
-              Colors.black,
-            ],
-            stops: const [0.0, 0.7, 1.0],
-            center: const Alignment(-0.35, -0.35),
-          ).createShader(
-            Rect.fromCircle(
-              center: center.translate(separation, 0),
-              radius: radius,
-            ),
-          );
-    canvas.drawCircle(center.translate(separation, 0), radius, redPaint);
-
-    canvas.restore();
-
-    // 3. Subtle highlight to unite the layers
-    final highlightPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [Colors.white.withValues(alpha: 0.2), Colors.transparent],
-        stops: const [0.0, 0.6],
-        center: const Alignment(-0.4, -0.4),
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius, highlightPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _AnaglyphBallPainter oldDelegate) =>
-      oldDelegate.separation != separation;
 }

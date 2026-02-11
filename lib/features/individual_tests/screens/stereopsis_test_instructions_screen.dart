@@ -26,13 +26,13 @@ class _StereopsisTestInstructionsScreenState
   final List<String> _stepTitles = [
     'Wear 3D Glasses',
     'Maintain Distance',
-    'Select 3D Ball',
+    'Identify 3D Image',
   ];
 
   final List<String> _ttsMessages = [
     'Please wear the special red and blue anaglyph glasses for this test.',
     'Position yourself at arm\'s length, about 40 centimeters from the screen.',
-    'You will see 4 balls. Select the one you can see in 3D.',
+    'You will see an image. Select if you see it in 3D or if it looks flat.',
   ];
 
   @override
@@ -155,10 +155,10 @@ class _StereopsisTestInstructionsScreenState
                         _buildStep(
                           2,
                           Icons.touch_app_rounded,
-                          'Select the one you can see in 3D',
-                          'You will see 4 balls. ONE will appear to "pop out" in 3D. Tap that ball to respond.',
+                          '3D or Flat?',
+                          'You will see 5 different images. For each one, tap "3D" if you perceive depth, or "FLAT" if it looks like a normal 2D image.',
                           context.success,
-                          animation: _Grid3DBallAnimation(
+                          animation: _StereoImageAnimation(
                             height: isLandscape ? 170 : 240,
                           ),
                         ),
@@ -664,46 +664,32 @@ class _RedBlueGlassesPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// 2x2 Grid of Balls with 3D Effect and Tap Interaction
-class _Grid3DBallAnimation extends StatefulWidget {
+// Animation showing a 3D image selection effect
+class _StereoImageAnimation extends StatefulWidget {
   final double height;
-  const _Grid3DBallAnimation({this.height = 240});
+  const _StereoImageAnimation({this.height = 240});
 
   @override
-  State<_Grid3DBallAnimation> createState() => _Grid3DBallAnimationState();
+  State<_StereoImageAnimation> createState() => _StereoImageAnimationState();
 }
 
-class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
+class _StereoImageAnimationState extends State<_StereoImageAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  int _targetIndex = 0;
-  bool _isTapping = false;
+  late Animation<double> _depthAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
 
-    _controller.addListener(() {
-      final progress = _controller.value;
-      // Cycle target index every 1s
-      final newIndex = (progress * 4).floor();
-      if (newIndex != _targetIndex) {
-        setState(() {
-          _targetIndex = newIndex;
-          _isTapping = false;
-        });
-      }
-
-      // Trigger tap effect in the second half of each second
-      final subProgress = (progress * 4) % 1.0;
-      if (subProgress > 0.5 && !_isTapping) {
-        setState(() => _isTapping = true);
-      }
-    });
+    _depthAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -714,180 +700,129 @@ class _Grid3DBallAnimationState extends State<_Grid3DBallAnimation>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final h = constraints.maxHeight;
-        final ballSize = h * 0.3; // Responsive ball size
-        final spacing = h * 0.1; // Responsive spacing
-
-        return Container(
-          width: double.infinity,
-          height: widget.height,
-          clipBehavior: Clip.hardEdge,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildBall(0, ballSize),
-                      SizedBox(width: spacing),
-                      _buildBall(1, ballSize),
-                    ],
-                  ),
-                  SizedBox(height: spacing),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildBall(2, ballSize),
-                      SizedBox(width: spacing),
-                      _buildBall(3, ballSize),
-                    ],
-                  ),
-                ],
-              ),
-              // Finger animation
-              _buildFinger(ballSize, spacing, constraints),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildBall(int index, double size) {
-    final isTarget = index == _targetIndex;
-    final subProgress = (_controller.value * 4) % 1.0;
-
-    final oscillation = (1.0 - (subProgress - 0.5).abs() * 2);
-    final scale = isTarget ? 1.0 + 0.15 * oscillation : 1.0;
-    final depth = isTarget ? (size * 0.08) * oscillation : 0.0;
-    final shadowBlur = isTarget ? (size * 0.15) * oscillation : 0.0;
-
-    final innerSize = size * 0.6;
-
-    return Transform.scale(
-      scale: scale,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(size * 0.2),
-          border: Border.all(
-            color: isTarget && _isTapping
-                ? AppColors.success
-                : Colors.transparent,
-            width: 2,
-          ),
-          boxShadow: [
-            if (isTarget)
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2 * oscillation),
-                blurRadius: shadowBlur,
-                offset: Offset(0, depth),
-              ),
-          ],
-        ),
-        child: Center(
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Blue layer
-              Transform.translate(
-                offset: Offset(-depth, 0),
-                child: Container(
-                  width: innerSize * 1.1,
-                  height: innerSize * 1.1,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.blue.withValues(alpha: isTarget ? 0.4 : 0.1),
-                  ),
-                ),
-              ),
-              // Red layer
-              Transform.translate(
-                offset: Offset(depth, 0),
-                child: Container(
-                  width: innerSize * 1.1,
-                  height: innerSize * 1.1,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.red.withValues(alpha: isTarget ? 0.4 : 0.1),
-                  ),
-                ),
-              ),
-              // Main ball
-              Container(
-                width: innerSize,
-                height: innerSize,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Colors.grey, Colors.black],
-                    center: Alignment(-0.3, -0.3),
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return Container(
+      width: double.infinity,
+      height: widget.height,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 2,
         ),
       ),
-    );
-  }
-
-  Widget _buildFinger(
-    double ballSize,
-    double spacing,
-    BoxConstraints constraints,
-  ) {
-    final centerX = constraints.maxWidth / 2;
-    final centerY = constraints.maxHeight / 2;
-
-    final row = _targetIndex ~/ 2;
-    final col = _targetIndex % 2;
-
-    // Calculate ball center positions relative to container center
-    final ballTotalSize = ballSize + spacing;
-    final targetX =
-        centerX + (col == 0 ? -ballTotalSize / 2 : ballTotalSize / 2);
-    final targetY =
-        centerY + (row == 0 ? -ballTotalSize / 2 : ballTotalSize / 2);
-
-    final subProgress = (_controller.value * 4) % 1.0;
-    final slideDistance = constraints.maxHeight * 0.4;
-    final currentY = subProgress < 0.5
-        ? targetY + slideDistance * (1.0 - subProgress * 2)
-        : targetY + slideDistance * (subProgress - 0.5) * 2;
-
-    return Positioned(
-      left: targetX + (ballSize * 0.2),
-      top: currentY,
-      child: Transform.rotate(
-        angle: -0.3,
-        child: Icon(
-          Icons.touch_app,
-          size: ballSize * 0.6,
-          color: _isTapping ? AppColors.success : Colors.grey,
-        ),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final depth = _depthAnimation.value;
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // "Image" container
+              Container(
+                width: widget.height * 0.8,
+                height: widget.height * 0.6,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10 * depth,
+                      offset: Offset(0, 5 * depth),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    children: [
+                      // Red shift
+                      Positioned(
+                        left: 2 - (4 * depth),
+                        top: 0,
+                        right: 2 + (4 * depth),
+                        bottom: 0,
+                        child: Container(
+                          color: Colors.red.withValues(alpha: 0.3 * depth),
+                        ),
+                      ),
+                      // Cyan shift
+                      Positioned(
+                        left: 2 + (4 * depth),
+                        top: 0,
+                        right: 2 - (4 * depth),
+                        bottom: 0,
+                        child: Container(
+                          color: Colors.cyan.withValues(alpha: 0.3 * depth),
+                        ),
+                      ),
+                      // "3D" content placeholder (a star)
+                      Center(
+                        child: Icon(
+                          Icons.star_rounded,
+                          size: 60,
+                          color: Colors.amber.withValues(
+                            alpha: 0.5 + (0.5 * depth),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Buttons indicator
+              Positioned(
+                bottom: 12,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: depth < 0.5
+                            ? AppColors.primary
+                            : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'FLAT',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: depth >= 0.5
+                            ? AppColors.primary
+                            : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        '3D',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

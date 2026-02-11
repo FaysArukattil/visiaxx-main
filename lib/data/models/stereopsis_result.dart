@@ -51,10 +51,15 @@ class StereopsisResult {
   double get percentage => totalRounds > 0 ? (score / totalRounds) * 100 : 0;
 
   String get recommendation {
-    if (stereopsisPresent) {
-      return 'Your stereopsis (3D vision) is working! Continue regular eye check-ups to maintain healthy vision.';
+    // If the user achieved the best possible result (40 seconds of arc)
+    if (grade == StereopsisGrade.excellent) {
+      return 'Excellent! Your stereopsis (3D vision) is normal (40 seconds of arc). Continue regular eye check-ups to maintain healthy vision.';
+    } else if (stereopsisPresent) {
+      // User identified some 3D, but not the finest level
+      return 'Normally, more than 40 seconds of arc have some defects. We advise you to take the Cover Eye test or go for an amblyopia test.';
     } else {
-      return 'Please consult an optometrist or ophthalmologist for a comprehensive eye examination. Absent stereopsis can be due to various treatable conditions.';
+      // No stereopsis detected or very poor
+      return 'No stereopsis detected. Please consult an optometrist for a comprehensive eye examination. We strongly advise you to take the Cover Eye test and go for an amblyopia test.';
     }
   }
 

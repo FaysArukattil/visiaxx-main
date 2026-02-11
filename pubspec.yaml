@@ -107,6 +107,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/icons/
+    - assets/images/stereopsis/
     - assets/ishihara_plates/
     - assets/ishihara_plates/Demo/
     - assets/ishihara_plates/Diagnostic/Transformation plates/
