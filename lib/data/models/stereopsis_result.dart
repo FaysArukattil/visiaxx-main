@@ -13,12 +13,19 @@ enum StereopsisGrade {
   const StereopsisGrade(this.label, this.description);
 
   static StereopsisGrade fromScore(int score, int totalRounds) {
-    double percentage = score / totalRounds;
-    if (percentage >= 1.0) return StereopsisGrade.excellent;
-    if (percentage >= 0.8) return StereopsisGrade.good;
-    if (percentage >= 0.6) return StereopsisGrade.fair;
-    if (percentage >= 0.4) return StereopsisGrade.poor;
-    return StereopsisGrade.none;
+    // Map score (out of 4) to specific ARC thresholds
+    switch (score) {
+      case 4:
+        return StereopsisGrade.excellent; // 40 ARC
+      case 3:
+        return StereopsisGrade.good; // 100 ARC
+      case 2:
+        return StereopsisGrade.fair; // 200 ARC
+      case 1:
+        return StereopsisGrade.poor; // 400 ARC
+      default:
+        return StereopsisGrade.none;
+    }
   }
 }
 

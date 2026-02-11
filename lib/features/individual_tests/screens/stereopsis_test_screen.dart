@@ -54,11 +54,11 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
     );
   }
 
-  void _handleAnswer(int selectedIndex) {
+  void _handleAnswer(bool perceived3D) {
     final stereopsisProvider = context.read<StereopsisProvider>();
     final sessionProvider = context.read<TestSessionProvider>();
 
-    stereopsisProvider.submitAnswer(selectedIndex);
+    stereopsisProvider.submitAnswer(perceived3D);
 
     if (stereopsisProvider.isTestComplete) {
       // Store result and navigate to result screen
@@ -138,80 +138,58 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Text(
-                      'Which circle pops out in 3D?',
+                      'Does this ball appear in 3D?',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 20,
+                        fontSize: 18, // Reduced from 20
                         fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4), // Reduced from 8
                   Text(
-                    'Tap the circle that appears to float forward',
+                    'Tap the button that matches your perception',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 14,
+                      fontSize: 13, // Reduced from 14
                       fontStyle: FontStyle.italic,
                     ),
                     textAlign: TextAlign.center,
                   ),
 
-                  // Circle grid
+                  // Single Circle View
                   Expanded(
                     child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 30,
-                                mainAxisSpacing: 30,
-                              ),
-                          itemCount: 4,
-                          itemBuilder: (context, index) {
-                            return GestureDetector(
-                              onTap: () => _handleAnswer(index),
-                              child: _StereopsisCircle(
-                                hasDepth: index == provider.correctIndex,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      child: provider.is3DInCurrentRound
+                          ? _StereopsisCircle(
+                              arc: provider.currentArc,
+                              hasDepth: true,
+                            )
+                          : const _StereopsisCircle(hasDepth: false),
                     ),
                   ),
 
-                  // Note
-                  Container(
-                    margin: const EdgeInsets.all(16),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.amber.withValues(alpha: 0.5),
-                      ),
-                    ),
+                  // Choice Buttons
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: Colors.amber,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            'Make sure you are wearing the red-cyan glasses',
-                            style: TextStyle(
-                              color: Colors.amber.shade100,
-                              fontSize: 13,
-                            ),
+                          child: _buildChoiceButton(
+                            label: 'APPEARS FLAT',
+                            icon: Icons.unfold_less_rounded,
+                            onPressed: () => _handleAnswer(false),
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildChoiceButton(
+                            label: 'PERCEIVED 3D',
+                            icon: Icons.view_in_ar_rounded,
+                            onPressed: () => _handleAnswer(true),
+                            color: context.primary,
                           ),
                         ),
                       ],
@@ -225,146 +203,143 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
       ),
     );
   }
+
+  Widget _buildChoiceButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+    required Color color,
+  }) {
+    return SizedBox(
+      height: 48, // Further reduced height to prevent overflow
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.zero, // Remove internal padding
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+        child: Row(
+          // Changed from Column to Row for more horizontal space/less vertical
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-/// Anaglyph circle widget with 3D depth effect
+/// Anaglyph circle widget with dynamic 3D depth effect
 class _StereopsisCircle extends StatelessWidget {
   final bool hasDepth;
+  final int arc;
 
-  const _StereopsisCircle({required this.hasDepth});
+  const _StereopsisCircle({this.hasDepth = false, this.arc = 400});
 
   @override
   Widget build(BuildContext context) {
-    final double separation = hasDepth ? 8.0 : 1.5;
+    // Aggressive separation for better 3D effect perception
+    // ARC 400 -> 16px, ARC 200 -> 8px, ARC 100 -> 4px, ARC 40 -> 2px
+    final double separation = hasDepth ? (arc / 25.0).clamp(1.5, 20.0) : 0.0;
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Background shadow for depth effect
-        if (hasDepth)
-          Container(
-            width: 130,
-            height: 130,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 25,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-          ),
-
-        // Cyan layer (for right eye)
-        Transform.translate(
-          offset: Offset(-separation, -separation / 2),
-          child: Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(
-                0xFF00FFFF,
-              ).withValues(alpha: hasDepth ? 0.7 : 0.3),
-              boxShadow: hasDepth
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF00FFFF).withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
-            ),
-          ),
-        ),
-
-        // Red layer (for left eye)
-        Transform.translate(
-          offset: Offset(separation, separation / 2),
-          child: Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(
-                0xFFFF0000,
-              ).withValues(alpha: hasDepth ? 0.7 : 0.3),
-              boxShadow: hasDepth
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFFFF0000).withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
-            ),
-          ),
-        ),
-
-        // Main circle
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                Colors.grey.shade400,
-                Colors.grey.shade800,
-                Colors.black,
-              ],
-              stops: const [0.0, 0.7, 1.0],
-              center: const Alignment(-0.35, -0.35),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-        ),
-
-        // Specular highlight
-        Positioned(
-          top: 15,
-          left: 15,
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  Colors.white.withValues(alpha: 0.9),
-                  Colors.white.withValues(alpha: 0.2),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.4, 1.0],
-              ),
-            ),
-          ),
-        ),
-
-        // Subtle border
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1,
-            ),
-          ),
-        ),
-      ],
+    return Center(
+      child: CustomPaint(
+        size: const Size(200, 200),
+        painter: _AnaglyphBallPainter(separation: separation),
+      ),
     );
   }
+}
+
+class _AnaglyphBallPainter extends CustomPainter {
+  final double separation;
+
+  _AnaglyphBallPainter({required this.separation});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width * 0.42;
+
+    // Background shadow
+    if (separation > 2) {
+      final shadowPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.5)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 12 + separation);
+      canvas.drawCircle(
+        center + Offset(0, 8 + separation),
+        radius,
+        shadowPaint,
+      );
+    }
+
+    // Save layer to handle blending modes correctly
+    canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
+
+    // 1. Right Eye Layer (Cyan)
+    final cyanPaint = Paint()
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFF00FFFF),
+              const Color(0xFF00AAAA),
+              Colors.black,
+            ],
+            stops: const [0.0, 0.7, 1.0],
+            center: const Alignment(-0.35, -0.35),
+          ).createShader(
+            Rect.fromCircle(
+              center: center.translate(-separation, 0),
+              radius: radius,
+            ),
+          );
+    canvas.drawCircle(center.translate(-separation, 0), radius, cyanPaint);
+
+    // 2. Left Eye Layer (Red)
+    final redPaint = Paint()
+      ..blendMode = BlendMode
+          .screen // Combine Red + Cyan -> White highlights
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFFFF0000),
+              const Color(0xFFAA0000),
+              Colors.black,
+            ],
+            stops: const [0.0, 0.7, 1.0],
+            center: const Alignment(-0.35, -0.35),
+          ).createShader(
+            Rect.fromCircle(
+              center: center.translate(separation, 0),
+              radius: radius,
+            ),
+          );
+    canvas.drawCircle(center.translate(separation, 0), radius, redPaint);
+
+    canvas.restore();
+
+    // 3. Subtle highlight to unite the layers
+    final highlightPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [Colors.white.withValues(alpha: 0.2), Colors.transparent],
+        stops: const [0.0, 0.6],
+        center: const Alignment(-0.4, -0.4),
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawCircle(center, radius, highlightPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AnaglyphBallPainter oldDelegate) =>
+      oldDelegate.separation != separation;
 }

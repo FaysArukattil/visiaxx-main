@@ -606,7 +606,7 @@ class _RedBlueGlassesPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final framePaint = Paint()
       ..color = Colors.black
-      ..strokeWidth = 3
+      ..strokeWidth = size.height * 0.08
       ..style = PaintingStyle.stroke;
 
     final redLensPaint = Paint()
@@ -617,22 +617,47 @@ class _RedBlueGlassesPainter extends CustomPainter {
       ..color = Colors.blue.withValues(alpha: 0.5)
       ..style = PaintingStyle.fill;
 
-    // Left lens (RED)
-    final leftLens = Rect.fromLTWH(10, 5, 35, 30);
+    const double lensWidthFactor = 0.35;
+    const double lensHeightFactor = 0.8;
+    final double lensW = size.width * lensWidthFactor;
+    final double lensH = size.height * lensHeightFactor;
+
+    // Left lens (RED) - Center at ~29.2% of width (aligned with 0.25 face offset)
+    final leftLens = Rect.fromCenter(
+      center: Offset(size.width * 0.2916, size.height * 0.5),
+      width: lensW,
+      height: lensH,
+    );
     canvas.drawRect(leftLens, redLensPaint);
     canvas.drawRect(leftLens, framePaint);
 
-    // Right lens (BLUE)
-    final rightLens = Rect.fromLTWH(75, 5, 35, 30);
+    // Right lens (BLUE) - Center at ~70.8% of width (aligned with 0.75 face offset)
+    final rightLens = Rect.fromCenter(
+      center: Offset(size.width * 0.7083, size.height * 0.5),
+      width: lensW,
+      height: lensH,
+    );
     canvas.drawRect(rightLens, blueLensPaint);
     canvas.drawRect(rightLens, framePaint);
 
     // Bridge
-    canvas.drawLine(const Offset(45, 20), const Offset(75, 20), framePaint);
+    canvas.drawLine(
+      Offset(size.width * 0.475, size.height * 0.5),
+      Offset(size.width * 0.525, size.height * 0.5),
+      framePaint,
+    );
 
     // Arms
-    canvas.drawLine(const Offset(10, 20), const Offset(0, 15), framePaint);
-    canvas.drawLine(const Offset(110, 20), const Offset(120, 15), framePaint);
+    canvas.drawLine(
+      Offset(leftLens.left, size.height * 0.5),
+      Offset(0, size.height * 0.4),
+      framePaint,
+    );
+    canvas.drawLine(
+      Offset(rightLens.right, size.height * 0.5),
+      Offset(size.width, size.height * 0.4),
+      framePaint,
+    );
   }
 
   @override
