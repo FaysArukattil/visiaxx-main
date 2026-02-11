@@ -4210,50 +4210,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       child: Row(
         children: observations.map((obs) {
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
               onTap: () =>
                   _showZoomedVideo(obs.videoPath, obs.videoUrl, obs.phase),
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: context.primary.withValues(alpha: 0.3),
-                  ),
-                  color: context.primary.withValues(alpha: 0.05),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      Icons.videocam_rounded,
-                      color: context.primary,
-                      size: 30,
-                    ),
-                    Positioned(
-                      bottom: 4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          obs.phase.split(' ').last,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: _LoopingVideoPreview(
+                videoPath: obs.videoPath,
+                videoUrl: obs.videoUrl,
+                label: obs.phase,
               ),
             ),
           );
@@ -4263,10 +4227,179 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   void _showZoomedVideo(String? localPath, String? awsUrl, String label) {
-    showDialog(
+    showGeneralDialog(
       context: context,
-      builder: (context) =>
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black87,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) =>
           _VideoZoomDialog(localPath: localPath, awsUrl: awsUrl, label: label),
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+              CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LoopingVideoPreview extends StatefulWidget {
+  final String? videoPath;
+  final String? videoUrl;
+  final String label;
+  final double width;
+  final double height;
+
+  const _LoopingVideoPreview({
+    this.videoPath,
+    this.videoUrl,
+    required this.label,
+    this.width = 100,
+    this.height = 100,
+  });
+
+  @override
+  State<_LoopingVideoPreview> createState() => _LoopingVideoPreviewState();
+}
+
+class _LoopingVideoPreviewState extends State<_LoopingVideoPreview> {
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  bool _initialized = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
+    try {
+      if (widget.videoUrl != null) {
+        _videoPlayerController = VideoPlayerController.networkUrl(
+          Uri.parse(widget.videoUrl!),
+        );
+      } else if (widget.videoPath != null) {
+        _videoPlayerController = VideoPlayerController.file(
+          File(widget.videoPath!),
+        );
+      } else {
+        return;
+      }
+
+      await _videoPlayerController!.initialize();
+      await _videoPlayerController!.setVolume(0);
+      await _videoPlayerController!.setLooping(true);
+      await _videoPlayerController!.play();
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController!,
+        autoPlay: true,
+        looping: true,
+        showControls: false,
+        showOptions: false,
+        allowFullScreen: false,
+        allowMuting: false,
+        aspectRatio: _videoPlayerController!.value.aspectRatio,
+        placeholder: Container(color: Colors.black),
+      );
+
+      setState(() => _initialized = true);
+    } catch (e) {
+      debugPrint('Error initializing video player: $e');
+      setState(() => _error = "Error loading video: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController?.pause();
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: context.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(Icons.error_outline, color: context.error, size: 20),
+      );
+    }
+
+    return Container(
+      width: widget.width,
+      height: widget.height,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (_initialized)
+            SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoPlayerController!.value.size.width,
+                  height: _videoPlayerController!.value.size.height,
+                  child: Chewie(controller: _chewieController!),
+                ),
+              ),
+            )
+          else
+            const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          // Subtle Overlay
+          Positioned(
+            bottom: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                widget.label.split(' ').last.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 7,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -4310,15 +4443,24 @@ class _VideoZoomDialogState extends State<_VideoZoomDialog> {
       }
 
       await _videoPlayerController!.initialize();
+      await _videoPlayerController!.setVolume(
+        0,
+      ); // Muted by default for premium feel
 
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController!,
         autoPlay: true,
-        looping: false,
+        looping: true, // LOOP FOREEVER
         aspectRatio: _videoPlayerController!.value.aspectRatio,
         allowFullScreen: true,
         allowMuting: true,
         showControls: true,
+        materialProgressColors: ChewieProgressColors(
+          playedColor: Theme.of(context).primaryColor,
+          handleColor: Theme.of(context).primaryColor,
+          backgroundColor: Colors.grey.withValues(alpha: 0.5),
+          bufferedColor: Colors.white.withValues(alpha: 0.3),
+        ),
       );
 
       setState(() => _initialized = true);
@@ -4330,6 +4472,7 @@ class _VideoZoomDialogState extends State<_VideoZoomDialog> {
 
   @override
   void dispose() {
+    _videoPlayerController?.pause();
     _videoPlayerController?.dispose();
     _chewieController?.dispose();
     super.dispose();
