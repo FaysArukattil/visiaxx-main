@@ -287,15 +287,10 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
           child: Scaffold(
             backgroundColor: context.scaffoldBackground,
             appBar: AppBar(
-              title: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'Cover-Uncover Test',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
               backgroundColor: Colors.transparent,
               elevation: 0,
+              centerTitle: false,
+              title: _buildAppBarTitle(provider),
               actions: [
                 if (provider.currentStep != CoverTestStep.instructions &&
                     provider.currentStep != CoverTestStep.result)
@@ -322,46 +317,55 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
     );
   }
 
-  Widget _buildProgressIndicator(CoverTestProvider provider) {
+  Widget _buildAppBarTitle(CoverTestProvider provider) {
     if (provider.currentStep == CoverTestStep.instructions ||
         provider.currentStep == CoverTestStep.result) {
-      return const SizedBox.shrink();
+      return const Text(
+        'Cover-Uncover Test',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      );
     }
 
-    final progress = (provider.observations.length) / 4;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Assessment in Progress',
-                style: TextStyle(color: context.textSecondary, fontSize: 12),
-              ),
-              Text(
-                '${(progress * 100).toInt()}%',
-                style: TextStyle(
-                  color: context.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: context.dividerColor.withValues(alpha: 0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(context.primary),
-              minHeight: 6,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(4, (index) {
+        final stepNum = index + 1;
+        final isCompleted = index < provider.observations.length;
+        final isCurrent = index == provider.observations.length;
+
+        return Container(
+          width: 26,
+          height: 26,
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: isCompleted
+                ? context.primary
+                : isCurrent
+                ? context.primary.withValues(alpha: 0.2)
+                : context.dividerColor.withValues(alpha: 0.05),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isCurrent ? context.primary : Colors.transparent,
+              width: 1.5,
             ),
           ),
-        ],
-      ),
-    ).animate().fadeIn();
+          child: Center(
+            child: isCompleted
+                ? Icon(Icons.check, color: context.primary, size: 14)
+                : Text(
+                    '$stepNum',
+                    style: TextStyle(
+                      color: isCurrent
+                          ? context.primary
+                          : context.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+          ),
+        );
+      }),
+    );
   }
 
   Widget _buildCurrentState(CoverTestProvider provider) {
@@ -431,67 +435,9 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
     }
 
     return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         children: [
-          _buildProgressIndicator(provider),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              children: [
-                Text(
-                  instruction,
-                  style: TextStyle(
-                    color: context.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  eyeToObserve,
-                  style: TextStyle(color: context.primary, fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
-                if (provider.currentVideoPath != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.success.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: context.success.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_circle,
-                          color: context.success,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'VIDEO CAPTURED',
-                          style: TextStyle(
-                            color: context.success,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ).animate().fadeIn().scale(),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
           AspectRatio(
             aspectRatio: 3 / 4,
             child: Container(
@@ -541,6 +487,13 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
 
                     // Video Recording UI
                     _buildRecordingOverlay(provider.isRecording),
+
+                    // Instruction Overlay (Compact)
+                    _buildInstructionOverlay(
+                      instruction,
+                      eyeToObserve,
+                      provider.currentVideoPath != null,
+                    ),
                   ],
                 ),
               ),
@@ -620,6 +573,83 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
+      ),
+    );
+  }
+
+  Widget _buildInstructionOverlay(
+    String instruction,
+    String eyeToObserve,
+    bool isCaptured,
+  ) {
+    return Positioned(
+      top: 16,
+      left: 16,
+      right: 16,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  instruction.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  eyeToObserve,
+                  style: TextStyle(
+                    color: context.primary.withValues(alpha: 0.9),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isCaptured) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: context.success.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    'CAPTURED',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn().slideX(begin: -0.2),
+          ],
+        ],
       ),
     );
   }
