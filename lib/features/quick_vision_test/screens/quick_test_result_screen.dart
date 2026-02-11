@@ -2141,13 +2141,18 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       // Check if file already exists
       final String filePath = await _pdfExportService.getExpectedFilePath(
         result,
+        subFolder: 'Single_Reports',
       );
       final File file = File(filePath);
 
       if (await file.exists()) {
         if (mounted) {
           setState(() => _isGeneratingPdf = false);
-          await showDownloadSuccessDialog(context: context, filePath: filePath);
+          await showDownloadSuccessDialog(
+            context: context,
+            filePath: filePath,
+            folderPath: file.parent.path,
+          );
         }
         return;
       }
@@ -2159,7 +2164,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       );
 
       final String generatedPath = await _pdfExportService
-          .generateAndDownloadPdf(result);
+          .generateAndDownloadPdf(result, subFolder: 'Single_Reports');
 
       if (!mounted) return;
       UIUtils.hideProgressDialog(context);
@@ -2168,6 +2173,7 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       await showDownloadSuccessDialog(
         context: context,
         filePath: generatedPath,
+        folderPath: File(generatedPath).parent.path,
       );
     } catch (e) {
       if (mounted) {

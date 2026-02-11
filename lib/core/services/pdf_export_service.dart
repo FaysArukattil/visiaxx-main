@@ -5,8 +5,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
+import 'file_manager_service.dart';
 
 import '../../data/models/test_result_model.dart';
 import '../../data/models/questionnaire_model.dart';
@@ -24,11 +24,10 @@ import '../../data/models/cover_test_result.dart';
 /// Service for generating PDF reports of test results
 class PdfExportService {
   /// Generate and download PDF report to device's Downloads folder
-  /// Generate and download PDF report to device's Downloads folder
-  /// Generate and download PDF report to device's Downloads folder
-  /// Generate and download PDF silently to Downloads folder
-  /// Generate and download PDF report to device's Downloads folder
-  Future<String> generateAndDownloadPdf(TestResultModel result) async {
+  Future<String> generateAndDownloadPdf(
+    TestResultModel result, {
+    String subFolder = 'Single_Reports',
+  }) async {
     try {
       // Generate filename
       final name = result.profileName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
@@ -46,12 +45,16 @@ class PdfExportService {
       );
 
       // Save to Downloads folder
-      final savedPath = await _saveToDownloads(pdfBytes, filename);
+      final savedPath = await _saveToDownloads(
+        pdfBytes,
+        filename,
+        subFolder: subFolder,
+      );
       debugPrint('[PdfExportService] ✅ PDF saved to: $savedPath');
 
       return savedPath;
     } catch (e) {
-      debugPrint('[PdfExportService] Œ Error generating PDF: $e');
+      debugPrint('[PdfExportService] ❌ Error generating PDF: $e');
 
       // Fallback: Save to app documents directory
       try {
@@ -81,67 +84,36 @@ class PdfExportService {
   }
 
   /// Save file to Downloads folder (works on Android & iOS)
-  Future<String> _saveToDownloads(Uint8List bytes, String filename) async {
-    if (Platform.isAndroid) {
-      // Android: Save to public Downloads folder
-      try {
-        // Request storage permission
-        final status = await Permission.storage.request();
+  Future<String> _saveToDownloads(
+    Uint8List bytes,
+    String filename, {
+    String subFolder = 'Single_Reports',
+  }) async {
+    try {
+      // Use FileManagerService to get the correct download directory for the platform
+      final baseDir = await FileManagerService.getDownloadDirectory();
 
-        if (status.isDenied) {
-          debugPrint(
-            '[PdfExportService] Permission denied, trying app directory',
-          );
-          return await _saveToAppDirectory(bytes, filename);
-        }
+      // Build the target directory path: Downloads/Visiaxx_Reports/subFolder
+      // Ensure subFolder doesn't have leading/trailing slashes
+      final normalizedSubFolder = subFolder.replaceAll(
+        RegExp(r'^[/\\]|[/\\]$'),
+        '',
+      );
+      final targetPath = '${baseDir.path}/Visiaxx_Reports/$normalizedSubFolder';
+      final targetDir = Directory(targetPath);
 
-        // Try to save to Downloads folder
-        final downloadsDir = Directory('/storage/emulated/0/Download');
-
-        if (await downloadsDir.exists()) {
-          final file = File('${downloadsDir.path}/$filename');
-          await file.writeAsBytes(bytes);
-          debugPrint('[PdfExportService] ✅ Saved to Downloads: ${file.path}');
-          return file.path;
-        } else {
-          // Try alternate path
-          final altDownloadsDir = Directory('/storage/emulated/0/Downloads');
-          if (await altDownloadsDir.exists()) {
-            final file = File('${altDownloadsDir.path}/$filename');
-            await file.writeAsBytes(bytes);
-            debugPrint('[PdfExportService] ✅ Saved to Downloads: ${file.path}');
-            return file.path;
-          }
-        }
-
-        // Fallback to external storage
-        debugPrint(
-          '[PdfExportService]  ï¸ Downloads folder not found, using external storage',
-        );
-        final externalDir = await getExternalStorageDirectory();
-        if (externalDir != null) {
-          // Create a Downloads subfolder in external storage
-          final downloadsPath = Directory('${externalDir.path}/Downloads');
-          if (!await downloadsPath.exists()) {
-            await downloadsPath.create(recursive: true);
-          }
-          final file = File('${downloadsPath.path}/$filename');
-          await file.writeAsBytes(bytes);
-          debugPrint('[PdfExportService] ✅ Saved to: ${file.path}');
-          return file.path;
-        }
-
-        // Last resort
-        return await _saveToAppDirectory(bytes, filename);
-      } catch (e) {
-        debugPrint('[PdfExportService] Œ Android save failed: $e');
-        return await _saveToAppDirectory(bytes, filename);
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
       }
-    } else if (Platform.isIOS) {
-      // iOS: Save to app documents directory (this is the proper way for iOS)
-      return await _saveToAppDirectory(bytes, filename);
-    } else {
-      // Other platforms
+
+      final file = File('${targetDir.path}/$filename');
+      await file.writeAsBytes(bytes);
+      debugPrint('[PdfExportService] ✅ Saved to: ${file.path}');
+      return file.path;
+    } catch (e) {
+      debugPrint(
+        '[PdfExportService] ❌ Save to downloads failed: $e. Falling back to app directory.',
+      );
       return await _saveToAppDirectory(bytes, filename);
     }
   }
@@ -158,30 +130,27 @@ class PdfExportService {
   /// Save PDF to Android Downloads folder using MediaStore (Android 10+)
 
   /// Get the expected file path for a test result PDF
-  /// Get the expected file path for a test result PDF
-  Future<String> getExpectedFilePath(TestResultModel result) async {
+  Future<String> getExpectedFilePath(
+    TestResultModel result, {
+    String subFolder = 'Single_Reports',
+  }) async {
     final name = result.profileName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
     final age = result.profileAge != null ? '${result.profileAge}' : 'NA';
     final dateStr = DateFormat('dd-MM-yyyy').format(result.timestamp);
     final timeStr = DateFormat('HH-mm').format(result.timestamp);
     final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
 
-    if (Platform.isAndroid) {
-      // Try Downloads folder first
-      final downloadsDir = Directory('/storage/emulated/0/Download');
-      if (await downloadsDir.exists()) {
-        return '${downloadsDir.path}/$filename';
-      }
-      // Fallback to external storage
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        return '${externalDir.path}/Downloads/$filename';
-      }
+    try {
+      final baseDir = await FileManagerService.getDownloadDirectory();
+      final normalizedSubFolder = subFolder.replaceAll(
+        RegExp(r'^[/\\]|[/\\]$'),
+        '',
+      );
+      return '${baseDir.path}/Visiaxx_Reports/$normalizedSubFolder/$filename';
+    } catch (e) {
+      final appDir = await getApplicationDocumentsDirectory();
+      return '${appDir.path}/$filename';
     }
-
-    // iOS or fallback
-    final appDir = await getApplicationDocumentsDirectory();
-    return '${appDir.path}/$filename';
   }
 
   /// Compatibility method for existing UI calls.

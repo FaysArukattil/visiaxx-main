@@ -3,17 +3,23 @@ import 'dart:io';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:printing/printing.dart';
-import '../../core/constants/app_colors.dart';
+import '../services/file_manager_service.dart';
+import '../extensions/theme_extension.dart';
 import '../widgets/eye_loader.dart';
+import '../utils/snackbar_utils.dart';
 
 class DownloadSuccessDialog extends StatefulWidget {
-  final String filePath;
-  final String fileName;
+  final String? filePath;
+  final String? fileName;
+  final String folderPath;
+  final int count;
 
   const DownloadSuccessDialog({
     super.key,
-    required this.filePath,
-    required this.fileName,
+    this.filePath,
+    this.fileName,
+    required this.folderPath,
+    this.count = 1,
   });
 
   @override
@@ -29,6 +35,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
   bool _isSaving = false;
   bool _isSharing = false;
   bool _isOpening = false;
+  bool _isOpeningFolder = false;
   String? _errorMessage;
 
   @override
@@ -58,42 +65,27 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
     super.dispose();
   }
 
-  String get _location {
-    if (widget.filePath.contains('/Download')) {
-      return 'Downloads Folder';
-    } else if (widget.filePath.contains('/Documents')) {
-      return 'Documents Folder';
-    } else {
-      return 'App Storage';
-    }
-  }
-
-  String get _locationIcon {
-    if (widget.filePath.contains('/Download')) {
-      return '📥';
-    } else if (widget.filePath.contains('/Documents')) {
-      return '📄';
-    } else {
-      return '📱';
-    }
+  String get _folderName {
+    return widget.folderPath.split(RegExp(r'[/\\]')).last;
   }
 
   Future<void> _saveToCustomLocation() async {
+    if (widget.filePath == null) return;
+
     setState(() {
       _isSaving = true;
       _errorMessage = null;
     });
 
     try {
-      final pdfBytes = await File(widget.filePath).readAsBytes();
+      final pdfBytes = await File(widget.filePath!).readAsBytes();
 
       await Printing.layoutPdf(
         onLayout: (format) => pdfBytes,
-        name: widget.fileName,
+        name: widget.fileName ?? 'Visiaxx_Report',
       );
 
       if (mounted) {
-        // Successfully opened system dialog - close this dialog
         Navigator.pop(context);
       }
     } catch (e) {
@@ -111,6 +103,8 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
   }
 
   Future<void> _shareFile() async {
+    if (widget.filePath == null) return;
+
     setState(() {
       _isSharing = true;
       _errorMessage = null;
@@ -118,7 +112,7 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
 
     try {
       await Share.shareXFiles([
-        XFile(widget.filePath),
+        XFile(widget.filePath!),
       ], subject: 'Vision Test Report');
 
       if (mounted) {
@@ -139,13 +133,15 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
   }
 
   Future<void> _openFile() async {
+    if (widget.filePath == null) return;
+
     setState(() {
       _isOpening = true;
       _errorMessage = null;
     });
 
     try {
-      final result = await OpenFilex.open(widget.filePath);
+      final result = await OpenFilex.open(widget.filePath!);
 
       if (mounted) {
         if (result.type == ResultType.done) {
@@ -180,347 +176,366 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
     }
   }
 
+  Future<void> _openFolder() async {
+    setState(() {
+      _isOpeningFolder = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final success = await FileManagerService.openFolder(widget.folderPath);
+
+      if (mounted) {
+        if (!success) {
+          SnackbarUtils.showWarning(
+            context,
+            Platform.isAndroid
+                ? 'Files saved! Open Files app → Downloads → Visiaxx_Reports'
+                : 'Files saved! Open Files app to view reports',
+            duration: const Duration(seconds: 5),
+          );
+        } else {
+          SnackbarUtils.showSuccess(context, 'Opening file manager...');
+        }
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage =
+              'Could not open file manager. Files are saved in Downloads/Visiaxx_Reports';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isOpeningFolder = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isAnyActionInProgress = _isSaving || _isSharing || _isOpening;
+    final isAnyActionInProgress =
+        _isSaving || _isSharing || _isOpening || _isOpeningFolder;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       elevation: 0,
-      backgroundColor: AppColors.transparent,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Animated Success Icon
-            ScaleTransition(
-              scale: _scaleAnimation,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+      backgroundColor: Colors.transparent,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            constraints: const BoxConstraints(maxWidth: 480),
+            decoration: BoxDecoration(
+              color: context.surface,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 30,
+                  offset: const Offset(0, 15),
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.success.withValues(alpha: 0.3),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    FadeTransition(
-                      opacity: _checkmarkAnimation,
-                      child: const Icon(
-                        Icons.check_circle,
-                        color: AppColors.success,
-                        size: 56,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
-
-            const SizedBox(height: 24),
-
-            // Title
-            const Text(
-              'PDF Downloaded Successfully',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.5,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Subtitle
-            Text(
-              'Your vision test report is ready',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // File Info Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border, width: 1),
-              ),
+            child: SingleChildScrollView(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // File name
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.picture_as_pdf,
-                          color: AppColors.error,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.fileName,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                    child: Column(
+                      children: [
+                        // Success Icon with glow
+                        ScaleTransition(
+                          scale: _scaleAnimation,
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: context.success.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'PDF Document',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textTertiary,
+                            child: FadeTransition(
+                              opacity: _checkmarkAnimation,
+                              child: Icon(
+                                Icons.check_circle_rounded,
+                                color: context.success,
+                                size: 52,
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(height: 1, color: AppColors.border),
-                  const SizedBox(height: 12),
-                  // Location
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
+                        const SizedBox(height: 20),
+                        Text(
+                          widget.count > 1 ? 'Reports Ready' : 'Report Ready',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: context.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                        child: Text(
-                          _locationIcon,
-                          style: const TextStyle(fontSize: 14),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Successfully prepared ${widget.count} clinical report${widget.count > 1 ? 's' : ''}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: context.textSecondary.withValues(alpha: 0.8),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _location,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
+                        const SizedBox(height: 28),
+                        // Location Card
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: context.scaffoldBackground,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: context.dividerColor.withValues(
+                                alpha: 0.5,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              widget.filePath,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: AppColors.textTertiary,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.folder_open_rounded,
+                                    size: 16,
+                                    color: context.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'SAVE LOCATION',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      color: context.textTertiary,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                              const SizedBox(height: 10),
+                              Text(
+                                _folderName,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.folderPath,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: context.textSecondary,
+                                  fontFamily: 'monospace',
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 28),
+                        // Error Message (if any)
+                        if (_errorMessage != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 20),
+                            decoration: BoxDecoration(
+                              color: context.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: context.error.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: context.error,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: context.error,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        // Action Buttons
+                        if (widget.filePath != null) ...[
+                          // Primary Actions for single file
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: isAnyActionInProgress
+                                      ? null
+                                      : _shareFile,
+                                  icon: _isSharing
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: EyeLoader.button(),
+                                        )
+                                      : const Icon(
+                                          Icons.share_outlined,
+                                          size: 18,
+                                        ),
+                                  label: Text(
+                                    _isSharing ? 'Sharing...' : 'Share',
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    side: BorderSide(
+                                      color: context.primary,
+                                      width: 1.5,
+                                    ),
+                                    foregroundColor: context.primary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: isAnyActionInProgress
+                                      ? null
+                                      : _openFile,
+                                  icon: _isOpening
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: EyeLoader.button(),
+                                        )
+                                      : const Icon(Icons.open_in_new, size: 18),
+                                  label: Text(
+                                    _isOpening ? 'Opening...' : 'Open',
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: context.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: isAnyActionInProgress
+                                  ? null
+                                  : _saveToCustomLocation,
+                              icon: _isSaving
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: EyeLoader.button(),
+                                    )
+                                  : const Icon(Icons.print_rounded, size: 18),
+                              label: Text(
+                                _isSaving
+                                    ? 'Printing...'
+                                    : 'Save to Files / Print',
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                side: BorderSide(
+                                  color: context.dividerColor,
+                                  width: 1.5,
+                                ),
+                                foregroundColor: context.textSecondary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        // Shared "Open Folder" Action
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: isAnyActionInProgress
+                                ? null
+                                : _openFolder,
+                            icon: _isOpeningFolder
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: EyeLoader.button(),
+                                  )
+                                : const Icon(
+                                    Icons.folder_open_rounded,
+                                    size: 18,
+                                  ),
+                            label: const Text('Open Folder Location'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: BorderSide(
+                                color: context.dividerColor,
+                                width: 1.5,
+                              ),
+                              foregroundColor: context.textSecondary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            'Close',
+                            style: TextStyle(
+                              color: context.textTertiary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-
-            // Error Message (if any)
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline, color: AppColors.error, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.error,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-
-            // Primary Action Buttons (Open & Share)
-            Row(
-              children: [
-                // Share Button
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: isAnyActionInProgress ? null : _shareFile,
-                    icon: _isSharing
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: EyeLoader.button(),
-                          )
-                        : const Icon(Icons.share_outlined, size: 18),
-                    label: Text(_isSharing ? 'Sharing...' : 'Share'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(
-                        color: isAnyActionInProgress
-                            ? AppColors.border
-                            : AppColors.primary,
-                        width: 1.5,
-                      ),
-                      foregroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Open PDF Button
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: isAnyActionInProgress ? null : _openFile,
-                    icon: _isOpening
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: EyeLoader.button(),
-                          )
-                        : const Icon(Icons.open_in_new, size: 18),
-                    label: Text(_isOpening ? 'Opening...' : 'Open'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isAnyActionInProgress
-                          ? AppColors.primary.withValues(alpha: 0.5)
-                          : AppColors.primary,
-                      foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Save/Print Button (Secondary Action)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: isAnyActionInProgress ? null : _saveToCustomLocation,
-                icon: _isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: EyeLoader.button(),
-                      )
-                    : const Icon(Icons.file_download_outlined, size: 18),
-                label: Text(
-                  _isSaving
-                      ? 'Opening System Dialog...'
-                      : 'Save to Files / Print',
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(color: AppColors.border, width: 1.5),
-                  foregroundColor: AppColors.textSecondary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Close Button
-            TextButton(
-              onPressed: isAnyActionInProgress
-                  ? null
-                  : () => Navigator.pop(context),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 24,
-                ),
-              ),
-              child: Text(
-                'Close',
-                style: TextStyle(
-                  color: isAnyActionInProgress
-                      ? AppColors.textTertiary
-                      : AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -529,15 +544,19 @@ class _DownloadSuccessDialogState extends State<DownloadSuccessDialog>
 /// Helper function to show the dialog
 Future<void> showDownloadSuccessDialog({
   required BuildContext context,
-  required String filePath,
+  String? filePath,
   String? fileName,
+  required String folderPath,
+  int count = 1,
 }) async {
-  final name = fileName ?? filePath.split(Platform.pathSeparator).last;
-
   await showDialog(
     context: context,
     barrierDismissible: true,
-    builder: (context) =>
-        DownloadSuccessDialog(filePath: filePath, fileName: name),
+    builder: (context) => DownloadSuccessDialog(
+      filePath: filePath,
+      fileName: fileName,
+      folderPath: folderPath,
+      count: count,
+    ),
   );
 }

@@ -9,8 +9,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:printing/printing.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:visiaxx/core/services/file_manager_service.dart';
 import '../../../core/services/dashboard_persistence_service.dart';
 import '../../../core/extensions/theme_extension.dart';
@@ -20,6 +18,7 @@ import '../../../core/services/pdf_export_service.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/utils/ui_utils.dart';
+import '../../../core/widgets/download_success_dialog.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../data/models/color_vision_result.dart';
@@ -1717,374 +1716,17 @@ class _PractitionerDashboardScreenState
         debugPrint(
           '[Dashboard] 📊 Showing success dialog: count=$successCount, singlePath=$singlePath',
         );
-        await _showDownloadSuccessDialog(
-          successCount,
-          targetDir.path,
-          singleFilePath: singlePath,
+        await showDownloadSuccessDialog(
+          context: context,
+          count: successCount,
+          folderPath: targetDir.path,
+          filePath: singlePath,
         );
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop(); // Close progress dialog
         SnackbarUtils.showError(context, 'Failed to download PDFs: $e');
-      }
-    }
-  }
-
-  Future<void> _showDownloadSuccessDialog(
-    int count,
-    String path, {
-    String? singleFilePath,
-  }) async {
-    debugPrint(
-      '[Dashboard] 🖼️ Rendering success dialog. Single file: ${singleFilePath != null}',
-    );
-
-    // Get the folder name safely
-    final folderName = path.split(RegExp(r'[/\\]')).last;
-
-    await showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: MediaQuery.of(context).size.width * 0.9,
-              constraints: const BoxConstraints(maxWidth: 480),
-              decoration: BoxDecoration(
-                color: context.surface,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 30,
-                    offset: const Offset(0, 15),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 8),
-
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                      child: Column(
-                        children: [
-                          // Success Icon with glow
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFF34C759,
-                              ).withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check_circle_rounded,
-                              color: Color(0xFF34C759),
-                              size: 52,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          Text(
-                            'Reports Ready',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: context.textPrimary,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          Text(
-                            'Successfully prepared $count clinical report${count > 1 ? 's' : ''}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: context.textSecondary.withValues(
-                                alpha: 0.8,
-                              ),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-
-                          const SizedBox(height: 28),
-
-                          // Location Card
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: context.scaffoldBackground,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: context.dividerColor.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.folder_open_rounded,
-                                      size: 16,
-                                      color: context.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'SAVE LOCATION',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        color: context.textTertiary,
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  folderName,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: context.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  path,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: context.textSecondary,
-                                    fontFamily: 'monospace',
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 28),
-
-                          // Action Buttons
-                          if (singleFilePath != null) ...[
-                            // Primary Action: Open and Print for single file
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () async {
-                                      try {
-                                        final file = File(singleFilePath);
-                                        if (await file.exists()) {
-                                          final bytes = await file
-                                              .readAsBytes();
-                                          await Printing.layoutPdf(
-                                            onLayout: (format) async => bytes,
-                                            name: singleFilePath
-                                                .split(RegExp(r'[/\\]'))
-                                                .last,
-                                          );
-                                        }
-                                      } catch (e) {
-                                        if (mounted) {
-                                          SnackbarUtils.showError(
-                                            context,
-                                            'Print failed: $e',
-                                          );
-                                        }
-                                      }
-                                    },
-                                    icon: const Icon(
-                                      Icons.print_rounded,
-                                      size: 20,
-                                    ),
-                                    label: const Text('Print'),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                      side: BorderSide(
-                                        color: context.primary,
-                                        width: 1.5,
-                                      ),
-                                      foregroundColor: context.primary,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      textStyle: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () async {
-                                      final res = await OpenFilex.open(
-                                        singleFilePath,
-                                      );
-                                      if (res.type != ResultType.done &&
-                                          mounted) {
-                                        SnackbarUtils.showError(
-                                          context,
-                                          'Could not open report',
-                                        );
-                                      }
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: context.primary,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      textStyle: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    child: const Text('Open'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Secondary: Folder opening
-                            SizedBox(
-                              width: double.infinity,
-                              child: TextButton.icon(
-                                onPressed: () async {
-                                  Navigator.pop(context);
-                                  await _openFolder(path);
-                                },
-                                icon: const Icon(
-                                  Icons.file_download_outlined,
-                                  size: 18,
-                                ),
-                                label: const Text('View in Downloads'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: context.primary,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ] else ...[
-                            // Batch download - only folder opening
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () async {
-                                  Navigator.pop(context);
-                                  await _openFolder(path);
-                                },
-                                icon: const Icon(
-                                  Icons.folder_special_rounded,
-                                  size: 20,
-                                ),
-                                label: const Text('Open Downloads Folder'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: context.primary,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 18,
-                                  ),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  textStyle: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Close Button (Top-Right)
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => Navigator.pop(context),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: context.scaffoldBackground.withValues(alpha: 0.8),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      color: context.textTertiary,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openFolder(String folderPath) async {
-    try {
-      final success = await FileManagerService.openFolder(folderPath);
-
-      if (!success && mounted) {
-        // Instead of showing a simple snackbar, show helpful instructions
-        SnackbarUtils.showWarning(
-          context,
-          Platform.isAndroid
-              ? 'Files saved! Open Files app → Downloads → Visiaxx_Reports'
-              : 'Files saved! Open Files app to view reports',
-          duration: const Duration(seconds: 5),
-        );
-      } else if (success && mounted) {
-        SnackbarUtils.showSuccess(context, 'Opening file manager...');
-      }
-    } catch (e) {
-      debugPrint('[Dashboard] Error opening folder: $e');
-      if (mounted) {
-        SnackbarUtils.showError(
-          context,
-          'Could not open file manager. Files are saved in Downloads/Visiaxx_Reports',
-        );
       }
     }
   }
@@ -2239,10 +1881,11 @@ class _PractitionerDashboardScreenState
 
       if (mounted) {
         UIUtils.hideProgressDialog(context);
-        await _showDownloadSuccessDialog(
-          1,
-          targetDir.path,
-          singleFilePath: file.path,
+        await showDownloadSuccessDialog(
+          context: context,
+          count: 1,
+          folderPath: targetDir.path,
+          filePath: file.path,
         );
       }
     } catch (e) {
