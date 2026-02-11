@@ -15,10 +15,14 @@ class CoverTestProvider extends ChangeNotifier {
   CoverTestStep _currentStep = CoverTestStep.instructions;
   final List<CoverTestObservation> _observations = [];
   bool _isPerformingAction = false;
+  bool _isRecording = false;
+  String? _currentVideoPath;
 
   CoverTestStep get currentStep => _currentStep;
   List<CoverTestObservation> get observations => _observations;
   bool get isPerformingAction => _isPerformingAction;
+  bool get isRecording => _isRecording;
+  String? get currentVideoPath => _currentVideoPath;
 
   void startTest() {
     _currentStep = CoverTestStep.coverRight;
@@ -32,7 +36,21 @@ class CoverTestProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void recordObservation(EyeMovement movement) {
+  void setRecording(bool value, {String? path}) {
+    _isRecording = value;
+    if (path != null) {
+      _currentVideoPath = path;
+      debugPrint('[CoverTest] 📽️ Provider: Video path set to $path');
+    }
+    notifyListeners();
+  }
+
+  void recordObservation(EyeMovement movement, {String? videoPath}) {
+    final effectiveVideoPath = videoPath ?? _currentVideoPath;
+    debugPrint(
+      '[CoverTest] 📝 Recording observation: $movement, video: $effectiveVideoPath',
+    );
+
     String eye = '';
     String phase = '';
 
@@ -58,9 +76,20 @@ class CoverTestProvider extends ChangeNotifier {
     }
 
     _observations.add(
-      CoverTestObservation(eye: eye, phase: phase, movement: movement),
+      CoverTestObservation(
+        eye: eye,
+        phase: phase,
+        movement: movement,
+        videoPath: effectiveVideoPath,
+      ),
     );
 
+    debugPrint(
+      '[CoverTest] ✅ Observation added. Total observations: ${_observations.length}',
+    );
+
+    _currentVideoPath = null;
+    _isRecording = false;
     _nextStep();
   }
 
@@ -151,6 +180,8 @@ class CoverTestProvider extends ChangeNotifier {
     _currentStep = CoverTestStep.instructions;
     _observations.clear();
     _isPerformingAction = false;
+    _isRecording = false;
+    _currentVideoPath = null;
     notifyListeners();
   }
 }

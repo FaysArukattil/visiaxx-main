@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -11,18 +12,34 @@ import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/utils/navigation_utils.dart';
 
-class CoverTestScreen extends StatefulWidget {
+class CoverTestScreen extends StatelessWidget {
   const CoverTestScreen({super.key});
 
   @override
-  State<CoverTestScreen> createState() => _CoverTestScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => CoverTestProvider(),
+      child: const _CoverTestScreenContent(),
+    );
+  }
 }
 
-class _CoverTestScreenState extends State<CoverTestScreen>
+class _CoverTestScreenContent extends StatefulWidget {
+  const _CoverTestScreenContent();
+
+  @override
+  State<_CoverTestScreenContent> createState() =>
+      _CoverTestScreenContentState();
+}
+
+class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
     with TickerProviderStateMixin {
   CameraController? _cameraController;
   bool _isFlashOn = false;
   bool _isCameraInitialized = false;
+  Timer? _recordingTimer;
+  int _recordingSeconds = 0;
+  static const int maxRecordingSeconds = 5;
 
   @override
   void initState() {
@@ -78,8 +95,91 @@ class _CoverTestScreenState extends State<CoverTestScreen>
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
     _cameraController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _startRecording(CoverTestProvider provider) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Camera not initialized')));
+      return;
+    }
+    if (_cameraController!.value.isRecordingVideo) return;
+
+    // Optimistic UI update
+    provider.setRecording(true);
+
+    try {
+      debugPrint('[CoverTest] 🎥 Starting video recording...');
+      await _cameraController!.startVideoRecording();
+      await SystemSound.play(SystemSoundType.click);
+      await HapticFeedback.heavyImpact();
+
+      setState(() {
+        _recordingSeconds = 0;
+      });
+
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        setState(() {
+          _recordingSeconds++;
+        });
+
+        if (_recordingSeconds >= maxRecordingSeconds) {
+          debugPrint('[CoverTest] ⏳ Max recording time reached');
+          _stopRecording(provider);
+        }
+      });
+      debugPrint('[CoverTest] ✅ Video recording started');
+    } catch (e) {
+      debugPrint('[CoverTest] ❌ Error starting video recording: $e');
+      provider.setRecording(false); // Rollback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to start recording: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopRecording(CoverTestProvider provider) async {
+    // If provider thinks we're recording but camera says no, sync back
+    if (_cameraController == null ||
+        !_cameraController!.value.isRecordingVideo) {
+      debugPrint(
+        '[CoverTest] ⚠️ stopRecording called but camera not recording',
+      );
+      provider.setRecording(false);
+      return;
+    }
+
+    _recordingTimer?.cancel();
+
+    try {
+      debugPrint('[CoverTest] ⏹️ Stopping video recording...');
+      final file = await _cameraController!.stopVideoRecording();
+      debugPrint('[CoverTest] 📁 Video saved to: ${file.path}');
+
+      provider.setRecording(false, path: file.path);
+      await SystemSound.play(SystemSoundType.click);
+      await HapticFeedback.mediumImpact();
+
+      if (mounted) {
+        setState(() {
+          _recordingSeconds = 0;
+        });
+      }
+    } catch (e) {
+      debugPrint('[CoverTest] ❌ Error stopping video recording: $e');
+      provider.setRecording(false);
+    }
   }
 
   void _showExitConfirmation() {
@@ -120,52 +220,49 @@ class _CoverTestScreenState extends State<CoverTestScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => CoverTestProvider(),
-      child: Consumer<CoverTestProvider>(
-        builder: (context, provider, child) {
-          return PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (didPop, result) {
-              if (didPop) return;
-              _showExitConfirmation();
-            },
-            child: Scaffold(
-              backgroundColor: context.scaffoldBackground,
-              appBar: AppBar(
-                title: const FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    'Cover-Uncover Test',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                actions: [
-                  if (provider.currentStep != CoverTestStep.instructions &&
-                      provider.currentStep != CoverTestStep.result)
-                    IconButton(
-                      icon: Icon(
-                        _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                        color: context.primary,
-                      ),
-                      onPressed: _toggleFlash,
-                    ),
-                ],
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new,
-                    color: context.textPrimary,
-                  ),
-                  onPressed: _showExitConfirmation,
+    return Consumer<CoverTestProvider>(
+      builder: (context, provider, child) {
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _showExitConfirmation();
+          },
+          child: Scaffold(
+            backgroundColor: context.scaffoldBackground,
+            appBar: AppBar(
+              title: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Cover-Uncover Test',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-              body: SafeArea(child: _buildCurrentState(provider)),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              actions: [
+                if (provider.currentStep != CoverTestStep.instructions &&
+                    provider.currentStep != CoverTestStep.result)
+                  IconButton(
+                    icon: Icon(
+                      _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                      color: context.primary,
+                    ),
+                    onPressed: _toggleFlash,
+                  ),
+              ],
+              leading: IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: context.textPrimary,
+                ),
+                onPressed: _showExitConfirmation,
+              ),
             ),
-          );
-        },
-      ),
+            body: SafeArea(child: _buildCurrentState(provider)),
+          ),
+        );
+      },
     );
   }
 
@@ -299,6 +396,42 @@ class _CoverTestScreenState extends State<CoverTestScreen>
                   style: TextStyle(color: context.primary, fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
+                if (provider.currentVideoPath != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.success.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: context.success.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: context.success,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'VIDEO CAPTURED',
+                          style: TextStyle(
+                            color: context.success,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn().scale(),
+                ],
               ],
             ),
           ),
@@ -329,7 +462,29 @@ class _CoverTestScreenState extends State<CoverTestScreen>
                       ),
 
                     // Overlay to guide eye alignment
-                    _buildEyeAlignmentOverlay(isLeftCovered, isRightCovered),
+                    _buildEyeAlignmentOverlay(
+                      isLeftCovered,
+                      isRightCovered,
+                      provider.isRecording,
+                    ),
+
+                    // Pulsing Red Border when recording
+                    if (provider.isRecording)
+                      Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: Colors.red, width: 4),
+                            ),
+                          )
+                          .animate(onPlay: (controller) => controller.repeat())
+                          .shimmer(
+                            duration: 1000.ms,
+                            color: Colors.red.withValues(alpha: 0.2),
+                          )
+                          .fadeIn(duration: 500.ms),
+
+                    // Video Recording UI
+                    _buildRecordingOverlay(provider.isRecording),
                   ],
                 ),
               ),
@@ -355,7 +510,11 @@ class _CoverTestScreenState extends State<CoverTestScreen>
     );
   }
 
-  Widget _buildEyeAlignmentOverlay(bool leftCovered, bool rightCovered) {
+  Widget _buildEyeAlignmentOverlay(
+    bool leftCovered,
+    bool rightCovered,
+    bool isRecording,
+  ) {
     return Stack(
       children: [
         // Semi-transparent overlay with eye holes
@@ -447,6 +606,97 @@ class _CoverTestScreenState extends State<CoverTestScreen>
     );
   }
 
+  Widget _buildRecordingOverlay(bool isRecording) {
+    return Stack(
+      children: [
+        if (isRecording)
+          Positioned(
+            top: 16,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                      .animate(onPlay: (controller) => controller.repeat())
+                      .fadeIn(duration: 500.ms)
+                      .fadeOut(delay: 500.ms),
+                  const SizedBox(width: 8),
+                  Text(
+                    '0:0${maxRecordingSeconds - _recordingSeconds}s',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        Positioned(
+          bottom: 24,
+          right: 24,
+          child:
+              GestureDetector(
+                    onTap: () {
+                      final p = context.read<CoverTestProvider>();
+                      if (isRecording) {
+                        _stopRecording(p);
+                      } else {
+                        _startRecording(p);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isRecording ? Colors.red : context.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isRecording ? Colors.red : context.primary)
+                                .withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        isRecording ? Icons.stop : Icons.videocam,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                  )
+                  .animate(
+                    target: isRecording ? 1 : 0,
+                    onPlay: (controller) {
+                      if (isRecording) controller.repeat(reverse: true);
+                    },
+                  )
+                  .scale(
+                    begin: const Offset(1, 1),
+                    end: const Offset(1.15, 1.15),
+                    duration: 600.ms,
+                    curve: Curves.easeInOut,
+                  ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMovementOptions(CoverTestProvider provider) {
     return Column(
       children: [
@@ -516,8 +766,12 @@ class _CoverTestScreenState extends State<CoverTestScreen>
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () async {
+          final p = context.read<CoverTestProvider>();
+          if (p.isRecording) {
+            await _stopRecording(p);
+          }
           await HapticFeedback.mediumImpact();
-          provider.recordObservation(movement);
+          p.recordObservation(movement);
         },
         splashColor: context.primary.withValues(alpha: 0.15),
         highlightColor: context.primary.withValues(alpha: 0.1),

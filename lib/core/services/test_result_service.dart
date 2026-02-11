@@ -10,6 +10,7 @@ import 'package:visiaxx/core/services/family_member_service.dart';
 import '../providers/network_connectivity_provider.dart';
 import 'package:visiaxx/core/services/dashboard_persistence_service.dart';
 import '../../data/models/patient_model.dart';
+import '../../data/models/cover_test_result.dart';
 
 /// Service for storing and retrieving test results from Firebase
 class TestResultService {
@@ -493,6 +494,57 @@ class TestResultService {
           );
         }
       }
+    }
+
+    // Upload Cover Test Videos
+    if (result.coverTest != null && result.coverTest!.observations.isNotEmpty) {
+      debugPrint('[TestResultService] “¤ Checking for Cover Test videos...');
+      final List<CoverTestObservation> updatedObservations = [];
+
+      for (var observation in updatedResult.coverTest!.observations) {
+        if (observation.videoPath != null &&
+            observation.videoPath!.isNotEmpty &&
+            observation.videoUrl == null) {
+          final file = File(observation.videoPath!);
+          if (await file.exists()) {
+            debugPrint(
+              '[TestResultService] “¤ Uploading video for ${observation.eye} - ${observation.phase}',
+            );
+            final awsUrl = await _awsStorageService.uploadCoverTestVideo(
+              userId: userId,
+              identityString: identityString,
+              roleCollection: roleCollection,
+              testCategory: testCategory,
+              testId: testId,
+              phase: '${observation.eye}_${observation.phase}'
+                  .toLowerCase()
+                  .replaceAll(' ', '_'),
+              videoFile: file,
+              memberIdentityString: memberId,
+            );
+
+            if (awsUrl != null) {
+              updatedObservations.add(
+                CoverTestObservation(
+                  eye: observation.eye,
+                  phase: observation.phase,
+                  movement: observation.movement,
+                  videoPath: observation.videoPath,
+                  videoUrl: awsUrl,
+                ),
+              );
+              continue; // Skip the default addition
+            }
+          }
+        }
+        updatedObservations.add(observation);
+      }
+
+      updatedResult = updatedResult.copyWith(
+        coverTest: updatedResult.coverTest!.copyWith(
+          observations: updatedObservations,
+        ),
+      );
     }
 
     return updatedResult;

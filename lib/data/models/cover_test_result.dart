@@ -31,27 +31,35 @@ class CoverTestObservation {
   final String eye; // 'Right' or 'Left'
   final String phase; // 'Covering Right', 'Uncovering Right', etc.
   final EyeMovement movement;
+  final String? videoPath; // Local path
+  final String? videoUrl; // AWS URL
 
   CoverTestObservation({
     required this.eye,
     required this.phase,
     required this.movement,
+    this.videoPath,
+    this.videoUrl,
   });
 
   Map<String, dynamic> toJson() => {
     'eye': eye,
     'phase': phase,
     'movement': movement.name,
+    'videoPath': videoPath,
+    'videoUrl': videoUrl,
   };
 
   factory CoverTestObservation.fromJson(Map<String, dynamic> json) =>
       CoverTestObservation(
-        eye: json['eye'],
-        phase: json['phase'],
+        eye: json['eye'] ?? '',
+        phase: json['phase'] ?? '',
         movement: EyeMovement.values.firstWhere(
           (e) => e.name == json['movement'],
           orElse: () => EyeMovement.none,
         ),
+        videoPath: json['videoPath'],
+        videoUrl: json['videoUrl'],
       );
 
   Map<String, dynamic> toMap() => toJson();

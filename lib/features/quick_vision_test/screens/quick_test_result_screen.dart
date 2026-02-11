@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 import 'package:visiaxx/core/providers/network_connectivity_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
@@ -3499,8 +3501,34 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           const Divider(),
           const SizedBox(height: 16),
           _buildCoverTestDetailRow('Right Eye', result.rightEyeStatus),
+          if (result.observations.any(
+            (o) =>
+                o.eye == 'Right' && (o.videoUrl != null || o.videoPath != null),
+          ))
+            _buildVideoPreviewRow(
+              result.observations
+                  .where(
+                    (o) =>
+                        o.eye == 'Right' &&
+                        (o.videoUrl != null || o.videoPath != null),
+                  )
+                  .toList(),
+            ),
           const SizedBox(height: 12),
           _buildCoverTestDetailRow('Left Eye', result.leftEyeStatus),
+          if (result.observations.any(
+            (o) =>
+                o.eye == 'Left' && (o.videoUrl != null || o.videoPath != null),
+          ))
+            _buildVideoPreviewRow(
+              result.observations
+                  .where(
+                    (o) =>
+                        o.eye == 'Left' &&
+                        (o.videoUrl != null || o.videoPath != null),
+                  )
+                  .toList(),
+            ),
           if (result.recommendation.isNotEmpty) ...[
             const SizedBox(height: 20),
             Container(
@@ -4171,6 +4199,204 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPreviewRow(List<CoverTestObservation> observations) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: observations.map((obs) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () =>
+                  _showZoomedVideo(obs.videoPath, obs.videoUrl, obs.phase),
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: context.primary.withValues(alpha: 0.3),
+                  ),
+                  color: context.primary.withValues(alpha: 0.05),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.videocam_rounded,
+                      color: context.primary,
+                      size: 30,
+                    ),
+                    Positioned(
+                      bottom: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          obs.phase.split(' ').last,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  void _showZoomedVideo(String? localPath, String? awsUrl, String label) {
+    showDialog(
+      context: context,
+      builder: (context) =>
+          _VideoZoomDialog(localPath: localPath, awsUrl: awsUrl, label: label),
+    );
+  }
+}
+
+class _VideoZoomDialog extends StatefulWidget {
+  final String? localPath;
+  final String? awsUrl;
+  final String label;
+
+  const _VideoZoomDialog({this.localPath, this.awsUrl, required this.label});
+
+  @override
+  State<_VideoZoomDialog> createState() => _VideoZoomDialogState();
+}
+
+class _VideoZoomDialogState extends State<_VideoZoomDialog> {
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  bool _initialized = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
+    try {
+      if (widget.awsUrl != null) {
+        _videoPlayerController = VideoPlayerController.networkUrl(
+          Uri.parse(widget.awsUrl!),
+        );
+      } else if (widget.localPath != null) {
+        _videoPlayerController = VideoPlayerController.file(
+          File(widget.localPath!),
+        );
+      } else {
+        setState(() => _error = "Video source not found");
+        return;
+      }
+
+      await _videoPlayerController!.initialize();
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController!,
+        autoPlay: true,
+        looping: false,
+        aspectRatio: _videoPlayerController!.value.aspectRatio,
+        allowFullScreen: true,
+        allowMuting: true,
+        showControls: true,
+      );
+
+      setState(() => _initialized = true);
+    } catch (e) {
+      debugPrint('Error initializing video player: $e');
+      setState(() => _error = "Error loading video: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(10),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.label,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                AspectRatio(
+                  aspectRatio: _initialized
+                      ? _videoPlayerController!.value.aspectRatio
+                      : 16 / 9,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: _initialized
+                        ? Chewie(controller: _chewieController!)
+                        : _error != null
+                        ? Center(
+                            child: Text(
+                              _error!,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          )
+                        : const Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
