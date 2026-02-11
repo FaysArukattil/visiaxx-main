@@ -11,6 +11,7 @@ import '../../../data/models/cover_test_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/utils/snackbar_utils.dart';
 
 class CoverTestScreen extends StatelessWidget {
   const CoverTestScreen({super.key});
@@ -102,9 +103,7 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
 
   Future<void> _startRecording(CoverTestProvider provider) async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Camera not initialized')));
+      SnackbarUtils.showError(context, 'Camera not initialized');
       return;
     }
     if (_cameraController!.value.isRecordingVideo) return;
@@ -142,9 +141,7 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
       debugPrint('[CoverTest] ❌ Error starting video recording: $e');
       provider.setRecording(false); // Rollback
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to start recording: $e')),
-        );
+        SnackbarUtils.showError(context, 'Failed to start recording');
       }
     }
   }
@@ -164,12 +161,7 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
     if (_recordingSeconds < 2) {
       debugPrint('[CoverTest] ⏳ Too short! Minimum 2 seconds required.');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please record for at least 2 seconds'),
-            duration: Duration(milliseconds: 1000),
-          ),
-        );
+        SnackbarUtils.showInfo(context, 'Please record for at least 2 seconds');
       }
       return;
     }
