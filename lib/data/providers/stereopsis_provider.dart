@@ -110,6 +110,7 @@ class StereopsisProvider extends ChangeNotifier {
       grade: getResultGrade(),
       score: _score,
       totalRounds: _totalRounds,
+      bestArc: _bestArc,
     );
   }
 

@@ -62,6 +62,10 @@ void main() {
       if (arcs[4] < expectedBest) expectedBest = arcs[4];
 
       expect(provider.bestArc, expectedBest);
+
+      final result = provider.createResult();
+      expect(result.bestArc, expectedBest);
+      expect(result.score, 4);
     });
 
     test('Result grading matches expectations', () {

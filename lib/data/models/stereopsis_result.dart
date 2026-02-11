@@ -35,6 +35,7 @@ class StereopsisResult {
   final StereopsisGrade grade;
   final int score;
   final int totalRounds;
+  final int? bestArc; // The smallest seconds of arc detected
   final DateTime testDate;
   final bool stereopsisPresent;
 
@@ -43,6 +44,7 @@ class StereopsisResult {
     required this.grade,
     required this.score,
     required this.totalRounds,
+    this.bestArc,
     DateTime? testDate,
   }) : testDate = testDate ?? DateTime.now(),
        stereopsisPresent =
@@ -71,6 +73,7 @@ class StereopsisResult {
       'gradeDescription': grade.description,
       'score': score,
       'totalRounds': totalRounds,
+      'bestArc': bestArc,
       'testDate': Timestamp.fromDate(testDate),
       'stereopsisPresent': stereopsisPresent,
       'percentage': percentage,
@@ -86,6 +89,7 @@ class StereopsisResult {
       ),
       score: json['score'] ?? 0,
       totalRounds: json['totalRounds'] ?? 5,
+      bestArc: json['bestArc'],
       testDate: (json['testDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -97,6 +101,7 @@ class StereopsisResult {
     StereopsisGrade? grade,
     int? score,
     int? totalRounds,
+    int? bestArc,
     DateTime? testDate,
   }) {
     return StereopsisResult(
@@ -104,6 +109,7 @@ class StereopsisResult {
       grade: grade ?? this.grade,
       score: score ?? this.score,
       totalRounds: totalRounds ?? this.totalRounds,
+      bestArc: bestArc ?? this.bestArc,
       testDate: testDate ?? this.testDate,
     );
   }

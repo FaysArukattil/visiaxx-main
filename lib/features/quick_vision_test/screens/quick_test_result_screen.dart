@@ -3377,8 +3377,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             children: [
               _buildStatItem('Score', '${result.score}/${result.totalRounds}'),
               _buildStatItem(
-                'Accuracy',
-                '${result.percentage.toStringAsFixed(0)}%',
+                'Best Arc',
+                result.bestArc != null ? '${result.bestArc}"' : 'N/A',
               ),
               _buildStatItem(
                 'Status',
