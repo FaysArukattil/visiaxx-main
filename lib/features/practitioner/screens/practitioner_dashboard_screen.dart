@@ -1531,31 +1531,11 @@ class _PractitionerDashboardScreenState
     if (!mounted) return;
 
     // Show progress dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const EyeLoader(size: 32),
-              const SizedBox(height: 16),
-              Text('Downloading ${resultsToDownload.length} PDFs...'),
-              const SizedBox(height: 8),
-              Text(
-                choice == 'all' ? 'All reports' : 'Filtered reports',
-                style: TextStyle(fontSize: 12, color: context.textSecondary),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    final String progressMsg = choice == 'all'
+        ? 'Downloading ${resultsToDownload.length} PDFs...'
+        : 'Downloading ${resultsToDownload.length} PDFs (${folderName.replaceAll('_', ' ')})';
+
+    UIUtils.showProgressDialog(context: context, message: progressMsg);
 
     try {
       final baseDir = await _getDownloadDirectory();

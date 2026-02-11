@@ -1,5 +1,5 @@
 ﻿import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import '../extensions/theme_extension.dart';
 
 class UIUtils {
   UIUtils._();
@@ -19,15 +19,15 @@ class UIUtils {
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 0,
-          backgroundColor: AppColors.transparent,
+          backgroundColor: Colors.transparent,
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.surface,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withValues(alpha: 0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -38,26 +38,23 @@ class UIUtils {
               children: [
                 Text(
                   message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: context.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 24),
-                const LinearProgressIndicator(
-                  backgroundColor: AppColors.border,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                LinearProgressIndicator(
+                  backgroundColor: context.dividerColor,
+                  valueColor: AlwaysStoppedAnimation<Color>(context.primary),
                   minHeight: 6,
-                  borderRadius: BorderRadius.all(Radius.circular(3)),
+                  borderRadius: const BorderRadius.all(Radius.circular(3)),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Please wait...',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary.withValues(alpha: 0.7),
-                  ),
+                  style: TextStyle(fontSize: 12, color: context.textSecondary),
                 ),
               ],
             ),
@@ -72,4 +69,3 @@ class UIUtils {
     Navigator.of(context, rootNavigator: true).pop();
   }
 }
-
