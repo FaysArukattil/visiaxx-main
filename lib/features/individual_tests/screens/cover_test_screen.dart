@@ -160,6 +160,20 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
       return;
     }
 
+    // Prevents "Error loading Video" by ensuring file is finalized
+    if (_recordingSeconds < 2) {
+      debugPrint('[CoverTest] ⏳ Too short! Minimum 2 seconds required.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please record for at least 2 seconds'),
+            duration: Duration(milliseconds: 1000),
+          ),
+        );
+      }
+      return;
+    }
+
     _recordingTimer?.cancel();
 
     try {
