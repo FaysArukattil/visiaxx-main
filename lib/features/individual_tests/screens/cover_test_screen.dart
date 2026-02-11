@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -285,7 +286,8 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
             _showExitConfirmation();
           },
           child: Scaffold(
-            backgroundColor: context.scaffoldBackground,
+            extendBodyBehindAppBar: true,
+            backgroundColor: Colors.black,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
@@ -297,20 +299,17 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
                   IconButton(
                     icon: Icon(
                       _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                      color: context.primary,
+                      color: Colors.white,
                     ),
                     onPressed: _toggleFlash,
                   ),
               ],
               leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new,
-                  color: context.textPrimary,
-                ),
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
                 onPressed: _showExitConfirmation,
               ),
             ),
-            body: SafeArea(child: _buildCurrentState(provider)),
+            body: _buildCurrentState(provider),
           ),
         );
       },
@@ -434,88 +433,100 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
         break;
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        children: [
-          AspectRatio(
-            aspectRatio: 3 / 4,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: context.dividerColor.withValues(alpha: 0.1),
-                ),
+    final orientation = MediaQuery.of(context).orientation;
+    final isLandscape = orientation == Orientation.landscape;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Full Screen Camera Preview
+        if (_isCameraInitialized && _cameraController != null)
+          Positioned.fill(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _cameraController!.value.previewSize!.height,
+                height: _cameraController!.value.previewSize!.width,
+                child: CameraPreview(_cameraController!),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (_isCameraInitialized && _cameraController != null)
-                      CameraPreview(_cameraController!)
-                    else
-                      Center(
-                        child: CircularProgressIndicator(
-                          color: context.primary,
-                        ),
+            ),
+          )
+        else
+          Container(
+            color: Colors.black,
+            child: Center(
+              child: CircularProgressIndicator(color: context.primary),
+            ),
+          ),
+
+        // Eye alignment overlay (Full Screen)
+        Positioned.fill(
+          child: _buildEyeAlignmentOverlay(
+            isLeftCovered,
+            isRightCovered,
+            provider.isRecording,
+          ),
+        ),
+
+        // 🟢 Instructions Overlay (Top - Safe Area)
+        SafeArea(
+          child: _buildInstructionOverlay(
+            instruction,
+            eyeToObserve,
+            provider.currentVideoPath != null,
+          ),
+        ),
+
+        // Recording Border
+        if (provider.isRecording)
+          Positioned.fill(
+            child:
+                Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.red, width: 4),
                       ),
-
-                    // Overlay to guide eye alignment
-                    _buildEyeAlignmentOverlay(
-                      isLeftCovered,
-                      isRightCovered,
-                      provider.isRecording,
+                    )
+                    .animate(onPlay: (controller) => controller.repeat())
+                    .shimmer(
+                      duration: 1000.ms,
+                      color: Colors.red.withValues(alpha: 0.2),
                     ),
+          ),
 
-                    // Pulsing Red Border when recording
-                    if (provider.isRecording)
-                      Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(color: Colors.red, width: 4),
-                            ),
-                          )
-                          .animate(onPlay: (controller) => controller.repeat())
-                          .shimmer(
-                            duration: 1000.ms,
-                            color: Colors.red.withValues(alpha: 0.2),
-                          )
-                          .fadeIn(duration: 500.ms),
+        // Recording Status & Time (Safe Area)
+        SafeArea(child: _buildRecordingOverlay(provider.isRecording)),
 
-                    // Video Recording UI
-                    _buildRecordingOverlay(provider.isRecording),
-
-                    // Instruction Overlay (Compact)
-                    _buildInstructionOverlay(
-                      instruction,
-                      eyeToObserve,
-                      provider.currentVideoPath != null,
-                    ),
-                  ],
+        // 🟢 Diagnostic Buttons Overlay (Bottom in Portrait, Right in Landscape)
+        if (isLandscape)
+          Positioned(
+            right: 16,
+            top: 0,
+            bottom: 0,
+            child: SafeArea(
+              child: Center(
+                child: SizedBox(
+                  width: 210, // Compact for landscape to avoid overlap
+                  child: _buildMovementOptions(provider),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              children: [
-                Text(
-                  'What movement did you observe?',
-                  style: TextStyle(color: context.textSecondary, fontSize: 14),
+          )
+        else
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 24.0,
                 ),
-                const SizedBox(height: 16),
-                _buildMovementOptions(provider),
-              ],
+                child: _buildMovementOptions(provider),
+              ),
             ),
           ),
-          const SizedBox(height: 32),
-        ],
-      ),
+      ],
     );
   }
 
@@ -587,10 +598,10 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
       left: 16,
       right: 16,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(12),
@@ -600,11 +611,12 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
               ),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   instruction.toUpperCase(),
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -615,6 +627,7 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
                 const SizedBox(height: 2),
                 Text(
                   eyeToObserve,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: context.primary.withValues(alpha: 0.9),
                     fontSize: 11,
@@ -784,58 +797,51 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
   }
 
   Widget _buildMovementOptions(CoverTestProvider provider) {
+    const double spacing = 8.0;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // D-Pad Layout - Horizontal Compact
-        Center(
-          child: SizedBox(
-            width: double.infinity,
-            child: Column(
-              children: [
-                // Top: Upward (Centered, 50% width)
-                Row(
-                  children: [
-                    const Spacer(),
-                    Expanded(
-                      flex: 2,
-                      child: _buildDPadButton(provider, EyeMovement.upward),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Middle: Inward | Outward
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: _buildDPadButton(provider, EyeMovement.inward),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildDPadButton(provider, EyeMovement.outward),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Bottom: Downward (Centered, 50% width)
-                Row(
-                  children: [
-                    const Spacer(),
-                    Expanded(
-                      flex: 2,
-                      child: _buildDPadButton(provider, EyeMovement.downward),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        // Row 1: [Spacer] | Upward | [Spacer]
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Expanded(child: SizedBox()),
+            const SizedBox(width: spacing),
+            Expanded(child: _buildDPadButton(provider, EyeMovement.upward)),
+            const SizedBox(width: spacing),
+            const Expanded(child: SizedBox()),
+          ],
         ),
-        const SizedBox(height: 12),
-        // No Movement Button
-        _buildDPadButton(provider, EyeMovement.none, isFullWidth: true),
+        const SizedBox(height: spacing),
+        // Row 2: Inward | NO MOVEMENT | Outward
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(child: _buildDPadButton(provider, EyeMovement.inward)),
+            const SizedBox(width: spacing),
+            Expanded(
+              child: _buildDPadButton(
+                provider,
+                EyeMovement.none,
+                label: 'NO\nMOVEMENT',
+              ),
+            ),
+            const SizedBox(width: spacing),
+            Expanded(child: _buildDPadButton(provider, EyeMovement.outward)),
+          ],
+        ),
+        const SizedBox(height: spacing),
+        // Row 3: [Spacer] | Downward | [Spacer]
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Expanded(child: SizedBox()),
+            const SizedBox(width: spacing),
+            Expanded(child: _buildDPadButton(provider, EyeMovement.downward)),
+            const SizedBox(width: spacing),
+            const Expanded(child: SizedBox()),
+          ],
+        ),
       ],
     );
   }
@@ -843,76 +849,88 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
   Widget _buildDPadButton(
     CoverTestProvider provider,
     EyeMovement movement, {
+    String? label,
     bool isFullWidth = false,
   }) {
-    return Material(
-      color: context.surface,
+    final movementLabel = label ?? movement.name.toUpperCase();
+    final isNone = movement == EyeMovement.none;
+
+    return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () async {
-          final p = context.read<CoverTestProvider>();
-          if (p.isRecording) {
-            await _stopRecording(p);
-          }
-          await HapticFeedback.mediumImpact();
-          p.recordObservation(movement);
-        },
-        splashColor: context.primary.withValues(alpha: 0.15),
-        highlightColor: context.primary.withValues(alpha: 0.1),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          width: isFullWidth ? double.infinity : null,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: context.dividerColor.withValues(alpha: 0.1),
+              color: Colors.white.withValues(alpha: 0.2),
+              width: 1,
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
-            children: [
-              _getMovementIcon(movement),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  movement.label,
-                  style: TextStyle(
-                    color: context.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () async {
+                final p = context.read<CoverTestProvider>();
+                if (p.isRecording) {
+                  await _stopRecording(p);
+                }
+                await HapticFeedback.mediumImpact();
+                p.recordObservation(movement);
+              },
+              splashColor: context.primary.withValues(alpha: 0.3),
+              highlightColor: Colors.white.withValues(alpha: 0.1),
+              child: Container(
+                width: isFullWidth ? double.infinity : null,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 8,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isNone
+                          ? Icons.do_not_disturb_on_rounded
+                          : _getMovementIcon(movement),
+                      color: isNone ? Colors.white70 : context.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      movementLabel,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _getMovementIcon(EyeMovement movement) {
-    IconData icon;
+  IconData _getMovementIcon(EyeMovement movement) {
     switch (movement) {
-      case EyeMovement.none:
-        icon = Icons.block;
-        break;
       case EyeMovement.inward:
-        icon = Icons.arrow_back;
-        break;
+        return Icons.keyboard_arrow_left;
       case EyeMovement.outward:
-        icon = Icons.arrow_forward;
-        break;
+        return Icons.keyboard_arrow_right;
       case EyeMovement.upward:
-        icon = Icons.arrow_upward;
-        break;
+        return Icons.keyboard_arrow_up;
       case EyeMovement.downward:
-        icon = Icons.arrow_downward;
-        break;
+        return Icons.keyboard_arrow_down;
+      default:
+        return Icons.circle;
     }
-    return Icon(icon, color: context.primary, size: 18);
   }
 }
