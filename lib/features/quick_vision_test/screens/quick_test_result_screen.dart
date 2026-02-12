@@ -29,7 +29,7 @@ import 'package:visiaxx/data/models/stereopsis_result.dart';
 import 'package:visiaxx/data/models/eye_hydration_result.dart';
 import 'package:visiaxx/data/models/visual_field_result.dart';
 import 'package:visiaxx/data/models/cover_test_result.dart';
-import 'package:visiaxx/features/quick_vision_test/widgets/visual_field_sensitivity_map.dart';
+import 'package:visiaxx/features/quick_vision_test/widgets/visual_field_maps.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
 /// Comprehensive results screen displaying all test data
@@ -4030,7 +4030,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        VisualFieldSensitivityMap(result: result, size: 160),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            VisualFieldGrayscaleMap(result: result, size: 130),
+            const SizedBox(width: 6),
+            VisualFieldPatternDeviationMap(result: result, size: 130),
+          ],
+        ),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
