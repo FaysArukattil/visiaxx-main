@@ -26,6 +26,7 @@ import '../../../data/models/mobile_refractometry_result.dart';
 import '../../../data/models/eye_hydration_result.dart';
 import '../../../data/models/visual_field_result.dart';
 import '../../../data/models/cover_test_result.dart';
+import '../../../data/models/torchlight_test_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
@@ -3587,7 +3588,8 @@ class _PractitionerDashboardScreenState
         result.visualFieldRight != null ||
         result.visualFieldLeft != null ||
         result.visualField != null ||
-        result.coverTest != null;
+        result.coverTest != null ||
+        result.torchlight != null;
 
     if (!hasVA && !hasRefraction && !hasOthers) return const SizedBox.shrink();
 
@@ -3949,6 +3951,52 @@ class _PractitionerDashboardScreenState
                           result.coverTest!.leftEyeStatus.label.toUpperCase(),
                           icon: Icons.visibility_rounded,
                         ),
+                      ],
+                    ),
+                  ],
+                  // Torchlight Examination
+                  if (result.torchlight != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Pupillary Findings
+                        if (result.torchlight!.pupillary != null)
+                          _buildDiagnosticItem(
+                            'PUPILLARY',
+                            result.torchlight!.pupillary!.rapdStatus ==
+                                    RAPDStatus.present
+                                ? 'RAPD DETECTED'
+                                : 'NORMAL',
+                            icon: Icons.remove_red_eye_rounded,
+                          ),
+                        if (result.torchlight!.pupillary != null &&
+                            result.torchlight!.extraocular != null)
+                          Container(
+                            width: 1,
+                            height: 30,
+                            color: context.primary.withValues(alpha: 0.15),
+                          ),
+                        // Extraocular Findings
+                        if (result.torchlight!.extraocular != null)
+                          _buildDiagnosticItem(
+                            'EOM',
+                            (result
+                                        .torchlight!
+                                        .extraocular!
+                                        .nystagmusDetected ||
+                                    result
+                                        .torchlight!
+                                        .extraocular!
+                                        .ptosisDetected ||
+                                    result
+                                        .torchlight!
+                                        .extraocular!
+                                        .affectedNerves
+                                        .isNotEmpty)
+                                ? 'FINDINGS'
+                                : 'NORMAL',
+                            icon: Icons.open_with_rounded,
+                          ),
                       ],
                     ),
                   ],
