@@ -37,8 +37,6 @@ class TorchlightHomeScreen extends StatelessWidget {
                       icon: Icons.remove_red_eye_rounded,
                       color: context.primary,
                       screenWidth: screenWidth,
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/pupillary-exam'),
                     ),
                     const SizedBox(height: 20),
                     _TestCard(
@@ -46,12 +44,8 @@ class TorchlightHomeScreen extends StatelessWidget {
                       description:
                           'Evaluate eye movements across different planes to check for muscle or nerve issues.',
                       icon: Icons.open_with_rounded,
-                      color: context.info,
+                      color: context.primary,
                       screenWidth: screenWidth,
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        '/extraocular-muscle-exam',
-                      ),
                     ),
                     const SizedBox(height: 32),
                   ],
@@ -108,14 +102,7 @@ class TorchlightHomeScreen extends StatelessWidget {
         MediaQuery.of(context).padding.bottom > 0 ? 8 : 24,
       ),
       decoration: BoxDecoration(
-        color: context.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        color: context.scaffoldBackground,
       ),
       child: SizedBox(
         width: double.infinity,
@@ -161,106 +148,96 @@ class _TestCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final double screenWidth;
-  final VoidCallback onTap;
-
   const _TestCard({
     required this.title,
     required this.description,
     required this.icon,
     required this.color,
     required this.screenWidth,
-    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withValues(alpha: 0.12),
-                color.withValues(alpha: 0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: color.withValues(alpha: 0.25),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
+      child: Ink(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withValues(alpha: 0.12),
+              color.withValues(alpha: 0.05),
             ],
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: context.scaffoldBackground,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(icon, color: color, size: 32),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: color.withValues(alpha: 0.25), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.scaffoldBackground,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                        letterSpacing: -0.3,
-                      ),
+              child: Icon(icon, color: color, size: 32),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                      letterSpacing: -0.3,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 14,
+                      height: 1.4,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: color,
-                  size: 14,
-                ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
               ),
-            ],
-          ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: color,
+                size: 14,
+              ),
+            ),
+          ],
         ),
       ),
     );

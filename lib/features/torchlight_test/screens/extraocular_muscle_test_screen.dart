@@ -3,7 +3,6 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:torch_light/torch_light.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../data/models/torchlight_test_result.dart';
 import '../../../data/providers/extraocular_muscle_provider.dart';
@@ -81,12 +80,14 @@ class _ExtraocularMuscleTestScreenState
   }
 
   Future<void> _toggleFlash(bool on) async {
+    if (_cameraController == null || !_isCameraInitialized) {
+      setState(() => _isFlashOn = on);
+      return;
+    }
     try {
-      if (on) {
-        await TorchLight.enableTorch();
-      } else {
-        await TorchLight.disableTorch();
-      }
+      await _cameraController!.setFlashMode(
+        on ? FlashMode.torch : FlashMode.off,
+      );
       setState(() => _isFlashOn = on);
     } catch (e) {
       debugPrint('Flash error: $e');
@@ -109,6 +110,7 @@ class _ExtraocularMuscleTestScreenState
         final savedPath =
             '${tempDir.path}/extraocular_${DateTime.now().millisecondsSinceEpoch}.mp4';
         await File(xFile.path).copy(savedPath);
+        if (!mounted) return;
         setState(() {
           _isRecording = false;
           _recordedVideoPath = savedPath;
@@ -125,6 +127,7 @@ class _ExtraocularMuscleTestScreenState
       // Start recording
       try {
         await _cameraController!.startVideoRecording();
+        if (!mounted) return;
         setState(() => _isRecording = true);
       } catch (e) {
         debugPrint('Start recording error: $e');
@@ -165,6 +168,8 @@ class _ExtraocularMuscleTestScreenState
     _cameraController?.dispose();
     _cameraController = null;
 
+    if (!mounted) return;
+
     final provider = context.read<ExtraocularMuscleProvider>();
     final session = context.read<TestSessionProvider>();
 
@@ -202,7 +207,13 @@ class _ExtraocularMuscleTestScreenState
     final provider = context.watch<ExtraocularMuscleProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Extraocular Muscle Test')),
+      backgroundColor: context.scaffoldBackground,
+      appBar: AppBar(
+        title: const Text('Extraocular Muscle Test'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
       body: provider.currentPhase == ExtraocularPhase.alignment
           ? _buildAlignmentView(provider)
           : _buildTestView(provider),
@@ -211,42 +222,71 @@ class _ExtraocularMuscleTestScreenState
 
   Widget _buildAlignmentView(ExtraocularMuscleProvider provider) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            provider.isAligned
-                ? Icons.check_circle_outline_rounded
-                : Icons.vibration_rounded,
-            size: 80,
-            color: provider.isAligned ? context.success : context.error,
+          const _StepHeader(
+            title: 'Device Alignment',
+            instruction:
+                'Ensure the device is perfectly vertical to ensure accurate tracking results.',
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.all(48),
+            decoration: BoxDecoration(
+              color: (provider.isAligned ? context.success : context.error)
+                  .withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: (provider.isAligned ? context.success : context.error)
+                    .withValues(alpha: 0.2),
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              provider.isAligned
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.vibration_rounded,
+              size: 100,
+              color: provider.isAligned ? context.success : context.error,
+            ),
           ),
           const SizedBox(height: 32),
           Text(
-            provider.isAligned ? 'Device Aligned' : 'Align Device Vertical',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Hold the device steady and vertical at eye level to ensure accurate tracking.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: context.textSecondary),
-          ),
-          const SizedBox(height: 48),
-          ElevatedButton(
-            onPressed: provider.isAligned
-                ? () {
-                    provider.stopSensing();
-                    provider.setPhase(ExtraocularPhase.hPattern);
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+            provider.isAligned
+                ? 'Perfectly Aligned'
+                : 'Align Device Vertically',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
             ),
-            child: const Text('Start Test'),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: provider.isAligned
+                  ? () {
+                      provider.stopSensing();
+                      provider.setPhase(ExtraocularPhase.hPattern);
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Begin Tracking',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ],
       ),
@@ -264,159 +304,190 @@ class _ExtraocularMuscleTestScreenState
 
   Widget _buildTargetContainer() {
     return Container(
-      height: 200,
+      height: 240,
+      margin: const EdgeInsets.all(24),
       width: double.infinity,
-      color: Colors.black,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: context.dividerColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Stack(
         children: [
+          // Background subtle pattern or gradient
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                gradient: RadialGradient(
+                  colors: [
+                    context.primary.withValues(alpha: 0.15),
+                    Colors.transparent,
+                  ],
+                  radius: 0.8,
+                ),
+              ),
+            ),
+          ),
+
           // Target indicator
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.gps_fixed_rounded,
-                  color: Colors.blue,
-                  size: 48,
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.primary.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.gps_fixed_rounded,
+                    color: context.primary,
+                    size: 56,
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Text(
-                  'Follow the target: $_currentDirection',
+                  _currentDirection.toUpperCase(),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+                Text(
+                  'Follow with eyes',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Flashlight toggle (top-left)
+          // Flashlight toggle
           Positioned(
-            top: 12,
-            left: 12,
-            child: GestureDetector(
+            top: 20,
+            left: 20,
+            child: _buildCircularControl(
               onTap: () => _toggleFlash(!_isFlashOn),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _isFlashOn
-                      ? Colors.amber.withValues(alpha: 0.3)
-                      : Colors.white12,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _isFlashOn ? Colors.amber : Colors.white24,
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(
-                  _isFlashOn ? Icons.flashlight_on : Icons.flashlight_off,
-                  color: _isFlashOn ? Colors.amber : Colors.white54,
-                  size: 22,
-                ),
-              ),
+              icon: _isFlashOn ? Icons.flashlight_on : Icons.flashlight_off,
+              isActive: _isFlashOn,
+              activeColor: Colors.amber,
             ),
           ),
 
-          // Video recording toggle (top-right)
+          // Video recording toggle
           Positioned(
-            top: 12,
-            right: 12,
-            child: GestureDetector(
+            top: 20,
+            right: 20,
+            child: _buildCircularControl(
               onTap: _isCameraInitialized ? _toggleRecording : null,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _isRecording
-                      ? Colors.red.withValues(alpha: 0.3)
-                      : Colors.white12,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _isRecording ? Colors.red : Colors.white24,
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(
-                  _isRecording
-                      ? Icons.stop_circle_rounded
-                      : Icons.videocam_rounded,
-                  color: _isRecording ? Colors.red : Colors.white54,
-                  size: 22,
-                ),
-              ),
+              icon: _isRecording ? Icons.stop_rounded : Icons.videocam_rounded,
+              isActive: _isRecording,
+              activeColor: context.error,
             ),
           ),
 
-          // Recording indicator (bottom-center)
+          // Recording indicator
           if (_isRecording)
-            Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.fiber_manual_record,
-                        color: Colors.white,
-                        size: 12,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        'REC',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            Positioned(bottom: 20, left: 20, child: _buildRecordingBadge()),
 
-          // Recorded video indicator (bottom-right)
+          // Saved indicator
           if (_recordedVideoPath != null && !_isRecording)
-            Positioned(
-              bottom: 12,
-              right: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check, color: Colors.white, size: 14),
-                    SizedBox(width: 4),
-                    Text(
-                      'Video Saved',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            Positioned(bottom: 20, right: 20, child: _buildSavedBadge()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCircularControl({
+    required VoidCallback? onTap,
+    required IconData icon,
+    required bool isActive,
+    required Color activeColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isActive ? activeColor.withValues(alpha: 0.2) : Colors.black45,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isActive ? activeColor : Colors.white24,
+            width: 1.5,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: isActive ? activeColor : Colors.white,
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecordingBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: context.error.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.fiber_manual_record, color: Colors.white, size: 12),
+          SizedBox(width: 8),
+          Text(
+            'RECORDING',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSavedBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: context.success.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle_rounded, color: Colors.white, size: 14),
+          SizedBox(width: 6),
+          Text(
+            'SAVED',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );
@@ -424,40 +495,33 @@ class _ExtraocularMuscleTestScreenState
 
   Widget _buildControls(ExtraocularMuscleProvider provider) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Grading of Movement',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          _buildPremiumCard(
+            title: 'Grading: $_currentDirection',
+            child: _buildMovementToggle(provider),
           ),
-          const SizedBox(height: 24),
-          _buildMovementToggle(provider),
-          const SizedBox(height: 32),
-          const Text(
-            'Additional Observations',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          CheckboxListTile(
-            title: const Text('Nystagmus Detected'),
-            value: provider.nystagmusDetected,
-            onChanged: (val) => provider.setNystagmus(val ?? false),
-            activeColor: context.primary,
-          ),
-          CheckboxListTile(
-            title: const Text('Ptosis Detected'),
-            value: provider.ptosisDetected,
-            onChanged: (val) => provider.setPtosis(val ?? false),
-            activeColor: context.primary,
-          ),
-          if (provider.ptosisDetected) ...[
-            const SizedBox(height: 8),
-            Row(
+          const SizedBox(height: 16),
+          _buildPremiumCard(
+            title: 'Additional Observations',
+            child: Column(
               children: [
-                const SizedBox(width: 48),
-                Expanded(
-                  child: SegmentedButton<EyeSide>(
+                _buildObservationToggle(
+                  label: 'Nystagmus Detected',
+                  value: provider.nystagmusDetected,
+                  onChanged: (val) => provider.setNystagmus(val ?? false),
+                ),
+                const Divider(height: 1),
+                _buildObservationToggle(
+                  label: 'Ptosis Detected',
+                  value: provider.ptosisDetected,
+                  onChanged: (val) => provider.setPtosis(val ?? false),
+                ),
+                if (provider.ptosisDetected) ...[
+                  const SizedBox(height: 12),
+                  SegmentedButton<EyeSide>(
                     segments: const [
                       ButtonSegment(value: EyeSide.right, label: Text('Right')),
                       ButtonSegment(value: EyeSide.left, label: Text('Left')),
@@ -465,11 +529,16 @@ class _ExtraocularMuscleTestScreenState
                     selected: {provider.ptosisEye ?? EyeSide.right},
                     onSelectionChanged: (set) =>
                         provider.setPtosis(true, set.first),
+                    style: SegmentedButton.styleFrom(
+                      backgroundColor: context.cardColor,
+                      selectedBackgroundColor: context.primary,
+                      selectedForegroundColor: Colors.white,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
-          ],
+          ),
           const SizedBox(height: 32),
           Row(
             children: [
@@ -483,7 +552,10 @@ class _ExtraocularMuscleTestScreenState
                       });
                     },
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                     child: const Text('Previous'),
                   ),
@@ -494,17 +566,25 @@ class _ExtraocularMuscleTestScreenState
                 child: ElevatedButton(
                   onPressed: _nextDirection,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: context.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
                   ),
                   child: Text(
                     _directionIndex == _directions.length - 1
                         ? 'Finish Test'
                         : 'Next Direction',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 48),
         ],
       ),
     );
@@ -515,19 +595,76 @@ class _ExtraocularMuscleTestScreenState
         provider.getMovement(_currentDirection) ?? MovementQuality.full;
 
     return Column(
-      children: MovementQuality.values
-          .map(
-            (q) => RadioListTile<MovementQuality>(
-              title: Text(q.name.toUpperCase()),
-              subtitle: Text(_getQualityDescription(q)),
-              value: q,
-              groupValue: currentQuality,
-              onChanged: (val) =>
-                  provider.recordMovement(_currentDirection, val!, 0),
-              activeColor: context.primary,
+      children: MovementQuality.values.map((q) {
+        final isSelected = currentQuality == q;
+        return GestureDetector(
+          onTap: () => provider.recordMovement(_currentDirection, q, 0),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? context.primary.withValues(alpha: 0.05)
+                  : context.cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? context.primary
+                    : context.dividerColor.withValues(alpha: 0.2),
+                width: 1.5,
+              ),
             ),
-          )
-          .toList(),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        q.name.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected
+                              ? context.primary
+                              : context.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _getQualityDescription(q),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Icon(Icons.check_circle, color: context.primary, size: 24),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildObservationToggle({
+    required String label,
+    required bool value,
+    required ValueChanged<bool?> onChanged,
+  }) {
+    return SwitchListTile(
+      title: Text(
+        label,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+      ),
+      value: value,
+      onChanged: onChanged,
+      activeColor: context.primary,
+      contentPadding: EdgeInsets.zero,
     );
   }
 
@@ -540,5 +677,88 @@ class _ExtraocularMuscleTestScreenState
       case MovementQuality.absent:
         return 'No movement in this direction';
     }
+  }
+
+  Widget _buildPremiumCard({required String title, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: context.primary,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _StepHeader extends StatelessWidget {
+  final String title;
+  final String instruction;
+
+  const _StepHeader({required this.title, required this.instruction});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                color: context.primary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          instruction,
+          style: TextStyle(
+            color: context.textSecondary,
+            fontSize: 15,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
   }
 }

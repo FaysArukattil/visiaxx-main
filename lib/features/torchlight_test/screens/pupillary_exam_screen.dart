@@ -4,7 +4,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:torch_light/torch_light.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../data/models/torchlight_test_result.dart';
 import '../../../data/providers/test_session_provider.dart';
@@ -34,11 +35,14 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   // Camera state for RAPD capture
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
-  bool _isTimerRunning = false;
-  int _timerSeconds = 5;
-  Timer? _countdownTimer;
-  String? _rapdImagePath;
+  bool _isRecording = false;
+  String? _recordedVideoPath;
   bool _isCapturing = false;
+
+  // Video Preview State
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  bool _showPreview = false;
 
   // Results state
   double _leftSize = 3.5;
@@ -51,10 +55,17 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   EyeSide? _rapdEye;
 
   @override
+  void initState() {
+    super.initState();
+    _initCamera();
+  }
+
+  @override
   void dispose() {
-    _turnOffFlash();
-    _countdownTimer?.cancel();
+    _cameraController?.setFlashMode(FlashMode.off);
     _cameraController?.dispose();
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
     super.dispose();
   }
 
@@ -83,69 +94,88 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   }
 
   void _disposeCamera() {
-    _countdownTimer?.cancel();
     _cameraController?.dispose();
     _cameraController = null;
     _isCameraInitialized = false;
-    _isTimerRunning = false;
-    _timerSeconds = 5;
   }
 
-  void _startRAPDTimer() {
-    setState(() {
-      _isTimerRunning = true;
-      _timerSeconds = 5;
-    });
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_timerSeconds <= 1) {
-        timer.cancel();
-        _captureRAPDImage();
-      } else {
-        setState(() => _timerSeconds--);
+  Future<void> _toggleRecording() async {
+    if (_cameraController == null || !_isCameraInitialized) return;
+    if (_isRecording) {
+      // Stop recording
+      try {
+        final xFile = await _cameraController!.stopVideoRecording();
+        final tempDir = await getTemporaryDirectory();
+        final savedPath =
+            '${tempDir.path}/rapd_${DateTime.now().millisecondsSinceEpoch}.mp4';
+        await File(xFile.path).copy(savedPath);
+
+        if (!mounted) return;
+        setState(() {
+          _isRecording = false;
+          _recordedVideoPath = savedPath;
+          _showPreview = true;
+        });
+
+        _initializeVideoPlayer(savedPath);
+      } catch (e) {
+        debugPrint('Stop recording error: $e');
+        setState(() => _isRecording = false);
       }
-    });
-  }
-
-  Future<void> _captureRAPDImage() async {
-    if (_isCapturing ||
-        _cameraController == null ||
-        !_cameraController!.value.isInitialized)
-      return;
-    setState(() => _isCapturing = true);
-    try {
-      final xFile = await _cameraController!.takePicture();
-      final tempDir = await getTemporaryDirectory();
-      final savedPath =
-          '${tempDir.path}/rapd_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      await File(xFile.path).copy(savedPath);
-      setState(() {
-        _rapdImagePath = savedPath;
-        _isTimerRunning = false;
-        _isCapturing = false;
-      });
-    } catch (e) {
-      debugPrint('Capture error: $e');
-      setState(() {
-        _isTimerRunning = false;
-        _isCapturing = false;
-      });
+    } else {
+      // Start recording
+      try {
+        await _cameraController!.startVideoRecording();
+        if (!mounted) return;
+        setState(() => _isRecording = true);
+      } catch (e) {
+        debugPrint('Start recording error: $e');
+      }
     }
   }
 
-  void _retakeRAPDImage() {
+  Future<void> _initializeVideoPlayer(String path) async {
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+
+    _videoPlayerController = VideoPlayerController.file(File(path));
+    await _videoPlayerController!.initialize();
+
+    _chewieController = ChewieController(
+      videoPlayerController: _videoPlayerController!,
+      autoPlay: true,
+      looping: false,
+      aspectRatio: _videoPlayerController!.value.aspectRatio,
+      showControls: true,
+      materialProgressColors: ChewieProgressColors(
+        playedColor: context.primary,
+        handleColor: context.primary,
+        bufferedColor: context.primary.withValues(alpha: 0.3),
+        backgroundColor: Colors.white24,
+      ),
+    );
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _retakeRAPDVideo() {
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
     setState(() {
-      _rapdImagePath = null;
-      _timerSeconds = 5;
+      _recordedVideoPath = null;
+      _showPreview = false;
     });
   }
 
   Future<void> _toggleFlash(bool on) async {
+    if (_cameraController == null || !_isCameraInitialized) {
+      setState(() => _isFlashOn = on);
+      return;
+    }
     try {
-      if (on) {
-        await TorchLight.enableTorch();
-      } else {
-        await TorchLight.disableTorch();
-      }
+      await _cameraController!.setFlashMode(
+        on ? FlashMode.torch : FlashMode.off,
+      );
       setState(() => _isFlashOn = on);
     } catch (e) {
       debugPrint('Flash error: $e');
@@ -169,10 +199,12 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
 
       if (_currentStep == PupillaryStep.rapd &&
           previousStep != PupillaryStep.rapd) {
-        _initCamera();
+        // Camera is already initialized in initState
       }
 
       if (_currentStep == PupillaryStep.finished) {
+        _videoPlayerController?.dispose();
+        _chewieController?.dispose();
         _disposeCamera();
         _saveAndFinish();
       }
@@ -191,7 +223,7 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
       rapdStatus: _rapdStatus,
       rapdAffectedEye: _rapdEye,
       anisocoriaDifference: (_leftSize - _rightSize).abs(),
-      rapdImagePath: _rapdImagePath,
+      rapdVideoPath: _recordedVideoPath,
     );
 
     // This would normally be part of a larger TorchlightTestResult
@@ -275,38 +307,52 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
 
   Widget _buildBaselineStep() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _StepHeader(
             title: 'Baseline Assessment',
             instruction:
-                'Observe both pupils in ambient light. Adjust sizes if they appear different.',
-          ),
-          const SizedBox(height: 32),
-          _buildSizeSlider(
-            'Right Pupil',
-            _rightSize,
-            (val) => setState(() => _rightSize = val),
+                'Observe both pupils in ambient light. Adjust sizes and shapes if they appear abnormal.',
           ),
           const SizedBox(height: 24),
-          _buildSizeSlider(
-            'Left Pupil',
-            _leftSize,
-            (val) => setState(() => _leftSize = val),
-          ),
-          const SizedBox(height: 32),
-          _buildShapeSelector(
-            'Right Shape',
-            _rightShape,
-            (val) => setState(() => _rightShape = val!),
+          _buildPremiumCard(
+            title: 'Pupil Size (mm)',
+            child: Column(
+              children: [
+                _buildSizeSlider(
+                  'Right Pupil',
+                  _rightSize,
+                  (val) => setState(() => _rightSize = val),
+                ),
+                const SizedBox(height: 16),
+                _buildSizeSlider(
+                  'Left Pupil',
+                  _leftSize,
+                  (val) => setState(() => _leftSize = val),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
-          _buildShapeSelector(
-            'Left Shape',
-            _leftShape,
-            (val) => setState(() => _leftShape = val!),
+          _buildPremiumCard(
+            title: 'Pupil Shape',
+            child: Column(
+              children: [
+                _buildShapeSelector(
+                  'Right Eye',
+                  _rightShape,
+                  (val) => setState(() => _rightShape = val!),
+                ),
+                const SizedBox(height: 16),
+                _buildShapeSelector(
+                  'Left Eye',
+                  _leftShape,
+                  (val) => setState(() => _leftShape = val!),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -316,19 +362,22 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   Widget _buildDirectReflexStep() {
     final isRight = _currentStep == PupillaryStep.directRight;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         children: [
           _StepHeader(
             title: 'Direct Light Reflex',
             instruction:
-                'Shine the light directly into the ${isRight ? "RIGHT" : "LEFT"} eye. Does the pupil constrict?',
+                'Shine the light directly into the ${isRight ? "RIGHT" : "LEFT"} eye. Observe the immediate constriction.',
           ),
-          const SizedBox(height: 48),
-          _buildReflexSelector(
-            'Direct Response',
-            _directReflex,
-            (val) => setState(() => _directReflex = val!),
+          const SizedBox(height: 32),
+          _buildPremiumCard(
+            title: 'Reaction Observed',
+            child: _buildReflexSelector(
+              'Direct Response',
+              _directReflex,
+              (val) => setState(() => _directReflex = val!),
+            ),
           ),
         ],
       ),
@@ -338,19 +387,22 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   Widget _buildConsensualStep() {
     final isRightSource = _currentStep == PupillaryStep.consensualRight;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         children: [
           _StepHeader(
-            title: 'Consensual Light Reflex',
+            title: 'Consensual Reflex',
             instruction:
-                'Shine the light in the ${isRightSource ? "RIGHT" : "LEFT"} eye while observing the OTHER pupil.',
+                'Shine the light in the ${isRightSource ? "RIGHT" : "LEFT"} eye while observing the OPPOSITE pupil.',
           ),
-          const SizedBox(height: 48),
-          _buildReflexSelector(
-            'Consensual Response',
-            _consensualReflex,
-            (val) => setState(() => _consensualReflex = val!),
+          const SizedBox(height: 32),
+          _buildPremiumCard(
+            title: 'Consensual Reaction',
+            child: _buildReflexSelector(
+              'Consensual Response',
+              _consensualReflex,
+              (val) => setState(() => _consensualReflex = val!),
+            ),
           ),
         ],
       ),
@@ -359,174 +411,197 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
 
   Widget _buildRAPDStep() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         children: [
           const _StepHeader(
             title: 'Swinging Light Test (RAPD)',
             instruction:
-                'Swing the light rapidly from one eye to the other. Look for paradoxical dilation.',
+                'Swing the light rapidly from one eye to the other. Manually record the pupil reactions.',
           ),
           const SizedBox(height: 24),
 
-          // Camera preview / captured image
+          // Camera preview / Video preview
           Container(
-            height: 220,
+            height: 240,
             width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.black,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: _isTimerRunning ? context.primary : context.dividerColor,
-                width: _isTimerRunning ? 3 : 1,
+                color: _isRecording
+                    ? context.error
+                    : context.dividerColor.withValues(alpha: 0.3),
+                width: _isRecording ? 2 : 1.5,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: (_isRecording ? context.error : Colors.black)
+                      .withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(19),
-              child: _rapdImagePath != null
-                  ? Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.file(File(_rapdImagePath!), fit: BoxFit.cover),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: context.success,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(6),
-                            child: const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
+              borderRadius: BorderRadius.circular(22),
+              child: _showPreview && _chewieController != null
+                  ? Chewie(controller: _chewieController!)
                   : _isCameraInitialized && _cameraController != null
                   ? Stack(
                       fit: StackFit.expand,
                       children: [
                         CameraPreview(_cameraController!),
-                        if (_isTimerRunning)
-                          Center(
-                            child: Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: context.primary,
-                                  width: 3,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$_timerSeconds',
-                                  style: const TextStyle(
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (_isCapturing)
-                          Container(
-                            color: Colors.white24,
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                              ),
-                            ),
+                        if (_isRecording)
+                          Positioned(
+                            top: 16,
+                            right: 16,
+                            child: _buildRecordingIndicator(),
                           ),
                       ],
                     )
                   : const Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircularProgressIndicator(color: Colors.white54),
-                          SizedBox(height: 12),
-                          Text(
-                            'Initializing camera...',
-                            style: TextStyle(color: Colors.white54),
-                          ),
-                        ],
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Timer / Capture controls
-          if (_rapdImagePath != null)
-            OutlinedButton.icon(
-              onPressed: _retakeRAPDImage,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retake Image'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-            )
-          else if (!_isTimerRunning && _isCameraInitialized)
-            ElevatedButton.icon(
-              onPressed: _startRAPDTimer,
-              icon: const Icon(Icons.timer),
-              label: const Text('Start 5s Timer'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.primary,
-                foregroundColor: context.onPrimary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-
           const SizedBox(height: 24),
 
-          // RAPD status dropdowns (original controls)
-          DropdownButtonFormField<RAPDStatus>(
-            value: _rapdStatus,
-            decoration: const InputDecoration(labelText: 'RAPD Finding'),
-            items: RAPDStatus.values
-                .map(
-                  (e) => DropdownMenuItem(
-                    value: e,
-                    child: Text(e.name.toUpperCase()),
-                  ),
-                )
-                .toList(),
-            onChanged: (val) => setState(() => _rapdStatus = val!),
-          ),
-          if (_rapdStatus == RAPDStatus.present) ...[
-            const SizedBox(height: 16),
-            DropdownButtonFormField<EyeSide>(
-              value: _rapdEye,
-              decoration: const InputDecoration(labelText: 'Affected Eye'),
-              items: [EyeSide.right, EyeSide.left]
-                  .map(
-                    (e) => DropdownMenuItem(
-                      value: e,
-                      child: Text(e.name.toUpperCase()),
+          // Action Buttons
+          if (_showPreview)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _retakeRAPDVideo,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Retake Video'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                  )
-                  .toList(),
-              onChanged: (val) => setState(() => _rapdEye = val),
+                  ),
+                ),
+              ],
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _toggleRecording,
+                icon: Icon(
+                  _isRecording ? Icons.stop_rounded : Icons.videocam_rounded,
+                ),
+                label: Text(
+                  _isRecording ? 'Stop Recording' : 'Start Recording',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isRecording
+                      ? context.error
+                      : context.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+              ),
             ),
-          ],
+
+          const SizedBox(height: 32),
+
+          // Findings
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: context.cardColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: context.dividerColor.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Clinical Finding',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<RAPDStatus>(
+                  value: _rapdStatus,
+                  decoration: InputDecoration(
+                    labelText: 'RAPD Status',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: RAPDStatus.values
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e.name.toUpperCase()),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) => setState(() => _rapdStatus = val!),
+                ),
+                if (_rapdStatus == RAPDStatus.present) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<EyeSide>(
+                    value: _rapdEye,
+                    decoration: InputDecoration(
+                      labelText: 'Affected Eye',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: [EyeSide.right, EyeSide.left]
+                        .map(
+                          (e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(e.name.toUpperCase()),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) => setState(() => _rapdEye = val),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecordingIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.fiber_manual_record, color: Colors.white, size: 12),
+          SizedBox(width: 6),
+          Text(
+            'REC',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -660,6 +735,42 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
       ),
     );
   }
+
+  Widget _buildPremiumCard({required String title, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: context.primary,
+              letterSpacing: 0.5,
+              textBaseline: TextBaseline.alphabetic,
+            ),
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
 }
 
 class _StepHeader extends StatelessWidget {
@@ -673,16 +784,37 @@ class _StepHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                color: context.primary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           instruction,
-          style: TextStyle(color: context.textSecondary, fontSize: 16),
+          style: TextStyle(
+            color: context.textSecondary,
+            fontSize: 15,
+            height: 1.5,
+          ),
         ),
       ],
     );

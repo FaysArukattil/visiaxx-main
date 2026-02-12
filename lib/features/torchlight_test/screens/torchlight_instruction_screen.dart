@@ -25,13 +25,13 @@ class _TorchlightInstructionScreenState
   final List<String> _stepTitles = [
     'Test Preparation',
     'Pupillary Examination',
-    'Extraocular Muscle Test',
+    'Follow Practitioner\'s Light',
   ];
 
   final List<String> _ttsMessages = [
     'Find a dimly lit room and ensure your phone\'s flashlight is ready. Maintain a distance of about forty centimeters.',
     'The examiner will shine a light in each eye to check reactions and look for Marcus Gunn pupil.',
-    'Follow the moving target on the screen without moving your head to test eye muscles.',
+    'Look directly at the practitioner or the device camera. Keep your head still while the examiner moves a light to test your eye movements.',
   ];
 
   @override
@@ -149,8 +149,8 @@ class _TorchlightInstructionScreenState
                     _buildStep(
                       2,
                       Icons.open_with_rounded,
-                      'Eye Movements',
-                      'Please follow the moving target on the screen without moving your head or neck.',
+                      'Follow Practitioner',
+                      'Look directly at the practitioner or the device camera. The examiner will move a light source to test your eye movements.',
                       context.success,
                       animation: const StayFocusedAnimation(isCompact: true),
                     ),

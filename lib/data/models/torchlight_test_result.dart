@@ -27,6 +27,8 @@ class PupillaryResult {
   final double? anisocoriaDifference; // mm difference between pupils
   final String? rapdImagePath; // Local path to RAPD pupil capture image
   final String? rapdImageUrl; // AWS URL for RAPD pupil capture image
+  final String? rapdVideoPath; // Local path to RAPD video
+  final String? rapdVideoUrl; // AWS URL for RAPD video
 
   PupillaryResult({
     required this.leftPupilSize,
@@ -41,6 +43,8 @@ class PupillaryResult {
     this.anisocoriaDifference,
     this.rapdImagePath,
     this.rapdImageUrl,
+    this.rapdVideoPath,
+    this.rapdVideoUrl,
   });
 
   Map<String, dynamic> toJson() {
@@ -57,6 +61,8 @@ class PupillaryResult {
       'anisocoriaDifference': anisocoriaDifference,
       'rapdImagePath': rapdImagePath,
       'rapdImageUrl': rapdImageUrl,
+      'rapdVideoPath': rapdVideoPath,
+      'rapdVideoUrl': rapdVideoUrl,
     };
   }
 
@@ -86,6 +92,8 @@ class PupillaryResult {
       anisocoriaDifference: (json['anisocoriaDifference'] as num?)?.toDouble(),
       rapdImagePath: json['rapdImagePath'],
       rapdImageUrl: json['rapdImageUrl'],
+      rapdVideoPath: json['rapdVideoPath'],
+      rapdVideoUrl: json['rapdVideoUrl'],
     );
   }
 
@@ -116,6 +124,8 @@ class PupillaryResult {
       anisocoriaDifference: anisocoriaDifference ?? this.anisocoriaDifference,
       rapdImagePath: rapdImagePath ?? this.rapdImagePath,
       rapdImageUrl: rapdImageUrl ?? this.rapdImageUrl,
+      rapdVideoPath: rapdVideoPath ?? this.rapdVideoPath,
+      rapdVideoUrl: rapdVideoUrl ?? this.rapdVideoUrl,
     );
   }
 }
