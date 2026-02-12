@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/extensions/theme_extension.dart';
+import '../../../data/providers/test_session_provider.dart';
 
 class TorchlightHomeScreen extends StatelessWidget {
   const TorchlightHomeScreen({super.key});
@@ -101,13 +103,15 @@ class TorchlightHomeScreen extends StatelessWidget {
         24,
         MediaQuery.of(context).padding.bottom > 0 ? 8 : 24,
       ),
-      decoration: BoxDecoration(
-        color: context.scaffoldBackground,
-      ),
+      decoration: BoxDecoration(color: context.scaffoldBackground),
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () {
+            // Initialize individual test session
+            context.read<TestSessionProvider>().startIndividualTest(
+              'torchlight',
+            );
             // Start the continuous flow: Instructions -> Pupillary -> Extraocular
             Navigator.pushNamed(context, '/torchlight-instructions');
           },

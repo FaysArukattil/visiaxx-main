@@ -286,6 +286,9 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       case 'cover_test':
                         routeName = '/cover-test-intro';
                         break;
+                      case 'torchlight':
+                        routeName = '/torchlight-instructions';
+                        break;
                     }
                   }
 
