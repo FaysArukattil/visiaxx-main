@@ -5,7 +5,10 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../data/providers/test_session_provider.dart';
+import '../../../data/models/visual_field_result.dart';
 import '../../quick_vision_test/widgets/instruction_animations.dart';
+import 'visual_field_cover_eye_screen.dart';
+import 'visual_field_test_screen.dart';
 
 class VisualFieldInstructionsScreen extends StatefulWidget {
   const VisualFieldInstructionsScreen({super.key});
@@ -59,7 +62,26 @@ class _VisualFieldInstructionsScreenState
 
   void _handleContinue() {
     _ttsService.stop();
-    Navigator.pushReplacementNamed(context, '/visual-field-test');
+    // Start session once at the beginning of the sequential test
+    context.read<TestSessionProvider>().startIndividualTest('visual_field');
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VisualFieldCoverEyeScreen(
+          eyeToCover: VisualFieldEye.left, // Cover left to test right
+          onContinue: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    const VisualFieldScreen(eye: VisualFieldEye.right),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   @override

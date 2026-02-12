@@ -172,7 +172,9 @@ class VisualFieldProvider extends ChangeNotifier {
     sensitivity.forEach((quadrant, score) {
       if (score < 0.7) {
         String level = score < 0.4 ? "Significant" : "Mild";
-        findings.add("$level sensitivity reduction in the ${quadrant.label}");
+        findings.add(
+          "$level sensitivity reduction in the ${quadrant.getLabel(_selectedEye)}",
+        );
       }
     });
 
@@ -190,7 +192,7 @@ class VisualFieldProvider extends ChangeNotifier {
       quadrantSensitivity: getQuadrantResults(),
       totalStimuli: totalCount,
       detectedStimuli: detectedCount,
-      stimuliResults: _results,
+      stimuliResults: List.from(_results),
     );
   }
 

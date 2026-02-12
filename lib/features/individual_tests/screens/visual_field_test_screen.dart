@@ -8,22 +8,29 @@ import '../../../core/utils/navigation_utils.dart';
 import '../../../data/providers/visual_field_provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../data/models/visual_field_result.dart';
+import 'visual_field_cover_eye_screen.dart';
 
 class VisualFieldScreen extends StatefulWidget {
-  const VisualFieldScreen({Key? key}) : super(key: key);
+  final VisualFieldEye? eye;
+  const VisualFieldScreen({Key? key, this.eye}) : super(key: key);
 
   @override
   State<VisualFieldScreen> createState() => _VisualFieldScreenState();
 }
 
 class _VisualFieldScreenState extends State<VisualFieldScreen> {
+  bool _isHandlingCompletion = false;
+
   @override
   void initState() {
     super.initState();
+    // Synchronously reset provider state to avoid seeing completion from previous phases
+    context.read<VisualFieldProvider>().reset();
+
     // Start test immediately when screen is loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<VisualFieldProvider>().startTest();
-      context.read<TestSessionProvider>().startIndividualTest('visual_field');
+      if (!mounted) return;
+      context.read<VisualFieldProvider>().startTest(eye: widget.eye);
     });
   }
 
@@ -60,13 +67,41 @@ class _VisualFieldScreenState extends State<VisualFieldScreen> {
   }
 
   void _handleTestComplete(VisualFieldProvider provider) {
+    if (_isHandlingCompletion) return;
+    setState(() => _isHandlingCompletion = true);
+
     final sessionProvider = context.read<TestSessionProvider>();
     final result = provider.createResult();
     sessionProvider.setVisualFieldResult(result);
 
-    // Smooth transition to results
+    // Reset provider state immediately to stop isComplete from triggering again
+    provider.reset();
+
+    // Smooth transition
     Future.delayed(500.ms, () {
-      if (mounted) {
+      if (!mounted) return;
+
+      if (result.eye == VisualFieldEye.right) {
+        // If Right Eye finished, prepare to test Left Eye
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VisualFieldCoverEyeScreen(
+              eyeToCover: VisualFieldEye.right,
+              onContinue: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const VisualFieldScreen(eye: VisualFieldEye.left),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        // If Left Eye finished, go to results
         Navigator.pushReplacementNamed(context, '/quick-test-result');
       }
     });
@@ -76,7 +111,7 @@ class _VisualFieldScreenState extends State<VisualFieldScreen> {
   Widget build(BuildContext context) {
     return Consumer<VisualFieldProvider>(
       builder: (context, provider, child) {
-        if (provider.isComplete) {
+        if (provider.isComplete && !_isHandlingCompletion) {
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => _handleTestComplete(provider),
           );

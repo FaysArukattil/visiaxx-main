@@ -2,14 +2,32 @@ import 'package:flutter/material.dart';
 
 /// Quadrants for visual field testing
 enum VisualFieldQuadrant {
-  topRight('Upper Temporal'),
-  topLeft('Upper Nasal'),
-  bottomRight('Lower Temporal'),
-  bottomLeft('Lower Nasal'),
-  center('Central');
+  topRight,
+  topLeft,
+  bottomRight,
+  bottomLeft,
+  center;
 
-  final String label;
-  const VisualFieldQuadrant(this.label);
+  String getLabel(VisualFieldEye? eye) {
+    if (this == center) return 'Central';
+
+    // For Right Eye: Right side is Temporal, Left side is Nasal
+    // For Left Eye: Left side is Temporal, Right side is Nasal
+    final isRightEye = eye == null || eye == VisualFieldEye.right;
+
+    switch (this) {
+      case topRight:
+        return isRightEye ? 'Upper Temporal' : 'Upper Nasal';
+      case topLeft:
+        return isRightEye ? 'Upper Nasal' : 'Upper Temporal';
+      case bottomRight:
+        return isRightEye ? 'Lower Temporal' : 'Lower Nasal';
+      case bottomLeft:
+        return isRightEye ? 'Lower Nasal' : 'Lower Temporal';
+      default:
+        return '';
+    }
+  }
 }
 
 /// Eye being tested

@@ -2748,12 +2748,12 @@ class PdfExportService {
             pw.Row(
               children: [
                 _buildPdfQuadrantItem(
-                  VisualFieldQuadrant.topRight.label,
+                  VisualFieldQuadrant.topRight.getLabel(res.eye),
                   res.quadrantSensitivity[VisualFieldQuadrant.topRight] ?? 0,
                 ),
                 pw.SizedBox(width: 6),
                 _buildPdfQuadrantItem(
-                  VisualFieldQuadrant.topLeft.label,
+                  VisualFieldQuadrant.topLeft.getLabel(res.eye),
                   res.quadrantSensitivity[VisualFieldQuadrant.topLeft] ?? 0,
                 ),
               ],
@@ -2762,12 +2762,12 @@ class PdfExportService {
             pw.Row(
               children: [
                 _buildPdfQuadrantItem(
-                  VisualFieldQuadrant.bottomRight.label,
+                  VisualFieldQuadrant.bottomRight.getLabel(res.eye),
                   res.quadrantSensitivity[VisualFieldQuadrant.bottomRight] ?? 0,
                 ),
                 pw.SizedBox(width: 6),
                 _buildPdfQuadrantItem(
-                  VisualFieldQuadrant.bottomLeft.label,
+                  VisualFieldQuadrant.bottomLeft.getLabel(res.eye),
                   res.quadrantSensitivity[VisualFieldQuadrant.bottomLeft] ?? 0,
                 ),
               ],

@@ -805,42 +805,30 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       ),
       child: Column(
         children: [
-          // Eyes comparison
-          Row(
-            children: [
-              Expanded(
-                child: _buildEyeResult(
-                  'Right Eye',
-                  rightResult?.snellenScore ?? 'N/A',
-                  rightResult?.status ?? 'N/A',
-                  context.primary,
-                ),
+          // Eyes comparison (Stacked for better readability)
+          if (rightResult != null)
+            _buildEyeResult(
+              'Right Eye',
+              rightResult.snellenScore,
+              rightResult.status,
+              context.primary,
+            ),
+          if (rightResult != null && leftResult != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: context.dividerColor.withValues(alpha: 0.1),
               ),
-              Container(
-                width: 1.5,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      context.dividerColor.withValues(alpha: 0.1),
-                      context.dividerColor,
-                      context.dividerColor.withValues(alpha: 0.1),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _buildEyeResult(
-                  'Left Eye',
-                  leftResult?.snellenScore ?? 'N/A',
-                  leftResult?.status ?? 'N/A',
-                  context.info,
-                ),
-              ),
-            ],
-          ),
+            ),
+          if (leftResult != null)
+            _buildEyeResult(
+              'Left Eye',
+              leftResult.snellenScore,
+              leftResult.status,
+              context.info,
+            ),
           const Divider(height: 48, thickness: 1),
           // Clinical Interpretation
           _buildClinicalInfoSection(
@@ -1044,37 +1032,26 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       ),
       child: Column(
         children: [
-          // Eyes comparison
-          Row(
+          // Eyes comparison (Stacked for better readability)
+          Column(
             children: [
-              Expanded(
-                child: _buildColorEyeResult(
-                  'Right Eye',
-                  result.rightEye,
-                  const Color(0xFF8B5CF6), // Violet
+              _buildColorEyeResult(
+                'Right Eye',
+                result.rightEye,
+                const Color(0xFF8B5CF6), // Violet
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: context.dividerColor.withValues(alpha: 0.1),
                 ),
               ),
-              Container(
-                width: 1.5,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      context.dividerColor.withValues(alpha: 0.1),
-                      context.dividerColor.withValues(alpha: 0.3),
-                      context.dividerColor.withValues(alpha: 0.1),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _buildColorEyeResult(
-                  'Left Eye',
-                  result.leftEye,
-                  const Color(0xFFEC4899), // Pink
-                ),
+              _buildColorEyeResult(
+                'Left Eye',
+                result.leftEye,
+                const Color(0xFFEC4899), // Pink
               ),
             ],
           ),
@@ -1231,37 +1208,29 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       ),
       child: Column(
         children: [
-          Row(
+          Column(
             children: [
-              Expanded(
-                child: _buildAmslerEyeResult(
+              if (rightResult != null)
+                _buildAmslerEyeResult(
                   'Right Eye',
                   rightResult,
                   const Color(0xFF3B82F6),
                 ),
-              ),
-              Container(
-                width: 1.5,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      context.dividerColor.withValues(alpha: 0.1),
-                      context.dividerColor.withValues(alpha: 0.3),
-                      context.dividerColor.withValues(alpha: 0.1),
-                    ],
+              if (rightResult != null && leftResult != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: context.dividerColor.withValues(alpha: 0.1),
                   ),
                 ),
-              ),
-              Expanded(
-                child: _buildAmslerEyeResult(
+              if (leftResult != null)
+                _buildAmslerEyeResult(
                   'Left Eye',
                   leftResult,
                   const Color(0xFF6366F1),
                 ),
-              ),
             ],
           ),
           const Divider(height: 48, thickness: 1),
@@ -3645,40 +3614,23 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Professional Results Grid
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Professional Results Grid (Stacked for better readability)
+          Column(
             children: [
-              Expanded(
-                child: _buildShadowEyeResult(
-                  'Right Eye',
-                  result.rightEye,
-                  context.primary,
+              _buildShadowEyeResult(
+                'Right Eye',
+                result.rightEye,
+                context.primary,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: context.dividerColor.withValues(alpha: 0.1),
                 ),
               ),
-              Container(
-                width: 1,
-                height: 120,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      context.dividerColor.withValues(alpha: 0.1),
-                      context.dividerColor.withValues(alpha: 0.3),
-                      context.dividerColor.withValues(alpha: 0.1),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _buildShadowEyeResult(
-                  'Left Eye',
-                  result.leftEye,
-                  context.info,
-                ),
-              ),
+              _buildShadowEyeResult('Left Eye', result.leftEye, context.info),
             ],
           ),
           const Divider(height: 48, thickness: 1),
@@ -4009,35 +3961,30 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         child: Column(
           children: [
             if (resultRight != null || resultLeft != null) ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Column(
                 children: [
                   if (resultRight != null)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: _buildVisualFieldEyeSection(
-                          'Right Eye',
-                          resultRight,
-                          context.primary,
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: _buildVisualFieldEyeSection(
+                        'Right Eye',
+                        resultRight,
+                        context.primary,
                       ),
                     ),
                   if (resultRight != null && resultLeft != null)
-                    VerticalDivider(
-                      width: 1,
+                    Divider(
+                      height: 1,
                       thickness: 1,
                       color: context.dividerColor.withValues(alpha: 0.1),
                     ),
                   if (resultLeft != null)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: _buildVisualFieldEyeSection(
-                          'Left Eye',
-                          resultLeft,
-                          context.info,
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: _buildVisualFieldEyeSection(
+                        'Left Eye',
+                        resultLeft,
+                        context.info,
                       ),
                     ),
                 ],
@@ -4107,13 +4054,13 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               children: [
                 _buildQuadrantItem(
                   context,
-                  VisualFieldQuadrant.topRight.label,
+                  VisualFieldQuadrant.topRight.getLabel(result.eye),
                   result.quadrantSensitivity[VisualFieldQuadrant.topRight] ?? 0,
                 ),
                 const SizedBox(width: 8),
                 _buildQuadrantItem(
                   context,
-                  VisualFieldQuadrant.topLeft.label,
+                  VisualFieldQuadrant.topLeft.getLabel(result.eye),
                   result.quadrantSensitivity[VisualFieldQuadrant.topLeft] ?? 0,
                 ),
               ],
@@ -4123,14 +4070,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
               children: [
                 _buildQuadrantItem(
                   context,
-                  VisualFieldQuadrant.bottomRight.label,
+                  VisualFieldQuadrant.bottomRight.getLabel(result.eye),
                   result.quadrantSensitivity[VisualFieldQuadrant.bottomRight] ??
                       0,
                 ),
                 const SizedBox(width: 8),
                 _buildQuadrantItem(
                   context,
-                  VisualFieldQuadrant.bottomLeft.label,
+                  VisualFieldQuadrant.bottomLeft.getLabel(result.eye),
                   result.quadrantSensitivity[VisualFieldQuadrant.bottomLeft] ??
                       0,
                 ),
