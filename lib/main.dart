@@ -60,6 +60,7 @@ import 'data/providers/eye_hydration_provider.dart';
 import 'data/providers/visual_field_provider.dart';
 import 'data/providers/cover_test_provider.dart';
 import 'features/individual_tests/screens/eye_hydration_instructions_screen.dart';
+import 'features/individual_tests/screens/eye_hydration_topic_selection_screen.dart';
 import 'features/individual_tests/screens/eye_hydration_test_screen.dart';
 import 'features/individual_tests/screens/visual_field_instructions_screen.dart';
 import 'features/individual_tests/screens/visual_field_test_screen.dart';
@@ -333,6 +334,8 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/stereopsis-test': (context) => const StereopsisTestScreen(),
               '/eye-hydration-test-intro': (context) =>
                   const EyeHydrationInstructionsScreen(),
+              '/eye-hydration-topic-selection': (context) =>
+                  const EyeHydrationTopicSelectionScreen(),
               '/eye-hydration-test': (context) =>
                   const EyeHydrationTestScreen(),
               '/visual-field-test-intro': (context) =>

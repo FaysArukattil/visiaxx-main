@@ -107,9 +107,12 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
           return Scaffold(
             backgroundColor: context.scaffoldBackground,
             appBar: AppBar(
-              title: const Text(
-                'Eye Hydration',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              title: Text(
+                'Hydration: ${provider.selectedTopic}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
               elevation: 0,
               backgroundColor: context.cardColor,

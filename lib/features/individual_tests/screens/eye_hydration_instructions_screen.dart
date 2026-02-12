@@ -64,7 +64,7 @@ class _EyeHydrationInstructionsScreenState
 
   void _handleContinue() {
     _ttsService.stop();
-    Navigator.pushReplacementNamed(context, '/eye-hydration-test');
+    Navigator.pushReplacementNamed(context, '/eye-hydration-topic-selection');
   }
 
   @override
