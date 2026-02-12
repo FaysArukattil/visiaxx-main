@@ -203,6 +203,15 @@ class IndividualTestsScreen extends StatelessWidget {
           onTap: () => _handleTestSelection(context, 'cover_test'),
           screenWidth: screenWidth,
         ),
+        SizedBox(height: cardSpacing),
+        _IndividualTestCard(
+          icon: Icons.highlight_rounded,
+          title: 'Torchlight Examination',
+          description:
+              'Check pupil reflexes and extraocular muscle movements using torchlight',
+          onTap: () => _handleTestSelection(context, 'torchlight'),
+          screenWidth: screenWidth,
+        ),
       ],
     );
   }

@@ -12,6 +12,7 @@ import 'stereopsis_result.dart';
 import 'eye_hydration_result.dart';
 import 'visual_field_result.dart';
 import 'cover_test_result.dart';
+import 'torchlight_test_result.dart';
 
 /// Test result status
 enum TestStatus {
@@ -52,6 +53,7 @@ class TestResultModel {
   final VisualFieldResult? visualFieldLeft;
   final VisualFieldResult? visualField; // Keeping for compatibility
   final CoverTestResult? coverTest;
+  final TorchlightTestResult? torchlight;
   final RefractionPrescriptionModel? refractionPrescription;
   final TestStatus overallStatus;
   final String recommendation;
@@ -86,6 +88,7 @@ class TestResultModel {
     this.visualFieldLeft,
     this.visualField,
     this.coverTest,
+    this.torchlight,
     this.refractionPrescription,
     required this.overallStatus,
     required this.recommendation,
@@ -166,6 +169,9 @@ class TestResultModel {
       coverTest: data['coverTest'] != null
           ? CoverTestResult.fromJson(data['coverTest'])
           : null,
+      torchlight: data['torchlight'] != null
+          ? TorchlightTestResult.fromJson(data['torchlight'])
+          : null,
       refractionPrescription: data['refractionPrescription'] != null
           ? RefractionPrescriptionModel.fromMap(data['refractionPrescription'])
           : null,
@@ -210,6 +216,7 @@ class TestResultModel {
       'visualFieldLeft': visualFieldLeft?.toJson(),
       'visualField': visualField?.toJson(),
       'coverTest': coverTest?.toJson(),
+      'torchlight': torchlight?.toJson(),
       'refractionPrescription': refractionPrescription?.toJson(),
       'overallStatus': overallStatus.name,
       'recommendation': recommendation,
@@ -247,6 +254,7 @@ class TestResultModel {
       if (visualFieldLeft != null) 'visualFieldLeft': visualFieldLeft!.toJson(),
       if (visualField != null) 'visualField': visualField!.toJson(),
       if (coverTest != null) 'coverTest': coverTest!.toJson(),
+      if (torchlight != null) 'torchlight': torchlight!.toJson(),
       if (refractionPrescription != null)
         'refractionPrescription': refractionPrescription!.toMap(),
       'overallStatus': overallStatus.name,
@@ -287,6 +295,7 @@ class TestResultModel {
     VisualFieldResult? visualFieldLeft,
     VisualFieldResult? visualField,
     CoverTestResult? coverTest,
+    TorchlightTestResult? torchlight,
   }) {
     // Check for URGENT conditions (severe/bilateral issues)
     if (shadowTest != null &&
@@ -389,6 +398,11 @@ class TestResultModel {
       return TestStatus.review;
     }
 
+    // Review if Torchlight indicates follow-up
+    if (torchlight != null && torchlight.requiresFollowUp) {
+      return TestStatus.review;
+    }
+
     return TestStatus.normal;
   }
 
@@ -431,6 +445,7 @@ class TestResultModel {
     VisualFieldResult? visualFieldLeft,
     VisualFieldResult? visualField,
     CoverTestResult? coverTest,
+    TorchlightTestResult? torchlight,
     String? recommendation,
     String? pdfUrl,
     bool? isFlagged,
@@ -463,6 +478,7 @@ class TestResultModel {
       visualFieldLeft: visualFieldLeft ?? this.visualFieldLeft,
       visualField: visualField ?? this.visualField,
       coverTest: coverTest ?? this.coverTest,
+      torchlight: torchlight ?? this.torchlight,
       refractionPrescription:
           refractionPrescription ?? this.refractionPrescription,
       overallStatus: overallStatus ?? this.overallStatus,

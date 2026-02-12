@@ -29,6 +29,7 @@ import 'package:visiaxx/data/models/stereopsis_result.dart';
 import 'package:visiaxx/data/models/eye_hydration_result.dart';
 import 'package:visiaxx/data/models/visual_field_result.dart';
 import 'package:visiaxx/data/models/cover_test_result.dart';
+import 'package:visiaxx/data/models/torchlight_test_result.dart';
 import 'package:visiaxx/features/quick_vision_test/widgets/visual_field_maps.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
 
@@ -449,6 +450,16 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                         Icons.remove_red_eye_rounded,
                       ),
                       _buildCoverTestCard(provider),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Torchlight Examination Results
+                    if (_shouldShowSection(provider, 'torchlight')) ...[
+                      _buildSectionTitle(
+                        'Torchlight Examination',
+                        Icons.highlight_rounded,
+                      ),
+                      _buildTorchlightCard(provider),
                       const SizedBox(height: 20),
                     ],
 
@@ -2016,6 +2027,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           return _hasVisualFieldData(provider);
         case 'cover_test':
           return _hasCoverTestData(provider);
+        case 'torchlight':
+          return _hasTorchlightData(provider);
         default:
           return false;
       }
@@ -2050,6 +2063,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         return _hasVisualFieldData(provider);
       case 'cover_test':
         return _hasCoverTestData(provider);
+      case 'torchlight':
+        return _hasTorchlightData(provider);
       default:
         return false;
     }
@@ -2498,6 +2513,11 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         provider.mobileRefractometry != null;
   }
 
+  bool _hasTorchlightData(TestSessionProvider provider) {
+    return widget.historicalResult?.torchlight != null ||
+        provider.torchlight != null;
+  }
+
   Widget _buildRefractometryCard(TestSessionProvider provider) {
     final result =
         widget.historicalResult?.mobileRefractometry ??
@@ -2590,6 +2610,214 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildTorchlightCard(TestSessionProvider provider) {
+    final result = widget.historicalResult?.torchlight ?? provider.torchlight;
+    if (result == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: context.primary.withValues(alpha: 0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (result.pupillary != null) ...[
+            _buildResultSubHeader('Pupillary Findings', Icons.remove_red_eye),
+            const SizedBox(height: 16),
+            _buildPupillarySummary(result.pupillary!),
+            const SizedBox(height: 24),
+          ],
+          if (result.extraocular != null) ...[
+            _buildResultSubHeader('Extraocular Muscles', Icons.open_with),
+            const SizedBox(height: 16),
+            _buildExtraocularSummary(result.extraocular!),
+            const SizedBox(height: 24),
+          ],
+          const Divider(height: 32),
+          _buildClinicalInfoSection(
+            'Clinical Interpretation',
+            result.clinicalInterpretation,
+            icon: Icons.analytics_outlined,
+          ),
+          if (result.recommendations.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildRecommendationsSection(result.recommendations),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultSubHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: context.primary),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPupillarySummary(PupillaryResult pupillary) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildTorchlightDetailColumn(
+              'Right Pupil',
+              '${pupillary.rightPupilSize}mm',
+              pupillary.rightShape.name.toUpperCase(),
+            ),
+            _buildTorchlightDetailColumn(
+              'Left Pupil',
+              '${pupillary.leftPupilSize}mm',
+              pupillary.leftShape.name.toUpperCase(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildTorchlightInfoRow(
+          'Direct Reflex',
+          pupillary.directReflex.name.toUpperCase(),
+        ),
+        _buildTorchlightInfoRow(
+          'Consensual Reflex',
+          pupillary.consensualReflex.name.toUpperCase(),
+        ),
+        _buildTorchlightInfoRow(
+          'RAPD Status',
+          pupillary.rapdStatus.name.toUpperCase(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExtraocularSummary(ExtraocularResult extraocular) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (extraocular.affectedNerves.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: extraocular.affectedNerves
+                .map(
+                  (n) => Chip(
+                    label: Text(n.name.toUpperCase()),
+                    backgroundColor: context.error.withValues(alpha: 0.1),
+                    labelStyle: TextStyle(color: context.error, fontSize: 10),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 12),
+        ],
+        _buildTorchlightInfoRow(
+          'Nystagmus',
+          extraocular.nystagmusDetected ? 'PRESENT' : 'ABSENT',
+        ),
+        _buildTorchlightInfoRow(
+          'Ptosis',
+          extraocular.ptosisDetected ? 'DETECTED' : 'NOT DETECTED',
+        ),
+        _buildTorchlightInfoRow('Pattern', extraocular.patternUsed),
+      ],
+    );
+  }
+
+  Widget _buildTorchlightDetailColumn(
+    String label,
+    String value,
+    String subValue,
+  ) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: context.textSecondary, fontSize: 12),
+        ),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
+        Text(
+          subValue,
+          style: TextStyle(
+            color: context.primary,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTorchlightInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(color: context.textSecondary, fontSize: 13),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendationsSection(List<String> recommendations) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Recommendations',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          ...recommendations.map(
+            (r) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('• '),
+                  Expanded(
+                    child: Text(r, style: const TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

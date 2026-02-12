@@ -59,6 +59,7 @@ import 'data/providers/stereopsis_provider.dart';
 import 'data/providers/eye_hydration_provider.dart';
 import 'data/providers/visual_field_provider.dart';
 import 'data/providers/cover_test_provider.dart';
+import 'data/providers/extraocular_muscle_provider.dart';
 import 'features/individual_tests/screens/eye_hydration_instructions_screen.dart';
 import 'features/individual_tests/screens/eye_hydration_topic_selection_screen.dart';
 import 'features/individual_tests/screens/eye_hydration_test_screen.dart';
@@ -66,6 +67,9 @@ import 'features/individual_tests/screens/visual_field_instructions_screen.dart'
 import 'features/individual_tests/screens/visual_field_test_screen.dart';
 import 'features/individual_tests/screens/cover_test_instructions_screen.dart';
 import 'features/individual_tests/screens/cover_test_screen.dart';
+import 'features/torchlight_test/screens/torchlight_home_screen.dart';
+import 'features/torchlight_test/screens/pupillary_exam_screen.dart';
+import 'features/torchlight_test/screens/extraocular_muscle_test_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -197,18 +201,19 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NetworkConnectivityProvider()),
-        ChangeNotifierProvider(create: (_) => TestSessionProvider()),
+        ChangeNotifierProvider(create: (_) => CoverTestProvider()),
+        ChangeNotifierProvider(create: (_) => ExtraocularMuscleProvider()),
         ChangeNotifierProvider(create: (_) => EyeExerciseProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => VoiceRecognitionProvider()),
         ChangeNotifierProvider(create: (_) => FamilyMemberProvider()),
+        ChangeNotifierProvider(create: (_) => TestSessionProvider()),
         ChangeNotifierProvider(create: (_) => PatientProvider()),
         ChangeNotifierProvider(create: (_) => ShadowTestProvider()),
         ChangeNotifierProvider(create: (_) => StereopsisProvider()),
         ChangeNotifierProvider(create: (_) => EyeHydrationProvider()),
         ChangeNotifierProvider(create: (_) => VisualFieldProvider()),
-        ChangeNotifierProvider(create: (_) => CoverTestProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -297,8 +302,17 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
                 );
               },
               '/eye-exercises': (context) => const EyeExerciseReelsScreen(),
-              '/eye-care-tips': (context) => const EyeCareTipsScreen(),
+              '/cover-test-main': (context) => const CoverTestScreen(),
+
+              // Torchlight Test Routes
+              '/torchlight-home': (context) => const TorchlightHomeScreen(),
+              '/pupillary-exam': (context) => const PupillaryExamScreen(),
+              '/extraocular-muscle-exam': (context) =>
+                  const ExtraocularMuscleTestScreen(),
+
+              // Settings
               '/settings': (context) => const SettingsScreen(),
+              '/eye-care-tips': (context) => const EyeCareTipsScreen(),
               '/mobile-refractometry-test': (context) {
                 final args =
                     ModalRoute.of(context)?.settings.arguments

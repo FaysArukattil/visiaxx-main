@@ -469,6 +469,9 @@ class _PractitionerProfileSelectionScreenState
         case 'cover_test':
           route = '/cover-test-intro';
           break;
+        case 'torchlight':
+          route = '/torchlight-home';
+          break;
         default:
           route = '/home'; // Safeguard
       }
