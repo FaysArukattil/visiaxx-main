@@ -68,6 +68,7 @@ import 'features/individual_tests/screens/visual_field_test_screen.dart';
 import 'features/individual_tests/screens/cover_test_instructions_screen.dart';
 import 'features/individual_tests/screens/cover_test_screen.dart';
 import 'features/torchlight_test/screens/torchlight_home_screen.dart';
+import 'features/torchlight_test/screens/torchlight_instruction_screen.dart';
 import 'features/torchlight_test/screens/pupillary_exam_screen.dart';
 import 'features/torchlight_test/screens/extraocular_muscle_test_screen.dart';
 
@@ -306,6 +307,8 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
 
               // Torchlight Test Routes
               '/torchlight-home': (context) => const TorchlightHomeScreen(),
+              '/torchlight-instructions': (context) =>
+                  const TorchlightInstructionScreen(),
               '/pupillary-exam': (context) => const PupillaryExamScreen(),
               '/extraocular-muscle-exam': (context) =>
                   const ExtraocularMuscleTestScreen(),

@@ -311,7 +311,7 @@ class AWSS3StorageService {
 
     try {
       final dateStr = DateTime.now().toIso8601String().split('T')[0];
-      final fileName = 'rapd_${testId}.jpg';
+      final fileName = 'rapd_$testId.jpg';
 
       String basePath = '$roleCollection/$identityString';
       if (memberIdentityString != null && memberIdentityString.isNotEmpty) {
@@ -378,7 +378,7 @@ class AWSS3StorageService {
 
     try {
       final dateStr = DateTime.now().toIso8601String().split('T')[0];
-      final fileName = 'extraocular_${testId}.mp4';
+      final fileName = 'extraocular_$testId.mp4';
 
       String basePath = '$roleCollection/$identityString';
       if (memberIdentityString != null && memberIdentityString.isNotEmpty) {

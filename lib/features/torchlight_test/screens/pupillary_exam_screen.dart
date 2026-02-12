@@ -220,7 +220,7 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
     session.setTorchlightResult(finalResult);
 
     SnackbarUtils.showSuccess(context, 'Pupillary Examination Complete');
-    Navigator.pop(context); // Go back to Torchlight Home
+    Navigator.pushReplacementNamed(context, '/extraocular-muscle-exam');
   }
 
   @override

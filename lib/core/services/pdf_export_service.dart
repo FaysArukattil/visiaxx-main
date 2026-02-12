@@ -2768,9 +2768,9 @@ class PdfExportService {
           final avgIntensity = weightedIntensity / totalWeight;
           if (avgIntensity > 0.4) {
             PdfColor blockColor;
-            if (avgIntensity > 0.9)
+            if (avgIntensity > 0.9) {
               blockColor = PdfColors.black;
-            else if (avgIntensity > 0.7)
+            } else if (avgIntensity > 0.7)
               blockColor = PdfColors.grey700;
             else if (avgIntensity > 0.5)
               blockColor = PdfColors.grey400;

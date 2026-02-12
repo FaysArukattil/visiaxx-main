@@ -194,7 +194,7 @@ class _ExtraocularMuscleTestScreenState
     provider.reset();
 
     SnackbarUtils.showSuccess(context, 'Extraocular Muscle Test Complete');
-    Navigator.pop(context); // Back to Torchlight Home
+    Navigator.pushReplacementNamed(context, '/quick-test-result');
   }
 
   @override
