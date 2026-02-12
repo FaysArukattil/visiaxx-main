@@ -11,6 +11,7 @@ import '../../../data/models/torchlight_test_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/widgets/premium_dropdown.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/services/tts_service.dart';
 
 enum PupillaryStep {
@@ -275,51 +276,76 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pupillary Examination'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _showRestartDialog,
-            tooltip: 'Restart Test',
-          ),
-          IconButton(
-            icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
-            onPressed: () => _toggleFlash(!_isFlashOn),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: OrientationBuilder(
-          builder: (context, orientation) {
-            final isLandscape = orientation == Orientation.landscape;
-            return Column(
-              children: [
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (index) {
-                      setState(
-                        () => _currentStep = PupillaryStep.values[index],
-                      );
-                    },
-                    children: [
-                      _buildBaselineStep(),
-                      _buildDirectReflexStep(eye: 'RIGHT'),
-                      _buildDirectReflexStep(eye: 'LEFT'),
-                      _buildConsensualStep(source: 'RIGHT'),
-                      _buildConsensualStep(source: 'LEFT'),
-                      _buildRAPDStep(),
-                    ],
-                  ),
-                ),
-                _buildBottomControls(isLandscape),
-              ],
-            );
-          },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Pupillary Examination'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _showRestartDialog,
+              tooltip: 'Restart Test',
+            ),
+            IconButton(
+              icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
+              onPressed: () => _toggleFlash(!_isFlashOn),
+            ),
+          ],
         ),
+        body: SafeArea(
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              final isLandscape = orientation == Orientation.landscape;
+              return Column(
+                children: [
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(
+                          () => _currentStep = PupillaryStep.values[index],
+                        );
+                      },
+                      children: [
+                        _buildBaselineStep(),
+                        _buildDirectReflexStep(eye: 'RIGHT'),
+                        _buildDirectReflexStep(eye: 'LEFT'),
+                        _buildConsensualStep(source: 'RIGHT'),
+                        _buildConsensualStep(source: 'LEFT'),
+                        _buildRAPDStep(),
+                      ],
+                    ),
+                  ),
+                  _buildBottomControls(isLandscape),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showExitConfirmation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => TestExitConfirmationDialog(
+        onContinue: () => Navigator.pop(dialogContext),
+        onRestart: () {
+          Navigator.pop(dialogContext);
+          _showRestartDialog();
+        },
+        onExit: () {
+          Navigator.pop(dialogContext);
+          Navigator.pop(context);
+        },
+        hasCompletedTests: false,
       ),
     );
   }

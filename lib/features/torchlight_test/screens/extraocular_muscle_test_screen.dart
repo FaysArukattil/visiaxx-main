@@ -12,6 +12,7 @@ import '../../../core/widgets/premium_dropdown.dart';
 import '../../../core/services/tts_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 
 class ExtraocularMuscleTestScreen extends StatefulWidget {
   const ExtraocularMuscleTestScreen({super.key});
@@ -36,6 +37,7 @@ class _ExtraocularMuscleTestScreenState
     'Convergence',
   ];
   int _directionIndex = 0;
+  late final PageController _pageController;
 
   // Flashlight state
   bool _isFlashOn = false;
@@ -57,6 +59,7 @@ class _ExtraocularMuscleTestScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ExtraocularMuscleProvider>().startAlignment();
     });
+    _pageController = PageController();
     _initCamera();
   }
 
@@ -64,6 +67,7 @@ class _ExtraocularMuscleTestScreenState
   void dispose() {
     _turnOffFlash();
     _cameraController?.dispose();
+    _pageController.dispose();
     _videoPlayerController?.dispose();
     _chewieController?.dispose();
     _ttsService.dispose();
@@ -190,14 +194,14 @@ class _ExtraocularMuscleTestScreenState
   }
 
   void _nextDirection() {
-    setState(() {
-      if (_directionIndex < _directions.length - 1) {
-        _directionIndex++;
-        _currentDirection = _directions[_directionIndex];
-      } else {
-        _finishTest();
-      }
-    });
+    if (_directionIndex < _directions.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      _finishTest();
+    }
   }
 
   Future<void> _finishTest() async {
@@ -264,24 +268,50 @@ class _ExtraocularMuscleTestScreenState
   Widget build(BuildContext context) {
     final provider = context.watch<ExtraocularMuscleProvider>();
 
-    return Scaffold(
-      backgroundColor: context.scaffoldBackground,
-      appBar: AppBar(
-        title: const Text('Extraocular Muscle Test'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _showRestartDialog,
-            tooltip: 'Restart Test',
-          ),
-        ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        backgroundColor: context.scaffoldBackground,
+        appBar: AppBar(
+          title: const Text('Extraocular Muscle Test'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _showRestartDialog,
+              tooltip: 'Restart Test',
+            ),
+          ],
+        ),
+        body: provider.currentPhase == ExtraocularPhase.alignment
+            ? _buildAlignmentView(provider)
+            : _buildTestView(provider),
       ),
-      body: provider.currentPhase == ExtraocularPhase.alignment
-          ? _buildAlignmentView(provider)
-          : _buildTestView(provider),
+    );
+  }
+
+  void _showExitConfirmation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => TestExitConfirmationDialog(
+        onContinue: () => Navigator.pop(dialogContext),
+        onRestart: () {
+          Navigator.pop(dialogContext);
+          _showRestartDialog();
+        },
+        onExit: () {
+          Navigator.pop(dialogContext);
+          Navigator.pop(context);
+        },
+        hasCompletedTests: false,
+      ),
     );
   }
 
@@ -393,22 +423,35 @@ class _ExtraocularMuscleTestScreenState
     if (_showPreview) {
       return _buildVideoPreview();
     }
-    return OrientationBuilder(
-      builder: (context, orientation) {
-        final isLandscape = orientation == Orientation.landscape;
-        if (isLandscape) {
-          return Row(
-            children: [
-              Expanded(child: _buildTargetContainer()),
-              Expanded(child: _buildControls(provider)),
-            ],
-          );
-        }
-        return Column(
-          children: [
-            _buildTargetContainer(),
-            Expanded(child: _buildControls(provider)),
-          ],
+
+    return PageView.builder(
+      controller: _pageController,
+      itemCount: _directions.length,
+      onPageChanged: (index) {
+        setState(() {
+          _directionIndex = index;
+          _currentDirection = _directions[index];
+        });
+      },
+      itemBuilder: (context, index) {
+        return OrientationBuilder(
+          builder: (context, orientation) {
+            final isLandscape = orientation == Orientation.landscape;
+            if (isLandscape) {
+              return Row(
+                children: [
+                  Expanded(child: _buildTargetContainer()),
+                  Expanded(child: _buildControls(provider)),
+                ],
+              );
+            }
+            return Column(
+              children: [
+                _buildTargetContainer(),
+                Expanded(child: _buildControls(provider)),
+              ],
+            );
+          },
         );
       },
     );
@@ -738,10 +781,10 @@ class _ExtraocularMuscleTestScreenState
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      setState(() {
-                        _directionIndex--;
-                        _currentDirection = _directions[_directionIndex];
-                      });
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 18),
