@@ -336,6 +336,37 @@ class TestResultService {
     }
   }
 
+  /// Update a specific field in a test result with a new URL (e.g. for background media uploads)
+  Future<void> updateTestResultUrl({
+    required String resultId,
+    required String field,
+    required String url,
+  }) async {
+    try {
+      debugPrint(
+        '[TestResultService] ”„ Updating $field with URL for result: $resultId',
+      );
+
+      // Try searching for the document using collection group query to get its reference
+      final query = await _firestore
+          .collectionGroup('tests')
+          .where(FieldPath.documentId, isEqualTo: resultId)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        await query.docs.first.reference.update({field: url});
+        debugPrint('[TestResultService] ✅ Field $field updated successfully');
+      } else {
+        debugPrint(
+          '[TestResultService]  ï¸  Could not find document $resultId to update field $field',
+        );
+      }
+    } catch (e) {
+      debugPrint('[TestResultService]  Œ Error updating field $field: $e');
+    }
+  }
+
   /// Check if AWS S3 is configured and reachable
   Future<bool> checkAWSConnection() async {
     try {
@@ -545,6 +576,69 @@ class TestResultService {
           observations: updatedObservations,
         ),
       );
+    }
+
+    // 4. Upload Torchlight Media (NEW)
+    if (updatedResult.torchlight != null) {
+      // Upload Pupillary RAPD Image
+      if (updatedResult.torchlight!.pupillary?.rapdImagePath != null &&
+          updatedResult.torchlight!.pupillary!.rapdImageUrl == null) {
+        final file = File(updatedResult.torchlight!.pupillary!.rapdImagePath!);
+        if (await file.exists()) {
+          debugPrint(
+            '[TestResultService] “¤ Uploading Torchlight RAPD image...',
+          );
+          final awsUrl = await _awsStorageService.uploadRAPDImage(
+            userId: userId,
+            identityString: identityString,
+            roleCollection: roleCollection,
+            testCategory: testCategory,
+            testId: testId,
+            imageFile: file,
+            memberIdentityString: memberId,
+          );
+
+          if (awsUrl != null) {
+            updatedResult = updatedResult.copyWith(
+              torchlight: updatedResult.torchlight!.copyWith(
+                pupillary: updatedResult.torchlight!.pupillary!.copyWith(
+                  rapdImageUrl: awsUrl,
+                ),
+              ),
+            );
+          }
+        }
+      }
+
+      // Upload Extraocular Video
+      if (updatedResult.torchlight!.extraocular?.videoPath != null &&
+          updatedResult.torchlight!.extraocular!.videoUrl == null) {
+        final file = File(updatedResult.torchlight!.extraocular!.videoPath!);
+        if (await file.exists()) {
+          debugPrint(
+            '[TestResultService] “¤ Uploading Torchlight extraocular video...',
+          );
+          final awsUrl = await _awsStorageService.uploadExtraocularVideo(
+            userId: userId,
+            identityString: identityString,
+            roleCollection: roleCollection,
+            testCategory: testCategory,
+            testId: testId,
+            videoFile: file,
+            memberIdentityString: memberId,
+          );
+
+          if (awsUrl != null) {
+            updatedResult = updatedResult.copyWith(
+              torchlight: updatedResult.torchlight!.copyWith(
+                extraocular: updatedResult.torchlight!.extraocular!.copyWith(
+                  videoUrl: awsUrl,
+                ),
+              ),
+            );
+          }
+        }
+      }
     }
 
     return updatedResult;

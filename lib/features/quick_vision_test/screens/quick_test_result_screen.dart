@@ -2704,6 +2704,52 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           'RAPD Status',
           pupillary.rapdStatus.name.toUpperCase(),
         ),
+        if (pupillary.rapdImagePath != null ||
+            pupillary.rapdImageUrl != null) ...[
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'RAPD EXAMINATION CAPTURE:',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: context.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _showZoomedImage(
+              pupillary.rapdImagePath,
+              pupillary.rapdImageUrl,
+              'RAPD Capture',
+            ),
+            child: Container(
+              height: 120,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.black12,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: pupillary.rapdImagePath != null
+                    ? Image.file(
+                        File(pupillary.rapdImagePath!),
+                        fit: BoxFit.cover,
+                      )
+                    : Image.network(
+                        pupillary.rapdImageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Center(child: Icon(Icons.broken_image)),
+                      ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -2737,6 +2783,33 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           extraocular.ptosisDetected ? 'DETECTED' : 'NOT DETECTED',
         ),
         _buildTorchlightInfoRow('Pattern', extraocular.patternUsed),
+        if (extraocular.videoPath != null || extraocular.videoUrl != null) ...[
+          const SizedBox(height: 16),
+          Text(
+            'EXAMINATION RECORDING:',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: context.textSecondary,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _showZoomedVideo(
+              extraocular.videoPath,
+              extraocular.videoUrl,
+              'Extraocular Muscle Test',
+            ),
+            child: _LoopingVideoPreview(
+              videoPath: extraocular.videoPath,
+              videoUrl: extraocular.videoUrl,
+              label: 'Motility Test',
+              width: double.infinity,
+              height: 150,
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -26,6 +26,7 @@ class ExtraocularMuscleProvider extends ChangeNotifier {
   bool _ptosisDetected = false;
   EyeSide? _ptosisEye;
   final Map<String, double> _restrictionMap = {};
+  String? _videoPath;
 
   // Getters
   ExtraocularPhase get currentPhase => _currentPhase;
@@ -36,6 +37,7 @@ class ExtraocularMuscleProvider extends ChangeNotifier {
   bool get nystagmusDetected => _nystagmusDetected;
   bool get ptosisDetected => _ptosisDetected;
   EyeSide? get ptosisEye => _ptosisEye;
+  String? get videoPath => _videoPath;
   List<CranialNerve> get affectedNerves => List.unmodifiable(_affectedNerves);
 
   MovementQuality? getMovement(String direction) => _movements[direction];
@@ -96,6 +98,11 @@ class ExtraocularMuscleProvider extends ChangeNotifier {
     }
   }
 
+  void setVideoPath(String? path) {
+    _videoPath = path;
+    notifyListeners();
+  }
+
   ExtraocularResult buildResult(String patternUsed) {
     return ExtraocularResult(
       movements: Map.from(_movements),
@@ -105,6 +112,7 @@ class ExtraocularMuscleProvider extends ChangeNotifier {
       ptosisEye: _ptosisEye,
       restrictionMap: Map.from(_restrictionMap),
       patternUsed: patternUsed,
+      videoPath: _videoPath,
     );
   }
 
@@ -118,6 +126,7 @@ class ExtraocularMuscleProvider extends ChangeNotifier {
     _ptosisDetected = false;
     _ptosisEye = null;
     _restrictionMap.clear();
+    _videoPath = null;
     notifyListeners();
   }
 

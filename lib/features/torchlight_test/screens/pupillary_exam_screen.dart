@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:torch_light/torch_light.dart';
 import '../../../core/extensions/theme_extension.dart';
@@ -27,6 +31,15 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   PupillaryStep _currentStep = PupillaryStep.baseline;
   bool _isFlashOn = false;
 
+  // Camera state for RAPD capture
+  CameraController? _cameraController;
+  bool _isCameraInitialized = false;
+  bool _isTimerRunning = false;
+  int _timerSeconds = 5;
+  Timer? _countdownTimer;
+  String? _rapdImagePath;
+  bool _isCapturing = false;
+
   // Results state
   double _leftSize = 3.5;
   double _rightSize = 3.5;
@@ -40,7 +53,90 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   @override
   void dispose() {
     _turnOffFlash();
+    _countdownTimer?.cancel();
+    _cameraController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      final cameras = await availableCameras();
+      // Use back camera for RAPD
+      final backCamera = cameras.firstWhere(
+        (c) => c.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+      _cameraController = CameraController(
+        backCamera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+      await _cameraController!.initialize();
+      if (mounted) {
+        setState(() => _isCameraInitialized = true);
+        // Turn on flash for pupil observation
+        await _toggleFlash(true);
+      }
+    } catch (e) {
+      debugPrint('Camera init error: $e');
+    }
+  }
+
+  void _disposeCamera() {
+    _countdownTimer?.cancel();
+    _cameraController?.dispose();
+    _cameraController = null;
+    _isCameraInitialized = false;
+    _isTimerRunning = false;
+    _timerSeconds = 5;
+  }
+
+  void _startRAPDTimer() {
+    setState(() {
+      _isTimerRunning = true;
+      _timerSeconds = 5;
+    });
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_timerSeconds <= 1) {
+        timer.cancel();
+        _captureRAPDImage();
+      } else {
+        setState(() => _timerSeconds--);
+      }
+    });
+  }
+
+  Future<void> _captureRAPDImage() async {
+    if (_isCapturing ||
+        _cameraController == null ||
+        !_cameraController!.value.isInitialized)
+      return;
+    setState(() => _isCapturing = true);
+    try {
+      final xFile = await _cameraController!.takePicture();
+      final tempDir = await getTemporaryDirectory();
+      final savedPath =
+          '${tempDir.path}/rapd_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      await File(xFile.path).copy(savedPath);
+      setState(() {
+        _rapdImagePath = savedPath;
+        _isTimerRunning = false;
+        _isCapturing = false;
+      });
+    } catch (e) {
+      debugPrint('Capture error: $e');
+      setState(() {
+        _isTimerRunning = false;
+        _isCapturing = false;
+      });
+    }
+  }
+
+  void _retakeRAPDImage() {
+    setState(() {
+      _rapdImagePath = null;
+      _timerSeconds = 5;
+    });
   }
 
   Future<void> _toggleFlash(bool on) async {
@@ -64,13 +160,20 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
 
   void _nextStep() {
     _turnOffFlash();
+    final previousStep = _currentStep;
     setState(() {
       final index = _currentStep.index;
       if (index < PupillaryStep.values.length - 1) {
         _currentStep = PupillaryStep.values[index + 1];
       }
 
+      if (_currentStep == PupillaryStep.rapd &&
+          previousStep != PupillaryStep.rapd) {
+        _initCamera();
+      }
+
       if (_currentStep == PupillaryStep.finished) {
+        _disposeCamera();
         _saveAndFinish();
       }
     });
@@ -88,6 +191,7 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
       rapdStatus: _rapdStatus,
       rapdAffectedEye: _rapdEye,
       anisocoriaDifference: (_leftSize - _rightSize).abs(),
+      rapdImagePath: _rapdImagePath,
     );
 
     // This would normally be part of a larger TorchlightTestResult
@@ -263,7 +367,137 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
             instruction:
                 'Swing the light rapidly from one eye to the other. Look for paradoxical dilation.',
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 24),
+
+          // Camera preview / captured image
+          Container(
+            height: 220,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _isTimerRunning ? context.primary : context.dividerColor,
+                width: _isTimerRunning ? 3 : 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(19),
+              child: _rapdImagePath != null
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.file(File(_rapdImagePath!), fit: BoxFit.cover),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: context.success,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(6),
+                            child: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : _isCameraInitialized && _cameraController != null
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CameraPreview(_cameraController!),
+                        if (_isTimerRunning)
+                          Center(
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: context.primary,
+                                  width: 3,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$_timerSeconds',
+                                  style: const TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (_isCapturing)
+                          Container(
+                            color: Colors.white24,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                      ],
+                    )
+                  : const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: Colors.white54),
+                          SizedBox(height: 12),
+                          Text(
+                            'Initializing camera...',
+                            style: TextStyle(color: Colors.white54),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Timer / Capture controls
+          if (_rapdImagePath != null)
+            OutlinedButton.icon(
+              onPressed: _retakeRAPDImage,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retake Image'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            )
+          else if (!_isTimerRunning && _isCameraInitialized)
+            ElevatedButton.icon(
+              onPressed: _startRAPDTimer,
+              icon: const Icon(Icons.timer),
+              label: const Text('Start 5s Timer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.primary,
+                foregroundColor: context.onPrimary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 24),
+
+          // RAPD status dropdowns (original controls)
           DropdownButtonFormField<RAPDStatus>(
             value: _rapdStatus,
             decoration: const InputDecoration(labelText: 'RAPD Finding'),

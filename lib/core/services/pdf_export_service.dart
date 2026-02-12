@@ -20,6 +20,7 @@ import '../../data/models/stereopsis_result.dart';
 import '../../data/models/visual_field_result.dart';
 import '../../data/models/eye_hydration_result.dart';
 import '../../data/models/cover_test_result.dart';
+import '../../data/models/torchlight_test_result.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -287,6 +288,12 @@ class PdfExportService {
           // Cover Test Section - DETAILED
           if (result.coverTest != null) ...[
             _buildCoverTestDetailedSection(result),
+            pw.SizedBox(height: 12),
+          ],
+
+          // Torchlight Examination Section - DETAILED
+          if (result.torchlight != null) ...[
+            _buildTorchlightDetailedSection(result),
             pw.SizedBox(height: 12),
           ],
 
@@ -3066,6 +3073,249 @@ class PdfExportService {
           ),
         ),
       ],
+    );
+  }
+
+  /// TORCHLIGHT EXAMINATION - DETAILED
+  pw.Widget _buildTorchlightDetailedSection(TestResultModel result) {
+    if (result.torchlight == null) return pw.SizedBox();
+    final t = result.torchlight!;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(height: 6),
+        _buildSectionHeader('TORCHLIGHT EXAMINATION'),
+        pw.SizedBox(height: 10),
+
+        // 1. Pupillary Examination Subsection
+        if (t.pupillary != null) ...[
+          pw.Text(
+            'PUPILLARY EXAMINATION',
+            style: pw.TextStyle(
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.blueGrey700,
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.blueGrey50, width: 0.5),
+            defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.blueGrey50),
+                children: [
+                  _buildTableCell('METRIC', isHeader: true),
+                  _buildTableCell('RIGHT EYE (OD)', isHeader: true),
+                  _buildTableCell('LEFT EYE (OS)', isHeader: true),
+                ],
+              ),
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Pupil Size (Static)'),
+                  _buildTableCell(
+                    '${t.pupillary!.rightPupilSize.toStringAsFixed(1)} mm',
+                  ),
+                  _buildTableCell(
+                    '${t.pupillary!.leftPupilSize.toStringAsFixed(1)} mm',
+                  ),
+                ],
+              ),
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Pupil Shape'),
+                  _buildTableCell(t.pupillary!.rightShape.name.toUpperCase()),
+                  _buildTableCell(t.pupillary!.leftShape.name.toUpperCase()),
+                ],
+              ),
+              pw.TableRow(
+                children: [
+                  _buildTableCell('Light Reflex'),
+                  _buildTableCell(t.pupillary!.directReflex.name.toUpperCase()),
+                  _buildTableCell(
+                    t.pupillary!.consensualReflex.name.toUpperCase(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 6),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(6),
+            decoration: const pw.BoxDecoration(color: PdfColors.blueGrey50),
+            child: pw.Row(
+              children: [
+                pw.Expanded(
+                  child: _buildSimpleInfoRow(
+                    'Symmetry:',
+                    t.pupillary!.symmetric
+                        ? 'Symmetric'
+                        : 'Anisocoria detected',
+                  ),
+                ),
+                pw.Expanded(
+                  child: _buildSimpleInfoRow(
+                    'RAPD Status:',
+                    t.pupillary!.rapdStatus.name.toUpperCase(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (t.pupillary!.anisocoriaDifference != null &&
+              t.pupillary!.anisocoriaDifference! > 0)
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(top: 4),
+              child: pw.Text(
+                'Anisocoria: ${t.pupillary!.anisocoriaDifference!.toStringAsFixed(1)} mm difference between pupils.',
+                style: const pw.TextStyle(
+                  fontSize: 7,
+                  color: PdfColors.blueGrey700,
+                ),
+              ),
+            ),
+          pw.SizedBox(height: 12),
+        ],
+
+        // 2. Extraocular Muscle Subsection
+        if (t.extraocular != null) ...[
+          pw.Text(
+            'EXTRAOCULAR MUSCLE MOTILITY',
+            style: pw.TextStyle(
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.blueGrey700,
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          _buildEomTable(t.extraocular!),
+          pw.SizedBox(height: 8),
+          pw.Row(
+            children: [
+              pw.Expanded(
+                child: _buildSimpleInfoRow(
+                  'Nystagmus:',
+                  t.extraocular!.nystagmusDetected
+                      ? 'Detected'
+                      : 'Not detected',
+                ),
+              ),
+              pw.Expanded(
+                child: _buildSimpleInfoRow(
+                  'Ptosis:',
+                  t.extraocular!.ptosisDetected
+                      ? 'Detected (${t.extraocular!.ptosisEye?.name})'
+                      : 'Not detected',
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 12),
+        ],
+
+        // 3. Clinical Interpretation
+        _buildTorchlightAssessmentBlock(
+          'CLINICAL INTERPRETATION',
+          t.clinicalInterpretation,
+        ),
+        pw.SizedBox(height: 8),
+
+        // 4. Recommendations
+        if (t.recommendations.isNotEmpty) ...[
+          _buildTorchlightAssessmentBlock(
+            'RECOMMENDATIONS',
+            t.recommendations.join('\n'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  pw.Widget _buildEomTable(ExtraocularResult eom) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.blueGrey50, width: 0.5),
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.blueGrey50),
+          children: [
+            _buildTableCell('DIRECTION', isHeader: true),
+            _buildTableCell('MOVEMENT QUALITY', isHeader: true),
+            _buildTableCell('RESTRICTION', isHeader: true),
+          ],
+        ),
+        ...eom.movements.entries.map((entry) {
+          final restriction = eom.restrictionMap[entry.key] ?? 0;
+          return pw.TableRow(
+            children: [
+              _buildTableCell(entry.key.replaceAll('_', ' ').toUpperCase()),
+              _buildTableCell(entry.value.name.toUpperCase()),
+              _buildTableCell(
+                restriction > 0 ? '${restriction.toStringAsFixed(0)}%' : 'None',
+              ),
+            ],
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  pw.Widget _buildTorchlightAssessmentBlock(String title, String content) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey50,
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            title,
+            style: pw.TextStyle(
+              fontSize: 7,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.blueGrey800,
+            ),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            content,
+            style: const pw.TextStyle(
+              fontSize: 7.5,
+              color: PdfColors.blueGrey700,
+              lineSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildSimpleInfoRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      child: pw.Row(
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Text(
+            '$label ',
+            style: pw.TextStyle(
+              fontSize: 7,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.blueGrey600,
+            ),
+          ),
+          pw.Text(
+            value,
+            style: const pw.TextStyle(
+              fontSize: 7,
+              color: PdfColors.blueGrey800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

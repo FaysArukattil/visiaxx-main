@@ -25,6 +25,8 @@ class PupillaryResult {
   final RAPDStatus rapdStatus;
   final EyeSide? rapdAffectedEye;
   final double? anisocoriaDifference; // mm difference between pupils
+  final String? rapdImagePath; // Local path to RAPD pupil capture image
+  final String? rapdImageUrl; // AWS URL for RAPD pupil capture image
 
   PupillaryResult({
     required this.leftPupilSize,
@@ -37,6 +39,8 @@ class PupillaryResult {
     required this.rapdStatus,
     this.rapdAffectedEye,
     this.anisocoriaDifference,
+    this.rapdImagePath,
+    this.rapdImageUrl,
   });
 
   Map<String, dynamic> toJson() {
@@ -51,6 +55,8 @@ class PupillaryResult {
       'rapdStatus': rapdStatus.name,
       'rapdAffectedEye': rapdAffectedEye?.name,
       'anisocoriaDifference': anisocoriaDifference,
+      'rapdImagePath': rapdImagePath,
+      'rapdImageUrl': rapdImageUrl,
     };
   }
 
@@ -78,6 +84,38 @@ class PupillaryResult {
           ? EyeSide.values.firstWhere((e) => e.name == json['rapdAffectedEye'])
           : null,
       anisocoriaDifference: (json['anisocoriaDifference'] as num?)?.toDouble(),
+      rapdImagePath: json['rapdImagePath'],
+      rapdImageUrl: json['rapdImageUrl'],
+    );
+  }
+
+  PupillaryResult copyWith({
+    double? leftPupilSize,
+    double? rightPupilSize,
+    bool? symmetric,
+    PupilShape? leftShape,
+    PupilShape? rightShape,
+    LightReflex? directReflex,
+    LightReflex? consensualReflex,
+    RAPDStatus? rapdStatus,
+    EyeSide? rapdAffectedEye,
+    double? anisocoriaDifference,
+    String? rapdImagePath,
+    String? rapdImageUrl,
+  }) {
+    return PupillaryResult(
+      leftPupilSize: leftPupilSize ?? this.leftPupilSize,
+      rightPupilSize: rightPupilSize ?? this.rightPupilSize,
+      symmetric: symmetric ?? this.symmetric,
+      leftShape: leftShape ?? this.leftShape,
+      rightShape: rightShape ?? this.rightShape,
+      directReflex: directReflex ?? this.directReflex,
+      consensualReflex: consensualReflex ?? this.consensualReflex,
+      rapdStatus: rapdStatus ?? this.rapdStatus,
+      rapdAffectedEye: rapdAffectedEye ?? this.rapdAffectedEye,
+      anisocoriaDifference: anisocoriaDifference ?? this.anisocoriaDifference,
+      rapdImagePath: rapdImagePath ?? this.rapdImagePath,
+      rapdImageUrl: rapdImageUrl ?? this.rapdImageUrl,
     );
   }
 }
@@ -91,6 +129,8 @@ class ExtraocularResult {
   final EyeSide? ptosisEye;
   final Map<String, double> restrictionMap; // Direction -> Restriction %
   final String patternUsed; // 'H' or 'Star'
+  final String? videoPath; // Local path to recorded video
+  final String? videoUrl; // AWS URL for recorded video
 
   ExtraocularResult({
     required this.movements,
@@ -100,6 +140,8 @@ class ExtraocularResult {
     this.ptosisEye,
     required this.restrictionMap,
     required this.patternUsed,
+    this.videoPath,
+    this.videoUrl,
   });
 
   Map<String, dynamic> toJson() {
@@ -111,6 +153,8 @@ class ExtraocularResult {
       'ptosisEye': ptosisEye?.name,
       'restrictionMap': restrictionMap,
       'patternUsed': patternUsed,
+      'videoPath': videoPath,
+      'videoUrl': videoUrl,
     };
   }
 
@@ -130,6 +174,32 @@ class ExtraocularResult {
           : null,
       restrictionMap: Map<String, double>.from(json['restrictionMap']),
       patternUsed: json['patternUsed'],
+      videoPath: json['videoPath'],
+      videoUrl: json['videoUrl'],
+    );
+  }
+
+  ExtraocularResult copyWith({
+    Map<String, MovementQuality>? movements,
+    bool? nystagmusDetected,
+    List<CranialNerve>? affectedNerves,
+    bool? ptosisDetected,
+    EyeSide? ptosisEye,
+    Map<String, double>? restrictionMap,
+    String? patternUsed,
+    String? videoPath,
+    String? videoUrl,
+  }) {
+    return ExtraocularResult(
+      movements: movements ?? this.movements,
+      nystagmusDetected: nystagmusDetected ?? this.nystagmusDetected,
+      affectedNerves: affectedNerves ?? this.affectedNerves,
+      ptosisDetected: ptosisDetected ?? this.ptosisDetected,
+      ptosisEye: ptosisEye ?? this.ptosisEye,
+      restrictionMap: restrictionMap ?? this.restrictionMap,
+      patternUsed: patternUsed ?? this.patternUsed,
+      videoPath: videoPath ?? this.videoPath,
+      videoUrl: videoUrl ?? this.videoUrl,
     );
   }
 }
@@ -180,6 +250,27 @@ class TorchlightTestResult {
       clinicalInterpretation: json['clinicalInterpretation'],
       recommendations: List<String>.from(json['recommendations']),
       requiresFollowUp: json['requiresFollowUp'],
+    );
+  }
+
+  TorchlightTestResult copyWith({
+    String? id,
+    PupillaryResult? pupillary,
+    ExtraocularResult? extraocular,
+    DateTime? testDate,
+    String? clinicalInterpretation,
+    List<String>? recommendations,
+    bool? requiresFollowUp,
+  }) {
+    return TorchlightTestResult(
+      id: id ?? this.id,
+      pupillary: pupillary ?? this.pupillary,
+      extraocular: extraocular ?? this.extraocular,
+      testDate: testDate ?? this.testDate,
+      clinicalInterpretation:
+          clinicalInterpretation ?? this.clinicalInterpretation,
+      recommendations: recommendations ?? this.recommendations,
+      requiresFollowUp: requiresFollowUp ?? this.requiresFollowUp,
     );
   }
 
