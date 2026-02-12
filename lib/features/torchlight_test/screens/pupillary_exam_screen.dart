@@ -10,6 +10,8 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../data/models/torchlight_test_result.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/premium_dropdown.dart';
+import '../../../core/services/tts_service.dart';
 
 enum PupillaryStep {
   baseline,
@@ -54,10 +56,14 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   RAPDStatus _rapdStatus = RAPDStatus.absent;
   EyeSide? _rapdEye;
 
+  final PageController _pageController = PageController();
+  final TtsService _ttsService = TtsService();
+
   @override
   void initState() {
     super.initState();
     _initCamera();
+    _ttsService.initialize();
   }
 
   @override
@@ -66,6 +72,8 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
     _cameraController?.dispose();
     _videoPlayerController?.dispose();
     _chewieController?.dispose();
+    _pageController.dispose();
+    _ttsService.dispose();
     super.dispose();
   }
 
@@ -135,17 +143,23 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   }
 
   Future<void> _initializeVideoPlayer(String path) async {
-    _videoPlayerController?.dispose();
+    // Avoid disposal error by checking if already disposed or active
+    await _videoPlayerController?.dispose();
     _chewieController?.dispose();
+    _videoPlayerController = null;
+    _chewieController = null;
 
-    _videoPlayerController = VideoPlayerController.file(File(path));
-    await _videoPlayerController!.initialize();
+    final controller = VideoPlayerController.file(File(path));
+    _videoPlayerController = controller;
+    await controller.initialize();
+
+    if (!mounted) return;
 
     _chewieController = ChewieController(
-      videoPlayerController: _videoPlayerController!,
+      videoPlayerController: controller,
       autoPlay: true,
       looping: false,
-      aspectRatio: _videoPlayerController!.value.aspectRatio,
+      aspectRatio: controller.value.aspectRatio,
       showControls: true,
       materialProgressColors: ChewieProgressColors(
         playedColor: context.primary,
@@ -154,13 +168,14 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
         backgroundColor: Colors.white24,
       ),
     );
-    if (!mounted) return;
     setState(() {});
   }
 
   void _retakeRAPDVideo() {
     _videoPlayerController?.dispose();
     _chewieController?.dispose();
+    _videoPlayerController = null;
+    _chewieController = null;
     setState(() {
       _recordedVideoPath = null;
       _showPreview = false;
@@ -190,25 +205,28 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
 
   void _nextStep() {
     _turnOffFlash();
-    final previousStep = _currentStep;
-    setState(() {
-      final index = _currentStep.index;
-      if (index < PupillaryStep.values.length - 1) {
-        _currentStep = PupillaryStep.values[index + 1];
-      }
-
-      if (_currentStep == PupillaryStep.rapd &&
-          previousStep != PupillaryStep.rapd) {
-        // Camera is already initialized in initState
-      }
-
-      if (_currentStep == PupillaryStep.finished) {
-        _videoPlayerController?.dispose();
-        _chewieController?.dispose();
-        _disposeCamera();
+    final index = _currentStep.index;
+    if (index < PupillaryStep.values.length - 1) {
+      final nextStep = PupillaryStep.values[index + 1];
+      if (nextStep == PupillaryStep.finished) {
+        _disposeResources();
         _saveAndFinish();
+      } else {
+        setState(() => _currentStep = nextStep);
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       }
-    });
+    }
+  }
+
+  void _disposeResources() {
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+    _videoPlayerController = null;
+    _chewieController = null;
+    _disposeCamera();
   }
 
   void _saveAndFinish() {
@@ -262,47 +280,120 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
         title: const Text('Pupillary Examination'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _showRestartDialog,
+            tooltip: 'Restart Test',
+          ),
+          IconButton(
             icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
             onPressed: () => _toggleFlash(!_isFlashOn),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildProgressIndicator(),
-          Expanded(child: _buildStepContent()),
-          _buildBottomControls(),
+      body: SafeArea(
+        child: OrientationBuilder(
+          builder: (context, orientation) {
+            final isLandscape = orientation == Orientation.landscape;
+            return Column(
+              children: [
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (index) {
+                      setState(
+                        () => _currentStep = PupillaryStep.values[index],
+                      );
+                    },
+                    children: [
+                      _buildBaselineStep(),
+                      _buildDirectReflexStep(eye: 'RIGHT'),
+                      _buildDirectReflexStep(eye: 'LEFT'),
+                      _buildConsensualStep(source: 'RIGHT'),
+                      _buildConsensualStep(source: 'LEFT'),
+                      _buildRAPDStep(),
+                    ],
+                  ),
+                ),
+                _buildBottomControls(isLandscape),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showRestartDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restart Test?'),
+        content: const Text(
+          'This will clear all current findings and take you back to the instructions.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(
+                context,
+                '/torchlight-instructions',
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: context.error),
+            child: const Text('Restart'),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildProgressIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: LinearProgressIndicator(
-        value: (_currentStep.index + 1) / PupillaryStep.values.length,
-        borderRadius: BorderRadius.circular(10),
-        minHeight: 8,
-      ),
+    final progress =
+        (_currentStep.index + 1) / (PupillaryStep.values.length - 1);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Step ${_currentStep.index + 1} of ${PupillaryStep.values.length - 1}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: context.textSecondary,
+                ),
+              ),
+              Text(
+                '${(progress * 100).toInt()}%',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: context.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: LinearProgressIndicator(
+            value: progress,
+            borderRadius: BorderRadius.circular(10),
+            minHeight: 6,
+            backgroundColor: context.dividerColor.withValues(alpha: 0.1),
+          ),
+        ),
+      ],
     );
-  }
-
-  Widget _buildStepContent() {
-    switch (_currentStep) {
-      case PupillaryStep.baseline:
-        return _buildBaselineStep();
-      case PupillaryStep.directRight:
-      case PupillaryStep.directLeft:
-        return _buildDirectReflexStep();
-      case PupillaryStep.consensualRight:
-      case PupillaryStep.consensualLeft:
-        return _buildConsensualStep();
-      case PupillaryStep.rapd:
-        return _buildRAPDStep();
-      case PupillaryStep.finished:
-        return const Center(child: CircularProgressIndicator());
-    }
   }
 
   Widget _buildBaselineStep() {
@@ -340,16 +431,20 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
             title: 'Pupil Shape',
             child: Column(
               children: [
-                _buildShapeSelector(
-                  'Right Eye',
-                  _rightShape,
-                  (val) => setState(() => _rightShape = val!),
+                PremiumDropdown<PupilShape>(
+                  label: 'Right Eye Shape',
+                  value: _rightShape,
+                  items: PupilShape.values,
+                  itemLabelBuilder: (s) => s.name.toUpperCase(),
+                  onChanged: (val) => setState(() => _rightShape = val),
                 ),
                 const SizedBox(height: 16),
-                _buildShapeSelector(
-                  'Left Eye',
-                  _leftShape,
-                  (val) => setState(() => _leftShape = val!),
+                PremiumDropdown<PupilShape>(
+                  label: 'Left Eye Shape',
+                  value: _leftShape,
+                  items: PupilShape.values,
+                  itemLabelBuilder: (s) => s.name.toUpperCase(),
+                  onChanged: (val) => setState(() => _leftShape = val),
                 ),
               ],
             ),
@@ -359,8 +454,7 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
     );
   }
 
-  Widget _buildDirectReflexStep() {
-    final isRight = _currentStep == PupillaryStep.directRight;
+  Widget _buildDirectReflexStep({required String eye}) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
@@ -368,7 +462,7 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
           _StepHeader(
             title: 'Direct Light Reflex',
             instruction:
-                'Shine the light directly into the ${isRight ? "RIGHT" : "LEFT"} eye. Observe the immediate constriction.',
+                'Shine the light directly into the $eye eye. Observe the immediate constriction.',
           ),
           const SizedBox(height: 32),
           _buildPremiumCard(
@@ -384,8 +478,7 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
     );
   }
 
-  Widget _buildConsensualStep() {
-    final isRightSource = _currentStep == PupillaryStep.consensualRight;
+  Widget _buildConsensualStep({required String source}) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
@@ -393,7 +486,7 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
           _StepHeader(
             title: 'Consensual Reflex',
             instruction:
-                'Shine the light in the ${isRightSource ? "RIGHT" : "LEFT"} eye while observing the OPPOSITE pupil.',
+                'Shine the light in the $source eye while observing the OPPOSITE pupil.',
           ),
           const SizedBox(height: 32),
           _buildPremiumCard(
@@ -535,42 +628,20 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<RAPDStatus>(
+                PremiumDropdown<RAPDStatus>(
+                  label: 'RAPD Status',
                   value: _rapdStatus,
-                  decoration: InputDecoration(
-                    labelText: 'RAPD Status',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  items: RAPDStatus.values
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e.name.toUpperCase()),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (val) => setState(() => _rapdStatus = val!),
+                  items: RAPDStatus.values,
+                  itemLabelBuilder: (s) => s.name.toUpperCase(),
+                  onChanged: (val) => setState(() => _rapdStatus = val),
                 ),
                 if (_rapdStatus == RAPDStatus.present) ...[
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<EyeSide>(
+                  PremiumDropdown<EyeSide>(
+                    label: 'Affected Eye',
                     value: _rapdEye,
-                    decoration: InputDecoration(
-                      labelText: 'Affected Eye',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    items: [EyeSide.right, EyeSide.left]
-                        .map(
-                          (e) => DropdownMenuItem(
-                            value: e,
-                            child: Text(e.name.toUpperCase()),
-                          ),
-                        )
-                        .toList(),
+                    items: const [EyeSide.right, EyeSide.left],
+                    itemLabelBuilder: (s) => s.name.toUpperCase(),
                     onChanged: (val) => setState(() => _rapdEye = val),
                   ),
                 ],
@@ -639,26 +710,7 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
     );
   }
 
-  Widget _buildShapeSelector(
-    String label,
-    PupilShape value,
-    ValueChanged<PupilShape?> onChanged,
-  ) {
-    return DropdownButtonFormField<PupilShape>(
-      value: value,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
-      items: PupilShape.values
-          .map(
-            (e) =>
-                DropdownMenuItem(value: e, child: Text(e.name.toUpperCase())),
-          )
-          .toList(),
-      onChanged: onChanged,
-    );
-  }
+  // Replaced by PremiumDropdown
 
   Widget _buildReflexSelector(
     String label,
@@ -698,9 +750,9 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
     );
   }
 
-  Widget _buildBottomControls() {
+  Widget _buildBottomControls(bool isLandscape) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.fromLTRB(24, 8, 24, isLandscape ? 8 : 24),
       decoration: BoxDecoration(
         color: context.cardColor,
         boxShadow: [
@@ -711,25 +763,57 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (_currentStep != PupillaryStep.baseline)
-            OutlinedButton(
-              onPressed: () => setState(
-                () =>
-                    _currentStep = PupillaryStep.values[_currentStep.index - 1],
+          _buildProgressIndicator(),
+          SizedBox(height: isLandscape ? 8 : 16),
+          Row(
+            children: [
+              if (_currentStep != PupillaryStep.baseline)
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        vertical: isLandscape ? 12 : 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text('Back'),
+                  ),
+                ),
+              if (_currentStep != PupillaryStep.baseline)
+                const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: _nextStep,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primary,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      vertical: isLandscape ? 12 : 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _currentStep == PupillaryStep.rapd ? 'Finish' : 'Next Step',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
-              child: const Text('Back'),
-            ),
-          const Spacer(),
-          ElevatedButton(
-            onPressed: _nextStep,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            ),
-            child: Text(
-              _currentStep == PupillaryStep.rapd ? 'Finish' : 'Next Step',
-            ),
+            ],
           ),
         ],
       ),

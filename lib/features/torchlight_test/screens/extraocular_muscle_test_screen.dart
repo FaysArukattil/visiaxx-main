@@ -8,6 +8,10 @@ import '../../../data/models/torchlight_test_result.dart';
 import '../../../data/providers/extraocular_muscle_provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/widgets/premium_dropdown.dart';
+import '../../../core/services/tts_service.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 
 class ExtraocularMuscleTestScreen extends StatefulWidget {
   const ExtraocularMuscleTestScreen({super.key});
@@ -41,6 +45,11 @@ class _ExtraocularMuscleTestScreenState
   bool _isCameraInitialized = false;
   bool _isRecording = false;
   String? _recordedVideoPath;
+  bool _showPreview = false;
+
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  final TtsService _ttsService = TtsService();
 
   @override
   void initState() {
@@ -55,6 +64,9 @@ class _ExtraocularMuscleTestScreenState
   void dispose() {
     _turnOffFlash();
     _cameraController?.dispose();
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+    _ttsService.dispose();
     super.dispose();
   }
 
@@ -114,7 +126,9 @@ class _ExtraocularMuscleTestScreenState
         setState(() {
           _isRecording = false;
           _recordedVideoPath = savedPath;
+          _showPreview = true;
         });
+        _initializeVideoPlayer(savedPath);
         // Store in provider
         if (mounted) {
           context.read<ExtraocularMuscleProvider>().setVideoPath(savedPath);
@@ -133,6 +147,46 @@ class _ExtraocularMuscleTestScreenState
         debugPrint('Start recording error: $e');
       }
     }
+  }
+
+  Future<void> _initializeVideoPlayer(String path) async {
+    await _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+    _videoPlayerController = null;
+    _chewieController = null;
+
+    final controller = VideoPlayerController.file(File(path));
+    _videoPlayerController = controller;
+    await controller.initialize();
+
+    if (!mounted) return;
+
+    _chewieController = ChewieController(
+      videoPlayerController: controller,
+      autoPlay: true,
+      looping: false,
+      aspectRatio: controller.value.aspectRatio,
+      showControls: true,
+      materialProgressColors: ChewieProgressColors(
+        playedColor: context.primary,
+        handleColor: context.primary,
+        bufferedColor: context.primary.withValues(alpha: 0.3),
+        backgroundColor: Colors.white24,
+      ),
+    );
+    setState(() {});
+  }
+
+  void _retakeVideo() {
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+    _videoPlayerController = null;
+    _chewieController = null;
+    setState(() {
+      _recordedVideoPath = null;
+      _showPreview = false;
+    });
+    context.read<ExtraocularMuscleProvider>().setVideoPath(null);
   }
 
   void _nextDirection() {
@@ -166,7 +220,11 @@ class _ExtraocularMuscleTestScreenState
     _isRecording = false;
     _turnOffFlash();
     _cameraController?.dispose();
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
     _cameraController = null;
+    _videoPlayerController = null;
+    _chewieController = null;
 
     if (!mounted) return;
 
@@ -213,10 +271,47 @@ class _ExtraocularMuscleTestScreenState
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _showRestartDialog,
+            tooltip: 'Restart Test',
+          ),
+        ],
       ),
       body: provider.currentPhase == ExtraocularPhase.alignment
           ? _buildAlignmentView(provider)
           : _buildTestView(provider),
+    );
+  }
+
+  void _showRestartDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restart Test?'),
+        content: const Text(
+          'This will clear all current findings and take you back to the instructions.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<ExtraocularMuscleProvider>().reset();
+              Navigator.pushReplacementNamed(
+                context,
+                '/torchlight-instructions',
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: context.error),
+            child: const Text('Restart'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -271,6 +366,7 @@ class _ExtraocularMuscleTestScreenState
                   ? () {
                       provider.stopSensing();
                       provider.setPhase(ExtraocularPhase.hPattern);
+                      _ttsService.speak('Follow the Flashlight');
                     }
                   : null,
               style: ElevatedButton.styleFrom(
@@ -294,10 +390,83 @@ class _ExtraocularMuscleTestScreenState
   }
 
   Widget _buildTestView(ExtraocularMuscleProvider provider) {
+    if (_showPreview) {
+      return _buildVideoPreview();
+    }
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        final isLandscape = orientation == Orientation.landscape;
+        if (isLandscape) {
+          return Row(
+            children: [
+              Expanded(child: _buildTargetContainer()),
+              Expanded(child: _buildControls(provider)),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            _buildTargetContainer(),
+            Expanded(child: _buildControls(provider)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildVideoPreview() {
     return Column(
       children: [
-        _buildTargetContainer(),
-        Expanded(child: _buildControls(provider)),
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child:
+                _chewieController != null &&
+                    _chewieController!.videoPlayerController.value.isInitialized
+                ? Chewie(controller: _chewieController!)
+                : const Center(child: CircularProgressIndicator()),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _retakeVideo,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text('Retake'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: () => setState(() => _showPreview = false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text('Continue to Grading'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -324,40 +493,38 @@ class _ExtraocularMuscleTestScreenState
       ),
       child: Stack(
         children: [
-          // Background subtle pattern or gradient
+          // Background Camera Preview
+          if (_isCameraInitialized && _cameraController != null)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: CameraPreview(_cameraController!),
+              ),
+            ),
+
+          // Overlay gradient for better text visibility
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
-                gradient: RadialGradient(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    context.primary.withValues(alpha: 0.15),
+                    Colors.black.withValues(alpha: 0.3),
                     Colors.transparent,
+                    Colors.black.withValues(alpha: 0.3),
                   ],
-                  radius: 0.8,
                 ),
               ),
             ),
           ),
 
-          // Target indicator
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: context.primary.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.gps_fixed_rounded,
-                    color: context.primary,
-                    size: 56,
-                  ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 48), // Push down to stay away from icons
                 Text(
                   _currentDirection.toUpperCase(),
                   style: const TextStyle(
@@ -365,14 +532,28 @@ class _ExtraocularMuscleTestScreenState
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        offset: Offset(0, 2),
+                        blurRadius: 4,
+                      ),
+                    ],
                   ),
                 ),
                 Text(
-                  'Follow with eyes',
+                  'Follow the Flashlight',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    shadows: const [
+                      Shadow(
+                        color: Colors.black54,
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -501,7 +682,18 @@ class _ExtraocularMuscleTestScreenState
         children: [
           _buildPremiumCard(
             title: 'Grading: $_currentDirection',
-            child: _buildMovementToggle(provider),
+            child: PremiumDropdown<MovementQuality>(
+              label: 'Movement Quality',
+              value:
+                  provider.getMovement(_currentDirection) ??
+                  MovementQuality.full,
+              items: MovementQuality.values,
+              itemLabelBuilder: (q) => q.name.toUpperCase(),
+              itemSubtitleBuilder: (q) => _getQualityDescription(q),
+              onChanged: (val) {
+                provider.recordMovement(_currentDirection, val, 0);
+              },
+            ),
           ),
           const SizedBox(height: 16),
           _buildPremiumCard(
@@ -587,67 +779,6 @@ class _ExtraocularMuscleTestScreenState
           const SizedBox(height: 48),
         ],
       ),
-    );
-  }
-
-  Widget _buildMovementToggle(ExtraocularMuscleProvider provider) {
-    final currentQuality =
-        provider.getMovement(_currentDirection) ?? MovementQuality.full;
-
-    return Column(
-      children: MovementQuality.values.map((q) {
-        final isSelected = currentQuality == q;
-        return GestureDetector(
-          onTap: () => provider.recordMovement(_currentDirection, q, 0),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? context.primary.withValues(alpha: 0.05)
-                  : context.cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? context.primary
-                    : context.dividerColor.withValues(alpha: 0.2),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        q.name.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? context.primary
-                              : context.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getQualityDescription(q),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isSelected)
-                  Icon(Icons.check_circle, color: context.primary, size: 24),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 

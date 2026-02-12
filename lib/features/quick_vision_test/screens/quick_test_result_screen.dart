@@ -2704,8 +2704,41 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
           'RAPD Status',
           pupillary.rapdStatus.name.toUpperCase(),
         ),
-        if (pupillary.rapdImagePath != null ||
-            pupillary.rapdImageUrl != null) ...[
+        if (pupillary.rapdVideoPath != null ||
+            pupillary.rapdVideoUrl != null) ...[
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'RAPD EXAMINATION VIDEO:',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: context.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _showZoomedVideo(
+              pupillary.rapdVideoPath,
+              pupillary.rapdVideoUrl,
+              'RAPD Examination',
+            ),
+            child: _LoopingVideoPreview(
+              videoPath: pupillary.rapdVideoPath,
+              videoUrl: pupillary.rapdVideoUrl,
+              label: 'RAPD Test',
+              width: double.infinity,
+              height: 150,
+            ),
+          ),
+        ],
+        if ((pupillary.rapdImagePath != null ||
+                pupillary.rapdImageUrl != null) &&
+            (pupillary.rapdVideoPath == null &&
+                pupillary.rapdVideoUrl == null)) ...[
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerLeft,

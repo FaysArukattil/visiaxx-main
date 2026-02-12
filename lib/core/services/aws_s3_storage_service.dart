@@ -361,6 +361,73 @@ class AWSS3StorageService {
     }
   }
 
+  /// Upload RAPD Video to S3
+  Future<String?> uploadRAPDVideo({
+    required String userId,
+    required String identityString,
+    required String roleCollection,
+    required String testCategory,
+    required String testId,
+    required File videoFile,
+    String? memberIdentityString,
+  }) async {
+    if (!isAvailable) {
+      debugPrint('[AWS S3] Service not available, skipping upload');
+      return null;
+    }
+
+    try {
+      final dateStr = DateTime.now().toIso8601String().split('T')[0];
+      final fileName = 'rapd_$testId.mp4';
+
+      String basePath = '$roleCollection/$identityString';
+      if (memberIdentityString != null && memberIdentityString.isNotEmpty) {
+        basePath += '/members/$memberIdentityString';
+      }
+
+      final objectName = '$basePath/$dateStr/$testCategory/videos/$fileName';
+      final bucket = AWSCredentials.bucketName;
+
+      debugPrint('[AWS S3] 🎥 RAPD VIDEO UPLOAD START:');
+      if (!await videoFile.exists()) {
+        debugPrint('[AWS S3] ❌ ERROR: Video file missing at ${videoFile.path}');
+        return null;
+      }
+
+      final bytes = await videoFile.readAsBytes();
+      if (bytes.isEmpty) {
+        debugPrint('[AWS S3] ❌ ERROR: Video file is empty');
+        return null;
+      }
+
+      final stream = Stream.value(bytes);
+
+      await _client!
+          .putObject(
+            bucket,
+            objectName,
+            stream,
+            size: bytes.length,
+            metadata: {
+              'Content-Type': 'video/mp4',
+              'user-id': userId,
+              'test-id': testId,
+              'test-type': 'torchlight_test',
+              'sub-type': 'rapd_video',
+              'upload-date': DateTime.now().toIso8601String(),
+            },
+          )
+          .timeout(const Duration(seconds: 45));
+
+      final url = await getPresignedUrl(objectName);
+      debugPrint('[AWS S3] ✅ RAPD VIDEO UPLOAD SUCCESS: $url');
+      return url;
+    } catch (e) {
+      debugPrint('[AWS S3] ❌ RAPD Video Upload failed: $e');
+      return null;
+    }
+  }
+
   /// Upload Extraocular Video to S3
   Future<String?> uploadExtraocularVideo({
     required String userId,

@@ -610,6 +610,36 @@ class TestResultService {
         }
       }
 
+      // Upload Pupillary RAPD Video (NEW)
+      if (updatedResult.torchlight!.pupillary?.rapdVideoPath != null &&
+          updatedResult.torchlight!.pupillary!.rapdVideoUrl == null) {
+        final file = File(updatedResult.torchlight!.pupillary!.rapdVideoPath!);
+        if (await file.exists()) {
+          debugPrint(
+            '[TestResultService] 🎥 Uploading Torchlight RAPD video...',
+          );
+          final awsUrl = await _awsStorageService.uploadRAPDVideo(
+            userId: userId,
+            identityString: identityString,
+            roleCollection: roleCollection,
+            testCategory: testCategory,
+            testId: testId,
+            videoFile: file,
+            memberIdentityString: memberId,
+          );
+
+          if (awsUrl != null) {
+            updatedResult = updatedResult.copyWith(
+              torchlight: updatedResult.torchlight!.copyWith(
+                pupillary: updatedResult.torchlight!.pupillary!.copyWith(
+                  rapdVideoUrl: awsUrl,
+                ),
+              ),
+            );
+          }
+        }
+      }
+
       // Upload Extraocular Video
       if (updatedResult.torchlight!.extraocular?.videoPath != null &&
           updatedResult.torchlight!.extraocular!.videoUrl == null) {

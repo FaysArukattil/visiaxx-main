@@ -110,6 +110,8 @@ class PupillaryResult {
     double? anisocoriaDifference,
     String? rapdImagePath,
     String? rapdImageUrl,
+    String? rapdVideoPath,
+    String? rapdVideoUrl,
   }) {
     return PupillaryResult(
       leftPupilSize: leftPupilSize ?? this.leftPupilSize,
