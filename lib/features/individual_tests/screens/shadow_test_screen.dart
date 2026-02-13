@@ -137,23 +137,17 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                 controller.value.isInitialized &&
                 !provider.isCameraStarting)
               Positioned.fill(
-                child:
-                    (controller.value.isInitialized &&
-                        controller.value.previewSize != null)
-                    ? OverflowBox(
-                        alignment: Alignment.center,
-                        child: FittedBox(
-                          fit: BoxFit.cover,
-                          child: SizedBox(
-                            width: controller.value.previewSize!.height,
-                            height: controller.value.previewSize!.width,
-                            child: CameraPreview(controller),
-                          ),
-                        ),
-                      )
-                    : const Center(
-                        child: CircularProgressIndicator(color: Colors.white),
-                      ), // Fallback if previewSize is null
+                child: OverflowBox(
+                  alignment: Alignment.center,
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: controller.value.previewSize!.height,
+                      height: controller.value.previewSize!.width,
+                      child: CameraPreview(controller),
+                    ),
+                  ),
+                ),
               )
             else
               const Center(child: EyeLoader()),

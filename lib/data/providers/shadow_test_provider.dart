@@ -259,9 +259,11 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
       // Release camera immediately when app goes to background
       stopCamera();
     } else if (state == AppLifecycleState.resumed) {
-      // If we were in the middle of a test, we might need to re-initialize
-      // but usually the user will see the "loading" or "camera error"
-      // and can tap reset. For now, we prioritze safety (releasing)
+      // Reinitialize camera when app returns from background
+      if (_state != ShadowTestState.initial &&
+          _cameraService.controller == null) {
+        initializeCamera();
+      }
     }
   }
 
