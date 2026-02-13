@@ -95,18 +95,23 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
 
       AppLogger.log('$_tag: Flash enabled', tag: _tag);
 
+      // Give camera time to stabilize after flash activation
+      await Future.delayed(const Duration(milliseconds: 500));
+
       // Start eye detection
       _startEyeDetection();
+      await Future.delayed(const Duration(milliseconds: 200));
 
-      // Camera is ready
+      // Camera is ready - clear any previous errors
       _isCameraStarting = false;
+      _errorMessage = null;
       if (!_isDisposed) notifyListeners();
 
       AppLogger.log('$_tag: Camera ready', tag: _tag);
     } catch (e) {
       AppLogger.log('$_tag: Init error: $e', tag: _tag, isError: true);
       _isCameraStarting = false;
-      _errorMessage = 'Camera failed: $e';
+      _errorMessage = 'Camera initialization failed. Please restart test.';
       if (!_isDisposed) notifyListeners();
     }
   }
@@ -170,14 +175,26 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       AppLogger.log('$_tag: Capturing image for $_currentEye eye', tag: _tag);
 
-      // Stop searching before capture to avoid resource contention
+      // Stop searching before capture
       _cameraService.stopSearchingForEyes();
+
+      // Wait for camera to stabilize
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Double-check controller is still valid
+      if (_isDisposed || _cameraService.controller == null) {
+        throw Exception('Camera not available');
+      }
 
       // Capture image
       final imagePath = await _cameraService.captureImage();
-      if (imagePath == null) throw Exception('Failed to capture image');
+      if (imagePath == null) {
+        throw Exception('Capture failed. Retry.');
+      }
 
-      // Check image quality (ShadowDetectionService refactored)
+      AppLogger.log('$_tag: Image captured successfully', tag: _tag);
+
+      // Check image quality
       final quality = await _detectionService.checkImageQuality(imagePath);
       if (!quality.isGood) {
         _errorMessage = quality.message;

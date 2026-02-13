@@ -68,9 +68,7 @@ class _ShadowTestInstructionsScreenState
 
   void _handleContinue() {
     _ttsService.stop();
-    context.read<ShadowTestProvider>().setState(
-      ShadowTestState.rightEyeCapture,
-    );
+    // Let the test screen handle state initialization
     Navigator.pushReplacementNamed(context, '/shadow-test-main');
   }
 

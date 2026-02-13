@@ -28,20 +28,45 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
   }
 
   Future<void> _initializeTest() async {
-    final shadowProvider = context.read<ShadowTestProvider>();
-    final sessionProvider = context.read<TestSessionProvider>();
+    try {
+      final shadowProvider = context.read<ShadowTestProvider>();
+      final sessionProvider = context.read<TestSessionProvider>();
 
-    // Start session
-    sessionProvider.startIndividualTest('shadow_test');
+      // Start session
+      sessionProvider.startIndividualTest('shadow_test');
 
-    // Reset and initialize
-    shadowProvider.setState(ShadowTestState.initial);
-    await shadowProvider.initializeCamera();
+      // Reset and initialize
+      shadowProvider.setState(ShadowTestState.initial);
 
-    if (mounted) {
-      setState(() {
-        _isInitialized = true;
-      });
+      // Initialize camera and WAIT for it to be fully ready
+      await shadowProvider.initializeCamera();
+
+      // Extra safety: wait for camera preview to be available
+      final controller = shadowProvider.cameraController;
+      if (controller != null) {
+        // Wait for preview size to be available (max 1 second)
+        int attempts = 0;
+        while (controller.value.previewSize == null && attempts < 20) {
+          await Future.delayed(const Duration(milliseconds: 50));
+          attempts++;
+        }
+
+        // One more small delay to ensure rendering is complete
+        await Future.delayed(const Duration(milliseconds: 150));
+      }
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      AppLogger.log('ShadowTestScreen: Init error: $e');
+      if (mounted) {
+        setState(() {
+          _isInitialized = true; // Still show UI even with error
+        });
+      }
     }
   }
 
@@ -64,15 +89,28 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
           onContinue: () {
             Navigator.of(dialogContext).pop();
           },
-          onRestart: () {
+          onRestart: () async {
             Navigator.of(dialogContext).pop();
+
             final shadowProvider = context.read<ShadowTestProvider>();
-            provider.resetKeepProfile();
-            shadowProvider.setState(ShadowTestState.initial);
-            setState(() {
-              _isInitialized = false;
-            });
-            _initializeTest();
+            final sessionProvider = context.read<TestSessionProvider>();
+
+            // Stop current camera
+            await shadowProvider.stopCamera();
+
+            // Reset session but keep profile
+            sessionProvider.resetKeepProfile();
+
+            // Small delay
+            await Future.delayed(const Duration(milliseconds: 300));
+
+            if (mounted) {
+              // Navigate back to instructions screen
+              Navigator.pushReplacementNamed(
+                context,
+                '/shadow-test-instructions',
+              );
+            }
           },
           onExit: () async {
             Navigator.of(dialogContext).pop();
@@ -133,22 +171,65 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
             backgroundColor: Colors.black,
             body: Stack(
               children: [
-                // Camera Preview - Full screen
+                // Camera Preview - with error boundary
                 if (_isInitialized &&
                     controller != null &&
-                    controller.value.isInitialized &&
-                    controller.value.previewSize != null)
+                    controller.value.isInitialized)
                   Positioned.fill(
-                    child: OverflowBox(
-                      alignment: Alignment.center,
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: controller.value.previewSize!.height,
-                          height: controller.value.previewSize!.width,
-                          child: CameraPreview(controller),
-                        ),
-                      ),
+                    child: Builder(
+                      builder: (context) {
+                        try {
+                          final previewSize = controller.value.previewSize;
+                          if (previewSize == null) {
+                            return const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  EyeLoader(),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Preparing camera...',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          return OverflowBox(
+                            alignment: Alignment.center,
+                            child: FittedBox(
+                              fit: BoxFit.cover,
+                              child: SizedBox(
+                                width: previewSize.height,
+                                height: previewSize.width,
+                                child: CameraPreview(controller),
+                              ),
+                            ),
+                          );
+                        } catch (e) {
+                          AppLogger.log('Camera preview error: $e');
+                          return const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                EyeLoader(),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Loading camera...',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      },
                     ),
                   )
                 else
