@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
@@ -7,13 +8,12 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import '../models/eye_hydration_result.dart';
 
 class EyeHydrationProvider extends ChangeNotifier {
-  // NEW APPROACH: Detect the DIP in eye openness, not absolute values
-  // A blink is a RAPID decrease followed by RAPID increase
+  // SIMPLE APPROACH: Track eye state transitions
+  // Open -> Closed -> Open = 1 blink
 
-  static const double SIGNIFICANT_DROP = 0.25; // Drop of 25% indicates closing
-  static const double SIGNIFICANT_RISE = 0.20; // Rise of 20% indicates opening
-  static const int MIN_BETWEEN_BLINKS_MS = 150;
-  static const double MIN_BASELINE = 0.5; // Minimum "normal" eye openness
+  static const double CLOSED_THRESHOLD = 0.40; // Eyes closed below this
+  static const double OPEN_THRESHOLD = 0.60; // Eyes open above this
+  static const int MIN_BETWEEN_BLINKS_MS = 100;
 
   // Broadcast stream for blink events
   final _blinkStreamController = StreamController<void>.broadcast();
@@ -29,18 +29,15 @@ class EyeHydrationProvider extends ChangeNotifier {
   final FaceDetector _faceDetector = FaceDetector(
     options: FaceDetectorOptions(
       enableClassification: true,
-      performanceMode: FaceDetectorMode.accurate,
+      performanceMode: FaceDetectorMode.fast,
     ),
   );
 
   bool _isProcessing = false;
   bool _faceDetected = false;
 
-  // Tracking for blink detection
-  double _previousProb = 1.0;
-  double _baselineProb = 1.0; // Running average of "normal" open state
-  bool _inPotentialBlink = false;
-  double _lowestProbInBlink = 1.0;
+  // Simple state tracking
+  bool _eyesCurrentlyClosed = false;
   DateTime? _lastBlinkTime;
 
   // Eye probability tracking
@@ -140,10 +137,7 @@ class EyeHydrationProvider extends ChangeNotifier {
     _blinkCount = 0;
     _testStartTime = DateTime.now();
     _finalResult = null;
-    _inPotentialBlink = false;
-    _previousProb = 1.0;
-    _baselineProb = 1.0;
-    _lowestProbInBlink = 1.0;
+    _eyesCurrentlyClosed = false;
     _lastBlinkTime = null;
     _isProcessing = false;
 
@@ -168,7 +162,7 @@ class EyeHydrationProvider extends ChangeNotifier {
           if (_faceDetected) {
             debugPrint('❓ Face lost');
             _faceDetected = false;
-            _inPotentialBlink = false;
+            _eyesCurrentlyClosed = false;
             notifyListeners();
           }
         }
@@ -224,99 +218,83 @@ class EyeHydrationProvider extends ChangeNotifier {
     return InputImageFormat.nv21;
   }
 
+  final List<double> _probBuffer = [];
+  static const int BUFFER_SIZE = 15;
+  double _adaptiveBaseline = 1.0;
+  double _minProbDuringDip = 1.0;
+
   void _analyzeFace(Face face) {
     _currentLeftProb = face.leftEyeOpenProbability ?? 1.0;
     _currentRightProb = face.rightEyeOpenProbability ?? 1.0;
 
-    // Use average of both eyes
-    double currentProb = (_currentLeftProb + _currentRightProb) / 2.0;
+    // Use max of both eyes for better stability (if one eye is blocked, the other still works)
+    double currentProb = max(_currentLeftProb, _currentRightProb);
 
-    // Update display probability with light smoothing for UI
-    _displayProb = (0.5 * currentProb) + (0.5 * _displayProb);
+    // 1. Update rolling window buffer
+    _probBuffer.add(currentProb);
+    if (_probBuffer.length > BUFFER_SIZE) {
+      _probBuffer.removeAt(0);
+    }
 
-    // Calculate change from previous frame
-    double change = currentProb - _previousProb;
+    // 2. Calculate adaptive baseline (usually the maximum "open" state recently seen)
+    if (_probBuffer.isNotEmpty) {
+      _adaptiveBaseline = _probBuffer.reduce(max);
+      // Ensure baseline doesn't stay too low if user has eyes mostly closed
+      if (_adaptiveBaseline < 0.6) _adaptiveBaseline = 0.6;
+    }
+
+    // Update display probability (minimal smoothing)
+    _displayProb = (0.85 * currentProb) + (0.15 * _displayProb);
 
     DateTime now = DateTime.now();
 
-    if (!_inPotentialBlink) {
-      // NOT in a blink - looking for a significant DROP
+    // 3. Detect "Seamless" Blink
+    // Start of blink: Deep relative dip (less than 50% of recent baseline)
+    if (!_eyesCurrentlyClosed && currentProb < (_adaptiveBaseline * 0.5)) {
+      _eyesCurrentlyClosed = true;
+      _minProbDuringDip = currentProb;
 
-      // Update baseline when eyes are relatively stable and open
-      if (currentProb >= MIN_BASELINE && change.abs() < 0.1) {
-        _baselineProb = (0.9 * _baselineProb) + (0.1 * currentProb);
+      // TRIGGER ANIMATION INSTANTLY on closure detection
+      _blinkStreamController.add(null);
+      debugPrint(
+        '👁️ Dip Start: Prob ${currentProb.toStringAsFixed(2)} < Baseline ${_adaptiveBaseline.toStringAsFixed(2)}',
+      );
+    }
+
+    if (_eyesCurrentlyClosed) {
+      // Track the deepest point of the dip
+      if (currentProb < _minProbDuringDip) {
+        _minProbDuringDip = currentProb;
       }
 
-      // Detect significant drop from baseline
-      double dropFromBaseline = _baselineProb - currentProb;
+      // Recovery: Significant climb from the minimum point (or back to baseline)
+      // We look for a recovery of at least 20% absolute or back to 70% of baseline
+      bool recovered =
+          currentProb > (_minProbDuringDip + 0.2) ||
+          currentProb > (_adaptiveBaseline * 0.75);
 
-      if (dropFromBaseline > SIGNIFICANT_DROP) {
-        // Potential blink started!
-        _inPotentialBlink = true;
-        _lowestProbInBlink = currentProb;
-        debugPrint(
-          '👁️ Blink START detected (baseline: ${_baselineProb.toStringAsFixed(2)}, current: ${currentProb.toStringAsFixed(2)}, drop: ${dropFromBaseline.toStringAsFixed(2)})',
-        );
-      }
-    } else {
-      // IN a potential blink - looking for a significant RISE
-
-      // Track the lowest point
-      if (currentProb < _lowestProbInBlink) {
-        _lowestProbInBlink = currentProb;
-      }
-
-      // Detect significant rise from lowest point
-      double riseFromLowest = currentProb - _lowestProbInBlink;
-
-      if (riseFromLowest > SIGNIFICANT_RISE) {
-        // Blink completed!
-
-        // Check debounce
+      if (recovered) {
+        // Debounce check
         bool validBlink = true;
         if (_lastBlinkTime != null) {
-          final timeSinceLastBlink = now
-              .difference(_lastBlinkTime!)
-              .inMilliseconds;
-          if (timeSinceLastBlink < MIN_BETWEEN_BLINKS_MS) {
+          final diff = now.difference(_lastBlinkTime!).inMilliseconds;
+          if (diff < MIN_BETWEEN_BLINKS_MS) {
             validBlink = false;
-            debugPrint(
-              '👁️ Blink too soon - ignored (${timeSinceLastBlink}ms)',
-            );
           }
         }
 
         if (validBlink) {
           _blinkCount++;
           _lastBlinkTime = now;
-
-          // Trigger animation
-          _blinkStreamController.add(null);
-
           debugPrint(
-            '✅ BLINK #$_blinkCount COMPLETE (lowest: ${_lowestProbInBlink.toStringAsFixed(2)}, current: ${currentProb.toStringAsFixed(2)}, rise: ${riseFromLowest.toStringAsFixed(2)})',
+            '✅ BLINK #$_blinkCount: Dip Min ${_minProbDuringDip.toStringAsFixed(2)} -> Recov ${currentProb.toStringAsFixed(2)}',
           );
         }
 
-        _inPotentialBlink = false;
-        _lowestProbInBlink = 1.0;
-      }
-
-      // Safety: If eye probability goes back to near baseline without completing blink, reset
-      if (currentProb >= (_baselineProb - 0.1) && change > 0) {
-        double totalDrop = _baselineProb - _lowestProbInBlink;
-        if (totalDrop < 0.15) {
-          // Wasn't a real blink, just noise
-          debugPrint(
-            '👁️ False blink - reset (total drop was only ${totalDrop.toStringAsFixed(2)})',
-          );
-          _inPotentialBlink = false;
-          _lowestProbInBlink = 1.0;
-        }
+        _eyesCurrentlyClosed = false;
       }
     }
 
-    _previousProb = currentProb;
     notifyListeners();
   }
 

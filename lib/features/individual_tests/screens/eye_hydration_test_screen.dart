@@ -273,9 +273,6 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
     if (!provider.faceDetected) {
       message = 'No face detected! Position your face in frame.';
       color = context.error;
-    } else if (provider.currentBlinkProbability < 0.4) {
-      message = 'Eyes closed... detecting blink';
-      color = context.warning;
     } else {
       message = 'Monitoring blinks...';
       color = context.success;
