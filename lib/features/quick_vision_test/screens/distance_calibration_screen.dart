@@ -444,6 +444,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                 children: [
                   if (isLandscape)
                     Positioned(
+                      key: const ValueKey('dc_landscape_hud'),
                       top: 60,
                       bottom: verticalPadding,
                       right: horizontalPadding,
@@ -463,6 +464,7 @@ class _DistanceCalibrationScreenState extends State<DistanceCalibrationScreen> {
                     )
                   else
                     Positioned(
+                      key: const ValueKey('dc_portrait_hud'),
                       bottom: verticalPadding,
                       left: horizontalPadding,
                       right: horizontalPadding,

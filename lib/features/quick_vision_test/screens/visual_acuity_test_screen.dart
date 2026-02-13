@@ -1016,6 +1016,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
 
                   if (isLandscape && _showE && _waitingForResponse) {
                     return Column(
+                      key: const ValueKey('va_landscape_layout'),
                       children: [
                         // Single Unified Header
                         if (_showE) _buildAcuityFixedHeader(isLandscape: true),
@@ -1046,6 +1047,7 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
                   }
 
                   return Column(
+                    key: const ValueKey('va_standard_layout'),
                     children: [
                       // Single Unified Header
                       if (_showE) _buildAcuityFixedHeader(isLandscape: false),

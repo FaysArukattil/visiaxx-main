@@ -896,9 +896,15 @@ class _MobileRefractometryTestScreenState
               return Stack(
                 children: [
                   if (isLandscape)
-                    _buildLandscapeLayout()
+                    KeyedSubtree(
+                      key: const ValueKey('mr_landscape_layout'),
+                      child: _buildLandscapeLayout(),
+                    )
                   else
-                    _buildPortraitLayout(),
+                    KeyedSubtree(
+                      key: const ValueKey('mr_portrait_layout'),
+                      child: _buildPortraitLayout(),
+                    ),
 
                   // Distance warning overlay
                   DistanceWarningOverlay(

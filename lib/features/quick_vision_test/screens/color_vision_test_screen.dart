@@ -829,6 +829,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
             if (isLandscape) {
               return Stack(
+                key: const ValueKey('cv_landscape_layout'),
                 children: [
                   Row(
                     children: [
@@ -867,6 +868,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
             }
 
             return Stack(
+              key: const ValueKey('cv_portrait_layout'),
               children: [
                 Column(
                   children: [
@@ -1136,6 +1138,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
 
           if (isSideBySide) {
             return Center(
+              key: const ValueKey('cv_side_by_side_view'),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: IshiharaPlateViewer(
@@ -1151,6 +1154,7 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
           }
 
           return Column(
+            key: const ValueKey('cv_standard_view'),
             children: [
               Expanded(
                 child: Center(
