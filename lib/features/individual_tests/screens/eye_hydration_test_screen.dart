@@ -267,23 +267,35 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
   }
 
   Widget _buildDetectionWarning(EyeHydrationProvider provider) {
+    final String message;
+    final Color color;
+
+    if (!provider.faceDetected) {
+      message = 'No face detected! Position your face in frame.';
+      color = context.error;
+    } else if (provider.currentBlinkProbability < 0.4) {
+      message = 'Eyes closed... detecting blink';
+      color = context.warning;
+    } else {
+      message = 'Monitoring blinks...';
+      color = context.success;
+    }
+
     return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
           child: Text(
-            provider.faceDetected
-                ? 'Scanning for blinks...'
-                : 'No face detected! Reposition device.',
+            message,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: provider.faceDetected ? context.primary : context.error,
+              color: color,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
         )
         .animate(onPlay: (c) => c.repeat())
-        .fadeIn(duration: 800.ms)
-        .fadeOut(delay: 1500.ms, duration: 800.ms);
+        .fadeIn(duration: 600.ms)
+        .fadeOut(delay: 1200.ms, duration: 600.ms);
   }
 
   Widget _buildReadingContent(EyeHydrationProvider provider) {
@@ -401,6 +413,24 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
             color: context.textSecondary.withValues(alpha: 0.7),
           ),
         ),
+        if (!isCompact) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: context.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'Eye Open: ${(provider.currentBlinkProbability * 100).toStringAsFixed(0)}%',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: context.textSecondary,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -7,14 +7,15 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import '../models/eye_hydration_result.dart';
 
 class EyeHydrationProvider extends ChangeNotifier {
-  // Constants for blink detection
-  static const double PROB_THRESHOLD =
-      0.35; // Stable avg prob below this for closure
-  static const double PROB_RECOVER =
-      0.55; // Stable avg prob above this for recovery
-  static const int MIN_BETWEEN_BLINKS_MS = 250; // Standard debouncing
+  // NEW APPROACH: Detect the DIP in eye openness, not absolute values
+  // A blink is a RAPID decrease followed by RAPID increase
 
-  // Broadcast stream for blink events to trigger animations
+  static const double SIGNIFICANT_DROP = 0.25; // Drop of 25% indicates closing
+  static const double SIGNIFICANT_RISE = 0.20; // Rise of 20% indicates opening
+  static const int MIN_BETWEEN_BLINKS_MS = 150;
+  static const double MIN_BASELINE = 0.5; // Minimum "normal" eye openness
+
+  // Broadcast stream for blink events
   final _blinkStreamController = StreamController<void>.broadcast();
   Stream<void> get blinkStream => _blinkStreamController.stream;
 
@@ -33,17 +34,19 @@ class EyeHydrationProvider extends ChangeNotifier {
   );
 
   bool _isProcessing = false;
-  bool _inBlinkState = false;
-  DateTime? _lastBlinkTime;
-
-  double _currentLeftProb = 1.0;
-  double _currentRightProb = 1.0;
-  double _smoothProb = 1.0;
-  static const double _smoothingFactor =
-      0.4; // Faster response to probability changes
   bool _faceDetected = false;
 
-  // Temporal blink filtering
+  // Tracking for blink detection
+  double _previousProb = 1.0;
+  double _baselineProb = 1.0; // Running average of "normal" open state
+  bool _inPotentialBlink = false;
+  double _lowestProbInBlink = 1.0;
+  DateTime? _lastBlinkTime;
+
+  // Eye probability tracking
+  double _currentLeftProb = 1.0;
+  double _currentRightProb = 1.0;
+  double _displayProb = 1.0;
 
   // Getters
   bool get isTestRunning => _isTestRunning;
@@ -51,7 +54,7 @@ class EyeHydrationProvider extends ChangeNotifier {
   bool get faceDetected => _faceDetected;
   double get leftEyeOpenProbability => _currentLeftProb;
   double get rightEyeOpenProbability => _currentRightProb;
-  double get currentBlinkProbability => _smoothProb;
+  double get currentBlinkProbability => _displayProb;
   EyeHydrationResult? get finalResult => _finalResult;
 
   set screenBrightness(double value) {
@@ -70,7 +73,7 @@ class EyeHydrationProvider extends ChangeNotifier {
   static const Map<String, List<String>> _topicContent = {
     'Digital World': [
       "The Wonders of Our Digital World",
-      "Technology has changed the way we live and work. We use our smartphones and computers for almost everything. While these tools make our lives easier, it is important to take care of our eyes.",
+      "Technology has changed the way we live and work. We use our smartphones and computers for almost everything. While these tools make our life easier, it is important to take care of our eyes.",
       "When we look at screens for a long time, we often forget to blink. This can make our eyes feel tired or dry. Taking small breaks every twenty minutes is a great way to stay fresh.",
       "Spending time outdoors and looking at distant objects also helps. Natural light is good for our overall health. Balance is the key to enjoying all the benefits of the digital age.",
       "Remember to stay hydrated and get enough sleep. Tiny habits like these make a big difference in how we feel. Your eyes are precious, so give them the rest they deserve today.",
@@ -113,7 +116,7 @@ class EyeHydrationProvider extends ChangeNotifier {
     'Biz Adventures': [
       "Business Adventures: John Brooks",
       "The 1960s were a time of rapid change and excitement in the business world, and John Brooks captures this era perfectly. His stories about the Ford Edsel and Xerox are classics.",
-      "A brand is a set of expectations, memories, stories and relationships that, taken together, account for a consumer’s decision to choose one product or service over another.",
+      "A brand is a set of expectations, memories, stories and relationships that, taken together, account for a consumer's decision to choose one product or service over another.",
       "The main difference between a success and a failure is the ability to adapt to changing circumstances. A business must be willing to change its strategy if it wants to survive.",
       "Innovation is the key to success in any industry. Companies that fail to innovate will eventually be left behind by their competitors.",
     ],
@@ -121,7 +124,7 @@ class EyeHydrationProvider extends ChangeNotifier {
       "The Intelligent Investor: Benjamin Graham",
       "The intelligent investor is a realist who sells to optimists and buys from pessimists. Investing is most intelligent when it is most businesslike.",
       "In the short run, the market is a voting machine but in the long run, it is a weighing machine. The margin of safety is the most important concept in value investing.",
-      "Successful investing is about managing risk, not avoiding it. An investor should always have a clear understanding of the difference between price and value.",
+      "Successful investing is about managing risk, not avoiding it. An investor should always have a clear understanding of the difference between the price and value.",
       "The stock market is filled with individuals who know the price of everything, but the value of nothing. Patience is a virtue in the world of finance.",
     ],
   };
@@ -137,7 +140,10 @@ class EyeHydrationProvider extends ChangeNotifier {
     _blinkCount = 0;
     _testStartTime = DateTime.now();
     _finalResult = null;
-    _inBlinkState = false;
+    _inPotentialBlink = false;
+    _previousProb = 1.0;
+    _baselineProb = 1.0;
+    _lowestProbInBlink = 1.0;
     _lastBlinkTime = null;
     _isProcessing = false;
 
@@ -155,14 +161,16 @@ class EyeHydrationProvider extends ChangeNotifier {
         if (faces.isNotEmpty) {
           if (!_faceDetected) {
             debugPrint('🙂 Face detected');
+            _faceDetected = true;
           }
           _analyzeFace(faces.first);
         } else {
           if (_faceDetected) {
             debugPrint('❓ Face lost');
+            _faceDetected = false;
+            _inPotentialBlink = false;
+            notifyListeners();
           }
-          _faceDetected = false;
-          notifyListeners();
         }
       } catch (e) {
         debugPrint('Error processing image: $e');
@@ -175,7 +183,6 @@ class EyeHydrationProvider extends ChangeNotifier {
   Future<List<Face>> _processImage(CameraImage image) async {
     final format = _getInputImageFormat(image.format.group);
 
-    // Improved byte extraction for YUV420
     final WriteBuffer allBytes = WriteBuffer();
     for (final Plane plane in image.planes) {
       allBytes.putUint8List(plane.bytes);
@@ -210,7 +217,6 @@ class EyeHydrationProvider extends ChangeNotifier {
 
   InputImageFormat _getInputImageFormat(ImageFormatGroup format) {
     if (Platform.isAndroid) {
-      // Android cameras typically use YUV_420_888 which is often compatible with NV21 for ML Kit
       return InputImageFormat.nv21;
     } else if (Platform.isIOS) {
       return InputImageFormat.bgra8888;
@@ -219,59 +225,98 @@ class EyeHydrationProvider extends ChangeNotifier {
   }
 
   void _analyzeFace(Face face) {
-    _faceDetected = true;
     _currentLeftProb = face.leftEyeOpenProbability ?? 1.0;
     _currentRightProb = face.rightEyeOpenProbability ?? 1.0;
 
-    // Use average for UI smoothing only
-    double avgProb = (_currentLeftProb + _currentRightProb) / 2.0;
-    _smoothProb =
-        (_smoothingFactor * avgProb) + ((1 - _smoothingFactor) * _smoothProb);
+    // Use average of both eyes
+    double currentProb = (_currentLeftProb + _currentRightProb) / 2.0;
+
+    // Update display probability with light smoothing for UI
+    _displayProb = (0.5 * currentProb) + (0.5 * _displayProb);
+
+    // Calculate change from previous frame
+    double change = currentProb - _previousProb;
 
     DateTime now = DateTime.now();
 
-    // STABLE LOGIC:
-    // 1. Use average probability for better stability.
-    // 2. Require CONFIRM_FRAMES (2) consecutive frames to filter noise.
-    bool isClosed = avgProb < PROB_THRESHOLD;
-    bool isOpened = avgProb > PROB_RECOVER;
+    if (!_inPotentialBlink) {
+      // NOT in a blink - looking for a significant DROP
 
-    if (isClosed) {
-      if (!_inBlinkState) {
-        // Debounce check
-        bool isDuplicate = false;
+      // Update baseline when eyes are relatively stable and open
+      if (currentProb >= MIN_BASELINE && change.abs() < 0.1) {
+        _baselineProb = (0.9 * _baselineProb) + (0.1 * currentProb);
+      }
+
+      // Detect significant drop from baseline
+      double dropFromBaseline = _baselineProb - currentProb;
+
+      if (dropFromBaseline > SIGNIFICANT_DROP) {
+        // Potential blink started!
+        _inPotentialBlink = true;
+        _lowestProbInBlink = currentProb;
+        debugPrint(
+          '👁️ Blink START detected (baseline: ${_baselineProb.toStringAsFixed(2)}, current: ${currentProb.toStringAsFixed(2)}, drop: ${dropFromBaseline.toStringAsFixed(2)})',
+        );
+      }
+    } else {
+      // IN a potential blink - looking for a significant RISE
+
+      // Track the lowest point
+      if (currentProb < _lowestProbInBlink) {
+        _lowestProbInBlink = currentProb;
+      }
+
+      // Detect significant rise from lowest point
+      double riseFromLowest = currentProb - _lowestProbInBlink;
+
+      if (riseFromLowest > SIGNIFICANT_RISE) {
+        // Blink completed!
+
+        // Check debounce
+        bool validBlink = true;
         if (_lastBlinkTime != null) {
-          if (now.difference(_lastBlinkTime!).inMilliseconds <
-              MIN_BETWEEN_BLINKS_MS) {
-            isDuplicate = true;
+          final timeSinceLastBlink = now
+              .difference(_lastBlinkTime!)
+              .inMilliseconds;
+          if (timeSinceLastBlink < MIN_BETWEEN_BLINKS_MS) {
+            validBlink = false;
+            debugPrint(
+              '👁️ Blink too soon - ignored (${timeSinceLastBlink}ms)',
+            );
           }
         }
 
-        if (!isDuplicate) {
-          _inBlinkState = true;
+        if (validBlink) {
           _blinkCount++;
           _lastBlinkTime = now;
 
-          // Notify stream to trigger animations
+          // Trigger animation
           _blinkStreamController.add(null);
 
           debugPrint(
-            '👁️ Blink confirmed! Count: $_blinkCount (Avg Prob: ${avgProb.toStringAsFixed(2)})',
+            '✅ BLINK #$_blinkCount COMPLETE (lowest: ${_lowestProbInBlink.toStringAsFixed(2)}, current: ${currentProb.toStringAsFixed(2)}, rise: ${riseFromLowest.toStringAsFixed(2)})',
           );
+        }
 
-          // Immediate UI update
-          notifyListeners();
+        _inPotentialBlink = false;
+        _lowestProbInBlink = 1.0;
+      }
+
+      // Safety: If eye probability goes back to near baseline without completing blink, reset
+      if (currentProb >= (_baselineProb - 0.1) && change > 0) {
+        double totalDrop = _baselineProb - _lowestProbInBlink;
+        if (totalDrop < 0.15) {
+          // Wasn't a real blink, just noise
+          debugPrint(
+            '👁️ False blink - reset (total drop was only ${totalDrop.toStringAsFixed(2)})',
+          );
+          _inPotentialBlink = false;
+          _lowestProbInBlink = 1.0;
         }
       }
-    } else if (isOpened) {
-      if (_inBlinkState) {
-        // Reset state only when eyes are sufficiently open
-        _inBlinkState = false;
-        debugPrint(
-          '👁️ Eyes open (Recovered at Avg Prob: ${avgProb.toStringAsFixed(2)})',
-        );
-      }
     }
+
+    _previousProb = currentProb;
     notifyListeners();
   }
 
@@ -288,11 +333,16 @@ class EyeHydrationProvider extends ChangeNotifier {
       screenBrightness: _screenBrightness,
     );
 
+    debugPrint(
+      '🏁 Test stopped - Total blinks: $_blinkCount, Duration: ${testDuration.inSeconds}s',
+    );
+
     notifyListeners();
   }
 
   @override
   void dispose() {
+    _blinkStreamController.close();
     _faceDetector.close();
     super.dispose();
   }
