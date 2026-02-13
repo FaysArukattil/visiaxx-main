@@ -26,6 +26,8 @@ import '../../quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
 import '../../quick_vision_test/screens/cover_right_eye_instruction_screen.dart';
 import './mobile_refractometry_instructions_screen.dart';
 import '../../../core/widgets/voice_input_overlay.dart';
+import '../../../core/providers/voice_recognition_provider.dart';
+import '../../../core/services/voice_recognition_service.dart';
 
 /// Refractometry phases
 enum RefractPhase { instruction, calibration, relaxation, test, complete }
@@ -131,10 +133,23 @@ class _MobileRefractometryTestScreenState
       final provider = context.read<TestSessionProvider>();
       _patientAge = provider.profileAge ?? 30;
 
+      // PROACTIVE VOICE INITIALIZATION
+      // Same pattern as working VisualAcuityTestScreen
+      final voiceProvider = context.read<VoiceRecognitionProvider>();
+      if (voiceProvider.isEnabled) {
+        debugPrint('[MobileRefract] Proactively initializing voice service');
+        await voiceProvider.initialize();
+      }
+
       // START FLOW LOGIC
       if (!widget.showInitialInstructions) {
         _instructionShown = true;
         _isTransitioning = true;
+        // Ensure distance state is clean before starting calibration
+        setState(() {
+          _isDistanceOk = true;
+          _isTestPausedForDistance = false;
+        });
         _startDistanceCalibration(TestConstants.mobileRefractometryDistanceCm);
       } else {
         _isTransitioning = true;
@@ -362,9 +377,14 @@ class _MobileRefractometryTestScreenState
   void _startRelaxation() {
     debugPrint('[MobileRefract] Starting relaxation phase');
 
+    // Ensure we are monitoring distance and state is reset
+    _startContinuousDistanceMonitoring();
+
     setState(() {
       _currentPhase = RefractPhase.relaxation;
       _relaxationCountdown = TestConstants.mobileRefractometryRelaxationSeconds;
+      _isTestPausedForDistance = false; // Force resume for relaxation start
+      _isDistanceOk = true;
     });
 
     _ttsService.speak(TtsService.relaxationInstruction);
@@ -388,7 +408,9 @@ class _MobileRefractometryTestScreenState
         return;
       }
 
+      // If paused during high-level check, stop everything
       if (_isTestPausedForDistance) {
+        timer.cancel();
         _relaxationProgressController.stop();
         return;
       }
@@ -402,6 +424,18 @@ class _MobileRefractometryTestScreenState
         }
       }
     });
+
+    // Safety fallback: if stuck for more than relaxation + 2s, force start
+    Future.delayed(
+      Duration(seconds: TestConstants.mobileRefractometryRelaxationSeconds + 2),
+      () {
+        if (mounted &&
+            _currentPhase == RefractPhase.relaxation &&
+            !_isTestPausedForDistance) {
+          _startRound();
+        }
+      },
+    );
   }
 
   void _startRound() {
@@ -499,17 +533,27 @@ class _MobileRefractometryTestScreenState
         !_waitingForResponse) {
       return;
     }
-    if (!isFinal) return;
 
-    final provider = context.read<TestSessionProvider>();
-    if (provider.profileType == 'patient') return;
+    // SUDDEN ACTION: Process both partial and final results
+    // This makes the app respond immediately without waiting for the "final" pause
 
+    // REMOVED: profileType == 'patient' check as it was blocking valid input
+    // The user should be able to use voice regardless of profile type
+
+    // Check if voice recognition is enabled and listening
+    final voiceProvider = context.read<VoiceRecognitionProvider>();
+    if (!voiceProvider.isEnabled) return;
+
+    // If we're in error state, don't try to parse garbage
+    if (voiceProvider.state == VoiceRecognitionState.error) {
+      debugPrint('[MobileRefract] Voice in error state, ignoring input');
+      return;
+    }
+
+    // Minimum display time guard - reduced for even more responsiveness
     if (_eDisplayStartTime != null) {
       final sinceStart = DateTime.now().difference(_eDisplayStartTime!);
-      if (sinceStart < const Duration(milliseconds: 1500)) {
-        debugPrint(
-          '[MobileRefract] Ignoring voice: arrived too fast (${sinceStart.inMilliseconds}ms)',
-        );
+      if (sinceStart < const Duration(milliseconds: 200)) {
         return;
       }
     }
@@ -517,7 +561,13 @@ class _MobileRefractometryTestScreenState
     // Parse direction from recognized text
     final direction = _parseDirection(recognizedText);
     if (direction != null) {
+      debugPrint(
+        '[MobileRefract] ✅ SUDDEN Voice match: ${direction.label} from "$recognizedText"',
+      );
       _handleResponse(direction);
+    } else {
+      // Enhanced logging to see why it's not matching
+      debugPrint('[MobileRefract] ⚠️ Voice mismatch: "$recognizedText"');
     }
   }
 
@@ -566,6 +616,39 @@ class _MobileRefractometryTestScreenState
 
   void _handleResponse(EDirection? response) {
     if (!_waitingForResponse || _showResult) return;
+
+    final roundConfig = _simplifiedProtocol[_currentRound];
+
+    // HANDLE NO RESPONSE (Timeout): Pick new rotation, stay in same round
+    if (response == null) {
+      debugPrint('[MobileRefract] Timeout - Rotating and retrying same round');
+
+      // Update direction for visual rotation
+      _currentDirection = roundConfig.getRandomDirection();
+
+      setState(() {
+        _waitingForResponse = false; // Briefly stop for mic restart
+        _showResult = false;
+        _remainingSeconds =
+            TestConstants.mobileRefractometryTimePerRoundSeconds;
+      });
+
+      // Clear recognized text for fresh start
+      context.read<VoiceRecognitionProvider>().clearRecognizedText();
+
+      // Moderate delay for rotation feel
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) {
+          setState(() {
+            _waitingForResponse = true; // Mic restarts here
+          });
+          _eDisplayStartTime = DateTime.now();
+          _startRoundTimer();
+        }
+      });
+      return;
+    }
+
     _waitingForResponse = false;
     _roundTimer?.cancel();
 
@@ -573,14 +656,12 @@ class _MobileRefractometryTestScreenState
     final isCantSee = response == EDirection.blurry;
 
     if (correct) {
-      _ttsService.speakCorrect(response?.label ?? 'None');
+      _ttsService.speakCorrect(response.label);
     } else if (isCantSee) {
       _ttsService.speak('Cannot see');
-    } else if (response != null) {
+    } else {
       _ttsService.speakIncorrect(response.label);
     }
-
-    final roundConfig = _simplifiedProtocol[_currentRound];
 
     final responseRecord = {
       'roundNumber': _currentRound + 1,
@@ -593,7 +674,7 @@ class _MobileRefractometryTestScreenState
       'isNear': _isNearMode,
       'direction': _currentDirection,
       'blurLevel': _currentBlur,
-      'userResponseIndex': response?.rotationDegrees ?? -1,
+      'userResponseIndex': response.rotationDegrees,
       'responseTime': _eDisplayStartTime != null
           ? DateTime.now().difference(_eDisplayStartTime!).inMilliseconds
           : 0,
@@ -852,9 +933,9 @@ class _MobileRefractometryTestScreenState
                     ),
 
                   // Voice Input Overlay
-                  if (_currentPhase == RefractPhase.test && _waitingForResponse)
+                  if (_currentPhase == RefractPhase.test)
                     VoiceInputOverlay(
-                      isActive: true,
+                      isActive: _waitingForResponse,
                       vocabulary: const [
                         'up',
                         'down',
@@ -863,7 +944,11 @@ class _MobileRefractometryTestScreenState
                         'blurry',
                         'cannot see',
                       ],
-                      onVoiceResult: _handleVoiceResponse,
+                      onVoiceResult: (text, isFinal) {
+                        if (mounted && _waitingForResponse) {
+                          _handleVoiceResponse(text, isFinal);
+                        }
+                      },
                     ),
                 ],
               );
@@ -879,8 +964,7 @@ class _MobileRefractometryTestScreenState
       children: [
         _buildInfoBar(isLandscape: false),
         Expanded(child: _buildMainContent()),
-        if (_currentPhase == RefractPhase.test && _waitingForResponse)
-          _buildDirectionButtons(),
+        if (_currentPhase == RefractPhase.test) _buildDirectionButtons(),
       ],
     );
   }
@@ -893,7 +977,7 @@ class _MobileRefractometryTestScreenState
           child: Row(
             children: [
               Expanded(flex: 1, child: _buildMainContent()),
-              if (_currentPhase == RefractPhase.test && _waitingForResponse)
+              if (_currentPhase == RefractPhase.test)
                 Expanded(
                   flex: 1,
                   child: Container(
@@ -1841,18 +1925,14 @@ class _MobileRefractometryTestScreenState
 
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true, // Allow dismissal by tapping outside
       builder: (dialogContext) {
         final provider = context.read<TestSessionProvider>();
         return TestExitConfirmationDialog(
           onContinue: () {
-            setState(() => _isTestPausedForDistance = false);
-            _startContinuousDistanceMonitoring();
-            if (_currentPhase == RefractPhase.test && _waitingForResponse) {
-              _startRoundTimer();
-            } else if (_currentPhase == RefractPhase.relaxation) {
-              _startRelaxationTimer();
-            }
+            Navigator.of(
+              dialogContext,
+            ).pop(); // Ensure manual pop triggers .then
           },
           onRestart: () {
             _restartTest();
@@ -1868,7 +1948,18 @@ class _MobileRefractometryTestScreenState
               : null,
         );
       },
-    );
+    ).then((_) {
+      // Act like "Continue" was clicked upon dismissal
+      if (mounted && _isTestPausedForDistance) {
+        setState(() => _isTestPausedForDistance = false);
+        _startContinuousDistanceMonitoring();
+        if (_currentPhase == RefractPhase.test && _waitingForResponse) {
+          _startRoundTimer();
+        } else if (_currentPhase == RefractPhase.relaxation) {
+          _startRelaxationTimer();
+        }
+      }
+    });
   }
 }
 

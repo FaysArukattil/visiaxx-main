@@ -137,7 +137,7 @@ class TestConstants {
   static const double mobileRefractometryToleranceCm =
       40.0; // ±40cm (optimal ~60cm)
   static const int mobileRefractometryRelaxationSeconds = 6;
-  static const int mobileRefractometryTimePerRoundSeconds = 5;
+  static const int mobileRefractometryTimePerRoundSeconds = 8;
 
   // Blur level constants for adaptive difficulty
   // Clear → Slight Blur (50% = 2.0) → Blurry (75-80% = 3.0-3.2)

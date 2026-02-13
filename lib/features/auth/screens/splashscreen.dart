@@ -312,7 +312,12 @@ class _SplashScreenState extends State<SplashScreen>
                     bottom: isLandscape ? 20 : 30,
                     child: Center(
                       child: isLandscape
-                          ? EyeLoader(size: 24, color: context.primary)
+                          ? EyeLoader(
+                              size: MediaQuery.of(context).size.width >= 600
+                                  ? 48
+                                  : 24,
+                              color: context.primary,
+                            )
                           : EyeLoader.fullScreen(),
                     ),
                   ),

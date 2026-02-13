@@ -37,29 +37,67 @@ class BlurAwarenessAnimation extends StatelessWidget {
                   SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    child: Column(
                       children: [
-                        _buildBlurredE(
-                          blur: 0.0,
-                          label: 'Clear',
-                          fontSize: isCompact ? 36.0 : eSize,
-                          labelColor: AppColors.success,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildBlurredCharacter(
+                              blur: 0.0,
+                              label: 'Clear',
+                              fontSize: isCompact ? 36.0 : eSize,
+                              labelColor: AppColors.success,
+                              character: 'E',
+                            ),
+                            const SizedBox(width: 12),
+                            _buildBlurredCharacter(
+                              blur: 2.0,
+                              label: 'Blur',
+                              fontSize: isCompact ? 36.0 : eSize,
+                              labelColor: AppColors.warning,
+                              character: 'E',
+                            ),
+                            const SizedBox(width: 12),
+                            _buildBlurredCharacter(
+                              blur:
+                                  9.0, // Fully blurry (center line not visible)
+                              label: 'Blurry',
+                              fontSize: isCompact ? 36.0 : eSize,
+                              labelColor: AppColors.error,
+                              isTargetState: true,
+                              character: 'E',
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        _buildBlurredE(
-                          blur: 2.0,
-                          label: 'Blur',
-                          fontSize: isCompact ? 36.0 : eSize,
-                          labelColor: AppColors.warning,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildBlurredE(
-                          blur: 5.0,
-                          label: 'Blurry',
-                          fontSize: isCompact ? 36.0 : eSize,
-                          labelColor: AppColors.error,
-                          isTargetState: true,
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildBlurredCharacter(
+                              blur: 0.0,
+                              label: 'Clear',
+                              fontSize: isCompact ? 36.0 : eSize,
+                              labelColor: AppColors.success,
+                              character: 'C',
+                            ),
+                            const SizedBox(width: 12),
+                            _buildBlurredCharacter(
+                              blur: 2.0,
+                              label: 'Blur',
+                              fontSize: isCompact ? 36.0 : eSize,
+                              labelColor: AppColors.warning,
+                              character: 'C',
+                            ),
+                            const SizedBox(width: 12),
+                            _buildBlurredCharacter(
+                              blur: 9.0, // Fully blurry (looks like O)
+                              label: 'Blurry',
+                              fontSize: isCompact ? 36.0 : eSize,
+                              labelColor: AppColors.error,
+                              isTargetState: true,
+                              character: 'C',
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -110,12 +148,13 @@ class BlurAwarenessAnimation extends StatelessWidget {
     );
   }
 
-  Widget _buildBlurredE({
+  Widget _buildBlurredCharacter({
     required double blur,
     required String label,
     required double fontSize,
     required Color labelColor,
     bool isTargetState = false,
+    String character = 'E',
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -145,11 +184,12 @@ class BlurAwarenessAnimation extends StatelessWidget {
             child: ImageFiltered(
               imageFilter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
               child: Text(
-                'E',
+                character,
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: FontWeight.bold,
                   color: AppColors.black,
+                  fontFamily: 'Roboto', // For consistent C shape
                 ),
               ),
             ),
