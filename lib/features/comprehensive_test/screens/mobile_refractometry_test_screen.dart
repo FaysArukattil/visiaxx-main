@@ -708,7 +708,7 @@ class _MobileRefractometryTestScreenState
 
     setState(() {
       _lastResponse = response;
-      _isLastCorrect = correct && response != null;
+      _isLastCorrect = correct;
       _showResult = true;
     });
 

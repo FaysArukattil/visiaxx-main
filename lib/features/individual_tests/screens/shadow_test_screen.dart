@@ -9,6 +9,7 @@ import '../../../core/widgets/eye_loader.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
 import '../../../core/utils/navigation_utils.dart';
+import '../../../core/utils/app_logger.dart';
 
 class ShadowTestScreen extends StatefulWidget {
   const ShadowTestScreen({super.key});
@@ -18,43 +19,38 @@ class ShadowTestScreen extends StatefulWidget {
 }
 
 class _ShadowTestScreenState extends State<ShadowTestScreen> {
-  // Local reference to camera controller to ensure reliable UI updates in release mode
-  CameraController? _localController;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Reset state IMMEDIATELY and synchronously before the first build
-    context.read<ShadowTestProvider>().setState(ShadowTestState.initial);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final shadowProvider = context.read<ShadowTestProvider>();
-      await shadowProvider.initializeCamera();
-      if (!mounted) return;
-      context.read<TestSessionProvider>().startIndividualTest('shadow_test');
-
-      // Get the controller and add local listener for reliable release mode updates
-      final controller = shadowProvider.cameraController;
-      if (controller != null) {
-        controller.addListener(_onCameraUpdate);
-        setState(() {
-          _localController = controller;
-        });
-      }
-    });
+    _initializeTest();
   }
 
-  void _onCameraUpdate() {
-    if (mounted && _localController != null) {
-      setState(() {});
+  Future<void> _initializeTest() async {
+    final shadowProvider = context.read<ShadowTestProvider>();
+    final sessionProvider = context.read<TestSessionProvider>();
+
+    // Start session
+    sessionProvider.startIndividualTest('shadow_test');
+
+    // Reset and initialize
+    shadowProvider.setState(ShadowTestState.initial);
+    await shadowProvider.initializeCamera();
+
+    if (mounted) {
+      setState(() {
+        _isInitialized = true;
+      });
     }
   }
 
   @override
   void dispose() {
-    _localController?.removeListener(_onCameraUpdate);
-    // Mandatory teardown to prevent camera/flash from staying on
-    context.read<ShadowTestProvider>().stopCamera();
+    final provider = context.read<ShadowTestProvider>();
+    provider.stopCamera().catchError((e) {
+      AppLogger.log('ShadowTestScreen: Error stopping camera: $e');
+    });
     super.dispose();
   }
 
@@ -66,19 +62,23 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
         final provider = context.read<TestSessionProvider>();
         return TestExitConfirmationDialog(
           onContinue: () {
-            // Just close the dialog
+            Navigator.of(dialogContext).pop();
           },
           onRestart: () {
-            provider.resetKeepProfile();
-            // Start the test again with a clean state
+            Navigator.of(dialogContext).pop();
             final shadowProvider = context.read<ShadowTestProvider>();
+            provider.resetKeepProfile();
             shadowProvider.setState(ShadowTestState.initial);
-            shadowProvider.initializeCamera();
+            setState(() {
+              _isInitialized = false;
+            });
+            _initializeTest();
           },
           onExit: () async {
-            // Ensure flash is off before navigating away
+            Navigator.of(dialogContext).pop();
             final shadowProvider = context.read<ShadowTestProvider>();
             await shadowProvider.stopCamera();
+            await Future.delayed(const Duration(milliseconds: 200));
             if (mounted) {
               await NavigationUtils.navigateHome(context);
             }
@@ -86,9 +86,10 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
           hasCompletedTests: provider.hasAnyCompletedTest,
           onSaveAndExit: provider.hasAnyCompletedTest
               ? () async {
-                  // Ensure flash is off before navigating away
+                  Navigator.of(dialogContext).pop();
                   final shadowProvider = context.read<ShadowTestProvider>();
                   await shadowProvider.stopCamera();
+                  await Future.delayed(const Duration(milliseconds: 200));
                   if (mounted) {
                     Navigator.pushReplacementNamed(
                       context,
@@ -104,132 +105,158 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<ShadowTestProvider>();
-    // Use local controller for reliable release mode updates
-    final controller = _localController;
-
-    // Handle navigation to results
-    if (provider.state == ShadowTestState.result) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const QuickTestResultScreen(),
-            ),
-          );
-        }
-      });
-    }
-
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        _showExitConfirmation();
-      },
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
-          children: [
-            // Camera Preview - Using explicit sizing for release mode compatibility
-            if (controller != null &&
-                controller.value.isInitialized &&
-                !provider.isCameraStarting)
-              Positioned.fill(
-                child: OverflowBox(
-                  alignment: Alignment.center,
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: controller.value.previewSize!.height,
-                      height: controller.value.previewSize!.width,
-                      child: CameraPreview(controller),
-                    ),
-                  ),
+    return Consumer<ShadowTestProvider>(
+      builder: (context, provider, child) {
+        // Handle navigation to results
+        if (provider.state == ShadowTestState.result) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const QuickTestResultScreen(),
                 ),
-              )
-            else
-              const Center(child: EyeLoader()),
+              );
+            }
+          });
+        }
 
-            // Overlay for instructions and feedback
-            _buildOverlay(context, provider),
+        final controller = provider.cameraController;
 
-            // Back button
-            Positioned(
-              top: 48,
-              left: 20,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 32),
-                onPressed: _showExitConfirmation,
-              ),
-            ),
-
-            // Flashlight Toggle Button
-            Positioned(
-              top: 60,
-              right: 20,
-              child: Column(
-                children: [
-                  IconButton(
-                    onPressed: () => provider.toggleFlashlight(),
-                    icon: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: provider.isFlashOn
-                            ? context.primary.withValues(alpha: 0.8)
-                            : Colors.black45,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white24, width: 1),
-                      ),
-                      child: Icon(
-                        provider.isFlashOn
-                            ? Icons.flashlight_on_rounded
-                            : Icons.flashlight_off_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    provider.isFlashOn ? 'Flash On' : 'Flash Off',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      shadows: [Shadow(blurRadius: 4, color: Colors.black)],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Loading Indicator for analysis
-            if (provider.isCapturing)
-              Container(
-                color: Colors.black54,
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      EyeLoader(),
-                      SizedBox(height: 24),
-                      Text(
-                        'Analyzing Shadow Pattern...',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _showExitConfirmation();
+          },
+          child: Scaffold(
+            backgroundColor: Colors.black,
+            body: Stack(
+              children: [
+                // Camera Preview - Full screen
+                if (_isInitialized &&
+                    controller != null &&
+                    controller.value.isInitialized &&
+                    controller.value.previewSize != null)
+                  Positioned.fill(
+                    child: OverflowBox(
+                      alignment: Alignment.center,
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: controller.value.previewSize!.height,
+                          height: controller.value.previewSize!.width,
+                          child: CameraPreview(controller),
                         ),
                       ),
-                    ],
+                    ),
+                  )
+                else
+                  const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        EyeLoader(),
+                        SizedBox(height: 16),
+                        Text(
+                          'Initializing camera...',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Overlay
+                if (_isInitialized && controller != null)
+                  _buildOverlay(context, provider),
+
+                // Back button
+                Positioned(
+                  top: 48,
+                  left: 20,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    onPressed: _showExitConfirmation,
                   ),
                 ),
-              ),
-          ],
-        ),
-      ),
+
+                // Flashlight Toggle
+                if (_isInitialized)
+                  Positioned(
+                    top: 60,
+                    right: 20,
+                    child: Column(
+                      children: [
+                        IconButton(
+                          onPressed: () => provider.toggleFlashlight(),
+                          icon: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: provider.isFlashOn
+                                  ? context.primary.withValues(alpha: 0.8)
+                                  : Colors.black45,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white24,
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(
+                              provider.isFlashOn
+                                  ? Icons.flashlight_on_rounded
+                                  : Icons.flashlight_off_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          provider.isFlashOn ? 'Flash On' : 'Flash Off',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(blurRadius: 4, color: Colors.black),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Loading Indicator
+                if (provider.isCapturing)
+                  Container(
+                    color: Colors.black54,
+                    child: const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          EyeLoader(),
+                          SizedBox(height: 24),
+                          Text(
+                            'Analyzing Shadow Pattern...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -279,7 +306,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
               ),
             ),
 
-            // Eye detection guide circle in the center
+            // Eye detection guide circle
             Center(
               child: Container(
                 width: isLandscape ? 200 : 280,
@@ -308,7 +335,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
               ),
             ),
 
-            // Feedback and Capture Action at the bottom
+            // Feedback and Capture Action
             Positioned(
               bottom: isLandscape ? 8 : 28 + safeArea.bottom,
               left: 24,
@@ -342,7 +369,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                       ),
                     ),
 
-                  // Feedback Card - Refined to be more compact
+                  // Feedback Card
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: BackdropFilter(
@@ -398,7 +425,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Capture Action
+                  // Capture Button
                   GestureDetector(
                     onTap: provider.isReadyForCapture && !provider.isCapturing
                         ? () {

@@ -39,6 +39,7 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _isCameraStarting = false;
   String? _errorMessage;
   bool _isFlashOn = false;
+  bool _isDisposed = false;
 
   // Getters
   ShadowTestState get state => _state;
@@ -54,11 +55,11 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? get errorMessage => _errorMessage;
   bool get isFlashOn => _isFlashOn;
   CameraController? get cameraController => _cameraService.controller;
-
   Future<void> initializeCamera() async {
-    _isCameraStarting = true;
-    notifyListeners();
     try {
+      AppLogger.log('$_tag: Initializing camera', tag: _tag);
+
+      _isCameraStarting = true;
       _errorMessage = null;
       _currentEye = 'right';
       _rightEyeGrading = null;
@@ -68,34 +69,45 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
       _isCapturing = false;
       _state = ShadowTestState.initial;
 
-      await _cameraService.dispose();
+      if (!_isDisposed) notifyListeners();
 
-      // Register lifecycle observer if not already
+      // Register lifecycle observer
       WidgetsBinding.instance.removeObserver(this);
       WidgetsBinding.instance.addObserver(this);
 
+      // Dispose existing camera
+      await _cameraService.dispose();
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Initialize camera
       await _cameraService.initialize();
 
       final controller = _cameraService.controller;
-      if (controller != null) {
-        controller.addListener(() {
-          notifyListeners();
-        });
-
-        // Start eye detection stream to fulfill "Only Works for Eyes" requirement
-        _startEyeDetection();
+      if (controller == null || !controller.value.isInitialized) {
+        throw Exception('Camera initialization failed');
       }
 
-      await Future.delayed(const Duration(milliseconds: 200));
+      AppLogger.log('$_tag: Camera initialized', tag: _tag);
 
-      // Automatically turn on flash for the test
+      // Turn on flash
       _isFlashOn = true;
       await _cameraService.setFlashMode(FlashMode.torch);
 
-      notifyListeners();
+      AppLogger.log('$_tag: Flash enabled', tag: _tag);
+
+      // Start eye detection
+      _startEyeDetection();
+
+      // Camera is ready
+      _isCameraStarting = false;
+      if (!_isDisposed) notifyListeners();
+
+      AppLogger.log('$_tag: Camera ready', tag: _tag);
     } catch (e) {
-      _errorMessage = 'Failed to initialize camera: $e';
-      notifyListeners();
+      AppLogger.log('$_tag: Init error: $e', tag: _tag, isError: true);
+      _isCameraStarting = false;
+      _errorMessage = 'Camera failed: $e';
+      if (!_isDisposed) notifyListeners();
     }
   }
 
@@ -141,7 +153,15 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
   // _processEyeDetection method removed as it's no longer used due to manual capture only.
 
   Future<void> captureAndAnalyze(TestSessionProvider sessionProvider) async {
-    if (_isCapturing || !_isReadyForCapture) return;
+    if (_isCapturing || !_isReadyForCapture || _isDisposed) return;
+
+    // Check if controller is still valid
+    final controller = _cameraService.controller;
+    if (controller == null || !controller.value.isInitialized) {
+      _errorMessage = 'Camera not available';
+      notifyListeners();
+      return;
+    }
 
     _isCapturing = true;
     _errorMessage = null;
@@ -242,12 +262,36 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> stopCamera() async {
-    _isFlashOn = false;
-    _isCameraStarting = false;
-    await _cameraService.setFlashMode(FlashMode.off);
-    await _cameraService.turnOffFlashlight();
-    await _cameraService.dispose();
-    notifyListeners();
+    try {
+      AppLogger.log('$_tag: Stopping camera', tag: _tag);
+
+      // Stop eye detection first
+      _cameraService.stopSearchingForEyes();
+
+      // Turn off flash
+      _isFlashOn = false;
+      await _cameraService.setFlashMode(FlashMode.off);
+      await _cameraService.turnOffFlashlight();
+
+      // Wait for flash to actually turn off
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Dispose camera
+      await _cameraService.dispose();
+
+      _isCameraStarting = false;
+      notifyListeners();
+    } catch (e) {
+      AppLogger.log(
+        '$_tag: Error stopping camera: $e',
+        tag: _tag,
+        isError: true,
+      );
+      // Force cleanup even if there's an error
+      _isCameraStarting = false;
+      _isFlashOn = false;
+      notifyListeners();
+    }
   }
 
   @override
@@ -256,21 +300,38 @@ class ShadowTestProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      // Release camera immediately when app goes to background
+      // App going to background - release camera immediately
       stopCamera();
     } else if (state == AppLifecycleState.resumed) {
-      // Reinitialize camera when app returns from background
-      if (_state != ShadowTestState.initial &&
+      // App returning to foreground - reinitialize if needed
+      if (_state != ShadowTestState.result &&
           _cameraService.controller == null) {
-        initializeCamera();
+        // Give a small delay before reinitializing
+        Future.delayed(const Duration(milliseconds: 300), () {
+          initializeCamera(); // Remove the mounted check here
+        });
       }
     }
   }
 
   @override
   void dispose() {
+    AppLogger.log('$_tag: Provider disposing', tag: _tag);
+
+    _isDisposed = true;
+
+    // Remove lifecycle observer
     WidgetsBinding.instance.removeObserver(this);
-    stopCamera();
+
+    // Stop camera synchronously
+    _cameraService.stopSearchingForEyes();
+    _isFlashOn = false;
+
+    // Fire and forget camera disposal
+    _cameraService.dispose().catchError((e) {
+      AppLogger.log('$_tag: Error in dispose: $e', tag: _tag);
+    });
+
     super.dispose();
   }
 }

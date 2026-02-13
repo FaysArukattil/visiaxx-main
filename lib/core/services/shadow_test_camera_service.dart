@@ -177,34 +177,59 @@ class ShadowTestCameraService {
     try {
       AppLogger.log('$_tag: Disposing camera service', tag: _tag);
 
-      // 1. Force flash off through all possible channels
-      if (_controller != null && _controller!.value.isInitialized) {
-        try {
-          await _controller!.setFlashMode(FlashMode.off);
-        } catch (_) {}
-      }
-      try {
-        await TorchLight.disableTorch();
-      } catch (_) {}
-      _isFlashlightOn = false;
-
-      // 2. Stop search timer
+      // 1. Stop search timer FIRST
       _searchTimer?.cancel();
       _searchTimer = null;
+      _isProcessingImage = false;
 
-      // 3. Stop stream if active (if any left)
-      if (_controller != null && _controller!.value.isStreamingImages) {
+      // 2. Force flash off through all channels
+      if (_controller != null) {
         try {
-          await _controller!.stopImageStream();
-        } catch (_) {}
+          if (_controller!.value.isInitialized) {
+            await _controller!.setFlashMode(FlashMode.off);
+          }
+        } catch (e) {
+          AppLogger.log('$_tag: Error turning off flash: $e', tag: _tag);
+        }
       }
 
-      // 4. Dispose controller
-      await _controller?.dispose();
-      _controller = null;
+      try {
+        await TorchLight.disableTorch();
+      } catch (e) {
+        AppLogger.log('$_tag: Error disabling torch: $e', tag: _tag);
+      }
+      _isFlashlightOn = false;
 
-      // 5. Close face detector (ML Kit)
-      await _faceDetector.close();
+      // 3. Stop image stream if active
+      if (_controller != null &&
+          _controller!.value.isInitialized &&
+          _controller!.value.isStreamingImages) {
+        try {
+          await _controller!.stopImageStream();
+          await Future.delayed(const Duration(milliseconds: 100));
+        } catch (e) {
+          AppLogger.log('$_tag: Error stopping stream: $e', tag: _tag);
+        }
+      }
+
+      // 4. Dispose controller with safety check
+      if (_controller != null) {
+        try {
+          await _controller!.dispose();
+          _controller = null;
+        } catch (e) {
+          AppLogger.log('$_tag: Error disposing controller: $e', tag: _tag);
+          _controller = null; // Force null even on error
+        }
+      }
+
+      // 5. Close face detector
+      try {
+        await _faceDetector.close();
+      } catch (e) {
+        AppLogger.log('$_tag: Error closing face detector: $e', tag: _tag);
+      }
+
       AppLogger.log('$_tag: Camera service disposed successfully', tag: _tag);
     } catch (e) {
       AppLogger.log(
@@ -212,6 +237,9 @@ class ShadowTestCameraService {
         tag: _tag,
         isError: true,
       );
+      // Force cleanup
+      _controller = null;
+      _isFlashlightOn = false;
     }
   }
 
