@@ -301,7 +301,7 @@ class _ExtraocularMuscleTestScreenState
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => TestExitConfirmationDialog(
-        onContinue: () => Navigator.pop(dialogContext),
+        onContinue: () {},
         onRestart: () {
           Navigator.pop(dialogContext);
           _showRestartDialog();

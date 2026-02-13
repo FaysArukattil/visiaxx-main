@@ -41,7 +41,7 @@ class _VisualFieldScreenState extends State<VisualFieldScreen> {
       builder: (dialogContext) {
         final sessionProvider = context.read<TestSessionProvider>();
         return TestExitConfirmationDialog(
-          onContinue: () => Navigator.pop(dialogContext),
+          onContinue: () {},
           onRestart: () {
             final sessionProvider = context.read<TestSessionProvider>();
             sessionProvider.resetKeepProfile();

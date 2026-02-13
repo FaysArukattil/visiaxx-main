@@ -1934,11 +1934,7 @@ class _MobileRefractometryTestScreenState
       builder: (dialogContext) {
         final provider = context.read<TestSessionProvider>();
         return TestExitConfirmationDialog(
-          onContinue: () {
-            Navigator.of(
-              dialogContext,
-            ).pop(); // Ensure manual pop triggers .then
-          },
+          onContinue: () {},
           onRestart: () {
             _restartTest();
           },

@@ -86,9 +86,7 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
       builder: (dialogContext) {
         final provider = context.read<TestSessionProvider>();
         return TestExitConfirmationDialog(
-          onContinue: () {
-            Navigator.of(dialogContext).pop();
-          },
+          onContinue: () {},
           onRestart: () async {
             Navigator.of(dialogContext).pop();
 
