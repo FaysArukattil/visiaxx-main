@@ -25,7 +25,6 @@ import '../../../data/models/color_vision_result.dart';
 import '../../../data/models/mobile_refractometry_result.dart';
 import '../../../data/models/eye_hydration_result.dart';
 import '../../../data/models/visual_field_result.dart';
-import '../../../data/models/cover_test_result.dart';
 import '../../../data/models/torchlight_test_result.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import 'dart:io';

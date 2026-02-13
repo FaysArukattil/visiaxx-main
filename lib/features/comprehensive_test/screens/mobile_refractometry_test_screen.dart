@@ -24,8 +24,8 @@ import 'package:visiaxx/core/services/distance_skip_manager.dart';
 import '../../quick_vision_test/screens/distance_calibration_screen.dart';
 import '../../quick_vision_test/screens/cover_left_eye_instruction_screen.dart';
 import '../../quick_vision_test/screens/cover_right_eye_instruction_screen.dart';
-// Note: refraction_logic.dart intentionally removed as unused
 import './mobile_refractometry_instructions_screen.dart';
+import '../../../core/widgets/voice_input_overlay.dart';
 
 /// Refractometry phases
 enum RefractPhase { instruction, calibration, relaxation, test, complete }
@@ -49,26 +49,26 @@ class _MobileRefractometryTestScreenState
   // Services
   final TtsService _ttsService = TtsService();
   final DistanceDetectionService _distanceService = DistanceDetectionService();
+  final DistanceSkipManager _skipManager = DistanceSkipManager();
 
   // State Management
   RefractPhase _currentPhase = RefractPhase.instruction;
   String _currentEye = 'right';
   bool _isNearMode = false;
   int _currentRound = 0;
-  double _currentBlur = 0.0; // Start with NO blur
+  double _currentBlur = 0.0;
+  RefractCharacter _currentCharacter = RefractCharacter.e;
+  String _activeRoundLabel = 'E';
   EDirection _currentDirection = EDirection.right;
   bool _waitingForResponse = false;
   bool _showResult = false;
   bool _instructionShown = false;
   EDirection? _lastResponse;
-  final DistanceSkipManager _skipManager = DistanceSkipManager();
+  bool? _isLastCorrect;
   DateTime? _eDisplayStartTime;
 
-  // Adaptive blur test state
-  int _currentSizeLevel =
-      0; // Index into mobileRefractometryLevels (0 = largest 6/60)
-  // ignore: unused_field
-  int _consecutiveWrongAtLevel = 0; // Track wrong answers at current level
+  // Protocol
+  late List<SimplifiedTestRound> _simplifiedProtocol;
 
   // Data storage
   final List<Map<String, dynamic>> _rightEyeResponses = [];
@@ -82,15 +82,13 @@ class _MobileRefractometryTestScreenState
   int _relaxationCountdown = TestConstants.mobileRefractometryRelaxationSeconds;
   Timer? _relaxationTimer;
   late AnimationController _relaxationProgressController;
-  bool _relaxationShownForCurrentEye =
-      false; // Only show relaxation once per eye
+  bool _relaxationShownForCurrentEye = false;
   bool _isTransitioning = false;
 
   // Distance monitoring
   double _currentDistance = 0;
   DistanceStatus _distanceStatus = DistanceStatus.noFaceDetected;
   bool _isDistanceOk = true;
-  final bool _isCalibrationActive = false;
   bool _isTestPausedForDistance = false;
   DateTime? _lastShouldPauseTime;
   static const Duration _distancePauseDebounce = Duration(milliseconds: 1000);
@@ -120,6 +118,10 @@ class _MobileRefractometryTestScreenState
     });
 
     _initServices();
+    _patientAge = context.read<TestSessionProvider>().profileAge ?? 30;
+    _simplifiedProtocol = _patientAge < 40
+        ? TestConstants.getSimplifiedRefractometryProtocolYoung()
+        : TestConstants.getSimplifiedRefractometryProtocolPresbyope();
   }
 
   Future<void> _initServices() async {
@@ -131,12 +133,10 @@ class _MobileRefractometryTestScreenState
 
       // START FLOW LOGIC
       if (!widget.showInitialInstructions) {
-        // Skip general instructions, go straight to setup
         _instructionShown = true;
         _isTransitioning = true;
         _startDistanceCalibration(TestConstants.mobileRefractometryDistanceCm);
       } else {
-        // Standard flow: Start instructions first
         _isTransitioning = true;
         _startInstruction();
       }
@@ -205,7 +205,6 @@ class _MobileRefractometryTestScreenState
   void _showEyeInstructionStage() {
     if (_isTransitioning) return;
 
-    // Show eye instruction after calibration for the first eye
     if (_currentEye == 'right' && _currentRound == 0 && !_isNearMode) {
       _isTransitioning = true;
       Navigator.of(context).push(
@@ -220,7 +219,6 @@ class _MobileRefractometryTestScreenState
             onContinue: () {
               _isTransitioning = false;
               Navigator.of(context).pop();
-              // Relaxation only at start of eye test, not during distance switch
               if (!_relaxationShownForCurrentEye) {
                 _relaxationShownForCurrentEye = true;
                 _startRelaxation();
@@ -232,7 +230,6 @@ class _MobileRefractometryTestScreenState
         ),
       );
     } else {
-      // Relaxation only at start of eye test, not during distance switch
       if (!_relaxationShownForCurrentEye) {
         _relaxationShownForCurrentEye = true;
         _startRelaxation();
@@ -257,7 +254,7 @@ class _MobileRefractometryTestScreenState
           targetDistanceCm: targetCm,
           toleranceCm: TestConstants.mobileRefractometryToleranceCm,
           minDistanceCm: targetCm >= 100 ? 60.0 : 35.0,
-          maxDistanceCm: 300.0, // Treat as 100+ or 40+
+          maxDistanceCm: 300.0,
           onCalibrationComplete: () {
             _isTransitioning = false;
             Navigator.of(context).pop();
@@ -383,7 +380,6 @@ class _MobileRefractometryTestScreenState
       return;
     }
 
-    // Start/Resume smooth animation
     _relaxationProgressController.forward();
 
     _relaxationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -401,7 +397,6 @@ class _MobileRefractometryTestScreenState
 
       if (_relaxationCountdown <= 0) {
         timer.cancel();
-        // … FALLBACK: Transition phase if animation listener fails
         if (_currentPhase == RefractPhase.relaxation) {
           _startRound();
         }
@@ -410,51 +405,55 @@ class _MobileRefractometryTestScreenState
   }
 
   void _startRound() {
-    if (_currentRound >= TestConstants.mobileRefractometryMaxRounds) {
+    if (_currentRound >= _simplifiedProtocol.length) {
       _finishEye();
       return;
     }
 
-    // Ensure phase is updated to test when round starts
+    final round = _simplifiedProtocol[_currentRound];
+
+    final newIsNearMode = round.testType == TestType.near;
+    if (newIsNearMode != _isNearMode) {
+      _isNearMode = newIsNearMode;
+      _showDistanceSwitchOverlay(newIsNearMode);
+      return;
+    }
+
     if (_currentPhase != RefractPhase.test) {
       setState(() => _currentPhase = RefractPhase.test);
     }
 
-    // Get the configuration for the NEXT round (since _currentRound is about to be displayed)
-    final nextRoundConfig = TestConstants.getTestRoundConfiguration(
-      _currentRound + 1,
-      _patientAge,
-    );
+    _currentCharacter = round.characterType;
+    _currentDirection = round.getRandomDirection();
 
-    final shouldBeNear = nextRoundConfig.testType == TestType.near;
+    final String actualLabel = _currentCharacter.getActualLabel();
+    _activeRoundLabel = actualLabel;
 
-    // Check if we need to switch distance mode
-    if (shouldBeNear && !_isNearMode) {
-      _showDistanceSwitchOverlay(true);
-      return;
-    } else if (!shouldBeNear && _isNearMode) {
-      _showDistanceSwitchOverlay(false);
-      return;
-    }
+    _eDisplayStartTime = null;
 
-    _generateNewRound();
+    setState(() {
+      _currentPhase = RefractPhase.test;
+      _remainingSeconds = TestConstants.mobileRefractometryTimePerRoundSeconds;
+      _waitingForResponse = true;
+      _showResult = false;
+    });
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      _eDisplayStartTime = DateTime.now();
+      _startRoundTimer();
+    });
   }
 
-  // ignore: unused_element
-  bool _shouldBeNearAtRound(int age, int round) {
-    if (age < 40) return false;
-    if (age < 50) {
-      if (round <= 6) return false;
-      if (round <= 12) return true;
-      return round % 2 == 0;
-    } else if (age < 60) {
-      if (round <= 5) return false;
-      if (round <= 14) return true;
-      return round % 2 == 0;
+  void _finishRound() {
+    setState(() {
+      _currentRound++;
+    });
+
+    if (_currentRound >= _simplifiedProtocol.length) {
+      _finishEye();
     } else {
-      if (round <= 4) return false;
-      if (round <= 16) return true;
-      return round % 2 == 0;
+      _startRound();
     }
   }
 
@@ -480,32 +479,6 @@ class _MobileRefractometryTestScreenState
     );
   }
 
-  void _generateNewRound() {
-    _eDisplayStartTime = null;
-
-    // Generate random direction (different from last)
-    final directions = [
-      EDirection.up,
-      EDirection.down,
-      EDirection.left,
-      EDirection.right,
-    ].where((d) => d != _currentDirection).toList();
-    _currentDirection = directions[math.Random().nextInt(directions.length)];
-
-    setState(() {
-      _currentPhase = RefractPhase.test;
-      _remainingSeconds = TestConstants.mobileRefractometryTimePerRoundSeconds;
-      _waitingForResponse = true;
-      _showResult = false;
-    });
-
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (!mounted) return;
-      _eDisplayStartTime = DateTime.now();
-      _startRoundTimer();
-    });
-  }
-
   void _startRoundTimer() {
     _roundTimer?.cancel();
     _roundTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -515,9 +488,80 @@ class _MobileRefractometryTestScreenState
 
       if (_remainingSeconds <= 0) {
         timer.cancel();
-        _generateNewRound();
+        _handleResponse(null);
       }
     });
+  }
+
+  void _handleVoiceResponse(String recognizedText, bool isFinal) {
+    if (!mounted ||
+        _currentPhase != RefractPhase.test ||
+        !_waitingForResponse) {
+      return;
+    }
+    if (!isFinal) return;
+
+    final provider = context.read<TestSessionProvider>();
+    if (provider.profileType == 'patient') return;
+
+    if (_eDisplayStartTime != null) {
+      final sinceStart = DateTime.now().difference(_eDisplayStartTime!);
+      if (sinceStart < const Duration(milliseconds: 1500)) {
+        debugPrint(
+          '[MobileRefract] Ignoring voice: arrived too fast (${sinceStart.inMilliseconds}ms)',
+        );
+        return;
+      }
+    }
+
+    // Parse direction from recognized text
+    final direction = _parseDirection(recognizedText);
+    if (direction != null) {
+      _handleResponse(direction);
+    }
+  }
+
+  EDirection? _parseDirection(String text) {
+    final normalized = text.toLowerCase().trim();
+
+    // Check for "blurry" keywords
+    final blurryKeywords = [
+      'blurry',
+      'blur',
+      'bloody',
+      'cannot see',
+      'can\'t see',
+      'kanchi',
+      'cannot see clearly',
+      'can\'t see clearly',
+      'too blurry',
+      'not clear',
+      'nothing',
+      'country',
+      'zero',
+    ];
+
+    for (var keyword in blurryKeywords) {
+      if (normalized.contains(keyword)) {
+        return EDirection.blurry;
+      }
+    }
+
+    // Check for direction keywords
+    if (normalized.contains('up') || normalized.contains('top')) {
+      return EDirection.up;
+    }
+    if (normalized.contains('down') || normalized.contains('bottom')) {
+      return EDirection.down;
+    }
+    if (normalized.contains('left')) {
+      return EDirection.left;
+    }
+    if (normalized.contains('right')) {
+      return EDirection.right;
+    }
+
+    return null;
   }
 
   void _handleResponse(EDirection? response) {
@@ -536,21 +580,20 @@ class _MobileRefractometryTestScreenState
       _ttsService.speakIncorrect(response.label);
     }
 
-    // Get current test configuration
-    final testRound = TestConstants.getTestRoundConfiguration(
-      _currentRound + 1, // +1 because _currentRound is 0-indexed
-      _patientAge,
-    );
+    final roundConfig = _simplifiedProtocol[_currentRound];
 
     final responseRecord = {
-      'round': _currentRound + 1,
-      'blur': _currentBlur,
-      'sizeLevel': _currentSizeLevel,
-      'fontSize': testRound.fontSize, // Store actual fontSize used
+      'roundNumber': _currentRound + 1,
+      'characterIndex': 0,
+      'characterType': _currentCharacter.label,
+      'snellenSize': roundConfig.snellen,
+      'fontSize': roundConfig.fontSize,
       'correct': correct,
       'isCantSee': isCantSee,
       'isNear': _isNearMode,
       'direction': _currentDirection,
+      'blurLevel': _currentBlur,
+      'userResponseIndex': response?.rotationDegrees ?? -1,
       'responseTime': _eDisplayStartTime != null
           ? DateTime.now().difference(_eDisplayStartTime!).inMilliseconds
           : 0,
@@ -562,17 +605,13 @@ class _MobileRefractometryTestScreenState
       _leftEyeResponses.add(responseRecord);
     }
 
-    // ADAPTIVE BLUR LOGIC (like working app)
+    // ADAPTIVE BLUR LOGIC
     if (correct) {
-      // Correct: Add blur to make it harder
       _currentBlur = math.min(
         TestConstants.maxBlurLevel,
         _currentBlur + TestConstants.blurIncrementOnCorrect,
       );
-      _consecutiveWrongAtLevel = 0;
     } else {
-      // Wrong or Can't See: Reduce blur to make it easier
-      _consecutiveWrongAtLevel++;
       _currentBlur = math.max(
         TestConstants.minBlurLevel,
         isCantSee
@@ -583,27 +622,21 @@ class _MobileRefractometryTestScreenState
 
     setState(() {
       _lastResponse = response;
+      _isLastCorrect = correct && response != null;
       _showResult = true;
     });
 
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (!mounted) return;
-      setState(() {
-        _showResult = false;
-        _currentRound++;
-      });
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _showResult = false);
+    });
 
-      // Check if we should finish this eye
-      if (_currentRound >= TestConstants.mobileRefractometryMaxRounds) {
-        _finishEye();
-      } else {
-        _startRound(); // Continue to next round
-      }
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _finishRound();
     });
   }
 
   void _finishEye() {
-    // Prevent duplicate calls if already transitioning or finished
     if (_currentPhase == RefractPhase.complete || _isTransitioning) return;
 
     _isTransitioning = true;
@@ -614,11 +647,10 @@ class _MobileRefractometryTestScreenState
       setState(() {
         _currentEye = 'left';
         _currentRound = 0;
-        _currentBlur = 0.0; // Start with no blur for left eye
-        _currentSizeLevel = 0; // Start at largest size
-        _consecutiveWrongAtLevel = 0; // Reset consecutive wrong count
+        _currentBlur = 0.0;
+        _isNearMode = false;
         _currentPhase = RefractPhase.instruction;
-        _relaxationShownForCurrentEye = false; // Reset for left eye
+        _relaxationShownForCurrentEye = false;
       });
 
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -652,7 +684,6 @@ class _MobileRefractometryTestScreenState
     final rightResults = _processEyeData(_rightEyeResponses);
     final leftResults = _processEyeData(_leftEyeResponses);
 
-    // Combine all responses for pathology screening
     final allResponses = [..._rightEyeResponses, ..._leftEyeResponses];
     final distResponses = allResponses
         .where((r) => r['isNear'] == false)
@@ -661,7 +692,6 @@ class _MobileRefractometryTestScreenState
         .where((r) => r['isNear'] == true)
         .toList();
 
-    // Use AdvancedRefractionService for comprehensive screening
     final combinedResult = AdvancedRefractionService.calculateFullAssessment(
       distanceResponses: distResponses,
       nearResponses: nearResponses,
@@ -673,31 +703,9 @@ class _MobileRefractometryTestScreenState
 
     final finalResult = MobileRefractometryResult(
       patientAge: _patientAge,
-      rightEye: MobileRefractometryEyeResult(
-        eye: 'right',
-        sphere: rightResults['sphere'] as String,
-        cylinder: rightResults['cylinder'] as String,
-        axis: rightResults['axis'] as int,
-        accuracy: ((rightResults['accuracy'] as double) * 100).toStringAsFixed(
-          1,
-        ),
-        avgBlur: (rightResults['threshold'] as double).toStringAsFixed(2),
-        addPower: rightResults['add'] as String,
-      ),
-      leftEye: MobileRefractometryEyeResult(
-        eye: 'left',
-        sphere: leftResults['sphere'] as String,
-        cylinder: leftResults['cylinder'] as String,
-        axis: leftResults['axis'] as int,
-        accuracy: ((leftResults['accuracy'] as double) * 100).toStringAsFixed(
-          1,
-        ),
-        avgBlur: (leftResults['threshold'] as double).toStringAsFixed(2),
-        addPower: leftResults['add'] as String,
-      ),
-      isAccommodating:
-          (rightResults['isAccommodating'] as bool) ||
-          (leftResults['isAccommodating'] as bool),
+      rightEye: rightResults,
+      leftEye: leftResults,
+      isAccommodating: combinedResult.isAccommodating,
       healthWarnings: (pathology['identifiedRisks'] as List)
           .map((e) => (e['conditionName'] as String))
           .toList(),
@@ -706,6 +714,13 @@ class _MobileRefractometryTestScreenState
       ),
       criticalAlert: pathology['criticalAlert'] as bool,
       overallInterpretation: pathology['interpretation'] as String? ?? 'Normal',
+      detectedConditions: List<Map<String, dynamic>>.from(
+        pathology['identifiedRisks'] ?? [],
+      ),
+      reliabilityScore: combinedResult.modelResult.visualAcuity == '6/6'
+          ? 0.95
+          : 0.85,
+      recommendedFollowUp: combinedResult.recommendation,
     );
 
     context.read<TestSessionProvider>().setMobileRefractometryResult(
@@ -722,14 +737,24 @@ class _MobileRefractometryTestScreenState
     }
   }
 
-  Map<String, dynamic> _processEyeData(List<Map<String, dynamic>> responses) {
-    if (responses.isEmpty) return _emptyEyeResult();
+  MobileRefractometryEyeResult _processEyeData(
+    List<Map<String, dynamic>> responses,
+  ) {
+    if (responses.isEmpty) {
+      return MobileRefractometryEyeResult(
+        eye: _currentEye,
+        sphere: '0.00',
+        cylinder: '0.00',
+        axis: 0,
+        accuracy: '0.0',
+        avgBlur: '0.00',
+        addPower: '0.00',
+      );
+    }
 
-    // Separate distance and near responses
     final distResponses = responses.where((r) => r['isNear'] == false).toList();
     final nearResponses = responses.where((r) => r['isNear'] == true).toList();
 
-    // Use AdvancedRefractionService for calculation
     final result = AdvancedRefractionService.calculateFullAssessment(
       distanceResponses: distResponses,
       nearResponses: nearResponses,
@@ -737,51 +762,15 @@ class _MobileRefractometryTestScreenState
       eye: _currentEye,
     );
 
-    final correctResponses = responses
-        .where((r) => r['correct'] == true)
-        .toList();
-    final cantSeeCount = responses.where((r) => r['isCantSee'] == true).length;
-    final accuracy = correctResponses.length / responses.length;
-
-    // Extract sphere value for return
-    final sphereStr = result.modelResult.sphere;
-    // ignore: unused_local_variable
-    final sphereVal = double.tryParse(sphereStr.replaceAll('+', '')) ?? 0.0;
-
-    return {
-      'sphere': result.modelResult.sphere,
-      'cylinder': result.modelResult.cylinder,
-      'axis': result.modelResult.axis,
-      'accuracy': accuracy,
-      'threshold': result.distanceThreshold,
-      'add': result.modelResult.addPower,
-      'isAccommodating': result.isAccommodating,
-      'cantSeeCount': cantSeeCount,
-    };
+    return result.modelResult;
   }
 
-  Map<String, dynamic> _emptyEyeResult() => {
-    'sphere': '0.00',
-    'cylinder': '0.00',
-    'axis': 0,
-    'accuracy': 0.0,
-    'threshold': 0.0,
-    'add': '0.00',
-    'isAccommodating': false,
-    'cantSeeCount': 0,
-  };
-
-  // Formatting moved to AdvancedRefractionService._formatDiopter
-
   String _getSnellenScore(double fontSize) {
-    // Match fontSize to the test configuration levels
     for (final level in TestConstants.mobileRefractometryLevels) {
       if ((fontSize - level.fontSize).abs() < 0.1) {
-        // Allow small floating point differences
         return level.snellen;
       }
     }
-    // Fallback
     return '6/6';
   }
 
@@ -830,8 +819,7 @@ class _MobileRefractometryTestScreenState
                     isVisible:
                         _isDistanceOk == false &&
                         (_waitingForResponse ||
-                            _currentPhase == RefractPhase.relaxation) &&
-                        !_isCalibrationActive,
+                            _currentPhase == RefractPhase.relaxation),
                     status: _distanceStatus,
                     currentDistance: _currentDistance,
                     targetDistance: _isNearMode ? 40.0 : 100.0,
@@ -862,6 +850,21 @@ class _MobileRefractometryTestScreenState
                           : 55,
                       child: _buildDistanceIndicator(),
                     ),
+
+                  // Voice Input Overlay
+                  if (_currentPhase == RefractPhase.test && _waitingForResponse)
+                    VoiceInputOverlay(
+                      isActive: true,
+                      vocabulary: const [
+                        'up',
+                        'down',
+                        'left',
+                        'right',
+                        'blurry',
+                        'cannot see',
+                      ],
+                      onVoiceResult: _handleVoiceResponse,
+                    ),
                 ],
               );
             },
@@ -889,9 +892,7 @@ class _MobileRefractometryTestScreenState
         Expanded(
           child: Row(
             children: [
-              // Left side: Main content (E view or relaxation)
               Expanded(flex: 1, child: _buildMainContent()),
-              // Right side: Direction buttons (when waiting for response)
               if (_currentPhase == RefractPhase.test && _waitingForResponse)
                 Expanded(
                   flex: 1,
@@ -952,22 +953,15 @@ class _MobileRefractometryTestScreenState
   }
 
   Widget _buildInfoBar({bool isLandscape = false}) {
-    // Count total correct responses for this eye
     final responses = _currentEye == 'right'
         ? _rightEyeResponses
         : _leftEyeResponses;
     final correctCount = responses.where((r) => r['correct'] == true).length;
-    // final provider = context.watch<TestSessionProvider>();
-    // final isPractitioner = provider.profileType == 'patient';
 
-    // Get current font size for size indicator if in landscape test phase
     double? currentFontSize;
     if (isLandscape && _currentPhase == RefractPhase.test && !_showResult) {
-      final testRound = TestConstants.getTestRoundConfiguration(
-        _currentRound + 1,
-        _patientAge,
-      );
-      currentFontSize = testRound.fontSize;
+      final round = _simplifiedProtocol[_currentRound];
+      currentFontSize = round.fontSize;
     }
 
     return Container(
@@ -986,7 +980,6 @@ class _MobileRefractometryTestScreenState
       ),
       child: Row(
         children: [
-          // 1. Size Indicator (Landscape only, matches VA)
           if (isLandscape && currentFontSize != null) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1008,8 +1001,6 @@ class _MobileRefractometryTestScreenState
             ),
             const SizedBox(width: 8),
           ],
-
-          // 2. Level/Progress indicator - MATCHES VA (1-indexed)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
@@ -1017,16 +1008,9 @@ class _MobileRefractometryTestScreenState
               shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              shadows: [
-                BoxShadow(
-                  color: context.primary.withValues(alpha: 0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Text(
-              'ROUND ${_currentRound + 1}/${TestConstants.mobileRefractometryMaxRounds}',
+              'ROUND ${_currentRound + 1}/${_simplifiedProtocol.length}',
               style: TextStyle(
                 color: context.primary,
                 fontWeight: FontWeight.w900,
@@ -1036,8 +1020,6 @@ class _MobileRefractometryTestScreenState
             ),
           ),
           const SizedBox(width: 8),
-
-          // 3. Score indicator - MATCHES VA
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: ShapeDecoration(
@@ -1045,13 +1027,6 @@ class _MobileRefractometryTestScreenState
               shape: ContinuousRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              shadows: [
-                BoxShadow(
-                  color: context.success.withValues(alpha: 0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Text(
               '$correctCount/${responses.length}',
@@ -1062,12 +1037,7 @@ class _MobileRefractometryTestScreenState
               ),
             ),
           ),
-
           const Spacer(),
-
-          // 4. Timer
-          // 5. Timer (Shown in landscape info bar or portrait info bar)
-          // Matching VA style timer
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1109,13 +1079,11 @@ class _MobileRefractometryTestScreenState
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Left Side: Image and Overlapping Timer
                   Expanded(
                     flex: 12,
                     child: _buildRelaxationHero(isLandscape: true),
                   ),
                   const SizedBox(width: 32),
-                  // Right Side: Instructions
                   Expanded(flex: 5, child: _buildRelaxationInstructions()),
                 ],
               ),
@@ -1127,7 +1095,7 @@ class _MobileRefractometryTestScreenState
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   _buildRelaxationHero(isLandscape: false),
-                  const SizedBox(height: 70), // Space for timer overlap
+                  const SizedBox(height: 70),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: _buildRelaxationInstructions(),
@@ -1154,25 +1122,13 @@ class _MobileRefractometryTestScreenState
                 ? Alignment.centerRight
                 : Alignment.bottomCenter,
             children: [
-              // Image Card
               Container(
-                margin: EdgeInsets.only(
-                  right: isLandscape ? 50 : 0, // Room for timer overlap
-                  bottom: 0,
-                  left: isLandscape ? 0 : 24, // Added left padding for portrait
-                ),
-                padding: EdgeInsets.only(
-                  right: isLandscape
-                      ? 0
-                      : 24, // Added right padding for portrait
-                ),
+                margin: EdgeInsets.only(right: isLandscape ? 50 : 0),
                 child: _buildRelaxationImage(
                   isLandscape: isLandscape,
                   height: imageHeight,
                 ),
               ),
-
-              // Glassmorphism Timer
               Positioned(
                 right: isLandscape ? 0 : null,
                 bottom: isLandscape ? null : -50,
@@ -1295,16 +1251,13 @@ class _MobileRefractometryTestScreenState
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            'Relax and focus on the distance',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: context.textPrimary,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
+        Text(
+          'Relax and focus on the distance',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: context.textPrimary,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
           ),
         ),
       ],
@@ -1312,117 +1265,120 @@ class _MobileRefractometryTestScreenState
   }
 
   Widget _buildEView() {
-    // Get the EXACT test round configuration
-    final testRound = TestConstants.getTestRoundConfiguration(
-      _currentRound + 1, // +1 because _currentRound is 0-indexed
-      _patientAge,
-    );
-
-    final currentFontSize =
-        testRound.fontSize; // Use EXACT fontSize from protocol
-
+    final round = _simplifiedProtocol[_currentRound];
+    final currentFontSize = round.fontSize;
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
 
-    return Column(
+    return Stack(
       children: [
-        // Timer and Size indicator row - ONLY IN PORTRAIT
-        // (In Landscape, these are moved to the Info Bar)
-        if (!isLandscape)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: context.surface,
-              border: Border(
-                bottom: BorderSide(
-                  color: context.border.withValues(alpha: 0.3),
-                  width: 1,
+        Column(
+          children: [
+            if (!isLandscape)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Size indicator on LEFT - COMPACT
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: ShapeDecoration(
-                    color: context.primary.withValues(alpha: 0.08),
-                    shape: ContinuousRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    _getSnellenScore(currentFontSize),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      color: context.primary,
-                      letterSpacing: -0.5,
+                decoration: BoxDecoration(
+                  color: context.surface,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: context.border.withValues(alpha: 0.3),
+                      width: 1,
                     ),
                   ),
                 ),
-
-                // Timer on RIGHT - COMPACT
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: 14,
-                      color: _remainingSeconds <= 2
-                          ? context.error
-                          : context.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _isTestPausedForDistance
-                          ? 'PAUSED'
-                          : '${_remainingSeconds}s',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: _remainingSeconds <= 2
-                            ? context.error
-                            : context.primary,
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
+                      decoration: ShapeDecoration(
+                        color: context.primary.withValues(alpha: 0.08),
+                        shape: ContinuousRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        round.snellen,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: context.primary,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 14,
+                          color: _remainingSeconds <= 2
+                              ? context.error
+                              : context.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_remainingSeconds}s',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: _remainingSeconds <= 2
+                                ? context.error
+                                : context.primary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-        // E Display - FULL SCREEN, NO SCALING, OVERFLOW ALLOWED
-        Expanded(
-          child: Container(
-            color: AppColors.white,
-            child: Center(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: Transform.rotate(
-                    angle: _currentDirection.rotationDegrees * math.pi / 180,
-                    child: ImageFiltered(
-                      imageFilter: ui.ImageFilter.blur(
-                        sigmaX: _currentBlur,
-                        sigmaY: _currentBlur,
-                      ),
-                      child: Text(
-                        'E',
-                        textScaler: TextScaler.noScaling,
-                        style: TextStyle(
-                          fontSize:
-                              currentFontSize, // EXACT size, no adjustment
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.black,
-                          height: 1.0,
-                          letterSpacing: 0,
+              ),
+            Expanded(
+              child: Container(
+                color: AppColors.white,
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                          return SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.2, 0.0),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                    child: KeyedSubtree(
+                      key: ValueKey('${_currentRound}_$_isNearMode'),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          child: Transform.rotate(
+                            angle:
+                                _currentDirection.rotationDegrees *
+                                math.pi /
+                                180,
+                            child: ImageFiltered(
+                              imageFilter: ui.ImageFilter.blur(
+                                sigmaX: _currentBlur,
+                                sigmaY: _currentBlur,
+                              ),
+                              child: _buildRefractCharacter(
+                                _activeRoundLabel,
+                                currentFontSize,
+                                _currentBlur,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1430,29 +1386,162 @@ class _MobileRefractometryTestScreenState
                 ),
               ),
             ),
-          ),
+            _buildInstructionText(),
+          ],
         ),
+        if (_showResult)
+          Positioned(
+            top: 20,
+            right: 20,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.elasticOut,
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: value * 1.2,
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: (_isLastCorrect ?? false)
+                          ? AppColors.success.withValues(alpha: 0.9)
+                          : AppColors.error.withValues(alpha: 0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      (_isLastCorrect ?? false) ? Icons.check : Icons.close,
+                      color: Colors.white,
+                      size: 36,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
 
-        // Instruction text - MINIMAL HEIGHT
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: Text(
+  Widget _buildInstructionText() {
+    final provider = context.watch<TestSessionProvider>();
+    final isPractitioner = provider.profileType == 'patient';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (!isPractitioner)
+            Icon(
+              Icons.mic,
+              size: 16,
+              color: _isTestPausedForDistance
+                  ? AppColors.warning
+                  : AppColors.success,
+            ),
+          if (!isPractitioner) const SizedBox(width: 8),
+          Text(
             _isTestPausedForDistance
                 ? 'Adjust distance'
-                : 'Which way is E pointing?',
+                : 'Which way is the gap pointing?',
             style: TextStyle(
               color: _isTestPausedForDistance
-                  ? context.warning
-                  : context.textSecondary,
-              fontSize: 13,
+                  ? AppColors.warning
+                  : AppColors.textSecondary,
+              fontSize: 14,
               fontWeight: _isTestPausedForDistance
                   ? FontWeight.bold
-                  : FontWeight.normal,
+                  : FontWeight.w600,
             ),
-            textAlign: TextAlign.center,
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefractCharacter(String label, double fontSize, double blur) {
+    final bool isHighBlur = blur >= 3.0;
+
+    if (label == 'E' && isHighBlur) {
+      return Text(
+        'E',
+        textScaler: TextScaler.noScaling,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w900,
+          color: AppColors.black,
+          height: 0.8,
+          letterSpacing: -fontSize * 0.1,
+          fontFamily: 'Inter',
         ),
-      ],
+      );
+    }
+
+    if (label == 'C' && isHighBlur) {
+      return Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            'C',
+            textScaler: TextScaler.noScaling,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w900,
+              color: AppColors.black,
+              height: 1.0,
+              fontFamily: 'Inter',
+            ),
+          ),
+          Transform.rotate(
+            angle: 8 * math.pi / 180,
+            child: Text(
+              'C',
+              textScaler: TextScaler.noScaling,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w900,
+                color: AppColors.black,
+                height: 1.0,
+                fontFamily: 'Inter',
+              ),
+            ),
+          ),
+          Transform.rotate(
+            angle: -8 * math.pi / 180,
+            child: Text(
+              'C',
+              textScaler: TextScaler.noScaling,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w900,
+                color: AppColors.black,
+                height: 1.0,
+                fontFamily: 'Inter',
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Text(
+      label,
+      textScaler: TextScaler.noScaling,
+      style: TextStyle(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w900,
+        color: AppColors.black,
+        height: 1.0,
+        fontFamily: 'Inter',
+      ),
     );
   }
 
@@ -1538,7 +1627,6 @@ class _MobileRefractometryTestScreenState
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight;
-        // Calculate dynamic button size based on available height
         double calcButtonSize = availableHeight / 5.2;
         final buttonSize = calcButtonSize.clamp(40.0, 72.0);
         final iconSize = buttonSize * 0.5;
@@ -1670,7 +1758,6 @@ class _MobileRefractometryTestScreenState
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Pulse-like status circle
               Container(
                 width: 8,
                 height: 8,

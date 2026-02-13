@@ -40,7 +40,6 @@ class _PupillaryExamScreenState extends State<PupillaryExamScreen> {
   bool _isCameraInitialized = false;
   bool _isRecording = false;
   String? _recordedVideoPath;
-  bool _isCapturing = false;
 
   // Video Preview State
   VideoPlayerController? _videoPlayerController;

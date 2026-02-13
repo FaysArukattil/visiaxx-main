@@ -7,6 +7,13 @@ class MobileRefractometryEyeResult {
   final String accuracy;
   final String avgBlur;
   final String addPower; // For presbyopia
+  final String? interpretation; // Specific diagnosis/classification
+  final String visualAcuity; // Best Snellen achieved
+  final List<Map<String, dynamic>>
+  characterStats; // Breakdown by character type
+  final String severityLevel; // 'Normal', 'Slight', 'Moderate', 'High'
+  final String
+  refractiveErrorType; // 'Normal', 'Myopia', 'Hyperopia', 'Astigmatism', 'Presbyopia'
 
   MobileRefractometryEyeResult({
     required this.eye,
@@ -16,6 +23,11 @@ class MobileRefractometryEyeResult {
     required this.accuracy,
     required this.avgBlur,
     required this.addPower,
+    this.interpretation,
+    this.visualAcuity = '6/60',
+    this.characterStats = const [],
+    this.severityLevel = 'Normal',
+    this.refractiveErrorType = 'Normal',
   });
 
   Map<String, dynamic> toJson() {
@@ -27,6 +39,11 @@ class MobileRefractometryEyeResult {
       'accuracy': accuracy,
       'avgBlur': avgBlur,
       'addPower': addPower,
+      'interpretation': interpretation,
+      'visualAcuity': visualAcuity,
+      'characterStats': characterStats,
+      'severityLevel': severityLevel,
+      'refractiveErrorType': refractiveErrorType,
     };
   }
 
@@ -39,6 +56,13 @@ class MobileRefractometryEyeResult {
       accuracy: json['accuracy'] ?? '0.0',
       avgBlur: json['avgBlur'] ?? '0.00',
       addPower: json['addPower'] ?? '0.00',
+      interpretation: json['interpretation'],
+      visualAcuity: json['visualAcuity'] ?? '6/60',
+      characterStats: List<Map<String, dynamic>>.from(
+        json['characterStats'] ?? [],
+      ),
+      severityLevel: json['severityLevel'] ?? 'Normal',
+      refractiveErrorType: json['refractiveErrorType'] ?? 'Normal',
     );
   }
 
@@ -56,10 +80,16 @@ class MobileRefractometryResult {
   final int patientAge;
   final List<String> healthWarnings; // Disease screening alerts
   final List<Map<String, dynamic>> identifiedRisks; // Structured risk data
+  final List<Map<String, dynamic>>
+  detectedDiseases; // VA-based disease screening
   final bool criticalAlert;
+  final bool requiresUrgentReferral; // Urgent ophthalmologist visit needed
   final String overallInterpretation;
   final bool isAccommodating;
   final DateTime timestamp;
+  final List<Map<String, dynamic>> detectedConditions; // Flagged pathologies
+  final double reliabilityScore; // Based on response time consistency
+  final String recommendedFollowUp; // Specific next steps
 
   MobileRefractometryResult({
     this.rightEye,
@@ -67,10 +97,15 @@ class MobileRefractometryResult {
     required this.patientAge,
     this.healthWarnings = const [],
     this.identifiedRisks = const [],
+    this.detectedDiseases = const [],
     this.criticalAlert = false,
+    this.requiresUrgentReferral = false,
     this.overallInterpretation = '',
     this.isAccommodating = false,
     DateTime? timestamp,
+    this.detectedConditions = const [],
+    this.reliabilityScore = 0.0,
+    this.recommendedFollowUp = '',
   }) : timestamp = timestamp ?? DateTime.now();
 
   Map<String, dynamic> toJson() {
@@ -80,10 +115,15 @@ class MobileRefractometryResult {
       'patientAge': patientAge,
       'healthWarnings': healthWarnings,
       'identifiedRisks': identifiedRisks,
+      'detectedDiseases': detectedDiseases,
       'criticalAlert': criticalAlert,
+      'requiresUrgentReferral': requiresUrgentReferral,
       'overallInterpretation': overallInterpretation,
       'isAccommodating': isAccommodating,
       'timestamp': timestamp.toIso8601String(),
+      'detectedConditions': detectedConditions,
+      'reliabilityScore': reliabilityScore,
+      'recommendedFollowUp': recommendedFollowUp,
     };
   }
 
@@ -100,12 +140,21 @@ class MobileRefractometryResult {
       identifiedRisks: List<Map<String, dynamic>>.from(
         json['identifiedRisks'] ?? [],
       ),
+      detectedDiseases: List<Map<String, dynamic>>.from(
+        json['detectedDiseases'] ?? [],
+      ),
       criticalAlert: json['criticalAlert'] ?? false,
+      requiresUrgentReferral: json['requiresUrgentReferral'] ?? false,
       overallInterpretation: json['overallInterpretation'] ?? '',
       isAccommodating: json['isAccommodating'] ?? false,
       timestamp: json['timestamp'] != null
           ? DateTime.parse(json['timestamp'])
           : DateTime.now(),
+      detectedConditions: List<Map<String, dynamic>>.from(
+        json['detectedConditions'] ?? [],
+      ),
+      reliabilityScore: (json['reliabilityScore'] ?? 0.0).toDouble(),
+      recommendedFollowUp: json['recommendedFollowUp'] ?? '',
     );
   }
 

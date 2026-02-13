@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
 /// Test configuration constants for vision tests
 ///
@@ -139,12 +140,15 @@ class TestConstants {
   static const int mobileRefractometryTimePerRoundSeconds = 5;
 
   // Blur level constants for adaptive difficulty
-  static const double initialBlurLevel = 0.5;
+  // Clear → Slight Blur (50% = 2.0) → Blurry (75-80% = 3.0-3.2)
+  static const double initialBlurLevel = 0.0; // Start clear
   static const double minBlurLevel = 0.0;
-  static const double maxBlurLevel = 6.0;
-  static const double blurIncrementOnCorrect = 0.3;
-  static const double blurDecrementOnWrong = 0.5;
-  static const double blurDecrementOnCantSee = 0.75;
+  static const double maxBlurLevel = 4.0; // Caps at 75-80% blur
+  static const double blurIncrementOnCorrect =
+      0.8; // Faster progression to slight blur
+  static const double blurDecrementOnWrong = 0.5; // Moderate reduction
+  static const double blurDecrementOnCantSee =
+      0.6; // Larger reduction for "can't see"
 
   // Mobile Refractometry E Size Levels (font size → Snellen score)
   static const List<MobileRefractometryLevel> mobileRefractometryLevels = [
@@ -193,16 +197,106 @@ class TestConstants {
   /// Calculate ADD power for presbyopia based on age
   static double calculateAddPower(int age) {
     if (age < 40) return 0.00;
-    if (age >= 40 && age <= 42) return 0.75;
-    if (age >= 43 && age <= 44) return 1.00;
-    if (age >= 45 && age <= 47) return 1.25;
-    if (age >= 48 && age <= 49) return 1.50;
-    if (age >= 50 && age <= 52) return 1.75;
-    if (age >= 53 && age <= 54) return 2.00;
-    if (age >= 55 && age <= 58) return 2.25;
-    if (age >= 59 && age <= 62) return 2.50;
-    if (age >= 63 && age <= 65) return 2.75;
-    return 3.00;
+    if (age >= 40 && age <= 42) return 0.50; // -0.25
+    if (age >= 43 && age <= 44) return 0.75; // -0.25
+    if (age >= 45 && age <= 47) return 1.00; // -0.25
+    if (age >= 48 && age <= 49) return 1.25; // -0.25
+    if (age >= 50 && age <= 52) return 1.50; // -0.25
+    if (age >= 53 && age <= 54) return 1.75; // -0.25
+    if (age >= 55 && age <= 58) return 2.00; // -0.25
+    if (age >= 59 && age <= 61) return 2.25; // -0.25
+    if (age >= 62 && age <= 65) return 2.50; // -0.25
+    return 2.75; // -0.25
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // REFRACTIVE ERROR CLASSIFICATION CONSTANTS
+  // ═══════════════════════════════════════════════════════════
+
+  /// Myopia classification thresholds (in diopters)
+  /// Three-tier system: Slight -> Moderate -> High
+  static const double slightMyopiaMinThreshold = -0.25;
+  static const double slightMyopiaMaxThreshold = -3.00;
+  static const double moderateMyopiaThreshold = -3.00; // Previously "high"
+  static const double moderateMyopiaMaxThreshold = -8.00;
+  static const double highMyopiaThreshold = -8.00; // New severe threshold
+
+  /// Hyperopia classification thresholds (in diopters)
+  /// Three-tier system: Slight -> Moderate -> High
+  static const double slightHyperopiaMinThreshold = 0.25;
+  static const double slightHyperopiaMaxThreshold = 3.00;
+  static const double moderateHyperopiaThreshold = 3.00; // Previously "high"
+  static const double moderateHyperopiaMaxThreshold = 6.00;
+  static const double highHyperopiaThreshold = 6.00; // New severe threshold
+
+  /// Astigmatism classification thresholds (in diopters, absolute value)
+  /// Three-tier system: Slight -> Moderate -> High
+  static const double slightAstigmatismMinThreshold = 0.25;
+  static const double slightAstigmatismMaxThreshold = 1.50;
+  static const double moderateAstigmatismThreshold = 1.50; // Moderate starts
+  static const double moderateAstigmatismMaxThreshold =
+      2.75; // Moderate: -1.50 to -2.75
+  static const double highAstigmatismThreshold =
+      2.75; // High starts at >= -2.75
+
+  /// Presbyopia age threshold
+  static const int presbyopiaAgeThreshold = 40;
+
+  // ═══════════════════════════════════════════════════════════
+  // DISEASE SCREENING THRESHOLDS BASED ON VISUAL ACUITY
+  // ═══════════════════════════════════════════════════════════
+
+  /// Visual acuity thresholds for disease screening
+  /// (Snellen denominator values - smaller = better vision)
+  static const int vaExcellent = 6; // 6/6
+  static const int vaGood = 9; // 6/9
+  static const int vaNormal = 12; // 6/12
+  static const int vaBorderline = 18; // 6/18
+  static const int vaMildImpairment = 24; // 6/24
+  static const int vaModerateImpairment = 36; // 6/36
+  static const int vaSevereImpairment = 60; // 6/60
+
+  /// Age-Related Macular Degeneration (ARMD) screening criteria
+  static const int armdMinAge = 50;
+  static const int armdVaThreshold = 24; // 6/24 or worse
+
+  /// Cataract screening criteria
+  static const int cataractMinAge = 55;
+  static const int cataractVaThreshold = 18; // 6/18 or worse
+  static const int cataractResponseTimeMs = 3500; // Slow responses
+
+  /// Diabetic Retinopathy screening criteria
+  static const int diabeticRetinopathyVaThreshold = 18; // 6/18 or worse
+  static const double diabeticRetinopathyBlurThreshold = 2.5;
+
+  /// Severe visual impairment threshold
+  static const int severeImpairmentVaThreshold = 60; // 6/60 or worse
+
+  /// Parse Snellen string to denominator value
+  static int parseSnellenDenominator(String snellen) {
+    // Extract denominator from formats like "6/6", "6/12", etc.
+    final parts = snellen.split('/');
+    if (parts.length == 2) {
+      return int.tryParse(parts[1]) ?? 60;
+    }
+    return 60; // Default to worst case
+  }
+
+  /// Check if visual acuity indicates potential disease
+  static bool requiresUrgentReferral(String visualAcuity, int age) {
+    final vaDenominator = parseSnellenDenominator(visualAcuity);
+
+    // Critical: Severe visual impairment
+    if (vaDenominator >= severeImpairmentVaThreshold) {
+      return true;
+    }
+
+    // ARMD risk for older patients with moderate impairment
+    if (age >= armdMinAge && vaDenominator >= armdVaThreshold) {
+      return true;
+    }
+
+    return false;
   }
 
   // … FIXED: Updated short distance font sizes to match visual acuity
@@ -689,22 +783,284 @@ class TestConstants {
   }
 
   /// Get test round configuration based on round number and patient age
-  static TestRound getTestRoundConfiguration(int round, int? patientAge) {
-    List<TestRound> protocol;
+  static SimplifiedTestRound getTestRoundConfiguration(
+    int round,
+    int? patientAge,
+  ) {
+    List<SimplifiedTestRound> protocol;
 
     if (patientAge == null || patientAge < 40) {
-      protocol = getYoungPatientProtocol();
-    } else if (patientAge >= 40 && patientAge < 50) {
-      protocol = getEarlyPresbyopeProtocol();
-    } else if (patientAge >= 50 && patientAge < 60) {
-      protocol = getModeratePresbyopeProtocol();
+      protocol = getSimplifiedRefractometryProtocolYoung();
     } else {
-      protocol = getAdvancedPresbyopeProtocol();
+      protocol = getSimplifiedRefractometryProtocolPresbyope();
     }
 
     // Use modulo to cycle through protocol if round exceeds length
     int index = (round - 1) % protocol.length;
     return protocol[index];
+  }
+
+  /// NEW 7-ROUND ENHANCED PROTOCOL (Legacy - for backward compatibility)
+  static List<EnhancedTestRound> getMobileRefractometry7RoundProtocol() {
+    return [
+      EnhancedTestRound(
+        snellen: '6/60',
+        fontSize: 150.0,
+        characters: [RefractCharacter.e],
+      ),
+      EnhancedTestRound(
+        snellen: '6/36',
+        fontSize: 120.0,
+        characters: [RefractCharacter.e, RefractCharacter.c],
+      ),
+      EnhancedTestRound(
+        snellen: '6/24',
+        fontSize: 100.0,
+        characters: [
+          RefractCharacter.c,
+          RefractCharacter.e,
+          RefractCharacter.c,
+        ],
+      ),
+      EnhancedTestRound(
+        snellen: '6/18',
+        fontSize: 80.0,
+        characters: [
+          RefractCharacter.c,
+          RefractCharacter.e,
+          RefractCharacter.c,
+          RefractCharacter.e,
+        ],
+      ),
+      EnhancedTestRound(
+        snellen: '6/12',
+        fontSize: 60.0,
+        characters: [
+          RefractCharacter.c,
+          RefractCharacter.c,
+          RefractCharacter.e,
+          RefractCharacter.e,
+          RefractCharacter.c,
+        ],
+      ),
+      EnhancedTestRound(
+        snellen: '6/9',
+        fontSize: 50.0,
+        characters: [
+          RefractCharacter.e,
+          RefractCharacter.c,
+          RefractCharacter.e,
+          RefractCharacter.c,
+          RefractCharacter.c,
+          RefractCharacter.e,
+        ],
+      ),
+      EnhancedTestRound(
+        snellen: '6/6',
+        fontSize: 40.0,
+        characters: [
+          RefractCharacter.c,
+          RefractCharacter.e,
+          RefractCharacter.c,
+          RefractCharacter.e,
+          RefractCharacter.c,
+          RefractCharacter.c,
+          RefractCharacter.e,
+        ],
+      ),
+    ];
+  }
+
+  /// SIMPLIFIED 14-ROUND PROTOCOL (Presbyope)
+  /// Optimized for speed and engagement while maintaining clinical accuracy
+  /// 7 Distance + 4 Near + 3 Mixed = 14 total rounds
+  /// Ages 40+: Presbyopia detection
+  static List<SimplifiedTestRound>
+  getSimplifiedRefractometryProtocolPresbyope() {
+    return [
+      // DISTANCE TESTS (Rounds 1-7) - 100cm
+      SimplifiedTestRound(
+        snellen: '6/60',
+        fontSize: 150.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/48',
+        fontSize: 120.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/36',
+        fontSize: 100.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/24',
+        fontSize: 80.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/18',
+        fontSize: 70.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/12',
+        fontSize: 60.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/6',
+        fontSize: 40.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.e,
+      ),
+
+      // NEAR TESTS (Rounds 8-14) - 40cm
+      SimplifiedTestRound(
+        snellen: '6/60',
+        fontSize: 150.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/48',
+        fontSize: 120.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/36',
+        fontSize: 100.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/24',
+        fontSize: 80.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/18',
+        fontSize: 70.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/12',
+        fontSize: 60.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/6',
+        fontSize: 40.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.c,
+      ),
+    ];
+  }
+
+  /// SIMPLIFIED 14-ROUND PROTOCOL (Young Patient 15-40)
+  /// 7 Distance (100cm) + 7 Near (40cm) = 14 total rounds
+  /// Each round randomized between E and C
+  static List<SimplifiedTestRound> getSimplifiedRefractometryProtocolYoung() {
+    return [
+      // DISTANCE TESTS (Rounds 1-7) - 100cm
+      SimplifiedTestRound(
+        snellen: '6/60',
+        fontSize: 150.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/48',
+        fontSize: 120.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/36',
+        fontSize: 100.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/24',
+        fontSize: 80.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/18',
+        fontSize: 70.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/12',
+        fontSize: 60.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/6',
+        fontSize: 40.0,
+        testType: TestType.distance,
+        characterType: RefractCharacter.e,
+      ),
+
+      // NEAR TESTS (Rounds 8-14) - 40cm
+      SimplifiedTestRound(
+        snellen: '6/60',
+        fontSize: 150.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/48',
+        fontSize: 120.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/36',
+        fontSize: 100.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/24',
+        fontSize: 80.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/18',
+        fontSize: 70.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.c,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/12',
+        fontSize: 60.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.e,
+      ),
+      SimplifiedTestRound(
+        snellen: '6/6',
+        fontSize: 40.0,
+        testType: TestType.near,
+        characterType: RefractCharacter.c,
+      ),
+    ];
   }
 }
 
@@ -788,23 +1144,106 @@ enum EDirection {
   static EDirection fromString(String direction) {
     switch (direction.toLowerCase()) {
       case 'right':
+      case 'gap right':
         return EDirection.right;
       case 'down':
+      case 'gap down':
         return EDirection.down;
       case 'left':
+      case 'gap left':
         return EDirection.left;
       case 'up':
+      case 'gap up':
         return EDirection.up;
       case 'blurry':
       case 'blur':
       case 'cannot see':
       case 'can\'t see':
-      case 'cannot see clearly':
-      case 'can\'t see clearly':
+      case 'cant see':
         return EDirection.blurry;
       default:
         return EDirection.right;
     }
+  }
+}
+
+/// Character type for refractometry
+enum RefractCharacter {
+  e('E'),
+  c('C'),
+  random('Random');
+
+  final String label;
+  const RefractCharacter(this.label);
+
+  /// Get actual character label, randomizing if needed
+  String getActualLabel() {
+    if (this == RefractCharacter.random) {
+      return math.Random().nextBool() ? 'E' : 'C';
+    }
+    return label;
+  }
+}
+
+/// Enhanced test round with multiple characters
+class EnhancedTestRound {
+  final String snellen;
+  final double fontSize;
+  final List<RefractCharacter> characters;
+
+  const EnhancedTestRound({
+    required this.snellen,
+    required this.fontSize,
+    required this.characters,
+  });
+}
+
+/// Simplified test round with single character per round
+/// Used for the new 11-round protocol with randomized directions
+class SimplifiedTestRound {
+  final String snellen;
+  final double fontSize;
+  final TestType testType;
+  final RefractCharacter characterType;
+
+  const SimplifiedTestRound({
+    required this.snellen,
+    required this.fontSize,
+    required this.testType,
+    required this.characterType,
+  });
+
+  /// Generate random direction for this round
+  EDirection getRandomDirection() {
+    final random = math.Random();
+    final directions = [
+      EDirection.up,
+      EDirection.down,
+      EDirection.left,
+      EDirection.right,
+    ];
+    return directions[random.nextInt(directions.length)];
+  }
+
+  /// Get color coding for UI
+  Color getTypeColor() {
+    return testType == TestType.distance
+        ? const Color(0xFF2196F3) // Blue for distance
+        : const Color(0xFFFF9800); // Orange for near
+  }
+
+  /// Get icon for test type
+  IconData getTypeIcon() {
+    return testType == TestType.distance
+        ? Icons.remove_red_eye
+        : Icons.menu_book;
+  }
+
+  /// Get display label
+  String getTypeLabel() {
+    return testType == TestType.distance
+        ? 'DISTANCE VISION'
+        : 'NEAR VISION (Reading)';
   }
 }
 
