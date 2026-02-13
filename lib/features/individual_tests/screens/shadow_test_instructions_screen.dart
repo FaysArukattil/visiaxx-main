@@ -4,7 +4,6 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/widgets/test_exit_confirmation_dialog.dart';
-import '../../../data/providers/shadow_test_provider.dart';
 import '../../../data/providers/test_session_provider.dart';
 import '../../quick_vision_test/widgets/instruction_animations.dart';
 import '../../quick_vision_test/widgets/glasses_removal_animation.dart';
