@@ -188,43 +188,42 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Column(
+    return Row(
       children: [
-        Expanded(
-          child: Row(
+        // Main reading area
+        Expanded(flex: 5, child: _buildReadingContent(provider)),
+        // Sidebar with controls and feedback
+        Container(
+          width: 200, // Increased slightly for better fit
+          margin: const EdgeInsets.fromLTRB(
+            0,
+            8,
+            8,
+            8,
+          ), // Match reading content margin style
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: context.cardColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: context.dividerColor.withValues(alpha: 0.1),
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment:
+                MainAxisAlignment.center, // Center contents vertically
             children: [
-              // Main reading area
-              Expanded(flex: 5, child: _buildReadingContent(provider)),
-              // Sidebar with controls and feedback
-              Container(
-                width: 180,
-                decoration: BoxDecoration(
-                  color: context.cardColor,
-                  border: Border(
-                    left: BorderSide(
-                      color: context.dividerColor.withValues(alpha: 0.1),
-                    ),
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      _buildAnimationHeader(provider, size: 70),
-                      const SizedBox(height: 12),
-                      _buildBlinkCounterPremium(provider, isCompact: true),
-                      const SizedBox(height: 8),
-                      _buildDetectionWarning(provider),
-                      const SizedBox(height: 12),
-                    ],
-                  ),
-                ),
-              ),
+              _buildAnimationHeader(provider, size: 80),
+              const SizedBox(height: 20),
+              _buildBlinkCounterPremium(provider, isCompact: true),
+              const SizedBox(height: 16),
+              _buildDetectionWarning(provider),
+              const Spacer(),
+              // Move action button inside sidebar for better landscape UX as requested by "matching real test" logic elsewhere
+              _buildActionButtons(provider, isCompact: true),
             ],
           ),
         ),
-        // Full width bottom button
-        _buildActionButtons(provider),
       ],
     );
   }

@@ -52,7 +52,7 @@ class _PelliRobsonInstructionsScreenState
           ? 'Hold the device about 40 centimeters away from your face.'
           : 'Place the device exactly 1 meter away from your face.',
       'You will see groups of 3 letters. Only read the letters inside the blue box aloud from left to right.',
-      'The letters will become fainter and harder to see. Read as many as you can. If you cannot see any, say "nothing" or "skip".',
+      'The letters will become fainter and harder to see. Read as many as you can. If you cannot see any, click on "Not Visible" button.',
       'If you wear glasses for distance, please keep them on during the test.',
     ];
     _initializeTts();
@@ -208,7 +208,7 @@ class _PelliRobsonInstructionsScreenState
                       'Wear Your Glasses',
                       'If you wear distance correction glasses, please keep them on.',
                       context.info,
-                      animation: const WearSpecsAnimation(),
+                      animation: const WearSpecsAnimation(isCompact: true),
                     ),
                   ],
                 ),

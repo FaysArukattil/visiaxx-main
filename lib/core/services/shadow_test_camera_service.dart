@@ -225,11 +225,17 @@ class ShadowTestCameraService {
       if (_isProcessingImage ||
           _controller == null ||
           !_controller!.value.isInitialized) {
+        if (_controller == null) {
+          timer.cancel(); // Stop if controller is gone
+        }
         return;
       }
 
       // Check for 'taking picture' or 'closed' status
-      if (_controller!.value.isTakingPicture) return;
+      if (_controller == null ||
+          !_controller!.value.isInitialized ||
+          _controller!.value.isTakingPicture)
+        return;
 
       _isProcessingImage = true;
       try {

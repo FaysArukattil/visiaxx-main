@@ -137,7 +137,9 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
                 controller.value.isInitialized &&
                 !provider.isCameraStarting)
               Positioned.fill(
-                child: controller.value.previewSize != null
+                child:
+                    (controller.value.isInitialized &&
+                        controller.value.previewSize != null)
                     ? OverflowBox(
                         alignment: Alignment.center,
                         child: FittedBox(

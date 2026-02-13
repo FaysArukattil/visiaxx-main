@@ -1370,7 +1370,7 @@ class _FadingTripletsAnimationState extends State<FadingTripletsAnimation>
         fit: BoxFit.contain,
         child: Container(
           width: 250,
-          height: 200,
+          height: 220, // Increased from 200 to accommodate buttons
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
@@ -1379,20 +1379,61 @@ class _FadingTripletsAnimationState extends State<FadingTripletsAnimation>
               width: 2,
             ),
           ),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8), // Reduced from 12
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
               return Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildFadingRow('V S K', 1.0),
-                  _buildFadingRow('N H Z', 0.4),
-                  _buildFadingRow('O R D', 0.15),
-                  _buildFadingRow('K S V', 0.05),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildFadingRow('V S K', 1.0),
+                        _buildFadingRow('N H Z', 0.4),
+                        _buildFadingRow('O R D', 0.15),
+                        _buildFadingRow('K S V', 0.05),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4), // Reduced from 8
+                  // Mock buttons to match real test UI
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildMockButton('VISIBLE', AppColors.success),
+                      ),
+                      const SizedBox(width: 6), // Reduced from 8
+                      Expanded(
+                        child: _buildMockButton('NOT VISIBLE', AppColors.error),
+                      ),
+                    ],
+                  ),
                 ],
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMockButton(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color, width: 1.5),
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),
