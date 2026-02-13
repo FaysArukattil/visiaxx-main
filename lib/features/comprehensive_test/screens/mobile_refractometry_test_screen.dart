@@ -564,6 +564,8 @@ class _MobileRefractometryTestScreenState
       debugPrint(
         '[MobileRefract] ✅ SUDDEN Voice match: ${direction.label} from "$recognizedText"',
       );
+      // Clear immediately to prevent leaking into next round
+      context.read<VoiceRecognitionProvider>().clearRecognizedText();
       _handleResponse(direction);
     } else {
       // Enhanced logging to see why it's not matching
@@ -616,6 +618,9 @@ class _MobileRefractometryTestScreenState
 
   void _handleResponse(EDirection? response) {
     if (!_waitingForResponse || _showResult) return;
+
+    // Proactively clear recognized text to avoid persistence in next round
+    context.read<VoiceRecognitionProvider>().clearRecognizedText();
 
     final roundConfig = _simplifiedProtocol[_currentRound];
 

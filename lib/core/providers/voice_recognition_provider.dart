@@ -181,6 +181,7 @@ class VoiceRecognitionProvider extends ChangeNotifier {
   /// Stop listening for speech
   Future<void> stopListening() async {
     await _service.stopListening();
+    _recognizedText = ''; // Clear text to prevent persistence
     _currentResultCallback = null;
     notifyListeners();
   }
