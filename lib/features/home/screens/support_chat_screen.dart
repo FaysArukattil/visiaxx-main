@@ -437,8 +437,22 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              setState(() => _messages.clear());
-              _addBotMessage("Chat history cleared. How can I help you?");
+              setState(() {
+                _messages.clear();
+                _messages.add(
+                  ChatMessage(
+                    text:
+                        "Hi there! 👋 I'm VisiBot, your personalized eye-care assistant.\n\nI can help you with test troubleshooting, understanding results, and technical support. How can I assist you today?",
+                    isUser: false,
+                    quickReplies: [
+                      'Vision Test Help',
+                      'Understanding Results',
+                      'Account Help',
+                      'Report a Bug',
+                    ],
+                  ),
+                );
+              });
             },
             icon: Icon(Icons.refresh_rounded, color: context.textSecondary),
           ),
@@ -575,23 +589,36 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
                 color: context.scaffoldBackground,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
                 border: Border.all(
-                  color: context.dividerColor.withValues(alpha: 0.5),
+                  color: context.primary.withValues(alpha: 0.08),
+                  width: 1.5,
                 ),
               ),
               child: TextField(
                 controller: _messageController,
                 onSubmitted: _addUserMessage,
-                style: TextStyle(color: context.textPrimary),
+                style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Type your concern here...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(
                     color: context.textTertiary,
-                    fontSize: 15,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
             ),

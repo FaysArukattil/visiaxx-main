@@ -203,5 +203,58 @@ class FAQData {
         ),
       ],
     ),
+    FAQCategory(
+      id: 'test-guide',
+      title: 'Clinical Test Guide',
+      description: 'Learn how tests work & their significance',
+      icon: Icons.menu_book_rounded,
+      items: [
+        FAQItem(
+          question: 'Visual Acuity Test (Snellen/ETDRS)',
+          answer:
+              '• Purpose: Measures the sharpness/clarity of your central vision.\n• Performance: Stand 1 meter from the device. Read letters as they appear.\n• Output: Recorded as Snellen equivalent (e.g., 6/6) or LogMAR score.',
+        ),
+        FAQItem(
+          question: 'Van Herick Shadow Test',
+          answer:
+              '• Purpose: Screens for narrow-angle Glaucoma risk by assessing the anterior chamber depth.\n• Performance: Using the phone\'s flash, a slit is projected on the iris. You must align the guide to capture the shadow.\n• Output: Grade 1 (Narrow) to Grade 4 (Open).',
+        ),
+        FAQItem(
+          question: 'Ishihara Color Vision Test',
+          answer:
+              '• Purpose: Detects Red-Green color vision deficiency.\n• Performance: Identify hidden numbers or paths within mosaic plates.\n• Output: Score based on correct identifications (e.g., 10/11 Correct).',
+        ),
+        FAQItem(
+          question: 'Mobile Refractometry',
+          answer:
+              '• Purpose: Estimates your refractive error (spectacle power requirement).\n• Performance: Remove glasses. Align your eye with the on-screen target at 30cm.\n• Output: Diopter values for Spherical, Cylinder, and Axis.',
+        ),
+        FAQItem(
+          question: 'Stereopsis 3D Test',
+          answer:
+              '• Purpose: Evaluates depth perception (how well eyes work together).\n• Performance: Wear Red/Cyan anaglyph glasses. Identify which shape appears closer.\n• Output: Depth sensitivity measured in "Seconds of Arc".',
+        ),
+        FAQItem(
+          question: 'Visual Field Test (Perimetry)',
+          answer:
+              '• Purpose: Maps your peripheral (side) vision to detect blind spots (scotomas).\n• Performance: Fixate on a center dot. Tap the screen when you see flashes in your side vision.\n• Output: A sensitivity map showing any vision loss areas.',
+        ),
+        FAQItem(
+          question: 'Contrast Sensitivity Test',
+          answer:
+              '• Purpose: Measures ability to distinguish objects from their background (useful for early Cataract/Glaucoma).\n• Performance: Identify letters or gratings that gradually fade in contrast.\n• Output: Contrast threshold percentage.',
+        ),
+        FAQItem(
+          question: 'Cover-Uncover Test (Strabismus)',
+          answer:
+              '• Purpose: Detects eye misalignment (tropias/phorias) or squint.\n• Performance: The app observes eye movement while one eye is digitally or manually covered.\n• Output: Identification of Exotropia, Esotropia, or Orthophoria.',
+        ),
+        FAQItem(
+          question: 'Torchlight & Extraocular Muscle Exam',
+          answer:
+              '• Purpose: Checks pupil reactions and eye muscle coordination.\n• Performance: Follow a moving light source or observe pupil response to light pulses.\n• Output: Assessment of Full range of motion and Pupillary reflex (RAPD).',
+        ),
+      ],
+    ),
   ];
 }

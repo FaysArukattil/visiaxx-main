@@ -525,9 +525,10 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
 
         // 🟢 Instructions Overlay (Top - Safe Area)
         Positioned(
-          top: 120 + MediaQuery.paddingOf(context).top,
+          top: (isLandscape ? 16 : 120) + MediaQuery.paddingOf(context).top,
           left: 16,
-          right: 16,
+          right: isLandscape ? null : 16,
+          width: isLandscape ? MediaQuery.of(context).size.width * 0.45 : null,
           child: _buildInstructionOverlay(
             instruction,
             eyeToObserve,
