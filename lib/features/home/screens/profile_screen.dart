@@ -1,15 +1,14 @@
 ﻿import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../core/providers/network_connectivity_provider.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:in_app_review/in_app_review.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:visiaxx/core/services/review_service.dart';
 import 'package:visiaxx/features/home/screens/settings_screen.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
+import 'package:visiaxx/core/services/review_service.dart';
 import '../../../core/extensions/theme_extension.dart';
+import '../../../core/providers/network_connectivity_provider.dart';
 import '../../../core/services/data_cleanup_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../data/models/user_model.dart';
@@ -237,13 +236,10 @@ class ProfileScreen extends StatelessWidget {
                 _buildProfileItem(
                   context: context,
                   icon: Icons.support_agent,
-                  title: 'Contact Us',
+                  title: 'Help & Support',
+                  subtitle: 'FAQs & Live Chat',
                   onTap: () {
-                    _showOptionDetails(
-                      context,
-                      'Contact Us',
-                      _buildContactContent(context),
-                    );
+                    Navigator.pushNamed(context, '/help-center');
                   },
                 ),
               ],
@@ -470,26 +466,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _launchEmail() async {
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: 'vnoptocare@gmail.com',
-    );
-    if (await canLaunchUrl(emailLaunchUri)) {
-      await launchUrl(emailLaunchUri);
-    }
-  }
-
-  Future<void> _launchMaps() async {
-    // Open Mumbai in Google Maps
-    final Uri googleMapsUri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=Mumbai',
-    );
-    if (await canLaunchUrl(googleMapsUri)) {
-      await launchUrl(googleMapsUri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   Future<void> _showReviewDialog(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -498,7 +474,6 @@ class ProfileScreen extends StatelessWidget {
     final hasReviewed = await reviewService.hasUserReviewed(user.uid);
 
     if (hasReviewed) {
-      // Show confirmation dialog
       if (context.mounted) {
         final reviewCount = await reviewService.getReviewCount(user.uid);
         if (!context.mounted) return;
@@ -511,7 +486,7 @@ class ProfileScreen extends StatelessWidget {
             title: Row(
               children: [
                 Icon(Icons.star, color: context.primary, size: 24),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 const Flexible(
                   child: Text(
                     'Submit Another Review?',
@@ -582,170 +557,6 @@ class ProfileScreen extends StatelessWidget {
     } catch (e) {
       debugPrint('Error opening store rating: $e');
     }
-  }
-
-  Widget _buildContactContent(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Get in Touch',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Our customer support team is available to assist you with any queries or technical issues.',
-          style: TextStyle(
-            fontSize: 14,
-            color: context.textSecondary,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 24),
-        _buildContactDetailItem(
-          context: context,
-          icon: Icons.phone_outlined,
-          title: 'Phone',
-          value: '7208996265',
-          onTap: () async {
-            final Uri phoneUri = Uri(scheme: 'tel', path: '7208996265');
-            if (await canLaunchUrl(phoneUri)) {
-              await launchUrl(phoneUri);
-            } else {
-              Clipboard.setData(const ClipboardData(text: '7208996265'));
-              if (context.mounted) {
-                SnackbarUtils.showSuccess(
-                  context,
-                  'Number copied to clipboard',
-                );
-              }
-            }
-          },
-        ),
-        _buildContactDetailItem(
-          context: context,
-          icon: Icons.chat_outlined,
-          title: 'WhatsApp',
-          value: '7208996265',
-          onTap: () async {
-            final Uri whatsappUri = Uri.parse('https://wa.me/917208996265');
-            if (await canLaunchUrl(whatsappUri)) {
-              await launchUrl(
-                whatsappUri,
-                mode: LaunchMode.externalApplication,
-              );
-            } else {
-              Clipboard.setData(const ClipboardData(text: '7208996265'));
-              if (context.mounted) {
-                SnackbarUtils.showSuccess(context, 'WhatsApp number copied');
-              }
-            }
-          },
-        ),
-        _buildContactDetailItem(
-          context: context,
-          icon: Icons.email_outlined,
-          title: 'Email',
-          value: 'vnoptocare@gmail.com',
-          showCopyIcon: false,
-          onTap: _launchEmail,
-        ),
-        _buildContactDetailItem(
-          context: context,
-          icon: Icons.location_on_outlined,
-          title: 'Office',
-          value: 'Vision Optocare, Mumbai',
-          showCopyIcon: false,
-          onTap: _launchMaps,
-        ),
-        const SizedBox(height: 32),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.error.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.error.withValues(alpha: 0.1)),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.report_problem_outlined,
-                color: Theme.of(context).colorScheme.error,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'For serious issues, please message us on WhatsApp for immediate assistance.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.primary.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: context.primary, size: 20),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Working hours: 9:00 AM - 6:00 PM (Monday to Saturday)',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContactDetailItem({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String value,
-    bool showCopyIcon = true,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      onTap: onTap,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(fontSize: 13, color: context.textSecondary),
-      ),
-      subtitle: Text(
-        value,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-      trailing: showCopyIcon
-          ? Icon(Icons.copy_outlined, size: 16, color: context.textTertiary)
-          : null,
-    );
   }
 
   Widget _buildLegalContent(BuildContext context) {

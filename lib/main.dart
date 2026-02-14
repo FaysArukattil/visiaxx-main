@@ -20,6 +20,8 @@ import 'features/auth/screens/registration_screen.dart';
 import 'features/auth/screens/forgot_password_screen.dart';
 // ignore: unused_import
 import 'features/home/screens/home_screen.dart';
+import 'features/home/screens/help_center_screen.dart';
+import 'features/home/screens/support_chat_screen.dart';
 import 'features/quick_vision_test/screens/profile_selection_screen.dart';
 import 'features/quick_vision_test/screens/questionnaire_screen.dart';
 import 'features/quick_vision_test/screens/test_instructions_screen.dart';
@@ -362,6 +364,8 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
                   const CoverTestInstructionsScreen(),
               '/cover-test-screen': (context) => const CoverTestScreen(),
               '/cover-test-result': (context) => const QuickTestResultScreen(),
+              '/help-center': (context) => const HelpCenterScreen(),
+              '/support-chat': (context) => const SupportChatScreen(),
             },
           );
         },
