@@ -23,7 +23,7 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
     // Defer to avoid setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<StereopsisProvider>().reset();
-      context.read<TestSessionProvider>().startIndividualTest('stereopsis');
+      context.read<TestSessionProvider>().startOrResumeTest('stereopsis');
     });
   }
 
@@ -63,7 +63,15 @@ class _StereopsisTestScreenState extends State<StereopsisTestScreen> {
     if (stereopsisProvider.isTestComplete) {
       final result = stereopsisProvider.createResult();
       sessionProvider.setStereopsisResult(result);
-      Navigator.pushReplacementNamed(context, '/quick-test-result');
+
+      if (sessionProvider.isMultiTest) {
+        Navigator.pushReplacementNamed(
+          context,
+          sessionProvider.getNextTestRoute(),
+        );
+      } else {
+        Navigator.pushReplacementNamed(context, '/quick-test-result');
+      }
     }
   }
 

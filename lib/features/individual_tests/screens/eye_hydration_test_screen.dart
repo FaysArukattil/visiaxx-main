@@ -358,7 +358,15 @@ class _EyeHydrationTestScreenState extends State<EyeHydrationTestScreen> {
                 context.read<TestSessionProvider>().setEyeHydrationResult(
                   result,
                 );
-                Navigator.pushReplacementNamed(context, '/quick-test-result');
+                final sessionProvider = context.read<TestSessionProvider>();
+                if (sessionProvider.isMultiTest) {
+                  Navigator.pushReplacementNamed(
+                    context,
+                    sessionProvider.getNextTestRoute(),
+                  );
+                } else {
+                  Navigator.pushReplacementNamed(context, '/quick-test-result');
+                }
               } else {
                 debugPrint('❌ Error: Final result is NULL');
                 Navigator.of(context).pop();

@@ -56,6 +56,10 @@ class TestSessionProvider extends ChangeNotifier {
   bool _isTestInProgress = false;
   DateTime? _testStartTime;
 
+  // Multi-test queue management
+  List<String> _testQueue = [];
+  int _currentQueueIndex = -1;
+
   // Comprehensive test mode flag
   bool _isComprehensiveTest = false;
 
@@ -100,6 +104,115 @@ class TestSessionProvider extends ChangeNotifier {
   VisualFieldResult? get visualField => _visualField;
   CoverTestResult? get coverTest => _coverTest;
   TorchlightTestResult? get torchlight => _torchlight;
+
+  // Queue getters
+  bool get isMultiTest => _testQueue.isNotEmpty;
+  List<String> get testQueue => _testQueue;
+  int get currentQueueIndex => _currentQueueIndex;
+
+  String? get currentTestInQueue {
+    if (_currentQueueIndex >= 0 && _currentQueueIndex < _testQueue.length) {
+      return _testQueue[_currentQueueIndex];
+    }
+    return null;
+  }
+
+  /// Check if there are more tests in the queue
+  bool get hasNextTest => _currentQueueIndex < _testQueue.length - 1;
+
+  /// Move to the next test in the queue
+  String? moveToNextTest() {
+    if (hasNextTest) {
+      _currentQueueIndex++;
+      _individualTestType = _testQueue[_currentQueueIndex];
+      notifyListeners();
+      return _individualTestType;
+    }
+    return null;
+  }
+
+  /// Get the route for the current test (multi-test or individual)
+  String getCurrentTestRoute() {
+    String? type;
+    if (isMultiTest && _currentQueueIndex >= 0) {
+      type = _testQueue[_currentQueueIndex];
+    } else if (_isIndividualTest) {
+      type = _individualTestType;
+    }
+
+    if (type == null) return '/visual-acuity-test';
+    return _getRouteForType(type);
+  }
+
+  /// Get the route for the next test in the queue
+  String getNextTestRoute() {
+    final nextType = moveToNextTest();
+    if (nextType == null) return '/quick-test-result';
+    return _getRouteForType(nextType);
+  }
+
+  /// Mapping from test type to its corresponding route
+  String _getRouteForType(String type) {
+    switch (type) {
+      case 'visual_acuity':
+        return '/visual-acuity-test';
+      case 'color_vision':
+        return '/color-vision-test';
+      case 'amsler_grid':
+        return '/amsler-grid-test';
+      case 'reading_test':
+        return '/reading-test-instructions';
+      case 'contrast_sensitivity':
+        return '/pelli-robson-test';
+      case 'mobile_refractometry':
+        return '/mobile-refractometry-test';
+      case 'shadow_test':
+        return '/shadow-test-intro';
+      case 'stereopsis':
+        return '/stereopsis-test-intro';
+      case 'eye_hydration':
+        return '/eye-hydration-test-intro';
+      case 'visual_field':
+        return '/visual-field-test-intro';
+      case 'cover_test':
+        return '/cover-test-intro';
+      case 'torchlight':
+        return '/torchlight-home';
+      default:
+        return '/quick-test-result';
+    }
+  }
+
+  /// Start a multi-test session with a sequence of tests
+  void startMultiTest(List<String> tests) {
+    _testQueue = List.from(tests);
+    _currentQueueIndex = 0;
+    _isComprehensiveTest = false;
+    _isIndividualTest = true;
+    _individualTestType = _testQueue[0];
+    resetAllResults();
+    startTest();
+    debugPrint(
+      ' Ž¯ [TestSessionProvider] Started multi-test session with ${tests.length} tests. First: ${_individualTestType}',
+    );
+  }
+
+  /// Safely starts or resumes a test.
+  /// If it's a multi-test, it only updates the current test type to avoid resetting the queue.
+  /// If it's a standalone test, it performs a full reset.
+  void startOrResumeTest(String type) {
+    if (_isIndividualTest && isMultiTest) {
+      // It's a multi-test, just update the current individual type
+      _individualTestType = type;
+      notifyListeners();
+      debugPrint(
+        ' Ž¯ [TestSessionProvider] Resuming multi-test session for: $type',
+      );
+    } else {
+      // Standalone test, perform full reset
+      startIndividualTest(type);
+    }
+  }
 
   /// Set profile for self-testing
   void selectSelfProfile(
@@ -157,7 +270,7 @@ class TestSessionProvider extends ChangeNotifier {
     _currentEye = 'right';
     _currentTestId = DateTime.now().millisecondsSinceEpoch.toString();
     debugPrint(
-      ' [TestSessionProvider] Started new test session with ID: $_currentTestId',
+      '  [TestSessionProvider] Started new test session with ID: $_currentTestId',
     );
     notifyListeners();
   }
@@ -165,6 +278,8 @@ class TestSessionProvider extends ChangeNotifier {
   /// Start a comprehensive test session
   void startComprehensiveTest() {
     _isComprehensiveTest = true;
+    _testQueue = [];
+    _currentQueueIndex = -1;
     startTest();
   }
 
@@ -172,6 +287,8 @@ class TestSessionProvider extends ChangeNotifier {
   void startQuickTest() {
     _isComprehensiveTest = false;
     _isIndividualTest = false;
+    _testQueue = [];
+    _currentQueueIndex = -1;
     startTest();
   }
 
@@ -180,9 +297,11 @@ class TestSessionProvider extends ChangeNotifier {
     _isComprehensiveTest = false;
     _isIndividualTest = true;
     _individualTestType = testType;
+    _testQueue = [];
+    _currentQueueIndex = -1;
     resetAllResults(); // Clear any previous test results
     startTest();
-    debugPrint('Ž¯ [TestSessionProvider] Started individual test: $testType');
+    debugPrint(' Ž¯ [TestSessionProvider] Started individual test: $testType');
   }
 
   /// Switch to testing the other eye
@@ -221,7 +340,7 @@ class TestSessionProvider extends ChangeNotifier {
     _shortDistance = result;
     notifyListeners();
     debugPrint(
-      '… [TestSessionProvider] Short distance result saved: ${result.toMap()}',
+      ' … [TestSessionProvider] Short distance result saved: ${result.toMap()}',
     );
   }
 
@@ -230,7 +349,7 @@ class TestSessionProvider extends ChangeNotifier {
     _pelliRobson = result;
     notifyListeners();
     debugPrint(
-      '… [TestSessionProvider] Pelli-Robson result saved: ${result.overallCategory}',
+      ' … [TestSessionProvider] Pelli-Robson result saved: ${result.overallCategory}',
     );
   }
 
@@ -238,7 +357,7 @@ class TestSessionProvider extends ChangeNotifier {
     _shadowTestResult = result;
     notifyListeners();
     debugPrint(
-      '… [TestSessionProvider] Shadow Test result saved: ${result.overallRisk}',
+      ' … [TestSessionProvider] Shadow Test result saved: ${result.overallRisk}',
     );
   }
 
@@ -247,7 +366,7 @@ class TestSessionProvider extends ChangeNotifier {
     _stereopsis = result;
     notifyListeners();
     debugPrint(
-      '… [TestSessionProvider] Stereopsis result saved: ${result.grade.label}',
+      ' … [TestSessionProvider] Stereopsis result saved: ${result.grade.label}',
     );
   }
 
@@ -257,7 +376,7 @@ class TestSessionProvider extends ChangeNotifier {
     _eyeHydration = result;
     notifyListeners();
     debugPrint(
-      '… [TestSessionProvider] Eye Hydration result saved: ${result.status.label}',
+      ' … [TestSessionProvider] Eye Hydration result saved: ${result.status.label}',
     );
   }
 
@@ -271,7 +390,7 @@ class TestSessionProvider extends ChangeNotifier {
     }
     notifyListeners();
     debugPrint(
-      '… [TestSessionProvider] Visual Field result saved for ${result.eye?.label ?? "unknown"}: ${result.overallSensitivity}',
+      ' … [TestSessionProvider] Visual Field result saved for ${result.eye?.label ?? "unknown"}: ${result.overallSensitivity}',
     );
   }
 
@@ -280,7 +399,7 @@ class TestSessionProvider extends ChangeNotifier {
     _coverTest = result;
     notifyListeners();
     debugPrint(
-      '… [TestSessionProvider] Cover Test result saved: ${result.hasDeviation ? "Deviation detected" : "Normal"}',
+      ' … [TestSessionProvider] Cover Test result saved: ${result.hasDeviation ? "Deviation detected" : "Normal"}',
     );
   }
 
@@ -289,7 +408,7 @@ class TestSessionProvider extends ChangeNotifier {
     _torchlight = result;
     notifyListeners();
     debugPrint(
-      '… [TestSessionProvider] Torchlight result saved: ${result.requiresFollowUp ? "Follow-up required" : "Normal"}',
+      ' … [TestSessionProvider] Torchlight result saved: ${result.requiresFollowUp ? "Follow-up required" : "Normal"}',
     );
   }
 
@@ -334,6 +453,11 @@ class TestSessionProvider extends ChangeNotifier {
           _pelliRobson != null &&
           _mobileRefractometry != null;
     }
+
+    if (isMultiTest) {
+      return _currentQueueIndex == _testQueue.length - 1;
+    }
+
     return quickTestsComplete;
   }
 
@@ -392,11 +516,20 @@ class TestSessionProvider extends ChangeNotifier {
     if (_currentTestId == null) {
       _currentTestId = DateTime.now().millisecondsSinceEpoch.toString();
       debugPrint(
-        '†• [TestSessionProvider] Generated new session ID: $_currentTestId',
+        ' † • [TestSessionProvider] Generated new session ID: $_currentTestId',
       );
     }
 
     final uniqueId = _currentTestId!;
+
+    String testTypeValue = 'quick';
+    if (_isComprehensiveTest) {
+      testTypeValue = 'comprehensive';
+    } else if (_isIndividualTest) {
+      testTypeValue = _individualTestType ?? 'individual';
+    } else if (isMultiTest) {
+      testTypeValue = 'multi_selection';
+    }
 
     final result = TestResultModel(
       id: uniqueId,
@@ -407,9 +540,7 @@ class TestSessionProvider extends ChangeNotifier {
       profileSex: _profileSex,
       profileType: _profileType,
       timestamp: DateTime.now(),
-      testType: _isIndividualTest
-          ? (_individualTestType ?? 'individual')
-          : (_isComprehensiveTest ? 'comprehensive' : 'quick'),
+      testType: testTypeValue,
       questionnaire: _questionnaire,
       visualAcuityRight: _visualAcuityRight,
       visualAcuityLeft: _visualAcuityLeft,
@@ -432,7 +563,7 @@ class TestSessionProvider extends ChangeNotifier {
       recommendation: getRecommendation(),
     );
     debugPrint(
-      '… [TestSessionProvider] Built test result with ID: $uniqueId, pelli-robson: ${result.pelliRobson != null}',
+      ' … [TestSessionProvider] Built test result with ID: $uniqueId, pelli-robson: ${result.pelliRobson != null}',
     );
     return result;
   }
@@ -454,6 +585,8 @@ class TestSessionProvider extends ChangeNotifier {
     _isIndividualTest = false;
     _individualTestType = null;
     _currentTestId = null;
+    _testQueue = [];
+    _currentQueueIndex = -1;
 
     notifyListeners();
   }
@@ -463,6 +596,10 @@ class TestSessionProvider extends ChangeNotifier {
     final bool isComp = _isComprehensiveTest;
     final bool isIndiv = _isIndividualTest;
     final String? indivType = _individualTestType;
+    final List<String> queue = List.from(_testQueue);
+    final int queueIdx = isMultiTest
+        ? 0
+        : -1; // Reset to 0 if multi-test, else -1
 
     resetAllResults();
     _currentEye = 'right';
@@ -470,8 +607,12 @@ class TestSessionProvider extends ChangeNotifier {
     _testStartTime = null;
     _isComprehensiveTest = isComp;
     _isIndividualTest = isIndiv;
-    _individualTestType = indivType;
+    _individualTestType = isMultiTest
+        ? (queue.isNotEmpty ? queue[0] : null)
+        : indivType;
     _currentTestId = null;
+    _testQueue = queue;
+    _currentQueueIndex = queueIdx;
 
     notifyListeners();
   }

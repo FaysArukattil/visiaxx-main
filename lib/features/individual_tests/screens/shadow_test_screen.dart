@@ -32,8 +32,8 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
       final shadowProvider = context.read<ShadowTestProvider>();
       final sessionProvider = context.read<TestSessionProvider>();
 
-      // Start session
-      sessionProvider.startIndividualTest('shadow_test');
+      // Start or Resume session
+      sessionProvider.startOrResumeTest('shadow_test');
 
       // Reset and initialize
       shadowProvider.setState(ShadowTestState.initial);
@@ -147,12 +147,20 @@ class _ShadowTestScreenState extends State<ShadowTestScreen> {
         if (provider.state == ShadowTestState.result) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const QuickTestResultScreen(),
-                ),
-              );
+              final sessionProvider = context.read<TestSessionProvider>();
+              if (sessionProvider.isMultiTest) {
+                Navigator.pushReplacementNamed(
+                  context,
+                  sessionProvider.getNextTestRoute(),
+                );
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const QuickTestResultScreen(),
+                  ),
+                );
+              }
             }
           });
         }

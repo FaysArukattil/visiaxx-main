@@ -613,6 +613,16 @@ class _AmslerGridTestScreenState extends State<AmslerGridTestScreen>
 
     final provider = context.read<TestSessionProvider>();
 
+    // Support multi-test queue
+    if (provider.isMultiTest) {
+      if (provider.hasNextTest) {
+        Navigator.pushReplacementNamed(context, provider.getNextTestRoute());
+      } else {
+        Navigator.pushReplacementNamed(context, '/quick-test-result');
+      }
+      return;
+    }
+
     // Check for individual test mode FIRST
     if (provider.isIndividualTest) {
       Navigator.pushReplacementNamed(context, '/quick-test-result');

@@ -26,7 +26,7 @@ class StandaloneColorVisionScreen extends StatelessWidget {
           );
         }
       }
-      provider.startIndividualTest('color_vision');
+      provider.startOrResumeTest('color_vision');
     });
 
     // Navigate to the standard test - it will automatically stop after color vision

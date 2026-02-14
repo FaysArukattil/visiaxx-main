@@ -429,7 +429,14 @@ class _PractitionerProfileSelectionScreenState
       return;
     }
 
-    if (widget.testType != null) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final bool isMultiTest = args?['multiTest'] == true;
+
+    if (isMultiTest) {
+      // Multi-test flow already started in IndividualTestsScreen
+      Navigator.pushNamed(context, '/questionnaire');
+    } else if (widget.testType != null) {
       // Individual test flow
       provider.startIndividualTest(widget.testType!);
 
@@ -480,7 +487,7 @@ class _PractitionerProfileSelectionScreenState
       provider.startComprehensiveTest();
       // If questionnaire exists, skip to test instructions
       if (questionnaire != null) {
-        Navigator.pushNamed(context, '/test-instructions');
+        Navigator.pushNamed(context, provider.getCurrentTestRoute());
       } else {
         Navigator.pushNamed(context, '/questionnaire');
       }
@@ -488,7 +495,7 @@ class _PractitionerProfileSelectionScreenState
       provider.startTest();
       // If questionnaire exists, skip to test instructions
       if (questionnaire != null) {
-        Navigator.pushNamed(context, '/test-instructions');
+        Navigator.pushNamed(context, provider.getCurrentTestRoute());
       } else {
         Navigator.pushNamed(context, '/questionnaire');
       }

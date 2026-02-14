@@ -261,7 +261,12 @@ class _ExtraocularMuscleTestScreenState
     provider.reset();
 
     SnackbarUtils.showSuccess(context, 'Extraocular Muscle Test Complete');
-    Navigator.pushReplacementNamed(context, '/quick-test-result');
+
+    if (session.isMultiTest) {
+      Navigator.pushReplacementNamed(context, session.getNextTestRoute());
+    } else {
+      Navigator.pushReplacementNamed(context, '/quick-test-result');
+    }
   }
 
   @override

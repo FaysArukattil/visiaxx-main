@@ -102,7 +102,14 @@ class _VisualFieldScreenState extends State<VisualFieldScreen> {
         );
       } else {
         // If Left Eye finished, go to results
-        Navigator.pushReplacementNamed(context, '/quick-test-result');
+        if (sessionProvider.isMultiTest) {
+          Navigator.pushReplacementNamed(
+            context,
+            sessionProvider.getNextTestRoute(),
+          );
+        } else {
+          Navigator.pushReplacementNamed(context, '/quick-test-result');
+        }
       }
     });
   }

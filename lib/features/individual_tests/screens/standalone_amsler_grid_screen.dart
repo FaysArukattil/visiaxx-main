@@ -24,7 +24,7 @@ class StandaloneAmslerGridScreen extends StatelessWidget {
           );
         }
       }
-      provider.startIndividualTest('amsler_grid');
+      provider.startOrResumeTest('amsler_grid');
     });
 
     return AmslerGridInstructionsScreen(

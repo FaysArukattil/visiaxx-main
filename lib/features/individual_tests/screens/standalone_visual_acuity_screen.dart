@@ -26,7 +26,7 @@ class StandaloneVisualAcuityScreen extends StatelessWidget {
           );
         }
       }
-      provider.startIndividualTest('visual_acuity');
+      provider.startOrResumeTest('visual_acuity');
     });
 
     // Navigate to the standard test flow - it will automatically stop after VA

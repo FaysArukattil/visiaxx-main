@@ -45,6 +45,14 @@ class _PelliRobsonResultScreenState extends State<PelliRobsonResultScreen> {
   void _navigateToSummary() {
     if (_isNavigating) return;
     _isNavigating = true;
+
+    final provider = context.read<TestSessionProvider>();
+
+    if (provider.isMultiTest) {
+      Navigator.pushReplacementNamed(context, provider.getNextTestRoute());
+      return;
+    }
+
     Navigator.pushReplacementNamed(context, '/mobile-refractometry-test');
   }
 

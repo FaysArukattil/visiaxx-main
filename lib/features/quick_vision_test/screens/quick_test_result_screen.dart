@@ -2037,8 +2037,8 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       }
     }
 
-    // If it's a current individual test, ONLY show that test's section
-    if (provider.isIndividualTest) {
+    // If it's a current individual test (and NOT a multi-test), ONLY show that test's section
+    if (provider.isIndividualTest && !provider.isMultiTest) {
       return provider.individualTestType == sectionType;
     }
 

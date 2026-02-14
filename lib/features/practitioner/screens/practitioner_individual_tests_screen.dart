@@ -1,67 +1,203 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
+import '../../../data/providers/test_session_provider.dart';
 
-/// Screen showing all individual test options
-class IndividualTestsScreen extends StatelessWidget {
+/// Screen showing all individual test options with multi-selection capability
+class IndividualTestsScreen extends StatefulWidget {
   const IndividualTestsScreen({super.key});
 
   @override
+  State<IndividualTestsScreen> createState() => _IndividualTestsScreenState();
+}
+
+class _IndividualTestsScreenState extends State<IndividualTestsScreen> {
+  // Track selected tests in order
+  final List<String> _selectedTests = [];
+
+  void _toggleTestSelection(String testType) {
+    setState(() {
+      if (_selectedTests.contains(testType)) {
+        _selectedTests.remove(testType);
+      } else {
+        _selectedTests.add(testType);
+      }
+    });
+  }
+
+  void _startSelectedTests() async {
+    if (_selectedTests.isEmpty) return;
+
+    List<String> testsToRun = List.from(_selectedTests);
+
+    final authService = AuthService();
+    final role = await authService.getCurrentUserRole();
+
+    if (!mounted) return;
+
+    // Start multi-test in provider
+    context.read<TestSessionProvider>().startMultiTest(testsToRun);
+
+    if (role == UserRole.examiner) {
+      Navigator.pushNamed(
+        context,
+        '/practitioner-profile-selection',
+        arguments: {'multiTest': true},
+      );
+    } else {
+      Navigator.pushNamed(
+        context,
+        '/profile-selection',
+        arguments: {'multiTest': true},
+      );
+    }
+  }
+
+  void _handleBack() {
+    if (_selectedTests.isNotEmpty) {
+      setState(() => _selectedTests.clear());
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.scaffoldBackground,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBack();
+      },
+      child: Scaffold(
         backgroundColor: context.scaffoldBackground,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: context.textPrimary),
-          onPressed: () => Navigator.pop(context),
+        appBar: AppBar(
+          backgroundColor: context.scaffoldBackground,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: context.textPrimary),
+            onPressed: _handleBack,
+          ),
+          title: Text(
+            'Individual Tests',
+            style: TextStyle(
+              color: context.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: [
+            if (_selectedTests.isNotEmpty)
+              TextButton.icon(
+                onPressed: () => setState(() => _selectedTests.clear()),
+                icon: const Icon(Icons.clear_all),
+                label: const Text('Clear'),
+              ),
+          ],
         ),
-        title: Text(
-          'Individual Tests',
-          style: TextStyle(
-            color: context.textPrimary,
-            fontWeight: FontWeight.bold,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: constraints.maxWidth * 0.045,
+                        vertical: 16,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Select Vision Tests',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: context.textPrimary,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Choose one or more screening tests to perform',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: context.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          _buildTestsGrid(context, constraints),
+                          const SizedBox(
+                            height: 100,
+                          ), // Space for bottom button
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_selectedTests.isNotEmpty)
+                    Positioned(
+                      bottom: 24,
+                      left: 24,
+                      right: 24,
+                      child: _buildStartButton(),
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: constraints.maxWidth * 0.045,
-                  vertical: 16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Select a Vision Test',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: context.textPrimary,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Choose from our comprehensive vision screening tests',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: context.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _buildTestsGrid(context, constraints),
-                  ],
-                ),
-              ),
-            );
-          },
+    );
+  }
+
+  Widget _buildStartButton() {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: context.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: () => _startSelectedTests(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: context.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Start ${_selectedTests.length} Selected ${_selectedTests.length == 1 ? 'Test' : 'Tests'}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 12),
+            const Icon(Icons.play_arrow_rounded, size: 28),
+          ],
         ),
       ),
     );
@@ -107,111 +243,135 @@ class IndividualTestsScreen extends StatelessWidget {
           ],
         ),
         SizedBox(height: cardSpacing),
+        _buildTestItem(
+          'visual_acuity',
+          Icons.visibility_outlined,
+          'Visual Acuity',
+          'Test how clearly you can see at distance using standard eye chart',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'color_vision',
+          Icons.palette_outlined,
+          'Color Vision',
+          'Screen for color blindness and red-green deficiencies',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'amsler_grid',
+          Icons.grid_4x4_outlined,
+          'Amsler Grid',
+          'Check for central vision distortions and blind spots',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'reading_test',
+          Icons.menu_book_outlined,
+          'Reading Test',
+          'Assess your near vision and reading ability at close distance',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'contrast_sensitivity',
+          Icons.contrast_outlined,
+          'Contrast Sensitivity',
+          'Measure ability to distinguish objects in different lighting conditions',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'mobile_refractometry',
+          Icons.remove_red_eye_rounded,
+          'Mobile Refractometry',
+          'Detect refractive errors and estimate prescription strength',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'shadow_test',
+          Icons.wb_sunny_outlined,
+          'Van Herick Shadow Test',
+          'Assess anterior chamber depth and glaucoma risk using shadow analysis',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'stereopsis',
+          Icons.threed_rotation_rounded,
+          'Stereopsis Test',
+          'Assess depth perception and binocular vision using 3D anaglyph patterns',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'eye_hydration',
+          Icons.opacity_rounded,
+          'Eye Hydration',
+          'Screen for blink rate and dry eye symptoms during natural reading',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'visual_field',
+          Icons.track_changes_outlined,
+          'Visual Field',
+          'Test your peripheral vision sensitivity across four quadrants',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'cover_test',
+          Icons.visibility_outlined,
+          'Cover-Uncover Test',
+          'Assess eye alignment and detect strabismus through cover test',
+          cardSpacing,
+          screenWidth,
+        ),
+        _buildTestItem(
+          'torchlight',
+          Icons.highlight_rounded,
+          'Torchlight Examination',
+          'Check pupil reflexes and extraocular muscle movements using torchlight',
+          0, // Last item
+          screenWidth,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTestItem(
+    String type,
+    IconData icon,
+    String title,
+    String description,
+    double spacing,
+    double screenWidth,
+  ) {
+    final int selectionIndex = _selectedTests.indexOf(type);
+    return Column(
+      children: [
         _IndividualTestCard(
-          icon: Icons.visibility_outlined,
-          title: 'Visual Acuity',
-          description:
-              'Test how clearly you can see at distance using standard eye chart',
-          onTap: () => _handleTestSelection(context, 'visual_acuity'),
+          icon: icon,
+          title: title,
+          description: description,
+          isSelected: selectionIndex != -1,
+          selectionIndex: selectionIndex != -1 ? selectionIndex + 1 : null,
+          onTap: () {
+            if (_selectedTests.isNotEmpty) {
+              _toggleTestSelection(type);
+            } else {
+              _handleTestSelection(context, type);
+            }
+          },
+          onLongPress: () => _toggleTestSelection(type),
+          onCheckboxChanged: (val) => _toggleTestSelection(type),
           screenWidth: screenWidth,
         ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.palette_outlined,
-          title: 'Color Vision',
-          description: 'Screen for color blindness and red-green deficiencies',
-          onTap: () => _handleTestSelection(context, 'color_vision'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.grid_4x4_outlined,
-          title: 'Amsler Grid',
-          description: 'Check for central vision distortions and blind spots',
-          onTap: () => _handleTestSelection(context, 'amsler_grid'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.menu_book_outlined,
-          title: 'Reading Test',
-          description:
-              'Assess your near vision and reading ability at close distance',
-          onTap: () => _handleTestSelection(context, 'reading_test'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.contrast_outlined,
-          title: 'Contrast Sensitivity',
-          description:
-              'Measure ability to distinguish objects in different lighting conditions',
-          onTap: () => _handleTestSelection(context, 'contrast_sensitivity'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.remove_red_eye_rounded,
-          title: 'Mobile Refractometry',
-          description:
-              'Detect refractive errors and estimate prescription strength',
-          onTap: () => _handleTestSelection(context, 'mobile_refractometry'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.wb_sunny_outlined,
-          title: 'Van Herick Shadow Test',
-          description:
-              'Assess anterior chamber depth and glaucoma risk using shadow analysis',
-          onTap: () => _handleTestSelection(context, 'shadow_test'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.threed_rotation_rounded,
-          title: 'Stereopsis Test',
-          description:
-              'Assess depth perception and binocular vision using 3D anaglyph patterns',
-          onTap: () => _handleTestSelection(context, 'stereopsis'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.opacity_rounded,
-          title: 'Eye Hydration',
-          description:
-              'Screen for blink rate and dry eye symptoms during natural reading',
-          onTap: () => _handleTestSelection(context, 'eye_hydration'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.track_changes_outlined,
-          title: 'Visual Field',
-          description:
-              'Test your peripheral vision sensitivity across four quadrants',
-          onTap: () => _handleTestSelection(context, 'visual_field'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.visibility_outlined,
-          title: 'Cover-Uncover Test',
-          description:
-              'Assess eye alignment and detect strabismus through cover test',
-          onTap: () => _handleTestSelection(context, 'cover_test'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing),
-        _IndividualTestCard(
-          icon: Icons.highlight_rounded,
-          title: 'Torchlight Examination',
-          description:
-              'Check pupil reflexes and extraocular muscle movements using torchlight',
-          onTap: () => _handleTestSelection(context, 'torchlight'),
-          screenWidth: screenWidth,
-        ),
+        if (spacing > 0) SizedBox(height: spacing),
       ],
     );
   }
@@ -224,6 +384,9 @@ class IndividualTestsScreen extends StatelessWidget {
     final role = await authService.getCurrentUserRole();
 
     if (!context.mounted) return;
+
+    // Start as a single individual test
+    context.read<TestSessionProvider>().startIndividualTest(testType);
 
     if (role == UserRole.examiner) {
       Navigator.pushNamed(
@@ -245,14 +408,22 @@ class _IndividualTestCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String description;
+  final bool isSelected;
+  final int? selectionIndex;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final ValueChanged<bool?> onCheckboxChanged;
   final double screenWidth;
 
   const _IndividualTestCard({
     required this.icon,
     required this.title,
     required this.description,
+    required this.isSelected,
+    this.selectionIndex,
     required this.onTap,
+    required this.onLongPress,
+    required this.onCheckboxChanged,
     required this.screenWidth,
   });
 
@@ -265,105 +436,167 @@ class _IndividualTestCard extends StatelessWidget {
         final titleFontSize = (availableWidth * 0.042).clamp(14.0, 17.0);
         final descriptionFontSize = (availableWidth * 0.032).clamp(10.0, 12.0);
 
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            splashColor: context.primary.withValues(alpha: 0.1),
-            highlightColor: context.primary.withValues(alpha: 0.05),
-            child: Ink(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.primary.withValues(alpha: 0.08),
-                    context.primary.withValues(alpha: 0.03),
-                  ],
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: context.primary.withValues(alpha: 0.1),
+                  blurRadius: 12,
+                  spreadRadius: 2,
                 ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: context.primary.withValues(alpha: 0.15),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.primary.withValues(alpha: 0.05),
-                    blurRadius: 12,
-                    spreadRadius: 0,
-                    offset: const Offset(0, 4),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              onLongPress: onLongPress,
+              borderRadius: BorderRadius.circular(20),
+              splashColor: context.primary.withValues(alpha: 0.1),
+              highlightColor: context.primary.withValues(alpha: 0.05),
+              child: Ink(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isSelected
+                        ? [
+                            context.primary.withValues(alpha: 0.15),
+                            context.primary.withValues(alpha: 0.08),
+                          ]
+                        : [
+                            context.primary.withValues(alpha: 0.08),
+                            context.primary.withValues(alpha: 0.03),
+                          ],
                   ),
-                ],
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: (availableWidth * 0.04).clamp(12.0, 18.0),
-                  vertical: 16,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? context.primary
+                        : context.primary.withValues(alpha: 0.15),
+                    width: isSelected ? 2.0 : 1.2,
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: iconSize + 14,
-                      height: iconSize + 14,
-                      decoration: BoxDecoration(
-                        color: context.scaffoldBackground,
-                        borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: (availableWidth * 0.04).clamp(12.0, 18.0),
+                    vertical: 16,
+                  ),
+                  child: Row(
+                    children: [
+                      _buildLeading(context, iconSize),
+                      SizedBox(
+                        width: (availableWidth * 0.03).clamp(12.0, 16.0),
                       ),
-                      child: Icon(icon, color: context.primary, size: iconSize),
-                    ),
-                    SizedBox(width: (availableWidth * 0.03).clamp(12.0, 16.0)),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: titleFontSize,
-                              color: context.primary,
-                              letterSpacing: -0.3,
-                              height: 1.2,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: titleFontSize,
+                                      color: context.primary,
+                                      letterSpacing: -0.3,
+                                      height: 1.2,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (isSelected && selectionIndex != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: context.primary,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      '#$selectionIndex',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            description,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: descriptionFontSize,
-                              color: context.textSecondary,
-                              height: 1.4,
+                            const SizedBox(height: 6),
+                            Text(
+                              description,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: descriptionFontSize,
+                                color: context.textSecondary,
+                                height: 1.4,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    SizedBox(width: (availableWidth * 0.02).clamp(8.0, 12.0)),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: context.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
-                        size: (availableWidth * 0.038).clamp(16.0, 20.0),
-                        color: context.primary,
-                      ),
-                    ),
-                  ],
+                      SizedBox(width: (availableWidth * 0.02).clamp(8.0, 12.0)),
+                      _buildTrailing(context, availableWidth),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLeading(BuildContext context, double iconSize) {
+    if (isSelected) {
+      return Container(
+        width: iconSize + 14,
+        height: iconSize + 14,
+        decoration: BoxDecoration(
+          color: context.primary,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.check_rounded, color: Colors.white, size: 24),
+      );
+    }
+    return Container(
+      width: iconSize + 14,
+      height: iconSize + 14,
+      decoration: BoxDecoration(
+        color: context.scaffoldBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: context.primary, size: iconSize),
+    );
+  }
+
+  Widget _buildTrailing(BuildContext context, double availableWidth) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? context.primary.withValues(alpha: 0.2)
+            : context.primary.withValues(alpha: 0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        isSelected ? Icons.check_box_rounded : Icons.arrow_forward_rounded,
+        size: (availableWidth * 0.038).clamp(16.0, 20.0),
+        color: context.primary,
+      ),
     );
   }
 }

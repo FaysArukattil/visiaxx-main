@@ -24,7 +24,7 @@ class StandaloneContrastSensitivityScreen extends StatelessWidget {
           );
         }
       }
-      provider.startIndividualTest('contrast_sensitivity');
+      provider.startOrResumeTest('contrast_sensitivity');
     });
 
     return PelliRobsonInstructionsScreen(

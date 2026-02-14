@@ -758,6 +758,15 @@ class _ColorVisionTestScreenState extends State<ColorVisionTestScreen>
   void _proceedToAmslerTest() {
     final provider = context.read<TestSessionProvider>();
 
+    if (provider.isMultiTest) {
+      if (provider.hasNextTest) {
+        Navigator.pushReplacementNamed(context, provider.getNextTestRoute());
+      } else {
+        Navigator.pushReplacementNamed(context, '/quick-test-result');
+      }
+      return;
+    }
+
     if (provider.isIndividualTest) {
       Navigator.pushReplacementNamed(context, '/quick-test-result');
       return;

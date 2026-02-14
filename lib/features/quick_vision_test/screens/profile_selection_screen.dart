@@ -112,8 +112,12 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final testType = args?['testType'] as String?;
+    final bool isMultiTest = args?['multiTest'] == true;
 
-    if (testType != null) {
+    if (isMultiTest) {
+      // Multi-test flow already started in IndividualTestsScreen
+      Navigator.pushNamed(context, '/questionnaire');
+    } else if (testType != null) {
       provider.startIndividualTest(testType);
       switch (testType) {
         case 'visual_acuity':

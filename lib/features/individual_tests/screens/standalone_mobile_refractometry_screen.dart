@@ -24,7 +24,7 @@ class StandaloneMobileRefractometryScreen extends StatelessWidget {
           );
         }
       }
-      provider.startIndividualTest('mobile_refractometry');
+      provider.startOrResumeTest('mobile_refractometry');
     });
 
     return MobileRefractometryInstructionsScreen(

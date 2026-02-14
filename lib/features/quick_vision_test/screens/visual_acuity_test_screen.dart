@@ -946,15 +946,21 @@ class _VisualAcuityTestScreenState extends State<VisualAcuityTestScreen>
     _distanceService.stopMonitoring();
 
     final provider = context.read<TestSessionProvider>();
+
+    // Support multi-test queue
+    if (provider.isMultiTest) {
+      if (provider.hasNextTest) {
+        Navigator.pushReplacementNamed(context, provider.getNextTestRoute());
+      } else {
+        Navigator.pushReplacementNamed(context, '/quick-test-result');
+      }
+      return;
+    }
+
     if (provider.isIndividualTest) {
       Navigator.pushReplacementNamed(context, '/quick-test-result');
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const ReadingTestInstructionsScreen(),
-        ),
-      );
+      Navigator.pushReplacementNamed(context, '/reading-test-instructions');
     }
   }
 

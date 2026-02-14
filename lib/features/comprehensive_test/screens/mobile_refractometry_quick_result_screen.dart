@@ -928,7 +928,15 @@ class _MobileRefractometryQuickResultScreenState
                 : () async {
                     final navigator = Navigator.of(context);
                     await _savePrescription(true);
-                    navigator.pushReplacementNamed('/quick-test-result');
+
+                    final provider = context.read<TestSessionProvider>();
+                    if (provider.isMultiTest) {
+                      navigator.pushReplacementNamed(
+                        provider.getNextTestRoute(),
+                      );
+                    } else {
+                      navigator.pushReplacementNamed('/quick-test-result');
+                    }
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.transparent,

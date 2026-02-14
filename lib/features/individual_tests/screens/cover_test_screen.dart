@@ -389,12 +389,19 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
           // Save to TestSessionProvider
           sessionProvider.setCoverTestResult(result);
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const QuickTestResultScreen(),
-            ),
-          );
+          if (sessionProvider.isMultiTest) {
+            Navigator.pushReplacementNamed(
+              context,
+              sessionProvider.getNextTestRoute(),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const QuickTestResultScreen(),
+              ),
+            );
+          }
         });
         return Center(child: CircularProgressIndicator(color: context.primary));
       default:

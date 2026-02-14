@@ -63,7 +63,7 @@ class _VisualFieldInstructionsScreenState
   void _handleContinue() {
     _ttsService.stop();
     // Start session once at the beginning of the sequential test
-    context.read<TestSessionProvider>().startIndividualTest('visual_field');
+    context.read<TestSessionProvider>().startOrResumeTest('visual_field');
 
     Navigator.pushReplacement(
       context,

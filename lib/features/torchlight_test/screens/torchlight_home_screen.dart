@@ -109,9 +109,7 @@ class TorchlightHomeScreen extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () {
             // Initialize individual test session
-            context.read<TestSessionProvider>().startIndividualTest(
-              'torchlight',
-            );
+            context.read<TestSessionProvider>().startOrResumeTest('torchlight');
             // Start the continuous flow: Instructions -> Pupillary -> Extraocular
             Navigator.pushNamed(context, '/torchlight-instructions');
           },

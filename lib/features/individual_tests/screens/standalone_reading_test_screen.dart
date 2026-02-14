@@ -24,7 +24,7 @@ class StandaloneReadingTestScreen extends StatelessWidget {
           );
         }
       }
-      provider.startIndividualTest('reading_test');
+      provider.startOrResumeTest('reading_test');
     });
 
     return const ReadingTestInstructionsScreen();

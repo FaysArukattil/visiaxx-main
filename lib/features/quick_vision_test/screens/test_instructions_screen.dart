@@ -74,7 +74,8 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
     if (widget.onContinue != null) {
       widget.onContinue!();
     } else {
-      Navigator.pushReplacementNamed(context, '/visual-acuity-test');
+      final provider = context.read<TestSessionProvider>();
+      Navigator.pushReplacementNamed(context, provider.getCurrentTestRoute());
     }
   }
 
@@ -163,15 +164,17 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
                       1,
                       Icons.straighten_rounded,
                       'Optimal Distance',
-                      'Hold the device about 1 meter (100 cm) away from your eyes.',
+                      _getDistanceInstruction(context),
                       context.primary,
-                      animation: const DistanceAnimation(),
+                      animation: DistanceAnimation(
+                        distanceText: _getDistanceText(context),
+                      ),
                     ),
                     _buildStep(
                       2,
                       Icons.mic_rounded,
                       'How to Respond',
-                      'Speak the direction of the letter "E" clearly or tap the buttons below.',
+                      _getResponseInstruction(context),
                       context.success,
                       animation: const HowToRespondAnimation(),
                     ),
@@ -269,6 +272,38 @@ class _TestInstructionsScreenState extends State<TestInstructionsScreen> {
         ),
       ),
     );
+  }
+
+  String _getResponseInstruction(BuildContext context) {
+    final provider = context.read<TestSessionProvider>();
+    final route = provider.getCurrentTestRoute();
+    if (route == '/visual-acuity-test' ||
+        route == '/visual-acuity-standalone') {
+      return 'Speak the direction of the letter "E" clearly or tap the buttons below.';
+    }
+    return 'Speak your answers clearly or use the buttons on screen to respond.';
+  }
+
+  String _getDistanceInstruction(BuildContext context) {
+    final provider = context.read<TestSessionProvider>();
+    final route = provider.getCurrentTestRoute();
+    if (route == '/visual-acuity-test' ||
+        route == '/visual-acuity-standalone' ||
+        route == '/visual-field-test') {
+      return 'Hold the device about 1 meter (100 cm) away from your eyes.';
+    }
+    return 'Hold the device about 40 centimeters away (at a comfortable reading distance).';
+  }
+
+  String _getDistanceText(BuildContext context) {
+    final provider = context.read<TestSessionProvider>();
+    final route = provider.getCurrentTestRoute();
+    if (route == '/visual-acuity-test' ||
+        route == '/visual-acuity-standalone' ||
+        route == '/visual-field-test') {
+      return '1 m';
+    }
+    return '40 cm';
   }
 
   Widget _buildStep(
