@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiaxx/core/extensions/theme_extension.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../widgets/bug_report_dialog.dart';
 
 class SupportChatScreen extends StatefulWidget {
@@ -387,55 +388,167 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.scaffoldBackground,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'VisiBot Assistant',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 18,
-                color: context.textPrimary,
-                letterSpacing: -0.5,
+      appBar: _buildPremiumAppBar(context),
+      body: Stack(
+        children: [
+          // Background Design Elements
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: context.primary.withValues(alpha: 0.03),
               ),
             ),
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.greenAccent.shade400,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.greenAccent.shade400.withValues(
-                          alpha: 0.4,
-                        ),
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
+          ),
+
+          Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) {
+                    final message = _messages[index];
+                    final isLast = index == _messages.length - 1;
+                    return Column(
+                          crossAxisAlignment: message.isUser
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
+                          children: [
+                            _buildMessageBubble(message),
+                            if (isLast &&
+                                !message.isUser &&
+                                message.quickReplies != null)
+                              _buildChatSuggestions(message.quickReplies!),
+                          ],
+                        )
+                        .animate()
+                        .fadeIn(duration: 400.ms)
+                        .slideY(begin: 0.1, curve: Curves.easeOutQuad);
+                  },
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  'Online & Ready',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.greenAccent.shade400,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+
+          // Floating Input Area
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildFloatingInputArea(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildPremiumAppBar(BuildContext context) {
+    return AppBar(
+      toolbarHeight: 80,
+      backgroundColor: context.surface,
+      elevation: 0,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          color: context.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        backgroundColor: context.surface,
-        elevation: 0,
-        actions: [
-          IconButton(
+      ),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 8.0),
+        child: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: context.textPrimary,
+            size: 20,
+          ),
+        ),
+      ),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  context.primary.withValues(alpha: 0.1),
+                  context.primary.withValues(alpha: 0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: context.primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'VisiBot Assistant',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 17,
+                    color: context.textPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: Colors.greenAccent.shade400,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.greenAccent.shade400.withValues(
+                              alpha: 0.4,
+                            ),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Ready to help',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.textTertiary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: IconButton(
             onPressed: () {
               setState(() {
                 _messages.clear();
@@ -454,98 +567,125 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                 );
               });
             },
-            icon: Icon(Icons.refresh_rounded, color: context.textSecondary),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isLast = index == _messages.length - 1;
-                return Column(
-                  crossAxisAlignment: message.isUser
-                      ? CrossAxisAlignment.end
-                      : CrossAxisAlignment.start,
-                  children: [
-                    _buildMessageBubble(message),
-                    if (isLast &&
-                        !message.isUser &&
-                        message.quickReplies != null)
-                      _buildChatSuggestions(message.quickReplies!),
-                  ],
-                );
-              },
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: context.scaffoldBackground,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.refresh_rounded,
+                color: context.textSecondary,
+                size: 20,
+              ),
             ),
           ),
-          _buildMessageInput(),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.isUser;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.85,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          color: isUser ? context.primary : context.surface,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(24),
-            topRight: const Radius.circular(24),
-            bottomLeft: Radius.circular(isUser ? 24 : 6),
-            bottomRight: Radius.circular(isUser ? 6 : 24),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (isUser ? context.primary : Colors.black).withValues(
-                alpha: 0.05,
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isUser) ...[
+            Container(
+              margin: const EdgeInsets.only(right: 8, bottom: 4),
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: context.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
               ),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+              child: Icon(
+                Icons.smart_toy_rounded,
+                color: context.primary,
+                size: 16,
+              ),
             ),
           ],
-        ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: isUser ? Colors.white : context.textPrimary,
-            fontSize: 15,
-            height: 1.5,
-            fontWeight: isUser ? FontWeight.w600 : FontWeight.w400,
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(maxWidth: screenWidth * 0.75),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: isUser
+                    ? LinearGradient(
+                        colors: [
+                          context.primary,
+                          context.primary.withValues(alpha: 0.85),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isUser ? null : context.surface,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(22),
+                  topRight: const Radius.circular(22),
+                  bottomLeft: Radius.circular(isUser ? 22 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 22),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isUser ? context.primary : Colors.black).withValues(
+                      alpha: 0.04,
+                    ),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Text(
+                message.text,
+                style: TextStyle(
+                  color: isUser ? Colors.white : context.textPrimary,
+                  fontSize: 15,
+                  height: 1.5,
+                  fontWeight: isUser ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildChatSuggestions(List<String> suggestions) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24, top: 4),
+      padding: const EdgeInsets.only(left: 40, bottom: 24, top: 4),
       child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+        spacing: 10,
+        runSpacing: 10,
         children: suggestions.map((suggestion) {
           return InkWell(
             onTap: () => _addUserMessage(suggestion),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: context.primary.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
+                color: context.surface,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.primary.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
                 border: Border.all(
                   color: context.primary.withValues(alpha: 0.1),
+                  width: 1,
                 ),
               ),
               child: Text(
@@ -556,105 +696,95 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                   fontSize: 13,
                 ),
               ),
-            ),
+            ).animate().scale(duration: 200.ms, curve: Curves.easeOut),
           );
         }).toList(),
       ),
     );
   }
 
-  Widget _buildMessageInput() {
+  Widget _buildFloatingInputArea() {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
         12,
         16,
-        MediaQuery.of(context).padding.bottom + 12,
+        MediaQuery.of(context).padding.bottom + 16,
       ),
-      decoration: BoxDecoration(
-        color: context.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: context.scaffoldBackground,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-                border: Border.all(
-                  color: context.primary.withValues(alpha: 0.08),
-                  width: 1.5,
-                ),
-              ),
+      decoration: const BoxDecoration(color: Colors.transparent),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: context.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 16),
+            Expanded(
               child: TextField(
                 controller: _messageController,
                 onSubmitted: _addUserMessage,
+                textCapitalization: TextCapitalization.sentences,
                 style: TextStyle(
                   color: context.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Type your concern here...',
+                  hintText: 'Type your message...',
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
                   hintStyle: TextStyle(
                     color: context.textTertiary,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: () => _addUserMessage(_messageController.text),
-            child: Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    context.primary,
-                    context.primary.withValues(alpha: 0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: context.primary.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _addUserMessage(_messageController.text),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      context.primary,
+                      context.primary.withValues(alpha: 0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.send_rounded,
-                color: Colors.white,
-                size: 24,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.primary.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
