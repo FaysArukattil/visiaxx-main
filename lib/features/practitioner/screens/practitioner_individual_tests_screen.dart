@@ -130,7 +130,7 @@ class _IndividualTestsScreenState extends State<IndividualTestsScreen> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Choose one or more screening tests to perform',
+                                      'Select a test to start, or press and hold to select multiple tests for a single flow',
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: context.textSecondary,
