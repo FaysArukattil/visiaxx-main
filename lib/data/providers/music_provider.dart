@@ -149,6 +149,20 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
+  /// Stop playback and clear current track status
+  Future<void> stopAndClear() async {
+    try {
+      await _player.stop();
+      _currentTrack = null;
+      _isPlaying = false;
+      _position = Duration.zero;
+      _duration = Duration.zero;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[MusicProvider] Error stopping and clearing: $e');
+    }
+  }
+
   /// Toggle play/pause
   Future<void> togglePlayPause() async {
     if (_currentTrack == null) return;

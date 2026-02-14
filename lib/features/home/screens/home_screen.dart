@@ -231,9 +231,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             SizedBox(height: constraints.maxHeight * 0.012),
                             _buildCarouselIndicators(),
                             SizedBox(height: constraints.maxHeight * 0.015),
-                            if (_user?.role == UserRole.user)
-                              _buildMusicSection(constraints),
-                            SizedBox(height: constraints.maxHeight * 0.015),
                             _buildServicesGrid(constraints),
                             SizedBox(height: constraints.maxHeight * 0.02),
                           ],
@@ -839,346 +836,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildMusicSection(BoxConstraints constraints) {
     final horizontalPadding = constraints.maxWidth * 0.045;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Consumer<MusicProvider>(
       builder: (context, music, _) {
-        final tracks = music.allTracks;
-        if (tracks.isEmpty) return const SizedBox.shrink();
+        final track = music.currentTrack;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.headphones_rounded,
-                    color: context.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Music Library',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: context.textPrimary,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const Spacer(),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const MusicLibraryScreen(),
-                        ),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'See All',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: context.primary,
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: context.primary,
-                              size: 12,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 300.ms),
-            const SizedBox(height: 10),
-
-            // Horizontal track cards
-            SizedBox(
-              height: 140,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                itemCount: tracks.length > 10 ? 10 : tracks.length,
-                itemBuilder: (context, index) {
-                  final track = tracks[index];
-                  final isCurrentTrack = music.currentTrack?.id == track.id;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: _buildMusicCard(track, music, isCurrentTrack, index),
-                  );
-                },
-              ),
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          child: _MusicServiceCard(
+            icon: Icons.headphones_rounded,
+            title: 'Music Library',
+            subtitle: track != null
+                ? 'Now Playing'
+                : 'Play your favorite tracks',
+            track: track,
+            isPlaying: music.isPlaying,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MusicLibraryScreen()),
             ),
-
-            // Mini player if playing
-            if (music.currentTrack != null)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  10,
-                  horizontalPadding,
-                  0,
-                ),
-                child: _buildHomeMiniPlayer(music),
-              ),
-          ],
+            onToggle: () => music.togglePlayPause(),
+            onCancel: () => music.stopAndClear(),
+            screenWidth: screenWidth,
+          ),
         );
       },
     );
   }
 
-  Widget _buildMusicCard(
-    MusicTrack track,
-    MusicProvider music,
-    bool isCurrentTrack,
-    int index,
-  ) {
-    return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => music.playTrack(track),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              width: 115,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    track.primaryColor.withValues(
-                      alpha: isCurrentTrack ? 0.9 : 0.75,
-                    ),
-                    track.secondaryColor.withValues(
-                      alpha: isCurrentTrack ? 0.95 : 0.8,
-                    ),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: isCurrentTrack
-                    ? Border.all(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        width: 2,
-                      )
-                    : null,
-                boxShadow: [
-                  BoxShadow(
-                    color: track.primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Background icon
-                  Positioned(
-                    right: -10,
-                    bottom: -10,
-                    child: Icon(
-                      Icons.music_note_rounded,
-                      color: Colors.white.withValues(alpha: 0.1),
-                      size: 64,
-                    ),
-                  ),
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Play indicator / icon
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            isCurrentTrack && music.isPlaying
-                                ? Icons.equalizer_rounded
-                                : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              track.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                height: 1.2,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              track.artist,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        )
-        .animate()
-        .fadeIn(
-          duration: 300.ms,
-          delay: Duration(milliseconds: 50 * index),
-        )
-        .slideX(begin: 0.1, end: 0);
-  }
-
-  Widget _buildHomeMiniPlayer(MusicProvider music) {
-    final track = music.currentTrack!;
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const NowPlayingScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return SlideTransition(
-              position:
-                  Tween<Offset>(
-                    begin: const Offset(0, 1),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ),
-                  ),
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 400),
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              track.primaryColor.withValues(alpha: 0.85),
-              track.secondaryColor.withValues(alpha: 0.9),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: track.primaryColor.withValues(alpha: 0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: const Icon(
-                Icons.music_note_rounded,
-                color: Colors.white,
-                size: 17,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                track.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => music.togglePlayPause(),
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(
-                    music.isPlaying
-                        ? Icons.pause_rounded
-                        : Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-              ),
-            ),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => music.skipNext(),
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(
-                    Icons.skip_next_rounded,
-                    color: Colors.white.withValues(alpha: 0.8),
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).animate().slideY(
-      begin: 0.5,
-      end: 0,
-      duration: 400.ms,
-      curve: Curves.easeOutCubic,
-    );
-  }
+  // Removed _buildMusicCard and _buildHomeMiniPlayer as they are replaced by _MusicServiceCard
 
   Widget _buildServicesGrid(BoxConstraints constraints) {
     final horizontalPadding = constraints.maxWidth * 0.045;
@@ -1246,6 +933,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           SizedBox(height: cardSpacing),
+          if (_user?.role == UserRole.user) ...[
+            _buildMusicSection(constraints),
+            SizedBox(height: cardSpacing),
+          ],
           _WideServiceCard(
             icon: Icons.assessment_outlined,
             title: 'My Results',
@@ -1571,6 +1262,267 @@ class _WideServiceCard extends StatelessWidget {
                         color: context.primary,
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MusicServiceCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final MusicTrack? track;
+  final bool isPlaying;
+  final VoidCallback onTap;
+  final VoidCallback onToggle;
+  final VoidCallback onCancel;
+  final double screenWidth;
+
+  const _MusicServiceCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.track,
+    required this.isPlaying,
+    required this.onTap,
+    required this.onToggle,
+    required this.onCancel,
+    required this.screenWidth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableWidth = cardConstraints.maxWidth;
+        final iconSize = (availableWidth * 0.055).clamp(24.0, 30.0);
+        final titleFontSize = (availableWidth * 0.042).clamp(14.0, 17.0);
+        final subtitleFontSize = (availableWidth * 0.032).clamp(10.0, 12.0);
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            splashColor: context.primary.withValues(alpha: 0.1),
+            highlightColor: context.primary.withValues(alpha: 0.05),
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    context.primary.withValues(alpha: 0.08),
+                    context.primary.withValues(alpha: 0.03),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: context.primary.withValues(alpha: 0.15),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.primary.withValues(alpha: 0.05),
+                    blurRadius: 12,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Top Section (Header)
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: (availableWidth * 0.04).clamp(12.0, 18.0),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: iconSize + 14,
+                            height: iconSize + 14,
+                            decoration: BoxDecoration(
+                              color: context.scaffoldBackground,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: context.primary,
+                              size: iconSize,
+                            ),
+                          ),
+                          SizedBox(
+                            width: (availableWidth * 0.03).clamp(8.0, 14.0),
+                          ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: titleFontSize,
+                                    color: context.primary,
+                                    letterSpacing: -0.3,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: subtitleFontSize,
+                                    color: context.textSecondary,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: (availableWidth * 0.038).clamp(16.0, 20.0),
+                            color: context.primary.withValues(alpha: 0.5),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Bottom Section (Recently Played Area)
+                    if (track != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                            margin: EdgeInsets.symmetric(
+                              horizontal: (availableWidth * 0.04).clamp(
+                                12.0,
+                                18.0,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  track!.primaryColor.withValues(alpha: 0.15),
+                                  track!.secondaryColor.withValues(alpha: 0.1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: track!.primaryColor.withValues(
+                                  alpha: 0.2,
+                                ),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: track!.primaryColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    isPlaying
+                                        ? Icons.equalizer_rounded
+                                        : Icons.music_note_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const NowPlayingScreen(),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          track!.title,
+                                          style: TextStyle(
+                                            color: context.textPrimary,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          isPlaying
+                                              ? 'Now Playing'
+                                              : 'Last Played',
+                                          style: TextStyle(
+                                            color: context.textSecondary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: onToggle,
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(6),
+                                      child: Icon(
+                                        isPlaying
+                                            ? Icons.pause_circle_filled_rounded
+                                            : Icons.play_circle_filled_rounded,
+                                        color: context.primary,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: onCancel,
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(6),
+                                      child: Icon(
+                                        Icons.close_rounded,
+                                        color: context.textSecondary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                          .animate()
+                          .fadeIn(duration: 400.ms)
+                          .slideY(begin: 0.2, end: 0),
+                    ],
                   ],
                 ),
               ),
