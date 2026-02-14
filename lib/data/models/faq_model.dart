@@ -27,126 +27,177 @@ class FAQData {
   static const List<FAQCategory> categories = [
     FAQCategory(
       id: 'general',
-      title: 'General',
-      description: 'Basics about Visiaxx App',
+      title: 'General Questions',
+      description: 'Basics about Visiaxx Platform',
       icon: Icons.info_outline_rounded,
       items: [
         FAQItem(
-          question: 'What is Visiaxx?',
+          question: 'What is the Visiaxx App?',
           answer:
-              'Visiaxx is a digital eye clinic app that allows you to perform clinically validated vision screenings from your smartphone.',
+              'Visiaxx is a digital eye-care platform designed to improve access to vision screening, early detection, and eye health awareness using smart technology and AI-enabled tools.',
         ),
         FAQItem(
-          question: 'Is it free to use?',
+          question: 'Who can use the Visiaxx App?',
           answer:
-              'The basic vision screenings are free. Some advanced clinical reports or professional consultations may have a fee.',
+              'Visiaxx is designed for: General public, Patients, Optometrists and ophthalmologists, Vision centers and clinics, Corporate and school screening programs.',
         ),
         FAQItem(
-          question: 'Is it clinically accurate?',
+          question: 'What problem does Visiaxx solve?',
           answer:
-              'Yes, our tests are based on standard clinical charts like Snellen and Ishihara, and have been validated by eye care professionals.',
-        ),
-        FAQItem(
-          question: 'Who should use this app?',
-          answer:
-              'Anyone looking for a quick, accessible eye screening. However, it does not replace a comprehensive eye exam by an optometrist.',
+              'Visiaxx addresses: Late detection of eye diseases, Lack of accessible screening in rural and semi-urban areas, Poor awareness about preventive eye care, and Fragmented eye health data management.',
         ),
       ],
     ),
     FAQCategory(
-      id: 'tests',
-      title: 'Vision Tests',
-      description: 'Troubleshooting test issues',
-      icon: Icons.visibility_outlined,
+      id: 'features',
+      title: 'Features & Technology',
+      description: 'Functionality and AI details',
+      icon: Icons.auto_awesome_outlined,
       items: [
         FAQItem(
-          question: 'Why does distance verification fail?',
+          question: 'What are the key features of the Visiaxx App?',
           answer:
-              'Ensure you are in a well-lit room and holding the phone at eye level. Avoid busy backgrounds which might confuse the camera.',
+              'Key features include: Digital vision screening, AI-assisted early risk detection, Refractive error awareness modules, DR, glaucoma, AMD screening awareness, Eye health education through Visiaxx Music, Patient data management dashboard, and Remote screening capability.',
         ),
         FAQItem(
-          question: 'Do I need to remove my glasses?',
+          question:
+              'How is Visiaxx different from other eye-care apps in India?',
           answer:
-              'For some tests like Mobile Refractometry, yes. For others like Visual Acuity, you should test both with and without your current prescription.',
+              'Visiaxx stands out through: Preventive + awareness + screening in one platform, AI-driven early risk alerts, Eye-health educational music engagement, Focus on mass screening and accessibility, and a Vision-access–focused ecosystem approach.',
         ),
         FAQItem(
-          question: 'What is the 1-meter rule?',
+          question: 'Does Visiaxx use Artificial Intelligence?',
           answer:
-              'Most acuity tests require you to be exactly 1 meter (3.3 feet) from the screen for calibrated results.',
+              'Yes. Visiaxx integrates AI-assisted analytics to support early risk identification and smart screening workflows (not a replacement for clinical diagnosis).',
         ),
         FAQItem(
-          question: 'Why is my screen brightness important?',
+          question: 'Can Visiaxx be used for remote eye screening?',
           answer:
-              'Tests like Color Vision (Ishihara) require high brightness (80%+) to accurately display colors.',
+              'Yes. The platform supports remote and field-based screening workflows, making it suitable for camps, schools, and rural outreach programs.',
         ),
       ],
     ),
     FAQCategory(
-      id: 'results',
-      title: 'Reports & Results',
-      description: 'Accessing and sharing data',
-      icon: Icons.assessment_outlined,
+      id: 'medical',
+      title: 'Medical & Safety',
+      description: 'Health data and professional advice',
+      icon: Icons.health_and_safety_outlined,
       items: [
         FAQItem(
-          question: 'Where can I see my results?',
+          question: 'Is Visiaxx a replacement for a doctor’s eye examination?',
           answer:
-              'All your history is saved in the "My Results" section. You can view, download, and share PDF reports from there.',
+              'No. Visiaxx is a screening and awareness tool, not a substitute for a comprehensive eye examination by a qualified eye care professional.',
         ),
         FAQItem(
-          question: 'How do I share my PDF?',
+          question: 'Is the Visiaxx App safe to use?',
           answer:
-              'Open any result in the "My Results" screen and click the Share icon to send it via WhatsApp, Email, or other apps.',
+              'Yes. The app is designed following digital health best practices, with secure data handling and user-friendly clinical workflows.',
         ),
         FAQItem(
-          question: 'Can I delete old reports?',
+          question: 'Does Visiaxx help detect serious eye diseases?',
           answer:
-              'Yes, you can swipe left on any report in History or use the "Delete" option in report details.',
+              'Visiaxx helps in early risk identification and awareness for conditions such as: Refractive errors, Diabetic retinopathy risk, Glaucoma risk awareness, and Age-related macular degeneration awareness. Users flagged at risk are advised to visit an eye care professional.',
         ),
       ],
     ),
     FAQCategory(
-      id: 'account',
-      title: 'Account & Security',
-      description: 'Login, Profile, and Privacy',
-      icon: Icons.account_circle_outlined,
+      id: 'professionals',
+      title: 'For Clinics & Professionals',
+      description: 'Benefits for healthcare providers',
+      icon: Icons.business_center_outlined,
       items: [
         FAQItem(
-          question: 'How do I reset my password?',
+          question: 'How can clinics benefit from Visiaxx?',
           answer:
-              'Log out of the app and use the "Forgot Password" link on the login screen to receive a reset email.',
+              'Clinics can digitize screening workflows, manage patient data efficiently, conduct outreach programs, improve early case detection, and enhance patient engagement.',
         ),
         FAQItem(
-          question: 'Is my data secure?',
+          question: 'Is Visiaxx suitable for vision screening camps?',
           answer:
-              'Yes, we use industry-standard encryption and Firebase security protocols to protect your health data.',
+              'Yes. It is specifically designed to support: School screenings, Community camps, Corporate eye check programs, and Rural outreach initiatives.',
         ),
         FAQItem(
-          question: 'How do I update my profile?',
+          question: 'Can Visiaxx integrate with existing eye clinic systems?',
           answer:
-              'Go to the Profile screen and tap on your name or "Edit Profile" to change your details.',
+              'The platform is being designed to support interoperability and future integrations with digital health ecosystems.',
         ),
       ],
     ),
     FAQCategory(
-      id: 'technical',
-      title: 'Technical Support',
-      description: 'App issues and compatibility',
-      icon: Icons.settings_phone_outlined,
+      id: 'users',
+      title: 'Users & Engagement',
+      description: 'Using the app features',
+      icon: Icons.people_outline,
       items: [
         FAQItem(
-          question: 'App is crashing on start.',
+          question: 'What is Visiaxx Music?',
           answer:
-              'Try clearing the app cache or reinstalling. Ensure your phone running the latest OS version for best stability.',
+              'Visiaxx Music is an innovative engagement feature that uses songs, meditation, and awareness audio to educate users about eye health, improve retention, and promote preventive eye care behavior.',
         ),
         FAQItem(
-          question: 'The camera isn\'t opening.',
+          question:
+              'How often should users perform vision screening on the app?',
           answer:
-              'Check your phone settings to ensure Visiaxx has permission to access the Camera.',
+              'Basic self-screening can be done periodically, but users should follow professional advice for comprehensive eye exams.',
         ),
         FAQItem(
-          question: 'Does it work offline?',
+          question: 'When you get stuck while doing the test?',
+          answer: 'Read the instructions very carefully and do the test.',
+        ),
+        FAQItem(
+          question: 'Stop the voice recognition?',
           answer:
-              'Most tests work offline, but you need an internet connection to sync results and generate PDF reports.',
+              'If you have enabled voice recognition, voice will be recorded according to the answer you say. If you turn it off, the test can be done manually for better results.',
+        ),
+        FAQItem(
+          question: 'Theme selection?',
+          answer:
+              'Theme can be used in dark mode or light mode and color can be changed according to your favourite color theme.',
+        ),
+        FAQItem(
+          question: 'Want to talk to our executive?',
+          answer: 'Call our customer care executive no. 7208996265.',
+        ),
+      ],
+    ),
+    FAQCategory(
+      id: 'privacy',
+      title: 'Privacy & Data',
+      description: 'Security and data handling',
+      icon: Icons.lock_outline,
+      items: [
+        FAQItem(
+          question: 'Is my health data secure in Visiaxx?',
+          answer:
+              'Yes. Visiaxx follows secure data handling practices and is designed to comply with digital health data protection standards.',
+        ),
+        FAQItem(
+          question: 'Does Visiaxx share user data with third parties?',
+          answer:
+              'No personal health data is shared without user consent, except where required for clinical or regulatory purposes.',
+        ),
+      ],
+    ),
+    FAQCategory(
+      id: 'future',
+      title: 'Startup & Future Vision',
+      description: 'Long-term goals and partnerships',
+      icon: Icons.rocket_launch_outlined,
+      items: [
+        FAQItem(
+          question: 'What is the long-term vision of Visiaxx?',
+          answer:
+              'Visiaxx aims to become a vision-access ecosystem that enables early detection, awareness, and digital eye-care delivery at scale across India and globally.',
+        ),
+        FAQItem(
+          question: 'Is Visiaxx applying for Startup India recognition?',
+          answer:
+              'Yes. Visiaxx is positioned as an innovative digital health solution addressing a significant public health gap in eye care.',
+        ),
+        FAQItem(
+          question: 'How can organizations partner with Visiaxx?',
+          answer:
+              'Hospitals, NGOs, schools, and corporate partners can collaborate for screening programs, pilot projects, and digital eye-care initiatives.',
         ),
       ],
     ),

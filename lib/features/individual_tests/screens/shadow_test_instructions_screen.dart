@@ -34,7 +34,7 @@ class _ShadowTestInstructionsScreenState
     'Please remove your spectacles or contact lenses for this test.',
     'Find a dimly lit room and turn off any bright overhead lights.',
     'The examiner should use the smartphone flashlight to illuminate the eye from the side at a sixty degree angle.',
-    'Look directly at the camera. Avoid moving your eyes frequently and blink normally.',
+    'Look straight ahead instead of at the smartphone. Avoid moving your eyes frequently and blink normally.',
   ];
 
   @override
@@ -160,8 +160,8 @@ class _ShadowTestInstructionsScreenState
                     _buildStep(
                       3,
                       Icons.remove_red_eye_rounded,
-                      'Look at Camera',
-                      'Look directly at the camera lens. Don\'t move eyes frequently and blink normally.',
+                      'Look Straight',
+                      'Look straight ahead instead of at the smartphone. Don\'t move eyes frequently and blink normally.',
                       context.success,
                       animation: const StayFocusedAnimation(isCompact: true),
                     ),

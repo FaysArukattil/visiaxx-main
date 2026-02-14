@@ -26,6 +26,54 @@ class CoverTestScreen extends StatelessWidget {
   }
 }
 
+class EyeHoleClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    const eyeWidth = 100.0;
+    const eyeHeight = 60.0;
+    const spacing = 40.0;
+    final centerY = size.height / 2;
+    final centerX = size.width / 2;
+
+    // Left hole (patient's right eye) - Positioned relative to screen center
+    path.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(
+            centerX - (eyeWidth / 2) - (spacing / 2),
+            centerY - 20,
+          ),
+          width: eyeWidth,
+          height: eyeHeight,
+        ),
+        const Radius.circular(30),
+      ),
+    );
+
+    // Right hole (patient's left eye)
+    path.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(
+            centerX + (eyeWidth / 2) + (spacing / 2),
+            centerY - 20,
+          ),
+          width: eyeWidth,
+          height: eyeHeight,
+        ),
+        const Radius.circular(30),
+      ),
+    );
+
+    return path..fillType = PathFillType.evenOdd;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
 class _CoverTestScreenContent extends StatefulWidget {
   const _CoverTestScreenContent();
 
@@ -476,7 +524,10 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
         ),
 
         // 🟢 Instructions Overlay (Top - Safe Area)
-        SafeArea(
+        Positioned(
+          top: 16 + MediaQuery.paddingOf(context).top,
+          left: 16,
+          right: 16,
           child: _buildInstructionOverlay(
             instruction,
             eyeToObserve,
@@ -496,12 +547,16 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
                     .animate(onPlay: (controller) => controller.repeat())
                     .shimmer(
                       duration: 1000.ms,
-                      color: Colors.red.withValues(alpha: 0.2),
+                      color: Colors.red.withAlpha(51),
                     ),
           ),
 
         // Recording Status & Time (Safe Area)
-        SafeArea(child: _buildRecordingOverlay(provider.isRecording)),
+        Positioned(
+          top: 16 + MediaQuery.paddingOf(context).top,
+          left: 16,
+          child: _buildRecordingStatus(provider.isRecording),
+        ),
 
         // 🟢 Diagnostic Buttons Overlay (Bottom in Portrait, Right in Landscape)
         if (isLandscape)
@@ -533,6 +588,13 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
               ),
             ),
           ),
+
+        // Recording Button at Bottom Right
+        Positioned(
+          bottom: 24 + MediaQuery.paddingOf(context).bottom,
+          right: 24,
+          child: _buildRecordingButton(provider.isRecording),
+        ),
       ],
     );
   }
@@ -544,27 +606,10 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
   ) {
     return Stack(
       children: [
-        // Semi-transparent overlay with eye holes
-        ColorFiltered(
-          colorFilter: ColorFilter.mode(
-            Colors.black.withValues(alpha: 0.5),
-            BlendMode.srcOut,
-          ),
-          child: Stack(
-            children: [
-              Container(decoration: const BoxDecoration(color: Colors.black)),
-              Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _eyeHole(), // Patient's Right Eye (Left side of screen)
-                    const SizedBox(width: 40),
-                    _eyeHole(), // Patient's Left Eye (Right side of screen)
-                  ],
-                ),
-              ),
-            ],
-          ),
+        // Semi-transparent overlay with eye holes using Clipper
+        ClipPath(
+          clipper: EyeHoleClipper(),
+          child: Container(color: Colors.black.withAlpha(128)),
         ),
         // Indicators for which eye is covered
         Center(
@@ -584,15 +629,86 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
     );
   }
 
-  Widget _eyeHole() {
+  Widget _buildRecordingStatus(bool isRecording) {
+    if (!isRecording) return const SizedBox.shrink();
     return Container(
-      width: 100,
-      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        color: Colors.black.withAlpha(153),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              )
+              .animate(onPlay: (controller) => controller.repeat())
+              .fadeIn(duration: 500.ms)
+              .fadeOut(delay: 500.ms),
+          const SizedBox(width: 8),
+          Text(
+            '0:0${maxRecordingSeconds - _recordingSeconds}s',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildRecordingButton(bool isRecording) {
+    return GestureDetector(
+          onTap: () {
+            final p = context.read<CoverTestProvider>();
+            if (isRecording) {
+              _stopRecording(p);
+            } else {
+              _startRecording(p);
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isRecording ? Colors.red : context.primary,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (isRecording ? Colors.red : context.primary).withAlpha(
+                    102,
+                  ),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              isRecording ? Icons.stop : Icons.videocam,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        )
+        .animate(
+          target: isRecording ? 1 : 0,
+          onPlay: (controller) {
+            if (isRecording) controller.repeat(reverse: true);
+          },
+        )
+        .scale(
+          begin: const Offset(1, 1),
+          end: const Offset(1.15, 1.15),
+          duration: 600.ms,
+          curve: Curves.easeInOut,
+        );
   }
 
   Widget _buildInstructionOverlay(
@@ -600,77 +716,70 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
     String eyeToObserve,
     bool isCaptured,
   ) {
-    return Positioned(
-      top: 16,
-      left: 16,
-      right: 16,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-                width: 1,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(179),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withAlpha(26), width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                instruction.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
               ),
+              const SizedBox(height: 2),
+              Text(
+                eyeToObserve,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.primary.withAlpha(230),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (isCaptured) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: context.success.withAlpha(230),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 12),
+                SizedBox(width: 4),
                 Text(
-                  instruction.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  eyeToObserve,
-                  textAlign: TextAlign.center,
+                  'CAPTURED',
                   style: TextStyle(
-                    color: context.primary.withValues(alpha: 0.9),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
             ),
-          ),
-          if (isCaptured) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: context.success.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 12),
-                  const SizedBox(width: 4),
-                  Text(
-                    'CAPTURED',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn().slideX(begin: -0.2),
-          ],
+          ).animate().fadeIn().slideX(begin: -0.2),
         ],
-      ),
+      ],
     );
   }
 
@@ -685,12 +794,12 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
             border: Border.all(
               color: isCovered
                   ? context.primary
-                  : context.dividerColor.withValues(alpha: 0.4),
+                  : context.dividerColor.withAlpha(102),
               width: 2,
             ),
             borderRadius: BorderRadius.circular(30),
             color: isCovered
-                ? context.primary.withValues(alpha: 0.3)
+                ? context.primary.withAlpha(77)
                 : Colors.transparent,
           ),
           child: isCovered
@@ -703,101 +812,10 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
           style: TextStyle(
             color: isCovered
                 ? context.primary
-                : context.dividerColor.withValues(alpha: 0.7),
+                : context.dividerColor.withAlpha(179),
             fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecordingOverlay(bool isRecording) {
-    return Stack(
-      children: [
-        if (isRecording)
-          Positioned(
-            top: 16,
-            left: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                      )
-                      .animate(onPlay: (controller) => controller.repeat())
-                      .fadeIn(duration: 500.ms)
-                      .fadeOut(delay: 500.ms),
-                  const SizedBox(width: 8),
-                  Text(
-                    '0:0${maxRecordingSeconds - _recordingSeconds}s',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        Positioned(
-          bottom: 24,
-          right: 24,
-          child:
-              GestureDetector(
-                    onTap: () {
-                      final p = context.read<CoverTestProvider>();
-                      if (isRecording) {
-                        _stopRecording(p);
-                      } else {
-                        _startRecording(p);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isRecording ? Colors.red : context.primary,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isRecording ? Colors.red : context.primary)
-                                .withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        isRecording ? Icons.stop : Icons.videocam,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                  )
-                  .animate(
-                    target: isRecording ? 1 : 0,
-                    onPlay: (controller) {
-                      if (isRecording) controller.repeat(reverse: true);
-                    },
-                  )
-                  .scale(
-                    begin: const Offset(1, 1),
-                    end: const Offset(1.15, 1.15),
-                    duration: 600.ms,
-                    curve: Curves.easeInOut,
-                  ),
         ),
       ],
     );
