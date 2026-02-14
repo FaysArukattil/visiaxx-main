@@ -3588,7 +3588,8 @@ class _PractitionerDashboardScreenState
         result.visualFieldLeft != null ||
         result.visualField != null ||
         result.coverTest != null ||
-        result.torchlight != null;
+        result.torchlight != null ||
+        result.shortDistance != null;
 
     if (!hasVA && !hasRefraction && !hasOthers) return const SizedBox.shrink();
 
@@ -3670,6 +3671,36 @@ class _PractitionerDashboardScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Reading Test - Quick Glance
+                  if (result.shortDistance != null) ...[
+                    Row(
+                      children: [
+                        _buildDiagnosticItem(
+                          'READING TEST',
+                          result.shortDistance!.bestAcuity.toUpperCase(),
+                          icon: Icons.menu_book_rounded,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: context.primary.withValues(alpha: 0.15),
+                        ),
+                        _buildDiagnosticItem(
+                          'ACCURACY',
+                          '${(result.shortDistance!.accuracy * 100).toStringAsFixed(0)}% CORRECT',
+                          icon: Icons.fact_check_rounded,
+                        ),
+                      ],
+                    ),
+                    if (result.colorVision != null ||
+                        result.pelliRobson != null ||
+                        result.amslerGridRight != null ||
+                        result.amslerGridLeft != null ||
+                        result.shadowTest != null ||
+                        result.stereopsis != null ||
+                        result.eyeHydration != null)
+                      const SizedBox(height: 8),
+                  ],
                   // Color Vision - Per Eye with Specific Deficiency Type
                   if (result.colorVision != null) ...[
                     Row(
