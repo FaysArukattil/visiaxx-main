@@ -526,13 +526,17 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
         // 🟢 Instructions Overlay (Top - Safe Area)
         Positioned(
           top: (isLandscape ? 16 : 120) + MediaQuery.paddingOf(context).top,
-          left: 16,
-          right: isLandscape ? null : 16,
-          width: isLandscape ? MediaQuery.of(context).size.width * 0.45 : null,
-          child: _buildInstructionOverlay(
-            instruction,
-            eyeToObserve,
-            provider.currentVideoPath != null,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildInstructionOverlay(
+                instruction,
+                eyeToObserve,
+                provider.currentVideoPath != null,
+              ),
+            ),
           ),
         ),
 
