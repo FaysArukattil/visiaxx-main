@@ -46,6 +46,11 @@ class FAQData {
           answer:
               'Yes, our tests are based on standard clinical charts like Snellen and Ishihara, and have been validated by eye care professionals.',
         ),
+        FAQItem(
+          question: 'Who should use this app?',
+          answer:
+              'Anyone looking for a quick, accessible eye screening. However, it does not replace a comprehensive eye exam by an optometrist.',
+        ),
       ],
     ),
     FAQCategory(
@@ -65,9 +70,14 @@ class FAQData {
               'For some tests like Mobile Refractometry, yes. For others like Visual Acuity, you should test both with and without your current prescription.',
         ),
         FAQItem(
-          question: 'I can\'t see the letters clearly.',
+          question: 'What is the 1-meter rule?',
           answer:
-              'If you can\'t see the targets even with your glasses, the test results will reflect that. It might indicate a need for a new prescription.',
+              'Most acuity tests require you to be exactly 1 meter (3.3 feet) from the screen for calibrated results.',
+        ),
+        FAQItem(
+          question: 'Why is my screen brightness important?',
+          answer:
+              'Tests like Color Vision (Ishihara) require high brightness (80%+) to accurately display colors.',
         ),
       ],
     ),
@@ -87,12 +97,40 @@ class FAQData {
           answer:
               'Open any result in the "My Results" screen and click the Share icon to send it via WhatsApp, Email, or other apps.',
         ),
+        FAQItem(
+          question: 'Can I delete old reports?',
+          answer:
+              'Yes, you can swipe left on any report in History or use the "Delete" option in report details.',
+        ),
+      ],
+    ),
+    FAQCategory(
+      id: 'account',
+      title: 'Account & Security',
+      description: 'Login, Profile, and Privacy',
+      icon: Icons.account_circle_outlined,
+      items: [
+        FAQItem(
+          question: 'How do I reset my password?',
+          answer:
+              'Log out of the app and use the "Forgot Password" link on the login screen to receive a reset email.',
+        ),
+        FAQItem(
+          question: 'Is my data secure?',
+          answer:
+              'Yes, we use industry-standard encryption and Firebase security protocols to protect your health data.',
+        ),
+        FAQItem(
+          question: 'How do I update my profile?',
+          answer:
+              'Go to the Profile screen and tap on your name or "Edit Profile" to change your details.',
+        ),
       ],
     ),
     FAQCategory(
       id: 'technical',
       title: 'Technical Support',
-      description: 'Account and app issues',
+      description: 'App issues and compatibility',
       icon: Icons.settings_phone_outlined,
       items: [
         FAQItem(
@@ -101,9 +139,14 @@ class FAQData {
               'Try clearing the app cache or reinstalling. Ensure your phone running the latest OS version for best stability.',
         ),
         FAQItem(
-          question: 'I forgot my password.',
+          question: 'The camera isn\'t opening.',
           answer:
-              'Use the "Forgot Password" link on the login screen to receive a reset link via your registered email.',
+              'Check your phone settings to ensure Visiaxx has permission to access the Camera.',
+        ),
+        FAQItem(
+          question: 'Does it work offline?',
+          answer:
+              'Most tests work offline, but you need an internet connection to sync results and generate PDF reports.',
         ),
       ],
     ),

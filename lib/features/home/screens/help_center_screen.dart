@@ -171,54 +171,65 @@ class HelpCenterScreen extends StatelessWidget {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.all(12), // Reduced padding slightly
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: context.dividerColor.withValues(alpha: 0.5),
+            color: context.primary.withValues(alpha: 0.1),
+            width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: context.primary.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(8), // Reduced padding
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: context.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                gradient: LinearGradient(
+                  colors: [
+                    context.primary.withValues(alpha: 0.15),
+                    context.primary.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(category.icon, color: context.primary, size: 20),
+              child: Icon(category.icon, color: context.primary, size: 28),
             ),
-            const SizedBox(height: 8),
+            const Spacer(),
             Text(
               category.title,
               style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14, // Slightly smaller title
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
                 color: context.textPrimary,
+                letterSpacing: -0.5,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
-            Expanded(
-              child: Text(
-                category.description,
-                style: TextStyle(fontSize: 10, color: context.textSecondary),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 4),
+            Text(
+              category.description,
+              style: TextStyle(
+                fontSize: 11,
+                color: context.textSecondary,
+                height: 1.3,
+                fontWeight: FontWeight.w500,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

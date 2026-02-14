@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visiaxx/core/extensions/theme_extension.dart';
+import '../widgets/bug_report_dialog.dart';
 
 class SupportChatScreen extends StatefulWidget {
   const SupportChatScreen({super.key});
@@ -20,20 +21,28 @@ class ChatMessage {
 class _SupportChatScreenState extends State<SupportChatScreen> {
   final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _messageController = TextEditingController();
   final String _supportNumber = '7208996265';
 
   @override
   void initState() {
     super.initState();
     _addBotMessage(
-      "Hi! 👋 I'm VisiBot, your digital eye care assistant. How can I help you today?",
+      "Hi there! 👋 I'm VisiBot, your personalized eye-care assistant.\n\nI can help you with test troubleshooting, understanding results, and technical support. How can I assist you today?",
       quickReplies: [
-        'Test Issues',
-        'Results & Reports',
+        'Vision Test Help',
+        'Understanding Results',
         'Account Help',
-        'Talk to Human',
+        'Report a Bug',
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _addBotMessage(String text, {List<String>? quickReplies}) {
@@ -46,8 +55,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   }
 
   void _addUserMessage(String text) {
+    if (text.trim().isEmpty) return;
     setState(() {
       _messages.add(ChatMessage(text: text, isUser: true));
+      _messageController.clear();
     });
     _scrollToBottom();
     _handleUserResponse(text);
@@ -66,49 +77,287 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   }
 
   void _handleUserResponse(String text) {
-    // Simulated decision tree logic
     Future.delayed(const Duration(seconds: 1), () {
-      if (text == 'Test Issues') {
+      final lowercaseText = text.toLowerCase();
+
+      // 1. Technical Bug Redirection
+      if (lowercaseText.contains('bug') ||
+          lowercaseText.contains('crash') ||
+          lowercaseText.contains('error') ||
+          lowercaseText.contains('broken') ||
+          lowercaseText.contains('fail')) {
         _addBotMessage(
-          "I can help with that. Which test are you having trouble with?",
+          "I've detected you might be experiencing a technical failure. 🛠️\n\nWould you like to open our Bug Reporting Tool? This will notify our developers directly with your system logs and device details.",
           quickReplies: [
-            'Distance Verification',
-            'Visual Acuity',
-            'Refractometry',
+            'Submit Bug Report',
+            'Vision Test Help',
+            'Talk to Human',
+          ],
+        );
+        return;
+      }
+      if (text == 'Submit Bug Report' || text == 'Report a Bug') {
+        _showBugReportDialog();
+        return;
+      }
+
+      // 2. Account & Security Hub
+      if (lowercaseText.contains('account') ||
+          lowercaseText.contains('profile') ||
+          lowercaseText.contains('password') ||
+          lowercaseText.contains('login') ||
+          lowercaseText.contains('logout')) {
+        _addBotMessage(
+          "🔐 Account & Security Hub:\n\nI can help you manage your profile, reset credentials, or secure your health data.",
+          quickReplies: [
+            'Reset Password',
+            'Update Profile',
+            'Logout Help',
+            'Delete Account',
             'Main Menu',
           ],
         );
-      } else if (text == 'Distance Verification') {
+        return;
+      }
+      if (text == 'Reset Password') {
         _addBotMessage(
-          "Pro Tip: Make sure you are in a well-lit room and stand exactly 1 meter away. The camera needs to see your face clearly.",
-          quickReplies: ['Still failing', 'Got it!', 'Main Menu'],
+          "To reset your password:\n1. Log out of the app.\n2. Tap 'Forgot Password' on the login screen.\n3. Check your email for the secure reset link.",
         );
-      } else if (text == 'Results & Reports') {
+        return;
+      }
+      if (text == 'Edit Profile') {
         _addBotMessage(
-          "You can find all your scores in the 'My Results' section. Would you like to know how to share them?",
-          quickReplies: ['Yes, how to share?', 'How to download?', 'Main Menu'],
+          "You can update your name, age, and gender by going to the Profile tab and tapping on your current name card.",
         );
-      } else if (text == 'Talk to Human' || text == 'Still failing') {
+        return;
+      }
+      if (text == 'Logout Help') {
         _addBotMessage(
-          "I'll connect you with our support team. You can reach us via WhatsApp or a direct call.",
+          "To logout, go to the Profile screen and scroll to the very bottom to find the Sign Out button.",
+        );
+        return;
+      }
+
+      // 3. Vision Tests Troubleshooting
+      if (lowercaseText.contains('test') ||
+          lowercaseText.contains('vision') ||
+          lowercaseText.contains('help')) {
+        _addBotMessage(
+          "Our clinical suite includes 15+ specialized tests. Which one are you performing?\n\nSelecting a test will provide specific troubleshooting tips and distance rules to ensure accuracy.",
+          quickReplies: [
+            'Acuity (Distance)',
+            'Shadow (Glaucoma)',
+            'Color (Ishihara)',
+            'Refractometry',
+            'Stereopsis (3D)',
+            'Peripheral Field',
+            'Other Tests',
+          ],
+        );
+        return;
+      }
+
+      // Specific Test Knowledge (Detailed)
+      if (lowercaseText.contains('acuity')) {
+        _addBotMessage(
+          "🔭 Visual Acuity Pro-Tips:\n\n1. Use a well-lit room (natural light is best).\n2. Stand exactly 1 meter (3.3 feet) from the phone.\n3. Keep the phone at eye level.\n4. If using voice, speak clearly when you see the letter.",
+          quickReplies: ['Voice Help', 'Distance Help', 'Main Menu'],
+        );
+        return;
+      }
+      if (text == 'Voice Help') {
+        _addBotMessage(
+          "For voice recognition:\n- Grant microphone permissions.\n- Speak the letter (E, C, or direction) loudly and clearly.\n- Avoid noisy background environments.",
+        );
+        return;
+      }
+      if (text == 'Distance Help') {
+        _addBotMessage(
+          "To verify distance:\n- Use the mirror calibration tool in the app.\n- Ensure you are exactly 1 meter away.\n- If the distance check fails, check for busy backgrounds.",
+        );
+        return;
+      }
+
+      if (lowercaseText.contains('shadow') ||
+          lowercaseText.contains('glaucoma')) {
+        _addBotMessage(
+          "👁️ Shadow Test (IOP) Calibration:\n\nThis test measures the shadow on your iris to screen for Glaucoma risk.\n\n- Hold your phone steady with both hands.\n- Avoid strong overhead lighting that creates 'star' glares on the iris.\n- Ensure the red circular guide covers your pupil perfectly.",
+          quickReplies: ['Common Fails', 'Main Menu'],
+        );
+        return;
+      }
+      if (text == 'Common Fails') {
+        _addBotMessage(
+          "Common failures in Shadow Test:\n- Pupil not detected: Improve room lighting.\n- Image too blurry: Clean your front camera lens.\n- Eye not centered: Look directly into the red circle.",
+        );
+        return;
+      }
+
+      if (lowercaseText.contains('color') ||
+          lowercaseText.contains('ishihara')) {
+        _addBotMessage(
+          "🎨 Color Vision Rules:\n\n- Set screen brightness to 100%.\n- Turn off Blue Light Filter or Night Shift.\n- Do not wear tinted glasses or sunglasses during this test.",
+          quickReplies: ['Brightness Info', 'Main Menu'],
+        );
+        return;
+      }
+      if (text == 'Brightness Info') {
+        _addBotMessage(
+          "Low brightness or blue light filters distort the colors of the Ishihara plates, leading to inaccurate results. Always test at full brightness.",
+        );
+        return;
+      }
+
+      if (lowercaseText.contains('refractometry')) {
+        _addBotMessage(
+          "👓 Mobile Refractometry Guide:\n\n- This test calculates your power (Sph/Cyl).\n- REMOVE your glasses/lenses before starting.\n- Keep the phone perfectly vertical.\n- Ensure your eyes are wide open during the capture pulse.",
+          quickReplies: ['Capture Help', 'Main Menu'],
+        );
+        return;
+      }
+      if (text == 'Capture Help') {
+        _addBotMessage(
+          "If the capture fails:\n- Ensure the red line is centered on your pupil.\n- Hold the phone at 30cm distance.\n- Use a mirror if you have trouble aligning yourself.",
+        );
+        return;
+      }
+
+      if (lowercaseText.contains('stereo')) {
+        _addBotMessage(
+          "🕶️ Stereopsis (3D) Help:\n\nThis test requires Red/Cyan Anaglyph glasses. If you don't have them, the shapes will remain flat. Ensure you follow the distance calibration carefully.",
+          quickReplies: ['No Glasses?', 'Main Menu'],
+        );
+        return;
+      }
+      if (text == 'No Glasses?') {
+        _addBotMessage(
+          "Without Red/Cyan glasses, you cannot perceive the 3D depth of this test. You can still select 'I see flat', but it won't accurately measure stereopsis.",
+        );
+        return;
+      }
+
+      if (lowercaseText.contains('field') ||
+          lowercaseText.contains('amsler') ||
+          lowercaseText.contains('peripheral')) {
+        _addBotMessage(
+          "📡 Visual Field & Amsler Grid:\n\n- Fix your gaze strictly on the center dot.\n- Do not move your eyes to look for the flashing lights.\n- Tap the screen as soon as you perceive a flash in your side-vision.",
+          quickReplies: ['Main Menu'],
+        );
+        return;
+      }
+
+      if (lowercaseText.contains('hydration') ||
+          lowercaseText.contains('blink')) {
+        _addBotMessage(
+          "💧 Eye Hydration (Dry Eye):\n\nThe AI detects your blink frequency. Ensure your face is centered and the lighting is sufficient to see your eyes clearly. Avoid heavy makeup for better detection accuracy.",
+        );
+        return;
+      }
+
+      if (text == 'Other Tests') {
+        _addBotMessage(
+          "We also offer Cover Tests, Torchlight Exams, and Reading Tests. Please follow the on-screen instructions for those specific procedures.",
+          quickReplies: ['Main Menu'],
+        );
+        return;
+      }
+
+      // 4. Results & Reports
+      if (lowercaseText.contains('result') ||
+          lowercaseText.contains('report') ||
+          lowercaseText.contains('pdf') ||
+          lowercaseText.contains('share')) {
+        _addBotMessage(
+          "📋 Results & Clinical Reports:\n\n- Visit 'My Results' to see your full history.\n- Open any report to generate a Clinical PDF.\n- Use the share icon in the report view to send it via WhatsApp or Email.",
+          quickReplies: ['Missing Report?', 'How to Share', 'Main Menu'],
+        );
+        return;
+      }
+      if (text == 'Missing Report?') {
+        _addBotMessage(
+          "If a report is missing:\n- Ensure you completed the entire test.\n- Check if you were logged in during the test.\n- Try refreshing the 'My Results' screen.",
+        );
+        return;
+      }
+      if (text == 'How to Share') {
+        _addBotMessage(
+          "To share a report:\n1. Open your test result.\n2. Tap the 'Share' or 'PDF' icon at the top.\n3. Choose your preferred app (WhatsApp, Email, etc.).",
+        );
+        return;
+      }
+
+      // 5. Conversational & Escalation
+      if (lowercaseText.contains('hi') ||
+          lowercaseText.contains('hello') ||
+          lowercaseText.contains('hey')) {
+        _addBotMessage(
+          "Hello! I'm here to help. What aspect of Visiaxx or your vision tests can I assist with today?",
+        );
+        return;
+      }
+
+      if (lowercaseText.contains('thank') || lowercaseText.contains('thanks')) {
+        _addBotMessage(
+          "You're very welcome! I'm always here if you need more help with your eye health tests. Stay vision-active! 👁️✨",
+        );
+        return;
+      }
+
+      if (lowercaseText.contains('human') ||
+          lowercaseText.contains('talk') ||
+          lowercaseText.contains('agent') ||
+          lowercaseText.contains('contact') ||
+          text == 'Talk to Human') {
+        _addBotMessage(
+          "I'll connect you with our professional support team for personalized assistance. 📞",
           quickReplies: ['WhatsApp Support', 'Call Support', 'Main Menu'],
         );
-      } else if (text == 'WhatsApp Support') {
-        _launchWhatsApp();
-      } else if (text == 'Call Support') {
-        _launchCall();
-      } else {
+        return;
+      }
+
+      if (text == 'Main Menu' || lowercaseText.contains('menu')) {
         _addBotMessage(
-          "Is there anything else I can assist you with?",
+          "Back to main menu. How else can I help?",
           quickReplies: [
-            'Test Issues',
-            'Results & Reports',
+            'Vision Test Help',
+            'Understanding Results',
             'Account Help',
-            'Main Menu',
+            'Talk to Human',
           ],
         );
+        return;
       }
+
+      if (text == 'WhatsApp Support') {
+        _launchWhatsApp();
+        return;
+      }
+      if (text == 'Call Support') {
+        _launchCall();
+        return;
+      }
+
+      // Dynamic Response for unknown queries
+      _addBotMessage(
+        "I'm not quite sure I understand that query yet. 🧠\n\nWould you like to try one of these common topics or talk to a human?",
+        quickReplies: [
+          'Vision Test Help',
+          'Technical Failures',
+          'Talk to Human',
+        ],
+      );
     });
+  }
+
+  void _showBugReportDialog() {
+    if (context.mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const BugReportDialog(),
+      );
+    }
   }
 
   Future<void> _launchWhatsApp() async {
@@ -133,24 +382,42 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Support Chat',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            Text(
+              'VisiBot Assistant',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                color: context.textPrimary,
+                letterSpacing: -0.5,
+              ),
             ),
             Row(
               children: [
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.shade400,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.greenAccent.shade400.withValues(
+                          alpha: 0.4,
+                        ),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 4),
-                const Text(
-                  'VisiBot is Online',
-                  style: TextStyle(fontSize: 11, color: Colors.green),
+                const SizedBox(width: 6),
+                Text(
+                  'Always active for you',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.greenAccent.shade400,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -158,13 +425,22 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         ),
         backgroundColor: context.surface,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () {
+              setState(() => _messages.clear());
+              _addBotMessage("Chat history cleared. How can I help you?");
+            },
+            icon: Icon(Icons.refresh_rounded, color: context.textSecondary),
+          ),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
@@ -173,6 +449,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             ),
           ),
           _buildQuickReplies(),
+          _buildMessageInput(),
         ],
       ),
     );
@@ -180,38 +457,54 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.isUser;
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width > 600
-              ? 450
-              : MediaQuery.of(context).size.width * 0.75,
-        ),
-        decoration: BoxDecoration(
-          color: isUser ? context.primary : context.surface,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: Radius.circular(isUser ? 20 : 0),
-            bottomRight: Radius.circular(isUser ? 0 : 20),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Align(
+        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.8,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: isUser
+                ? LinearGradient(
+                    colors: [
+                      context.primary,
+                      context.primary.withValues(alpha: 0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: isUser ? null : context.surface,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(20),
+              topRight: const Radius.circular(20),
+              bottomLeft: Radius.circular(isUser ? 20 : 4),
+              bottomRight: Radius.circular(isUser ? 4 : 20),
             ),
-          ],
-        ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: isUser ? Colors.white : context.textPrimary,
-            fontSize: 14,
-            height: 1.4,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: isUser
+                ? null
+                : Border.all(
+                    color: context.dividerColor.withValues(alpha: 0.2),
+                  ),
+          ),
+          child: Text(
+            message.text,
+            style: TextStyle(
+              color: isUser ? Colors.white : context.textPrimary,
+              fontSize: 15,
+              height: 1.5,
+              fontWeight: isUser ? FontWeight.w500 : FontWeight.w400,
+            ),
           ),
         ),
       ),
@@ -227,11 +520,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: context.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -242,10 +531,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               child: ActionChip(
                 label: Text(reply),
                 onPressed: () => _addUserMessage(reply),
-                backgroundColor: context.primary.withValues(alpha: 0.1),
+                backgroundColor: context.surface,
                 labelStyle: TextStyle(
                   color: context.primary,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
                 padding: const EdgeInsets.symmetric(
@@ -253,12 +542,99 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                   vertical: 8,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: context.primary.withValues(alpha: 0.2),
+                  ),
                 ),
+                elevation: 0,
               ),
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        MediaQuery.of(context).padding.bottom + 12,
+      ),
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: context.scaffoldBackground,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: context.dividerColor.withValues(alpha: 0.5),
+                ),
+              ),
+              child: TextField(
+                controller: _messageController,
+                onSubmitted: _addUserMessage,
+                style: TextStyle(color: context.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Type your concern here...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(
+                    color: context.textTertiary,
+                    fontSize: 15,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: () => _addUserMessage(_messageController.text),
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    context.primary,
+                    context.primary.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: context.primary.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.send_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
