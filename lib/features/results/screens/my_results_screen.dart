@@ -1360,7 +1360,8 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
         result.pelliRobson != null ||
         result.amslerGridRight != null ||
         result.amslerGridLeft != null ||
-        result.shadowTest != null;
+        result.shortDistance != null ||
+        result.eyeHydration != null;
 
     if (!hasVA && !hasRefraction && !hasOthers) {
       return Container(
@@ -1460,6 +1461,34 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Reading Test - Quick Glance
+                  if (result.shortDistance != null) ...[
+                    Row(
+                      children: [
+                        _buildDiagnosticItem(
+                          'READING TEST',
+                          result.shortDistance!.bestAcuity.toUpperCase(),
+                          icon: Icons.menu_book_rounded,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 30,
+                          color: context.primary.withValues(alpha: 0.15),
+                        ),
+                        _buildDiagnosticItem(
+                          'ACCURACY',
+                          '${(result.shortDistance!.accuracy * 100).toStringAsFixed(0)}% CORRECT',
+                          icon: Icons.fact_check_rounded,
+                        ),
+                      ],
+                    ),
+                    if (result.colorVision != null ||
+                        result.pelliRobson != null ||
+                        result.amslerGridRight != null ||
+                        result.amslerGridLeft != null ||
+                        result.eyeHydration != null)
+                      const SizedBox(height: 8),
+                  ],
                   // Color Vision - Per Eye with Specific Deficiency Type
                   if (result.colorVision != null) ...[
                     Row(
@@ -1549,7 +1578,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                     ),
                     if (result.amslerGridRight != null ||
                         result.amslerGridLeft != null ||
-                        result.shadowTest != null)
+                        result.eyeHydration != null)
                       const SizedBox(height: 8),
                   ],
                   // Amsler Grid - Per Eye
@@ -1584,35 +1613,26 @@ class _MyResultsScreenState extends State<MyResultsScreen> {
                           ),
                       ],
                     ),
-                    if (result.amslerGridRight != null ||
-                        result.amslerGridLeft != null)
-                      const SizedBox(height: 8),
+                    if (result.eyeHydration != null) const SizedBox(height: 8),
                   ],
-                  // Shadow Test - Per Eye
-                  if (result.shadowTest != null) ...[
-                    if (result.colorVision != null ||
-                        result.pelliRobson != null ||
-                        result.amslerGridRight != null ||
-                        result.amslerGridLeft != null)
-                      const SizedBox(height: 8),
+                  // Eye Hydration Test
+                  if (result.eyeHydration != null) ...[
                     Row(
                       children: [
-                        // Right Eye Shadow
                         _buildDiagnosticItem(
-                          'SHADOW (RIGHT)',
-                          'G${result.shadowTest!.rightEye.grade.grade}',
-                          icon: Icons.wb_sunny_outlined,
+                          'BLINK RATE',
+                          '${result.eyeHydration!.averageBlinksPerMinute.toStringAsFixed(1)} BPM',
+                          icon: Icons.opacity_rounded,
                         ),
                         Container(
                           width: 1,
                           height: 30,
                           color: context.primary.withValues(alpha: 0.15),
                         ),
-                        // Left Eye Shadow
                         _buildDiagnosticItem(
-                          'SHADOW (LEFT)',
-                          'G${result.shadowTest!.leftEye.grade.grade}',
-                          icon: Icons.wb_sunny_outlined,
+                          'HYDRATION',
+                          result.eyeHydration!.status.label.toUpperCase(),
+                          icon: Icons.health_and_safety_rounded,
                         ),
                       ],
                     ),
