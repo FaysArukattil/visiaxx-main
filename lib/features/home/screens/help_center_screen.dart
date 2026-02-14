@@ -123,29 +123,39 @@ class HelpCenterScreen extends StatelessWidget {
   }
 
   Widget _buildCategoriesSection(BuildContext context) {
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
-    final crossAxisCount = isLandscape ? 3 : 2;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Explore Categories',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: context.textPrimary,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: context.primary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Explore Categories',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: context.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: FAQData.categories.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
               final category = FAQData.categories[index];
               return _buildCategoryCard(context, category);
@@ -166,34 +176,38 @@ class HelpCenterScreen extends StatelessWidget {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: context.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: context.dividerColor.withValues(alpha: 0.5),
-          ),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: context.primary.withValues(alpha: 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: context.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    context.primary.withValues(alpha: 0.15),
+                    context.primary.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(category.icon, color: context.primary, size: 28),
+              child: Icon(category.icon, color: context.primary, size: 32),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,27 +216,40 @@ class HelpCenterScreen extends StatelessWidget {
                   Text(
                     category.title,
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
                       color: context.textPrimary,
+                      letterSpacing: -0.5,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     category.description,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 13,
                       color: context.textSecondary,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    overflow: TextOverflow.visible,
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: context.textTertiary),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: context.scaffoldBackground,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: context.primary,
+                size: 14,
+              ),
+            ),
           ],
         ),
       ),
@@ -235,39 +262,68 @@ class HelpCenterScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Still Need Help?',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: context.textPrimary,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: context.primary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Still Need Help?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: context.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          _buildEscalationTile(
-            context,
-            icon: Icons.chat_bubble_outline_rounded,
-            title: 'WhatsApp Us',
-            subtitle: 'Get human assistance over chat',
-            onTap: () async {
-              final Uri uri = Uri.parse('https://wa.me/91$whatsappNumber');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildEscalationTile(
-            context,
-            icon: Icons.phone_in_talk_outlined,
-            title: 'Call Support',
-            subtitle: 'Directly speak with our team',
-            onTap: () async {
-              final Uri uri = Uri(scheme: 'tel', path: whatsappNumber);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri);
-              }
-            },
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildEscalationTile(
+                  context,
+                  icon: Icons.chat_bubble_rounded,
+                  title: 'WhatsApp',
+                  subtitle: 'instant support',
+                  color: const Color(0xFF25D366),
+                  onTap: () async {
+                    final Uri uri = Uri.parse(
+                      'https://wa.me/91$whatsappNumber',
+                    );
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildEscalationTile(
+                  context,
+                  icon: Icons.phone_rounded,
+                  title: 'Call Us',
+                  subtitle: 'speak to us',
+                  color: context.primary,
+                  onTap: () async {
+                    final Uri uri = Uri(scheme: 'tel', path: whatsappNumber);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri);
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -279,57 +335,52 @@ class HelpCenterScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     required String subtitle,
+    required Color color,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: context.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: context.dividerColor.withValues(alpha: 0.5),
-          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        child: Row(
+        child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: context.scaffoldBackground,
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: context.primary, size: 24),
+              child: Icon(icon, color: color, size: 28),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: context.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.textSecondary,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: context.textPrimary,
+                letterSpacing: -0.5,
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: context.textTertiary,
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: context.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),

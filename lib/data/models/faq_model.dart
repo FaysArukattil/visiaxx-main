@@ -57,7 +57,7 @@ class FAQData {
         FAQItem(
           question: 'What are the key features of the Visiaxx App?',
           answer:
-              'Key features include: Digital vision screening, AI-assisted early risk detection, Refractive error awareness modules, DR, glaucoma, AMD screening awareness, Eye health education through Visiaxx Music, Patient data management dashboard, and Remote screening capability including Van Herick Shadow Test and Cover-Uncover Test.',
+              'Key features include: Digital vision screening, AI-assisted early risk detection, Refractive error awareness modules, DR, glaucoma, AMD screening awareness, Eye health education through Visiaxx Music, Patient data management dashboard, and Remote screening capability including Van Herick Shadow Test, Contrast Sensitivity Test, and Cover-Uncover Test.',
         ),
         FAQItem(
           question:
@@ -142,9 +142,9 @@ class FAQData {
         ),
         FAQItem(
           question:
-              'When you get stuck while doing the test (e.g. Visual Acuity, Ishihara Color Vision)?',
+              'When you get stuck while doing a test (e.g., Visual Acuity Test, Ishihara Color Vision Test)?',
           answer:
-              'Read the instructions very carefully and do the test. Each test like Visual Acuity, Van Herick Shadow Test or Torchlight Examination has detailed prep steps.',
+              'Read the instructions very carefully and do the test. Each test like Visual Acuity, Ishihara Color Vision, Van Herick Shadow Test, or Torchlight Examination has detailed preparation steps.',
         ),
         FAQItem(
           question: 'Stop the voice recognition?',

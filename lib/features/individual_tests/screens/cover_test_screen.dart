@@ -525,7 +525,7 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
 
         // 🟢 Instructions Overlay (Top - Safe Area)
         Positioned(
-          top: 16 + MediaQuery.paddingOf(context).top,
+          top: 120 + MediaQuery.paddingOf(context).top,
           left: 16,
           right: 16,
           child: _buildInstructionOverlay(
@@ -609,7 +609,7 @@ class _CoverTestScreenContentState extends State<_CoverTestScreenContent>
         // Semi-transparent overlay with eye holes using Clipper
         ClipPath(
           clipper: EyeHoleClipper(),
-          child: Container(color: Colors.black.withAlpha(128)),
+          child: Container(color: Colors.transparent),
         ),
         // Indicators for which eye is covered
         Center(

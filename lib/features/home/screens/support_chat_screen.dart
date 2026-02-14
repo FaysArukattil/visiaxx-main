@@ -145,12 +145,13 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         _addBotMessage(
           "Our clinical suite includes 15+ specialized tests. Which one are you performing?\n\nSelecting a test will provide specific troubleshooting tips and distance rules to ensure accuracy.",
           quickReplies: [
-            'Acuity (Distance)',
-            'Shadow (Glaucoma)',
-            'Color (Ishihara)',
-            'Refractometry',
-            'Stereopsis (3D)',
-            'Peripheral Field',
+            'Visual Acuity Test',
+            'Van Herick Shadow Test',
+            'Ishihara Color Vision',
+            'Mobile Refractometry',
+            'Stereopsis 3D Test',
+            'Visual Field Test',
+            'Contrast Sensitivity Test',
             'Other Tests',
           ],
         );
@@ -160,7 +161,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       // Specific Test Knowledge (Detailed)
       if (lowercaseText.contains('acuity')) {
         _addBotMessage(
-          "🔭 Visual Acuity Pro-Tips:\n\n1. Use a well-lit room (natural light is best).\n2. Stand exactly 1 meter (3.3 feet) from the phone.\n3. Keep the phone at eye level.\n4. If using voice, speak clearly when you see the letter.",
+          "🔭 Visual Acuity Test Pro-Tips:\n\n1. Use a well-lit room (natural light is best).\n2. Stand exactly 1 meter (3.3 feet) from the phone.\n3. Keep the phone at eye level.\n4. If using voice, speak clearly when you see the letter.",
           quickReplies: ['Voice Help', 'Distance Help', 'Main Menu'],
         );
         return;
@@ -181,7 +182,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       if (lowercaseText.contains('shadow') ||
           lowercaseText.contains('glaucoma')) {
         _addBotMessage(
-          "👁️ Shadow Test (IOP) Calibration:\n\nThis test measures the shadow on your iris to screen for Glaucoma risk.\n\n- Hold your phone steady with both hands.\n- Avoid strong overhead lighting that creates 'star' glares on the iris.\n- Ensure the red circular guide covers your pupil perfectly.",
+          "👁️ Van Herick Shadow Test Calibration:\n\nThis test measures the shadow on your iris to screen for Glaucoma risk.\n\n- Hold your phone steady with both hands.\n- Avoid strong overhead lighting that creates 'star' glares on the iris.\n- Ensure the circular guide covers your pupil perfectly.",
           quickReplies: ['Common Fails', 'Main Menu'],
         );
         return;
@@ -196,7 +197,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       if (lowercaseText.contains('color') ||
           lowercaseText.contains('ishihara')) {
         _addBotMessage(
-          "🎨 Color Vision Rules:\n\n- Set screen brightness to 100%.\n- Turn off Blue Light Filter or Night Shift.\n- Do not wear tinted glasses or sunglasses during this test.",
+          "🎨 Ishihara Color Vision Rules:\n\n- Set screen brightness to 100%.\n- Turn off Blue Light Filter or Night Shift.\n- Do not wear tinted glasses or sunglasses during this test.",
           quickReplies: ['Brightness Info', 'Main Menu'],
         );
         return;
@@ -224,7 +225,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
       if (lowercaseText.contains('stereo')) {
         _addBotMessage(
-          "🕶️ Stereopsis (3D) Help:\n\nThis test requires Red/Cyan Anaglyph glasses. If you don't have them, the shapes will remain flat. Ensure you follow the distance calibration carefully.",
+          "🕶️ Stereopsis 3D Test Help:\n\nThis test requires Red/Cyan Anaglyph glasses. If you don't have them, the shapes will remain flat. Ensure you follow the distance calibration carefully.",
           quickReplies: ['No Glasses?', 'Main Menu'],
         );
         return;
@@ -240,7 +241,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           lowercaseText.contains('amsler') ||
           lowercaseText.contains('peripheral')) {
         _addBotMessage(
-          "📡 Visual Field & Amsler Grid:\n\n- Fix your gaze strictly on the center dot.\n- Do not move your eyes to look for the flashing lights.\n- Tap the screen as soon as you perceive a flash in your side-vision.",
+          "📡 Visual Field & Amsler Grid Test:\n\n- Fix your gaze strictly on the center dot.\n- Do not move your eyes to look for the flashing lights.\n- Tap the screen as soon as you perceive a flash in your side-vision.",
           quickReplies: ['Main Menu'],
         );
         return;
@@ -249,14 +250,22 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       if (lowercaseText.contains('hydration') ||
           lowercaseText.contains('blink')) {
         _addBotMessage(
-          "💧 Eye Hydration (Dry Eye):\n\nThe AI detects your blink frequency. Ensure your face is centered and the lighting is sufficient to see your eyes clearly. Avoid heavy makeup for better detection accuracy.",
+          "💧 Eye Hydration Test (Dry Eye):\n\nThe AI detects your blink frequency. Ensure your face is centered and the lighting is sufficient to see your eyes clearly. Avoid heavy makeup for better detection accuracy.",
+        );
+        return;
+      }
+
+      if (lowercaseText.contains('contrast')) {
+        _addBotMessage(
+          "👁️ Contrast Sensitivity Test:\n\nThis test measures how well you can distinguish between an object and the background behind it. Ensure your screen is clean and you are in a room with stable, non-glaring light.",
+          quickReplies: ['Main Menu'],
         );
         return;
       }
 
       if (text == 'Other Tests') {
         _addBotMessage(
-          "We also offer Cover Tests, Torchlight Exams, and Reading Tests. Please follow the on-screen instructions for those specific procedures.",
+          "We also offer Cover-Uncover Test, Torchlight Examination, and Reading Test. Please follow the on-screen instructions for those specific procedures.",
           quickReplies: ['Main Menu'],
         );
         return;
@@ -385,7 +394,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
             Text(
               'VisiBot Assistant',
               style: TextStyle(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w900,
                 fontSize: 18,
                 color: context.textPrimary,
                 letterSpacing: -0.5,
@@ -412,7 +421,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Always active for you',
+                  'Online & Ready',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.greenAccent.shade400,
@@ -440,15 +449,26 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return _buildMessageBubble(message);
+                final isLast = index == _messages.length - 1;
+                return Column(
+                  crossAxisAlignment: message.isUser
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
+                  children: [
+                    _buildMessageBubble(message),
+                    if (isLast &&
+                        !message.isUser &&
+                        message.quickReplies != null)
+                      _buildChatSuggestions(message.quickReplies!),
+                  ],
+                );
               },
             ),
           ),
-          _buildQuickReplies(),
           _buildMessageInput(),
         ],
       ),
@@ -458,100 +478,73 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.isUser;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Align(
-        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.8,
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.85,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: isUser ? context.primary : context.surface,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(24),
+            topRight: const Radius.circular(24),
+            bottomLeft: Radius.circular(isUser ? 24 : 6),
+            bottomRight: Radius.circular(isUser ? 6 : 24),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            gradient: isUser
-                ? LinearGradient(
-                    colors: [
-                      context.primary,
-                      context.primary.withValues(alpha: 0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
-            color: isUser ? null : context.surface,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(20),
-              topRight: const Radius.circular(20),
-              bottomLeft: Radius.circular(isUser ? 20 : 4),
-              bottomRight: Radius.circular(isUser ? 4 : 20),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+          boxShadow: [
+            BoxShadow(
+              color: (isUser ? context.primary : Colors.black).withValues(
+                alpha: 0.05,
               ),
-            ],
-            border: isUser
-                ? null
-                : Border.all(
-                    color: context.dividerColor.withValues(alpha: 0.2),
-                  ),
-          ),
-          child: Text(
-            message.text,
-            style: TextStyle(
-              color: isUser ? Colors.white : context.textPrimary,
-              fontSize: 15,
-              height: 1.5,
-              fontWeight: isUser ? FontWeight.w500 : FontWeight.w400,
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
+          ],
+        ),
+        child: Text(
+          message.text,
+          style: TextStyle(
+            color: isUser ? Colors.white : context.textPrimary,
+            fontSize: 15,
+            height: 1.5,
+            fontWeight: isUser ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildQuickReplies() {
-    final lastMessage = _messages.isNotEmpty ? _messages.last : null;
-    if (lastMessage == null ||
-        lastMessage.isUser ||
-        lastMessage.quickReplies == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: lastMessage.quickReplies!.map((reply) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ActionChip(
-                label: Text(reply),
-                onPressed: () => _addUserMessage(reply),
-                backgroundColor: context.surface,
-                labelStyle: TextStyle(
+  Widget _buildChatSuggestions(List<String> suggestions) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24, top: 4),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: suggestions.map((suggestion) {
+          return InkWell(
+            onTap: () => _addUserMessage(suggestion),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: context.primary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: context.primary.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Text(
+                suggestion,
+                style: TextStyle(
                   color: context.primary,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: context.primary.withValues(alpha: 0.2),
-                  ),
-                ),
-                elevation: 0,
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
