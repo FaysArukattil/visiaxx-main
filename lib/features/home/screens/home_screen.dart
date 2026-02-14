@@ -1,13 +1,18 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
+import '../../../data/models/music_track.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/extensions/theme_extension.dart';
 import 'package:provider/provider.dart';
 import '../../../data/providers/family_member_provider.dart';
 import '../../../data/providers/patient_provider.dart';
+import '../../../data/providers/music_provider.dart';
+import '../../music/screens/music_library_screen.dart';
+import '../../music/screens/now_playing_screen.dart';
 
 /// User home screen with navigation grid and carousel
 class HomeScreen extends StatefulWidget {
@@ -87,6 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
             _user = user;
             _isLoading = false;
           });
+          // Initialize music provider for user role
+          if (user.role == UserRole.user && mounted) {
+            context.read<MusicProvider>().initialize(user.id);
+          }
 
           // Trigger pre-fetching in background
           _preFetchData(user);
@@ -221,7 +230,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             _buildCarousel(constraints),
                             SizedBox(height: constraints.maxHeight * 0.012),
                             _buildCarouselIndicators(),
-                            SizedBox(height: constraints.maxHeight * 0.02),
+                            SizedBox(height: constraints.maxHeight * 0.015),
+                            if (_user?.role == UserRole.user)
+                              _buildMusicSection(constraints),
+                            SizedBox(height: constraints.maxHeight * 0.015),
                             _buildServicesGrid(constraints),
                             SizedBox(height: constraints.maxHeight * 0.02),
                           ],
@@ -822,6 +834,349 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMusicSection(BoxConstraints constraints) {
+    final horizontalPadding = constraints.maxWidth * 0.045;
+    return Consumer<MusicProvider>(
+      builder: (context, music, _) {
+        final tracks = music.allTracks;
+        if (tracks.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.headphones_rounded,
+                    color: context.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Music Library',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: context.textPrimary,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const Spacer(),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MusicLibraryScreen(),
+                        ),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'See All',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: context.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: context.primary,
+                              size: 12,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(duration: 300.ms),
+            const SizedBox(height: 10),
+
+            // Horizontal track cards
+            SizedBox(
+              height: 140,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                itemCount: tracks.length > 10 ? 10 : tracks.length,
+                itemBuilder: (context, index) {
+                  final track = tracks[index];
+                  final isCurrentTrack = music.currentTrack?.id == track.id;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: _buildMusicCard(track, music, isCurrentTrack, index),
+                  );
+                },
+              ),
+            ),
+
+            // Mini player if playing
+            if (music.currentTrack != null)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  10,
+                  horizontalPadding,
+                  0,
+                ),
+                child: _buildHomeMiniPlayer(music),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMusicCard(
+    MusicTrack track,
+    MusicProvider music,
+    bool isCurrentTrack,
+    int index,
+  ) {
+    return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => music.playTrack(track),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: 115,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    track.primaryColor.withValues(
+                      alpha: isCurrentTrack ? 0.9 : 0.75,
+                    ),
+                    track.secondaryColor.withValues(
+                      alpha: isCurrentTrack ? 0.95 : 0.8,
+                    ),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: isCurrentTrack
+                    ? Border.all(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        width: 2,
+                      )
+                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: track.primaryColor.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // Background icon
+                  Positioned(
+                    right: -10,
+                    bottom: -10,
+                    child: Icon(
+                      Icons.music_note_rounded,
+                      color: Colors.white.withValues(alpha: 0.1),
+                      size: 64,
+                    ),
+                  ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Play indicator / icon
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            isCurrentTrack && music.isPlaying
+                                ? Icons.equalizer_rounded
+                                : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              track.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                height: 1.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              track.artist,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        )
+        .animate()
+        .fadeIn(
+          duration: 300.ms,
+          delay: Duration(milliseconds: 50 * index),
+        )
+        .slideX(begin: 0.1, end: 0);
+  }
+
+  Widget _buildHomeMiniPlayer(MusicProvider music) {
+    final track = music.currentTrack!;
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const NowPlayingScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              track.primaryColor.withValues(alpha: 0.85),
+              track.secondaryColor.withValues(alpha: 0.9),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: track.primaryColor.withValues(alpha: 0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: const Icon(
+                Icons.music_note_rounded,
+                color: Colors.white,
+                size: 17,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                track.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => music.togglePlayPause(),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(
+                    music.isPlaying
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => music.skipNext(),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(
+                    Icons.skip_next_rounded,
+                    color: Colors.white.withValues(alpha: 0.8),
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().slideY(
+      begin: 0.5,
+      end: 0,
+      duration: 400.ms,
+      curve: Curves.easeOutCubic,
     );
   }
 

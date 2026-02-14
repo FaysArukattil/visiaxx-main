@@ -83,6 +83,7 @@ import 'data/providers/patient_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/network_connectivity_provider.dart';
 import 'core/providers/voice_recognition_provider.dart';
+import 'data/providers/music_provider.dart';
 
 // AWS Credentials Manager
 import 'core/services/aws_credentials_manager.dart';
@@ -217,6 +218,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => StereopsisProvider()),
         ChangeNotifierProvider(create: (_) => EyeHydrationProvider()),
         ChangeNotifierProvider(create: (_) => VisualFieldProvider()),
+        ChangeNotifierProvider(create: (_) => MusicProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
