@@ -834,32 +834,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMusicSection(BoxConstraints constraints) {
-    final horizontalPadding = constraints.maxWidth * 0.045;
+  Widget _buildMusicSection(BoxConstraints constraints, double height) {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Consumer<MusicProvider>(
       builder: (context, music, _) {
         final track = music.currentTrack;
 
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          child: _MusicServiceCard(
-            icon: Icons.headphones_rounded,
-            title: 'Music Library',
-            subtitle: track != null
-                ? 'Now Playing'
-                : 'Play your favorite tracks',
-            track: track,
-            isPlaying: music.isPlaying,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MusicLibraryScreen()),
-            ),
-            onToggle: () => music.togglePlayPause(),
-            onCancel: () => music.stopAndClear(),
-            screenWidth: screenWidth,
+        return _MusicServiceCard(
+          icon: Icons.headphones_rounded,
+          title: 'Music Library',
+          subtitle: track != null ? 'Now Playing' : 'Play your favorite tracks',
+          track: track,
+          isPlaying: music.isPlaying,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MusicLibraryScreen()),
           ),
+          onToggle: () => music.togglePlayPause(),
+          onCancel: () => music.stopAndClear(),
+          height: height,
+          screenWidth: screenWidth,
         );
       },
     );
@@ -934,7 +929,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SizedBox(height: cardSpacing),
           if (_user?.role == UserRole.user) ...[
-            _buildMusicSection(constraints),
+            _buildMusicSection(constraints, wideCardHeight),
             SizedBox(height: cardSpacing),
           ],
           _WideServiceCard(
@@ -1282,6 +1277,7 @@ class _MusicServiceCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onToggle;
   final VoidCallback onCancel;
+  final double height;
   final double screenWidth;
 
   const _MusicServiceCard({
@@ -1293,6 +1289,7 @@ class _MusicServiceCard extends StatelessWidget {
     required this.onTap,
     required this.onToggle,
     required this.onCancel,
+    required this.height,
     required this.screenWidth,
   });
 
@@ -1337,7 +1334,8 @@ class _MusicServiceCard extends StatelessWidget {
                 ],
               ),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                constraints: BoxConstraints(minHeight: height),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1367,6 +1365,7 @@ class _MusicServiceCard extends StatelessWidget {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
                                   title,
@@ -1391,10 +1390,17 @@ class _MusicServiceCard extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: (availableWidth * 0.038).clamp(16.0, 20.0),
-                            color: context.primary.withValues(alpha: 0.5),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: context.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: (availableWidth * 0.038).clamp(16.0, 20.0),
+                              color: context.primary,
+                            ),
                           ),
                         ],
                       ),
