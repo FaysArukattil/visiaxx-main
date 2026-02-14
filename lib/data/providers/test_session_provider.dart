@@ -144,11 +144,29 @@ class TestSessionProvider extends ChangeNotifier {
     return _getRouteForType(type);
   }
 
+  /// Get the route for starting the current test, including instructions if needed
+  String getStartRouteForCurrentTest() {
+    final route = getCurrentTestRoute();
+    if (route == '/visual-acuity-test' ||
+        route == '/visual-acuity-standalone') {
+      return '/test-instructions';
+    }
+    return route;
+  }
+
   /// Get the route for the next test in the queue
   String getNextTestRoute() {
     final nextType = moveToNextTest();
     if (nextType == null) return '/quick-test-result';
-    return _getRouteForType(nextType);
+    final route = _getRouteForType(nextType);
+
+    // If it's Visual Acuity, go to generic instructions first
+    if (route == '/visual-acuity-test' ||
+        route == '/visual-acuity-standalone') {
+      return '/test-instructions';
+    }
+
+    return route;
   }
 
   /// Mapping from test type to its corresponding route

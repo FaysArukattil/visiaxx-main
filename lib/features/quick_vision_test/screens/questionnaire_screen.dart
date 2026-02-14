@@ -299,7 +299,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     );
 
     provider.setQuestionnaire(questionnaire);
-    Navigator.pushNamed(context, provider.getCurrentTestRoute());
+    Navigator.pushNamed(context, provider.getStartRouteForCurrentTest());
   }
 
   void _showExitConfirmation() {

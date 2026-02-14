@@ -487,7 +487,7 @@ class _PractitionerProfileSelectionScreenState
       provider.startComprehensiveTest();
       // If questionnaire exists, skip to test instructions
       if (questionnaire != null) {
-        Navigator.pushNamed(context, provider.getCurrentTestRoute());
+        Navigator.pushNamed(context, provider.getStartRouteForCurrentTest());
       } else {
         Navigator.pushNamed(context, '/questionnaire');
       }
@@ -495,7 +495,7 @@ class _PractitionerProfileSelectionScreenState
       provider.startTest();
       // If questionnaire exists, skip to test instructions
       if (questionnaire != null) {
-        Navigator.pushNamed(context, provider.getCurrentTestRoute());
+        Navigator.pushNamed(context, provider.getStartRouteForCurrentTest());
       } else {
         Navigator.pushNamed(context, '/questionnaire');
       }
