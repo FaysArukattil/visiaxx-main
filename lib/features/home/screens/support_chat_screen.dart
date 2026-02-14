@@ -139,31 +139,28 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         return;
       }
 
-      // 3. Vision Tests Troubleshooting
-      if (lowercaseText.contains('test') ||
-          lowercaseText.contains('vision') ||
-          lowercaseText.contains('help')) {
+      // 3. Clinical Deep Dives (Specific Test Knowledge)
+      // PRIORITY: Check specific tests BEFORE general "test" or "help" keywords to avoid looping.
+
+      // Visual Acuity
+      if (lowercaseText.contains('acuity')) {
         _addBotMessage(
-          "Our clinical suite includes 15+ specialized tests. Which one are you performing?\n\nSelecting a test will provide specific troubleshooting tips and distance rules to ensure accuracy.",
+          "🔬 Visual Acuity Deep Dive:\n\n• Purpose: Measures the sharpness/clarity of your central vision.\n• Performance: Stand 1 meter (3.3ft) from the device. Read letters as they appear. Use voice or tap to respond.\n• Output: Recorded as Snellen equivalent (e.g., 6/6) or LogMAR score.\n• Why it matters: Vital for detecting myopia, hyperopia, or astigmatism early on.",
           quickReplies: [
-            'Visual Acuity Test',
-            'Van Herick Shadow Test',
-            'Ishihara Color Vision',
-            'Mobile Refractometry',
-            'Stereopsis 3D Test',
-            'Visual Field Test',
-            'Contrast Sensitivity Test',
-            'Other Tests',
+            'How to Respond (Acuity)',
+            'Voice Help',
+            'Distance Help',
+            'Report a Bug',
+            'WhatsApp Support',
+            'Main Menu',
           ],
         );
         return;
       }
-
-      // Specific Test Knowledge (Detailed)
-      if (lowercaseText.contains('acuity')) {
+      if (text == 'How to Respond (Acuity)') {
         _addBotMessage(
-          "🔭 Visual Acuity Test Pro-Tips:\n\n1. Use a well-lit room (natural light is best).\n2. Stand exactly 1 meter (3.3 feet) from the phone.\n3. Keep the phone at eye level.\n4. If using voice, speak clearly when you see the letter.",
-          quickReplies: ['Voice Help', 'Distance Help', 'Main Menu'],
+          "📜 Visual Acuity - How to Respond:\n\n1. 🎤 Voice: Speak the letter clearly (e.g., 'E', 'Left', 'Up').\n2. 🖐️ Touch: Tap the corresponding direction button on the screen.\n3. ⏱️ Timing: You have 10 seconds for each letter. If you miss it, the next letter appears automatically.\n\n✨ [ANIMATION]: Imagine the letter rotating and the mic icon pulsing as you speak! ⚡",
+          quickReplies: ['Voice Help', 'Report a Bug', 'Main Menu'],
         );
         return;
       }
@@ -180,11 +177,25 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         return;
       }
 
+      // Shadow Test / Glaucoma
       if (lowercaseText.contains('shadow') ||
           lowercaseText.contains('glaucoma')) {
         _addBotMessage(
-          "👁️ Van Herick Shadow Test Calibration:\n\nThis test measures the shadow on your iris to screen for Glaucoma risk.\n\n- Hold your phone steady with both hands.\n- Avoid strong overhead lighting that creates 'star' glares on the iris.\n- Ensure the circular guide covers your pupil perfectly.",
-          quickReplies: ['Common Fails', 'Main Menu'],
+          "👁️ Van Herick Shadow Test Deep Dive:\n\n• Purpose: Screens for narrow-angle Glaucoma risk by assessing the anterior chamber depth.\n• Performance: Using the phone's flash, a slit is projected on the iris. Align the guide to capture the shadow.\n• Output: Grade 1 (Narrow) to Grade 4 (Open).\n• Why it matters: Helps identify risks of sudden-onset Glaucoma which can cause permanent vision loss.",
+          quickReplies: [
+            'How to Respond (Shadow)',
+            'Common Fails',
+            'Report a Bug',
+            'WhatsApp Support',
+            'Main Menu',
+          ],
+        );
+        return;
+      }
+      if (text == 'How to Respond (Shadow)') {
+        _addBotMessage(
+          "📸 Shadow Test - How to Respond:\n\n1. 🔦 Flash: The app will turn on your flash automatically.\n2. 🎯 Alignment: Move the phone so the red circular guide covers your iris.\n3. ⏳ Stability: Hold perfectly still for 2 seconds while the AI analyzes the shadow.\n\n✨ [ANIMATION]: Watch the red circle turn GREEN when alignment is locked! 🟢",
+          quickReplies: ['Common Fails', 'Report a Bug', 'Main Menu'],
         );
         return;
       }
@@ -195,11 +206,25 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         return;
       }
 
+      // Color Vision / Ishihara
       if (lowercaseText.contains('color') ||
           lowercaseText.contains('ishihara')) {
         _addBotMessage(
-          "🎨 Ishihara Color Vision Rules:\n\n- Set screen brightness to 100%.\n- Turn off Blue Light Filter or Night Shift.\n- Do not wear tinted glasses or sunglasses during this test.",
-          quickReplies: ['Brightness Info', 'Main Menu'],
+          "🎨 Ishihara Color Vision Deep Dive:\n\n• Purpose: Detects Red-Green color vision deficiency.\n• Performance: Identify hidden numbers or paths within mosaic plates. Set brightness to 100%.\n• Output: Score based on correct identifications (e.g., 10/11 Correct).\n• Why it matters: Important for certain professions and understanding daily color perceptions.",
+          quickReplies: [
+            'How to Respond (Color)',
+            'Brightness Info',
+            'Report a Bug',
+            'WhatsApp Support',
+            'Main Menu',
+          ],
+        );
+        return;
+      }
+      if (text == 'How to Respond (Color)') {
+        _addBotMessage(
+          "🔢 Color Vision - How to Respond:\n\n1. 👁️ Observe: Look at the mosaic plate for 3 seconds.\n2. ⌨️ Input: Type the number you see or select 'I see nothing'.\n3. 📏 Path: For path plates, follow the line with your eyes before selecting the result.\n\n✨ [ANIMATION]: The plates will flip like cards as you progress through the test! 🃏",
+          quickReplies: ['Brightness Info', 'Report a Bug', 'Main Menu'],
         );
         return;
       }
@@ -210,10 +235,24 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         return;
       }
 
+      // Refractometry
       if (lowercaseText.contains('refractometry')) {
         _addBotMessage(
-          "👓 Mobile Refractometry Guide:\n\n- This test calculates your power (Sph/Cyl).\n- REMOVE your glasses/lenses before starting.\n- Keep the phone perfectly vertical.\n- Ensure your eyes are wide open during the capture pulse.",
-          quickReplies: ['Capture Help', 'Main Menu'],
+          "👓 Mobile Refractometry Deep Dive:\n\n• Purpose: Estimates your refractive error (spectacle power requirement).\n• Performance: Remove glasses. Align your eye with the target at 30cm. Face should be well-lit.\n• Output: Diopter values for Spherical (SPH), Cylinder (CYL), and Axis.\n• Why it matters: Provides a quick estimate of your prescription from your home.",
+          quickReplies: [
+            'How to Respond (Refract)',
+            'Capture Help',
+            'Report a Bug',
+            'WhatsApp Support',
+            'Main Menu',
+          ],
+        );
+        return;
+      }
+      if (text == 'How to Respond (Refract)') {
+        _addBotMessage(
+          "🛠️ Refractometry - How to Respond:\n\n1. 👓 Prep: Remove all eyewear.\n2. 📏 Distance: Hold the phone exactly 30cm (1 foot) away.\n3. 🎯 Center: Align the red target ring with your pupil until it pulses.\n\n✨ [ANIMATION]: A bright blue scanning pulse will run across the screen during capture! ☄️",
+          quickReplies: ['Capture Help', 'Report a Bug', 'Main Menu'],
         );
         return;
       }
@@ -224,10 +263,24 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         return;
       }
 
+      // Stereopsis
       if (lowercaseText.contains('stereo')) {
         _addBotMessage(
-          "🕶️ Stereopsis 3D Test Help:\n\nThis test requires Red/Cyan Anaglyph glasses. If you don't have them, the shapes will remain flat. Ensure you follow the distance calibration carefully.",
-          quickReplies: ['No Glasses?', 'Main Menu'],
+          "🕶️ Stereopsis 3D Test Deep Dive:\n\n• Purpose: Evaluates depth perception (how well eyes work together).\n• Performance: Wear Red/Cyan anaglyph glasses. Identify which shape appears closer.\n• Output: Depth sensitivity measured in 'Seconds of Arc'.\n• Why it matters: Essential for sports, driving, and 3D vision health.",
+          quickReplies: [
+            'How to Respond (Stereo)',
+            'No Glasses?',
+            'Report a Bug',
+            'WhatsApp Support',
+            'Main Menu',
+          ],
+        );
+        return;
+      }
+      if (text == 'How to Respond (Stereo)') {
+        _addBotMessage(
+          "📦 Stereopsis - How to Respond:\n\n1. 🕶️ Glasses: Put on your Red/Cyan anaglyph glasses now.\n2. 🕵️ Identify: Look at the 4 shapes. One will 'pop' out towards you.\n3. 👆 Select: Tap the shape that looks closest to you.\n\n✨ [ANIMATION]: Shapes will slowly emerge in 3D as your eyes focus through the filters! 💎",
+          quickReplies: ['No Glasses?', 'Report a Bug', 'Main Menu'],
         );
         return;
       }
@@ -238,36 +291,111 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
         return;
       }
 
+      // Visual Field
       if (lowercaseText.contains('field') ||
           lowercaseText.contains('amsler') ||
           lowercaseText.contains('peripheral')) {
         _addBotMessage(
-          "📡 Visual Field & Amsler Grid Test:\n\n- Fix your gaze strictly on the center dot.\n- Do not move your eyes to look for the flashing lights.\n- Tap the screen as soon as you perceive a flash in your side-vision.",
-          quickReplies: ['Main Menu'],
+          "📡 Visual Field Deep Dive:\n\n• Purpose: Maps your peripheral (side) vision to detect blind spots (scotomas).\n• Performance: Fixate on the center dot. Tap when you see flashes in your side vision.\n• Output: A sensitivity map showing any vision loss areas.\n• Why it matters: Critical for spotting early signs of Glaucoma or Neurological issues.",
+          quickReplies: [
+            'How to Respond (Field)',
+            'Report a Bug',
+            'WhatsApp Support',
+            'Main Menu',
+          ],
+        );
+        return;
+      }
+      if (text == 'How to Respond (Field)') {
+        _addBotMessage(
+          "📡 Visual Field - How to Respond:\n\n1. 🎯 Fixate: Keep your eyes strictly on the center yellow dot.\n2. 🔦 Detect: Faint light pulses will appear randomly in your peripheral vision.\n3. ⌨️ Action: Tap the screen anywhere the instant you perceive a pulse.\n\n✨ [ANIMATION]: Subtle light stars will twinkle across the screen like fireflies! 🎇",
+          quickReplies: ['Report a Bug', 'Main Menu'],
         );
         return;
       }
 
+      // Eye Hydration / Blink
       if (lowercaseText.contains('hydration') ||
           lowercaseText.contains('blink')) {
         _addBotMessage(
-          "💧 Eye Hydration Test (Dry Eye):\n\nThe AI detects your blink frequency. Ensure your face is centered and the lighting is sufficient to see your eyes clearly. Avoid heavy makeup for better detection accuracy.",
+          "💧 Eye Hydration Deep Dive:\n\n• Purpose: Checks for Dry Eye syndrome by monitoring blink frequency.\n• Performance: Face the camera directly. Blink naturally for the duration of the test.\n• Output: Average blink rate and eye surface hydration score.\n• Why it matters: Digital eye strain often leads to low blink rates and dry eye discomfort.",
+          quickReplies: [
+            'How to Respond (Blink)',
+            'Report a Bug',
+            'WhatsApp Support',
+            'Main Menu',
+          ],
+        );
+        return;
+      }
+      if (text == 'How to Respond (Blink)') {
+        _addBotMessage(
+          "💧 Eye Hydration - How to Respond:\n\n1. 🤳 Selfie: Hold the phone at a comfortable reading distance (40cm).\n2. 👁️ Eyes: Ensure your eyes are clearly visible in the preview.\n3. 😌 Relax: Simply blink as you normally would while the timer counts down.\n\n✨ [ANIMATION]: A water droplet icon will fill up as each blink is successfully detected! 💧",
+          quickReplies: ['Report a Bug', 'Main Menu'],
         );
         return;
       }
 
+      // Contrast Sensitivity
       if (lowercaseText.contains('contrast')) {
         _addBotMessage(
-          "👁️ Contrast Sensitivity Test:\n\nThis test measures how well you can distinguish between an object and the background behind it. Ensure your screen is clean and you are in a room with stable, non-glaring light.",
-          quickReplies: ['Main Menu'],
+          "👁️ Contrast Sensitivity Deep Dive:\n\n• Purpose: Measures ability to distinguish objects from backgrounds (useful for early Cataract/Glaucoma).\n• Performance: Identify letters or gratings that gradually fade in contrast.\n• Output: Contrast threshold percentage.\n• Why it matters: High sensitivity is needed for night driving and reading in low light.",
+          quickReplies: [
+            'How to Respond (Contrast)',
+            'Report a Bug',
+            'WhatsApp Support',
+            'Main Menu',
+          ],
+        );
+        return;
+      }
+      if (text == 'How to Respond (Contrast)') {
+        _addBotMessage(
+          "👁️ Contrast - How to Respond:\n\n1. 📖 Read: Look at the letters on the screen.\n2. 📉 Fade: Each set will be harder to see than the last.\n3. ⌨️ Input: Tap the letter you see until it becomes invisible.\n\n✨ [ANIMATION]: Watch the letters slowly 'ghost' away as they merge with the background! 🌫️",
+          quickReplies: ['Report a Bug', 'Main Menu'],
         );
         return;
       }
 
-      if (text == 'Other Tests') {
+      // Screening Exams
+      if (text == 'Other Tests' ||
+          lowercaseText.contains('cover') ||
+          lowercaseText.contains('torch')) {
         _addBotMessage(
-          "We also offer Cover-Uncover Test, Torchlight Examination, and Reading Test. Please follow the on-screen instructions for those specific procedures.",
-          quickReplies: ['Main Menu'],
+          "🩺 Screening Exams (Cover & Torchlight):\n\n• Cover-Uncover: Detects eye misalignment/squint (Strabismus). Observe eyes as they are covered/uncovered.\n• Torchlight Exam: Checks pupil reactions (RAPD) and eye muscle range of motion.\n• Why it matters: These tests help identify functional eye issues that specialized tests might miss.",
+          quickReplies: [
+            'How to Respond (Screening)',
+            'Report a Bug',
+            'WhatsApp Support',
+            'Main Menu',
+          ],
+        );
+        return;
+      }
+      if (text == 'How to Respond (Screening)') {
+        _addBotMessage(
+          "🩺 Screening Exams - How to Respond:\n\n1. 🔦 Torchlight: Look straight ahead as a light source passes over your eyes to check for pupil reflex.\n2. 🙈 Cover Test: Keep both eyes open, but look at the distant object as one eye is covered.\n3. 🎬 Observation: These are observation-based tests; simply follow the on-screen animation guidance.\n\n✨ [ANIMATION]: A virtual covering hand will appear over the patient's eye on screen! ✋",
+          quickReplies: ['Report a Bug', 'Main Menu'],
+        );
+        return;
+      }
+
+      // 4. General Vision Tests Troubleshooting (Catch-all)
+      if (lowercaseText.contains('test') ||
+          lowercaseText.contains('vision') ||
+          lowercaseText.contains('help')) {
+        _addBotMessage(
+          "Our clinical suite includes 15+ specialized tests. Which one are you performing?\n\nSelecting a test will provide specific troubleshooting tips and distance rules to ensure accuracy.",
+          quickReplies: [
+            'Visual Acuity Test',
+            'Van Herick Shadow Test',
+            'Ishihara Color Vision',
+            'Mobile Refractometry',
+            'Stereopsis 3D Test',
+            'Visual Field Test',
+            'Contrast Sensitivity Test',
+            'Other Tests',
+          ],
         );
         return;
       }
