@@ -900,6 +900,15 @@ class _HomeScreenState extends State<HomeScreen> {
             screenWidth: screenWidth,
           ),
           SizedBox(height: cardSpacing),
+          _WideServiceCard(
+            icon: Icons.list_alt_rounded,
+            title: 'Individual Test Options',
+            subtitle: 'Select specific tests sequentially',
+            onTap: () => Navigator.pushNamed(context, '/individual-tests'),
+            height: wideCardHeight,
+            screenWidth: screenWidth,
+          ),
+          SizedBox(height: cardSpacing),
           Row(
             children: [
               Expanded(

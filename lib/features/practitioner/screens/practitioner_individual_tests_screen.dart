@@ -17,6 +17,25 @@ class IndividualTestsScreen extends StatefulWidget {
 class _IndividualTestsScreenState extends State<IndividualTestsScreen> {
   // Track selected tests in order
   final List<String> _selectedTests = [];
+  UserRole? _userRole;
+  bool _isRoleLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    final authService = AuthService();
+    final role = await authService.getCurrentUserRole();
+    if (mounted) {
+      setState(() {
+        _userRole = role;
+        _isRoleLoading = false;
+      });
+    }
+  }
 
   void _toggleTestSelection(String testType) {
     setState(() {
@@ -66,6 +85,10 @@ class _IndividualTestsScreenState extends State<IndividualTestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isRoleLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -210,12 +233,14 @@ class _IndividualTestsScreenState extends State<IndividualTestsScreen> {
     return Column(
       children: [
         // Add Patient Card (for receptionists in eye camp workflow)
-        _AddPatientCard(
-          onTap: () =>
-              Navigator.pushNamed(context, '/add-patient-questionnaire'),
-          screenWidth: screenWidth,
-        ),
-        SizedBox(height: cardSpacing * 1.5),
+        if (_userRole == UserRole.examiner) ...[
+          _AddPatientCard(
+            onTap: () =>
+                Navigator.pushNamed(context, '/add-patient-questionnaire'),
+            screenWidth: screenWidth,
+          ),
+          SizedBox(height: cardSpacing * 1.5),
+        ],
         // Divider with text
         Row(
           children: [
@@ -292,22 +317,6 @@ class _IndividualTestsScreenState extends State<IndividualTestsScreen> {
           screenWidth,
         ),
         _buildTestItem(
-          'shadow_test',
-          Icons.wb_sunny_outlined,
-          'Van Herick Shadow Test',
-          'Assess anterior chamber depth and glaucoma risk using shadow analysis',
-          cardSpacing,
-          screenWidth,
-        ),
-        _buildTestItem(
-          'stereopsis',
-          Icons.threed_rotation_rounded,
-          'Stereopsis Test',
-          'Assess depth perception and binocular vision using 3D anaglyph patterns',
-          cardSpacing,
-          screenWidth,
-        ),
-        _buildTestItem(
           'eye_hydration',
           Icons.opacity_rounded,
           'Eye Hydration',
@@ -315,30 +324,48 @@ class _IndividualTestsScreenState extends State<IndividualTestsScreen> {
           cardSpacing,
           screenWidth,
         ),
-        _buildTestItem(
-          'visual_field',
-          Icons.track_changes_outlined,
-          'Visual Field',
-          'Test your peripheral vision sensitivity across four quadrants',
-          cardSpacing,
-          screenWidth,
-        ),
-        _buildTestItem(
-          'cover_test',
-          Icons.visibility_outlined,
-          'Cover-Uncover Test',
-          'Assess eye alignment and detect strabismus through cover test',
-          cardSpacing,
-          screenWidth,
-        ),
-        _buildTestItem(
-          'torchlight',
-          Icons.highlight_rounded,
-          'Torchlight Examination',
-          'Check pupil reflexes and extraocular muscle movements using torchlight',
-          0, // Last item
-          screenWidth,
-        ),
+        if (_userRole == UserRole.examiner) ...[
+          _buildTestItem(
+            'shadow_test',
+            Icons.wb_sunny_outlined,
+            'Van Herick Shadow Test',
+            'Assess anterior chamber depth and glaucoma risk using shadow analysis',
+            cardSpacing,
+            screenWidth,
+          ),
+          _buildTestItem(
+            'stereopsis',
+            Icons.threed_rotation_rounded,
+            'Stereopsis Test',
+            'Assess depth perception and binocular vision using 3D anaglyph patterns',
+            cardSpacing,
+            screenWidth,
+          ),
+          _buildTestItem(
+            'visual_field',
+            Icons.track_changes_outlined,
+            'Visual Field',
+            'Test your peripheral vision sensitivity across four quadrants',
+            cardSpacing,
+            screenWidth,
+          ),
+          _buildTestItem(
+            'cover_test',
+            Icons.visibility_outlined,
+            'Cover-Uncover Test',
+            'Assess eye alignment and detect strabismus through cover test',
+            cardSpacing,
+            screenWidth,
+          ),
+          _buildTestItem(
+            'torchlight',
+            Icons.highlight_rounded,
+            'Torchlight Examination',
+            'Check pupil reflexes and extraocular muscle movements using torchlight',
+            0, // Last item
+            screenWidth,
+          ),
+        ],
       ],
     );
   }
