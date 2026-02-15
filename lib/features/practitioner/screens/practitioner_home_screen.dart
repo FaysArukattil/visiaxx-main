@@ -6,6 +6,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../core/services/dashboard_persistence_service.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/glass_chat_button.dart';
 import '../../../data/providers/patient_provider.dart';
 import '../../../data/models/test_result_model.dart';
 
@@ -158,28 +159,32 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(child: EyeLoader.fullScreen())
-            : LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(constraints),
-                        SizedBox(height: constraints.maxHeight * 0.015),
-                        _buildCarousel(constraints),
-                        SizedBox(height: constraints.maxHeight * 0.012),
-                        _buildCarouselIndicators(),
-                        SizedBox(height: constraints.maxHeight * 0.02),
-                        _buildServicesGrid(constraints),
-                        SizedBox(height: constraints.maxHeight * 0.02),
-                      ],
-                    ),
-                  );
-                },
-              ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: _isLoading
+                ? const Center(child: EyeLoader.fullScreen())
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeader(constraints),
+                            SizedBox(height: constraints.maxHeight * 0.015),
+                            _buildCarousel(constraints),
+                            SizedBox(height: constraints.maxHeight * 0.012),
+                            _buildCarouselIndicators(),
+                            SizedBox(height: constraints.maxHeight * 0.02),
+                            _buildServicesGrid(constraints),
+                            SizedBox(height: constraints.maxHeight * 0.02),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -235,7 +240,7 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                   horizontal: screenWidth * 0.035,
                   vertical: screenHeight * 0.01,
                 ),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -244,14 +249,16 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                       Theme.of(context).primaryColor.withValues(alpha: 0.03),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.15),
-                    width: 1.2,
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(40),
+                    side: BorderSide(
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.15),
+                      width: 1.2,
+                    ),
                   ),
-                  boxShadow: [
+                  shadows: [
                     BoxShadow(
                       color: Theme.of(
                         context,
@@ -282,6 +289,8 @@ class _PractitionerHomeScreenState extends State<PractitionerHomeScreen> {
                   ],
                 ),
               ),
+              const SizedBox(width: 10),
+              const GlassChatButton(),
             ],
           ),
           SizedBox(height: screenHeight * 0.015),

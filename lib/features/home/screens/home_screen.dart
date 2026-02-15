@@ -5,6 +5,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/music_track.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/glass_chat_button.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/extensions/theme_extension.dart';
 import 'package:provider/provider.dart';
@@ -336,6 +337,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
+              const SizedBox(width: 10),
+              const GlassChatButton(),
             ],
           ),
           SizedBox(height: screenHeight * 0.015),
