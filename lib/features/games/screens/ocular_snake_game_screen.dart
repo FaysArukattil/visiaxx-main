@@ -19,7 +19,7 @@ class OcularSnakeGameScreen extends StatefulWidget {
 class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
   // Game Configuration
   static const int _gridSize = 20;
-  static const Duration _baseSpeed = Duration(milliseconds: 250);
+  static const Duration _baseSpeed = Duration(milliseconds: 150);
 
   // Game State
   List<Point<int>> _snake = [
@@ -36,6 +36,9 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
   bool _isGameOver = false;
   bool _isPlaying = false;
   Timer? _timer;
+
+  // Joystick State
+  Offset _joystickPos = Offset.zero;
 
   final List<String> _words = [
     'IRIS',
@@ -177,7 +180,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
           children: [
             _buildHeader(),
             Expanded(child: _buildGameBoard()),
-            _buildControls(),
+            _buildJoystick(),
           ],
         ),
       ),
@@ -451,71 +454,111 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
     );
   }
 
-  Widget _buildControls() {
-    return Padding(
-      padding: const EdgeInsets.all(40),
+  Widget _buildJoystick() {
+    return Container(
+      padding: const EdgeInsets.only(bottom: 40),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildControlButton(
-                Icons.keyboard_arrow_up_rounded,
-                Direction.up,
-              ),
-            ],
+          Text(
+            'CONTROL TRACKPAD',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.3),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildControlButton(
-                Icons.keyboard_arrow_left_rounded,
-                Direction.left,
+          const SizedBox(height: 16),
+          GestureDetector(
+            onPanUpdate: (details) {
+              if (!_isPlaying && !_isGameOver) return;
+
+              // Center is 75,75 for a 150x150 container
+              final center = const Offset(75, 75);
+              final rawOffset = details.localPosition - center;
+
+              // Constrain ball movement to a radius of 35
+              final distance = rawOffset.distance;
+              final limitedOffset = distance > 35
+                  ? rawOffset * (35 / distance)
+                  : rawOffset;
+
+              setState(() {
+                _joystickPos = limitedOffset;
+              });
+
+              // Significant movement required to change direction (threshold 10)
+              if (limitedOffset.dx.abs() > limitedOffset.dy.abs()) {
+                if (limitedOffset.dx > 10 && _direction != Direction.left) {
+                  _direction = Direction.right;
+                } else if (limitedOffset.dx < -10 &&
+                    _direction != Direction.right) {
+                  _direction = Direction.left;
+                }
+              } else {
+                if (limitedOffset.dy > 10 && _direction != Direction.up) {
+                  _direction = Direction.down;
+                } else if (limitedOffset.dy < -10 &&
+                    _direction != Direction.up) {
+                  _direction = Direction.up;
+                }
+              }
+            },
+            onPanEnd: (_) => setState(() => _joystickPos = Offset.zero),
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.03),
+                border: Border.all(color: Colors.white12, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.primary.withValues(alpha: 0.05),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                  ),
+                ],
               ),
-              const SizedBox(width: 40),
-              _buildControlButton(
-                Icons.keyboard_arrow_right_rounded,
-                Direction.right,
+              child: Center(
+                child: Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        context.primary.withValues(alpha: 0.3),
+                        context.primary.withValues(alpha: 0.05),
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Transform.translate(
+                      offset: _joystickPos,
+                      child: Container(
+                        width: 45,
+                        height: 45,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: context.primary.withValues(alpha: 0.4),
+                              blurRadius: 15,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildControlButton(
-                Icons.keyboard_arrow_down_rounded,
-                Direction.down,
-              ),
-            ],
+            ),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildControlButton(IconData icon, Direction dir) {
-    return GestureDetector(
-      onTap: () {
-        if (_isOpposite(dir)) return;
-        setState(() => _direction = dir);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white12),
-        ),
-        child: Icon(icon, color: Colors.white, size: 32),
-      ),
-    );
-  }
-
-  bool _isOpposite(Direction newDir) {
-    if (_direction == Direction.up && newDir == Direction.down) return true;
-    if (_direction == Direction.down && newDir == Direction.up) return true;
-    if (_direction == Direction.left && newDir == Direction.right) return true;
-    if (_direction == Direction.right && newDir == Direction.left) return true;
-    return false;
   }
 }
