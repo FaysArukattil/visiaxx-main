@@ -934,6 +934,15 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_user?.role == UserRole.user) ...[
             _buildMusicSection(constraints, wideCardHeight),
             SizedBox(height: cardSpacing),
+            _WideServiceCard(
+              icon: Icons.sports_esports_outlined,
+              title: 'Eye Therapy Games',
+              subtitle: 'Fun exercises for your eyes',
+              onTap: () => Navigator.pushNamed(context, '/game-selection'),
+              height: wideCardHeight,
+              screenWidth: screenWidth,
+            ),
+            SizedBox(height: cardSpacing),
           ],
           _WideServiceCard(
             icon: Icons.assessment_outlined,
@@ -1016,6 +1025,7 @@ class _CompactServiceCard extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, cardConstraints) {
         final availableWidth = cardConstraints.maxWidth;
+        final Color activeColor = context.primary;
         final iconSize = (availableWidth * 0.18).clamp(
           28.0,
           36.0,
@@ -1029,28 +1039,27 @@ class _CompactServiceCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: context.primary.withValues(alpha: 0.1),
-            highlightColor: context.primary.withValues(alpha: 0.05),
+            splashColor: activeColor.withValues(alpha: 0.1),
+            highlightColor: activeColor.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    context.primary.withValues(alpha: 0.08),
-                    context.primary.withValues(alpha: 0.03),
+                    activeColor.withValues(alpha: 0.08),
+                    activeColor.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: context.primary.withValues(alpha: 0.15),
+                  color: activeColor.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: context.primary.withValues(alpha: 0.05),
-                    blurRadius: 12,
-                    spreadRadius: 0,
+                    color: activeColor.withValues(alpha: 0.05),
+                    blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1070,11 +1079,7 @@ class _CompactServiceCard extends StatelessWidget {
                           color: context.scaffoldBackground,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          icon,
-                          color: context.primary,
-                          size: iconSize,
-                        ),
+                        child: Icon(icon, color: activeColor, size: iconSize),
                       ),
                       SizedBox(height: cardPadding * 0.8),
                     ],
@@ -1087,7 +1092,7 @@ class _CompactServiceCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: titleFontSize,
-                            color: context.primary,
+                            color: activeColor,
                             height: 1.1,
                             letterSpacing: -0.2,
                           ),
@@ -1150,33 +1155,34 @@ class _WideServiceCard extends StatelessWidget {
           12.0,
         );
 
+        final Color activeColor = context.primary;
+
         return Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            splashColor: context.primary.withValues(alpha: 0.1),
-            highlightColor: context.primary.withValues(alpha: 0.05),
+            splashColor: activeColor.withValues(alpha: 0.1),
+            highlightColor: activeColor.withValues(alpha: 0.05),
             child: Ink(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    context.primary.withValues(alpha: 0.08),
-                    context.primary.withValues(alpha: 0.03),
+                    activeColor.withValues(alpha: 0.08),
+                    activeColor.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: context.primary.withValues(alpha: 0.15),
+                  color: activeColor.withValues(alpha: 0.15),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: context.primary.withValues(alpha: 0.05),
-                    blurRadius: 12,
-                    spreadRadius: 0,
+                    color: activeColor.withValues(alpha: 0.05),
+                    blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1200,11 +1206,7 @@ class _WideServiceCard extends StatelessWidget {
                           color: context.scaffoldBackground,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          icon,
-                          color: context.primary,
-                          size: iconSize,
-                        ),
+                        child: Icon(icon, color: activeColor, size: iconSize),
                       ),
                       SizedBox(
                         width: (cardConstraints.maxWidth * 0.03).clamp(
@@ -1223,7 +1225,7 @@ class _WideServiceCard extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: titleFontSize,
-                              color: context.primary,
+                              color: activeColor,
                               letterSpacing: -0.3,
                               height: 1.2,
                             ),
