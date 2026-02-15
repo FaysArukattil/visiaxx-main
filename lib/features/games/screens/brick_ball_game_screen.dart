@@ -16,6 +16,12 @@ class BrickAndBallGameScreen extends StatefulWidget {
 }
 
 class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  }
+
   // Game state
   bool _isPlaying = false;
   int _score = 0;
@@ -26,6 +32,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   // Screen dimensions
   late double _screenWidth;
   late double _screenHeight;
+  double _lastWidth = 0;
 
   // Paddle/Brick state
   late double _paddleX;
@@ -37,10 +44,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
 
   // Bricks state
   final List<_Brick> _bricks = [];
-  double _brickWidth = 60.0;
-  double _brickHeight = 25.0;
   int _rows = 4;
-  int _cols = 6;
 
   // Balls state
   late List<_Ball> _balls;
@@ -61,6 +65,12 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
 
   @override
   void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _gameTimer?.cancel();
     super.dispose();
   }
@@ -79,46 +89,63 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
 
   void _initBricks() {
     _bricks.clear();
-    // Professional Mechanic: Bricks get smaller as level increases
-    _brickWidth = (60.0 - (_level * 2)).clamp(35.0, 60.0);
-    _brickHeight = (25.0 - (_level * 0.5)).clamp(18.0, 25.0);
-    _cols = (_screenWidth / (_brickWidth + 5)).floor().clamp(4, 9);
-    _rows = (3 + (_level / 2).floor()).clamp(3, 7);
+    final random = math.Random();
 
-    double totalGridWidth = _cols * (_brickWidth + 5);
-    double startX = (_screenWidth - totalGridWidth) / 2;
+    // Professional Mechanic: Bricks get smaller as level increases
+    double baseWidth = (70.0 - (_level * 2)).clamp(40.0, 70.0);
+    double baseHeight = (30.0 - (_level * 0.5)).clamp(20.0, 30.0);
+
+    _rows = (3 + (_level / 2).floor()).clamp(3, 8);
+
+    double currentY = 100.0;
     for (int r = 0; r < _rows; r++) {
-      for (int c = 0; c < _cols; c++) {
+      double currentX = 20.0;
+      while (currentX < _screenWidth - 40) {
+        // Randomize width for each brick
+        double w = baseWidth * (0.8 + random.nextDouble() * 0.4);
+        double h = baseHeight * (0.9 + random.nextDouble() * 0.2);
+
+        // Ensure it doesn't overflow screen width
+        if (currentX + w > _screenWidth - 20) {
+          w = _screenWidth - 20 - currentX;
+        }
+
+        if (w < 20) break;
+
+        // Level 3+ introduces Strong bricks (2 hits)
+        int health =
+            (_level >= 3 && random.nextDouble() < 0.2 + (_level * 0.05))
+            ? 2
+            : 1;
+
         _bricks.add(
           _Brick(
-            rect: Rect.fromLTWH(
-              startX + c * (_brickWidth + 5),
-              100 + r * (_brickHeight + 5),
-              _brickWidth,
-              _brickHeight,
-            ),
-            isGreen: (r + c) % 2 == 0,
+            rect: Rect.fromLTWH(currentX, currentY, w, h),
+            isGreen: random.nextBool(),
+            health: health,
           ),
         );
+        currentX += w + 5;
       }
+      currentY += baseHeight + 5;
     }
   }
 
   void _initBalls() {
     // Professional Mechanic: Balls go UP initially and start at paddle
-    double initialSpeed = (2.5 + (_level * 0.2)).clamp(2.5, 4.5);
+    double initialSpeed = (2.8 + (_level * 0.2)).clamp(2.8, 5.0);
     _balls = [
       _Ball(
         x: _paddleX + 20,
         y: _screenHeight - 150,
-        vx: -initialSpeed,
+        vx: -initialSpeed * 0.8,
         vy: -initialSpeed,
         isGreen: true,
       ),
       _Ball(
         x: _paddleX + _paddleWidth - 40,
         y: _screenHeight - 150,
-        vx: initialSpeed,
+        vx: initialSpeed * 0.8,
         vy: -initialSpeed,
         isGreen: false,
       ),
@@ -180,15 +207,19 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
         for (var brick in _bricks.where((b) => !b.isBroken)) {
           if (brick.rect.overlaps(Rect.fromLTWH(ball.x, ball.y, 20, 20))) {
             if (brick.isGreen == ball.isGreen) {
-              brick.isBroken = true;
-              _score += 10;
-              _createParticles(
-                ball.x + 10,
-                ball.y + 10,
-                ball.isGreen ? Colors.green : Colors.red,
-              );
+              brick.health--;
+              if (brick.isBroken) {
+                _score += 10;
+                _createParticles(
+                  ball.x + 10,
+                  ball.y + 10,
+                  ball.isGreen ? Colors.green : Colors.red,
+                );
+                HapticFeedback.mediumImpact();
+              } else {
+                HapticFeedback.lightImpact();
+              }
               ball.vy *= -1;
-              HapticFeedback.mediumImpact();
               SystemSound.play(SystemSoundType.click);
             } else {
               // Wrong color: just bounce without breaking
@@ -250,75 +281,92 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => Center(
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: context.primary.withValues(alpha: 0.5),
-              width: 2,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: context.primary.withValues(alpha: 0.5),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: context.primary.withValues(alpha: 0.3),
+                  blurRadius: 40,
+                  spreadRadius: 10,
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: context.primary.withValues(alpha: 0.3),
-                blurRadius: 40,
-                spreadRadius: 10,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.stars_rounded, color: Colors.amber, size: 80)
-                  .animate()
-                  .scale(duration: 600.ms, curve: Curves.elasticOut)
-                  .shimmer(delay: 600.ms),
-              const SizedBox(height: 24),
-              const Text(
-                'LEVEL COMPLETE!',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Challenge increases as you progress.',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _level++;
-                    _startGame();
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 48,
-                    vertical: 16,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.stars_rounded, color: Colors.amber, size: 80)
+                      .animate()
+                      .scale(duration: 600.ms, curve: Curves.elasticOut)
+                      .shimmer(delay: 600.ms),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'LEVEL COMPLETE!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Challenge increases as you progress.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                child: const Text(
-                  'NEXT LEVEL',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
+                  const SizedBox(height: 32),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 16,
+                    runSpacing: 12,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          setState(() {
+                            _level++;
+                            _startGame();
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 48,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'NEXT LEVEL',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -334,26 +382,140 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Game Over ❌'),
-        content: Text('Your Score: $_score'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Exit'),
+      builder: (context) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: context.primary.withValues(alpha: 0.5),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: context.primary.withValues(alpha: 0.3),
+                  blurRadius: 40,
+                  spreadRadius: 10,
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.sentiment_very_dissatisfied,
+                    color: Colors.redAccent,
+                    size: 80,
+                  ).animate().shake(duration: 600.ms),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'GAME OVER',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildMiniStat('FINAL SCORE', '$_score', Colors.amber),
+                        const SizedBox(width: 24),
+                        _buildMiniStat('LEVEL REACHED', '$_level', Colors.blue),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 16,
+                    runSpacing: 12,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                        },
+                        child: Text(
+                          'EXIT',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _startGame();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 40,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'TRY AGAIN',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _startGame();
-            },
-            child: const Text('Try Again'),
-          ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildMiniStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: color.withValues(alpha: 0.7),
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 
@@ -386,236 +548,333 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black, // Dark background for focus
-      body: Stack(
-        children: [
-          // Background Decor (Subtle)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.5,
-                  colors: [Colors.grey.withValues(alpha: 0.1), Colors.black],
-                ),
-              ),
-            ),
-          ),
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            if (_lastWidth != 0 && _lastWidth != constraints.maxWidth) {
+              double ratio = constraints.maxWidth / _lastWidth;
+              // Scale bricks
+              for (var brick in _bricks) {
+                brick.rect = Rect.fromLTWH(
+                  brick.rect.left * ratio,
+                  brick.rect.top,
+                  brick.rect.width * ratio,
+                  brick.rect.height,
+                );
+              }
+              // Scale paddle
+              _paddleX *= ratio;
+              _paddleX = _paddleX.clamp(0, constraints.maxWidth - _paddleWidth);
 
-          // Header
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Scale balls
+              if (_isPlaying) {
+                for (var ball in _balls) {
+                  ball.x *= ratio;
+                  ball.x = ball.x.clamp(0, constraints.maxWidth - 20);
+                }
+              }
+            }
+            _lastWidth = constraints.maxWidth;
+            _screenWidth = constraints.maxWidth;
+            _screenHeight = constraints.maxHeight;
+
+            return Scaffold(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              body: Stack(
                 children: [
-                  _buildStatCard('SCORE', '$_score', Colors.amber),
-                  _buildStatCard('LEVEL', '$_level', Colors.blue),
-                  Row(
-                    children: List.generate(
-                      3,
-                      (index) =>
-                          Icon(
-                                index < _lives
-                                    ? Icons.favorite_rounded
-                                    : Icons.favorite_border_rounded,
-                                color: index < _lives
-                                    ? Colors.red
-                                    : Colors.red.withValues(alpha: 0.3),
-                                size: 20,
-                              )
-                              .animate(target: index < _lives ? 0 : 1)
-                              .shake(duration: 400.ms),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Drag Handler (Bottom Region)
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onPanUpdate: (details) {
-                if (!_isPlaying) return;
-                setState(() {
-                  _paddleX = (_paddleX + details.delta.dx).clamp(
-                    0,
-                    _screenWidth - _paddleWidth,
-                  );
-                });
-              },
-            ),
-          ),
-
-          // Particle Layer
-          ..._particles.map(
-            (p) => Positioned(
-              left: p.x,
-              top: p.y,
-              child: Opacity(
-                opacity: p.life.clamp(0.0, 1.0),
-                child: Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: p.color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Game Elements
-          // Game Elements (Bricks)
-          ..._bricks
-              .where((b) => !b.isBroken)
-              .map(
-                (brick) => Positioned(
-                  left: brick.rect.left,
-                  top: brick.rect.top,
-                  child: _BrickWidget(
-                    isGreen: brick.isGreen,
-                    width: _brickWidth,
-                    height: _brickHeight,
-                  ),
-                ),
-              ),
-
-          // Game Elements (Balls)
-          if (_isPlaying) ...[
-            ..._balls.map((ball) => _BallWidget(ball: ball)),
-
-            // Paddle (Brick)
-            Positioned(
-              left:
-                  _paddleX + (math.Random().nextDouble() - 0.5) * _shakeAmount,
-              top:
-                  _screenHeight -
-                  120 +
-                  (math.Random().nextDouble() - 0.5) * _shakeAmount,
-              child: _PaddleWidget(width: _paddleWidth, height: _paddleHeight),
-            ),
-
-            // Instruction Label
-            Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Text(
-                  'Keep both colored balls in play',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-
-          // Start Screen Overlay
-          if (!_isPlaying)
-            Container(
-              color: Colors.black.withValues(alpha: 0.8),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                          Icons.grid_view_rounded,
-                          size: 100,
-                          color: Colors.orange,
-                        )
-                        .animate(onPlay: (c) => c.repeat())
-                        .shimmer(duration: 2.seconds),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Brick & Ball',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 40),
-                      child: Text(
-                        'This game improves your hand-eye coordination, saccadic eye movements, and color-specific tracking. By managing two targets at once, you strengthen your visual focus and reaction time.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 40),
-                      child: Text(
-                        'Tip: Catching a ball on the WRONG color of the paddle increases its speed!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.amber,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                  // Background Decor (Subtle)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: Alignment.center,
+                          radius: 1.5,
+                          colors: [
+                            Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.05),
+                            Theme.of(context).scaffoldBackgroundColor,
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: _startGame,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: context.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 48,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'START GAME',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  ),
+
+                  // Header
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: _screenWidth - 40,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildStatCard('SCORE', '$_score', Colors.amber),
+                              _buildStatCard('LEVEL', '$_level', Colors.blue),
+                              Row(
+                                children: List.generate(
+                                  3,
+                                  (index) =>
+                                      Icon(
+                                            index < _lives
+                                                ? Icons.favorite_rounded
+                                                : Icons.favorite_border_rounded,
+                                            color: index < _lives
+                                                ? Colors.red
+                                                : Colors.red.withValues(
+                                                    alpha: 0.3,
+                                                  ),
+                                            size: 20,
+                                          )
+                                          .animate(
+                                            target: index < _lives ? 0 : 1,
+                                          )
+                                          .shake(duration: 400.ms),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'Back to Menu',
-                        style: TextStyle(color: Colors.white60),
+                  ),
+
+                  // Drag Handler (Bottom Region)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onPanUpdate: (details) {
+                        if (!_isPlaying) return;
+                        setState(() {
+                          _paddleX = (_paddleX + details.delta.dx).clamp(
+                            0,
+                            _screenWidth - _paddleWidth,
+                          );
+                        });
+                      },
+                    ),
+                  ),
+
+                  // Particle Layer
+                  ..._particles.map(
+                    (p) => Positioned(
+                      left: p.x,
+                      top: p.y,
+                      child: Opacity(
+                        opacity: p.life.clamp(0.0, 1.0),
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: p.color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Game Elements (Bricks)
+                  ..._bricks
+                      .where((b) => !b.isBroken)
+                      .map(
+                        (brick) => Positioned(
+                          left: brick.rect.left,
+                          top: brick.rect.top,
+                          child: _BrickWidget(brick: brick),
+                        ),
+                      ),
+
+                  // Game Elements (Balls)
+                  if (_isPlaying) ...[
+                    ..._balls.map((ball) => _BallWidget(ball: ball)),
+
+                    // Paddle (Brick)
+                    Positioned(
+                      left:
+                          _paddleX +
+                          (math.Random().nextDouble() - 0.5) * _shakeAmount,
+                      top:
+                          _screenHeight -
+                          120 +
+                          (math.Random().nextDouble() - 0.5) * _shakeAmount,
+                      child: _PaddleWidget(
+                        width: _paddleWidth,
+                        height: _paddleHeight,
+                      ),
+                    ),
+
+                    // Instruction Label
+                    Positioned(
+                      bottom: 40,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Text(
+                          'Keep both colored balls in play',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                ),
-              ),
-            ),
 
-          // Back button (floating)
-          if (_isPlaying)
-            Positioned(
-              top: 40,
-              left: 20,
-              child: IconButton(
-                icon: const Icon(
-                  Icons.close_rounded,
-                  color: Colors.white54,
-                  size: 30,
-                ),
-                onPressed: () {
-                  _gameTimer?.cancel();
-                  Navigator.pop(context);
-                },
+                  if (!_isPlaying)
+                    Container(
+                      color: Colors.black.withValues(alpha: 0.8),
+                      width: double.infinity,
+                      height: double.infinity,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 600),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                      Icons.grid_view_rounded,
+                                      size: 100,
+                                      color: Colors.orange,
+                                    )
+                                    .animate(onPlay: (c) => c.repeat())
+                                    .shimmer(duration: 2.seconds),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  'Brick & Ball',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 40),
+                                  child: Text(
+                                    'This game improves your hand-eye coordination, saccadic eye movements, and color-specific tracking. By managing two targets at once, you strengthen your visual focus and reaction time.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildBenefitItem(
+                                  Icons.visibility_rounded,
+                                  'Hand-Eye Coordination',
+                                ),
+                                _buildBenefitItem(
+                                  Icons.remove_red_eye_rounded,
+                                  'Saccadic Eye Training',
+                                ),
+                                _buildBenefitItem(
+                                  Icons.track_changes_rounded,
+                                  'Dynamic Target Tracking',
+                                ),
+                                const SizedBox(height: 32),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 40),
+                                  child: Text(
+                                    'Tip: Catching a ball on the WRONG color of the paddle increases its speed!',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.amber,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 48),
+                                ElevatedButton(
+                                  onPressed: _startGame,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: context.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 48,
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'START GAME',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text(
+                                    'Back to Menu',
+                                    style: TextStyle(color: Colors.white60),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Back button (floating)
+                  if (_isPlaying)
+                    Positioned(
+                      top: 40,
+                      left: 20,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white54,
+                          size: 30,
+                        ),
+                        onPressed: () {
+                          _gameTimer?.cancel();
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                ],
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildBenefitItem(IconData icon, String text) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: (_screenWidth * 0.1).clamp(16.0, 48.0),
+        vertical: 4,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.blueAccent, size: 18),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
+          ),
         ],
       ),
     );
@@ -670,10 +929,13 @@ class _Ball {
 }
 
 class _Brick {
-  final Rect rect;
+  Rect rect;
   final bool isGreen;
-  bool isBroken = false;
-  _Brick({required this.rect, required this.isGreen});
+  int health;
+  final int initialHealth;
+  _Brick({required this.rect, required this.isGreen, this.health = 1})
+    : initialHealth = health;
+  bool get isBroken => health <= 0;
 }
 
 class _Particle {
@@ -814,38 +1076,67 @@ class _PaddleWidget extends StatelessWidget {
 }
 
 class _BrickWidget extends StatelessWidget {
-  final bool isGreen;
-  final double width;
-  final double height;
+  final _Brick brick;
 
-  const _BrickWidget({
-    required this.isGreen,
-    required this.width,
-    required this.height,
-  });
+  const _BrickWidget({required this.brick});
 
   @override
   Widget build(BuildContext context) {
+    final bool isDamaged = brick.health < brick.initialHealth;
+    final color = brick.isGreen ? Colors.green : Colors.red;
+
     return Container(
-      width: width,
-      height: height,
+      width: brick.rect.width,
+      height: brick.rect.height,
       decoration: BoxDecoration(
-        color: isGreen
-            ? Colors.green.withValues(alpha: 0.6)
-            : Colors.red.withValues(alpha: 0.6),
+        color: color.withValues(alpha: isDamaged ? 0.3 : 0.6),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: isGreen ? Colors.green : Colors.red,
-          width: 1.5,
+          color: color.withValues(alpha: isDamaged ? 0.6 : 1.0),
+          width: isDamaged ? 1.0 : 2.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: (isGreen ? Colors.green : Colors.red).withValues(alpha: 0.3),
-            blurRadius: 8,
+            color: color.withValues(alpha: 0.2),
+            blurRadius: isDamaged ? 4 : 8,
             spreadRadius: 1,
           ),
         ],
       ),
+      child: isDamaged
+          ? CustomPaint(
+              painter: _CrackPainter(color: color.withValues(alpha: 0.5)),
+            )
+          : null,
     );
   }
+}
+
+class _CrackPainter extends CustomPainter {
+  final Color color;
+  _CrackPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    path.moveTo(size.width * 0.2, 0);
+    path.lineTo(size.width * 0.4, size.height * 0.4);
+    path.lineTo(size.width * 0.3, size.height * 0.7);
+    path.lineTo(size.width * 0.6, size.height);
+
+    path.moveTo(size.width * 0.8, 0);
+    path.lineTo(size.width * 0.6, size.height * 0.3);
+    path.lineTo(size.width * 0.7, size.height * 0.6);
+    path.lineTo(size.width * 0.4, size.height);
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

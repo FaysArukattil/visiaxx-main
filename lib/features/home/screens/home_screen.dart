@@ -1194,7 +1194,7 @@ class _WideServiceCard extends StatelessWidget {
                     12.0,
                     18.0,
                   ),
-                  vertical: 10,
+                  vertical: 12,
                 ),
                 child: Row(
                   children: [
