@@ -17,106 +17,529 @@ class EyeQuestGameScreen extends StatefulWidget {
 
 class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
   final List<Map<String, String>> _allWordData = [
-    {'word': 'PUPIL', 'hint': 'Center of the iris.'},
-    {'word': 'IRIS', 'hint': 'Colored part of the eye.'},
-    {'word': 'CORNEA', 'hint': 'Clear front surface.'},
-    {'word': 'RETINA', 'hint': 'Light-sensitive layer.'},
-    {'word': 'SCLERA', 'hint': 'White outer layer.'},
-    {'word': 'LENS', 'hint': 'Focusing structure.'},
-    {'word': 'OPTIC', 'hint': 'Relating to vision.'},
-    {'word': 'MACULA', 'hint': 'Central vision area.'},
-    {'word': 'VISION', 'hint': 'Ability to see.'},
-    {'word': 'ACUITY', 'hint': 'Sharpness of vision.'},
-    {'word': 'MYOPIA', 'hint': 'Nearsightedness.'},
-    {'word': 'FOVEA', 'hint': 'Pit for sharpest vision.'},
-    {'word': 'EYELID', 'hint': 'Protective eye cover.'},
-    {'word': 'TEARS', 'hint': 'Lubricating fluid.'},
-    {'word': 'BLINK', 'hint': 'Quick eye closure.'},
-    {'word': 'GLARE', 'hint': 'Harsh bright light.'},
-    {'word': 'FOCUS', 'hint': 'Clear image point.'},
-    {'word': 'CONES', 'hint': 'Color sensing cells.'},
-    {'word': 'RODS', 'hint': 'Low light sensing cells.'},
-    {'word': 'LASER', 'hint': 'Surgical light beam.'},
-    {'word': 'GLASSES', 'hint': 'Vision correction frames.'},
-    {'word': 'FRAMES', 'hint': 'Eyewear structure.'},
-    {'word': 'PRISM', 'hint': 'Triangular glass optic.'},
-    {'word': 'STIGMA', 'hint': 'Related to Astigmatism.'},
-    {'word': 'CATARACT', 'hint': 'Cloudy eye lens.'},
-    {'word': 'GLAUCOMA', 'hint': 'High eye pressure.'},
-    {'word': 'UVEITIS', 'hint': 'Inner eye inflammation.'},
-    {'word': 'DIPLOPIA', 'hint': 'Double vision.'},
-    {'word': 'STRABIS', 'hint': 'Misaligned eyes.'},
-    {'word': 'ORBIT', 'hint': 'Eye socket.'},
-    {'word': 'NERVE', 'hint': 'Sends signals to brain.'},
-    {'word': 'FUNDUS', 'hint': 'Interior eye surface.'},
-    {'word': 'CHART', 'hint': 'Snellen vision test.'},
-    {'word': 'SNELLEN', 'hint': 'Famous vision chart.'},
-    {'word': 'DIOPTER', 'hint': 'Lens power unit.'},
-    {'word': 'SPHERE', 'hint': 'Basic lens power.'},
-    {'word': 'AXIS', 'hint': 'Astigmatism angle.'},
-    {'word': 'VITREOUS', 'hint': 'Gel inside the eye.'},
-    {'word': 'AQUEOUS', 'hint': 'Fluid in front of lens.'},
-    {'word': 'CHOROID', 'hint': 'Eye vascular layer.'},
-    {'word': 'EYELASH', 'hint': 'Lid hair protection.'},
-    {'word': 'PTOSIS', 'hint': 'Drooping eyelid.'},
-    {'word': 'LASIK', 'hint': 'Vision correction surgery.'},
-    {'word': 'SMILE', 'hint': 'Newer laser surgery.'},
-    {'word': 'HYPHEMA', 'hint': 'Blood in front chamber.'},
-    {'word': 'KERATIT', 'hint': 'Cornea inflammation.'},
-    {'word': 'IRITIS', 'hint': 'Iris inflammation.'},
-    {'word': 'ARCUS', 'hint': 'White corneal ring.'},
-    {'word': 'CHALAZI', 'hint': 'Eyelid lump/cyst.'},
-    {'word': 'BLEPHAR', 'hint': 'Eyelid related.'},
-    {'word': 'EYEWEAR', 'hint': 'Glasses and contacts.'},
-    {'word': 'MYOPE', 'hint': 'Person with myopia.'},
-    {'word': 'BRIGHT', 'hint': 'Opposite of dim.'},
-    {'word': 'REFRACT', 'hint': 'Bending of light.'},
-    {'word': 'IMAGE', 'hint': 'What the retina sees.'},
-    {'word': 'NODAL', 'hint': 'Optical center point.'},
-    {'word': 'PUNCTA', 'hint': 'Tear drainage hole.'},
-    {'word': 'LIMBUS', 'hint': 'Cornea-sclera border.'},
-    {'word': 'STROMA', 'hint': 'Thick corneal layer.'},
-    {'word': 'CANTHUS', 'hint': 'Corner of the eye.'},
-    {'word': 'ZONULES', 'hint': 'Lens holding fibers.'},
-    {'word': 'TUNICA', 'hint': 'Anatomical eye layer.'},
-    {'word': 'VESSEL', 'hint': 'Retinal blood carrier.'},
-    {'word': 'OBLIQUE', 'hint': 'Extraocular muscle.'},
-    {'word': 'RECTUS', 'hint': 'Straight eye muscle.'},
-    {'word': 'CILIARY', 'hint': 'Lens focusing muscle.'},
-    {'word': 'MANTLE', 'hint': 'Protective layer.'},
-    {'word': 'CHAMBER', 'hint': 'Eye fluid space.'},
-    {'word': 'SIGHT', 'hint': 'Sense of vision.'},
-    {'word': 'BINARY', 'hint': 'Stereoscopy related.'},
-    {'word': 'DEPTH', 'hint': '3D perception.'},
-    {'word': 'BLIND', 'hint': 'Lack of vision.'},
-    {'word': 'BLINKER', 'hint': 'Used for eye testing.'},
-    {'word': 'LUX', 'hint': 'Unit of illumination.'},
-    {'word': 'CANDELA', 'hint': 'Intensity of light.'},
-    {'word': 'SPEKTR', 'hint': 'Color range.'},
-    {'word': 'PHOTON', 'hint': 'Particle of light.'},
-    {'word': 'QUARTZ', 'hint': 'Used in high-end lenses.'},
-    {'word': 'COATING', 'hint': 'Anti-glare layer.'},
-    {'word': 'STRAY', 'hint': 'Unwanted light glare.'},
-    {'word': 'DILATE', 'hint': 'Enlarge the pupil.'},
-    {'word': 'FOCAL', 'hint': 'Relating to focus.'},
-    {'word': 'PLANO', 'hint': 'Zero power lens.'},
-    {'word': 'SHADE', 'hint': 'Protection from sun.'},
-    {'word': 'FILTER', 'hint': 'Blocks specific light.'},
-    {'word': 'POLAR', 'hint': 'Light wave direction.'},
-    {'word': 'TINTED', 'hint': 'Colored lenses.'},
-    {'word': 'AMBER', 'hint': 'Common lens tint.'},
-    {'word': 'GRADIENT', 'hint': 'Varying lens tint.'},
-    {'word': 'ABBE', 'hint': 'Optical value term.'},
-    {'word': 'MIRROR', 'hint': 'Reflective lens finish.'},
-    {'word': 'SPORT', 'hint': 'Protective eyewear.'},
-    {'word': 'SAFETY', 'hint': 'Industrial eyewear.'},
-    {'word': 'HYGIENE', 'hint': 'Contact lens care.'},
-    {'word': 'SALINE', 'hint': 'Lens rinsing fluid.'},
-    {'word': 'CASE', 'hint': 'Eyewear storage.'},
-    {'word': 'CLOTH', 'hint': 'Microfiber cleaner.'},
-    {'word': 'SOLUTION', 'hint': 'Lens cleaning liquid.'},
-    {'word': 'DROP', 'hint': 'Eye medication unit.'},
-    {'word': 'DRYNESS', 'hint': 'Lack of moisture.'},
+    // --- TIER 1: FAMILIAR TERMS (Levels 1-30) ---
+    {
+      'word': 'PUPIL',
+      'hint': 'The dark center of your eye.',
+      'details': 'Opening in the center of the iris that controls light entry.',
+    },
+    {
+      'word': 'IRIS',
+      'hint': 'The colored part of the eye.',
+      'details':
+          'The circular structure containing muscle that controls pupil size.',
+    },
+    {
+      'word': 'LENS',
+      'hint': 'Helps you focus on objects.',
+      'details':
+          'Transparent structure behind the pupil that focuses light on the retina.',
+    },
+    {
+      'word': 'VISION',
+      'hint': 'The faculty of seeing.',
+      'details':
+          'The process of light becoming neural signals for brain processing.',
+    },
+    {
+      'word': 'EYELID',
+      'hint': 'Skin that covers your eye.',
+      'details':
+          'Thin fold of skin that protects and spreads tears over the eye.',
+    },
+    {
+      'word': 'TEARS',
+      'hint': 'Fluid that cleans the eye.',
+      'details':
+          'Watery liquid produced by lacrimal glands to lubricate the surface.',
+    },
+    {
+      'word': 'BLINK',
+      'hint': 'Quick closing of the lids.',
+      'details': 'Reflex action that protects and cleans the ocular surface.',
+    },
+    {
+      'word': 'SIGHT',
+      'hint': 'A primary human sense.',
+      'details':
+          'The ability to perceive visual information from the environment.',
+    },
+    {
+      'word': 'EYE',
+      'hint': 'The organ used for seeing.',
+      'details':
+          'The sensory organ located in the bony socket (orbit) of the skull.',
+    },
+    {
+      'word': 'CHART',
+      'hint': 'Used during a vision test.',
+      'details': 'A tool like the Snellen chart used to measure visual acuity.',
+    },
+    {
+      'word': 'FOCUS',
+      'hint': 'Making an image clear.',
+      'details': 'The point where light rays converge to create a sharp image.',
+    },
+    {
+      'word': 'ACUITY',
+      'hint': 'Sharpness of your vision.',
+      'details':
+          'Ability to distinguish fine details, often measured as 20/20.',
+    },
+    {
+      'word': 'CORNEA',
+      'hint': 'Clear front window of eye.',
+      'details':
+          'The transparent outer layer that provides most focusing power.',
+    },
+    {
+      'word': 'RETINA',
+      'hint': 'Light sensing back tissue.',
+      'details':
+          'Inner lining of the eye that converts light into electrical signals.',
+    },
+    {
+      'word': 'MACULA',
+      'hint': 'Center of sharp vision.',
+      'details': 'Part of the retina responsible for detailed, central vision.',
+    },
+    {
+      'word': 'SCLERA',
+      'hint': 'The white part of the eye.',
+      'details': 'Tough outer wall of the eyeball that maintains its shape.',
+    },
+    {
+      'word': 'MYOPIA',
+      'hint': 'Term for nearsightedness.',
+      'details': 'Vision condition where distant objects appear blurred.',
+    },
+    {
+      'word': 'CONES',
+      'hint': 'Cells for color vision.',
+      'details':
+          'Photoreceptors in the macula responsible for color and detail.',
+    },
+    {
+      'word': 'RODS',
+      'hint': 'Cells for low-light vision.',
+      'details':
+          'Photoreceptors in peripheral retina for night and motion sensing.',
+    },
+    {
+      'word': 'NERVE',
+      'hint': 'Carrier of visual signals.',
+      'details': 'The optic nerve connects the retina directly to the brain.',
+    },
+    {
+      'word': 'ORBIT',
+      'hint': 'Socket for the eyeball.',
+      'details':
+          'The bony cavity in the skull that holds and protects the eye.',
+    },
+    {
+      'word': 'BLURRY',
+      'hint': 'When things look unclear.',
+      'details': 'Visual distortion caused by improper focusing of light.',
+    },
+    {
+      'word': 'BRIGHT',
+      'hint': 'Opposite of a dim room.',
+      'details': 'Luminous environment requiring constriction of the pupil.',
+    },
+    {
+      'word': 'GLASS',
+      'hint': 'Traditional lens material.',
+      'details': 'Optical material used in eyeglasses for correcting vision.',
+    },
+    {
+      'word': 'LIGHTS',
+      'hint': 'What the eyes perceive.',
+      'details': 'Electromagnetic radiation detected by the sensory retina.',
+    },
+    {
+      'word': 'GLARE',
+      'hint': 'Brightness that bothers.',
+      'details': 'Visual interference caused by unwanted light reflections.',
+    },
+    {
+      'word': 'DEPTH',
+      'hint': 'Seeing three dimensions.',
+      'details': 'Binocular perception that allows us to judge distances.',
+    },
+    {
+      'word': 'LOOK',
+      'hint': 'To direct your gaze.',
+      'details': 'Active focusing on a specific object in the visual field.',
+    },
+    {
+      'word': 'WATCH',
+      'hint': 'To observe over time.',
+      'details': 'Following a moving image or event with visual tracking.',
+    },
+    {
+      'word': 'SEE',
+      'hint': 'To perceive with eyes.',
+      'details': 'The act of sensory perception through the visual system.',
+    },
+
+    // --- TIER 2: ADVANCED CLINICAL TERMS (Levels 31-100) ---
+    {
+      'word': 'OPTIC',
+      'hint': 'Vision-related pathway.',
+      'details': 'Relating to the eyes or the science of light and vision.',
+    },
+    {
+      'word': 'AXIS',
+      'hint': 'Astigmatism orienation.',
+      'details': 'The meridian in degrees used for astigmatism correction.',
+    },
+    {
+      'word': 'PTOSIS',
+      'hint': 'A drooping upper eyelid.',
+      'details': 'Condition where the eyelid falls lower than normal.',
+    },
+    {
+      'word': 'LASIK',
+      'hint': 'Vision laser surgery.',
+      'details': 'Refractive surgery that reshapes the cornea with a laser.',
+    },
+    {
+      'word': 'SMILE',
+      'hint': 'Advanced laser surgery.',
+      'details': 'Small Incision Lenticule Extraction for myopia correction.',
+    },
+    {
+      'word': 'IRITIS',
+      'hint': 'Iris inflammation.',
+      'details': 'A form of anterior uveitis affecting the colored eye part.',
+    },
+    {
+      'word': 'ARCUS',
+      'hint': 'White ring on cornea.',
+      'details': 'Lipid deposit at the edge of the cornea, common with age.',
+    },
+    {
+      'word': 'MYOPE',
+      'hint': 'A nearsighted person.',
+      'details': 'Someone whose eye is too long or cornea too curved.',
+    },
+    {
+      'word': 'IMAGE',
+      'hint': 'Pattern on the retina.',
+      'details': 'The inverted representation formed at the back of the eye.',
+    },
+    {
+      'word': 'NODAL',
+      'hint': 'Point in eye optics.',
+      'details':
+          'The reference center through which light rays pass undeviated.',
+    },
+    {
+      'word': 'PUNCTA',
+      'hint': 'Tiny drainage holes.',
+      'details': 'Small openings at the inner lid corner for tear exit.',
+    },
+    {
+      'word': 'LIMBUS',
+      'hint': 'Cornea-sclera border.',
+      'details': 'The junction where the clear cornea meets the white sclera.',
+    },
+    {
+      'word': 'STROMA',
+      'hint': 'Thick cornea layer.',
+      'details': 'The middle 90% of the cornea, providing structural strength.',
+    },
+    {
+      'word': 'TUNICA',
+      'hint': 'An eye coat layer.',
+      'details': 'Anatomical term for one of the three layers of the eyeball.',
+    },
+    {
+      'word': 'VESSEL',
+      'hint': 'Carries eye blood.',
+      'details': 'Artery or vein supplying nutrients to retinal tissues.',
+    },
+    {
+      'word': 'MANTLE',
+      'hint': 'Protective outer zone.',
+      'details': 'Terminology for the cellular coverage of ocular structures.',
+    },
+    {
+      'word': 'BINARY',
+      'hint': 'Two-eyed vision state.',
+      'details': 'Relating to the use of both eyes simultaneously (Binocular).',
+    },
+    {
+      'word': 'BLIND',
+      'hint': 'Vision is fully absent.',
+      'details': 'Condition characterized by total lack of light perception.',
+    },
+    {
+      'word': 'LUX',
+      'hint': 'Illumination unit.',
+      'details': 'Scientific measurement of light intensity on a surface.',
+    },
+    {
+      'word': 'PHOTON',
+      'hint': 'Unit of light energy.',
+      'details': 'Elementary particle that acts as the basic unit of light.',
+    },
+    {
+      'word': 'QUARTZ',
+      'hint': 'Crystal for optics.',
+      'details': 'Mineral used in manufacturing high-quality optical lenses.',
+    },
+    {
+      'word': 'STRAY',
+      'hint': 'Unwanted light rays.',
+      'details': 'Light hitting internal structures away from the visual axis.',
+    },
+    {
+      'word': 'DILATE',
+      'hint': 'Pupil getting larger.',
+      'details': 'Opening of the pupil, often using medicated eye drops.',
+    },
+    {
+      'word': 'FOCAL',
+      'hint': 'Related to the focus.',
+      'details': 'Pertaining to the focal point or length of a lens system.',
+    },
+    {
+      'word': 'PLANO',
+      'hint': 'Zero lens power.',
+      'details': 'A lens that has no magnification or refractive correction.',
+    },
+    {
+      'word': 'SHADE',
+      'hint': 'Blight light shelter.',
+      'details': 'Protection intended to reduce retinal exposure to UV rays.',
+    },
+    {
+      'word': 'FILTER',
+      'hint': 'Blocks 일부 spectral.',
+      'details': 'Optical device used to selectively transmit specific light.',
+    },
+    {
+      'word': 'POLAR',
+      'hint': 'Wave path alignment.',
+      'details': 'Relating to polarized light used in glare-reducing lenses.',
+    },
+    {
+      'word': 'AMBER',
+      'hint': 'Warm lens coloring.',
+      'details': 'Yellowish tint used to increase contrast in eyewear.',
+    },
+    {
+      'word': 'ABBE',
+      'hint': 'Dispersion value.',
+      'details': 'Number describing how much a lens material spreads light.',
+    },
+    {
+      'word': 'MIRROR',
+      'hint': 'Reflective coat.',
+      'details': 'Thin metallic coating applied to the outside of lenses.',
+    },
+    {
+      'word': 'SPORT',
+      'hint': 'Athletic eyewear.',
+      'details': 'High-impact frames designed for physical activities.',
+    },
+    {
+      'word': 'SAFETY',
+      'hint': 'Industrial goggles.',
+      'details': 'Protective eyewear used in hazardous work environments.',
+    },
+    {
+      'word': 'CASE',
+      'hint': 'Glasses holder.',
+      'details': 'Protective storage for spectacles and contact lenses.',
+    },
+    {
+      'word': 'CLOTH',
+      'hint': 'Microfiber cleaner.',
+      'details': 'Specialized fabric for removing oils from lens surfaces.',
+    },
+    {
+      'word': 'DROP',
+      'hint': 'Medicine delivery.',
+      'details': 'Fluid unit used for administering topical eye medication.',
+    },
+    {
+      'word': 'SNELL',
+      'hint': 'Optics law names.',
+      'details':
+          'Scientist Willebrord Snellius, known for the law of refraction.',
+    },
+    {
+      'word': 'FLUID',
+      'hint': 'Intraocular liquid.',
+      'details': 'Aqueous or vitreous humor that maintains eye pressure.',
+    },
+    {
+      'word': 'FUNGAL',
+      'hint': 'Infection category.',
+      'details': 'Ocular condition caused by yeast or mold pathogens.',
+    },
+    {
+      'word': 'FUNDUS',
+      'hint': 'The back of the interior.',
+      'details': 'The interior surface of the eye opposite the lens.',
+    },
+    {
+      'word': 'SPHERE',
+      'hint': 'Main correction part.',
+      'details':
+          'The primary part of an eye prescription for distance or near.',
+    },
+    {
+      'word': 'BLOOD',
+      'hint': 'Diabetic leakage.',
+      'details': 'Fluid leaked into the eye during retinal pathologies.',
+    },
+    {
+      'word': 'LASHES',
+      'hint': 'Eyelid hair fringe.',
+      'details': 'Protective hairs that prevent debris from entering the eye.',
+    },
+    {
+      'word': 'VEIN',
+      'hint': 'Return blood vessel.',
+      'details': 'Carrier that drains deoxygenated blood from ocular tissues.',
+    },
+    {
+      'word': 'ANGLE',
+      'hint': 'Fluid exit point.',
+      'details': 'The junction where the cornea and iris meet externally.',
+    },
+    {
+      'word': 'STAIN',
+      'hint': 'Health check dye.',
+      'details': 'Fluorescein used to locate corneal scratches or dry spots.',
+    },
+    {
+      'word': 'ZONULE',
+      'hint': 'Lens suspension fiber.',
+      'details': 'Thread-like structures holding the lens to the ciliary body.',
+    },
+    {
+      'word': 'RECTUS',
+      'hint': 'Straight eye muscle.',
+      'details': 'One of the four muscles that move the eye in straight lines.',
+    },
+    {
+      'word': 'SULCUS',
+      'hint': 'Space behind iris.',
+      'details': 'The anatomical groove located between the iris and ciliary.',
+    },
+    {
+      'word': 'PLICA',
+      'hint': 'Conjunctional fold.',
+      'details': 'Small semilunar fold of conjunctiva at the inner corner.',
+    },
+    {
+      'word': 'FACET',
+      'hint': 'Lens edge detail.',
+      'details':
+          'A small surface carved into the periphery of an optical lens.',
+    },
+    {
+      'word': 'SLANT',
+      'hint': 'Tilted ocular gaze.',
+      'details': 'Oblique positioning of the eyes or an optical axis.',
+    },
+    {
+      'word': 'BEND',
+      'hint': 'What refraction does.',
+      'details': 'The change in direction of light as it enters a new medium.',
+    },
+    {
+      'word': 'POWER',
+      'hint': 'Correction amount.',
+      'details': 'Refractive strength of a lens measured in Diopters.',
+    },
+    {
+      'word': 'TORIC',
+      'hint': 'Astigmatism lens.',
+      'details':
+          'Lens with different powers in two perpendicular orientations.',
+    },
+    {
+      'word': 'VERTEX',
+      'hint': 'Eye to lens gap.',
+      'details':
+          'Distance between the back of a lens and the front of the eye.',
+    },
+    {
+      'word': 'ADD',
+      'hint': 'Reading correction.',
+      'details': 'Extra power added to the bottom of multifocal lenses.',
+    },
+    {
+      'word': 'CLEAR',
+      'hint': 'Crystal transparent.',
+      'details': 'Absence of tint or opacity in an ocular or lens structure.',
+    },
+    {
+      'word': 'HARD',
+      'hint': 'Non-soft contact.',
+      'details': 'Rigid Gas Permeable (RGP) contact lens material.',
+    },
+    {
+      'word': 'SOFT',
+      'hint': 'Standard contact.',
+      'details': 'Flexible, water-absorbing hydrogel contact lens material.',
+    },
+    {
+      'word': 'DAILY',
+      'hint': 'One-day wear lens.',
+      'details': 'Contact lenses discarded after a single day of use.',
+    },
+    {
+      'word': 'MONTH',
+      'hint': 'Longer wear lens.',
+      'details': 'Contact lenses designed to be replaced every 30 days.',
+    },
+    {
+      'word': 'RINSE',
+      'hint': 'To wash the surface.',
+      'details': 'Removing debris or preservatives with saline solution.',
+    },
+    {
+      'word': 'DROPS',
+      'hint': 'Dry eye treatment.',
+      'details': 'Lubricating artificial tears used to treat dryness.',
+    },
+    {
+      'word': 'STEAM',
+      'hint': 'Lens fogging cause.',
+      'details':
+          'Condensation formed on lens surfaces during temperature shifts.',
+    },
+    {
+      'word': 'GAZING',
+      'hint': 'Steady eye focus.',
+      'details': 'Prolonged fixated look maintained on a specific target.',
+    },
+    {
+      'word': 'PEEK',
+      'hint': 'Brief ocular look.',
+      'details': 'Quick or secretive visual examination of an object.',
+    },
+    {
+      'word': 'PRISM',
+      'hint': 'Light shifter tool.',
+      'details': 'A transparent element used to diverge or displace light.',
+    },
+    {
+      'word': 'LASER',
+      'hint': 'Coherent light beam.',
+      'details': 'Highly focused radiation used in delicate eye surgeries.',
+    },
+    {
+      'word': 'FOVEA',
+      'hint': 'Macula center pit.',
+      'details': 'The point of highest resolution at the center of the macula.',
+    },
   ];
 
   late List<Map<String, String>> _shuffledWordData;
@@ -124,6 +547,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
   int _level = 1;
   late String _targetWord;
   late String _hint;
+  late String _details;
   final List<String> _guesses = [];
   String _currentGuess = "";
   final int _maxGuesses = 6;
@@ -146,11 +570,18 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
     setState(() {
       _level = progress?.currentLevel ?? 1;
 
-      // SHUFFLE DETERMINISTICALLY PER USER
-      _shuffledWordData = List.from(_allWordData);
-      // Use UserID hashCode as seed
+      // FIRST 30 are familiar, 31-100 are advanced
+      var familiar = _allWordData.sublist(0, 30);
+      var advanced = _allWordData.sublist(30);
+
       final seed = user.uid.hashCode;
-      _shuffledWordData.shuffle(math.Random(seed));
+      final random = math.Random(seed);
+
+      // Shuffle within tiers
+      familiar.shuffle(random);
+      advanced.shuffle(random);
+
+      _shuffledWordData = familiar + advanced;
 
       _initLevel();
     });
@@ -160,6 +591,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
     final data = _shuffledWordData[(_level - 1) % _shuffledWordData.length];
     _targetWord = data['word']!.toUpperCase();
     _hint = data['hint']!;
+    _details = data['details']!;
     _guesses.clear();
     _currentGuess = "";
     _isGameOver = false;
@@ -354,10 +786,16 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double availableWidth = constraints.maxWidth - 48;
-        final double boxSize = (availableWidth / _targetWord.length).clamp(
-          35.0,
-          50.0,
-        );
+        final double wordLen = _targetWord.length.toDouble();
+        const double marginPerBox =
+            6.0; // EdgeInsets.all(3) means 6px horizontal
+
+        // Dynamically calculate box size considering all margins
+        final double boxSize =
+            ((availableWidth - (wordLen * marginPerBox)) / wordLen).clamp(
+              30.0,
+              55.0,
+            );
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -555,6 +993,27 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(color: Colors.white10),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'CLINICAL SIGNIFICANCE',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _details,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        height: 1.4,
                       ),
                     ),
                   ],
