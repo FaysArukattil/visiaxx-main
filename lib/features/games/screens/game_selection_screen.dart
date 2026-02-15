@@ -18,9 +18,12 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        context.read<GameProvider>().loadAllProgress(user.uid);
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId != null) {
+        context.read<GameProvider>().loadAllProgress(userId);
+        // Fetch leaderboards for all games
+        context.read<GameProvider>().fetchLeaderboard('brick_ball');
+        context.read<GameProvider>().fetchLeaderboard('eye_quest');
       }
     });
   }
@@ -51,7 +54,6 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
               children: [
                 _buildAppBar(),
                 Expanded(child: _buildGameList()),
-                _buildProgressSection(),
               ],
             ),
           ),
@@ -104,26 +106,184 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
   }
 
   Widget _buildGameList() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        _buildGameCard(
-          id: 'brick_ball',
-          title: 'Brick & Ball',
-          description:
-              'Improve hand-eye coordination by catching falling balls with matching colors.',
-          icon: Icons.grid_view_rounded,
-          color: Colors.orange,
-          onTap: () => Navigator.pushNamed(context, '/brick-ball-game'),
+    return Consumer<GameProvider>(
+      builder: (context, provider, _) {
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            _buildDashboardCard(provider),
+            const SizedBox(height: 20),
+            _buildGameCard(
+              id: 'brick_ball',
+              title: 'Brick & Ball',
+              description:
+                  'Improve hand-eye coordination by catching falling balls with matching colors.',
+              icon: Icons.grid_view_rounded,
+              color: Colors.orange,
+              onTap: () => Navigator.pushNamed(context, '/brick-ball-game'),
+            ),
+            const SizedBox(height: 16),
+            _buildGameCard(
+              id: 'eye_quest',
+              title: 'Eye Quest',
+              description:
+                  'Test your knowledge of eye anatomy and vision concepts with 100+ levels.',
+              icon: Icons.spellcheck_rounded,
+              color: Colors.blue,
+              onTap: () => Navigator.pushNamed(context, '/eye-quest-game'),
+            ),
+            const SizedBox(height: 16),
+            _buildComingSoonCard(
+              title: 'Eye Tracker',
+              description:
+                  'Follow the target as it moves across the screen to exercise eye muscles.',
+              color: Colors.blue,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDashboardCard(GameProvider provider) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showDashboard(provider),
+        borderRadius: BorderRadius.circular(28),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [context.primary, context.primary.withValues(alpha: 0.8)],
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: context.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.dashboard_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'DASHBOARD',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'View World Rankings & My Progress',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white,
+                size: 16,
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
-        _buildComingSoonCard(
-          title: 'Eye Tracker',
-          description:
-              'Follow the target as it moves across the screen to exercise eye muscles.',
-          color: Colors.blue,
-        ),
-      ],
+      ),
+    ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1, end: 0);
+  }
+
+  void _showDashboard(GameProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) =>
+            _buildDashboardSheet(provider, scrollController),
+      ),
+    );
+  }
+
+  Widget _buildDashboardSheet(
+    GameProvider provider,
+    ScrollController scrollController,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(color: context.primary.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white12,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Expanded(
+            child: DefaultTabController(
+              length: 2,
+              child: Column(
+                children: [
+                  TabBar(
+                    dividerColor: Colors.transparent,
+                    indicatorColor: context.primary,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white38,
+                    tabs: const [
+                      Tab(text: 'MY PROGRESS'),
+                      Tab(text: 'WORLD RANKING'),
+                    ],
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _buildMyProgressTab(provider),
+                        _buildLeaderboardTab(provider),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -318,67 +478,246 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
     );
   }
 
-  Widget _buildProgressSection() {
-    return Consumer<GameProvider>(
-      builder: (context, provider, _) {
-        if (provider.gameProgress.isEmpty) return const SizedBox.shrink();
+  Widget _buildMyProgressTab(GameProvider provider) {
+    if (provider.gameProgress.isEmpty) {
+      return const Center(
+        child: Text(
+          'Play a game to see your progress!',
+          style: TextStyle(color: Colors.white38),
+        ),
+      );
+    }
 
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.cardColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, -5),
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        ...provider.gameProgress.values.map((p) {
+          final String title = p.gameId == 'brick_ball'
+              ? 'Brick & Ball'
+              : 'Eye Quest';
+          final double progress = (p.clearedLevels.length / 10).clamp(0.0, 1.0);
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    p.gameId == 'brick_ball'
+                        ? Icons.sports_esports_rounded
+                        : Icons.spellcheck_rounded,
+                    color: context.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            'Score: ${p.totalScore}',
+                            style: TextStyle(
+                              color: context.primary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          backgroundColor: Colors.white10,
+                          valueColor: AlwaysStoppedAnimation(context.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'LEVEL ${p.currentLevel}',
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+        TextButton(
+          onPressed: () => _showResetConfirmDialog(context, provider),
+          child: const Text(
+            'RESET ALL PROGRESS',
+            style: TextStyle(
+              color: Colors.redAccent,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLeaderboardTab(GameProvider provider) {
+    // Combine leaderboards for a global feel or just show brick_ball by default
+    final brickBallLeaderboard = provider.leaderboards['brick_ball'] ?? [];
+    final eyeQuestLeaderboard = provider.leaderboards['eye_quest'] ?? [];
+
+    // Filter for only 'user' role as requested
+    final allScores = [
+      ...brickBallLeaderboard,
+      ...eyeQuestLeaderboard,
+    ].where((s) => s.userRole == 'user').toList();
+
+    allScores.sort((a, b) => b.totalScore.compareTo(a.totalScore));
+
+    // Only show if the current user has played (score > 0)
+    final myUid = FirebaseAuth.instance.currentUser?.uid;
+    final hasPlayed = provider.gameProgress.values.any((p) => p.totalScore > 0);
+
+    if (!hasPlayed) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock_outline_rounded, color: Colors.white24, size: 64),
+              SizedBox(height: 16),
+              Text(
+                'Play a game to unlock the leaderboard!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white38, fontSize: 16),
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+      );
+    }
+
+    final topScores = allScores.take(20).toList();
+
+    if (topScores.isEmpty) {
+      return const Center(
+        child: Text(
+          'Leaderboard empty. Be the first!',
+          style: TextStyle(color: Colors.white38),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      itemCount: topScores.length,
+      itemBuilder: (context, index) {
+        final score = topScores[index];
+        final isMe = score.userId == myUid;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isMe
+                ? context.primary.withValues(alpha: 0.1)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isMe
+                  ? context.primary.withValues(alpha: 0.3)
+                  : Colors.transparent,
+            ),
+          ),
+          child: Row(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Overall Progress',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => _showResetConfirmDialog(context, provider),
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text('Reset All'),
-                    style: TextButton.styleFrom(foregroundColor: context.error),
-                  ),
-                ],
+              Text(
+                '#${index + 1}',
+                style: TextStyle(
+                  color: index < 3 ? Colors.amber : Colors.white24,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
               ),
-              const SizedBox(height: 12),
-              ...provider.gameProgress.values.map(
-                (p) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    p.gameId == 'brick_ball' ? 'Brick & Ball' : p.gameId,
+              const SizedBox(width: 16),
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: context.primary.withValues(alpha: 0.2),
+                child: Text(
+                  score.userName.isNotEmpty
+                      ? score.userName[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: context.primary,
+                    fontWeight: FontWeight.bold,
                   ),
-                  trailing: Text(
-                    'Level ${p.currentLevel}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: LinearProgressIndicator(
-                    value: (p.clearedLevels.length / 10).clamp(
-                      0.0,
-                      1.0,
-                    ), // Assuming 10 levels for progress bar
-                    backgroundColor: context.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      score.userName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      score.gameId == 'brick_ball'
+                          ? 'Brick & Ball'
+                          : 'Eye Quest',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: Colors.white38,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${score.totalScore}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: Colors.amber,
+                  fontSize: 16,
                 ),
               ),
             ],
           ),
-        ).animate().slideY(begin: 1.0, end: 0, duration: 400.ms);
+        );
       },
     );
   }

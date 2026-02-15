@@ -7,7 +7,10 @@ class GameService {
   static const String _collectionName = 'GameProgress';
 
   /// Get progress for a specific game and user
-  Future<GameProgressModel?> getGameProgress(String userId, String gameId) async {
+  Future<GameProgressModel?> getGameProgress(
+    String userId,
+    String gameId,
+  ) async {
     try {
       final doc = await _firestore
           .collection(_collectionName)
@@ -70,6 +73,25 @@ class GameService {
           .toList();
     } catch (e) {
       debugPrint('[GameService] Error fetching all game progress: $e');
+      return [];
+    }
+  }
+
+  /// Get global leaderboard for a specific game
+  Future<List<GameProgressModel>> getGlobalLeaderboard(String gameId) async {
+    try {
+      final query = await _firestore
+          .collection(_collectionName)
+          .where('gameId', isEqualTo: gameId)
+          .orderBy('totalScore', descending: true)
+          .limit(20)
+          .get();
+
+      return query.docs
+          .map((doc) => GameProgressModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      debugPrint('[GameService] Error fetching leaderboard: $e');
       return [];
     }
   }

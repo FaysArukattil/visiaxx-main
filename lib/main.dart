@@ -75,6 +75,7 @@ import 'features/torchlight_test/screens/pupillary_exam_screen.dart';
 import 'features/torchlight_test/screens/extraocular_muscle_test_screen.dart';
 import 'features/games/screens/game_selection_screen.dart';
 import 'features/games/screens/brick_ball_game_screen.dart';
+import 'features/games/screens/word_puzzle_game_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -374,6 +375,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/support-chat': (context) => const SupportChatScreen(),
               '/game-selection': (context) => const GameSelectionScreen(),
               '/brick-ball-game': (context) => const BrickAndBallGameScreen(),
+              '/eye-quest-game': (context) => const EyeQuestGameScreen(),
             },
           );
         },

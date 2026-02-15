@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GameProgressModel {
+  final String userName;
+  final String userRole;
   final String gameId;
   final String userId;
   final int currentLevel;
@@ -11,6 +13,8 @@ class GameProgressModel {
   GameProgressModel({
     required this.gameId,
     required this.userId,
+    this.userName = 'Player',
+    this.userRole = 'user',
     this.currentLevel = 1,
     this.clearedLevels = const [],
     this.totalScore = 0,
@@ -26,14 +30,16 @@ class GameProgressModel {
     return GameProgressModel(
       gameId: json['gameId'] ?? '',
       userId: json['userId'] ?? '',
+      userName: json['userName'] ?? 'Player',
+      userRole: json['userRole'] ?? 'user',
       currentLevel: json['currentLevel'] ?? 1,
       clearedLevels: List<int>.from(json['clearedLevels'] ?? []),
       totalScore: json['totalScore'] ?? 0,
       lastPlayed: json['lastPlayed'] is Timestamp
           ? (json['lastPlayed'] as Timestamp).toDate()
           : (json['lastPlayed'] != null
-              ? DateTime.parse(json['lastPlayed'])
-              : DateTime.now()),
+                ? DateTime.parse(json['lastPlayed'])
+                : DateTime.now()),
     );
   }
 
@@ -41,6 +47,8 @@ class GameProgressModel {
     return {
       'gameId': gameId,
       'userId': userId,
+      'userName': userName,
+      'userRole': userRole,
       'currentLevel': currentLevel,
       'clearedLevels': clearedLevels,
       'totalScore': totalScore,
@@ -52,6 +60,8 @@ class GameProgressModel {
     return {
       'gameId': gameId,
       'userId': userId,
+      'userName': userName,
+      'userRole': userRole,
       'currentLevel': currentLevel,
       'clearedLevels': clearedLevels,
       'totalScore': totalScore,
@@ -62,6 +72,8 @@ class GameProgressModel {
   GameProgressModel copyWith({
     String? gameId,
     String? userId,
+    String? userName,
+    String? userRole,
     int? currentLevel,
     List<int>? clearedLevels,
     int? totalScore,
@@ -70,6 +82,8 @@ class GameProgressModel {
     return GameProgressModel(
       gameId: gameId ?? this.gameId,
       userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userRole: userRole ?? this.userRole,
       currentLevel: currentLevel ?? this.currentLevel,
       clearedLevels: clearedLevels ?? this.clearedLevels,
       totalScore: totalScore ?? this.totalScore,

@@ -4,11 +4,13 @@ import '../models/game_progress_model.dart';
 
 class GameProvider with ChangeNotifier {
   final GameService _gameService = GameService();
-  
+
   Map<String, GameProgressModel> _gameProgress = {};
+  Map<String, List<GameProgressModel>> _leaderboards = {};
   bool _isLoading = false;
 
   Map<String, GameProgressModel> get gameProgress => _gameProgress;
+  Map<String, List<GameProgressModel>> get leaderboards => _leaderboards;
   bool get isLoading => _isLoading;
 
   /// Fetch all game progress for a user
@@ -24,6 +26,17 @@ class GameProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Fetch leaderboard for a specific game
+  Future<void> fetchLeaderboard(String gameId) async {
+    try {
+      final leaderboard = await _gameService.getGlobalLeaderboard(gameId);
+      _leaderboards[gameId] = leaderboard;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[GameProvider] Error fetching leaderboard: $e');
     }
   }
 
@@ -49,6 +62,8 @@ class GameProvider with ChangeNotifier {
       final freshProgress = GameProgressModel(
         gameId: gameId,
         userId: userId,
+        userName: _gameProgress[gameId]?.userName ?? 'Player',
+        userRole: _gameProgress[gameId]?.userRole ?? 'user',
         currentLevel: 1,
         clearedLevels: [],
         totalScore: 0,
@@ -63,17 +78,30 @@ class GameProvider with ChangeNotifier {
   }
 
   /// Mark a level as cleared
-  Future<void> clearLevel(String userId, String gameId, int level, int addedScore) async {
-    final current = _gameProgress[gameId] ?? GameProgressModel(
-      gameId: gameId,
-      userId: userId,
-      lastPlayed: DateTime.now(),
-    );
+  Future<void> clearLevel(
+    String userId,
+    String gameId,
+    int level,
+    int addedScore, {
+    String userName = 'Player',
+    String userRole = 'user',
+  }) async {
+    final current =
+        _gameProgress[gameId] ??
+        GameProgressModel(
+          gameId: gameId,
+          userId: userId,
+          userName: userName,
+          userRole: userRole,
+          lastPlayed: DateTime.now(),
+        );
 
     final updatedCleared = Set<int>.from(current.clearedLevels)..add(level);
     final updatedLevel = level + 1; // Move to next level
 
     final updated = current.copyWith(
+      userName: userName,
+      userRole: userRole,
       currentLevel: updatedLevel,
       clearedLevels: updatedCleared.toList(),
       totalScore: current.totalScore + addedScore,
@@ -81,5 +109,7 @@ class GameProvider with ChangeNotifier {
     );
 
     await updateProgress(updated);
+    // Refresh leaderboard after update
+    fetchLeaderboard(gameId);
   }
 }
