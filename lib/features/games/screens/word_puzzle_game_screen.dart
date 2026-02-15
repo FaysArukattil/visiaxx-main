@@ -650,8 +650,13 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop && !_isGameOver) _saveProgress();
+        if (!didPop && !_isGameOver) {
+          _handleExitAttempt();
+        } else if (didPop && !_isGameOver) {
+          _saveProgress();
+        }
       },
+      canPop: _isGameOver,
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Stack(
@@ -707,7 +712,13 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (_isGameOver) {
+                Navigator.pop(context);
+              } else {
+                _handleExitAttempt();
+              }
+            },
           ),
           Column(
             children: [
@@ -1022,16 +1033,10 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: () {
-                  if (_isWin) {
-                    setState(() {
-                      _level++;
-                      _initLevel();
-                    });
-                  } else {
-                    setState(() {
-                      _initLevel();
-                    });
-                  }
+                  setState(() {
+                    _level++;
+                    _initLevel();
+                  });
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isWin ? Colors.green : context.primary,
@@ -1045,7 +1050,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                   ),
                 ),
                 child: Text(
-                  _isWin ? 'NEXT LEVEL' : 'TRY AGAIN',
+                  _isWin ? 'NEXT LEVEL' : 'NEXT CONCEPT',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -1062,6 +1067,112 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _handleExitAttempt() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'GIVING UP?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Are you sure you want to quit this level? We will reveal the answer if you leave.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'CONTINUE',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // Close confirm dialog
+              _showAnswerAndExit();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('GIVE UP', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAnswerAndExit() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lightbulb_rounded, color: Colors.amber, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'THE ANSWER WAS',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _targetWord,
+              style: const TextStyle(
+                color: Colors.amber,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _details,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  _level++; // Increment so we don't see the same word twice
+                  _saveProgress(); // Save the incremented state
+                  Navigator.pop(context); // Close answer dialog
+                  Navigator.pop(context); // Exit game screen
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'EXIT TO MENU',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
