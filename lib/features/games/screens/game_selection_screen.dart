@@ -24,6 +24,7 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
         // Fetch leaderboards for all games
         context.read<GameProvider>().fetchLeaderboard('brick_ball');
         context.read<GameProvider>().fetchLeaderboard('eye_quest');
+        context.read<GameProvider>().fetchLeaderboard('ocular_snake');
       }
     });
   }
@@ -131,6 +132,16 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
               icon: Icons.spellcheck_rounded,
               color: Colors.blue,
               onTap: () => Navigator.pushNamed(context, '/eye-quest-game'),
+            ),
+            const SizedBox(height: 16),
+            _buildGameCard(
+              id: 'ocular_snake',
+              title: 'Ocular Snake',
+              description:
+                  'Modern Nokia-style snake game. Eat letters to form ocular terms and grow!',
+              icon: Icons.gesture_rounded,
+              color: Colors.green,
+              onTap: () => Navigator.pushNamed(context, '/ocular-snake-game'),
             ),
             const SizedBox(height: 16),
             _buildComingSoonCard(
@@ -494,7 +505,9 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
         ...provider.gameProgress.values.map((p) {
           final String title = p.gameId == 'brick_ball'
               ? 'Brick & Ball'
-              : 'Eye Quest';
+              : p.gameId == 'eye_quest'
+              ? 'Eye Quest'
+              : 'Ocular Snake';
           final double progress = (p.clearedLevels.length / 10).clamp(0.0, 1.0);
 
           return Container(
@@ -698,7 +711,9 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
                     Text(
                       score.gameId == 'brick_ball'
                           ? 'Brick & Ball'
-                          : 'Eye Quest',
+                          : score.gameId == 'eye_quest'
+                          ? 'Eye Quest'
+                          : 'Ocular Snake',
                       style: const TextStyle(
                         fontSize: 9,
                         color: Colors.white38,
