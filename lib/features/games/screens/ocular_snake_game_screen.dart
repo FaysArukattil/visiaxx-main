@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -61,6 +62,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     _startNewLevel();
   }
 
@@ -172,6 +174,12 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
 
   @override
   void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _timer?.cancel();
     super.dispose();
   }
@@ -193,7 +201,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.3),
         border: Border(
@@ -201,18 +209,19 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             icon: const Icon(
               Icons.arrow_back_ios_new_rounded,
               color: Colors.white,
-              size: 24,
+              size: 22,
             ),
             onPressed: () => Navigator.pop(context),
           ),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
                   'MISSION TARGET',
@@ -220,63 +229,68 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
                     color: Colors.greenAccent,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 4,
+                    letterSpacing: 2,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: _targetWord.split('').asMap().entries.map((e) {
-                    final isCleared = e.key < _letterIndex;
-                    return AnimatedContainer(
-                      duration: 300.ms,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isCleared
-                            ? Colors.greenAccent.withValues(alpha: 0.1)
-                            : Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: isCleared
-                              ? Colors.greenAccent
-                              : Colors.white10,
-                          width: 1.5,
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: _targetWord.split('').asMap().entries.map((e) {
+                      final isCleared = e.key < _letterIndex;
+                      return AnimatedContainer(
+                        duration: 300.ms,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 3,
                         ),
-                      ),
-                      child: Text(
-                        e.value,
-                        style: TextStyle(
+                        decoration: BoxDecoration(
                           color: isCleared
-                              ? Colors.greenAccent
-                              : Colors.white38,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
+                              ? Colors.greenAccent.withValues(alpha: 0.1)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isCleared
+                                ? Colors.greenAccent
+                                : Colors.white10,
+                            width: 1.2,
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                        child: Text(
+                          e.value,
+                          style: TextStyle(
+                            color: isCleared
+                                ? Colors.greenAccent
+                                : Colors.white38,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white10),
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
                   'XP',
                   style: TextStyle(
                     color: Colors.white54,
-                    fontSize: 10,
+                    fontSize: 8,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -284,7 +298,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
                   '$_score',
                   style: const TextStyle(
                     color: Colors.amber,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -319,7 +333,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
         } else {
           if (_swipeDelta.dy > 0 && _direction != Direction.up) {
             newDir = Direction.down;
-          } else if (_swipeDelta.dy < 0 && _direction != Direction.down) {
+          } else if (_swipeDelta.dy < 0 && _direction != Direction.up) {
             newDir = Direction.up;
           }
         }

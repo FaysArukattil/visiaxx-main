@@ -16,6 +16,24 @@ class EyeQuestGameScreen extends StatefulWidget {
 }
 
 class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    _loadProgress();
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    super.dispose();
+  }
+
   final List<Map<String, String>> _allWordData = [
     // --- TIER 1: FAMILIAR TERMS (Levels 1-30) ---
     {
@@ -553,12 +571,6 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
   final int _maxGuesses = 6;
   bool _isGameOver = false;
   bool _isWin = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProgress();
-  }
 
   void _loadProgress() {
     final user = FirebaseAuth.instance.currentUser;
