@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/game_provider.dart';
@@ -20,9 +21,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   int _score = 0;
   int _lives = 3;
   int _level = 1;
-  double _ballSpeed = 3.5;
   Timer? _gameTimer;
-  final math.Random _random = math.Random();
 
   // Screen dimensions
   late double _screenWidth;
@@ -32,10 +31,19 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   late double _paddleX;
   final double _paddleWidth = 120.0;
   final double _paddleHeight = 20.0;
-  bool _paddleColorLeftIsGreen = true; // Left side is green, right is red
+  // Effects
+  double _shakeAmount = 0.0;
+  final List<_Particle> _particles = [];
+
+  // Bricks state
+  final List<_Brick> _bricks = [];
+  double _brickWidth = 60.0;
+  double _brickHeight = 25.0;
+  int _rows = 4;
+  int _cols = 6;
 
   // Balls state
-  final List<_Ball> _balls = [];
+  late List<_Ball> _balls;
 
   @override
   void didChangeDependencies() {
@@ -48,7 +56,6 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     final progress = context.read<GameProvider>().getProgress('brick_ball');
     if (progress != null) {
       _level = progress.currentLevel;
-      _ballSpeed = 3.5 + (_level - 1) * 0.5;
     }
   }
 
@@ -59,69 +66,167 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   }
 
   void _startGame() {
-    setState(() {
-      _isPlaying = true;
-      _score = 0;
-      _lives = 3;
-      _balls.clear();
-    });
+    _score = 0;
+    _lives = 3;
+    _isPlaying = true;
+    _initBricks();
+    _initBalls();
+    _gameTimer?.cancel();
     _gameTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
       _updateGame();
     });
+  }
+
+  void _initBricks() {
+    _bricks.clear();
+    // Professional Mechanic: Bricks get smaller as level increases
+    _brickWidth = (60.0 - (_level * 2)).clamp(35.0, 60.0);
+    _brickHeight = (25.0 - (_level * 0.5)).clamp(18.0, 25.0);
+    _cols = (_screenWidth / (_brickWidth + 5)).floor().clamp(4, 9);
+    _rows = (3 + (_level / 2).floor()).clamp(3, 7);
+
+    double totalGridWidth = _cols * (_brickWidth + 5);
+    double startX = (_screenWidth - totalGridWidth) / 2;
+    for (int r = 0; r < _rows; r++) {
+      for (int c = 0; c < _cols; c++) {
+        _bricks.add(
+          _Brick(
+            rect: Rect.fromLTWH(
+              startX + c * (_brickWidth + 5),
+              100 + r * (_brickHeight + 5),
+              _brickWidth,
+              _brickHeight,
+            ),
+            isGreen: (r + c) % 2 == 0,
+          ),
+        );
+      }
+    }
+  }
+
+  void _initBalls() {
+    // Professional Mechanic: Balls go UP initially and start at paddle
+    double initialSpeed = (2.5 + (_level * 0.2)).clamp(2.5, 4.5);
+    _balls = [
+      _Ball(
+        x: _paddleX + 20,
+        y: _screenHeight - 150,
+        vx: -initialSpeed,
+        vy: -initialSpeed,
+        isGreen: true,
+      ),
+      _Ball(
+        x: _paddleX + _paddleWidth - 40,
+        y: _screenHeight - 150,
+        vx: initialSpeed,
+        vy: -initialSpeed,
+        isGreen: false,
+      ),
+    ];
   }
 
   void _updateGame() {
     if (!_isPlaying) return;
 
     setState(() {
-      // 1. Probabilistically spawn balls
-      if (_random.nextDouble() < 0.02 + (_level * 0.005)) {
-        _balls.add(
-          _Ball(
-            x: _random.nextDouble() * (_screenWidth - 30),
-            y: -40,
-            isGreen: _random.nextBool(),
-          ),
-        );
-      }
-
-      // 2. Update ball positions and check collisions
-      final List<_Ball> toRemove = [];
       for (var ball in _balls) {
-        ball.y += _ballSpeed;
+        // Update position
+        ball.x += ball.vx;
+        ball.y += ball.vy;
 
-        // Collision with bottom/paddle
-        if (ball.y + 30 >= _screenHeight - 120 &&
-            ball.y <= _screenHeight - 100) {
-          if (ball.x + 30 >= _paddleX && ball.x <= _paddleX + _paddleWidth) {
-            // Hit the paddle
-            bool hitLeft = ball.x + 15 < _paddleX + (_paddleWidth / 2);
-            bool match =
-                (hitLeft && _paddleColorLeftIsGreen == ball.isGreen) ||
-                (!hitLeft && _paddleColorLeftIsGreen != ball.isGreen);
+        // Add to trail
+        ball.trail.insert(0, Offset(ball.x + 10, ball.y + 10));
+        if (ball.trail.length > 5) ball.trail.removeLast();
 
-            if (match) {
-              _score += 10;
-              toRemove.add(ball);
-            } else {
-              _lives--;
-              toRemove.add(ball);
-              if (_lives <= 0) _gameOver();
-            }
+        // Wall collisions
+        if (ball.x <= 0 || ball.x >= _screenWidth - 20) {
+          ball.vx *= -1;
+          ball.x = ball.x.clamp(0, _screenWidth - 20);
+        }
+        if (ball.y <= 0) {
+          ball.vy *= -1;
+          ball.y = 0;
+        }
+
+        // Paddle collision
+        if (ball.y + 20 >= _screenHeight - 120 &&
+            ball.y <= _screenHeight - 100 &&
+            ball.x + 20 >= _paddleX &&
+            ball.x <= _paddleX + _paddleWidth) {
+          // Professional Mechanic: Speed increases only if color mismatch
+          bool hitLeft = ball.x + 10 < _paddleX + (_paddleWidth / 2);
+          bool correctSide =
+              (hitLeft && ball.isGreen) || (!hitLeft && !ball.isGreen);
+
+          if (!correctSide) {
+            ball.vx *= 1.1;
+            ball.vy *= 1.1;
+            _createParticles(
+              ball.x + 10,
+              ball.y + 10,
+              Colors.white.withValues(alpha: 0.5),
+            );
+          } else {
+            // Perfect catch: heal/stabilize? (Optional)
           }
-        } else if (ball.y > _screenHeight) {
-          // Missed ball
+
+          ball.vy = -ball.vy.abs(); // Bounce up
+          _score += 1;
+          HapticFeedback.lightImpact();
+          SystemSound.play(SystemSoundType.click);
+        }
+
+        // Brick collisions
+        for (var brick in _bricks.where((b) => !b.isBroken)) {
+          if (brick.rect.overlaps(Rect.fromLTWH(ball.x, ball.y, 20, 20))) {
+            if (brick.isGreen == ball.isGreen) {
+              brick.isBroken = true;
+              _score += 10;
+              _createParticles(
+                ball.x + 10,
+                ball.y + 10,
+                ball.isGreen ? Colors.green : Colors.red,
+              );
+              ball.vy *= -1;
+              HapticFeedback.mediumImpact();
+              SystemSound.play(SystemSoundType.click);
+            } else {
+              // Wrong color: just bounce without breaking
+              ball.vy *= -1;
+            }
+            break;
+          }
+        }
+
+        // Bottom collision (Game Over/Life Loss)
+        if (ball.y > _screenHeight) {
           _lives--;
-          toRemove.add(ball);
-          if (_lives <= 0) _gameOver();
+          _triggerShake();
+          if (_lives <= 0) {
+            _gameOver();
+          } else {
+            // Reset ball position
+            ball.x = _paddleX + (_paddleWidth / 2);
+            ball.y = _screenHeight / 2;
+            ball.vy = 3.5;
+            ball.vx = ball.isGreen ? -3 : 3;
+            HapticFeedback.heavyImpact();
+          }
         }
       }
-      _balls.removeWhere((b) => toRemove.contains(b));
 
-      // 3. Level Up condition
-      if (_score >= _level * 100) {
+      // Win condition: All bricks broken
+      if (_bricks.every((b) => b.isBroken)) {
         _levelUp();
       }
+
+      // Update particles
+      for (var p in _particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.05;
+      }
+      _particles.removeWhere((p) => p.life <= 0);
     });
   }
 
@@ -144,22 +249,78 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Level Cleared! 🎉'),
-        content: Text('Congratulations! You reached Level ${_level + 1}'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _level++;
-                _ballSpeed += 0.5;
-                _startGame();
-              });
-            },
-            child: const Text('Next Level'),
+      builder: (context) => Center(
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: context.primary.withValues(alpha: 0.5),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: context.primary.withValues(alpha: 0.3),
+                blurRadius: 40,
+                spreadRadius: 10,
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.stars_rounded, color: Colors.amber, size: 80)
+                  .animate()
+                  .scale(duration: 600.ms, curve: Curves.elasticOut)
+                  .shimmer(delay: 600.ms),
+              const SizedBox(height: 24),
+              const Text(
+                'LEVEL COMPLETE!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Challenge increases as you progress.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _level++;
+                    _startGame();
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'NEXT LEVEL',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -196,10 +357,31 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     );
   }
 
-  void _togglePaddle() {
+  void _triggerShake() {
     setState(() {
-      _paddleColorLeftIsGreen = !_paddleColorLeftIsGreen;
+      _shakeAmount = 10.0;
     });
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) {
+        setState(() {
+          _shakeAmount = 0.0;
+        });
+      }
+    });
+  }
+
+  void _createParticles(double x, double y, Color color) {
+    for (int i = 0; i < 8; i++) {
+      _particles.add(
+        _Particle(
+          x: x,
+          y: y,
+          vx: (math.Random().nextDouble() - 0.5) * 10,
+          vy: (math.Random().nextDouble() - 0.5) * 10,
+          color: color,
+        ),
+      );
+    }
   }
 
   @override
@@ -230,43 +412,92 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                 children: [
                   _buildStatCard('SCORE', '$_score', Colors.amber),
                   _buildStatCard('LEVEL', '$_level', Colors.blue),
-                  _buildStatCard('LIVES', '$_lives', Colors.red),
+                  Row(
+                    children: List.generate(
+                      3,
+                      (index) =>
+                          Icon(
+                                index < _lives
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                color: index < _lives
+                                    ? Colors.red
+                                    : Colors.red.withValues(alpha: 0.3),
+                                size: 20,
+                              )
+                              .animate(target: index < _lives ? 0 : 1)
+                              .shake(duration: 400.ms),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
 
-          // Game Elements
-          if (_isPlaying) ...[
-            // Falling Balls
-            ..._balls.map(
-              (ball) => Positioned(
-                left: ball.x,
-                top: ball.y,
-                child: _BallWidget(isGreen: ball.isGreen),
+          // Drag Handler (Bottom Region)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onPanUpdate: (details) {
+                if (!_isPlaying) return;
+                setState(() {
+                  _paddleX = (_paddleX + details.delta.dx).clamp(
+                    0,
+                    _screenWidth - _paddleWidth,
+                  );
+                });
+              },
+            ),
+          ),
+
+          // Particle Layer
+          ..._particles.map(
+            (p) => Positioned(
+              left: p.x,
+              top: p.y,
+              child: Opacity(
+                opacity: p.life.clamp(0.0, 1.0),
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: p.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
               ),
             ),
+          ),
+
+          // Game Elements
+          // Game Elements (Bricks)
+          ..._bricks
+              .where((b) => !b.isBroken)
+              .map(
+                (brick) => Positioned(
+                  left: brick.rect.left,
+                  top: brick.rect.top,
+                  child: _BrickWidget(
+                    isGreen: brick.isGreen,
+                    width: _brickWidth,
+                    height: _brickHeight,
+                  ),
+                ),
+              ),
+
+          // Game Elements (Balls)
+          if (_isPlaying) ...[
+            ..._balls.map((ball) => _BallWidget(ball: ball)),
 
             // Paddle (Brick)
             Positioned(
-              left: _paddleX,
-              top: _screenHeight - 120,
-              child: GestureDetector(
-                onPanUpdate: (details) {
-                  setState(() {
-                    _paddleX = (_paddleX + details.delta.dx).clamp(
-                      0,
-                      _screenWidth - _paddleWidth,
-                    );
-                  });
-                },
-                onTap: _togglePaddle,
-                child: _PaddleWidget(
-                  width: _paddleWidth,
-                  height: _paddleHeight,
-                  leftIsGreen: _paddleColorLeftIsGreen,
-                ),
-              ),
+              left:
+                  _paddleX + (math.Random().nextDouble() - 0.5) * _shakeAmount,
+              top:
+                  _screenHeight -
+                  120 +
+                  (math.Random().nextDouble() - 0.5) * _shakeAmount,
+              child: _PaddleWidget(width: _paddleWidth, height: _paddleHeight),
             ),
 
             // Instruction Label
@@ -276,11 +507,11 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
               right: 0,
               child: Center(
                 child: Text(
-                  'Tap to flip colors • Drag to move',
+                  'Keep both colored balls in play',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -315,9 +546,22 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 40),
                       child: Text(
-                        'Catch the green balls with green side and red with red side.',
+                        'This game improves your hand-eye coordination, saccadic eye movements, and color-specific tracking. By managing two targets at once, you strengthen your visual focus and reaction time.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white70, fontSize: 16),
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 40),
+                      child: Text(
+                        'Tip: Catching a ball on the WRONG color of the paddle increases its speed!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.amber,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 40),
@@ -412,30 +656,89 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
 class _Ball {
   double x;
   double y;
+  double vx;
+  double vy;
   final bool isGreen;
-  _Ball({required this.x, required this.y, required this.isGreen});
+  final List<Offset> trail = [];
+  _Ball({
+    required this.x,
+    required this.y,
+    required this.vx,
+    required this.vy,
+    required this.isGreen,
+  });
+}
+
+class _Brick {
+  final Rect rect;
+  final bool isGreen;
+  bool isBroken = false;
+  _Brick({required this.rect, required this.isGreen});
+}
+
+class _Particle {
+  double x, y, vx, vy;
+  double life = 1.0;
+  final Color color;
+  _Particle({
+    required this.x,
+    required this.y,
+    required this.vx,
+    required this.vy,
+    required this.color,
+  });
 }
 
 class _BallWidget extends StatelessWidget {
-  final bool isGreen;
-  const _BallWidget({required this.isGreen});
+  final _Ball ball;
+  const _BallWidget({required this.ball});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        color: isGreen ? Colors.green : Colors.red,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: (isGreen ? Colors.green : Colors.red).withValues(alpha: 0.5),
-            blurRadius: 10,
-            spreadRadius: 2,
+    return Stack(
+      children: [
+        // Trail
+        ...List.generate(ball.trail.length, (index) {
+          final opacity = 1.0 - (index / ball.trail.length);
+          final size = 30.0 * (1.0 - (index / ball.trail.length) * 0.5);
+          return Positioned(
+            left: ball.trail[index].dx - (size / 2),
+            top: ball.trail[index].dy - (size / 2),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: (ball.isGreen ? Colors.green : Colors.red).withValues(
+                  alpha: opacity * 0.3,
+                ),
+                shape: BoxShape.circle,
+              ),
+            ),
+          );
+        }),
+        // Main Ball
+        Positioned(
+          left: ball.x,
+          top: ball.y,
+          child: Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: ball.isGreen ? Colors.green : Colors.red,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (ball.isGreen ? Colors.green : Colors.red).withValues(
+                    alpha: 0.6,
+                  ),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -443,40 +746,106 @@ class _BallWidget extends StatelessWidget {
 class _PaddleWidget extends StatelessWidget {
   final double width;
   final double height;
-  final bool leftIsGreen;
 
-  const _PaddleWidget({
+  const _PaddleWidget({required this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(height / 2),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.8),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.2),
+            blurRadius: 15,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.green.withValues(alpha: 0.6),
+                        Colors.green.withValues(alpha: 0.2),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red.withValues(alpha: 0.2),
+                        Colors.red.withValues(alpha: 0.6),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Center(
+            child: Container(width: 2, height: height, color: Colors.white54),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrickWidget extends StatelessWidget {
+  final bool isGreen;
+  final double width;
+  final double height;
+
+  const _BrickWidget({
+    required this.isGreen,
     required this.width,
     required this.height,
-    required this.leftIsGreen,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(height / 2),
-            border: Border.all(color: Colors.white, width: 2),
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: isGreen
+            ? Colors.green.withValues(alpha: 0.6)
+            : Colors.red.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: isGreen ? Colors.green : Colors.red,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isGreen ? Colors.green : Colors.red).withValues(alpha: 0.3),
+            blurRadius: 8,
+            spreadRadius: 1,
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Row(
-            children: [
-              Expanded(
-                child: Container(
-                  color: leftIsGreen ? Colors.green : Colors.red,
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  color: leftIsGreen ? Colors.red : Colors.green,
-                ),
-              ),
-            ],
-          ),
-        )
-        .animate(target: leftIsGreen ? 0 : 1)
-        .rotate(begin: 0, end: 0.5, duration: 200.ms);
+        ],
+      ),
+    );
   }
 }
