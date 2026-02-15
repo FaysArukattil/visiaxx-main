@@ -804,7 +804,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
         // Dynamically calculate box size considering all margins
         final double boxSize =
             ((availableWidth - (wordLen * marginPerBox)) / wordLen).clamp(
-              30.0,
+              25.0,
               55.0,
             );
 
@@ -937,135 +937,137 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
     return Container(
       color: Colors.black.withValues(alpha: 0.85),
       child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(32),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: context.cardColor,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: (_isWin ? Colors.green : Colors.red).withValues(
-                alpha: 0.5,
+        child: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: context.cardColor,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: (_isWin ? Colors.green : Colors.red).withValues(
+                  alpha: 0.5,
+                ),
+                width: 2,
               ),
-              width: 2,
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _isWin
-                    ? Icons.stars_rounded
-                    : Icons.sentiment_dissatisfied_rounded,
-                color: _isWin ? Colors.amber : Colors.redAccent,
-                size: 80,
-              ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
-              const SizedBox(height: 24),
-              Text(
-                _isWin ? 'EXCELLENT!' : 'GAME OVER',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _isWin
-                    ? 'You identified the concept!'
-                    : 'Better luck next time!',
-                style: const TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'CONCEPT',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      _targetWord,
-                      style: TextStyle(
-                        color: _isWin ? Colors.green : Colors.redAccent,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(color: Colors.white10),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'CLINICAL SIGNIFICANCE',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _details,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _level++;
-                    _initLevel();
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isWin ? Colors.green : context.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 48,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Text(
-                  _isWin ? 'NEXT LEVEL' : 'NEXT CONCEPT',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isWin
+                      ? Icons.stars_rounded
+                      : Icons.sentiment_dissatisfied_rounded,
+                  color: _isWin ? Colors.amber : Colors.redAccent,
+                  size: 80,
+                ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+                const SizedBox(height: 24),
+                Text(
+                  _isWin ? 'EXCELLENT!' : 'GAME OVER',
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
                   ),
                 ),
-              ),
-              if (!_isWin)
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'EXIT',
-                    style: TextStyle(color: Colors.white54),
+                const SizedBox(height: 12),
+                Text(
+                  _isWin
+                      ? 'You identified the concept!'
+                      : 'Better luck next time!',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'CONCEPT',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        _targetWord,
+                        style: TextStyle(
+                          color: _isWin ? Colors.green : Colors.redAccent,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Divider(color: Colors.white10),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'CLINICAL SIGNIFICANCE',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _details,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-            ],
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _level++;
+                      _initLevel();
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isWin ? Colors.green : context.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 48,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    _isWin ? 'NEXT LEVEL' : 'NEXT CONCEPT',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                if (!_isWin)
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'EXIT',
+                      style: TextStyle(color: Colors.white54),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
