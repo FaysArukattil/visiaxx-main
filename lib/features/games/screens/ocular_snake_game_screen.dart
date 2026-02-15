@@ -19,7 +19,11 @@ class OcularSnakeGameScreen extends StatefulWidget {
 class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
   // Game Configuration
   static const int _gridSize = 20;
-  static const Duration _baseSpeed = Duration(milliseconds: 150);
+  static const Duration _baseSpeed = Duration(milliseconds: 140);
+
+  // Input Handling
+  Offset _swipeDelta = Offset.zero;
+  bool _directionChangedThisTick = false;
 
   // Game State
   List<Point<int>> _snake = [
@@ -37,9 +41,6 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
   bool _isPlaying = false;
   Timer? _timer;
 
-  // Joystick State
-  Offset _joystickPos = Offset.zero;
-
   final List<String> _words = [
     'IRIS',
     'LENS',
@@ -51,6 +52,10 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
     'MACULA',
     'FOVEA',
     'VISION',
+    'ASTIG',
+    'MYOPIA',
+    'PHEME',
+    'CRYST',
   ];
 
   @override
@@ -133,6 +138,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
         _snake.removeLast();
       }
     });
+    _directionChangedThisTick = false;
   }
 
   void _endGame() {
@@ -150,7 +156,6 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
       final provider = context.read<GameProvider>();
       final currentProgress = provider.getProgress('ocular_snake');
 
-      // Calculate level based on score (100 pts per level)
       final newLevel = (_score / 100).floor() + 1;
 
       if (_score > (currentProgress?.totalScore ?? 0)) {
@@ -174,13 +179,12 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0F1115),
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(),
-            Expanded(child: _buildGameBoard()),
-            _buildJoystick(),
+            Expanded(child: _buildMainLayer()),
           ],
         ),
       ),
@@ -188,101 +192,217 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
-          Column(
-            children: [
-              Text(
-                'TARGET WORD',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+          Expanded(
+            child: Column(
+              children: [
+                const Text(
+                  'MISSION TARGET',
+                  style: TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 4,
+                  ),
                 ),
-              ),
-              Row(
-                children: _targetWord.split('').asMap().entries.map((e) {
-                  final isCleared = e.key < _letterIndex;
-                  return Text(
-                    e.value,
-                    style: TextStyle(
-                      color: isCleared ? Colors.green : Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: _targetWord.split('').asMap().entries.map((e) {
+                    final isCleared = e.key < _letterIndex;
+                    return AnimatedContainer(
+                      duration: 300.ms,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isCleared
+                            ? Colors.greenAccent.withValues(alpha: 0.1)
+                            : Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: isCleared
+                              ? Colors.greenAccent
+                              : Colors.white10,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        e.value,
+                        style: TextStyle(
+                          color: isCleared
+                              ? Colors.greenAccent
+                              : Colors.white38,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
           ),
-          Column(
-            children: [
-              Text(
-                'SCORE',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  'XP',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              Text(
-                '$_score',
-                style: const TextStyle(
-                  color: Colors.amber,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
+                Text(
+                  '$_score',
+                  style: const TextStyle(
+                    color: Colors.amber,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildGameBoard() {
+  Widget _buildMainLayer() {
     return GestureDetector(
-      onVerticalDragUpdate: (details) {
-        if (_direction != Direction.up && details.delta.dy > 5) {
-          _direction = Direction.down;
-        } else if (_direction != Direction.down && details.delta.dy < -5) {
-          _direction = Direction.up;
+      behavior: HitTestBehavior.opaque,
+      onPanStart: (details) => _swipeDelta = Offset.zero,
+      onPanUpdate: (details) {
+        if (!_isPlaying && !_isGameOver) return;
+        if (_directionChangedThisTick) return;
+
+        _swipeDelta += details.delta;
+
+        // Threshold of 20 pixels for instant turn
+        if (_swipeDelta.distance < 20) return;
+
+        Direction? newDir;
+        if (_swipeDelta.dx.abs() > _swipeDelta.dy.abs()) {
+          if (_swipeDelta.dx > 0 && _direction != Direction.left) {
+            newDir = Direction.right;
+          } else if (_swipeDelta.dx < 0 && _direction != Direction.right) {
+            newDir = Direction.left;
+          }
+        } else {
+          if (_swipeDelta.dy > 0 && _direction != Direction.up) {
+            newDir = Direction.down;
+          } else if (_swipeDelta.dy < 0 && _direction != Direction.down) {
+            newDir = Direction.up;
+          }
+        }
+
+        if (newDir != null && newDir != _direction) {
+          setState(() {
+            _direction = newDir!;
+            _directionChangedThisTick = true;
+            _swipeDelta = Offset.zero;
+          });
         }
       },
-      onHorizontalDragUpdate: (details) {
-        if (_direction != Direction.left && details.delta.dx > 5) {
-          _direction = Direction.right;
-        } else if (_direction != Direction.right && details.delta.dx < -5) {
-          _direction = Direction.left;
-        }
-      },
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: Container(
-          margin: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white12),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildBackgroundGrid(),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 2,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Stack(
+                    children: [
+                      _buildGrid(),
+                      if (!_isPlaying && !_isGameOver) _buildStartOverlay(),
+                      if (_isGameOver) _buildGameOverOverlay(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-          child: Stack(
+          _buildHelpOverlay(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHelpOverlay() {
+    return Positioned(
+      bottom: 40,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _buildGrid(),
-              if (!_isPlaying && !_isGameOver) _buildStartOverlay(),
-              if (_isGameOver) _buildGameOverOverlay(),
+              Icon(Icons.swipe_rounded, color: Colors.greenAccent, size: 18),
+              SizedBox(width: 10),
+              Text(
+                'INSTANT SWIPE ENABLED',
+                style: TextStyle(
+                  color: Colors.greenAccent,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildBackgroundGrid() {
+    return Container(decoration: const BoxDecoration(color: Color(0xFF0F1115)));
   }
 
   Widget _buildGrid() {
@@ -291,6 +411,32 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
         final double cellSize = constraints.maxWidth / _gridSize;
         return Stack(
           children: [
+            // Solid Grid Lines
+            ...List.generate(
+              _gridSize,
+              (i) => Positioned(
+                left: i * cellSize,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: 1,
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+            ),
+            ...List.generate(
+              _gridSize,
+              (i) => Positioned(
+                top: i * cellSize,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 1,
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+            ),
+
             // Letter / Food
             if (_food != null)
               Positioned(
@@ -301,19 +447,35 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
                   height: cellSize,
                   alignment: Alignment.center,
                   child:
-                      Text(
-                            _currentLetter,
-                            style: TextStyle(
+                      Container(
+                            decoration: BoxDecoration(
                               color: Colors.amber,
-                              fontWeight: FontWeight.bold,
-                              fontSize: cellSize * 0.7,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.amber.withValues(alpha: 0.8),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: Center(
+                              child: Text(
+                                _currentLetter,
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: cellSize * 0.6,
+                                ),
+                              ),
                             ),
                           )
                           .animate(onPlay: (c) => c.repeat())
                           .scale(
-                            begin: const Offset(0.8, 0.8),
-                            end: const Offset(1.2, 1.2),
-                            duration: 500.ms,
+                            begin: const Offset(0.9, 0.9),
+                            end: const Offset(1.15, 1.15),
+                            duration: 400.ms,
                             curve: Curves.easeInOut,
                           ),
                 ),
@@ -323,24 +485,52 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
               final idx = e.key;
               final p = e.value;
               final isHead = idx == 0;
+
               return Positioned(
+                key: ValueKey('snake_$idx'),
                 left: p.x * cellSize,
                 top: p.y * cellSize,
-                child: Container(
-                  width: cellSize,
-                  height: cellSize,
-                  decoration: BoxDecoration(
-                    color: isHead
-                        ? context.primary
-                        : context.primary.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(isHead ? 6 : 4),
-                    boxShadow: isHead
-                        ? [
-                            BoxShadow(
-                              color: context.primary.withValues(alpha: 0.5),
-                              blurRadius: 10,
+                child: Padding(
+                  padding: const EdgeInsets.all(1.0),
+                  child: Container(
+                    width: cellSize - 2,
+                    height: cellSize - 2,
+                    decoration: BoxDecoration(
+                      color: isHead ? Colors.white : Colors.greenAccent,
+                      borderRadius: BorderRadius.circular(isHead ? 8 : 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isHead ? Colors.white : Colors.greenAccent)
+                              .withValues(alpha: 0.6),
+                          blurRadius: isHead ? 15 : 6,
+                          spreadRadius: isHead ? 1 : 0,
+                        ),
+                      ],
+                    ),
+                    child: isHead
+                        ? Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ]
+                          )
                         : null,
                   ),
                 ),
@@ -353,68 +543,124 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
   }
 
   Widget _buildStartOverlay() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.touch_app_rounded, color: Colors.white38, size: 64),
-          const SizedBox(height: 16),
-          const Text(
-            'SWIPE TO START',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _startGame,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+    return Container(
+      color: Colors.black.withValues(alpha: 0.95),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.greenAccent.withValues(alpha: 0.1),
+                border: Border.all(color: Colors.greenAccent, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.greenAccent.withValues(alpha: 0.2),
+                    blurRadius: 40,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.flash_on_rounded,
+                color: Colors.greenAccent,
+                size: 72,
+              ),
+            ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 2.seconds),
+            const SizedBox(height: 32),
+            const Text(
+              'OCULAR SNAKE',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 36,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 6,
+                shadows: [Shadow(color: Colors.greenAccent, blurRadius: 20)],
               ),
             ),
-            child: const Text(
-              'START GAME',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            const SizedBox(height: 12),
+            const Text(
+              'HIGH-VELOCITY SWIPE SENSOR',
+              style: TextStyle(
+                color: Colors.greenAccent,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 56),
+            ElevatedButton(
+              onPressed: _startGame,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 64,
+                  vertical: 24,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                'INITIALIZE SYSTEM',
+                style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2),
+              ),
+            ),
+          ],
+        ).animate().fadeIn(duration: 500.ms),
       ),
     );
   }
 
   Widget _buildGameOverOverlay() {
     return Container(
-      color: Colors.black87,
+      color: Colors.black.withValues(alpha: 0.96),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.sentiment_dissatisfied_rounded,
-              color: Colors.redAccent,
-              size: 80,
-            ),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.redAccent.withValues(alpha: 0.1),
+                border: Border.all(color: Colors.redAccent, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.redAccent.withValues(alpha: 0.3),
+                    blurRadius: 50,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.redAccent,
+                size: 80,
+              ),
+            ).animate(onPlay: (c) => c.repeat()).shake(duration: 2.seconds),
+            const SizedBox(height: 32),
             const Text(
-              'GAME OVER',
+              'MISSION COMPROMISED',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 32,
+                fontSize: 28,
                 fontWeight: FontWeight.w900,
+                letterSpacing: 4,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
-              'Final Score: $_score',
-              style: const TextStyle(color: Colors.white70),
+              'FINAL SCORE: $_score',
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 56),
             ElevatedButton(
               onPressed: () {
                 setState(() {
@@ -431,133 +677,34 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
                 _startGame();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: context.primary,
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 48,
-                  vertical: 16,
+                  horizontal: 64,
+                  vertical: 24,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
               child: const Text(
-                'TRY AGAIN',
+                'RE-BOOT MISSION',
+                style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'TERMINATE SESSION',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  color: Colors.white38,
+                  fontSize: 12,
+                  letterSpacing: 2,
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildJoystick() {
-    return Container(
-      padding: const EdgeInsets.only(bottom: 40),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'CONTROL TRACKPAD',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.3),
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onPanUpdate: (details) {
-              if (!_isPlaying && !_isGameOver) return;
-
-              // Center is 75,75 for a 150x150 container
-              final center = const Offset(75, 75);
-              final rawOffset = details.localPosition - center;
-
-              // Constrain ball movement to a radius of 35
-              final distance = rawOffset.distance;
-              final limitedOffset = distance > 35
-                  ? rawOffset * (35 / distance)
-                  : rawOffset;
-
-              setState(() {
-                _joystickPos = limitedOffset;
-              });
-
-              // Significant movement required to change direction (threshold 10)
-              if (limitedOffset.dx.abs() > limitedOffset.dy.abs()) {
-                if (limitedOffset.dx > 10 && _direction != Direction.left) {
-                  _direction = Direction.right;
-                } else if (limitedOffset.dx < -10 &&
-                    _direction != Direction.right) {
-                  _direction = Direction.left;
-                }
-              } else {
-                if (limitedOffset.dy > 10 && _direction != Direction.up) {
-                  _direction = Direction.down;
-                } else if (limitedOffset.dy < -10 &&
-                    _direction != Direction.up) {
-                  _direction = Direction.up;
-                }
-              }
-            },
-            onPanEnd: (_) => setState(() => _joystickPos = Offset.zero),
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.03),
-                border: Border.all(color: Colors.white12, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.primary.withValues(alpha: 0.05),
-                    blurRadius: 30,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        context.primary.withValues(alpha: 0.3),
-                        context.primary.withValues(alpha: 0.05),
-                      ],
-                    ),
-                  ),
-                  child: Center(
-                    child: Transform.translate(
-                      offset: _joystickPos,
-                      child: Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: context.primary.withValues(alpha: 0.4),
-                              blurRadius: 15,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ).animate().fadeIn(duration: 600.ms),
       ),
     );
   }
