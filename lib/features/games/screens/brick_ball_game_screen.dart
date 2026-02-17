@@ -18,12 +18,22 @@ class BrickAndBallGameScreen extends StatefulWidget {
   State<BrickAndBallGameScreen> createState() => _BrickAndBallGameScreenState();
 }
 
-class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
+class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     AudioService().init(); // Ensure audio is initialized
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _pauseGame();
+    }
   }
 
   // Game state
@@ -42,7 +52,8 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   // Paddle/Brick state
   late double _paddleX;
   final double _paddleWidth = 120.0;
-  final double _paddleHeight = 20.0;
+  final double _paddleHeight = 32.0; // Thicker bar
+  bool _isPaddleFlipped = false;
   // Effects
   double _shakeAmount = 0.0;
   final List<_Particle> _particles = [];
@@ -79,6 +90,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   @override
   void dispose() {
     _disposed = true;
+    WidgetsBinding.instance.removeObserver(this);
     _gameTimer?.cancel();
     _gameTimer = null;
     SystemChrome.setPreferredOrientations([
@@ -95,6 +107,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     _score = 0;
     _lives = 3;
     _isPlaying = true;
+    _isPaddleFlipped = false;
     _initBricks();
     _initBalls();
     _gameTimer?.cancel();
@@ -164,15 +177,25 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
         isGreen: true,
         bricksHitInOneFlight: 0,
       ),
-      _Ball(
-        x: _paddleX + _paddleWidth - 40,
-        y: _screenHeight - 150,
-        vx: initialSpeed * 0.8,
-        vy: -initialSpeed,
-        isGreen: false,
-        bricksHitInOneFlight: 0,
-      ),
     ];
+
+    // Second ball (Red) spawns after 1 second
+    Future.delayed(const Duration(seconds: 1), () {
+      if (_isPlaying && !_disposed && mounted) {
+        setState(() {
+          _balls.add(
+            _Ball(
+              x: _paddleX + _paddleWidth - 40,
+              y: _screenHeight - 150,
+              vx: initialSpeed * 0.8,
+              vy: -initialSpeed,
+              isGreen: false,
+              bricksHitInOneFlight: 0,
+            ),
+          );
+        });
+      }
+    });
   }
 
   void _updateGame() {
@@ -209,8 +232,16 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
           ball.bricksHitInOneFlight = 0; // Reset powerup counter
 
           bool hitLeft = ball.x + 10 < _paddleX + (_paddleWidth / 2);
-          bool correctSide =
-              (hitLeft && ball.isGreen) || (!hitLeft && !ball.isGreen);
+
+          // If flipped, left is red, right is green. If not, left is green, right is red.
+          bool correctSide;
+          if (!_isPaddleFlipped) {
+            correctSide =
+                (hitLeft && ball.isGreen) || (!hitLeft && !ball.isGreen);
+          } else {
+            correctSide =
+                (!hitLeft && ball.isGreen) || (hitLeft && !ball.isGreen);
+          }
 
           if (!correctSide) {
             ball.vx *= 1.1;
@@ -754,6 +785,14 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                             );
                           });
                         },
+                        onDoubleTap: () {
+                          if (!_isPlaying) return;
+                          setState(() {
+                            _isPaddleFlipped = !_isPaddleFlipped;
+                          });
+                          HapticFeedback.mediumImpact();
+                          AudioService().playClick();
+                        },
                       ),
                     ),
 
@@ -793,17 +832,21 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
 
                       // Paddle (Brick)
                       Positioned(
-                        left:
-                            _paddleX +
-                            (math.Random().nextDouble() - 0.5) * _shakeAmount,
-                        top:
-                            _screenHeight -
-                            120 +
-                            (math.Random().nextDouble() - 0.5) * _shakeAmount,
-                        child: _PaddleWidget(
-                          width: _paddleWidth,
-                          height: _paddleHeight,
-                        ),
+                        left: _paddleX,
+                        top: _screenHeight - 110,
+                        child:
+                            AnimatedRotation(
+                                  turns: _isPaddleFlipped ? 0.5 : 0,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutBack,
+                                  child: _PaddleWidget(
+                                    width: _paddleWidth,
+                                    height: _paddleHeight,
+                                    isFlipped: _isPaddleFlipped,
+                                  ),
+                                )
+                                .animate(target: _shakeAmount > 0 ? 1 : 0)
+                                .shake(hz: 10, offset: const Offset(4, 0)),
                       ),
 
                       // Instruction Label
@@ -1124,16 +1167,31 @@ class _BallWidget extends StatelessWidget {
 class _PaddleWidget extends StatelessWidget {
   final double width;
   final double height;
+  final bool isFlipped;
 
-  const _PaddleWidget({required this.width, required this.height});
+  const _PaddleWidget({
+    required this.width,
+    required this.height,
+    required this.isFlipped,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Determine colors based on flipped state
+    // Normal: Green Left, Red Right
+    // Flipped (180 deg rotation in parent): Green Right, Red Left (visually)
+    // Actually, since we rotate the WHOLE widget in the parent using AnimatedRotation,
+    // the COLORS will also rotate. So we just need to DRAW them once.
+    // Left = Green, Right = Red.
+    // When Turns = 0.5 (180 deg), the widget will upside down.
+    // To make it look like a flip, we should probably just rotate or swap.
+    // The user said "Double tap... flip the colors gets reversed like with nice animation and all instantly."
+
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(height / 2),
         gradient: const LinearGradient(
           colors: [Colors.green, Colors.red],
           begin: Alignment.centerLeft,
@@ -1141,55 +1199,70 @@ class _PaddleWidget extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withValues(alpha: 0.4),
-            blurRadius: 8,
+            color: Colors.green.withValues(alpha: 0.6),
+            blurRadius: 12,
             offset: const Offset(-4, 0),
           ),
           BoxShadow(
-            color: Colors.red.withValues(alpha: 0.4),
-            blurRadius: 8,
+            color: Colors.red.withValues(alpha: 0.6),
+            blurRadius: 12,
             offset: const Offset(4, 0),
           ),
         ],
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+          width: 2,
+        ),
       ),
       child: Stack(
         children: [
           // Center divider
-          Positioned(
-            left: width / 2 - 1,
-            top: 2,
-            bottom: 2,
+          Center(
             child: Container(
-              width: 2,
+              width: 4,
+              height: height * 0.7,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(1),
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
             ),
           ),
-          // Left label
+          // Thicker indicator rings
           Positioned(
-            left: 8,
+            left: 12,
             top: 0,
             bottom: 0,
             child: Center(
-              child: Icon(
-                Icons.circle,
-                color: Colors.white.withValues(alpha: 0.4),
-                size: 8,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.3),
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
               ),
             ),
           ),
-          // Right label
           Positioned(
-            right: 8,
+            right: 12,
             top: 0,
             bottom: 0,
             child: Center(
-              child: Icon(
-                Icons.circle,
-                color: Colors.white.withValues(alpha: 0.4),
-                size: 8,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.3),
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
               ),
             ),
           ),

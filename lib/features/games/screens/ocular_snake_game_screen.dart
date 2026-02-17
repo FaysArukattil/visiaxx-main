@@ -18,7 +18,8 @@ class OcularSnakeGameScreen extends StatefulWidget {
   State<OcularSnakeGameScreen> createState() => _OcularSnakeGameScreenState();
 }
 
-class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
+class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
+    with WidgetsBindingObserver {
   // Game Configuration
   static const int _gridSize = 20;
   static const Duration _baseSpeed = Duration(milliseconds: 140);
@@ -63,8 +64,17 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     _startNewLevel();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _pauseGame();
+    }
   }
 
   void _startNewLevel() {
@@ -276,6 +286,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,

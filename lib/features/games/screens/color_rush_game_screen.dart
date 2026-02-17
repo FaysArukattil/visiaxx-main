@@ -19,7 +19,7 @@ class ColorRushGameScreen extends StatefulWidget {
 }
 
 class _ColorRushGameScreenState extends State<ColorRushGameScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   // ─── Game State ───
   bool _isPlaying = false;
   bool _isGameOver = false;
@@ -61,6 +61,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     AudioService().init();
 
@@ -94,6 +95,14 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _pauseGame();
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _screenWidth = MediaQuery.of(context).size.width;
@@ -103,6 +112,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
   @override
   void dispose() {
     _disposed = true;
+    WidgetsBinding.instance.removeObserver(this);
     _gameTimer?.cancel();
     _coinSpawnTimer?.cancel();
     _colorSwitchTimer?.cancel();
