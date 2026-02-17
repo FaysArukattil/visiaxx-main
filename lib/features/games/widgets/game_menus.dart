@@ -203,15 +203,28 @@ class _GamePauseDialogState extends State<GamePauseDialog> {
               setState(() {});
             },
             borderRadius: BorderRadius.circular(16),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: context.surface,
+                color: audio.isSoundEnabled ? context.primary : context.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: context.dividerColor.withValues(alpha: 0.1),
+                  color: audio.isSoundEnabled
+                      ? context.primary
+                      : context.dividerColor.withValues(alpha: 0.1),
+                  width: 2,
                 ),
+                boxShadow: audio.isSoundEnabled
+                    ? [
+                        BoxShadow(
+                          color: context.primary.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -220,14 +233,18 @@ class _GamePauseDialogState extends State<GamePauseDialog> {
                     audio.isSoundEnabled
                         ? Icons.volume_up_rounded
                         : Icons.volume_off_rounded,
-                    color: context.textPrimary,
+                    color: audio.isSoundEnabled
+                        ? context.onPrimary
+                        : context.textPrimary,
                     size: 24,
                   ),
                   const SizedBox(width: 12),
                   Text(
                     audio.isSoundEnabled ? 'SOUND: ON' : 'SOUND: OFF',
                     style: TextStyle(
-                      color: context.textPrimary,
+                      color: audio.isSoundEnabled
+                          ? context.onPrimary
+                          : context.textPrimary,
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
                       letterSpacing: 2,

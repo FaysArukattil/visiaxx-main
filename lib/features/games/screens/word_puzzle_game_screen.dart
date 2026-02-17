@@ -725,7 +725,9 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      context.primary.withValues(alpha: 0.1),
+                      context.isDarkMode
+                          ? context.primary.withValues(alpha: 0.1)
+                          : context.scaffoldBackground,
                       context.scaffoldBackground,
                       context.scaffoldBackground,
                     ],
@@ -907,7 +909,9 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                       bgColor = Colors.amber.withValues(alpha: 0.6);
                       borderColor = Colors.amber;
                     } else {
-                      bgColor = context.surface;
+                      bgColor = context.isDarkMode
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.grey.withValues(alpha: 0.2);
                       borderColor = context.dividerColor.withValues(alpha: 0.1);
                     }
                   } else if (rowIndex == _guesses.length &&
@@ -929,7 +933,16 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                           child: Text(
                             char,
                             style: TextStyle(
-                              color: rowIndex < _guesses.length
+                              color:
+                                  (rowIndex < _guesses.length &&
+                                      (bgColor ==
+                                              Colors.green.withValues(
+                                                alpha: 0.6,
+                                              ) ||
+                                          bgColor ==
+                                              Colors.amber.withValues(
+                                                alpha: 0.6,
+                                              )))
                                   ? Colors.white
                                   : context.textPrimary,
                               fontSize: boxSize * 0.45,
@@ -1086,12 +1099,12 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Divider(color: Colors.white10),
+                      const Divider(),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'CLINICAL SIGNIFICANCE',
                         style: TextStyle(
-                          color: Colors.white54,
+                          color: context.textTertiary,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1100,8 +1113,8 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                       Text(
                         _details,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: context.textSecondary,
                           fontSize: 12,
                           height: 1.4,
                         ),

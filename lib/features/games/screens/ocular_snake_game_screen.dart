@@ -662,11 +662,11 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                     width: cellSize - 2,
                     height: cellSize - 2,
                     decoration: BoxDecoration(
-                      color: isHead ? Colors.white : Colors.greenAccent,
+                      color: isHead ? context.primary : Colors.greenAccent,
                       borderRadius: BorderRadius.circular(isHead ? 8 : 4),
                       boxShadow: [
                         BoxShadow(
-                          color: (isHead ? Colors.white : Colors.greenAccent)
+                          color: (isHead ? context.primary : Colors.greenAccent)
                               .withValues(alpha: 0.6),
                           blurRadius: isHead ? 15 : 6,
                           spreadRadius: isHead ? 1 : 0,
@@ -681,16 +681,20 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                                 Container(
                                   width: 4,
                                   height: 4,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black,
+                                  decoration: BoxDecoration(
+                                    color: context.isDarkMode
+                                        ? Colors.black
+                                        : Colors.white,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
                                 Container(
                                   width: 4,
                                   height: 4,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black,
+                                  decoration: BoxDecoration(
+                                    color: context.isDarkMode
+                                        ? Colors.black
+                                        : Colors.white,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
