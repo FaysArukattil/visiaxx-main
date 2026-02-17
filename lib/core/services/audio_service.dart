@@ -9,7 +9,13 @@ class AudioService {
   AudioService._internal();
 
   final AudioPlayer _bgmPlayer = AudioPlayer();
-  final AudioPlayer _sfxPlayer = AudioPlayer();
+
+  // Larger pool for heavy concurrent playback (prevents timeouts and lag)
+  final List<AudioPlayer> _sfxPlayerPool = List.generate(
+    10,
+    (_) => AudioPlayer(),
+  );
+  int _currentPlayerIndex = 0;
 
   bool _isSoundEnabled = true;
   bool get isSoundEnabled => _isSoundEnabled;
@@ -21,6 +27,16 @@ class AudioService {
     _isSoundEnabled = prefs.getBool(_soundEnabledKey) ?? true;
 
     _bgmPlayer.setReleaseMode(ReleaseMode.loop);
+    // Initialize all SFX players with auto-cleanup
+    for (var player in _sfxPlayerPool) {
+      player.setReleaseMode(ReleaseMode.release);
+      player.setVolume(0.7); // Slightly lower to reduce processing load
+
+      // Auto-stop on complete to free up resources immediately
+      player.onPlayerComplete.listen((_) {
+        player.stop();
+      });
+    }
   }
 
   Future<void> toggleSound() async {
@@ -30,7 +46,9 @@ class AudioService {
 
     if (!_isSoundEnabled) {
       await _bgmPlayer.stop();
-      await _sfxPlayer.stop();
+      for (var player in _sfxPlayerPool) {
+        await player.stop();
+      }
     }
   }
 
@@ -168,11 +186,19 @@ class AudioService {
     playSFX('sounds/click.mp3');
   }
 
-  // Generic fallback if needed
-  Future<void> playSFX(String assetPath) async {
+  // Generic SFX player - NON-BLOCKING fire-and-forget for performance
+  void playSFX(String assetPath) {
     if (!_isSoundEnabled) return;
     try {
-      await _sfxPlayer.play(AssetSource(assetPath));
+      // Get next player in pool (circular)
+      final player = _sfxPlayerPool[_currentPlayerIndex];
+      _currentPlayerIndex = (_currentPlayerIndex + 1) % _sfxPlayerPool.length;
+
+      // Stop any currently playing sound on this player
+      player.stop();
+
+      // Fire-and-forget play (NO await to prevent blocking/timeouts)
+      player.play(AssetSource(assetPath));
     } catch (e) {
       debugPrint('[AudioService] Error playing SFX: $e');
     }
@@ -180,6 +206,8 @@ class AudioService {
 
   void dispose() {
     _bgmPlayer.dispose();
-    _sfxPlayer.dispose();
+    for (var player in _sfxPlayerPool) {
+      player.dispose();
+    }
   }
 }

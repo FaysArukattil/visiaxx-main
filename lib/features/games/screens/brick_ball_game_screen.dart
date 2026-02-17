@@ -218,13 +218,16 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
               brick.health--;
               ball.bricksHitInOneFlight++;
 
-              // POWER-UP: Spawn new ball if 2 bricks hit in one flight (MAX 8 balls)
-              if (ball.bricksHitInOneFlight >= 2 && _balls.length < 8) {
+              // POWER-UP: Spawn new ball if 2 bricks hit in one flight (MAX 6 per color)
+              final sameColorBalls = _balls
+                  .where((b) => b.isGreen == ball.isGreen)
+                  .length;
+              if (ball.bricksHitInOneFlight >= 2 && sameColorBalls < 6) {
                 ballsToAdd.add(
                   _Ball(
                     x: ball.x,
                     y: ball.y,
-                    vx: -ball.vx,
+                    vx: -ball.vx * 0.9, // Slight variation
                     vy: ball.vy,
                     isGreen: ball.isGreen,
                     bricksHitInOneFlight: 0,
