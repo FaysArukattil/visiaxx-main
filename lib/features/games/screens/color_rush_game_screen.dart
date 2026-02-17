@@ -461,9 +461,9 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF0D1B2A),
-            const Color(0xFF1B2838),
             context.scaffoldBackground,
+            context.scaffoldBackground.withValues(alpha: 0.95),
+            context.scaffoldBackground.withValues(alpha: 0.9),
           ],
         ),
       ),
@@ -486,25 +486,21 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(
-                                0xFF00C853,
-                              ).withValues(alpha: 0.1),
+                              color: context.primary.withValues(alpha: 0.1),
                               border: Border.all(
-                                color: const Color(0xFF00C853),
+                                color: context.primary,
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(
-                                    0xFF00C853,
-                                  ).withValues(alpha: 0.3),
+                                  color: context.primary.withValues(alpha: 0.3),
                                   blurRadius: 40,
                                 ),
                               ],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.directions_run_rounded,
-                              color: Colors.white,
+                              color: context.primary,
                               size: 56,
                             ),
                           )
@@ -513,36 +509,36 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                           .animate()
                           .scale(duration: 600.ms, curve: Curves.elasticOut),
                       const SizedBox(height: 24),
-                      const Text(
+                      Text(
                         'COLOR RUSH',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: context.textPrimary,
                           letterSpacing: 6,
                           shadows: [
-                            Shadow(color: Color(0xFF00C853), blurRadius: 15),
+                            Shadow(color: context.primary, blurRadius: 15),
                           ],
                         ),
                       ).animate().fadeIn(duration: 400.ms),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'Chromatic Velocity Mission',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Color(0xFF00C853),
+                          color: context.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                         ),
                       ).animate().fadeIn(delay: 100.ms),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Dodge obstacles and collect matching colors at high velocity. Synchronize your vision with rapid movements.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: context.textSecondary,
                           fontSize: 14,
                           height: 1.4,
                         ),
@@ -570,8 +566,8 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                         child: ElevatedButton(
                           onPressed: _startGame,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
+                            backgroundColor: context.primary,
+                            foregroundColor: context.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
@@ -594,7 +590,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                         child: Text(
                           'Return to Games',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: context.textTertiary,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
@@ -617,19 +613,21 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: context.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.1),
+          ),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF00C853).withValues(alpha: 0.1),
+                color: context.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: const Color(0xFF00C853), size: 20),
+              child: Icon(icon, color: context.primary, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -638,8 +636,8 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -647,7 +645,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: context.textSecondary,
                       fontSize: 12,
                     ),
                   ),

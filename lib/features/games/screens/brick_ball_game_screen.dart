@@ -862,9 +862,11 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              const Color(0xFF0D1B2A),
-                              const Color(0xFF1B2838),
                               context.scaffoldBackground,
+                              context.scaffoldBackground.withValues(
+                                alpha: 0.95,
+                              ),
+                              context.scaffoldBackground.withValues(alpha: 0.9),
                             ],
                           ),
                         ),
@@ -892,25 +894,24 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                               padding: const EdgeInsets.all(20),
                                               decoration: BoxDecoration(
                                                 shape: BoxShape.circle,
-                                                color: Colors.orange.withValues(
-                                                  alpha: 0.1,
-                                                ),
+                                                color: context.primary
+                                                    .withValues(alpha: 0.1),
                                                 border: Border.all(
-                                                  color: Colors.orange,
+                                                  color: context.primary,
                                                   width: 2,
                                                 ),
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: Colors.orange
+                                                    color: context.primary
                                                         .withValues(alpha: 0.3),
                                                     blurRadius: 40,
                                                   ),
                                                 ],
                                               ),
-                                              child: const Icon(
+                                              child: Icon(
                                                 Icons.grid_view_rounded,
                                                 size: 56,
-                                                color: Colors.white,
+                                                color: context.primary,
                                               ),
                                             )
                                             .animate(onPlay: (c) => c.repeat())
@@ -922,17 +923,17 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                             ),
                                         const SizedBox(height: 24),
                                         // Title block
-                                        const Text(
+                                        Text(
                                           'BRICK & BALL',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontSize: 32,
                                             fontWeight: FontWeight.w900,
-                                            color: Colors.white,
+                                            color: context.textPrimary,
                                             letterSpacing: 6,
                                             shadows: [
                                               Shadow(
-                                                color: Colors.orangeAccent,
+                                                color: context.primary,
                                                 blurRadius: 15,
                                               ),
                                             ],
@@ -943,18 +944,18 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                           'Multi-Target Tracking Mission',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
-                                            color: Colors.orangeAccent,
+                                            color: context.primary,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w900,
                                             letterSpacing: 2,
                                           ),
                                         ).animate().fadeIn(delay: 100.ms),
                                         const SizedBox(height: 16),
-                                        const Text(
+                                        Text(
                                           'Master focus by keeping multiple balls in play. Train your eyes to track and react to moving targets.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
-                                            color: Colors.white70,
+                                            color: context.textSecondary,
                                             fontSize: 14,
                                             height: 1.4,
                                           ),
@@ -983,8 +984,10 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                               child: ElevatedButton(
                                                 onPressed: _startGame,
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.white,
-                                                  foregroundColor: Colors.black,
+                                                  backgroundColor:
+                                                      context.primary,
+                                                  foregroundColor:
+                                                      context.onPrimary,
                                                   padding:
                                                       const EdgeInsets.symmetric(
                                                         vertical: 20,
@@ -1017,9 +1020,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                           child: Text(
                                             'Return to Games',
                                             style: TextStyle(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.4,
-                                              ),
+                                              color: context.textTertiary,
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -1049,9 +1050,16 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: context.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -1070,18 +1078,15 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: context.textSecondary, fontSize: 13),
                 ),
               ],
             ),

@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../data/providers/game_provider.dart';
 import '../../../core/services/audio_service.dart';
 import '../widgets/game_menus.dart';
+import '../../../core/extensions/theme_extension.dart';
 
 enum Direction { up, down, left, right }
 
@@ -706,9 +707,9 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF0D1B2A),
-            const Color(0xFF1B2838),
-            const Color(0xFF0F1115),
+            context.scaffoldBackground,
+            context.scaffoldBackground.withValues(alpha: 0.95),
+            context.scaffoldBackground.withValues(alpha: 0.9),
           ],
         ),
       ),
@@ -731,23 +732,21 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.greenAccent.withValues(alpha: 0.1),
+                              color: context.primary.withValues(alpha: 0.1),
                               border: Border.all(
-                                color: Colors.greenAccent,
+                                color: context.primary,
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.greenAccent.withValues(
-                                    alpha: 0.3,
-                                  ),
+                                  color: context.primary.withValues(alpha: 0.3),
                                   blurRadius: 40,
                                 ),
                               ],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.flash_on_rounded,
-                              color: Colors.white,
+                              color: context.primary,
                               size: 56,
                             ),
                           )
@@ -756,36 +755,36 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                           .animate()
                           .scale(duration: 600.ms, curve: Curves.elasticOut),
                       const SizedBox(height: 24),
-                      const Text(
+                      Text(
                         'OCULAR SNAKE',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: context.textPrimary,
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 6,
                           shadows: [
-                            Shadow(color: Colors.greenAccent, blurRadius: 15),
+                            Shadow(color: context.primary, blurRadius: 15),
                           ],
                         ),
                       ).animate().fadeIn(duration: 400.ms),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'Precision Navigation Mission',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.greenAccent,
+                          color: context.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                         ),
                       ).animate().fadeIn(delay: 100.ms),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Hunt for letters to build medical terms while navigating at high speed. Sharpen your visual search and saccadic accuracy.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: context.textSecondary,
                           fontSize: 14,
                           height: 1.4,
                         ),
@@ -813,8 +812,8 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                         child: ElevatedButton(
                           onPressed: _startGame,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
+                            backgroundColor: context.primary,
+                            foregroundColor: context.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
@@ -837,7 +836,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                         child: Text(
                           'Return to Games',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: context.textTertiary,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
@@ -860,19 +859,21 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: context.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.1),
+          ),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.greenAccent.withValues(alpha: 0.1),
+                color: context.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: Colors.greenAccent, size: 20),
+              child: Icon(icon, color: context.primary, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -881,8 +882,8 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -890,7 +891,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: context.textSecondary,
                       fontSize: 12,
                     ),
                   ),

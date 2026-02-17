@@ -1149,9 +1149,9 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF0D1B2A),
-            const Color(0xFF1B2838),
-            Colors.black,
+            context.scaffoldBackground,
+            context.scaffoldBackground.withValues(alpha: 0.95),
+            context.scaffoldBackground.withValues(alpha: 0.9),
           ],
         ),
       ),
@@ -1174,24 +1174,22 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.blueAccent.withValues(alpha: 0.1),
+                              color: context.primary.withValues(alpha: 0.1),
                               border: Border.all(
-                                color: Colors.blueAccent,
+                                color: context.primary,
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.blueAccent.withValues(
-                                    alpha: 0.3,
-                                  ),
+                                  color: context.primary.withValues(alpha: 0.3),
                                   blurRadius: 40,
                                 ),
                               ],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.visibility_rounded,
                               size: 56,
-                              color: Colors.white,
+                              color: context.primary,
                             ),
                           )
                           .animate(onPlay: (c) => c.repeat())
@@ -1199,16 +1197,16 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                           .animate()
                           .scale(duration: 600.ms, curve: Curves.elasticOut),
                       const SizedBox(height: 24),
-                      const Text(
+                      Text(
                         'EYE QUEST',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: context.textPrimary,
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 6,
                           shadows: [
-                            Shadow(color: Colors.blueAccent, blurRadius: 15),
+                            Shadow(color: context.primary, blurRadius: 15),
                           ],
                         ),
                       ).animate().fadeIn(duration: 400.ms),
@@ -1224,11 +1222,11 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                         ),
                       ).animate().fadeIn(delay: 100.ms),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Master eye anatomy and clinical terminology through visual word puzzles. Sharpen your medical focus.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: context.textSecondary,
                           fontSize: 14,
                           height: 1.4,
                         ),
@@ -1261,8 +1259,8 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
+                            backgroundColor: context.primary,
+                            foregroundColor: context.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
@@ -1285,7 +1283,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                         child: Text(
                           'Return to Games',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: context.textTertiary,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1308,9 +1306,11 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: context.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.1),
+          ),
         ),
         child: Row(
           children: [
@@ -1329,8 +1329,8 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1338,7 +1338,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: context.textSecondary,
                       fontSize: 12,
                     ),
                   ),
