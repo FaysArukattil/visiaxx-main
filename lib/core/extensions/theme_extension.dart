@@ -12,6 +12,7 @@ extension ThemeExtension on BuildContext {
   Color get onSurface => Theme.of(this).colorScheme.onSurface;
   Color get scaffoldBackground => Theme.of(this).scaffoldBackgroundColor;
   Color get cardColor => Theme.of(this).cardColor;
+  Color get cardBackground => Theme.of(this).cardColor;
 
   // Text colors
   Color get textPrimary => Theme.of(this).colorScheme.onSurface;

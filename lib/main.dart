@@ -77,6 +77,7 @@ import 'features/games/screens/game_selection_screen.dart';
 import 'features/games/screens/brick_ball_game_screen.dart';
 import 'features/games/screens/word_puzzle_game_screen.dart';
 import 'features/games/screens/ocular_snake_game_screen.dart';
+import 'features/games/screens/color_rush_game_screen.dart';
 
 // Providers
 import 'data/providers/test_session_provider.dart';
@@ -378,6 +379,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/brick-ball-game': (context) => const BrickAndBallGameScreen(),
               '/eye-quest-game': (context) => const EyeQuestGameScreen(),
               '/ocular-snake-game': (context) => const OcularSnakeGameScreen(),
+              '/color-rush-game': (context) => const ColorRushGameScreen(),
             },
           );
         },

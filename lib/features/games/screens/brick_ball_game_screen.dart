@@ -23,6 +23,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   void initState() {
     super.initState();
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    AudioService().init(); // Ensure audio is initialized
   }
 
   // Game state
@@ -31,6 +32,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   int _lives = 3;
   int _level = 1;
   Timer? _gameTimer;
+  bool _disposed = false;
 
   // Screen dimensions
   late double _screenWidth;
@@ -52,6 +54,10 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   // Balls state
   late List<_Ball> _balls;
 
+  // Max ball limits to prevent performance issues
+  static const int _maxBallsPerColor = 3;
+  static const int _maxTotalBalls = 6;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -60,14 +66,21 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     _paddleX = (_screenWidth - _paddleWidth) / 2;
 
     // Load user level if exists
-    final progress = context.read<GameProvider>().getProgress('brick_ball');
-    if (progress != null) {
-      _level = progress.currentLevel;
+    try {
+      final progress = context.read<GameProvider>().getProgress('brick_ball');
+      if (progress != null) {
+        _level = progress.currentLevel;
+      }
+    } catch (e) {
+      debugPrint('[BrickBall] Error loading progress: $e');
     }
   }
 
   @override
   void dispose() {
+    _disposed = true;
+    _gameTimer?.cancel();
+    _gameTimer = null;
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -78,6 +91,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   }
 
   void _startGame() {
+    if (_disposed || !mounted) return;
     _score = 0;
     _lives = 3;
     _isPlaying = true;
@@ -85,6 +99,10 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     _initBalls();
     _gameTimer?.cancel();
     _gameTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+      if (_disposed || !mounted) {
+        timer.cancel();
+        return;
+      }
       _updateGame();
     });
     AudioService().playClick(); // Start sound
@@ -155,11 +173,10 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
         bricksHitInOneFlight: 0,
       ),
     ];
-    AudioService().playBallSpawn();
   }
 
   void _updateGame() {
-    if (!_isPlaying) return;
+    if (!_isPlaying || _disposed || !mounted) return;
 
     setState(() {
       List<_Ball> ballsToRemove = [];
@@ -198,6 +215,9 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
           if (!correctSide) {
             ball.vx *= 1.1;
             ball.vy *= 1.1;
+            // Cap max speed to prevent invisible balls
+            ball.vx = ball.vx.clamp(-8.0, 8.0);
+            ball.vy = ball.vy.clamp(-8.0, 8.0);
             _createParticles(
               ball.x + 10,
               ball.y + 10,
@@ -218,22 +238,26 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
               brick.health--;
               ball.bricksHitInOneFlight++;
 
-              // POWER-UP: Spawn new ball if 2 bricks hit in one flight (MAX 6 per color)
-              final sameColorBalls = _balls
-                  .where((b) => b.isGreen == ball.isGreen)
-                  .length;
-              if (ball.bricksHitInOneFlight >= 2 && sameColorBalls < 6) {
+              // POWER-UP: Spawn new ball if 3 bricks hit in one flight
+              // Hard cap: max _maxBallsPerColor per color, _maxTotalBalls total
+              final sameColorBalls =
+                  _balls.where((b) => b.isGreen == ball.isGreen).length +
+                  ballsToAdd.where((b) => b.isGreen == ball.isGreen).length;
+              final totalBalls = _balls.length + ballsToAdd.length;
+              if (ball.bricksHitInOneFlight >= 3 &&
+                  sameColorBalls < _maxBallsPerColor &&
+                  totalBalls < _maxTotalBalls) {
                 ballsToAdd.add(
                   _Ball(
                     x: ball.x,
                     y: ball.y,
-                    vx: -ball.vx * 0.9, // Slight variation
+                    vx: -ball.vx * 0.9,
                     vy: ball.vy,
                     isGreen: ball.isGreen,
                     bricksHitInOneFlight: 0,
                   ),
                 );
-                ball.bricksHitInOneFlight = 0; // Consume powerup
+                ball.bricksHitInOneFlight = 0;
                 AudioService().playBallMultiply();
               }
 
@@ -245,11 +269,11 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                   ball.isGreen ? Colors.green : Colors.red,
                 );
                 HapticFeedback.mediumImpact();
+                AudioService().playBrickSmash(); // Only on full break
               } else {
                 HapticFeedback.lightImpact();
               }
               ball.vy *= -1;
-              AudioService().playBrickSmash();
             } else {
               ball.vy *= -1;
             }
@@ -307,24 +331,25 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
 
   void _levelUp() {
     _gameTimer?.cancel();
+    if (!mounted) return;
     setState(() {
       _isPlaying = false;
     });
     _saveProgress();
-    // Play level-up sound (Game over remains playLifeLost)
-    AudioService().playSuccess(); // Keep general success for now
+    AudioService().playSuccess();
 
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Center(
+      builder: (dialogContext) => Center(
         child: Material(
           color: Colors.transparent,
           child: Container(
             margin: const EdgeInsets.all(24),
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
+              color: Theme.of(dialogContext).cardColor,
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
                 color: context.primary.withValues(alpha: 0.5),
@@ -347,11 +372,11 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                       .scale(duration: 600.ms, curve: Curves.elasticOut)
                       .shimmer(delay: 600.ms),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'LEVEL COMPLETE!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: context.textPrimary,
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 2,
@@ -362,7 +387,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                     'Challenge increases as you progress.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: context.textPrimary.withValues(alpha: 0.7),
                       fontSize: 16,
                     ),
                   ),
@@ -374,11 +399,13 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(context);
-                          setState(() {
-                            _level++;
-                            _startGame();
-                          });
+                          Navigator.pop(dialogContext);
+                          if (mounted) {
+                            setState(() {
+                              _level++;
+                              _startGame();
+                            });
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: context.primary,
@@ -412,21 +439,23 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
 
   void _gameOver() {
     _gameTimer?.cancel();
+    if (!mounted) return;
     setState(() {
       _isPlaying = false;
     });
 
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Center(
+      builder: (dialogContext) => Center(
         child: Material(
           color: Colors.transparent,
           child: Container(
             margin: const EdgeInsets.all(24),
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
+              color: Theme.of(dialogContext).cardColor,
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
                 color: Colors.red.withValues(alpha: 0.5),
@@ -443,11 +472,11 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                     size: 80,
                   ).animate().shake(duration: 600.ms),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'GAME OVER',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: context.textPrimary,
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 2,
@@ -460,7 +489,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: context.textPrimary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
@@ -480,21 +509,21 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                     children: [
                       TextButton(
                         onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.pop(context);
+                          Navigator.pop(dialogContext);
+                          if (mounted) Navigator.pop(context);
                         },
                         child: Text(
                           'EXIT',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: context.textPrimary.withValues(alpha: 0.6),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(context);
-                          _startGame();
+                          Navigator.pop(dialogContext);
+                          if (mounted) _startGame();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: context.primary,
@@ -539,8 +568,8 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
         ),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.textPrimary,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -550,23 +579,28 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   }
 
   void _saveProgress() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      // Get role from AuthService cached user
-      final role = AuthService().cachedUser?.role.name ?? 'user';
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && mounted) {
+        // Get role from AuthService cached user
+        final role = AuthService().cachedUser?.role.name ?? 'user';
 
-      context.read<GameProvider>().clearLevel(
-        user.uid,
-        'brick_ball',
-        _level,
-        _score,
-        userName: user.displayName ?? 'Player',
-        userRole: role,
-      );
+        context.read<GameProvider>().clearLevel(
+          user.uid,
+          'brick_ball',
+          _level,
+          _score,
+          userName: user.displayName ?? 'Player',
+          userRole: role,
+        );
+      }
+    } catch (e) {
+      debugPrint('[BrickBall] Error saving progress: $e');
     }
   }
 
   void _triggerShake() {
+    if (!mounted) return;
     setState(() {
       _shakeAmount = 10.0;
     });
@@ -594,7 +628,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
   }
 
   void _pauseGame() {
-    if (!_isPlaying) return;
+    if (!_isPlaying || !mounted) return;
     _gameTimer?.cancel();
     setState(() {
       _isPlaying = false;
@@ -603,26 +637,31 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => GamePauseDialog(
+      builder: (dialogContext) => GamePauseDialog(
         gameTitle: 'Brick & Ball',
         onResume: () {
-          Navigator.pop(context);
+          Navigator.pop(dialogContext);
+          if (!mounted) return;
           setState(() {
             _isPlaying = true;
           });
           _gameTimer = Timer.periodic(const Duration(milliseconds: 16), (
             timer,
           ) {
+            if (_disposed || !mounted) {
+              timer.cancel();
+              return;
+            }
             _updateGame();
           });
         },
         onRestart: () {
-          Navigator.pop(context);
-          _startGame();
+          Navigator.pop(dialogContext);
+          if (mounted) _startGame();
         },
         onExit: () {
-          Navigator.pop(context); // Close dialog
-          Navigator.pop(context); // Exit game
+          Navigator.pop(dialogContext); // Close dialog
+          if (mounted) Navigator.pop(context); // Exit game
         },
       ),
     );
@@ -630,20 +669,22 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
 
   void _handleExitAttempt() {
     _gameTimer?.cancel();
+    if (!mounted) return;
     setState(() {
       _isPlaying = false;
     });
 
     showDialog(
       context: context,
-      builder: (context) => GameExitConfirmationDialog(
+      builder: (dialogContext) => GameExitConfirmationDialog(
         onConfirm: () {
           _saveProgress();
-          Navigator.pop(context); // Close dialog
-          Navigator.pop(context); // Exit game
+          Navigator.pop(dialogContext); // Close dialog
+          if (mounted) Navigator.pop(context); // Exit game
         },
         onCancel: () {
-          Navigator.pop(context);
+          Navigator.pop(dialogContext);
+          if (!mounted) return;
           if (_lives > 0 && _bricks.any((b) => !b.isBroken)) {
             setState(() {
               _isPlaying = true;
@@ -651,6 +692,10 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
             _gameTimer = Timer.periodic(const Duration(milliseconds: 16), (
               timer,
             ) {
+              if (_disposed || !mounted) {
+                timer.cancel();
+                return;
+              }
               _updateGame();
             });
           }
@@ -730,7 +775,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.center,
-                          child: Container(
+                          child: SizedBox(
                             width: _screenWidth - 40,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -861,7 +906,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                           child: Text(
                             'Keep both colored balls in play',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: context.textPrimary.withValues(alpha: 0.5),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1033,7 +1078,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: context.textPrimary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
@@ -1049,8 +1094,8 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
           ),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -1109,42 +1154,48 @@ class _BallWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         // Trail
-        ...List.generate(ball.trail.length, (index) {
-          final opacity = 1.0 - (index / ball.trail.length);
-          final size = 30.0 * (1.0 - (index / ball.trail.length) * 0.5);
+        ...ball.trail.asMap().entries.map((entry) {
+          final i = entry.key;
+          final pos = entry.value;
           return Positioned(
-            left: ball.trail[index].dx - (size / 2),
-            top: ball.trail[index].dy - (size / 2),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: (ball.isGreen ? Colors.green : Colors.red).withValues(
-                  alpha: opacity * 0.3,
+            left: pos.dx - 5,
+            top: pos.dy - 5,
+            child: Opacity(
+              opacity: (1 - i / ball.trail.length) * 0.3,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: ball.isGreen ? Colors.green : Colors.red,
+                  shape: BoxShape.circle,
                 ),
-                shape: BoxShape.circle,
               ),
             ),
           );
         }),
-        // Main Ball
+        // Ball
         Positioned(
           left: ball.x,
           top: ball.y,
           child: Container(
-            width: 30,
-            height: 30,
+            width: 20,
+            height: 20,
             decoration: BoxDecoration(
-              color: ball.isGreen ? Colors.green : Colors.red,
+              gradient: RadialGradient(
+                colors: ball.isGreen
+                    ? [Colors.green.shade300, Colors.green.shade700]
+                    : [Colors.red.shade300, Colors.red.shade700],
+              ),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
                   color: (ball.isGreen ? Colors.green : Colors.red).withValues(
                     alpha: 0.6,
                   ),
-                  blurRadius: 12,
+                  blurRadius: 10,
                   spreadRadius: 2,
                 ),
               ],
@@ -1168,57 +1219,65 @@ class _PaddleWidget extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(height / 2),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.8),
-          width: 2,
+        borderRadius: BorderRadius.circular(10),
+        gradient: const LinearGradient(
+          colors: [Colors.green, Colors.red],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.white.withValues(alpha: 0.2),
-            blurRadius: 15,
-            spreadRadius: 2,
+            color: Colors.green.withValues(alpha: 0.4),
+            blurRadius: 8,
+            offset: const Offset(-4, 0),
+          ),
+          BoxShadow(
+            color: Colors.red.withValues(alpha: 0.4),
+            blurRadius: 8,
+            offset: const Offset(4, 0),
           ),
         ],
       ),
-      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.green.withValues(alpha: 0.6),
-                        Colors.green.withValues(alpha: 0.2),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                  ),
-                ),
+          // Center divider
+          Positioned(
+            left: width / 2 - 1,
+            top: 2,
+            bottom: 2,
+            child: Container(
+              width: 2,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(1),
               ),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.red.withValues(alpha: 0.2),
-                        Colors.red.withValues(alpha: 0.6),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          Center(
-            child: Container(width: 2, height: height, color: Colors.white54),
+          // Left label
+          Positioned(
+            left: 8,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: Icon(
+                Icons.circle,
+                color: Colors.white.withValues(alpha: 0.4),
+                size: 8,
+              ),
+            ),
+          ),
+          // Right label
+          Positioned(
+            right: 8,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: Icon(
+                Icons.circle,
+                color: Colors.white.withValues(alpha: 0.4),
+                size: 8,
+              ),
+            ),
           ),
         ],
       ),
@@ -1228,37 +1287,27 @@ class _PaddleWidget extends StatelessWidget {
 
 class _BrickWidget extends StatelessWidget {
   final _Brick brick;
-
   const _BrickWidget({required this.brick});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDamaged = brick.health < brick.initialHealth;
-    final color = brick.isGreen ? Colors.green : Colors.red;
-
-    return Container(
+    final bool isCracked = brick.initialHealth > 1 && brick.health == 1;
+    return SizedBox(
       width: brick.rect.width,
       height: brick.rect.height,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDamaged ? 0.3 : 0.6),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: color.withValues(alpha: isDamaged ? 0.6 : 1.0),
-          width: isDamaged ? 1.0 : 2.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.2),
-            blurRadius: isDamaged ? 4 : 8,
-            spreadRadius: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          color: brick.isGreen ? Colors.green : Colors.red,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.15),
+            width: 1,
           ),
-        ],
+        ),
+        child: isCracked
+            ? CustomPaint(painter: _CrackPainter(color: Colors.white))
+            : null,
       ),
-      child: isDamaged
-          ? CustomPaint(
-              painter: _CrackPainter(color: color.withValues(alpha: 0.5)),
-            )
-          : null,
     );
   }
 }
@@ -1270,22 +1319,23 @@ class _CrackPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.0
+      ..color = color.withValues(alpha: 0.5)
+      ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
     final path = Path();
-    path.moveTo(size.width * 0.2, 0);
-    path.lineTo(size.width * 0.4, size.height * 0.4);
-    path.lineTo(size.width * 0.3, size.height * 0.7);
-    path.lineTo(size.width * 0.6, size.height);
-
-    path.moveTo(size.width * 0.8, 0);
-    path.lineTo(size.width * 0.6, size.height * 0.3);
-    path.lineTo(size.width * 0.7, size.height * 0.6);
+    path.moveTo(size.width * 0.3, 0);
+    path.lineTo(size.width * 0.45, size.height * 0.4);
+    path.lineTo(size.width * 0.35, size.height * 0.5);
+    path.lineTo(size.width * 0.5, size.height * 0.7);
     path.lineTo(size.width * 0.4, size.height);
 
+    final path2 = Path();
+    path2.moveTo(size.width * 0.45, size.height * 0.4);
+    path2.lineTo(size.width * 0.65, size.height * 0.55);
+
     canvas.drawPath(path, paint);
+    canvas.drawPath(path2, paint);
   }
 
   @override

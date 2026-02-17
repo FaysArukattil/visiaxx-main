@@ -144,11 +144,14 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
               onTap: () => Navigator.pushNamed(context, '/ocular-snake-game'),
             ),
             const SizedBox(height: 16),
-            _buildComingSoonCard(
-              title: 'Eye Tracker',
+            _buildGameCard(
+              id: 'color_rush',
+              title: 'Color Rush',
               description:
-                  'Follow the target as it moves across the screen to exercise eye muscles.',
-              color: Colors.blue,
+                  'Temple-run style game! Switch between red & green to collect matching coins.',
+              icon: Icons.directions_run_rounded,
+              color: Colors.teal,
+              onTap: () => Navigator.pushNamed(context, '/color-rush-game'),
             ),
           ],
         );
