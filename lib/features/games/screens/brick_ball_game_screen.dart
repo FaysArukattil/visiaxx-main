@@ -607,7 +607,11 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
   }
 
   void _handleExitAttempt() {
-    _pauseGame();
+    if (_isPlaying) {
+      _pauseGame();
+    } else {
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -835,124 +839,174 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
 
                     if (!_isPlaying)
                       Container(
-                        color: Colors.black.withValues(alpha: 0.8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              const Color(0xFF0D1B2A),
+                              const Color(0xFF1B2838),
+                              context.scaffoldBackground,
+                            ],
+                          ),
+                        ),
                         width: double.infinity,
                         height: double.infinity,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: SafeArea(
                           child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 600),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                        Icons.grid_view_rounded,
-                                        size: 100,
-                                        color: Colors.orange,
-                                      )
-                                      .animate(onPlay: (c) => c.repeat())
-                                      .shimmer(duration: 2.seconds),
-                                  const SizedBox(height: 24),
-                                  const Text(
-                                    'Brick & Ball',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 40,
-                                    ),
-                                    child: Text(
-                                      'This game improves your hand-eye coordination, saccadic eye movements, and color-specific tracking. By managing two targets at once, you strengthen your visual focus and reaction time.',
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 40,
+                              ),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 450,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // Animated Title Icon
+                                    Container(
+                                          width: 100,
+                                          height: 100,
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              colors: [
+                                                Colors.orange,
+                                                Colors.deepOrange,
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              24,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.orange.withValues(
+                                                  alpha: 0.3,
+                                                ),
+                                                blurRadius: 20,
+                                                offset: const Offset(0, 10),
+                                              ),
+                                            ],
+                                          ),
+                                          child: const Icon(
+                                            Icons.grid_view_rounded,
+                                            size: 60,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                        .animate(onPlay: (c) => c.repeat())
+                                        .shimmer(duration: 2.seconds)
+                                        .animate()
+                                        .scale(
+                                          duration: 600.ms,
+                                          curve: Curves.elasticOut,
+                                        ),
+                                    const SizedBox(height: 32),
+                                    Text(
+                                      'BRICK & BALL',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 4,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                    ).animate().fadeIn(duration: 400.ms),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Enhance your focus and reaction speed by managing multiple targets simultaneously.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: Colors.white70,
-                                        fontSize: 13,
+                                        fontSize: 15,
+                                        height: 1.5,
+                                      ),
+                                    ).animate().fadeIn(delay: 200.ms),
+                                    const SizedBox(height: 40),
+                                    // Benefits Section
+                                    _buildPremiumBenefit(
+                                      Icons.visibility_rounded,
+                                      'Hand-Eye Coordination',
+                                      'Sharpen your motor responses.',
+                                    ),
+                                    _buildPremiumBenefit(
+                                      Icons.psychology_rounded,
+                                      'Cognitive Focus',
+                                      'Track multiple elements at once.',
+                                    ),
+                                    _buildPremiumBenefit(
+                                      Icons.speed_rounded,
+                                      'Reaction Time',
+                                      'Improve rapid decision making.',
+                                    ),
+                                    const SizedBox(height: 48),
+                                    // Actions
+                                    SizedBox(
+                                          width: double.infinity,
+                                          child: ElevatedButton(
+                                            onPressed: _startGame,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: context.primary,
+                                              foregroundColor: Colors.white,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 20,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              elevation: 8,
+                                              shadowColor: context.primary
+                                                  .withValues(alpha: 0.5),
+                                            ),
+                                            child: const Text(
+                                              'START MISSION',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 2,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                        .animate()
+                                        .slideY(
+                                          begin: 0.5,
+                                          duration: 500.ms,
+                                          curve: Curves.easeOutCubic,
+                                        )
+                                        .fadeIn(),
+                                    const SizedBox(height: 16),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text(
+                                        'Back to Base',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.2,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  _buildBenefitItem(
-                                    Icons.visibility_rounded,
-                                    'Hand-Eye Coordination',
-                                  ),
-                                  _buildBenefitItem(
-                                    Icons.remove_red_eye_rounded,
-                                    'Saccadic Eye Training',
-                                  ),
-                                  _buildBenefitItem(
-                                    Icons.track_changes_rounded,
-                                    'Dynamic Target Tracking',
-                                  ),
-                                  const SizedBox(height: 32),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 40,
-                                    ),
-                                    child: Text(
-                                      'Tip: Catching a ball on the WRONG color of the paddle increases its speed!',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.amber,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 48),
-                                  ElevatedButton(
-                                    onPressed: _startGame,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: context.primary,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 48,
-                                        vertical: 16,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      'START GAME',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text(
-                                      'Back to Menu',
-                                      style: TextStyle(color: Colors.white60),
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-
-                    // Back button (floating)
-                    if (_isPlaying)
-                      Positioned(
-                        top: 40,
-                        right: 20,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.white54,
-                            size: 30,
-                          ),
-                          onPressed: _handleExitAttempt,
                         ),
                       ),
                   ],
@@ -965,28 +1019,51 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
     );
   }
 
-  Widget _buildBenefitItem(IconData icon, String text) {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: (_screenWidth * 0.1).clamp(16.0, 48.0),
-        vertical: 4,
+  Widget _buildPremiumBenefit(IconData icon, String title, String subtitle) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.blueAccent, size: 18),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: context.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: context.primary, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(duration: 500.ms).slideX(begin: 0.1);
   }
 
   Widget _buildStatCard(String label, String value, Color color) {
