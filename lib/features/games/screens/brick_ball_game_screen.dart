@@ -448,109 +448,18 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => Center(
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            margin: const EdgeInsets.all(24),
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Theme.of(dialogContext).cardColor,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.red.withValues(alpha: 0.5),
-                width: 2,
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.sentiment_very_dissatisfied,
-                    color: Colors.redAccent,
-                    size: 80,
-                  ).animate().shake(duration: 600.ms),
-                  const SizedBox(height: 24),
-                  Text(
-                    'GAME OVER',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.textPrimary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildMiniStat('FINAL SCORE', '$_score', Colors.amber),
-                        const SizedBox(width: 24),
-                        _buildMiniStat('LEVEL REACHED', '$_level', Colors.blue),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 16,
-                    runSpacing: 12,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(dialogContext);
-                          if (mounted) Navigator.pop(context);
-                        },
-                        child: Text(
-                          'EXIT',
-                          style: TextStyle(
-                            color: context.textPrimary.withValues(alpha: 0.6),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(dialogContext);
-                          if (mounted) _startGame();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 40,
-                            vertical: 16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          'TRY AGAIN',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      builder: (dc) => GameOverDialog(
+        gameTitle: 'Brick & Ball',
+        score: _score,
+        onRestart: () {
+          Navigator.pop(dc);
+          if (mounted) _startGame();
+        },
+        onExit: () {
+          Navigator.pop(dc);
+          if (mounted) Navigator.pop(context);
+        },
+        additionalStats: [_buildMiniStat('LEVEL', '$_level', Colors.blue)],
       ),
     );
   }
@@ -1193,10 +1102,15 @@ class _BallWidget extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: (ball.isGreen ? Colors.green : Colors.red).withValues(
-                    alpha: 0.6,
+                    alpha: 0.8,
                   ),
-                  blurRadius: 10,
-                  spreadRadius: 2,
+                  blurRadius: 15,
+                  spreadRadius: 3,
+                ),
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  blurRadius: 5,
+                  spreadRadius: 1,
                 ),
               ],
             ),

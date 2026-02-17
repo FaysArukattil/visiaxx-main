@@ -223,6 +223,35 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
     });
     AudioService().playSnakeCrash(); // Wall crash + Game over
     _saveProgress();
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dc) => GameOverDialog(
+        gameTitle: 'Ocular Snake',
+        score: _score,
+        onRestart: () {
+          Navigator.pop(dc);
+          setState(() {
+            _snake = [
+              const Point(10, 10),
+              const Point(10, 11),
+              const Point(10, 12),
+            ];
+            _direction = Direction.up;
+            _score = 0;
+            _isGameOver = false;
+            _startNewLevel();
+          });
+          _startGame();
+        },
+        onExit: () {
+          Navigator.pop(dc);
+          if (mounted) Navigator.pop(context);
+        },
+      ),
+    );
   }
 
   Future<void> _saveProgress() async {
@@ -459,7 +488,6 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
                     children: [
                       _buildGrid(),
                       if (!_isPlaying && !_isGameOver) _buildStartOverlay(),
-                      if (_isGameOver) _buildGameOverOverlay(),
                     ],
                   ),
                 ),
@@ -541,6 +569,26 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
                 ),
               ),
             ),
+
+            // Pulsing Grid Center for focus (Eye Health)
+            Center(
+                  child: Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.greenAccent.withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                )
+                .animate(onPlay: (c) => c.repeat())
+                .scale(
+                  begin: const Offset(1, 1),
+                  end: const Offset(150, 150),
+                  duration: 4.seconds,
+                  curve: Curves.easeOutQuart,
+                )
+                .fadeOut(duration: 4.seconds),
 
             // Letter / Food
             if (_food != null)
@@ -715,101 +763,6 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
             ),
           ],
         ).animate().fadeIn(duration: 500.ms),
-      ),
-    );
-  }
-
-  Widget _buildGameOverOverlay() {
-    return Container(
-      color: Colors.black.withValues(alpha: 0.96),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.redAccent.withValues(alpha: 0.1),
-                border: Border.all(color: Colors.redAccent, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.redAccent.withValues(alpha: 0.3),
-                    blurRadius: 50,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                color: Colors.redAccent,
-                size: 80,
-              ),
-            ).animate(onPlay: (c) => c.repeat()).shake(duration: 2.seconds),
-            const SizedBox(height: 32),
-            const Text(
-              'MISSION COMPROMISED',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 4,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'FINAL SCORE: $_score',
-              style: const TextStyle(
-                color: Colors.redAccent,
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-              ),
-            ),
-            const SizedBox(height: 56),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _snake = [
-                    const Point(10, 10),
-                    const Point(10, 11),
-                    const Point(10, 12),
-                  ];
-                  _direction = Direction.up;
-                  _score = 0;
-                  _isGameOver = false;
-                  _startNewLevel();
-                });
-                _startGame();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 64,
-                  vertical: 24,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                'RE-BOOT MISSION',
-                style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'TERMINATE SESSION',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 12,
-                  letterSpacing: 2,
-                ),
-              ),
-            ),
-          ],
-        ).animate().fadeIn(duration: 600.ms),
       ),
     );
   }

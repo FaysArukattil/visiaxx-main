@@ -251,3 +251,193 @@ class GameExitConfirmationDialog extends StatelessWidget {
     );
   }
 }
+
+class GameOverDialog extends StatelessWidget {
+  final String gameTitle;
+  final int score;
+  final VoidCallback onRestart;
+  final VoidCallback onExit;
+  final List<Widget>? additionalStats;
+
+  const GameOverDialog({
+    super.key,
+    required this.gameTitle,
+    required this.score,
+    required this.onRestart,
+    required this.onExit,
+    this.additionalStats,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: context.cardColor,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: Colors.red.withValues(alpha: 0.3),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withValues(alpha: 0.1),
+                blurRadius: 40,
+                spreadRadius: 10,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.heart_broken_rounded,
+                  color: Colors.red,
+                  size: 56,
+                ),
+              ).animate().shake(duration: 500.ms, hz: 4),
+              const SizedBox(height: 24),
+              Text(
+                'GAME OVER',
+                style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 4,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                gameTitle.toUpperCase(),
+                style: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Score Display
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: context.primary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: context.primary.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'FINAL SCORE',
+                      style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    Text(
+                      '$score',
+                      style: TextStyle(
+                        color: context.primary,
+                        fontSize: 40,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (additionalStats != null) ...[
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: additionalStats!,
+                ),
+              ],
+              const SizedBox(height: 40),
+              // Unified Buttons - Properly Aligned
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildActionButton(
+                      context,
+                      label: 'RETRY',
+                      icon: Icons.refresh_rounded,
+                      color: context.primary,
+                      onTap: onRestart,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionButton(
+                      context,
+                      label: 'EXIT',
+                      icon: Icons.exit_to_app_rounded,
+                      color: context.error,
+                      onTap: onExit,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

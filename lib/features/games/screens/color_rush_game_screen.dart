@@ -295,120 +295,22 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dc) => Center(
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            margin: const EdgeInsets.all(24),
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Theme.of(dc).cardColor,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.red.withValues(alpha: 0.5),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.withValues(alpha: 0.2),
-                  blurRadius: 40,
-                ),
-              ],
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.heart_broken_rounded,
-                    color: Colors.red,
-                    size: 72,
-                  ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
-                  const SizedBox(height: 20),
-                  Text(
-                    'GAME OVER',
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Stats row
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.textPrimary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _miniStat('SCORE', '$_score', Colors.amber),
-                        const SizedBox(width: 20),
-                        _miniStat('COINS', '$_coinsCollected', Colors.green),
-                        const SizedBox(width: 20),
-                        _miniStat(
-                          'DISTANCE',
-                          '${_distance.toStringAsFixed(0)}m',
-                          Colors.blue,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Wrap(
-                    spacing: 12,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(dc);
-                          if (mounted) _startGame();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 36,
-                            vertical: 14,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          'RETRY',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(dc);
-                          if (mounted) Navigator.pop(context);
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: context.textPrimary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 36,
-                            vertical: 14,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text('EXIT'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      builder: (dc) => GameOverDialog(
+        gameTitle: 'Color Rush',
+        score: _score,
+        onRestart: () {
+          Navigator.pop(dc);
+          if (mounted) _startGame();
+        },
+        onExit: () {
+          Navigator.pop(dc);
+          if (mounted) Navigator.pop(context);
+        },
+        additionalStats: [
+          _miniStat('COINS', '$_coinsCollected', Colors.green),
+          const SizedBox(width: 20),
+          _miniStat('DIST', '${_distance.toStringAsFixed(0)}m', Colors.blue),
+        ],
       ),
     );
   }
@@ -698,8 +600,8 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
             onHorizontalDragEnd: (details) {
               if (!_isPlaying) return;
               final v = details.primaryVelocity ?? 0;
-              if (v < -200) _moveRight();
-              if (v > 200) _moveLeft();
+              if (v < -200) _moveLeft(); // Left swipe -> Move Left
+              if (v > 200) _moveRight(); // Right swipe -> Move Right
             },
             onTapDown: (details) {
               if (!_isPlaying) return;
@@ -1144,7 +1046,32 @@ class _RoadPainter extends CustomPainter {
       }
     }
 
-    // Vanishing point glow
+    // 4. Peripheral Vision Bars (Eye Health Focus)
+    // Subtle glowing bars on the far edges to encourage peripheral awareness
+    final peripheralPaint = Paint()
+      ..shader =
+          LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              playerColor.withValues(alpha: 0.0),
+              playerColor.withValues(
+                alpha: 0.2 + (0.1 * math.sin(roadOffset * 0.02)),
+              ),
+              playerColor.withValues(alpha: 0.0),
+            ],
+          ).createShader(
+            Rect.fromLTWH(0, horizonY, size.width, bottomY - horizonY),
+          );
+
+    canvas.drawRect(
+      Rect.fromLTWH(0, horizonY, 5, bottomY - horizonY),
+      peripheralPaint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(size.width - 5, horizonY, 5, bottomY - horizonY),
+      peripheralPaint,
+    );
     final vanishPaint = Paint()
       ..shader =
           RadialGradient(
