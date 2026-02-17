@@ -49,9 +49,8 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
   late double _screenHeight;
   double _lastWidth = 0;
 
-  // Paddle/Brick state
   late double _paddleX;
-  final double _paddleWidth = 120.0;
+  final double _paddleWidth = 150.0;
   final double _paddleHeight = 32.0; // Thicker bar
   bool _isPaddleFlipped = false;
   // Effects
@@ -337,10 +336,10 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
         _triggerShake();
         HapticFeedback.heavyImpact();
         if (_lives <= 0) {
-          AudioService().playLifeLost(); // Life lost + game over
+          AudioService().playSnakeGameOver(); // Better for game over
           _gameOver();
         } else {
-          AudioService().playLifeLost(); // Life lost
+          AudioService().playSnakeCrash(); // Better for ball miss
           _initBalls();
         }
       }
@@ -608,53 +607,20 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
   }
 
   void _handleExitAttempt() {
-    _gameTimer?.cancel();
-    if (!mounted) return;
-    setState(() {
-      _isPlaying = false;
-    });
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => GameExitConfirmationDialog(
-        onConfirm: () {
-          _saveProgress();
-          Navigator.pop(dialogContext); // Close dialog
-          if (mounted) Navigator.pop(context); // Exit game
-        },
-        onCancel: () {
-          Navigator.pop(dialogContext);
-          if (!mounted) return;
-          if (_lives > 0 && _bricks.any((b) => !b.isBroken)) {
-            setState(() {
-              _isPlaying = true;
-            });
-            _gameTimer = Timer.periodic(const Duration(milliseconds: 16), (
-              timer,
-            ) {
-              if (_disposed || !mounted) {
-                timer.cancel();
-                return;
-              }
-              _updateGame();
-            });
-          }
-        },
-      ),
-    );
+    _pauseGame();
   }
 
   @override
   Widget build(BuildContext context) {
-    return OrientationBuilder(
-      builder: (context, orientation) {
-        return PopScope(
-          onPopInvokedWithResult: (didPop, result) {
-            if (didPop) return;
-            _handleExitAttempt();
-          },
-          canPop: false,
-          child: LayoutBuilder(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleExitAttempt();
+      },
+      child: OrientationBuilder(
+        builder: (context, orientation) {
+          return LayoutBuilder(
             builder: (context, constraints) {
               if (_lastWidth != 0 && _lastWidth != constraints.maxWidth) {
                 double ratio = constraints.maxWidth / _lastWidth;
@@ -979,26 +945,23 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                     if (_isPlaying)
                       Positioned(
                         top: 40,
-                        left: 20,
+                        right: 20,
                         child: IconButton(
                           icon: const Icon(
                             Icons.close_rounded,
                             color: Colors.white54,
                             size: 30,
                           ),
-                          onPressed: () {
-                            _gameTimer?.cancel();
-                            Navigator.pop(context);
-                          },
+                          onPressed: _handleExitAttempt,
                         ),
                       ),
                   ],
                 ),
               );
             },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -1192,11 +1155,7 @@ class _PaddleWidget extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(height / 2),
-        gradient: const LinearGradient(
-          colors: [Colors.green, Colors.red],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        color: Colors.black.withValues(alpha: 0.2), // Base color under splits
         boxShadow: [
           BoxShadow(
             color: Colors.green.withValues(alpha: 0.6),
@@ -1214,59 +1173,69 @@ class _PaddleWidget extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: Stack(
-        children: [
-          // Center divider
-          Center(
-            child: Container(
-              width: 4,
-              height: height * 0.7,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    blurRadius: 4,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(height / 2),
+        child: Stack(
+          children: [
+            // Solid colors without gradient
+            Row(
+              children: [
+                Expanded(child: Container(color: Colors.green)),
+                Expanded(child: Container(color: Colors.red)),
+              ],
+            ),
+            // Center divider
+            Center(
+              child: Container(
+                width: 4,
+                height: height * 0.7,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Thicker indicator rings
+            Positioned(
+              left: 12,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.3),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
-                ],
-              ),
-            ),
-          ),
-          // Thicker indicator rings
-          Positioned(
-            left: 12,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.3),
-                  border: Border.all(color: Colors.white, width: 2),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            right: 12,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.3),
-                  border: Border.all(color: Colors.white, width: 2),
+            Positioned(
+              right: 12,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.3),
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

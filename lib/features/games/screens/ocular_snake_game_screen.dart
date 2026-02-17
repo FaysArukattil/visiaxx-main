@@ -125,33 +125,6 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
     );
   }
 
-  void _handleExitAttempt() {
-    _timer?.cancel();
-    setState(() {
-      _isPlaying = false;
-    });
-
-    showDialog(
-      context: context,
-      builder: (context) => GameExitConfirmationDialog(
-        onConfirm: () {
-          _saveProgress();
-          Navigator.pop(context);
-          Navigator.pop(context);
-        },
-        onCancel: () {
-          Navigator.pop(context);
-          if (!_isGameOver && _snake.isNotEmpty) {
-            setState(() {
-              _isPlaying = true;
-            });
-            _timer = Timer.periodic(_baseSpeed, (timer) => _moveSnake());
-          }
-        },
-      ),
-    );
-  }
-
   void _spawnLetter() {
     _currentLetter = _targetWord[_letterIndex];
     final random = Random();
@@ -302,7 +275,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        _handleExitAttempt();
+        _pauseGame();
       },
       canPop: false,
       child: Scaffold(
@@ -336,7 +309,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
               color: Colors.white,
               size: 22,
             ),
-            onPressed: _handleExitAttempt,
+            onPressed: _pauseGame,
           ),
           const SizedBox(width: 8),
           Expanded(

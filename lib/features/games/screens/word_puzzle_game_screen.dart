@@ -623,20 +623,6 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
     );
   }
 
-  void _handleExitAttempt() {
-    showDialog(
-      context: context,
-      builder: (context) => GameExitConfirmationDialog(
-        onConfirm: () {
-          _saveProgress();
-          Navigator.pop(context); // Close dialog
-          Navigator.pop(context); // Exit game
-        },
-        onCancel: () => Navigator.pop(context),
-      ),
-    );
-  }
-
   void _initLevel() {
     final data = _shuffledWordData[(_level - 1) % _shuffledWordData.length];
     _targetWord = data['word']!.toUpperCase();
@@ -717,11 +703,8 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && !_isGameOver) {
-          _handleExitAttempt();
-        } else if (didPop && !_isGameOver) {
-          _saveProgress();
-        }
+        if (didPop) return;
+        _pauseGame();
       },
       canPop: _isGameOver,
       child: Scaffold(
@@ -783,7 +766,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
               if (_isGameOver) {
                 Navigator.pop(context);
               } else {
-                _handleExitAttempt();
+                _pauseGame();
               }
             },
           ),

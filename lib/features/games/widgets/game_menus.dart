@@ -96,8 +96,8 @@ class GamePauseDialog extends StatelessWidget {
               const SizedBox(height: 12),
               _buildMenuButton(
                 context,
-                label: 'EXIT GAME',
-                icon: Icons.exit_to_app_rounded,
+                label: 'MAIN MENU',
+                icon: Icons.home_rounded,
                 color: context.error,
                 onTap: onExit,
               ),
@@ -386,8 +386,8 @@ class GameOverDialog extends StatelessWidget {
                   Expanded(
                     child: _buildActionButton(
                       context,
-                      label: 'EXIT',
-                      icon: Icons.exit_to_app_rounded,
+                      label: 'MAIN MENU',
+                      icon: Icons.home_rounded,
                       color: context.error,
                       onTap: onExit,
                     ),
