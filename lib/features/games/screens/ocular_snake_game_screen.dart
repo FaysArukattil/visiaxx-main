@@ -713,130 +713,142 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
         ),
       ),
       child: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 450),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Icon
-                  Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.greenAccent.withValues(alpha: 0.1),
-                          border: Border.all(
-                            color: Colors.greenAccent,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.greenAccent.withValues(alpha: 0.2),
-                              blurRadius: 40,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 450),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Shimmering Icon
+                      Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.greenAccent.withValues(alpha: 0.1),
+                              border: Border.all(
+                                color: Colors.greenAccent,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.greenAccent.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 40,
+                                ),
+                              ],
                             ),
+                            child: const Icon(
+                              Icons.flash_on_rounded,
+                              color: Colors.white,
+                              size: 56,
+                            ),
+                          )
+                          .animate(onPlay: (c) => c.repeat())
+                          .shimmer(duration: 2.seconds)
+                          .animate()
+                          .scale(duration: 600.ms, curve: Curves.elasticOut),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'OCULAR SNAKE',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 6,
+                          shadows: [
+                            Shadow(color: Colors.greenAccent, blurRadius: 15),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.flash_on_rounded,
-                          color: Colors.greenAccent,
-                          size: 64,
-                        ),
-                      )
-                      .animate(onPlay: (c) => c.repeat())
-                      .shimmer(duration: 2.seconds),
-                  const SizedBox(height: 32),
-                  const Text(
-                    'OCULAR SNAKE',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 6,
-                      shadows: [
-                        Shadow(color: Colors.greenAccent, blurRadius: 20),
-                      ],
-                    ),
-                  ).animate().fadeIn(duration: 400.ms),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Precision Navigation',
-                    style: TextStyle(
-                      color: Colors.greenAccent,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                    ),
-                  ).animate().fadeIn(delay: 100.ms),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Hunt for letters to build medical terms while navigating at high speed. Sharpen your visual search and saccadic accuracy.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                  ).animate().fadeIn(delay: 200.ms),
-                  const SizedBox(height: 32),
-                  // Benefits Section
-                  _buildPremiumBenefit(
-                    Icons.center_focus_strong_rounded,
-                    'Saccadic Accuracy',
-                    'Precision target-to-target leaps.',
-                  ),
-                  _buildPremiumBenefit(
-                    Icons.spellcheck_rounded,
-                    'Lexical Recognition',
-                    'Identify words while navigating.',
-                  ),
-                  _buildPremiumBenefit(
-                    Icons.grid_4x4_rounded,
-                    'Spatial Awareness',
-                    'Manage flow in confined spaces.',
-                  ),
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _startGame,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        elevation: 12,
-                        shadowColor: Colors.white24,
-                      ),
-                      child: const Text(
-                        'INITIALIZE MISSION',
+                      ).animate().fadeIn(duration: 400.ms),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Precision Navigation Mission',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 16,
+                          color: Colors.greenAccent,
+                          fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                         ),
+                      ).animate().fadeIn(delay: 100.ms),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Hunt for letters to build medical terms while navigating at high speed. Sharpen your visual search and saccadic accuracy.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ).animate().fadeIn(delay: 200.ms),
+                      const SizedBox(height: 24),
+                      // Benefits Section
+                      _buildPremiumBenefit(
+                        Icons.center_focus_strong_rounded,
+                        'Saccadic Accuracy',
+                        'Precision target-to-target leaps.',
                       ),
-                    ),
-                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Return to Games',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                      _buildPremiumBenefit(
+                        Icons.spellcheck_rounded,
+                        'Lexical Recognition',
+                        'Identify words while navigating.',
                       ),
-                    ),
+                      _buildPremiumBenefit(
+                        Icons.grid_4x4_rounded,
+                        'Spatial Awareness',
+                        'Manage flow in confined spaces.',
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _startGame,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 12,
+                          ),
+                          child: const Text(
+                            'INITIALIZE MISSION',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Return to Games',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

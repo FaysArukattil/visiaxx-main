@@ -871,158 +871,166 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                         width: double.infinity,
                         height: double.infinity,
                         child: SafeArea(
-                          child: Center(
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 20,
-                              ),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 450,
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // Animated Title Icon
-                                    Container(
-                                          width: 80,
-                                          height: 80,
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Colors.orange,
-                                                Colors.deepOrange,
-                                              ],
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Center(
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 24,
+                                  ),
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 450,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        // Shimmering Icon
+                                        Container(
+                                              padding: const EdgeInsets.all(20),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
                                                 color: Colors.orange.withValues(
-                                                  alpha: 0.3,
+                                                  alpha: 0.1,
                                                 ),
+                                                border: Border.all(
+                                                  color: Colors.orange,
+                                                  width: 2,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.orange
+                                                        .withValues(alpha: 0.3),
+                                                    blurRadius: 40,
+                                                  ),
+                                                ],
+                                              ),
+                                              child: const Icon(
+                                                Icons.grid_view_rounded,
+                                                size: 56,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                            .animate(onPlay: (c) => c.repeat())
+                                            .shimmer(duration: 2.seconds)
+                                            .animate()
+                                            .scale(
+                                              duration: 600.ms,
+                                              curve: Curves.elasticOut,
+                                            ),
+                                        const SizedBox(height: 24),
+                                        // Title block
+                                        const Text(
+                                          'BRICK & BALL',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.white,
+                                            letterSpacing: 6,
+                                            shadows: [
+                                              Shadow(
+                                                color: Colors.orangeAccent,
                                                 blurRadius: 15,
-                                                offset: const Offset(0, 8),
                                               ),
                                             ],
                                           ),
-                                          child: const Icon(
-                                            Icons.grid_view_rounded,
-                                            size: 48,
-                                            color: Colors.white,
+                                        ).animate().fadeIn(duration: 400.ms),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Multi-Target Tracking Mission',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.orangeAccent,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 2,
                                           ),
-                                        )
-                                        .animate(onPlay: (c) => c.repeat())
-                                        .shimmer(duration: 2.seconds)
-                                        .animate()
-                                        .scale(
-                                          duration: 600.ms,
-                                          curve: Curves.elasticOut,
+                                        ).animate().fadeIn(delay: 100.ms),
+                                        const SizedBox(height: 16),
+                                        const Text(
+                                          'Master focus by keeping multiple balls in play. Train your eyes to track and react to moving targets.',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                            height: 1.4,
+                                          ),
+                                        ).animate().fadeIn(delay: 200.ms),
+                                        const SizedBox(height: 24),
+                                        // Benefits
+                                        _buildPremiumBenefit(
+                                          Icons.visibility_rounded,
+                                          'Visual Tracking',
+                                          'Follow multiple moving objects.',
                                         ),
-                                    const SizedBox(height: 20),
-                                    Text(
-                                      'BRICK & BALL',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 4,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.5,
-                                            ),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                    ).animate().fadeIn(duration: 400.ms),
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      'Master focus by keeping multiple balls in play while breaking bricks. Train your eyes to track and react to moving targets simultaneously.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 14,
-                                        height: 1.4,
-                                      ),
-                                    ).animate().fadeIn(delay: 200.ms),
-                                    const SizedBox(height: 24),
-                                    // Benefits Section
-                                    _buildPremiumBenefit(
-                                      Icons.visibility_rounded,
-                                      'Visual Tracking',
-                                      'Follow multiple moving objects.',
-                                    ),
-                                    _buildPremiumBenefit(
-                                      Icons.psychology_rounded,
-                                      'Concentration',
-                                      'Build sustained attention.',
-                                    ),
-                                    _buildPremiumBenefit(
-                                      Icons.speed_rounded,
-                                      'Reflexes',
-                                      'Respond instantly to changes.',
-                                    ),
-                                    const SizedBox(height: 32),
-                                    // Actions
-                                    SizedBox(
-                                          width: double.infinity,
-                                          child: ElevatedButton(
-                                            onPressed: _startGame,
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: context.primary,
-                                              foregroundColor: Colors.white,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 18,
+                                        _buildPremiumBenefit(
+                                          Icons.psychology_rounded,
+                                          'Concentration',
+                                          'Build sustained attention.',
+                                        ),
+                                        _buildPremiumBenefit(
+                                          Icons.speed_rounded,
+                                          'Reflexes',
+                                          'Respond instantly to changes.',
+                                        ),
+                                        const SizedBox(height: 32),
+                                        // Actions
+                                        SizedBox(
+                                              width: double.infinity,
+                                              child: ElevatedButton(
+                                                onPressed: _startGame,
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.white,
+                                                  foregroundColor: Colors.black,
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 20,
+                                                      ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          20,
+                                                        ),
                                                   ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(18),
+                                                  elevation: 12,
+                                                ),
+                                                child: const Text(
+                                                  'INITIALIZE MISSION',
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w900,
+                                                    letterSpacing: 2,
+                                                  ),
+                                                ),
                                               ),
-                                              elevation: 6,
-                                              shadowColor: context.primary
-                                                  .withValues(alpha: 0.4),
-                                            ),
-                                            child: const Text(
-                                              'START MISSION',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w900,
-                                                letterSpacing: 2,
+                                            )
+                                            .animate()
+                                            .fadeIn(delay: 400.ms)
+                                            .slideY(begin: 0.3),
+                                        const SizedBox(height: 12),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: Text(
+                                            'Return to Games',
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.4,
                                               ),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                        )
-                                        .animate()
-                                        .slideY(
-                                          begin: 0.5,
-                                          duration: 500.ms,
-                                          curve: Curves.easeOutCubic,
-                                        )
-                                        .fadeIn(),
-                                    const SizedBox(height: 8),
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text(
-                                        'Back to Base',
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.4,
-                                          ),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
+                              );
+                            },
                           ),
                         ),
                       ),

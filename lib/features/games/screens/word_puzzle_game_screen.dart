@@ -1156,131 +1156,147 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
         ),
       ),
       child: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 450),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Icon
-                  Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: context.primary.withValues(alpha: 0.1),
-                          border: Border.all(color: context.primary, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: context.primary.withValues(alpha: 0.2),
-                              blurRadius: 40,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 450),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Shimmering Icon
+                      Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.blueAccent.withValues(alpha: 0.1),
+                              border: Border.all(
+                                color: Colors.blueAccent,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blueAccent.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 40,
+                                ),
+                              ],
                             ),
+                            child: const Icon(
+                              Icons.visibility_rounded,
+                              size: 56,
+                              color: Colors.white,
+                            ),
+                          )
+                          .animate(onPlay: (c) => c.repeat())
+                          .shimmer(duration: 2.seconds)
+                          .animate()
+                          .scale(duration: 600.ms, curve: Curves.elasticOut),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'EYE QUEST',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 6,
+                          shadows: [
+                            Shadow(color: Colors.blueAccent, blurRadius: 15),
                           ],
                         ),
-                        child: Icon(
-                          Icons.spellcheck_rounded,
-                          color: context.primary,
-                          size: 64,
-                        ),
-                      )
-                      .animate(onPlay: (c) => c.repeat())
-                      .shimmer(duration: 2.seconds),
-                  const SizedBox(height: 32),
-                  const Text(
-                    'EYE QUEST',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 6,
-                      shadows: [
-                        Shadow(color: Colors.blueAccent, blurRadius: 20),
-                      ],
-                    ),
-                  ).animate().fadeIn(duration: 400.ms),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Clinical Lexical Mission',
-                    style: TextStyle(
-                      color: context.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                    ),
-                  ).animate().fadeIn(delay: 100.ms),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Master eye anatomy and clinical terminology through visual word puzzles. Sharpen your medical focus.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                  ).animate().fadeIn(delay: 200.ms),
-                  const SizedBox(height: 32),
-                  // Benefits Section
-                  _buildPremiumBenefit(
-                    Icons.remove_red_eye_rounded,
-                    'Anatomy Mastery',
-                    'Learn core parts of human eye.',
-                  ),
-                  _buildPremiumBenefit(
-                    Icons.medical_services_rounded,
-                    'Clinical Literacy',
-                    'Master medical-grade terminology.',
-                  ),
-                  _buildPremiumBenefit(
-                    Icons.psychology_rounded,
-                    'Cognitive Focus',
-                    'Strategic word building puzzles.',
-                  ),
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _initLevel();
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        elevation: 12,
-                        shadowColor: Colors.white24,
-                      ),
-                      child: const Text(
-                        'BEGIN MISSION',
+                      ).animate().fadeIn(duration: 400.ms),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Clinical Lexical Mission',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 16,
+                          color: context.primary,
+                          fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                         ),
+                      ).animate().fadeIn(delay: 100.ms),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Master eye anatomy and clinical terminology through visual word puzzles. Sharpen your medical focus.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ).animate().fadeIn(delay: 200.ms),
+                      const SizedBox(height: 24),
+                      // Benefits Section
+                      _buildPremiumBenefit(
+                        Icons.remove_red_eye_rounded,
+                        'Anatomy Mastery',
+                        'Learn core parts of human eye.',
                       ),
-                    ),
-                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Return to Games',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                      _buildPremiumBenefit(
+                        Icons.medical_services_rounded,
+                        'Clinical Literacy',
+                        'Master medical-grade terminology.',
                       ),
-                    ),
+                      _buildPremiumBenefit(
+                        Icons.psychology_rounded,
+                        'Cognitive Focus',
+                        'Strategic word building puzzles.',
+                      ),
+                      const SizedBox(height: 32),
+                      // Actions
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _initLevel();
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 12,
+                          ),
+                          child: const Text(
+                            'BEGIN MISSION',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Return to Games',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

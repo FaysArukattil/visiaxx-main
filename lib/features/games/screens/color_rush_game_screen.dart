@@ -468,131 +468,144 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
         ),
       ),
       child: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 450),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // 3D road preview icon
-                  Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF00C853), Color(0xFFFF1744)],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 450),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Shimmering Icon
+                      Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
                               color: const Color(
                                 0xFF00C853,
-                              ).withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              offset: const Offset(-4, 8),
+                              ).withValues(alpha: 0.1),
+                              border: Border.all(
+                                color: const Color(0xFF00C853),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF00C853,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 40,
+                                ),
+                              ],
                             ),
+                            child: const Icon(
+                              Icons.directions_run_rounded,
+                              color: Colors.white,
+                              size: 56,
+                            ),
+                          )
+                          .animate(onPlay: (c) => c.repeat())
+                          .shimmer(duration: 2.seconds)
+                          .animate()
+                          .scale(duration: 600.ms, curve: Curves.elasticOut),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'COLOR RUSH',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 6,
+                          shadows: [
+                            Shadow(color: Color(0xFF00C853), blurRadius: 15),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.directions_run_rounded,
-                          color: Colors.white,
-                          size: 48,
-                        ),
-                      )
-                      .animate()
-                      .scale(duration: 600.ms, curve: Curves.elasticOut)
-                      .shimmer(delay: 800.ms, duration: 1200.ms),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'COLOR RUSH',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 4,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black26,
-                          offset: Offset(0, 4),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                  ).animate().fadeIn(duration: 400.ms),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Dodge obstacles and collect matching colors at high velocity. Synchronize your vision with rapid movements.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                  ).animate().fadeIn(delay: 200.ms),
-                  const SizedBox(height: 24),
-                  // Benefits Section
-                  _buildPremiumBenefit(
-                    Icons.filter_center_focus_rounded,
-                    'Color Perception',
-                    'High-speed identification.',
-                  ),
-                  _buildPremiumBenefit(
-                    Icons.bolt_rounded,
-                    'Precision Reflexes',
-                    'Lane-switching accuracy.',
-                  ),
-                  _buildPremiumBenefit(
-                    Icons.visibility_rounded,
-                    'Peripheral Support',
-                    'Wide-field movement tracking.',
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _startGame,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00C853),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        elevation: 8,
-                        shadowColor: const Color(
-                          0xFF00C853,
-                        ).withValues(alpha: 0.4),
-                      ),
-                      child: const Text(
-                        'START RUNNING',
+                      ).animate().fadeIn(duration: 400.ms),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Chromatic Velocity Mission',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 16,
+                          color: Color(0xFF00C853),
+                          fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                         ),
+                      ).animate().fadeIn(delay: 100.ms),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Dodge obstacles and collect matching colors at high velocity. Synchronize your vision with rapid movements.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ).animate().fadeIn(delay: 200.ms),
+                      const SizedBox(height: 24),
+                      // Benefits Section
+                      _buildPremiumBenefit(
+                        Icons.filter_center_focus_rounded,
+                        'Color Perception',
+                        'High-speed identification.',
                       ),
-                    ),
-                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Back to Base',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                      _buildPremiumBenefit(
+                        Icons.bolt_rounded,
+                        'Precision Reflexes',
+                        'Lane-switching accuracy.',
                       ),
-                    ),
+                      _buildPremiumBenefit(
+                        Icons.visibility_rounded,
+                        'Peripheral Support',
+                        'Wide-field movement tracking.',
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _startGame,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 12,
+                          ),
+                          child: const Text(
+                            'INITIALIZE MISSION',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'Return to Games',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
@@ -693,7 +706,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                 // Color indicator flash
                 AnimatedBuilder(
                   animation: _colorFlashCtrl,
-                  builder: (_, __) {
+                  builder: (context, child) {
                     final opacity = (1.0 - _colorFlashCtrl.value).clamp(
                       0.0,
                       0.3,
@@ -792,7 +805,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
 
     return AnimatedBuilder(
       animation: _playerBounceCtrl,
-      builder: (_, __) {
+      builder: (context, child) {
         final bounce = math.sin(_playerBounceCtrl.value * math.pi) * 4;
         return AnimatedPositioned(
           duration: const Duration(milliseconds: 100),
