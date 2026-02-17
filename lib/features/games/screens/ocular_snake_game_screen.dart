@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -42,6 +43,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
   int _score = 0;
   bool _isGameOver = false;
   bool _isPlaying = false;
+  bool _hasGameStarted = false; // For persistent game background
   Timer? _timer;
 
   final List<String> _words = [
@@ -118,8 +120,8 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
           _startGame();
         },
         onExit: () {
-          Navigator.pop(context);
-          Navigator.pop(context);
+          Navigator.pop(context); // Close dialog
+          if (mounted) Navigator.pop(context); // Exit game
         },
       ),
     );
@@ -143,6 +145,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
     setState(() {
       _isPlaying = true;
       _isGameOver = false;
+      _hasGameStarted = true;
     });
     _timer = Timer.periodic(_baseSpeed, (timer) => _moveSnake());
   }
@@ -275,18 +278,40 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        _pauseGame();
+        if (_isPlaying) {
+          _pauseGame();
+        } else if (!_hasGameStarted) {
+          Navigator.pop(context);
+        }
       },
       canPop: false,
       child: Scaffold(
         backgroundColor: const Color(0xFF0F1115),
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(child: _buildMainLayer()),
-            ],
-          ),
+        body: Stack(
+          children: [
+            // Game Layer (Always visible once started)
+            if (_hasGameStarted)
+              SafeArea(
+                child: Column(
+                  children: [
+                    _buildHeader(),
+                    Expanded(child: _buildMainLayer()),
+                  ],
+                ),
+              ),
+
+            // Intro Screen (Before game starts)
+            if (!_hasGameStarted) _buildPremiumIntro(),
+
+            // Pause Overlay (Blur/Dim)
+            if (!_isPlaying && _hasGameStarted && !_isGameOver)
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  child: Container(color: Colors.black.withValues(alpha: 0.5)),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -468,12 +493,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(30),
-                  child: Stack(
-                    children: [
-                      _buildGrid(),
-                      if (!_isPlaying && !_isGameOver) _buildStartOverlay(),
-                    ],
-                  ),
+                  child: Stack(children: [_buildGrid()]),
                 ),
               ),
             ),
@@ -679,74 +699,194 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
     );
   }
 
-  Widget _buildStartOverlay() {
+  Widget _buildPremiumIntro() {
     return Container(
-      color: Colors.black.withValues(alpha: 0.95),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.greenAccent.withValues(alpha: 0.1),
-                border: Border.all(color: Colors.greenAccent, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.greenAccent.withValues(alpha: 0.2),
-                    blurRadius: 40,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF0D1B2A),
+            const Color(0xFF1B2838),
+            const Color(0xFF0F1115),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 450),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icon
+                  Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.greenAccent.withValues(alpha: 0.1),
+                          border: Border.all(
+                            color: Colors.greenAccent,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.greenAccent.withValues(alpha: 0.2),
+                              blurRadius: 40,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.flash_on_rounded,
+                          color: Colors.greenAccent,
+                          size: 64,
+                        ),
+                      )
+                      .animate(onPlay: (c) => c.repeat())
+                      .shimmer(duration: 2.seconds),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'EYE QUEST',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 6,
+                      shadows: [
+                        Shadow(color: Colors.greenAccent, blurRadius: 20),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 400.ms),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Precision Navigation',
+                    style: TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
+                  ).animate().fadeIn(delay: 100.ms),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Hunt for letters to build medical terms while navigating at high speed. Sharpen your visual search and saccadic accuracy.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ).animate().fadeIn(delay: 200.ms),
+                  const SizedBox(height: 32),
+                  // Benefits Section
+                  _buildPremiumBenefit(
+                    Icons.center_focus_strong_rounded,
+                    'Saccadic Accuracy',
+                    'Precision target-to-target leaps.',
+                  ),
+                  _buildPremiumBenefit(
+                    Icons.spellcheck_rounded,
+                    'Lexical Recognition',
+                    'Identify words while navigating.',
+                  ),
+                  _buildPremiumBenefit(
+                    Icons.grid_4x4_rounded,
+                    'Spatial Awareness',
+                    'Manage flow in confined spaces.',
+                  ),
+                  const SizedBox(height: 40),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _startGame,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 12,
+                        shadowColor: Colors.white24,
+                      ),
+                      child: const Text(
+                        'INITIALIZE MISSION',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Return to Games',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.flash_on_rounded,
-                color: Colors.greenAccent,
-                size: 72,
-              ),
-            ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 2.seconds),
-            const SizedBox(height: 32),
-            const Text(
-              'OCULAR SNAKE',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 6,
-                shadows: [Shadow(color: Colors.greenAccent, blurRadius: 20)],
-              ),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              'HIGH-VELOCITY SWIPE SENSOR',
-              style: TextStyle(
-                color: Colors.greenAccent,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumBenefit(IconData icon, String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.greenAccent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
+              child: Icon(icon, color: Colors.greenAccent, size: 20),
             ),
-            const SizedBox(height: 56),
-            ElevatedButton(
-              onPressed: _startGame,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 64,
-                  vertical: 24,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                'INITIALIZE SYSTEM',
-                style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        ).animate().fadeIn(duration: 500.ms),
+        ),
       ),
     );
   }

@@ -111,7 +111,9 @@ class AudioService {
   void playBrickSmash() => playSFX('sounds/brick_ball/brick_smash.mp3');
   void playPaddleBounce() => playSFX('sounds/brick_ball/paddle_bounce.mp3');
   void playBallMultiply() => playSFX('sounds/brick_ball/ball_multiply.mp3');
-  void playLifeLost() => playSFX('sounds/brick_ball/life_lost.mp3');
+  void playLifeLost() => playSFX(
+    'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3',
+  );
   void playBallSpawn() => playSFX('sounds/brick_ball/ball_spawn.mp3');
 
   // ===== WORD PUZZLE / EYE QUEST SFX =====
@@ -161,16 +163,19 @@ class AudioService {
 
     // Stop → play, swallow all errors
     try {
+      final source = assetPath.startsWith('http')
+          ? UrlSource(assetPath)
+          : AssetSource(assetPath);
       player
           .stop()
           .then((_) {
-            player.play(AssetSource(assetPath)).catchError((e) {
+            player.play(source).catchError((e) {
               debugPrint('[AudioService] SFX play error (ignored): $e');
               return;
             });
           })
           .catchError((e) {
-            player.play(AssetSource(assetPath)).catchError((e2) {
+            player.play(source).catchError((e2) {
               debugPrint('[AudioService] SFX fallback error (ignored): $e2');
               return;
             });

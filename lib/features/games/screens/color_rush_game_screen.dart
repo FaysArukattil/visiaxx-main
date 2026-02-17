@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -26,6 +27,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
   int _score = 0;
   int _lives = 3;
   bool _disposed = false;
+  bool _hasGameStarted = false; // For persistent game background
 
   // ─── Player ───
   bool _playerIsGreen = true; // Current avatar color (auto-switches)
@@ -144,6 +146,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
       _distance = 0;
       _coinsCollected = 0;
       _roadOffset = 0;
+      _hasGameStarted = true;
     });
 
     AudioService().playClick();
@@ -419,13 +422,33 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
     return PopScope(
       canPop: !_isPlaying,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _isPlaying) _pauseGame();
+        if (didPop) return;
+        if (_isPlaying) {
+          _pauseGame();
+        } else if (!_hasGameStarted) {
+          Navigator.pop(context);
+        }
       },
       child: Scaffold(
         backgroundColor: context.scaffoldBackground,
-        body: _isPlaying || _isGameOver
-            ? _buildGameView()
-            : _buildStartScreen(),
+        body: Stack(
+          children: [
+            // Game Layer
+            if (_hasGameStarted) _buildGameView(),
+
+            // Intro Layer
+            if (!_hasGameStarted) _buildStartScreen(),
+
+            // Pause Overlay
+            if (!_isPlaying && _hasGameStarted && !_isGameOver)
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  child: Container(color: Colors.black.withValues(alpha: 0.5)),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -447,133 +470,127 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // 3D road preview icon
-                Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF00C853), Color(0xFFFF1744)],
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 450),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // 3D road preview icon
+                  Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF00C853), Color(0xFFFF1744)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF00C853,
+                              ).withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(-4, 8),
+                            ),
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF00C853,
-                            ).withValues(alpha: 0.4),
-                            blurRadius: 30,
-                            offset: const Offset(-8, 12),
-                          ),
-                          BoxShadow(
-                            color: const Color(
-                              0xFFFF1744,
-                            ).withValues(alpha: 0.4),
-                            blurRadius: 30,
-                            offset: const Offset(8, 12),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.directions_run_rounded,
-                        color: Colors.white,
-                        size: 64,
-                      ),
-                    )
-                    .animate()
-                    .scale(duration: 600.ms, curve: Curves.elasticOut)
-                    .shimmer(delay: 800.ms, duration: 1200.ms),
-                const SizedBox(height: 32),
-                const Text(
-                  'COLOR RUSH',
-                  style: TextStyle(
-                    fontSize: 38,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 4,
-                  ),
-                ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2),
-                const SizedBox(height: 8),
-                Text(
-                  'Infinite Runner',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    letterSpacing: 2,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                // How to play
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      _howToRow(Icons.swipe, 'Swipe left/right to dodge'),
-                      const SizedBox(height: 12),
-                      _howToRow(
-                        Icons.autorenew_rounded,
-                        'Color auto-switches — stay alert!',
-                      ),
-                      const SizedBox(height: 12),
-                      _howToRow(Icons.circle, 'Collect matching coins'),
-                      const SizedBox(height: 12),
-                      _howToRow(
-                        Icons.visibility,
-                        'Improves color perception & reflexes',
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
-                const SizedBox(height: 40),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _startGame,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00C853),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      elevation: 12,
-                      shadowColor: const Color(
-                        0xFF00C853,
-                      ).withValues(alpha: 0.5),
-                    ),
-                    child: const Text(
-                      'START RUNNING',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Back to Games',
+                        child: const Icon(
+                          Icons.directions_run_rounded,
+                          color: Colors.white,
+                          size: 48,
+                        ),
+                      )
+                      .animate()
+                      .scale(duration: 600.ms, curve: Curves.elasticOut)
+                      .shimmer(delay: 800.ms, duration: 1200.ms),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'COLOR RUSH',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 4,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black26,
+                          offset: Offset(0, 4),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 400.ms),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Dodge obstacles and collect matching colors at high velocity. Synchronize your vision with rapid movements.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ).animate().fadeIn(delay: 200.ms),
+                  const SizedBox(height: 24),
+                  // Benefits Section
+                  _buildPremiumBenefit(
+                    Icons.filter_center_focus_rounded,
+                    'Color Perception',
+                    'High-speed identification.',
+                  ),
+                  _buildPremiumBenefit(
+                    Icons.bolt_rounded,
+                    'Precision Reflexes',
+                    'Lane-switching accuracy.',
+                  ),
+                  _buildPremiumBenefit(
+                    Icons.visibility_rounded,
+                    'Peripheral Support',
+                    'Wide-field movement tracking.',
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _startGame,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00C853),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 8,
+                        shadowColor: const Color(
+                          0xFF00C853,
+                        ).withValues(alpha: 0.4),
+                      ),
+                      child: const Text(
+                        'START RUNNING',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Back to Base',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -581,21 +598,52 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
     );
   }
 
-  Widget _howToRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, color: const Color(0xFF00C853), size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
-            ),
-          ),
+  Widget _buildPremiumBenefit(IconData icon, String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
-      ],
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00C853).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: const Color(0xFF00C853), size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -941,7 +941,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                     ).animate().fadeIn(duration: 400.ms),
                                     const SizedBox(height: 12),
                                     const Text(
-                                      'Sharpen focus and reaction speed by tracking multiple targets.',
+                                      'Master focus by keeping multiple balls in play while breaking bricks. Train your eyes to track and react to moving targets simultaneously.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: Colors.white70,
@@ -953,18 +953,18 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                     // Benefits Section
                                     _buildPremiumBenefit(
                                       Icons.visibility_rounded,
-                                      'Coordination',
-                                      'Sharpen motor responses.',
+                                      'Visual Tracking',
+                                      'Follow multiple moving objects.',
                                     ),
                                     _buildPremiumBenefit(
                                       Icons.psychology_rounded,
-                                      'Focus',
-                                      'Track multiple elements.',
+                                      'Concentration',
+                                      'Build sustained attention.',
                                     ),
                                     _buildPremiumBenefit(
                                       Icons.speed_rounded,
-                                      'Reaction',
-                                      'Rapid decision making.',
+                                      'Reflexes',
+                                      'Respond instantly to changes.',
                                     ),
                                     const SizedBox(height: 32),
                                     // Actions
