@@ -3,7 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/audio_service.dart';
 
-class GamePauseDialog extends StatelessWidget {
+class GamePauseDialog extends StatefulWidget {
   final VoidCallback onResume;
   final VoidCallback onRestart;
   final VoidCallback onExit;
@@ -18,115 +18,135 @@ class GamePauseDialog extends StatelessWidget {
   });
 
   @override
+  State<GamePauseDialog> createState() => _GamePauseDialogState();
+}
+
+class _GamePauseDialogState extends State<GamePauseDialog> {
+  bool _isResuming = false;
+
+  void _handleResume() {
+    if (_isResuming) return;
+    setState(() => _isResuming = true);
+    widget.onResume();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Background Blur
-        Positioned.fill(
-          child: Container(color: Colors.black.withValues(alpha: 0.3)),
-        ),
-        Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              margin: const EdgeInsets.all(24),
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: context.cardColor.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    blurRadius: 40,
-                    offset: const Offset(0, 20),
+    return PopScope(
+      canPop: _isResuming,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleResume();
+      },
+      child: Stack(
+        children: [
+          // Background Blur
+          Positioned.fill(
+            child: Container(color: Colors.black.withValues(alpha: 0.3)),
+          ),
+          Center(
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                margin: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: context.cardColor.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 1.5,
                   ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          context.primary,
-                          context.primary.withValues(alpha: 0.7),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            context.primary,
+                            context.primary.withValues(alpha: 0.7),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.primary.withValues(alpha: 0.3),
+                            blurRadius: 15,
+                          ),
                         ],
                       ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.primary.withValues(alpha: 0.3),
-                          blurRadius: 15,
-                        ),
-                      ],
+                      child: const Icon(
+                        Icons.pause_rounded,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ).animate().scale(
+                      duration: 400.ms,
+                      curve: Curves.easeOutBack,
                     ),
-                    child: const Icon(
-                      Icons.pause_rounded,
-                      color: Colors.white,
-                      size: 40,
+                    const SizedBox(height: 24),
+                    Text(
+                      'PAUSED',
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 4,
+                      ),
                     ),
-                  ).animate().scale(
-                    duration: 400.ms,
-                    curve: Curves.easeOutBack,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'PAUSED',
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 4,
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.gameTitle,
+                      style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    gameTitle,
-                    style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
+                    const SizedBox(height: 40),
+                    _buildMenuButton(
+                      context,
+                      label: 'RESUME',
+                      icon: Icons.play_arrow_rounded,
+                      color: context.primary,
+                      onTap: _handleResume,
                     ),
-                  ),
-                  const SizedBox(height: 40),
-                  _buildMenuButton(
-                    context,
-                    label: 'RESUME',
-                    icon: Icons.play_arrow_rounded,
-                    color: context.primary,
-                    onTap: onResume,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildMenuButton(
-                    context,
-                    label: 'RESTART',
-                    icon: Icons.refresh_rounded,
-                    color: Colors.amber,
-                    onTap: onRestart,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSoundToggle(context),
-                  const SizedBox(height: 12),
-                  _buildMenuButton(
-                    context,
-                    label: 'MAIN MENU',
-                    icon: Icons.home_rounded,
-                    color: context.error,
-                    onTap: onExit,
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
+                    const SizedBox(height: 12),
+                    _buildMenuButton(
+                      context,
+                      label: 'RESTART',
+                      icon: Icons.refresh_rounded,
+                      color: Colors.amber,
+                      onTap: widget.onRestart,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildSoundToggle(context),
+                    const SizedBox(height: 12),
+                    _buildMenuButton(
+                      context,
+                      label: 'MAIN MENU',
+                      icon: Icons.home_rounded,
+                      color: context.error,
+                      onTap: widget.onExit,
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -422,7 +442,7 @@ class GameOverDialog extends StatelessWidget {
                       Expanded(
                         child: _buildActionButton(
                           context,
-                          label: 'HOME',
+                          label: 'MAIN MENU',
                           icon: Icons.home_rounded,
                           color: context.textSecondary,
                           onTap: onExit,

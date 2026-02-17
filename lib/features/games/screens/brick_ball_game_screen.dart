@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -43,6 +44,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
   int _level = 1;
   Timer? _gameTimer;
   bool _disposed = false;
+  bool _hasGameStarted = false; // Persistent game background state
 
   // Screen dimensions
   late double _screenWidth;
@@ -106,6 +108,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
     _score = 0;
     _lives = 3;
     _isPlaying = true;
+    _hasGameStarted = true;
     _isPaddleFlipped = false;
     _initBricks();
     _initBalls();
@@ -797,7 +800,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                         ),
 
                     // Game Elements (Balls)
-                    if (_isPlaying) ...[
+                    if (_isPlaying || _hasGameStarted) ...[
                       ..._balls.map((ball) => _BallWidget(ball: ball)),
 
                       // Paddle (Brick)
@@ -820,24 +823,38 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                       ),
 
                       // Instruction Label
-                      Positioned(
-                        bottom: 40,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Text(
-                            'Keep both colored balls in play',
-                            style: TextStyle(
-                              color: context.textPrimary.withValues(alpha: 0.5),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                      if (_isPlaying)
+                        Positioned(
+                          bottom: 40,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Text(
+                              'Keep both colored balls in play',
+                              style: TextStyle(
+                                color: context.textPrimary.withValues(
+                                  alpha: 0.5,
+                                ),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
-                      ),
+
+                      // Pause Overlay (Dim/Blur)
+                      if (!_isPlaying && _hasGameStarted)
+                        Positioned.fill(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                            child: Container(
+                              color: Colors.black.withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ),
                     ],
 
-                    if (!_isPlaying)
+                    if (!_hasGameStarted)
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -856,8 +873,8 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                           child: Center(
                             child: SingleChildScrollView(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 40,
+                                horizontal: 24,
+                                vertical: 20,
                               ),
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(
@@ -868,8 +885,8 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                   children: [
                                     // Animated Title Icon
                                     Container(
-                                          width: 100,
-                                          height: 100,
+                                          width: 80,
+                                          height: 80,
                                           decoration: BoxDecoration(
                                             gradient: const LinearGradient(
                                               colors: [
@@ -878,21 +895,21 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                               ],
                                             ),
                                             borderRadius: BorderRadius.circular(
-                                              24,
+                                              20,
                                             ),
                                             boxShadow: [
                                               BoxShadow(
                                                 color: Colors.orange.withValues(
                                                   alpha: 0.3,
                                                 ),
-                                                blurRadius: 20,
-                                                offset: const Offset(0, 10),
+                                                blurRadius: 15,
+                                                offset: const Offset(0, 8),
                                               ),
                                             ],
                                           ),
                                           child: const Icon(
                                             Icons.grid_view_rounded,
-                                            size: 60,
+                                            size: 48,
                                             color: Colors.white,
                                           ),
                                         )
@@ -903,12 +920,12 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                           duration: 600.ms,
                                           curve: Curves.elasticOut,
                                         ),
-                                    const SizedBox(height: 32),
+                                    const SizedBox(height: 20),
                                     Text(
                                       'BRICK & BALL',
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 36,
+                                        fontSize: 30,
                                         fontWeight: FontWeight.w900,
                                         letterSpacing: 4,
                                         shadows: [
@@ -922,34 +939,34 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                         ],
                                       ),
                                     ).animate().fadeIn(duration: 400.ms),
-                                    const SizedBox(height: 16),
+                                    const SizedBox(height: 12),
                                     const Text(
-                                      'Enhance your focus and reaction speed by managing multiple targets simultaneously.',
+                                      'Sharpen focus and reaction speed by tracking multiple targets.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: Colors.white70,
-                                        fontSize: 15,
-                                        height: 1.5,
+                                        fontSize: 14,
+                                        height: 1.4,
                                       ),
                                     ).animate().fadeIn(delay: 200.ms),
-                                    const SizedBox(height: 40),
+                                    const SizedBox(height: 24),
                                     // Benefits Section
                                     _buildPremiumBenefit(
                                       Icons.visibility_rounded,
-                                      'Hand-Eye Coordination',
-                                      'Sharpen your motor responses.',
+                                      'Coordination',
+                                      'Sharpen motor responses.',
                                     ),
                                     _buildPremiumBenefit(
                                       Icons.psychology_rounded,
-                                      'Cognitive Focus',
-                                      'Track multiple elements at once.',
+                                      'Focus',
+                                      'Track multiple elements.',
                                     ),
                                     _buildPremiumBenefit(
                                       Icons.speed_rounded,
-                                      'Reaction Time',
-                                      'Improve rapid decision making.',
+                                      'Reaction',
+                                      'Rapid decision making.',
                                     ),
-                                    const SizedBox(height: 48),
+                                    const SizedBox(height: 32),
                                     // Actions
                                     SizedBox(
                                           width: double.infinity,
@@ -960,20 +977,20 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                               foregroundColor: Colors.white,
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    vertical: 20,
+                                                    vertical: 18,
                                                   ),
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(20),
+                                                    BorderRadius.circular(18),
                                               ),
-                                              elevation: 8,
+                                              elevation: 6,
                                               shadowColor: context.primary
-                                                  .withValues(alpha: 0.5),
+                                                  .withValues(alpha: 0.4),
                                             ),
                                             child: const Text(
                                               'START MISSION',
                                               style: TextStyle(
-                                                fontSize: 18,
+                                                fontSize: 16,
                                                 fontWeight: FontWeight.w900,
                                                 letterSpacing: 2,
                                               ),
@@ -987,7 +1004,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                           curve: Curves.easeOutCubic,
                                         )
                                         .fadeIn(),
-                                    const SizedBox(height: 16),
+                                    const SizedBox(height: 8),
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
                                       child: Text(
@@ -996,9 +1013,8 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
                                           color: Colors.white.withValues(
                                             alpha: 0.4,
                                           ),
-                                          fontSize: 14,
+                                          fontSize: 13,
                                           fontWeight: FontWeight.bold,
-                                          letterSpacing: 1.2,
                                         ),
                                       ),
                                     ),
