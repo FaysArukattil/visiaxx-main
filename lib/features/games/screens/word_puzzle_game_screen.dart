@@ -714,7 +714,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
       },
       canPop: _isGameOver,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: context.scaffoldBackground,
         body: Stack(
           children: [
             // Game Layer (Always visible once started)
@@ -726,8 +726,8 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                     end: Alignment.bottomRight,
                     colors: [
                       context.primary.withValues(alpha: 0.1),
-                      Colors.black,
-                      Colors.black,
+                      context.scaffoldBackground,
+                      context.scaffoldBackground,
                     ],
                   ),
                 ),
@@ -770,7 +770,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
             onPressed: () {
               if (_isGameOver) {
                 Navigator.pop(context);
@@ -781,10 +781,10 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
           ),
           Column(
             children: [
-              const Text(
+              Text(
                 'EYE QUEST',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: context.textPrimary,
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 4,
@@ -801,9 +801,9 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
             ],
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.pause_circle_filled_rounded,
-              color: Colors.white,
+              color: context.textPrimary,
               size: 28,
             ),
             onPressed: _pauseGame,
@@ -820,7 +820,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: context.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: context.primary.withValues(alpha: 0.2)),
       ),
@@ -850,8 +850,8 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
           Text(
             _hint,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: context.textSecondary,
               fontSize: 14,
               fontStyle: FontStyle.italic,
             ),
@@ -895,7 +895,9 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                   if (colIndex < word.length) char = word[colIndex];
 
                   Color bgColor = Colors.transparent;
-                  Color borderColor = Colors.white24;
+                  Color borderColor = context.dividerColor.withValues(
+                    alpha: 0.2,
+                  );
 
                   if (rowIndex < _guesses.length) {
                     if (_targetWord[colIndex] == char) {
@@ -905,8 +907,8 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                       bgColor = Colors.amber.withValues(alpha: 0.6);
                       borderColor = Colors.amber;
                     } else {
-                      bgColor = Colors.white.withValues(alpha: 0.1);
-                      borderColor = Colors.white12;
+                      bgColor = context.surface;
+                      borderColor = context.dividerColor.withValues(alpha: 0.1);
                     }
                   } else if (rowIndex == _guesses.length &&
                       colIndex < _currentGuess.length) {
@@ -927,7 +929,9 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                           child: Text(
                             char,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: rowIndex < _guesses.length
+                                  ? Colors.white
+                                  : context.textPrimary,
                               fontSize: boxSize * 0.45,
                               fontWeight: FontWeight.bold,
                             ),
@@ -972,20 +976,23 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                     width: isSpecial ? keyWidth * 1.5 : keyWidth,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: context.surface,
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: context.dividerColor.withValues(alpha: 0.1),
+                      ),
                     ),
                     child: Center(
                       child: isDel
-                          ? const Icon(
+                          ? Icon(
                               Icons.backspace_outlined,
-                              color: Colors.white,
+                              color: context.textPrimary,
                               size: 20,
                             )
                           : Text(
                               key,
                               style: TextStyle(
-                                color: Colors.white,
+                                color: context.textPrimary,
                                 fontSize: isSpecial ? 10 : 14,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1003,7 +1010,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
 
   Widget _buildOverlay() {
     return Container(
-      color: Colors.black.withValues(alpha: 0.85),
+      color: Colors.black.withValues(alpha: 0.7),
       child: Center(
         child: SingleChildScrollView(
           child: Container(
@@ -1032,8 +1039,8 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                 const SizedBox(height: 24),
                 Text(
                   _isWin ? 'EXCELLENT!' : 'GAME OVER',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.textPrimary,
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2,
@@ -1044,7 +1051,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                   _isWin
                       ? 'You identified the concept!'
                       : 'Better luck next time!',
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(color: context.textSecondary),
                 ),
                 const SizedBox(height: 24),
                 Container(
@@ -1053,15 +1060,18 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: context.surface,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: context.dividerColor.withValues(alpha: 0.1),
+                    ),
                   ),
                   child: Column(
                     children: [
                       const Text(
                         'CONCEPT',
                         style: TextStyle(
-                          color: Colors.white54,
+                          color: Colors.grey,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1129,9 +1139,9 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                 if (!_isWin)
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
+                    child: Text(
                       'EXIT',
-                      style: TextStyle(color: Colors.white54),
+                      style: TextStyle(color: context.textTertiary),
                     ),
                   ),
               ],

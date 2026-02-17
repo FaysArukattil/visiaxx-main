@@ -287,7 +287,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
       },
       canPop: false,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F1115),
+        backgroundColor: context.scaffoldBackground,
         body: Stack(
           children: [
             // Game Layer (Always visible once started)
@@ -322,17 +322,19 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
+        color: context.scaffoldBackground,
         border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          bottom: BorderSide(
+            color: context.dividerColor.withValues(alpha: 0.1),
+          ),
         ),
       ),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: Colors.white,
+              color: context.textPrimary,
               size: 22,
             ),
             onPressed: _pauseGame,
@@ -368,12 +370,12 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                         decoration: BoxDecoration(
                           color: isCleared
                               ? Colors.greenAccent.withValues(alpha: 0.1)
-                              : Colors.white.withValues(alpha: 0.05),
+                              : context.surface,
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
                             color: isCleared
                                 ? Colors.greenAccent
-                                : Colors.white10,
+                                : context.dividerColor.withValues(alpha: 0.1),
                             width: 1.2,
                           ),
                         ),
@@ -382,7 +384,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                           style: TextStyle(
                             color: isCleared
                                 ? Colors.greenAccent
-                                : Colors.white38,
+                                : context.textSecondary,
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                           ),
@@ -398,17 +400,19 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: context.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(
+                color: context.dividerColor.withValues(alpha: 0.1),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'XP',
                   style: TextStyle(
-                    color: Colors.white54,
+                    color: context.textSecondary,
                     fontSize: 8,
                     fontWeight: FontWeight.w900,
                   ),
@@ -426,9 +430,9 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
           ),
           const SizedBox(width: 12),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.pause_circle_filled_rounded,
-              color: Colors.white,
+              color: context.textPrimary,
               size: 28,
             ),
             onPressed: _pauseGame,
@@ -488,7 +492,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(32),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: context.dividerColor.withValues(alpha: 0.1),
                     width: 2,
                   ),
                 ),
@@ -514,9 +518,11 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
+            color: context.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            border: Border.all(
+              color: context.dividerColor.withValues(alpha: 0.05),
+            ),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
@@ -540,7 +546,9 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
   }
 
   Widget _buildBackgroundGrid() {
-    return Container(decoration: const BoxDecoration(color: Color(0xFF0F1115)));
+    return Container(
+      decoration: BoxDecoration(color: context.scaffoldBackground),
+    );
   }
 
   Widget _buildGrid() {
@@ -558,7 +566,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                 bottom: 0,
                 child: Container(
                   width: 1,
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: context.dividerColor.withValues(alpha: 0.08),
                 ),
               ),
             ),
@@ -570,7 +578,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                 right: 0,
                 child: Container(
                   height: 1,
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: context.dividerColor.withValues(alpha: 0.08),
                 ),
               ),
             ),

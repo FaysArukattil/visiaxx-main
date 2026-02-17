@@ -207,9 +207,11 @@ class _GamePauseDialogState extends State<GamePauseDialog> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: context.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(
+                  color: context.dividerColor.withValues(alpha: 0.1),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -218,14 +220,14 @@ class _GamePauseDialogState extends State<GamePauseDialog> {
                     audio.isSoundEnabled
                         ? Icons.volume_up_rounded
                         : Icons.volume_off_rounded,
-                    color: Colors.white,
+                    color: context.textPrimary,
                     size: 24,
                   ),
                   const SizedBox(width: 12),
                   Text(
                     audio.isSoundEnabled ? 'SOUND: ON' : 'SOUND: OFF',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.textPrimary,
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
                       letterSpacing: 2,
