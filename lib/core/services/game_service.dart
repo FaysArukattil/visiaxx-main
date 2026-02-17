@@ -83,6 +83,7 @@ class GameService {
       final query = await _firestore
           .collection(_collectionName)
           .where('gameId', isEqualTo: gameId)
+          .orderBy('currentLevel', descending: true)
           .orderBy('totalScore', descending: true)
           .limit(20)
           .get();

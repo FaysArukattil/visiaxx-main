@@ -8,6 +8,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/game_provider.dart';
+import '../../../core/services/audio_service.dart';
+import '../widgets/game_menus.dart';
 
 class BrickAndBallGameScreen extends StatefulWidget {
   const BrickAndBallGameScreen({super.key});
@@ -72,7 +74,6 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
-    _gameTimer?.cancel();
     super.dispose();
   }
 
@@ -86,6 +87,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     _gameTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
       _updateGame();
     });
+    AudioService().playClick(); // Start sound
   }
 
   void _initBricks() {
@@ -153,6 +155,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
         bricksHitInOneFlight: 0,
       ),
     ];
+    AudioService().playBallSpawn();
   }
 
   void _updateGame() {
@@ -205,7 +208,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
           ball.vy = -ball.vy.abs(); // Bounce up
           _score += 1;
           HapticFeedback.lightImpact();
-          SystemSound.play(SystemSoundType.click);
+          AudioService().playPaddleBounce();
         }
 
         // Brick collisions
@@ -215,8 +218,8 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
               brick.health--;
               ball.bricksHitInOneFlight++;
 
-              // POWER-UP: Spawn new ball if 2 bricks hit in one flight
-              if (ball.bricksHitInOneFlight >= 2) {
+              // POWER-UP: Spawn new ball if 2 bricks hit in one flight (MAX 8 balls)
+              if (ball.bricksHitInOneFlight >= 2 && _balls.length < 8) {
                 ballsToAdd.add(
                   _Ball(
                     x: ball.x,
@@ -228,6 +231,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                   ),
                 );
                 ball.bricksHitInOneFlight = 0; // Consume powerup
+                AudioService().playBallMultiply();
               }
 
               if (brick.isBroken) {
@@ -242,7 +246,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                 HapticFeedback.lightImpact();
               }
               ball.vy *= -1;
-              SystemSound.play(SystemSoundType.click);
+              AudioService().playBrickSmash();
             } else {
               ball.vy *= -1;
             }
@@ -275,8 +279,10 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
         _triggerShake();
         HapticFeedback.heavyImpact();
         if (_lives <= 0) {
+          AudioService().playLifeLost(); // Life lost + game over
           _gameOver();
         } else {
+          AudioService().playLifeLost(); // Life lost
           _initBalls();
         }
       }
@@ -302,6 +308,8 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
       _isPlaying = false;
     });
     _saveProgress();
+    // Play level-up sound (Game over remains playLifeLost)
+    AudioService().playSuccess(); // Keep general success for now
 
     showDialog(
       context: context,
@@ -582,14 +590,82 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
     }
   }
 
+  void _pauseGame() {
+    if (!_isPlaying) return;
+    _gameTimer?.cancel();
+    setState(() {
+      _isPlaying = false;
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => GamePauseDialog(
+        gameTitle: 'Brick & Ball',
+        onResume: () {
+          Navigator.pop(context);
+          setState(() {
+            _isPlaying = true;
+          });
+          _gameTimer = Timer.periodic(const Duration(milliseconds: 16), (
+            timer,
+          ) {
+            _updateGame();
+          });
+        },
+        onRestart: () {
+          Navigator.pop(context);
+          _startGame();
+        },
+        onExit: () {
+          Navigator.pop(context); // Close dialog
+          Navigator.pop(context); // Exit game
+        },
+      ),
+    );
+  }
+
+  void _handleExitAttempt() {
+    _gameTimer?.cancel();
+    setState(() {
+      _isPlaying = false;
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => GameExitConfirmationDialog(
+        onConfirm: () {
+          _saveProgress();
+          Navigator.pop(context); // Close dialog
+          Navigator.pop(context); // Exit game
+        },
+        onCancel: () {
+          Navigator.pop(context);
+          if (_lives > 0 && _bricks.any((b) => !b.isBroken)) {
+            setState(() {
+              _isPlaying = true;
+            });
+            _gameTimer = Timer.periodic(const Duration(milliseconds: 16), (
+              timer,
+            ) {
+              _updateGame();
+            });
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return OrientationBuilder(
       builder: (context, orientation) {
         return PopScope(
           onPopInvokedWithResult: (didPop, result) {
-            if (didPop) _saveProgress();
+            if (didPop) return;
+            _handleExitAttempt();
           },
+          canPop: false,
           child: LayoutBuilder(
             builder: (context, constraints) {
               if (_lastWidth != 0 && _lastWidth != constraints.maxWidth) {
@@ -663,26 +739,43 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen> {
                                 ),
                                 _buildStatCard('LEVEL', '$_level', Colors.blue),
                                 Row(
-                                  children: List.generate(
-                                    3,
-                                    (index) =>
-                                        Icon(
-                                              index < _lives
-                                                  ? Icons.favorite_rounded
-                                                  : Icons
-                                                        .favorite_border_rounded,
-                                              color: index < _lives
-                                                  ? Colors.red
-                                                  : Colors.red.withValues(
-                                                      alpha: 0.3,
-                                                    ),
-                                              size: 20,
-                                            )
-                                            .animate(
-                                              target: index < _lives ? 0 : 1,
-                                            )
-                                            .shake(duration: 400.ms),
-                                  ),
+                                  children: [
+                                    Row(
+                                      children: List.generate(
+                                        3,
+                                        (index) =>
+                                            Icon(
+                                                  index < _lives
+                                                      ? Icons.favorite_rounded
+                                                      : Icons
+                                                            .favorite_border_rounded,
+                                                  color: index < _lives
+                                                      ? Colors.red
+                                                      : Colors.red.withValues(
+                                                          alpha: 0.3,
+                                                        ),
+                                                  size: 20,
+                                                )
+                                                .animate(
+                                                  target: index < _lives
+                                                      ? 0
+                                                      : 1,
+                                                )
+                                                .shake(duration: 400.ms),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.pause_circle_filled_rounded,
+                                        color: Colors.white,
+                                        size: 28,
+                                      ),
+                                      onPressed: _pauseGame,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

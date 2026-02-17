@@ -117,4 +117,7 @@ flutter:
     - assets/ishihara_plates/Classification/
     - assets/amsler_grid/
     - assets/exercise_videos/
-    - assets/music/
+    - assets/sounds/
+    - assets/sounds/brick_ball/
+    - assets/sounds/word_puzzle/
+    - assets/sounds/snake/

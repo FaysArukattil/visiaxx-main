@@ -5,8 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/game_provider.dart';
+import '../../../core/services/audio_service.dart';
+import '../widgets/game_menus.dart';
 
 enum Direction { up, down, left, right }
 
@@ -72,6 +73,75 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
     _spawnLetter();
   }
 
+  void _pauseGame() {
+    if (!_isPlaying || _isGameOver) return;
+    _timer?.cancel();
+    setState(() {
+      _isPlaying = false;
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => GamePauseDialog(
+        gameTitle: 'Ocular Snake',
+        onResume: () {
+          Navigator.pop(context);
+          setState(() {
+            _isPlaying = true;
+          });
+          _timer = Timer.periodic(_baseSpeed, (timer) => _moveSnake());
+        },
+        onRestart: () {
+          Navigator.pop(context);
+          setState(() {
+            _snake = [
+              const Point(10, 10),
+              const Point(10, 11),
+              const Point(10, 12),
+            ];
+            _direction = Direction.up;
+            _score = 0;
+            _isGameOver = false;
+            _startNewLevel();
+          });
+          _startGame();
+        },
+        onExit: () {
+          Navigator.pop(context);
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  void _handleExitAttempt() {
+    _timer?.cancel();
+    setState(() {
+      _isPlaying = false;
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => GameExitConfirmationDialog(
+        onConfirm: () {
+          _saveProgress();
+          Navigator.pop(context);
+          Navigator.pop(context);
+        },
+        onCancel: () {
+          Navigator.pop(context);
+          if (!_isGameOver && _snake.isNotEmpty) {
+            setState(() {
+              _isPlaying = true;
+            });
+            _timer = Timer.periodic(_baseSpeed, (timer) => _moveSnake());
+          }
+        },
+      ),
+    );
+  }
+
   void _spawnLetter() {
     _currentLetter = _targetWord[_letterIndex];
     final random = Random();
@@ -128,10 +198,12 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
 
       // Check if food eaten
       if (newHead == _food) {
+        AudioService().playSnakeEat(); // Snake eating
         _score += 10;
         _letterIndex++;
         if (_letterIndex >= _targetWord.length) {
           _score += 50; // Bonus for completion
+          AudioService().playSnakeLevelUp(); // Level complete
           _startNewLevel();
         } else {
           _spawnLetter();
@@ -149,6 +221,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
       _isPlaying = false;
       _isGameOver = true;
     });
+    AudioService().playSnakeCrash(); // Wall crash + Game over
     _saveProgress();
   }
 
@@ -186,14 +259,21 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F1115),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(child: _buildMainLayer()),
-          ],
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleExitAttempt();
+      },
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0F1115),
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(child: _buildMainLayer()),
+            ],
+          ),
         ),
       ),
     );
@@ -216,7 +296,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
               color: Colors.white,
               size: 22,
             ),
-            onPressed: () => Navigator.pop(context),
+            onPressed: _handleExitAttempt,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -304,6 +384,17 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen> {
                 ),
               ],
             ),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            icon: const Icon(
+              Icons.pause_circle_filled_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+            onPressed: _pauseGame,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ],
       ),

@@ -100,7 +100,9 @@ class GameProvider with ChangeNotifier {
     final updatedLevel = level + 1; // Move to next level
 
     final updated = current.copyWith(
-      userName: userName,
+      userName: userName != 'Player'
+          ? userName
+          : (current.userName != 'Player' ? current.userName : 'Player'),
       userRole: userRole,
       currentLevel: updatedLevel,
       clearedLevels: updatedCleared.toList(),

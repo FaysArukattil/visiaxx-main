@@ -1,0 +1,253 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../../core/extensions/theme_extension.dart';
+import '../../../core/services/audio_service.dart';
+
+class GamePauseDialog extends StatelessWidget {
+  final VoidCallback onResume;
+  final VoidCallback onRestart;
+  final VoidCallback onExit;
+  final String gameTitle;
+
+  const GamePauseDialog({
+    super.key,
+    required this.onResume,
+    required this.onRestart,
+    required this.onExit,
+    required this.gameTitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: context.cardColor,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: context.primary.withValues(alpha: 0.3),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: context.primary.withValues(alpha: 0.2),
+                blurRadius: 40,
+                spreadRadius: 10,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.pause_rounded,
+                  color: context.primary,
+                  size: 48,
+                ),
+              ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
+              const SizedBox(height: 24),
+              Text(
+                'PAUSED',
+                style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 4,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                gameTitle,
+                style: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 40),
+              _buildMenuButton(
+                context,
+                label: 'RESUME',
+                icon: Icons.play_arrow_rounded,
+                color: context.primary,
+                onTap: onResume,
+              ),
+              const SizedBox(height: 12),
+              _buildMenuButton(
+                context,
+                label: 'RESTART',
+                icon: Icons.refresh_rounded,
+                color: Colors.amber,
+                onTap: onRestart,
+              ),
+              const SizedBox(height: 12),
+              _buildSoundToggle(context),
+              const SizedBox(height: 12),
+              _buildMenuButton(
+                context,
+                label: 'EXIT GAME',
+                icon: Icons.exit_to_app_rounded,
+                color: context.error,
+                onTap: onExit,
+              ),
+            ],
+          ),
+        ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
+      ),
+    );
+  }
+
+  Widget _buildMenuButton(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSoundToggle(BuildContext context) {
+    final audio = AudioService();
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              await audio.toggleSound();
+              setState(() {});
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    audio.isSoundEnabled
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    audio.isSoundEnabled ? 'SOUND: ON' : 'SOUND: OFF',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class GameExitConfirmationDialog extends StatelessWidget {
+  final VoidCallback onConfirm;
+  final VoidCallback onCancel;
+
+  const GameExitConfirmationDialog({
+    super.key,
+    required this.onConfirm,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: context.cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: const Text(
+        'Exit Game?',
+        style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
+      ),
+      content: const Text(
+        'Are you sure you want to leave? Your current progress in this session will be saved.',
+        style: TextStyle(fontSize: 14),
+      ),
+      actions: [
+        TextButton(
+          onPressed: onCancel,
+          child: Text(
+            'CANCEL',
+            style: TextStyle(
+              color: context.textTertiary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: onConfirm,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: context.error,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text(
+            'EXIT',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+}

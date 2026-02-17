@@ -612,10 +612,36 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
       ...eyeQuestLeaderboard,
     ].where((s) => s.userRole == 'user').toList();
 
-    allScores.sort((a, b) => b.totalScore.compareTo(a.totalScore));
+    // Sort global scores
+    allScores.sort((a, b) {
+      if (b.currentLevel != a.currentLevel) {
+        return b.currentLevel.compareTo(a.currentLevel);
+      }
+      return b.totalScore.compareTo(a.totalScore);
+    });
+
+    // Special handling for same-level players: move 'me' to the top of their group
+    final myUid = FirebaseAuth.instance.currentUser?.uid;
+    if (myUid != null) {
+      // Find where 'I' am
+      int myIndex = allScores.indexWhere((s) => s.userId == myUid);
+      if (myIndex != -1) {
+        final myScore = allScores[myIndex];
+        // Move myScore to the front of all players with same level and score
+        int swapIndex = myIndex;
+        while (swapIndex > 0 &&
+            allScores[swapIndex - 1].currentLevel == myScore.currentLevel &&
+            allScores[swapIndex - 1].totalScore == myScore.totalScore) {
+          swapIndex--;
+        }
+        if (swapIndex != myIndex) {
+          allScores.removeAt(myIndex);
+          allScores.insert(swapIndex, myScore);
+        }
+      }
+    }
 
     // Only show if the current user has played (score > 0)
-    final myUid = FirebaseAuth.instance.currentUser?.uid;
     final hasPlayed = provider.gameProgress.values.any((p) => p.totalScore > 0);
 
     if (!hasPlayed) {
