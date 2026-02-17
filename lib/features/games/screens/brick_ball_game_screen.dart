@@ -331,6 +331,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
           break;
         } else {
           _balls.remove(ball);
+          AudioService().playBallOut();
         }
       }
 
@@ -342,7 +343,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
           AudioService().playSnakeGameOver(); // Better for game over
           _gameOver();
         } else {
-          AudioService().playSnakeCrash(); // Better for ball miss
+          AudioService().playLifeLost();
           _initBalls();
         }
       }

@@ -111,9 +111,10 @@ class AudioService {
   void playBrickSmash() => playSFX('sounds/brick_ball/brick_smash.mp3');
   void playPaddleBounce() => playSFX('sounds/brick_ball/paddle_bounce.mp3');
   void playBallMultiply() => playSFX('sounds/brick_ball/ball_multiply.mp3');
-  void playLifeLost() => playSFX(
+  void playLifeLost() => playSFX('sounds/brick_ball/life_lost.mp3');
+  void playBallOut() => playSFX(
     'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3',
-  );
+  ); // Subtle pop
   void playBallSpawn() => playSFX('sounds/brick_ball/ball_spawn.mp3');
 
   // ===== WORD PUZZLE / EYE QUEST SFX =====

@@ -573,6 +573,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
   final int _maxGuesses = 6;
   bool _isGameOver = false;
   bool _isWin = false;
+  bool _hasGameStarted = false; // For persistent game background
 
   void _loadProgress() {
     final user = FirebaseAuth.instance.currentUser;
@@ -597,7 +598,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
 
       _shuffledWordData = familiar + advanced;
 
-      _initLevel();
+      _initLevel(shouldStartGame: false);
     });
   }
 
@@ -623,7 +624,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
     );
   }
 
-  void _initLevel() {
+  void _initLevel({bool shouldStartGame = true}) {
     final data = _shuffledWordData[(_level - 1) % _shuffledWordData.length];
     _targetWord = data['word']!.toUpperCase();
     _hint = data['hint']!;
@@ -632,6 +633,7 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
     _currentGuess = "";
     _isGameOver = false;
     _isWin = false;
+    _hasGameStarted = shouldStartGame;
   }
 
   void _onKeyTap(String key) {
@@ -704,48 +706,55 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        _pauseGame();
+        if (!_isGameOver && _hasGameStarted) {
+          _pauseGame();
+        } else if (!_hasGameStarted) {
+          Navigator.pop(context);
+        }
       },
       canPop: _isGameOver,
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // Background
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.primary.withValues(alpha: 0.1),
-                    Colors.black,
-                    Colors.black,
-                  ],
+            // Game Layer (Always visible once started)
+            if (_hasGameStarted)
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      context.primary.withValues(alpha: 0.1),
+                      Colors.black,
+                      Colors.black,
+                    ],
+                  ),
                 ),
-              ),
-            ),
-
-            SafeArea(
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [_buildHint(), _buildGrid()],
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(
+                        child: Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [_buildHint(), _buildGrid()],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      _buildKeyboard(),
+                      const SizedBox(height: 16),
+                    ],
                   ),
-                  _buildKeyboard(),
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            ),
+
+            // Intro Screen (Before game starts)
+            if (!_hasGameStarted) _buildPremiumIntro(),
 
             if (_isGameOver) _buildOverlay(),
           ],
@@ -1128,6 +1137,199 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumIntro() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF0D1B2A),
+            const Color(0xFF1B2838),
+            Colors.black,
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 450),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icon
+                  Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: context.primary.withValues(alpha: 0.1),
+                          border: Border.all(color: context.primary, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: context.primary.withValues(alpha: 0.2),
+                              blurRadius: 40,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.spellcheck_rounded,
+                          color: context.primary,
+                          size: 64,
+                        ),
+                      )
+                      .animate(onPlay: (c) => c.repeat())
+                      .shimmer(duration: 2.seconds),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'EYE QUEST',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 6,
+                      shadows: [
+                        Shadow(color: Colors.blueAccent, blurRadius: 20),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 400.ms),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Clinical Lexical Mission',
+                    style: TextStyle(
+                      color: context.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
+                  ).animate().fadeIn(delay: 100.ms),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Master eye anatomy and clinical terminology through visual word puzzles. Sharpen your medical focus.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ).animate().fadeIn(delay: 200.ms),
+                  const SizedBox(height: 32),
+                  // Benefits Section
+                  _buildPremiumBenefit(
+                    Icons.remove_red_eye_rounded,
+                    'Anatomy Mastery',
+                    'Learn core parts of human eye.',
+                  ),
+                  _buildPremiumBenefit(
+                    Icons.medical_services_rounded,
+                    'Clinical Literacy',
+                    'Master medical-grade terminology.',
+                  ),
+                  _buildPremiumBenefit(
+                    Icons.psychology_rounded,
+                    'Cognitive Focus',
+                    'Strategic word building puzzles.',
+                  ),
+                  const SizedBox(height: 40),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _initLevel();
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 12,
+                        shadowColor: Colors.white24,
+                      ),
+                      child: const Text(
+                        'BEGIN MISSION',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Return to Games',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumBenefit(IconData icon, String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: context.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: context.primary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

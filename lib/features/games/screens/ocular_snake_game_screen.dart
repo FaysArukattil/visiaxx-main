@@ -748,7 +748,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                       .shimmer(duration: 2.seconds),
                   const SizedBox(height: 32),
                   const Text(
-                    'EYE QUEST',
+                    'OCULAR SNAKE',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 32,
