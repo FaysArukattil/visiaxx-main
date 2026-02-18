@@ -32,6 +32,7 @@ import 'package:visiaxx/data/models/cover_test_result.dart';
 import 'package:visiaxx/data/models/torchlight_test_result.dart';
 import 'package:visiaxx/features/quick_vision_test/widgets/visual_field_maps.dart';
 import 'package:visiaxx/features/home/widgets/review_dialog.dart';
+import 'package:visiaxx/core/widgets/symptom_detector_card.dart';
 
 /// Comprehensive results screen displaying all test data
 class QuickTestResultScreen extends StatefulWidget {
@@ -475,6 +476,14 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
                       _buildPrescriptionCard(provider),
                       const SizedBox(height: 20),
                     ],
+
+                    // Symptom Detector
+                    SymptomDetectorCard(
+                      result: isHistorical
+                          ? widget.historicalResult!
+                          : provider.buildTestResult(provider.profileId),
+                    ),
+                    const SizedBox(height: 20),
 
                     // Recommendation
                     _buildRecommendationCard(provider),

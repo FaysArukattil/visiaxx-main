@@ -25,8 +25,6 @@
    info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:829:9 - curly_braces_in_flow_control_structures
    info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:872:9 - curly_braces_in_flow_control_structures
    info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:919:9 - curly_braces_in_flow_control_structures
-  error - The operator '>' can't be unconditionally invoked because the receiver can be 'null' - lib\core\services\symptom_detector_service.dart:981:54 - unchecked_use_of_nullable_value
-  error - The method 'toStringAsFixed' can't be unconditionally invoked because the receiver can be 'null' - lib\core\services\symptom_detector_service.dart:988:61 - unchecked_use_of_nullable_value
    info - 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead - lib\core\widgets\glass_chat_button.dart:34:42 - deprecated_member_use
    info - Use interpolation to compose strings and values - lib\data\models\cover_test_result.dart:104:12 - prefer_interpolation_to_compose_strings
    info - Unnecessary 'this.' qualifier - lib\data\models\test_result_model.dart:476:37 - unnecessary_this
@@ -63,15 +61,13 @@ warning - Unused import: 'reading_test_instructions_screen.dart' - lib\features\
    info - Parameter 'key' could be a super parameter - lib\features\quick_vision_test\widgets\visual_field_sensitivity_map.dart:9:9 - use_super_parameters
    info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\torchlight_test\screens\extraocular_muscle_test_screen.dart:845:7 - deprecated_member_use
 
-flutter : 62 issues found. (ran in 6.5s)
+flutter : 60 issues found. (ran in 6.4s)
 At line:1 char:1
-+ flutter analyze > analysis_output.txt 
-2>&1
-+ 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : 
-NotSpecified:     (62 issues found. (ran 
-in 6.5s):String    ) [], RemoteException
-    + FullyQualifiedErrorId : 
-NativeCommand    Error
++ flutter analyze > full_analysis.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecifie 
+   d: (60 issues found. (ran in 6.4s):St  
+  ring) [], RemoteException
+    + FullyQualifiedErrorId : NativeComma 
+   ndError
  

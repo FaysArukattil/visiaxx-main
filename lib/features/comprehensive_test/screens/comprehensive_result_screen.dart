@@ -14,6 +14,7 @@ import '../../../data/models/pelli_robson_result.dart';
 import '../../../data/models/short_distance_result.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../data/models/refraction_prescription_model.dart';
+import '../../../core/widgets/symptom_detector_card.dart';
 
 /// Comprehensive test result screen
 class ComprehensiveResultScreen extends StatefulWidget {
@@ -224,6 +225,12 @@ class _ComprehensiveResultScreenState extends State<ComprehensiveResultScreen> {
                       _buildPrescriptionCard(provider),
                     ],
                     const SizedBox(height: 24),
+                    // Symptom Detector
+                    SymptomDetectorCard(
+                      result: provider.buildTestResult(provider.profileId),
+                    ),
+                    const SizedBox(height: 24),
+
                     // Recommendations Card
                     _buildRecommendationsCard(
                       provider.getOverallStatus(),

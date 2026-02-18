@@ -1,0 +1,24 @@
+﻿Analyzing color_rush_game_screen.dart...                        
+
+warning - Unused import: '../../../core/extensions/theme_extension.dart' - lib\features\games\screens\color_rush_game_screen.dart:11:8 - unused_import
+   info - Statements in an if should be enclosed in a block - lib\features\games\screens\color_rush_game_screen.dart:534:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\games\screens\color_rush_game_screen.dart:732:11 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\games\screens\color_rush_game_screen.dart:734:11 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of multiple underscores - lib\features\games\screens\color_rush_game_screen.dart:771:28 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\games\screens\color_rush_game_screen.dart:1065:26 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\games\screens\color_rush_game_screen.dart:1074:36 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\games\screens\color_rush_game_screen.dart:1102:34 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\games\screens\color_rush_game_screen.dart:1543:32 - unnecessary_underscores
+
+flutter : 9 issues found. (ran in 1.4s)
+At line:1 char:1
++ flutter analyze lib/features/games/scree
+ns/color_rush_game_screen.dar ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecifie 
+   d: (9 issues found. (ran in 1.4s):Str  
+  ing) [], RemoteException
+    + FullyQualifiedErrorId : NativeComma 
+   ndError
+ 

@@ -1,0 +1,33 @@
+﻿Analyzing symptom_detector_service.dart...                      
+
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:220:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:222:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:225:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:484:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:551:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:587:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:589:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:591:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:593:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:641:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:643:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:677:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:740:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:743:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:827:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:829:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:872:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\symptom_detector_service.dart:919:9 - curly_braces_in_flow_control_structures
+
+flutter : 18 issues found. (ran in 1.5s)
+At line:1 char:1
++ flutter analyze lib/core/services/sympto
+m_detector_service.dart > sym ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecifie 
+   d: (18 issues found. (ran in 1.5s):St  
+  ring) [], RemoteException
+    + FullyQualifiedErrorId : NativeComma 
+   ndError
+ 

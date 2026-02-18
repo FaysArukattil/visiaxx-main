@@ -1,0 +1,16 @@
+﻿Analyzing color_rush_game_screen.dart...                        
+
+   info - Statements in an if should be enclosed in a block - lib\features\games\screens\color_rush_game_screen.dart:533:9 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\games\screens\color_rush_game_screen.dart:648:20 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\features\games\screens\color_rush_game_screen.dart:731:11 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\games\screens\color_rush_game_screen.dart:733:11 - curly_braces_in_flow_control_structures
+
+flutter : 4 issues found. (ran in 2.0s)
+At line:1 char:1
++ flutter analyze lib/features/games/screens/color_rush_game_screen.dar 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (4 issues found. (ran in 2. 
+   0s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

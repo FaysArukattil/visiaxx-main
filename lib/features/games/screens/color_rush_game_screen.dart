@@ -8,7 +8,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/services/audio_service.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/extensions/theme_extension.dart';
 import '../../../data/providers/game_provider.dart';
 import '../widgets/game_menus.dart';
 
@@ -646,7 +645,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
       Text(
         l,
         style: TextStyle(
-          color: c.withValues(alpha: 0.7),
+          color: c.withOpacity(0.7),
           fontSize: 9,
           fontWeight: FontWeight.bold,
           letterSpacing: 1,
@@ -728,10 +727,11 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
       canPop: !_playing,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        if (_playing)
+        if (_playing) {
           _pause();
-        else if (!_started)
+        } else if (!_started) {
           Navigator.pop(context);
+        }
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF020408),
@@ -744,7 +744,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
               Positioned.fill(
                 child: BackdropFilter(
                   filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                  child: Container(color: Colors.black.withValues(alpha: 0.55)),
+                  child: Container(color: Colors.black.withOpacity(0.55)),
                 ),
               ),
           ],
@@ -768,7 +768,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
           children: [
             AnimatedBuilder(
               animation: _bgCtrl,
-              builder: (_, __) => CustomPaint(
+              builder: (context, child) => CustomPaint(
                 painter: _GridPainter(
                   t: _bgCtrl.value,
                   color: const Color(0xFF00E676),
@@ -796,7 +796,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                     Text(
                       'NEON ENDLESS RUNNER',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.22),
+                        color: Colors.white.withOpacity(0.22),
                         fontSize: 10,
                         letterSpacing: 6,
                         fontWeight: FontWeight.w700,
@@ -874,9 +874,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(
-                                0xFF00E676,
-                              ).withValues(alpha: 0.45),
+                              color: const Color(0xFF00E676).withOpacity(0.45),
                               blurRadius: 30,
                               spreadRadius: 2,
                             ),
@@ -910,7 +908,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                       child: Text(
                         'Back to Games',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: Colors.white.withOpacity(0.3),
                           fontSize: 13,
                         ),
                       ),
@@ -938,7 +936,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
           foreground: Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = 4
-            ..color = color.withValues(alpha: 0.22),
+            ..color = color.withOpacity(0.22),
         ),
       ),
       Text(
@@ -961,16 +959,16 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
+          color: color.withOpacity(0.06),
           borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: color.withValues(alpha: 0.18)),
+          border: Border.all(color: color.withOpacity(0.18)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
+                color: color.withOpacity(0.14),
                 borderRadius: BorderRadius.circular(9),
               ),
               child: Icon(icon, color: color, size: 16),
@@ -992,7 +990,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                   Text(
                     sub,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.32),
+                      color: Colors.white.withOpacity(0.32),
                       fontSize: 10,
                     ),
                   ),
@@ -1007,9 +1005,9 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
       Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
+          color: color.withOpacity(0.06),
           borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+          border: Border.all(color: color.withOpacity(0.2)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1030,7 +1028,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
               desc,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.28),
+                color: Colors.white.withOpacity(0.28),
                 fontSize: 8.5,
               ),
             ),
@@ -1062,7 +1060,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
           },
           child: AnimatedBuilder(
             animation: _shakeAnim,
-            builder: (_, __) => Transform.translate(
+            builder: (context, child) => Transform.translate(
               offset: Offset(_shakeAnim.value, 0),
               child: Stack(
                 clipBehavior: Clip.hardEdge,
@@ -1071,7 +1069,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                   Positioned.fill(
                     child: AnimatedBuilder(
                       animation: _bgCtrl,
-                      builder: (_, __) => CustomPaint(
+                      builder: (context, child) => CustomPaint(
                         painter: _WorldPainter(
                           w: _w,
                           h: _h,
@@ -1099,7 +1097,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                   // ── Colour flash ──
                   AnimatedBuilder(
                     animation: _flashCtrl,
-                    builder: (_, __) {
+                    builder: (context, child) {
                       final a = (1.0 - _flashCtrl.value).clamp(0.0, 0.18);
                       final col = _isGreen
                           ? const Color(0xFF00E676)
@@ -1108,7 +1106,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                         child: Container(
                           width: _w,
                           height: _h,
-                          color: col.withValues(alpha: a),
+                          color: col.withOpacity(a),
                         ),
                       );
                     },
@@ -1120,7 +1118,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                       child: Container(
                         width: _w,
                         height: _h,
-                        color: Colors.red.withValues(alpha: 0.28),
+                        color: Colors.red.withOpacity(0.28),
                       ),
                     ),
 
@@ -1132,8 +1130,12 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                         height: _h,
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            width: 3,
+                            color:
+                                (_isGreen
+                                        ? const Color(0xFF00E676)
+                                        : const Color(0xFFFF5252))
+                                    .withOpacity(0.45),
+                            width: 12,
                           ),
                         ),
                       ),
@@ -1142,7 +1144,6 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                   // ── Combo popup ──
                   if (_showComboPopup)
                     Positioned(
-                      left: _w / 2 - 100,
                       top: _h * 0.27,
                       child: IgnorePointer(
                         child:
@@ -1214,7 +1215,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
               color: p.color,
               boxShadow: [
                 BoxShadow(
-                  color: p.color.withValues(alpha: 0.6),
+                  color: p.color.withOpacity(0.6),
                   blurRadius: p.size * 2,
                 ),
               ],
@@ -1248,7 +1249,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: c2.withValues(alpha: 0.85),
+                  color: c2.withOpacity(0.85),
                   blurRadius: 14 * p.s,
                   spreadRadius: p.s,
                 ),
@@ -1257,7 +1258,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
             child: Center(
               child: Icon(
                 o.green ? Icons.brightness_1 : Icons.change_history_rounded,
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Colors.white.withOpacity(0.9),
                 size: sz * 0.46,
               ),
             ),
@@ -1313,7 +1314,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
     height: sz,
     decoration: BoxDecoration(
       shape: BoxShape.circle,
-      color: color.withValues(alpha: 0.18),
+      color: color.withOpacity(0.18),
       border: Border.all(color: color, width: 2),
       boxShadow: [
         BoxShadow(color: color.withValues(alpha: 0.7), blurRadius: 18),
@@ -1540,7 +1541,7 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
                 // FIX #3: HUD pill shows grace period "SWITCHING..." state
                 AnimatedBuilder(
                   animation: _colorPulseCtrl,
-                  builder: (_, __) => AnimatedContainer(
+                  builder: (context, child) => AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,

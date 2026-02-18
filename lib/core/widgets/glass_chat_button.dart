@@ -31,7 +31,11 @@ class _GlassChatButtonState extends State<GlassChatButton> {
         onTap: _navigateToSupport,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
+          transform: Matrix4.diagonal3Values(
+            _isHovered ? 1.05 : 1.0,
+            _isHovered ? 1.05 : 1.0,
+            1.0,
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: BackdropFilter(

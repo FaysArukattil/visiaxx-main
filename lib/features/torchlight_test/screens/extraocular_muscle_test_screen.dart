@@ -842,7 +842,7 @@ class _ExtraocularMuscleTestScreenState
       ),
       value: value,
       onChanged: onChanged,
-      activeColor: context.primary,
+      activeThumbColor: context.primary,
       contentPadding: EdgeInsets.zero,
     );
   }

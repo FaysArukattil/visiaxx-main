@@ -1,0 +1,17 @@
+﻿Analyzing game_selection_screen.dart...                         
+
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\games\screens\game_selection_screen.dart:714:33 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\games\screens\game_selection_screen.dart:716:21 - use_build_context_synchronously
+
+flutter : 2 issues found. (ran in 2.9s)
+At line:1 char:1
++ flutter analyze lib/features/games/scree
+ns/game_selection_screen.dart ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecifie 
+   d: (2 issues found. (ran in 2.9s):Str  
+  ing) [], RemoteException
+    + FullyQualifiedErrorId : NativeComma 
+   ndError
+ 

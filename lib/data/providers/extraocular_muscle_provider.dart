@@ -45,7 +45,7 @@ class ExtraocularMuscleProvider extends ChangeNotifier {
 
   void startAlignment() {
     _currentPhase = ExtraocularPhase.alignment;
-    _accelerometerSubscription = accelerometerEvents.listen((
+    _accelerometerSubscription = accelerometerEventStream().listen((
       AccelerometerEvent event,
     ) {
       // Simple alignment logic: device should be relatively upright (portrait)

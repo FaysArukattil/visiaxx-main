@@ -21,6 +21,7 @@ import '../../data/models/visual_field_result.dart';
 import '../../data/models/eye_hydration_result.dart';
 import '../../data/models/cover_test_result.dart';
 import '../../data/models/torchlight_test_result.dart';
+import 'symptom_detector_service.dart';
 
 /// Service for generating PDF reports of test results
 class PdfExportService {
@@ -303,6 +304,10 @@ class PdfExportService {
             _buildRefractionPrescriptionSection(result),
             pw.SizedBox(height: 12),
           ],
+
+          // Symptom Detector Section
+          _buildSymptomDetectorSection(result),
+          pw.SizedBox(height: 12),
 
           // Questionnaire
           if (result.questionnaire != null) ...[
@@ -2770,12 +2775,13 @@ class PdfExportService {
             PdfColor blockColor;
             if (avgIntensity > 0.9) {
               blockColor = PdfColors.black;
-            } else if (avgIntensity > 0.7)
+            } else if (avgIntensity > 0.7) {
               blockColor = PdfColors.grey700;
-            else if (avgIntensity > 0.5)
+            } else if (avgIntensity > 0.5) {
               blockColor = PdfColors.grey400;
-            else
+            } else {
               blockColor = PdfColors.grey200;
+            }
 
             blocks.add(
               pw.Positioned(
@@ -3312,6 +3318,247 @@ class PdfExportService {
             style: const pw.TextStyle(
               fontSize: 7,
               color: PdfColors.blueGrey800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// SYMPTOM DETECTOR & PRELIMINARY SCREENING SECTION
+  pw.Widget _buildSymptomDetectorSection(TestResultModel result) {
+    final conditions = SymptomDetectorService.analyze(result);
+    if (conditions.isEmpty) return pw.SizedBox();
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(height: 6),
+        _buildSectionHeader('PRELIMINARY SYMPTOM DETECTION & SCREENING'),
+        pw.SizedBox(height: 8),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.yellow50,
+            borderRadius: pw.BorderRadius.circular(4),
+            border: pw.Border.all(color: PdfColors.yellow100, width: 0.5),
+          ),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Container(
+                width: 12,
+                height: 12,
+                decoration: const pw.BoxDecoration(
+                  color: PdfColors.amber700,
+                  shape: pw.BoxShape.circle,
+                ),
+                child: pw.Center(
+                  child: pw.Text(
+                    '!',
+                    style: pw.TextStyle(
+                      color: PdfColors.white,
+                      fontSize: 8,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              pw.SizedBox(width: 8),
+              pw.Expanded(
+                child: pw.Text(
+                  'IMPORTANT NOTICE: This section is generated using rule-based analysis and clinical correlation rules. '
+                  'These findings are PRELIMINARY SYMPTOMS/SIGNS and NOT clinical diagnoses. '
+                  'A full ocular examination by a qualified practitioner is mandatory for definitive diagnosis and treatment.',
+                  style: pw.TextStyle(
+                    fontSize: 7,
+                    fontStyle: pw.FontStyle.italic,
+                    color: PdfColors.amber900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 10),
+        ...conditions
+            .take(15) // Limit to avoid massive reports in edge cases
+            .map((condition) => _buildDetectedConditionBlock(condition))
+            .toList(),
+      ],
+    );
+  }
+
+  pw.Widget _buildDetectedConditionBlock(DetectedCondition condition) {
+    final severityColor = condition.severity == ConditionSeverity.critical
+        ? PdfColors.red700
+        : condition.severity == ConditionSeverity.significant
+        ? PdfColors.orange700
+        : condition.severity == ConditionSeverity.moderate
+        ? PdfColors.amber700
+        : PdfColors.blue700;
+
+    return pw.Container(
+      margin: const pw.EdgeInsets.only(bottom: 8),
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                condition.name.toUpperCase(),
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blueGrey900,
+                ),
+              ),
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: pw.BoxDecoration(
+                  color: severityColor,
+                  borderRadius: pw.BorderRadius.circular(2),
+                ),
+                child: pw.Text(
+                  condition.severity.name.toUpperCase(),
+                  style: pw.TextStyle(
+                    fontSize: 6,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 4),
+          pw.Row(
+            children: [
+              pw.Text(
+                'CATEGORY: ',
+                style: pw.TextStyle(
+                  fontSize: 6,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey500,
+                ),
+              ),
+              pw.Text(
+                condition.category.name.toUpperCase(),
+                style: const pw.TextStyle(
+                  fontSize: 6,
+                  color: PdfColors.grey600,
+                ),
+              ),
+              pw.SizedBox(width: 12),
+              pw.Text(
+                'TESTS: ',
+                style: pw.TextStyle(
+                  fontSize: 6,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey500,
+                ),
+              ),
+              pw.Text(
+                condition.contributingTests.join(', ').toUpperCase(),
+                style: const pw.TextStyle(
+                  fontSize: 6,
+                  color: PdfColors.grey600,
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 6),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'DETECTED SYMPTOMS/SIGNS',
+                      style: pw.TextStyle(
+                        fontSize: 6,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.grey500,
+                      ),
+                    ),
+                    pw.SizedBox(height: 2),
+                    ...condition.detectedSymptoms.map(
+                      (s) => pw.Bullet(
+                        text: s,
+                        style: const pw.TextStyle(fontSize: 7),
+                        bulletMargin: const pw.EdgeInsets.only(
+                          top: 2,
+                          right: 4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(width: 20),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'POTENTIAL CAUSES',
+                      style: pw.TextStyle(
+                        fontSize: 6,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.grey500,
+                      ),
+                    ),
+                    pw.SizedBox(height: 2),
+                    ...condition.possibleCauses.map(
+                      (c) => pw.Bullet(
+                        text: c,
+                        style: const pw.TextStyle(fontSize: 7),
+                        bulletMargin: const pw.EdgeInsets.only(
+                          top: 2,
+                          right: 4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(4),
+            decoration: const pw.BoxDecoration(color: PdfColors.blueGrey50),
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'RECOMMENDATION: ',
+                  style: pw.TextStyle(
+                    fontSize: 7,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.blueGrey800,
+                  ),
+                ),
+                pw.Expanded(
+                  child: pw.Text(
+                    condition.recommendation,
+                    style: const pw.TextStyle(
+                      fontSize: 7,
+                      color: PdfColors.blueGrey700,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
