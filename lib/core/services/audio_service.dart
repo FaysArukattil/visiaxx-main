@@ -135,7 +135,8 @@ class AudioService {
 
   void playCoinCollect() => playSFX('sounds/snake/snake_eat_subtle.mp3');
   void playColorSwitch() => playSFX('sounds/click.mp3');
-  void playWrongCoin() => playSFX('sounds/brick_ball/life_lost.mp3');
+  void playWrongCoin() => playSFX('sounds/wrong_action_subtle.mp3');
+  void playCrash() => playSFX('sounds/snake/snake_crash.mp3');
 
   // ===== LEGACY / GENERAL =====
 
