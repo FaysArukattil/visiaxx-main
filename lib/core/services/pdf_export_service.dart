@@ -2355,14 +2355,13 @@ class PdfExportService {
     PdfColor? color,
   }) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: pw.Text(
         text,
         style: pw.TextStyle(
-          fontSize: 7.5,
+          fontSize: isHeader ? 6.5 : 7.5,
           fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color:
-              color ?? (isHeader ? PdfColors.blueGrey800 : PdfColors.grey800),
+          color: color ?? (isHeader ? PdfColors.black : PdfColors.grey900),
         ),
         textAlign: pw.TextAlign.center,
       ),
@@ -3330,14 +3329,21 @@ class PdfExportService {
     final conditions = SymptomDetectorService.analyze(result);
     if (conditions.isEmpty) return pw.SizedBox();
 
+    // Group by category
+    final grouped = <ConditionCategory, List<DetectedCondition>>{};
+    for (var c in conditions.take(15)) {
+      grouped.putIfAbsent(c.category, () => []).add(c);
+    }
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.SizedBox(height: 6),
         _buildSectionHeader('PRELIMINARY SYMPTOM DETECTION & SCREENING'),
         pw.SizedBox(height: 8),
+        // Disclaimer notice
         pw.Container(
-          padding: const pw.EdgeInsets.all(10),
+          padding: const pw.EdgeInsets.all(8),
           decoration: pw.BoxDecoration(
             color: PdfColors.yellow50,
             borderRadius: pw.BorderRadius.circular(4),
@@ -3347,8 +3353,8 @@ class PdfExportService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Container(
-                width: 12,
-                height: 12,
+                width: 10,
+                height: 10,
                 decoration: const pw.BoxDecoration(
                   color: PdfColors.amber700,
                   shape: pw.BoxShape.circle,
@@ -3358,20 +3364,19 @@ class PdfExportService {
                     '!',
                     style: pw.TextStyle(
                       color: PdfColors.white,
-                      fontSize: 8,
+                      fontSize: 7,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-              pw.SizedBox(width: 8),
+              pw.SizedBox(width: 6),
               pw.Expanded(
                 child: pw.Text(
-                  'IMPORTANT NOTICE: This section is generated using rule-based analysis and clinical correlation rules. '
-                  'These findings are PRELIMINARY SYMPTOMS/SIGNS and NOT clinical diagnoses. '
-                  'A full ocular examination by a qualified practitioner is mandatory for definitive diagnosis and treatment.',
+                  'PRELIMINARY SYMPTOMS/SIGNS - Not clinical diagnoses. '
+                  'A full ocular examination by a qualified practitioner is mandatory.',
                   style: pw.TextStyle(
-                    fontSize: 7,
+                    fontSize: 6.5,
                     fontStyle: pw.FontStyle.italic,
                     color: PdfColors.amber900,
                   ),
@@ -3380,189 +3385,175 @@ class PdfExportService {
             ],
           ),
         ),
-        pw.SizedBox(height: 10),
-        ...conditions
-            .take(15) // Limit to avoid massive reports in edge cases
-            .map((condition) => _buildDetectedConditionBlock(condition))
-            .toList(),
-      ],
-    );
-  }
-
-  pw.Widget _buildDetectedConditionBlock(DetectedCondition condition) {
-    final severityColor = condition.severity == ConditionSeverity.critical
-        ? PdfColors.red700
-        : condition.severity == ConditionSeverity.significant
-        ? PdfColors.orange700
-        : condition.severity == ConditionSeverity.moderate
-        ? PdfColors.amber700
-        : PdfColors.blue700;
-
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 8),
-      padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey200, width: 0.5),
-        borderRadius: pw.BorderRadius.circular(4),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text(
-                condition.name.toUpperCase(),
-                style: pw.TextStyle(
-                  fontSize: 9,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.blueGrey900,
-                ),
-              ),
-              pw.Container(
-                padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
-                decoration: pw.BoxDecoration(
-                  color: severityColor,
-                  borderRadius: pw.BorderRadius.circular(2),
-                ),
-                child: pw.Text(
-                  condition.severity.name.toUpperCase(),
-                  style: pw.TextStyle(
-                    fontSize: 6,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.white,
-                  ),
-                ),
-              ),
-            ],
+        pw.SizedBox(height: 8),
+        // Summary count
+        pw.Text(
+          '${conditions.length} condition${conditions.length == 1 ? '' : 's'} detected',
+          style: pw.TextStyle(
+            fontSize: 7,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.blueGrey600,
           ),
-          pw.SizedBox(height: 4),
-          pw.Row(
-            children: [
-              pw.Text(
-                'CATEGORY: ',
-                style: pw.TextStyle(
-                  fontSize: 6,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey500,
-                ),
-              ),
-              pw.Text(
-                condition.category.name.toUpperCase(),
-                style: const pw.TextStyle(
-                  fontSize: 6,
-                  color: PdfColors.grey600,
-                ),
-              ),
-              pw.SizedBox(width: 12),
-              pw.Text(
-                'TESTS: ',
-                style: pw.TextStyle(
-                  fontSize: 6,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey500,
-                ),
-              ),
-              pw.Text(
-                condition.contributingTests.join(', ').toUpperCase(),
-                style: const pw.TextStyle(
-                  fontSize: 6,
-                  color: PdfColors.grey600,
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 6),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'DETECTED SYMPTOMS/SIGNS',
-                      style: pw.TextStyle(
-                        fontSize: 6,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.grey500,
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    ...condition.detectedSymptoms.map(
-                      (s) => pw.Bullet(
-                        text: s,
-                        style: const pw.TextStyle(fontSize: 7),
-                        bulletMargin: const pw.EdgeInsets.only(
-                          top: 2,
-                          right: 4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(width: 20),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'POTENTIAL CAUSES',
-                      style: pw.TextStyle(
-                        fontSize: 6,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.grey500,
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    ...condition.possibleCauses.map(
-                      (c) => pw.Bullet(
-                        text: c,
-                        style: const pw.TextStyle(fontSize: 7),
-                        bulletMargin: const pw.EdgeInsets.only(
-                          top: 2,
-                          right: 4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 8),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(4),
-            decoration: const pw.BoxDecoration(color: PdfColors.blueGrey50),
-            child: pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
+        ),
+        pw.SizedBox(height: 6),
+        // Compact summary table with grouping
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.blueGrey50, width: 0.5),
+          defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
+          columnWidths: {
+            0: const pw.FlexColumnWidth(2.2),
+            1: const pw.FlexColumnWidth(
+              1.3,
+            ), // Fixed: more space for "INFORMATIONAL"
+            2: const pw.FlexColumnWidth(3),
+            3: const pw.FlexColumnWidth(2.5),
+          },
+          children: [
+            // Header row
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.blueGrey50),
               children: [
-                pw.Text(
-                  'RECOMMENDATION: ',
-                  style: pw.TextStyle(
-                    fontSize: 7,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blueGrey800,
-                  ),
-                ),
-                pw.Expanded(
-                  child: pw.Text(
-                    condition.recommendation,
-                    style: const pw.TextStyle(
-                      fontSize: 7,
-                      color: PdfColors.blueGrey700,
-                    ),
-                  ),
-                ),
+                _buildTableCell('CONDITION', isHeader: true),
+                _buildTableCell('SEVERITY', isHeader: true),
+                _buildTableCell('KEY FINDINGS', isHeader: true),
+                _buildTableCell('RECOMMENDATION', isHeader: true),
               ],
             ),
-          ),
-        ],
-      ),
+            // Grouped Data rows
+            ...grouped.entries.expand((entry) {
+              final category = entry.key;
+              final items = entry.value;
+
+              return [
+                // Category Header Line
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey50),
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 3,
+                      ),
+                      child: pw.Text(
+                        category.name.toUpperCase(),
+                        style: pw.TextStyle(
+                          fontSize: 6.5,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.grey900,
+                        ),
+                      ),
+                    ),
+                    pw.SizedBox(),
+                    pw.SizedBox(),
+                    pw.SizedBox(),
+                  ],
+                ),
+                // Items for this category
+                ...items.map((condition) {
+                  final severityColor =
+                      condition.severity == ConditionSeverity.critical
+                      ? PdfColors.red700
+                      : condition.severity == ConditionSeverity.significant
+                      ? PdfColors.orange700
+                      : condition.severity == ConditionSeverity.moderate
+                      ? PdfColors.amber700
+                      : PdfColors.blue700;
+
+                  return pw.TableRow(
+                    children: [
+                      // Condition name
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(
+                          condition.name,
+                          style: pw.TextStyle(
+                            fontSize: 7,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.grey900,
+                          ),
+                        ),
+                      ),
+                      // Severity badge
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Container(
+                          padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: pw.BoxDecoration(
+                            color: severityColor,
+                            borderRadius: pw.BorderRadius.circular(2),
+                          ),
+                          child: pw.Text(
+                            condition.severity.name.toUpperCase(),
+                            style: pw.TextStyle(
+                              fontSize: 5.5,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.white,
+                            ),
+                            textAlign: pw.TextAlign.center,
+                          ),
+                        ),
+                      ),
+                      // Key findings
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            ...condition.detectedSymptoms
+                                .take(2)
+                                .map(
+                                  (s) => pw.Text(
+                                    '- $s',
+                                    style: const pw.TextStyle(
+                                      fontSize: 6.5,
+                                      color: PdfColors.grey800,
+                                    ),
+                                  ),
+                                ),
+                            if (condition.detectedSymptoms.length > 2)
+                              pw.Text(
+                                '  +${condition.detectedSymptoms.length - 2} more',
+                                style: const pw.TextStyle(
+                                  fontSize: 6,
+                                  color: PdfColors.grey500,
+                                ),
+                              ),
+                            if (condition.possibleCauses.isNotEmpty) ...[
+                              pw.SizedBox(height: 1),
+                              pw.Text(
+                                condition.possibleCauses.take(2).join(', '),
+                                style: pw.TextStyle(
+                                  fontSize: 5.5,
+                                  color: PdfColors.grey600,
+                                  fontStyle: pw.FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      // Recommendation
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(
+                          condition.recommendation,
+                          style: const pw.TextStyle(
+                            fontSize: 6.5,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ];
+            }).toList(),
+          ],
+        ),
+      ],
     );
   }
 }

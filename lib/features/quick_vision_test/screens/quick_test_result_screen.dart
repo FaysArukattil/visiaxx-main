@@ -43,7 +43,8 @@ class QuickTestResultScreen extends StatefulWidget {
   State<QuickTestResultScreen> createState() => _QuickTestResultScreenState();
 }
 
-class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
+class _QuickTestResultScreenState extends State<QuickTestResultScreen>
+    with SingleTickerProviderStateMixin {
   final PdfExportService _pdfExportService = PdfExportService();
   final TestResultService _testResultService = TestResultService();
 
@@ -51,9 +52,20 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   TestResultModel? _savedResult;
   bool _isGeneratingPdf = false;
 
+  late AnimationController _headerPulse;
+  late Animation<double> _headerScale;
+
   @override
   void initState() {
     super.initState();
+    _headerPulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+    _headerScale = Tween<double>(
+      begin: 0.92,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _headerPulse, curve: Curves.easeInOut));
     // Only save results to Firebase if this is a new test (just completed)
     if (widget.historicalResult == null) {
       WidgetsBinding.instance.addPostFrameCallback(
@@ -216,6 +228,12 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   }
 
   @override
+  void dispose() {
+    _headerPulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final provider = context.watch<TestSessionProvider>();
     final isHistorical = widget.historicalResult != null;
@@ -351,6 +369,10 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
 
                     // Patient info card
                     _buildPatientInfoCard(provider),
+                    const SizedBox(height: 12),
+
+                    // Tests performed chip row
+                    _buildTestsPerformedRow(provider),
                     const SizedBox(height: 20),
 
                     // Visual Acuity Results
@@ -551,22 +573,25 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
       ),
       child: Column(
         children: [
-          // Icon with background circle
-          Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+          // Icon with background circle + pulse animation
+          ScaleTransition(
+            scale: _headerScale,
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(statusIcon, size: 52, color: textColor),
             ),
-            child: Icon(statusIcon, size: 52, color: textColor),
           ),
           const SizedBox(height: 24),
           Text(
@@ -763,41 +788,167 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
   Widget _buildSectionTitle(String title, IconData icon) {
     return Container(
       padding: const EdgeInsets.only(bottom: 16, top: 4),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  context.primary,
-                  context.primary.withValues(alpha: 0.7),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: context.primary.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      context.primary,
+                      context.primary.withValues(alpha: 0.7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.primary.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.3,
-            ),
+                child: Icon(icon, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        context.primary.withValues(alpha: 0.15),
+                        context.primary.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  /// Chip row showing which tests were performed
+  Widget _buildTestsPerformedRow(TestSessionProvider provider) {
+    final tests = <MapEntry<String, IconData>>[];
+
+    if (_shouldShowSection(provider, 'visual_acuity')) {
+      tests.add(const MapEntry('Acuity', Icons.visibility));
+    }
+    if (_shouldShowSection(provider, 'reading_test')) {
+      tests.add(const MapEntry('Reading', Icons.text_fields));
+    }
+    if (_shouldShowSection(provider, 'color_vision')) {
+      tests.add(const MapEntry('Color', Icons.palette));
+    }
+    if (_shouldShowSection(provider, 'amsler_grid')) {
+      tests.add(const MapEntry('Amsler', Icons.grid_on));
+    }
+    if (_shouldShowSection(provider, 'contrast_sensitivity')) {
+      tests.add(const MapEntry('Contrast', Icons.contrast));
+    }
+    if (_shouldShowSection(provider, 'mobile_refractometry')) {
+      tests.add(const MapEntry('Refraction', Icons.phone_android_rounded));
+    }
+    if (_shouldShowSection(provider, 'shadow_test')) {
+      tests.add(const MapEntry('Shadow', Icons.wb_sunny_rounded));
+    }
+    if (_shouldShowSection(provider, 'stereopsis')) {
+      tests.add(const MapEntry('Stereo', Icons.threed_rotation_rounded));
+    }
+    if (_shouldShowSection(provider, 'eye_hydration')) {
+      tests.add(const MapEntry('Hydration', Icons.opacity_rounded));
+    }
+    if (_shouldShowSection(provider, 'visual_field')) {
+      tests.add(const MapEntry('Field', Icons.track_changes_rounded));
+    }
+    if (_shouldShowSection(provider, 'cover_test')) {
+      tests.add(const MapEntry('Cover', Icons.remove_red_eye_rounded));
+    }
+    if (_shouldShowSection(provider, 'torchlight')) {
+      tests.add(const MapEntry('Torchlight', Icons.highlight_rounded));
+    }
+
+    if (tests.isEmpty) return const SizedBox();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 8),
+          child: Text(
+            'TESTS PERFORMED',
+            style: TextStyle(
+              color: context.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 34,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: tests.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 6),
+            itemBuilder: (context, index) {
+              final test = tests[index];
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: context.scaffoldBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: context.dividerColor.withValues(alpha: 0.8),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(test.value, size: 13, color: context.textSecondary),
+                    const SizedBox(width: 6),
+                    Text(
+                      test.key,
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 12,
+                      color: context.success.withValues(alpha: 0.7),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -1949,8 +2100,6 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
         ),
         const SizedBox(height: 12),
 
-        const SizedBox(height: 12),
-
         // Sharing Row
         Row(
           children: [
@@ -1984,8 +2133,6 @@ class _QuickTestResultScreenState extends State<QuickTestResultScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-
         const SizedBox(height: 12),
 
         // Back to Home

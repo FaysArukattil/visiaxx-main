@@ -4,7 +4,7 @@ import '../../data/models/test_result_model.dart';
 import '../extensions/theme_extension.dart';
 
 /// Reusable card that runs the symptom detector engine on a TestResultModel
-/// and displays the results with expandable disease tiles + disclaimer.
+/// and displays the results as a compact summariser with expandable details.
 class SymptomDetectorCard extends StatefulWidget {
   final TestResultModel result;
   const SymptomDetectorCard({super.key, required this.result});
@@ -13,14 +13,26 @@ class SymptomDetectorCard extends StatefulWidget {
   State<SymptomDetectorCard> createState() => _SymptomDetectorCardState();
 }
 
-class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
+class _SymptomDetectorCardState extends State<SymptomDetectorCard>
+    with SingleTickerProviderStateMixin {
   late List<DetectedCondition> _conditions;
   bool _isExpanded = true;
+  int? _expandedIndex; // which condition row is expanded (null = none)
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
     _conditions = SymptomDetectorService.analyze(widget.result);
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -28,33 +40,40 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.result != widget.result) {
       _conditions = SymptomDetectorService.analyze(widget.result);
+      _expandedIndex = null;
     }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         color: context.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.dividerColor),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          // Header
           _buildHeader(context),
-
           if (_isExpanded) ...[
-            // Disclaimer
             _buildDisclaimer(context),
-
-            // Content
             if (_conditions.isEmpty)
               _buildNoConcerns(context)
             else
-              _buildConditionsList(context),
-
+              _buildSummaryList(context),
             const SizedBox(height: 12),
           ],
         ],
@@ -62,83 +81,85 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
     );
   }
 
+  // ─── HEADER ──────────────────────────────────────────────────
+
   Widget _buildHeader(BuildContext context) {
     return InkWell(
       onTap: () => setState(() => _isExpanded = !_isExpanded),
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.deepPurple.shade400,
-                    Colors.deepPurple.shade700,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
+                color: context.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.biotech_rounded,
-                color: Colors.white,
-                size: 22,
+                color: context.primary,
+                size: 24,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Symptom Detector',
+                    'Symptoms Detected',
                     style: TextStyle(
                       color: context.textPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
+                      letterSpacing: -0.2,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _conditions.isEmpty
-                        ? 'No concerns detected'
-                        : '${_conditions.length} condition${_conditions.length == 1 ? '' : 's'} detected',
-                    style: TextStyle(
-                      color: _conditions.isEmpty
-                          ? context.success
-                          : Colors.deepPurple.shade300,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(height: 4),
+                  if (_conditions.isEmpty)
+                    Text(
+                      'No concerns detected',
+                      style: TextStyle(
+                        color: context.success,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getOverallSeverityColor().withValues(
+                          alpha: 0.12,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _getOverallSeverityLabel().toUpperCase(),
+                        style: TextStyle(
+                          color: _getOverallSeverityColor(),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
-            if (_conditions.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: _getOverallSeverityColor().withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _getOverallSeverityLabel(),
-                  style: TextStyle(
-                    color: _getOverallSeverityColor(),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
             const SizedBox(width: 8),
-            Icon(
-              _isExpanded ? Icons.expand_less : Icons.expand_more,
-              color: context.textSecondary,
+            AnimatedRotation(
+              turns: _isExpanded ? 0.5 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: context.textSecondary,
+              ),
             ),
           ],
         ),
@@ -146,30 +167,30 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
     );
   }
 
+  // ─── DISCLAIMER ──────────────────────────────────────────────
+
   Widget _buildDisclaimer(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: context.warning.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: context.warning.withValues(alpha: 0.3)),
+          color: context.warning.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.gavel_rounded, color: context.warning, size: 16),
-            const SizedBox(width: 10),
+            Icon(Icons.gavel_rounded, color: context.warning, size: 14),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'This analysis is for informational purposes only and does not '
-                'constitute a medical diagnosis. Always consult a licensed eye '
-                'care professional for a definitive diagnosis.',
+                'For informational purposes only — not a medical diagnosis. '
+                'Consult a licensed eye care professional for definitive diagnosis.',
                 style: TextStyle(
                   color: context.textSecondary,
-                  fontSize: 11,
-                  height: 1.4,
+                  fontSize: 10.5,
+                  height: 1.35,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -180,21 +201,26 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
     );
   }
 
+  // ─── NO CONCERNS ─────────────────────────────────────────────
+
   Widget _buildNoConcerns(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.success.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.check_circle_outline,
-              color: context.success,
-              size: 40,
+          ScaleTransition(
+            scale: _pulseAnimation,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: context.success.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_rounded,
+                color: context.success,
+                size: 36,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -208,54 +234,69 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Based on available test data, no significant conditions were flagged.',
+            'All test data within normal parameters.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: context.textSecondary, fontSize: 13),
+            style: TextStyle(color: context.textSecondary, fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildConditionsList(BuildContext context) {
-    // Group by category
-    final grouped = <ConditionCategory, List<DetectedCondition>>{};
-    for (final c in _conditions) {
-      grouped.putIfAbsent(c.category, () => []).add(c);
+  // ─── COMPACT SUMMARY LIST ────────────────────────────────────
+
+  Widget _buildSummaryList(BuildContext context) {
+    // Group by severity (critical → informational)
+    final grouped =
+        <ConditionSeverity, List<MapEntry<int, DetectedCondition>>>{};
+    for (int i = 0; i < _conditions.length; i++) {
+      final c = _conditions[i];
+      grouped.putIfAbsent(c.severity, () => []).add(MapEntry(i, c));
     }
 
+    // Order: critical, significant, moderate, informational
+    final orderedSeverities = [
+      ConditionSeverity.critical,
+      ConditionSeverity.significant,
+      ConditionSeverity.moderate,
+      ConditionSeverity.informational,
+    ];
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       child: Column(
-        children: grouped.entries.map((entry) {
+        children: orderedSeverities.where((s) => grouped.containsKey(s)).map((
+          severity,
+        ) {
+          final items = grouped[severity]!;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Category header
+              // Severity group label
               Padding(
                 padding: const EdgeInsets.only(bottom: 8, top: 4),
                 child: Row(
                   children: [
-                    Icon(
-                      _getCategoryIcon(entry.key),
-                      size: 14,
-                      color: context.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
                     Text(
-                      _getCategoryLabel(entry.key).toUpperCase(),
+                      _getSeverityLabel(severity).toUpperCase(),
                       style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
+                        color: context.textSecondary.withValues(alpha: 0.7),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
                       ),
                     ),
+                    const SizedBox(width: 10),
+                    const Spacer(),
                   ],
                 ),
               ),
-              // Condition tiles
-              ...entry.value.map((c) => _buildConditionTile(context, c)),
+              // Compact rows for this severity group
+              ...items.map(
+                (entry) =>
+                    _buildCompactConditionRow(context, entry.key, entry.value),
+              ),
+              const SizedBox(height: 8),
             ],
           );
         }).toList(),
@@ -263,89 +304,169 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
     );
   }
 
-  Widget _buildConditionTile(
+  /// A single compact condition row — tap to expand details
+  Widget _buildCompactConditionRow(
+    BuildContext context,
+    int index,
+    DetectedCondition condition,
+  ) {
+    final isOpen = _expandedIndex == index;
+    final categoryIcon = _getCategoryIcon(condition.category);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isOpen
+            ? context.primary.withValues(alpha: 0.03)
+            : context.scaffoldBackground.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => setState(() {
+            _expandedIndex = isOpen ? null : index;
+          }),
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            children: [
+              // ── Compact row ──
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    // Category icon
+                    Icon(
+                      categoryIcon,
+                      size: 16,
+                      color: _getSeverityColor(condition.severity),
+                    ),
+                    const SizedBox(width: 10),
+                    // Condition name + key finding
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            condition.name,
+                            style: TextStyle(
+                              color: context.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.5,
+                              height: 1.2,
+                            ),
+                          ),
+                          if (condition.detectedSymptoms.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              condition.detectedSymptoms.first,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: context.textTertiary,
+                                fontSize: 10.5,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Category chip
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.textSecondary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        _getCategoryLabel(condition.category),
+                        style: TextStyle(
+                          color: context.textSecondary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    AnimatedRotation(
+                      turns: isOpen ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 18,
+                        color: context.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Expanded detail panel ──
+              AnimatedCrossFade(
+                firstChild: const SizedBox(width: double.infinity, height: 0),
+                secondChild: _buildConditionDetails(context, condition),
+                crossFadeState: isOpen
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 200),
+                sizeCurve: Curves.easeInOut,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Expanded details — detected symptoms + recommendation (concise)
+  Widget _buildConditionDetails(
     BuildContext context,
     DetectedCondition condition,
   ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: context.scaffoldBackground,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.dividerColor),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-          childrenPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 0,
-          ),
-          leading: _buildSeverityDot(condition.severity),
-          title: Text(
-            condition.name,
-            style: TextStyle(
-              color: context.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: 13.5,
-            ),
-          ),
-          subtitle: Text(
-            condition.recommendation,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: context.textTertiary, fontSize: 11),
-          ),
-          children: [
-            // Detected symptoms
-            _buildDetailSection(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Spacing instead of divider
+          const SizedBox(height: 8),
+
+          // Detected symptoms
+          if (condition.detectedSymptoms.isNotEmpty) ...[
+            _buildMiniSectionLabel(
               context,
               'Detected Signs',
               Icons.visibility_outlined,
-              condition.detectedSymptoms,
             ),
-            // Possible causes
-            _buildDetailSection(
-              context,
-              'Possible Causes',
-              Icons.help_outline,
-              condition.possibleCauses,
-            ),
-            // Contributing tests
-            _buildDetailSection(
-              context,
-              'Based On',
-              Icons.science_outlined,
-              condition.contributingTests,
-            ),
-            // Recommendation
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12, top: 4),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: context.info.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
+            const SizedBox(height: 4),
+            ...condition.detectedSymptoms.map(
+              (s) => Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 2),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.lightbulb_outline,
-                      color: context.info,
-                      size: 14,
+                    Text(
+                      '▸ ',
+                      style: TextStyle(
+                        color: _getSeverityColor(condition.severity),
+                        fontSize: 11,
+                      ),
                     ),
-                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        condition.recommendation,
+                        s,
                         style: TextStyle(
                           color: context.textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          height: 1.4,
+                          fontSize: 11.5,
+                          height: 1.3,
                         ),
                       ),
                     ),
@@ -353,60 +474,56 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
           ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildDetailSection(
-    BuildContext context,
-    String title,
-    IconData icon,
-    List<String> items,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 13, color: context.textSecondary),
-              const SizedBox(width: 6),
-              Text(
-                title,
+          // Possible causes (compact inline)
+          if (condition.possibleCauses.isNotEmpty) ...[
+            _buildMiniSectionLabel(
+              context,
+              'Possible Causes',
+              Icons.help_outline_rounded,
+            ),
+            const SizedBox(height: 3),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(
+                condition.possibleCauses.join(' · '),
                 style: TextStyle(
                   color: context.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 10.5,
+                  height: 1.3,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          ...items.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(left: 20, bottom: 2),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '• ',
-                    style: TextStyle(color: context.textTertiary, fontSize: 12),
-                  ),
-                  Expanded(
-                    child: Text(
-                      item,
-                      style: TextStyle(
-                        color: context.textPrimary,
-                        fontSize: 12,
-                        height: 1.3,
-                      ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
+          // Recommendation box
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: context.info.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.lightbulb_outline, color: context.info, size: 13),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    condition.recommendation,
+                    style: TextStyle(
+                      color: context.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -414,22 +531,29 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
     );
   }
 
-  Widget _buildSeverityDot(ConditionSeverity severity) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: _getSeverityColor(severity),
-        boxShadow: [
-          BoxShadow(
-            color: _getSeverityColor(severity).withValues(alpha: 0.4),
-            blurRadius: 6,
+  Widget _buildMiniSectionLabel(
+    BuildContext context,
+    String label,
+    IconData icon,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: context.textSecondary),
+        const SizedBox(width: 4),
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            color: context.textSecondary,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.4,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
+
+  // ─── HELPERS ─────────────────────────────────────────────────
 
   Color _getSeverityColor(ConditionSeverity severity) {
     switch (severity) {
@@ -438,9 +562,22 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
       case ConditionSeverity.significant:
         return Colors.orange;
       case ConditionSeverity.moderate:
-        return Colors.amber;
+        return Colors.amber.shade700;
       case ConditionSeverity.informational:
         return Colors.blue;
+    }
+  }
+
+  String _getSeverityLabel(ConditionSeverity severity) {
+    switch (severity) {
+      case ConditionSeverity.critical:
+        return 'Critical';
+      case ConditionSeverity.significant:
+        return 'Attention Needed';
+      case ConditionSeverity.moderate:
+        return 'Review';
+      case ConditionSeverity.informational:
+        return 'Informational';
     }
   }
 
@@ -451,16 +588,7 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
 
   String _getOverallSeverityLabel() {
     if (_conditions.isEmpty) return 'All Clear';
-    switch (_conditions.first.severity) {
-      case ConditionSeverity.critical:
-        return 'Critical';
-      case ConditionSeverity.significant:
-        return 'Attention Needed';
-      case ConditionSeverity.moderate:
-        return 'Review';
-      case ConditionSeverity.informational:
-        return 'Info';
-    }
+    return _getSeverityLabel(_conditions.first.severity);
   }
 
   IconData _getCategoryIcon(ConditionCategory category) {
@@ -489,13 +617,13 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard> {
       case ConditionCategory.retinal:
         return 'Retinal';
       case ConditionCategory.glaucoma:
-        return 'Glaucoma / IOP';
+        return 'Glaucoma';
       case ConditionCategory.neurological:
-        return 'Neurological';
+        return 'Neuro';
       case ConditionCategory.surface:
-        return 'Surface / Anterior';
+        return 'Surface';
       case ConditionCategory.alignment:
-        return 'Alignment / Binocular';
+        return 'Binocular';
       case ConditionCategory.systemic:
         return 'Systemic';
     }
