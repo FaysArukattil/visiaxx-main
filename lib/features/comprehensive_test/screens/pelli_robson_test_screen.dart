@@ -551,7 +551,9 @@ class _PelliRobsonTestScreenState extends State<PelliRobsonTestScreen>
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         final provider = context.read<TestSessionProvider>();
-        if (provider.isIndividualTest) {
+        if (provider.isMultiTest) {
+          Navigator.pushReplacementNamed(context, provider.getNextTestRoute());
+        } else if (provider.isIndividualTest) {
           Navigator.pushReplacementNamed(context, '/quick-test-result');
         } else {
           Navigator.of(context).pushReplacement(

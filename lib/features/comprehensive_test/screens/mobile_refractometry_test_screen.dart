@@ -814,7 +814,9 @@ class _MobileRefractometryTestScreenState
     );
 
     final prov = context.read<TestSessionProvider>();
-    if (prov.isIndividualTest) {
+    if (prov.isMultiTest) {
+      Navigator.pushReplacementNamed(context, prov.getNextTestRoute());
+    } else if (prov.isIndividualTest) {
       Navigator.pushReplacementNamed(context, '/quick-test-result');
     } else {
       Navigator.of(
