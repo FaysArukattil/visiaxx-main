@@ -1331,7 +1331,7 @@ class SymptomDetectorService {
     if (si?.hasDiabetes == true) {
       out.add(
         const DetectedCondition(
-          name: 'Diabetic Patient - Ocular Screening',
+          name: 'Diabetic Patient Ocular Screening',
           category: ConditionCategory.systemic,
           severity: ConditionSeverity.informational,
           detectedSymptoms: ['Patient has diabetes'],
