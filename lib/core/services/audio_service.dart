@@ -111,10 +111,12 @@ class AudioService {
   void playBrickSmash() => playSFX('sounds/brick_ball/brick_smash.mp3');
   void playPaddleBounce() => playSFX('sounds/brick_ball/paddle_bounce.mp3');
   void playBallMultiply() => playSFX('sounds/brick_ball/ball_multiply.mp3');
-  void playLifeLost() => playSFX('sounds/brick_ball/life_lost.mp3');
-  void playBallOut() => playSFX(
+  void playLifeLost() => playSFX(
     'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3',
-  ); // Subtle pop
+  ); // Subtle light pop
+  void playBallOut() => playSFX(
+    'https://assets.mixkit.co/active_storage/sfx/2431/2431-preview.mp3',
+  ); // Subtle bubble pop
   void playBallSpawn() => playSFX('sounds/brick_ball/ball_spawn.mp3');
 
   // ===== WORD PUZZLE / EYE QUEST SFX =====
@@ -123,8 +125,7 @@ class AudioService {
   void playWordCorrect() => playSFX('sounds/word_puzzle/word_correct.mp3');
   void playWordPartial() => playSFX('sounds/word_puzzle/word_partial.mp3');
   void playKeyDelete() => playSFX('sounds/word_puzzle/key_delete.mp3');
-  void playPuzzleGameOver() =>
-      playSFX('sounds/word_puzzle/puzzle_gameover.mp3');
+  void playPuzzleGameOver() => playSFX('sounds/snake/snake_gameover.mp3');
   void playPuzzleLevelUp() => playSFX('sounds/word_puzzle/puzzle_levelup.mp3');
 
   // ===== OCULAR SNAKE SFX =====
@@ -145,7 +146,7 @@ class AudioService {
   void playClick() => playSFX('sounds/click.mp3');
   void playAction() => playSFX('sounds/hit.mp3');
   void playSuccess() => playSFX('sounds/success.mp3');
-  void playGameOver() => playSFX('sounds/game_over.mp3');
+  void playGameOver() => playSFX('sounds/snake/snake_gameover.mp3');
   void playWelcome() => playSFX('sounds/click.mp3');
 
   // ===== CORE SFX ENGINE =====
@@ -183,6 +184,14 @@ class AudioService {
           });
     } catch (e) {
       debugPrint('[AudioService] SFX sync error (ignored): $e');
+    }
+  }
+
+  void stopAllSFX() {
+    for (var p in _players) {
+      try {
+        p.stop();
+      } catch (_) {}
     }
   }
 

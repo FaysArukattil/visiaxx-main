@@ -23,7 +23,8 @@ class OcularSnakeGameScreen extends StatefulWidget {
 class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
     with WidgetsBindingObserver {
   // Game Configuration
-  static const int _gridSize = 20;
+  static const int _gridSizeX = 20;
+  int _gridSizeY = 20;
   static const Duration _baseSpeed = Duration(milliseconds: 140);
 
   // Input Handling
@@ -133,7 +134,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
     final random = Random();
     Point<int> newFood;
     do {
-      newFood = Point(random.nextInt(_gridSize), random.nextInt(_gridSize));
+      newFood = Point(random.nextInt(_gridSizeX), random.nextInt(_gridSizeY));
     } while (_snake.contains(newFood));
 
     setState(() {
@@ -173,9 +174,9 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
 
       // Check collisions
       if (newHead.x < 0 ||
-          newHead.x >= _gridSize ||
+          newHead.x >= _gridSizeX ||
           newHead.y < 0 ||
-          newHead.y >= _gridSize ||
+          newHead.y >= _gridSizeY ||
           _snake.contains(newHead)) {
         _endGame();
         return;
@@ -208,7 +209,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
       _isPlaying = false;
       _isGameOver = true;
     });
-    AudioService().playSnakeCrash(); // Wall crash + Game over
+    AudioService().playSnakeGameOver(); // Synced game over sound
     _saveProgress();
 
     if (!mounted) return;
@@ -281,7 +282,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
         if (didPop) return;
         if (_isPlaying) {
           _pauseGame();
-        } else if (!_hasGameStarted) {
+        } else if (_isGameOver || !_hasGameStarted) {
           Navigator.pop(context);
         }
       },
@@ -320,7 +321,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: context.scaffoldBackground,
         border: Border(
@@ -331,52 +332,44 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: context.textPrimary,
-              size: 22,
-            ),
-            onPressed: _pauseGame,
-          ),
-          const SizedBox(width: 8),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'MISSION TARGET',
+                  'OCULAR SNAKE',
                   style: TextStyle(
                     color: Colors.greenAccent,
-                    fontSize: 10,
+                    fontSize: 14,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 FittedBox(
                   fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: _targetWord.split('').asMap().entries.map((e) {
                       final isCleared = e.key < _letterIndex;
                       return AnimatedContainer(
                         duration: 300.ms,
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        margin: const EdgeInsets.only(right: 4),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 3,
+                          horizontal: 6,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: isCleared
                               ? Colors.greenAccent.withValues(alpha: 0.1)
                               : context.surface,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: isCleared
                                 ? Colors.greenAccent
                                 : context.dividerColor.withValues(alpha: 0.1),
-                            width: 1.2,
+                            width: 1.5,
                           ),
                         ),
                         child: Text(
@@ -385,7 +378,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                             color: isCleared
                                 ? Colors.greenAccent
                                 : context.textSecondary,
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -396,48 +389,52 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: context.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: context.dividerColor.withValues(alpha: 0.1),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'XP',
-                  style: TextStyle(
-                    color: context.textSecondary,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  '$_score',
-                  style: const TextStyle(
-                    color: Colors.amber,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(width: 16),
+          _buildXPBadge(),
           const SizedBox(width: 12),
           IconButton(
             icon: Icon(
               Icons.pause_circle_filled_rounded,
               color: context.textPrimary,
-              size: 28,
+              size: 32,
             ),
             onPressed: _pauseGame,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildXPBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.amber.shade700, Colors.amber.shade400],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.stars_rounded, color: Colors.white, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            '$_score XP',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ],
       ),
@@ -480,31 +477,25 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
           });
         }
       },
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          _buildBackgroundGrid(),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(
-                    color: context.dividerColor.withValues(alpha: 0.1),
-                    width: 2,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: Stack(children: [_buildGrid()]),
-                ),
-              ),
-            ),
-          ),
-          _buildHelpOverlay(),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double cellSize = constraints.maxWidth / _gridSizeX;
+          final int calculatedY = (constraints.maxHeight / cellSize).floor();
+          if (_gridSizeY != calculatedY && calculatedY > 0) {
+            Future.microtask(() {
+              if (mounted) setState(() => _gridSizeY = calculatedY);
+            });
+          }
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildBackgroundGrid(),
+              ClipRect(child: _buildGrid(cellSize)),
+              _buildHelpOverlay(),
+            ],
+          );
+        },
       ),
     );
   }
@@ -551,164 +542,155 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
     );
   }
 
-  Widget _buildGrid() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double cellSize = constraints.maxWidth / _gridSize;
-        return Stack(
-          children: [
-            // Solid Grid Lines
-            ...List.generate(
-              _gridSize,
-              (i) => Positioned(
-                left: i * cellSize,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  width: 1,
-                  color: context.dividerColor.withValues(alpha: 0.08),
+  Widget _buildGrid(double cellSize) {
+    return Stack(
+      children: [
+        // Grid Lines
+        ...List.generate(
+          _gridSizeX + 1,
+          (i) => Positioned(
+            left: i * cellSize,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 1,
+              color: context.dividerColor.withValues(alpha: 0.15),
+            ),
+          ),
+        ),
+        ...List.generate(
+          _gridSizeY + 1,
+          (i) => Positioned(
+            top: i * cellSize,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 1,
+              color: context.dividerColor.withValues(alpha: 0.15),
+            ),
+          ),
+        ),
+
+        // Pulsing Grid Center for focus (Eye Health)
+        Center(
+              child: Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.greenAccent.withValues(alpha: 0.3),
+                  shape: BoxShape.circle,
                 ),
               ),
-            ),
-            ...List.generate(
-              _gridSize,
-              (i) => Positioned(
-                top: i * cellSize,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 1,
-                  color: context.dividerColor.withValues(alpha: 0.08),
-                ),
-              ),
-            ),
+            )
+            .animate(onPlay: (c) => c.repeat())
+            .scale(
+              begin: const Offset(1, 1),
+              end: const Offset(150, 150),
+              duration: 4.seconds,
+              curve: Curves.easeOutQuart,
+            )
+            .fadeOut(duration: 4.seconds),
 
-            // Pulsing Grid Center for focus (Eye Health)
-            Center(
-                  child: Container(
-                    width: 4,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.greenAccent.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                )
-                .animate(onPlay: (c) => c.repeat())
-                .scale(
-                  begin: const Offset(1, 1),
-                  end: const Offset(150, 150),
-                  duration: 4.seconds,
-                  curve: Curves.easeOutQuart,
-                )
-                .fadeOut(duration: 4.seconds),
-
-            // Letter / Food
-            if (_food != null)
-              Positioned(
-                left: _food!.x * cellSize,
-                top: _food!.y * cellSize,
-                child: Container(
-                  width: cellSize,
-                  height: cellSize,
-                  alignment: Alignment.center,
-                  child:
-                      Container(
-                            decoration: BoxDecoration(
-                              color: Colors.amber,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.amber.withValues(alpha: 0.8),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                ),
-                              ],
+        // Letter / Food
+        if (_food != null)
+          Positioned(
+            left: _food!.x * cellSize,
+            top: _food!.y * cellSize,
+            width: cellSize,
+            height: cellSize,
+            child: OverflowBox(
+              maxWidth: cellSize * 4,
+              maxHeight: cellSize * 4,
+              child:
+                  Text(
+                        _currentLetter,
+                        style: TextStyle(
+                          color: Colors.amber,
+                          fontWeight: FontWeight.w900,
+                          fontSize: cellSize * 1.8,
+                          shadows: [
+                            Shadow(
+                              color: Colors.amber.withValues(alpha: 0.9),
+                              blurRadius: 20,
                             ),
-                            padding: const EdgeInsets.all(4),
-                            child: Center(
-                              child: Text(
-                                _currentLetter,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: cellSize * 0.6,
-                                ),
+                          ],
+                        ),
+                      )
+                      .animate(onPlay: (c) => c.repeat())
+                      .scale(
+                        begin: const Offset(0.9, 0.9),
+                        end: const Offset(1.15, 1.15),
+                        duration: 500.ms,
+                        curve: Curves.easeInOut,
+                      )
+                      .shimmer(
+                        delay: 400.ms,
+                        duration: 2.seconds,
+                        color: Colors.white.withValues(alpha: 0.5),
+                      ),
+            ),
+          ),
+        // Snake
+        ..._snake.asMap().entries.map((e) {
+          final idx = e.key;
+          final p = e.value;
+          final isHead = idx == 0;
+
+          return Positioned(
+            key: ValueKey('snake_$idx'),
+            left: p.x * cellSize,
+            top: p.y * cellSize,
+            child: Padding(
+              padding: const EdgeInsets.all(1.0),
+              child: Container(
+                width: cellSize - 2,
+                height: cellSize - 2,
+                decoration: BoxDecoration(
+                  color: isHead ? context.primary : Colors.greenAccent,
+                  borderRadius: BorderRadius.circular(isHead ? 8 : 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isHead ? context.primary : Colors.greenAccent)
+                          .withValues(alpha: 0.6),
+                      blurRadius: isHead ? 15 : 6,
+                      spreadRadius: isHead ? 1 : 0,
+                    ),
+                  ],
+                ),
+                child: isHead
+                    ? Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: context.isDarkMode
+                                    ? Colors.black
+                                    : Colors.white,
+                                shape: BoxShape.circle,
                               ),
                             ),
-                          )
-                          .animate(onPlay: (c) => c.repeat())
-                          .scale(
-                            begin: const Offset(0.9, 0.9),
-                            end: const Offset(1.15, 1.15),
-                            duration: 400.ms,
-                            curve: Curves.easeInOut,
-                          ),
-                ),
-              ),
-            // Snake
-            ..._snake.asMap().entries.map((e) {
-              final idx = e.key;
-              final p = e.value;
-              final isHead = idx == 0;
-
-              return Positioned(
-                key: ValueKey('snake_$idx'),
-                left: p.x * cellSize,
-                top: p.y * cellSize,
-                child: Padding(
-                  padding: const EdgeInsets.all(1.0),
-                  child: Container(
-                    width: cellSize - 2,
-                    height: cellSize - 2,
-                    decoration: BoxDecoration(
-                      color: isHead ? context.primary : Colors.greenAccent,
-                      borderRadius: BorderRadius.circular(isHead ? 8 : 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isHead ? context.primary : Colors.greenAccent)
-                              .withValues(alpha: 0.6),
-                          blurRadius: isHead ? 15 : 6,
-                          spreadRadius: isHead ? 1 : 0,
-                        ),
-                      ],
-                    ),
-                    child: isHead
-                        ? Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: context.isDarkMode
-                                        ? Colors.black
-                                        : Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: context.isDarkMode
-                                        ? Colors.black
-                                        : Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ],
+                            Container(
+                              width: 4,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: context.isDarkMode
+                                    ? Colors.black
+                                    : Colors.white,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          )
-                        : null,
-                  ),
-                ),
-              );
-            }),
-          ],
-        );
-      },
+                          ],
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 

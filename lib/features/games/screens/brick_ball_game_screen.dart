@@ -167,37 +167,54 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
     }
   }
 
-  void _initBalls() {
+  void _initBalls({bool? onlyColorGreen}) {
     // Professional Mechanic: Balls go UP initially and start at paddle
     double initialSpeed = (2.8 + (_level * 0.2)).clamp(2.8, 5.0);
-    _balls = [
-      _Ball(
-        x: _paddleX + 20,
-        y: _screenHeight - 150,
-        vx: -initialSpeed * 0.8,
-        vy: -initialSpeed,
-        isGreen: true,
-        bricksHitInOneFlight: 0,
-      ),
-    ];
 
-    // Second ball (Red) spawns after 1 second
-    Future.delayed(const Duration(seconds: 1), () {
-      if (_isPlaying && !_disposed && mounted) {
-        setState(() {
-          _balls.add(
-            _Ball(
-              x: _paddleX + _paddleWidth - 40,
-              y: _screenHeight - 150,
-              vx: initialSpeed * 0.8,
-              vy: -initialSpeed,
-              isGreen: false,
-              bricksHitInOneFlight: 0,
-            ),
-          );
-        });
-      }
-    });
+    if (onlyColorGreen == null) {
+      _balls = [
+        _Ball(
+          x: _paddleX + 20,
+          y: _screenHeight - 150,
+          vx: -initialSpeed * 0.8,
+          vy: -initialSpeed,
+          isGreen: true,
+          bricksHitInOneFlight: 0,
+        ),
+      ];
+
+      // Second ball (Red) spawns after 1 second
+      Future.delayed(const Duration(seconds: 1), () {
+        if (_isPlaying && !_disposed && mounted) {
+          setState(() {
+            _balls.add(
+              _Ball(
+                x: _paddleX + _paddleWidth - 40,
+                y: _screenHeight - 150,
+                vx: initialSpeed * 0.8,
+                vy: -initialSpeed,
+                isGreen: false,
+                bricksHitInOneFlight: 0,
+              ),
+            );
+          });
+        }
+      });
+    } else {
+      // Regenerate only the lost color
+      setState(() {
+        _balls.add(
+          _Ball(
+            x: onlyColorGreen ? _paddleX + 20 : _paddleX + _paddleWidth - 40,
+            y: _screenHeight - 150,
+            vx: onlyColorGreen ? -initialSpeed * 0.8 : initialSpeed * 0.8,
+            vy: -initialSpeed,
+            isGreen: onlyColorGreen,
+            bricksHitInOneFlight: 0,
+          ),
+        );
+      });
+    }
   }
 
   void _updateGame() {
@@ -323,28 +340,32 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
       _balls.addAll(ballsToAdd);
 
       bool lifeLost = false;
+      bool soundPlayedThisTick = false;
       for (var ball in ballsToRemove) {
         bool lastOfColor =
             _balls.where((b) => b.isGreen == ball.isGreen).length == 1;
+        _balls.remove(ball);
         if (lastOfColor) {
           lifeLost = true;
-          break;
-        } else {
-          _balls.remove(ball);
+        } else if (_isPlaying && !soundPlayedThisTick) {
           AudioService().playBallOut();
+          soundPlayedThisTick = true;
         }
       }
 
-      if (lifeLost) {
+      if (lifeLost && _isPlaying) {
         _lives--;
         _triggerShake();
         HapticFeedback.heavyImpact();
         if (_lives <= 0) {
-          AudioService().playSnakeGameOver(); // Better for game over
           _gameOver();
         } else {
-          AudioService().playLifeLost();
-          _initBalls();
+          AudioService().playLifeLost(); // Now subtle
+          // Find which color ball is missing and regenerate it
+          bool hasGreen = _balls.any((b) => b.isGreen);
+          bool hasRed = _balls.any((b) => !b.isGreen);
+          if (!hasGreen) _initBalls(onlyColorGreen: true);
+          if (!hasRed) _initBalls(onlyColorGreen: false);
         }
       }
 
@@ -472,11 +493,15 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
   }
 
   void _gameOver() {
+    if (!_isPlaying && _hasGameStarted) return;
     _gameTimer?.cancel();
     if (!mounted) return;
     setState(() {
       _isPlaying = false;
     });
+
+    AudioService().stopAllSFX();
+    AudioService().playSnakeGameOver(); // Synced game over sound
 
     if (!mounted) return;
     showDialog(

@@ -1119,36 +1119,42 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                           height: 1.4,
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _level++;
+                              _initLevel();
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _isWin
+                                ? Colors.green
+                                : context.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            _isWin ? 'NEXT LEVEL' : 'NEXT CONCEPT',
+                            maxLines: 1,
+                            softWrap: false,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _level++;
-                      _initLevel();
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isWin ? Colors.green : context.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 48,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    _isWin ? 'NEXT LEVEL' : 'NEXT CONCEPT',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
                 if (!_isWin)
                   TextButton(
                     onPressed: () => Navigator.pop(context),
@@ -1301,17 +1307,11 @@ class _EyeQuestGameScreenState extends State<EyeQuestGameScreen> {
                         ),
                       ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
                       const SizedBox(height: 12),
-                      TextButton(
+                      IconButton(
                         onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          'Return to Games',
-                          style: TextStyle(
-                            color: context.textTertiary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                        icon: const Icon(Icons.close_rounded),
+                        color: Colors.white70,
+                      ).animate().fadeIn(delay: 800.ms),
                     ],
                   ),
                 ),
