@@ -111,12 +111,8 @@ class AudioService {
   void playBrickSmash() => playSFX('sounds/brick_ball/brick_smash.mp3');
   void playPaddleBounce() => playSFX('sounds/brick_ball/paddle_bounce.mp3');
   void playBallMultiply() => playSFX('sounds/brick_ball/ball_multiply.mp3');
-  void playLifeLost() => playSFX(
-    'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3',
-  ); // Subtle light pop
-  void playBallOut() => playSFX(
-    'https://assets.mixkit.co/active_storage/sfx/2431/2431-preview.mp3',
-  ); // Subtle bubble pop
+  void playLifeLost() => playSFX('sounds/brick_ball/life_lost_subtle.mp3');
+  void playBallOut() => playSFX('sounds/brick_ball/ball_out_subtle.mp3');
   void playBallSpawn() => playSFX('sounds/brick_ball/ball_spawn.mp3');
 
   // ===== WORD PUZZLE / EYE QUEST SFX =====
@@ -130,14 +126,14 @@ class AudioService {
 
   // ===== OCULAR SNAKE SFX =====
 
-  void playSnakeEat() => playSFX('sounds/snake/snake_eat.mp3');
+  void playSnakeEat() => playSFX('sounds/snake/snake_eat_subtle.mp3');
   void playSnakeCrash() => playSFX('sounds/snake/snake_crash.mp3');
   void playSnakeGameOver() => playSFX('sounds/snake/snake_gameover.mp3');
   void playSnakeLevelUp() => playSFX('sounds/snake/snake_levelup.mp3');
 
   // ===== COLOR RUSH SFX =====
 
-  void playCoinCollect() => playSFX('sounds/snake/snake_eat.mp3');
+  void playCoinCollect() => playSFX('sounds/snake/snake_eat_subtle.mp3');
   void playColorSwitch() => playSFX('sounds/click.mp3');
   void playWrongCoin() => playSFX('sounds/brick_ball/life_lost.mp3');
 

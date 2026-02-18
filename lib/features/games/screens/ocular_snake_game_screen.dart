@@ -303,7 +303,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
               ),
 
             // Intro Screen (Before game starts)
-            if (!_hasGameStarted) _buildPremiumIntro(),
+            if (!_hasGameStarted) SafeArea(child: _buildPremiumIntro()),
 
             // Pause Overlay (Blur/Dim)
             if (!_isPlaying && _hasGameStarted && !_isGameOver)
@@ -492,46 +492,9 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
             children: [
               _buildBackgroundGrid(),
               ClipRect(child: _buildGrid(cellSize)),
-              _buildHelpOverlay(),
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildHelpOverlay() {
-    return Positioned(
-      bottom: 40,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: context.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: context.dividerColor.withValues(alpha: 0.05),
-            ),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.swipe_rounded, color: Colors.greenAccent, size: 18),
-              SizedBox(width: 10),
-              Text(
-                'INSTANT SWIPE ENABLED',
-                style: TextStyle(
-                  color: Colors.greenAccent,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -607,7 +570,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                         style: TextStyle(
                           color: Colors.amber,
                           fontWeight: FontWeight.w900,
-                          fontSize: cellSize * 1.8,
+                          fontSize: cellSize * 1.3,
                           shadows: [
                             Shadow(
                               color: Colors.amber.withValues(alpha: 0.9),
