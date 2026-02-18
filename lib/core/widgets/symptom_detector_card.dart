@@ -246,62 +246,79 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard>
   // ─── COMPACT SUMMARY LIST ────────────────────────────────────
 
   Widget _buildSummaryList(BuildContext context) {
-    // Group by severity (critical → informational)
+    // Group by category
     final grouped =
-        <ConditionSeverity, List<MapEntry<int, DetectedCondition>>>{};
+        <ConditionCategory, List<MapEntry<int, DetectedCondition>>>{};
     for (int i = 0; i < _conditions.length; i++) {
       final c = _conditions[i];
-      grouped.putIfAbsent(c.severity, () => []).add(MapEntry(i, c));
+      grouped.putIfAbsent(c.category, () => []).add(MapEntry(i, c));
     }
 
-    // Order: critical, significant, moderate, informational
-    final orderedSeverities = [
-      ConditionSeverity.critical,
-      ConditionSeverity.significant,
-      ConditionSeverity.moderate,
-      ConditionSeverity.informational,
-    ];
+    // Sort categories alphabetically or by importance? (Let's stick to alphabetical for now)
+    final sortedCategories = grouped.keys.toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       child: Column(
-        children: orderedSeverities.where((s) => grouped.containsKey(s)).map((
-          severity,
-        ) {
-          final items = grouped[severity]!;
+        children: sortedCategories.map((category) {
+          final items = grouped[category]!;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Severity group label
+              // Category group label
               Padding(
                 padding: const EdgeInsets.only(bottom: 8, top: 4),
-                child: Row(
-                  children: [
-                    Text(
-                      _getSeverityLabel(severity).toUpperCase(),
-                      style: TextStyle(
-                        color: context.textSecondary.withValues(alpha: 0.7),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                      ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.dividerColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _getCategoryLabel(category).toUpperCase(),
+                    style: TextStyle(
+                      color: context.textSecondary.withValues(alpha: 0.8),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
                     ),
-                    const SizedBox(width: 10),
-                    const Spacer(),
-                  ],
+                  ),
                 ),
               ),
-              // Compact rows for this severity group
+              // Compact rows for this category group
               ...items.map(
                 (entry) =>
                     _buildCompactConditionRow(context, entry.key, entry.value),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
             ],
           );
         }).toList(),
       ),
     );
+  }
+
+  String _getCategoryLabel(ConditionCategory category) {
+    switch (category) {
+      case ConditionCategory.refractive:
+        return 'Refractive & Vision';
+      case ConditionCategory.retinal:
+        return 'Retinal Health';
+      case ConditionCategory.glaucoma:
+        return 'Glaucoma Screening';
+      case ConditionCategory.neurological:
+        return 'Neurological Vision';
+      case ConditionCategory.surface:
+        return 'Ocular Surface';
+      case ConditionCategory.alignment:
+        return 'Muscle & Alignment';
+      case ConditionCategory.systemic:
+        return 'Systemic Health';
+    }
   }
 
   /// A single compact condition row — tap to expand details
@@ -607,25 +624,6 @@ class _SymptomDetectorCardState extends State<SymptomDetectorCard>
         return Icons.swap_horiz;
       case ConditionCategory.systemic:
         return Icons.monitor_heart_outlined;
-    }
-  }
-
-  String _getCategoryLabel(ConditionCategory category) {
-    switch (category) {
-      case ConditionCategory.refractive:
-        return 'Refractive';
-      case ConditionCategory.retinal:
-        return 'Retinal';
-      case ConditionCategory.glaucoma:
-        return 'Glaucoma';
-      case ConditionCategory.neurological:
-        return 'Neuro';
-      case ConditionCategory.surface:
-        return 'Surface';
-      case ConditionCategory.alignment:
-        return 'Binocular';
-      case ConditionCategory.systemic:
-        return 'Systemic';
     }
   }
 }

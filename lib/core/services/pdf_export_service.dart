@@ -3427,12 +3427,12 @@ class PdfExportService {
               return [
                 // Category Header Line
                 pw.TableRow(
-                  decoration: const pw.BoxDecoration(color: PdfColors.grey50),
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey100),
                   children: [
                     pw.Padding(
                       padding: const pw.EdgeInsets.symmetric(
                         horizontal: 4,
-                        vertical: 3,
+                        vertical: 5,
                       ),
                       child: pw.Text(
                         category.name.toUpperCase(),
