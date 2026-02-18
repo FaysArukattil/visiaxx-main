@@ -331,6 +331,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
             child: Column(
@@ -346,7 +347,7 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
                     letterSpacing: 2,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
@@ -390,17 +391,23 @@ class _OcularSnakeGameScreenState extends State<OcularSnakeGameScreen>
             ),
           ),
           const SizedBox(width: 16),
-          _buildXPBadge(),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: _buildXPBadge(),
+          ),
           const SizedBox(width: 12),
-          IconButton(
-            icon: Icon(
-              Icons.pause_circle_filled_rounded,
-              color: context.textPrimary,
-              size: 32,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: IconButton(
+              icon: Icon(
+                Icons.pause_circle_filled_rounded,
+                color: context.textPrimary,
+                size: 32,
+              ),
+              onPressed: _pauseGame,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
-            onPressed: _pauseGame,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
           ),
         ],
       ),

@@ -347,7 +347,7 @@ class _BrickAndBallGameScreenState extends State<BrickAndBallGameScreen>
         _balls.remove(ball);
         if (lastOfColor) {
           lifeLost = true;
-        } else if (_isPlaying && !soundPlayedThisTick) {
+        } else if (_isPlaying && !soundPlayedThisTick && !lifeLost) {
           AudioService().playBallOut();
           soundPlayedThisTick = true;
         }
