@@ -115,36 +115,27 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (_cachedUser != null) {
       debugPrint(
-        '[SplashScreen] ✅ Cache found: ${_cachedUser!.fullName}. Navigating home IMMEDIATELY.',
+        '[SplashScreen] ✅ Cache found: ${_cachedUser!.fullName}. Stabilizing auth...',
       );
 
-      // FIRE-AND-FORGET: Start auth stabilization in background
-      unawaited(
-        _authService.getInitialUser().then((user) {
-          if (user != null) {
-            debugPrint(
-              '[SplashScreen] 🛡️ Background auth confirmed user: ${user.uid}',
-            );
-            // Ensure session monitoring is running
-            SessionMonitorService().startMonitoring(
-              _cachedUser!.identityString,
-              context,
-              isPractitioner: _cachedUser!.role == UserRole.examiner,
-            );
-          } else {
-            debugPrint(
-              '[SplashScreen] ⚠️ Background auth found NO user. Session monitoring will handle fallback.',
-            );
-          }
-        }),
-      );
+      // STEP 1: Wait for Firebase Auth to restore session (same as manual login's signInWithEmail)
+      final firebaseUser = await _authService.getInitialUser();
 
-      // Navigate immediately while background check runs
-      if (mounted)
-        await NavigationUtils.navigateHome(
-          context,
-          preFetchedRole: _cachedUser!.role,
+      if (firebaseUser == null) {
+        debugPrint(
+          '[SplashScreen] 🚫 Firebase Auth failed to confirm session. Clearing cache.',
         );
+        await LocalStorageService().clearUserData();
+        if (mounted) Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      debugPrint(
+        '[SplashScreen] ✅ Firebase Auth confirmed: ${firebaseUser.uid}. Replicating session flow...',
+      );
+
+      // STEP 2: Replicate Manual Login Session Flow
+      await _initializeSessionAndNavigate(_cachedUser!);
       return;
     }
 
@@ -176,21 +167,81 @@ class _SplashScreenState extends State<SplashScreen>
         return;
       }
 
-      // Start monitoring
-      if (mounted) {
-        SessionMonitorService().startMonitoring(
-          user.identityString,
-          context,
-          isPractitioner: user.role == UserRole.examiner,
-        );
-      }
-
-      debugPrint('[SplashScreen] Navigating home with new session.');
-      if (mounted)
-        await NavigationUtils.navigateHome(context, preFetchedRole: user.role);
+      // Replicate Manual Login Session Flow
+      await _initializeSessionAndNavigate(user);
     } else {
       debugPrint('[SplashScreen] 🚫 No user logged in. Redirecting to login.');
       if (mounted) Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  /// Replicates the session logic from loginscreen.dart._handleLogin
+  Future<void> _initializeSessionAndNavigate(UserModel user) async {
+    final sessionService = SessionMonitorService();
+    final isPractitioner = user.role == UserRole.examiner;
+    final identityString = user.identityString;
+
+    // 1. Session check (blocks regular users if active elsewhere)
+    if (!isPractitioner) {
+      debugPrint(
+        '[SplashScreen] Checking existing session for regular user...',
+      );
+      final checkResult = await sessionService.checkExistingSession(
+        identityString,
+      );
+
+      if (checkResult.exists &&
+          checkResult.isOnline &&
+          !checkResult.isOurSession) {
+        debugPrint(
+          '[SplashScreen] 🚫 Active session elsewhere. Blocking auto-login.',
+        );
+        await _authService.signOut();
+        await LocalStorageService().clearUserData();
+        if (mounted) Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+    }
+
+    // 2. Create session (with timeout mirroring loginscreen.dart)
+    debugPrint('[SplashScreen] Registering device session...');
+    final creationFuture = sessionService.createSession(
+      user.id,
+      identityString,
+      isPractitioner: isPractitioner,
+    );
+
+    final creationResult = await creationFuture.timeout(
+      const Duration(seconds: 2),
+      onTimeout: () {
+        debugPrint('[SplashScreen] Session creation timed out, proceeding...');
+        return SessionCreationResult(sessionId: 'pending');
+      },
+    );
+
+    if (creationResult.error != null) {
+      debugPrint(
+        '[SplashScreen] ❌ Session creation failed: ${creationResult.error}',
+      );
+      await _authService.signOut();
+      await LocalStorageService().clearUserData();
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
+    // 3. Start monitoring
+    if (mounted) {
+      sessionService.startMonitoring(
+        identityString,
+        context,
+        isPractitioner: isPractitioner,
+      );
+    }
+
+    // 4. Final navigation
+    debugPrint('[SplashScreen] Navigating home with active session parity.');
+    if (mounted) {
+      await NavigationUtils.navigateHome(context, preFetchedRole: user.role);
     }
   }
 
