@@ -3,12 +3,12 @@ import '../../../core/constants/app_status.dart';
 import '../../../core/extensions/theme_extension.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/utils/navigation_utils.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 /// Professional eye care splash screen with elegant animations
 class SplashScreen extends StatefulWidget {
@@ -36,10 +36,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _setupAnimations() {
-    // Faster logo animation
     _logoController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000), // Reduced from 1600
+      duration: const Duration(milliseconds: 1000),
     );
 
     _logoFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -69,25 +68,19 @@ class _SplashScreenState extends State<SplashScreen>
 
     _logoController.forward();
 
-    // KEY FIX: Start auth check in parallel with animation - NO pre-delay
+    // Start auth check in parallel with animation - NO pre-delay
     final authFuture = _checkAuthAndNavigate();
 
     // Minimum splash display time
     await Future.delayed(const Duration(milliseconds: 1000));
 
-    // Add a timeout to the auth check to prevent getting stuck
     try {
       await authFuture.timeout(
         const Duration(seconds: 15),
         onTimeout: () async {
           debugPrint('[SplashScreen] ⚠️ Auth check timed out.');
           if (mounted) {
-            // If Firebase says we ARE logged in, try to go home anyway instead of forcing login
-            if (_authService.isLoggedIn) {
-              debugPrint(
-                '[SplashScreen] Still logged in via Firebase, attempting Home.',
-              );
-              // Use cached user role if available to speed up fallback
+            if (_cachedUser != null) {
               await NavigationUtils.navigateHome(
                 context,
                 preFetchedRole: _cachedUser?.role,
@@ -99,9 +92,7 @@ class _SplashScreenState extends State<SplashScreen>
         },
       );
     } catch (e) {
-      debugPrint(
-        '[SplashScreen] Error during auth check: $e. Navigating to Login.',
-      );
+      debugPrint('[SplashScreen] Error during auth check: $e');
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/login');
       }
@@ -118,104 +109,98 @@ class _SplashScreenState extends State<SplashScreen>
       debugPrint(
         '[SplashScreen] ✅ Cache found: ${_cachedUser!.fullName}. Skipping Firebase wait.',
       );
-
-      // STEP 1: Skip Firebase Auth wait - go directly to session init
-      // Firebase will restore token in background; we don't wait for it here.
       await _initializeSessionAndNavigate(_cachedUser!);
       return;
     }
 
-    // NO CACHE: Must wait for Firebase (this is a first-time or logged-out start)
-    debugPrint(
-      '[SplashScreen] 🔍 No cache found. Waiting for Firebase Auth...',
-    );
-    User? initialUser = await _authService.getInitialUser();
+    // No cache: wait for Firebase (first launch or logged out)
+    debugPrint('[SplashScreen] 🔍 No cache. Waiting for Firebase Auth...');
+    final initialUser = await _authService.getInitialUser();
 
-    if (initialUser != null) {
-      final userId = initialUser.uid;
-      debugPrint('[SplashScreen] ✅ User logged in via Firebase: $userId');
-
-      // Fetch profile from network since we have no cache
-      UserModel? user;
-      try {
-        user = await _authService
-            .getUserData(userId)
-            .timeout(const Duration(seconds: 10));
-      } catch (e) {
-        debugPrint('[SplashScreen] ⚠️ Failed to fetch user data: $e');
-      }
-
-      if (user == null) {
-        debugPrint(
-          '[SplashScreen] 🚨 No profile found even with valid auth. Redirecting to login.',
-        );
-        if (mounted) Navigator.pushReplacementNamed(context, '/login');
-        return;
-      }
-
-      // Replicate Manual Login Session Flow
-      await _initializeSessionAndNavigate(user);
-    } else {
-      debugPrint('[SplashScreen] 🚫 No user logged in. Redirecting to login.');
+    if (initialUser == null) {
+      debugPrint('[SplashScreen] 🚫 No user logged in. Going to login.');
       if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      return;
     }
+
+    debugPrint('[SplashScreen] ✅ Firebase user: ${initialUser.uid}');
+
+    UserModel? user;
+    try {
+      user = await _authService
+          .getUserData(initialUser.uid)
+          .timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('[SplashScreen] ⚠️ Failed to fetch user data: $e');
+    }
+
+    if (user == null) {
+      debugPrint('[SplashScreen] 🚨 No profile found. Going to login.');
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
+    await _initializeSessionAndNavigate(user);
   }
 
-  /// Replicates the session logic from loginscreen.dart._handleLogin
   Future<void> _initializeSessionAndNavigate(UserModel user) async {
     final sessionService = SessionMonitorService();
     final isPractitioner = user.role == UserRole.examiner;
     final identityString = user.identityString;
 
-    // 1. Session check (blocks regular users if active elsewhere)
+    // Initialize service to load stored session ID
+    debugPrint('[SplashScreen] Starting session check...');
+
+    // Check for conflicts (regular users only)
     if (!isPractitioner) {
-      debugPrint(
-        '[SplashScreen] Checking existing session for regular user...',
-      );
+      debugPrint('[SplashScreen] Checking session conflict...');
       final checkResult = await sessionService.checkExistingSession(
         identityString,
+      );
+      debugPrint(
+        '[SplashScreen] Check: exists=${checkResult.exists} ours=${checkResult.isOurSession} online=${checkResult.isOnline}',
       );
 
       if (checkResult.exists &&
           checkResult.isOnline &&
           !checkResult.isOurSession) {
-        debugPrint(
-          '[SplashScreen] 🚫 Active session elsewhere. Blocking auto-login.',
-        );
-        // DO NOT call _authService.signOut() - it clears Firebase token permanently
+        debugPrint('[SplashScreen] 🚫 Conflict detected. Going to login.');
         await LocalStorageService().clearUserData();
         if (mounted) Navigator.pushReplacementNamed(context, '/login');
         return;
       }
     }
 
-    // 2. Create session (with timeout mirroring loginscreen.dart)
-    debugPrint('[SplashScreen] Registering device session...');
-    final creationFuture = sessionService.createSession(
-      user.id,
-      identityString,
-      isPractitioner: isPractitioner,
-    );
+    // Wait for Firebase Auth token to restore before hitting database
+    if (FirebaseAuth.instance.currentUser == null) {
+      debugPrint(
+        '[SplashScreen] ⏳ Waiting for Firebase Auth token to restore...',
+      );
+      await Future.delayed(const Duration(milliseconds: 2000));
+    }
 
-    final creationResult = await creationFuture.timeout(
-      const Duration(seconds: 2),
-      onTimeout: () {
-        debugPrint('[SplashScreen] Session creation timed out, proceeding...');
-        return SessionCreationResult(sessionId: 'pending');
-      },
-    );
+    // Create session
+    debugPrint('[SplashScreen] Creating session...');
+    final creationResult = await sessionService
+        .createSession(user.id, identityString, isPractitioner: isPractitioner)
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            debugPrint(
+              '[SplashScreen] Session creation timed out, proceeding...',
+            );
+            return SessionCreationResult(sessionId: 'pending');
+          },
+        );
 
     if (creationResult.error != null) {
       debugPrint(
-        '[SplashScreen] ❌ Session creation failed: ${creationResult.error}',
+        '[SplashScreen] ⚠️ Session creation error: ${creationResult.error}. Proceeding anyway.',
       );
-      // DO NOT call _authService.signOut()
-      await LocalStorageService().clearUserData();
-      if (mounted) Navigator.pushReplacementNamed(context, '/login');
-      return;
+      // Do NOT block home navigation for session errors - auth is valid
     }
 
-    // 3. Start monitoring
+    // Start monitoring
     if (mounted) {
       sessionService.startMonitoring(
         identityString,
@@ -224,8 +209,8 @@ class _SplashScreenState extends State<SplashScreen>
       );
     }
 
-    // 4. Final navigation
-    debugPrint('[SplashScreen] Navigating home with active session parity.');
+    // Navigate home with full data
+    debugPrint('[SplashScreen] 🏠 Navigating home...');
     if (mounted) {
       await NavigationUtils.navigateHome(context, preFetchedRole: user.role);
     }
@@ -258,8 +243,6 @@ class _SplashScreenState extends State<SplashScreen>
           child: OrientationBuilder(
             builder: (context, orientation) {
               final isLandscape = orientation == Orientation.landscape;
-
-              // Unified layout for both orientations, but with specific adjustments
               return Stack(
                 children: [
                   // Centered logo
