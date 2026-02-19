@@ -187,6 +187,12 @@ class SessionMonitorService with WidgetsBindingObserver {
       final Map<dynamic, dynamic> sessionsMap =
           snapshot.value as Map<dynamic, dynamic>;
 
+      // NEW: Early exit for empty sessions map
+      if (sessionsMap.isEmpty) {
+        debugPrint('[SessionMonitor] Sessions map is empty - safe');
+        return SessionCheckResult(exists: false, isOurSession: false);
+      }
+
       SessionData? conflictingSession;
       bool hasActiveOtherSession = false;
 
@@ -213,13 +219,23 @@ class SessionMonitorService with WidgetsBindingObserver {
       }
       final storedSessionId = _currentSessionId;
 
-      sessionsMap.forEach((key, value) {
-        final sessionData = SessionData.fromMap(value as Map<dynamic, dynamic>);
+      // NEW: Early exit if our own session ID exists in the map
+      if (storedSessionId != null && sessionsMap.containsKey(storedSessionId)) {
+        debugPrint('[SessionMonitor] Our session ID found in DB keys - safe');
+        return SessionCheckResult(exists: true, isOurSession: true);
+      }
+
+      // NEW: Use for-loop instead of forEach for proper break/continue
+      for (final entry in sessionsMap.entries) {
+        final sessionData = SessionData.fromMap(
+          entry.value as Map<dynamic, dynamic>,
+        );
 
         // Ownership Check
         if (storedSessionId != null &&
             sessionData.sessionId == storedSessionId) {
-          return;
+          debugPrint('[SessionMonitor] Our session ID found in data - safe');
+          return SessionCheckResult(exists: true, isOurSession: true);
         }
 
         // Online Check
@@ -232,10 +248,14 @@ class SessionMonitorService with WidgetsBindingObserver {
         if (isActuallyOnline) {
           hasActiveOtherSession = true;
           conflictingSession = sessionData;
+          break; // Found an active foreign session, no need to check further
         }
-      });
+      }
 
       if (hasActiveOtherSession) {
+        debugPrint(
+          '[SessionMonitor] 🚫 Conflict: foreign active session found',
+        );
         return SessionCheckResult(
           exists: true,
           isOurSession: false,
@@ -356,11 +376,13 @@ class SessionMonitorService with WidgetsBindingObserver {
 
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      sessionsMap.forEach((key, value) {
-        if (conflictDetected) return;
+      // NEW: Use for-loop instead of forEach for proper break
+      for (final entry in sessionsMap.entries) {
+        final sessionData = SessionData.fromMap(
+          entry.value as Map<dynamic, dynamic>,
+        );
 
-        final sessionData = SessionData.fromMap(value as Map<dynamic, dynamic>);
-        if (sessionData.sessionId == _currentSessionId) return;
+        if (sessionData.sessionId == _currentSessionId) continue;
 
         final bool isKilled = sessionData.lastActiveMillis == -1;
         final bool isTimedOut =
@@ -370,15 +392,16 @@ class SessionMonitorService with WidgetsBindingObserver {
           // This session is active and NOT ours. For non-practitioners, this is a conflict.
           conflictDetected = true;
           conflictingSession = sessionData;
+          break; // Found a conflict, stop checking
         }
-      });
+      }
 
       if (conflictDetected && conflictingSession != null) {
         debugPrint(
           '[SessionMonitor] âš  Session conflict detected for regular user!',
         );
         if (!context.mounted) return;
-        await _handleSessionConflict(context, conflictingSession!);
+        await _handleSessionConflict(context, conflictingSession);
       }
     } catch (e) {
       debugPrint('[SessionMonitor] âš  Error handling session change: $e');

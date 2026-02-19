@@ -65,19 +65,20 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _startAnimationSequence() async {
-    // Reduced initial delay
-    await Future.delayed(const Duration(milliseconds: 200)); // Reduced from 500
     if (!mounted) return;
 
     _logoController.forward();
 
-    // 2. Reduced total time
-    await Future.delayed(const Duration(milliseconds: 1500));
+    // KEY FIX: Start auth check in parallel with animation - NO pre-delay
+    final authFuture = _checkAuthAndNavigate();
+
+    // Minimum splash display time
+    await Future.delayed(const Duration(milliseconds: 1000));
 
     // Add a timeout to the auth check to prevent getting stuck
     try {
-      await _checkAuthAndNavigate().timeout(
-        const Duration(seconds: 15), // Increased from 5s
+      await authFuture.timeout(
+        const Duration(seconds: 15),
         onTimeout: () async {
           debugPrint('[SplashScreen] ⚠️ Auth check timed out.');
           if (mounted) {
@@ -99,7 +100,7 @@ class _SplashScreenState extends State<SplashScreen>
       );
     } catch (e) {
       debugPrint(
-        '[SplashScreen] Œ Error during auth check: $e. Navigating to Login.',
+        '[SplashScreen] Error during auth check: $e. Navigating to Login.',
       );
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/login');
@@ -115,26 +116,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (_cachedUser != null) {
       debugPrint(
-        '[SplashScreen] ✅ Cache found: ${_cachedUser!.fullName}. Stabilizing auth...',
+        '[SplashScreen] ✅ Cache found: ${_cachedUser!.fullName}. Skipping Firebase wait.',
       );
 
-      // STEP 1: Wait for Firebase Auth to restore session (same as manual login's signInWithEmail)
-      final firebaseUser = await _authService.getInitialUser();
-
-      if (firebaseUser == null) {
-        debugPrint(
-          '[SplashScreen] 🚫 Firebase Auth failed to confirm session. Clearing cache.',
-        );
-        await LocalStorageService().clearUserData();
-        if (mounted) Navigator.pushReplacementNamed(context, '/login');
-        return;
-      }
-
-      debugPrint(
-        '[SplashScreen] ✅ Firebase Auth confirmed: ${firebaseUser.uid}. Replicating session flow...',
-      );
-
-      // STEP 2: Replicate Manual Login Session Flow
+      // STEP 1: Skip Firebase Auth wait - go directly to session init
+      // Firebase will restore token in background; we don't wait for it here.
       await _initializeSessionAndNavigate(_cachedUser!);
       return;
     }
@@ -196,7 +182,7 @@ class _SplashScreenState extends State<SplashScreen>
         debugPrint(
           '[SplashScreen] 🚫 Active session elsewhere. Blocking auto-login.',
         );
-        await _authService.signOut();
+        // DO NOT call _authService.signOut() - it clears Firebase token permanently
         await LocalStorageService().clearUserData();
         if (mounted) Navigator.pushReplacementNamed(context, '/login');
         return;
@@ -223,7 +209,7 @@ class _SplashScreenState extends State<SplashScreen>
       debugPrint(
         '[SplashScreen] ❌ Session creation failed: ${creationResult.error}',
       );
-      await _authService.signOut();
+      // DO NOT call _authService.signOut()
       await LocalStorageService().clearUserData();
       if (mounted) Navigator.pushReplacementNamed(context, '/login');
       return;
