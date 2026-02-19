@@ -1,6 +1,7 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
@@ -64,13 +65,6 @@ class SessionMonitorService with WidgetsBindingObserver {
   BuildContext? _currentContext;
   StreamSubscription<DatabaseEvent>? _connectionSubscription;
 
-  // Use WebOptions for web compatibility
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
-    webOptions: WebOptions(
-      dbName: 'visiaxx_secure_v2',
-      publicKey: 'visiaxx_public_v2',
-    ),
-  );
   final FirebaseDatabase _database = FirebaseDatabase.instance;
 
   static const String _sessionIdKey = 'visiaxx_session_id';
@@ -152,15 +146,21 @@ class SessionMonitorService with WidgetsBindingObserver {
         }),
       );
 
-      // Store session info locally
-      await _secureStorage.write(key: _sessionIdKey, value: sessionId);
-      await _secureStorage.write(key: _userIdKey, value: userId);
-      await _secureStorage.write(
-        key: _identityStringKey,
-        value: identityString,
-      );
+      // Store session info locally - Using SharedPreferences for better reliability on reboot
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_sessionIdKey, sessionId);
+      await prefs.setString(_userIdKey, userId);
+      await prefs.setString(_identityStringKey, identityString);
 
+      // CRITICAL: Update in-memory ID immediately
       _currentSessionId = sessionId;
+
+      // Double-verify local storage to prevent race condition on instant restart
+      final verifyId = prefs.getString(_sessionIdKey);
+      if (verifyId != sessionId) {
+        debugPrint('[SessionMonitor] 🚨 RE-WRITING SESSION ID to storage...');
+        await prefs.setString(_sessionIdKey, sessionId);
+      }
 
       debugPrint(
         '[SessionMonitor] â€¦ Session created: $sessionId under $identityString',
@@ -191,7 +191,27 @@ class SessionMonitorService with WidgetsBindingObserver {
       bool hasActiveOtherSession = false;
 
       final now = DateTime.now().millisecondsSinceEpoch;
-      final storedSessionId = await _secureStorage.read(key: _sessionIdKey);
+
+      // Eagerly load or use existing session ID
+      if (_currentSessionId == null) {
+        final prefs = await SharedPreferences.getInstance();
+        _currentSessionId = prefs.getString(_sessionIdKey);
+
+        // MIGRATION: Try to read from SecureStorage if Prefs is empty (first run after migration)
+        if (_currentSessionId == null) {
+          try {
+            const secure = FlutterSecureStorage();
+            _currentSessionId = await secure.read(key: _sessionIdKey);
+            if (_currentSessionId != null) {
+              await prefs.setString(_sessionIdKey, _currentSessionId!);
+              debugPrint(
+                '[SessionMonitor] Migrated sessionId from SecureStorage',
+              );
+            }
+          } catch (_) {}
+        }
+      }
+      final storedSessionId = _currentSessionId;
 
       sessionsMap.forEach((key, value) {
         final sessionData = SessionData.fromMap(value as Map<dynamic, dynamic>);
@@ -284,7 +304,10 @@ class SessionMonitorService with WidgetsBindingObserver {
     String identityString,
     bool online,
   ) async {
-    _currentSessionId ??= await _secureStorage.read(key: _sessionIdKey);
+    if (_currentSessionId == null) {
+      final prefs = await SharedPreferences.getInstance();
+      _currentSessionId = prefs.getString(_sessionIdKey);
+    }
     if (_currentSessionId == null) return;
 
     final sessionRef = _database.ref(
@@ -316,7 +339,10 @@ class SessionMonitorService with WidgetsBindingObserver {
       final Map<dynamic, dynamic> sessionsMap =
           event.snapshot.value as Map<dynamic, dynamic>;
 
-      _currentSessionId ??= await _secureStorage.read(key: _sessionIdKey);
+      if (_currentSessionId == null) {
+        final prefs = await SharedPreferences.getInstance();
+        _currentSessionId = prefs.getString(_sessionIdKey);
+      }
       if (_currentSessionId == null) return;
 
       // Check for cached practitioner status
@@ -449,8 +475,13 @@ class SessionMonitorService with WidgetsBindingObserver {
         return;
       }
 
-      _currentSessionId ??= await _secureStorage.read(key: _sessionIdKey);
-      String? identity = await _secureStorage.read(key: _identityStringKey);
+      if (_currentSessionId == null) {
+        final prefs = await SharedPreferences.getInstance();
+        _currentSessionId = prefs.getString(_sessionIdKey);
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      String? identity = prefs.getString(_identityStringKey);
 
       if (identity != null && _currentSessionId != null) {
         debugPrint(
@@ -475,8 +506,9 @@ class SessionMonitorService with WidgetsBindingObserver {
   /// Clear local session storage
   Future<void> _clearLocalSession() async {
     try {
-      await _secureStorage.delete(key: _sessionIdKey);
-      await _secureStorage.delete(key: _userIdKey);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_sessionIdKey);
+      await prefs.remove(_userIdKey);
       _currentSessionId = null;
     } catch (e) {
       debugPrint('[SessionMonitor] âš  Failed to clear local session: $e');
@@ -505,7 +537,8 @@ class SessionMonitorService with WidgetsBindingObserver {
 
   /// Proactively verify current session (used on resume/reconnect)
   Future<void> _verifyCurrentSession() async {
-    String? identity = await _secureStorage.read(key: _identityStringKey);
+    final prefs = await SharedPreferences.getInstance();
+    String? identity = prefs.getString(_identityStringKey);
     if (identity == null) return;
 
     // If we're a practitioner, we don't care about other sessions
@@ -545,8 +578,11 @@ class SessionMonitorService with WidgetsBindingObserver {
 
   /// Update last active timestamp
   Future<void> updateLastActive() async {
-    String? identity = await _secureStorage.read(key: _identityStringKey);
-    _currentSessionId ??= await _secureStorage.read(key: _sessionIdKey);
+    final prefs = await SharedPreferences.getInstance();
+    String? identity = prefs.getString(_identityStringKey);
+    if (_currentSessionId == null) {
+      _currentSessionId = prefs.getString(_sessionIdKey);
+    }
     if (identity == null || _currentSessionId == null) return;
 
     try {

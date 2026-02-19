@@ -97,9 +97,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // OPTIMIZATION: Navigate immediately while session creates in background
         // Wait just a tiny bit for initial session write
+        // OPTIMIZATION: Wait a bit longer for session creation to ensure storage persistence
+        // We need to be sure the session ID is written before the app is closed/reopened
         final creationResult = await creationFuture.timeout(
-          const Duration(milliseconds: 500),
-          onTimeout: () => SessionCreationResult(sessionId: 'pending'),
+          const Duration(seconds: 2), // Increased from 500ms
+          onTimeout: () {
+            debugPrint('[Login] Session creation timed out but proceeding...');
+            return SessionCreationResult(sessionId: 'pending');
+          },
         );
 
         // Only block if definite failure

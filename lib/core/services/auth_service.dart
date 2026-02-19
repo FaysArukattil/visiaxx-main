@@ -29,6 +29,26 @@ class AuthService {
   /// Check if user is logged in
   bool get isLoggedIn => _auth.currentUser != null;
 
+  /// Wait for the first valid auth state (to handle cold starts)
+  /// Returns the current user or null if definitely not logged in
+  Future<User?> getInitialUser() async {
+    debugPrint('[AuthService] ⏳ Stabilizing auth state (3s max)...');
+
+    // Polling loop: check every 500ms for up to 3 seconds
+    // This handles cases where Firebase restores the session AFTER the first null emission
+    for (int i = 0; i < 6; i++) {
+      final user = _auth.currentUser;
+      if (user != null) {
+        debugPrint('[AuthService] ✅ Auth stabilized: ${user.uid}');
+        return user;
+      }
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+
+    debugPrint('[AuthService] ⚠️ Auth stabilization timed out.');
+    return _auth.currentUser;
+  }
+
   /// Sign in with email and password
   /// OPTIMIZED: Uses cache-first reads and defers non-critical updates
   Future<AuthResult> signInWithEmail({
@@ -58,8 +78,8 @@ class AuthService {
                 .doc(uid)
                 .get(const GetOptions(source: Source.serverAndCache))
                 .timeout(
-                  const Duration(seconds: 15),
-                ); // Increased for first-run
+                  const Duration(seconds: 30),
+                ); // Increased for better resiliency on slow networks
 
             if (lookupDoc.exists && lookupDoc.data() != null) {
               collection = lookupDoc.data()!['collection'] as String?;
@@ -88,13 +108,13 @@ class AuthService {
                 .collection(collection)
                 .doc(identityString)
                 .get(const GetOptions(source: Source.serverAndCache))
-                .timeout(const Duration(seconds: 15));
+                .timeout(const Duration(seconds: 30));
 
             if (userDoc.exists && userDoc.data() != null) {
               userModel = UserModel.fromMap(userDoc.data()!, userDoc.id);
 
-              // Refresh cache in background
-              unawaited(LocalStorageService().saveUserProfile(userModel));
+              // Refresh cache - Ensure persisted before proceeding
+              await LocalStorageService().saveUserProfile(userModel);
 
               // Fire-and-forget server updates (no await)
               unawaited(
@@ -449,7 +469,7 @@ class AuthService {
           .doc(uid)
           .get(const GetOptions(source: Source.serverAndCache))
           .timeout(
-            const Duration(seconds: 15),
+            const Duration(seconds: 30),
             onTimeout: () =>
                 throw TimeoutException('Background lookup timed out'),
           );

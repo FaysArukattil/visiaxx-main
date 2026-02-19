@@ -1,5 +1,5 @@
 ﻿import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_status.dart';
 import '../../../core/extensions/theme_extension.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'dart:async';
@@ -8,7 +8,7 @@ import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/utils/navigation_utils.dart';
-import '../../../core/constants/app_status.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Professional eye care splash screen with elegant animations
 class SplashScreen extends StatefulWidget {
@@ -25,6 +25,7 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _logoScaleAnimation;
   late Animation<double> _textFadeAnimation;
   final _authService = AuthService();
+  UserModel? _cachedUser;
 
   @override
   void initState() {
@@ -76,13 +77,23 @@ class _SplashScreenState extends State<SplashScreen>
     // Add a timeout to the auth check to prevent getting stuck
     try {
       await _checkAuthAndNavigate().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          debugPrint(
-            '[SplashScreen] ±ï¸ Auth check timed out. Navigating to Login.',
-          );
+        const Duration(seconds: 15), // Increased from 5s
+        onTimeout: () async {
+          debugPrint('[SplashScreen] ⚠️ Auth check timed out.');
           if (mounted) {
-            Navigator.pushReplacementNamed(context, '/login');
+            // If Firebase says we ARE logged in, try to go home anyway instead of forcing login
+            if (_authService.isLoggedIn) {
+              debugPrint(
+                '[SplashScreen] Still logged in via Firebase, attempting Home.',
+              );
+              // Use cached user role if available to speed up fallback
+              await NavigationUtils.navigateHome(
+                context,
+                preFetchedRole: _cachedUser?.role,
+              );
+            } else {
+              Navigator.pushReplacementNamed(context, '/login');
+            }
           }
         },
       );
@@ -99,125 +110,87 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _checkAuthAndNavigate() async {
     if (!mounted) return;
 
-    if (_authService.isLoggedIn) {
-      final userId = _authService.currentUserId;
-      if (userId == null) {
-        Navigator.pushReplacementNamed(context, '/login');
-        return;
+    debugPrint('[SplashScreen] 🚀 Starting Cache-First Auth Check...');
+    _cachedUser = await LocalStorageService().getUserProfile();
+
+    if (_cachedUser != null) {
+      debugPrint(
+        '[SplashScreen] ✅ Cache found: ${_cachedUser!.fullName}. Navigating home IMMEDIATELY.',
+      );
+
+      // FIRE-AND-FORGET: Start auth stabilization in background
+      unawaited(
+        _authService.getInitialUser().then((user) {
+          if (user != null) {
+            debugPrint(
+              '[SplashScreen] 🛡️ Background auth confirmed user: ${user.uid}',
+            );
+            // Ensure session monitoring is running
+            SessionMonitorService().startMonitoring(
+              _cachedUser!.identityString,
+              context,
+              isPractitioner: _cachedUser!.role == UserRole.examiner,
+            );
+          } else {
+            debugPrint(
+              '[SplashScreen] ⚠️ Background auth found NO user. Session monitoring will handle fallback.',
+            );
+          }
+        }),
+      );
+
+      // Navigate immediately while background check runs
+      if (mounted)
+        await NavigationUtils.navigateHome(
+          context,
+          preFetchedRole: _cachedUser!.role,
+        );
+      return;
+    }
+
+    // NO CACHE: Must wait for Firebase (this is a first-time or logged-out start)
+    debugPrint(
+      '[SplashScreen] 🔍 No cache found. Waiting for Firebase Auth...',
+    );
+    User? initialUser = await _authService.getInitialUser();
+
+    if (initialUser != null) {
+      final userId = initialUser.uid;
+      debugPrint('[SplashScreen] ✅ User logged in via Firebase: $userId');
+
+      // Fetch profile from network since we have no cache
+      UserModel? user;
+      try {
+        user = await _authService
+            .getUserData(userId)
+            .timeout(const Duration(seconds: 10));
+      } catch (e) {
+        debugPrint('[SplashScreen] ⚠️ Failed to fetch user data: $e');
       }
 
-      // OPTIMIZATION: Try local cache first for instant UI
-      UserModel? user = await LocalStorageService().getUserProfile();
-
-      // Verify cached user matches current auth
-      if (user != null && user.id != userId) {
-        user = null; // Cache is stale
-      }
-
-      // OPTIMIZATION: If no valid cache, fetch from network with timeout
       if (user == null) {
-        try {
-          user = await _authService
-              .getUserData(userId)
-              .timeout(const Duration(seconds: 2));
-        } catch (e) {
-          debugPrint('[SplashScreen] ⚠️ Failed to fetch user data: $e');
-        }
-      }
-
-      if (user == null) {
+        debugPrint(
+          '[SplashScreen] 🚨 No profile found even with valid auth. Redirecting to login.',
+        );
         if (mounted) Navigator.pushReplacementNamed(context, '/login');
         return;
       }
 
-      final isPractitioner = user.role == UserRole.examiner;
-
-      // OPTIMIZATION: For practitioners, skip session conflict check (multi-device allowed)
-      if (!isPractitioner) {
-        final sessionService = SessionMonitorService();
-        try {
-          final checkResult = await sessionService
-              .checkExistingSession(user.identityString)
-              .timeout(const Duration(seconds: 2));
-
-          if (checkResult.exists && !checkResult.isOurSession) {
-            debugPrint(
-              '[SplashScreen] 🚨 Session stolen by another device. Forcing logout.',
-            );
-
-            sessionService.markKickedOut();
-
-            if (mounted) {
-              await showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (ctx) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  title: Row(
-                    children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: AppColors.warning,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Logged Out',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: Text(
-                    'Your account is currently active on: ${checkResult.sessionData?.deviceInfo ?? 'Another Device'}.\n\nYou have been logged out on this device.',
-                    style: const TextStyle(fontSize: 15),
-                  ),
-                  actions: [
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            await _authService.signOut();
-            if (!mounted) return;
-            Navigator.pushReplacementNamed(context, '/login');
-            return;
-          }
-
-          // Start monitoring in background
-          if (mounted) {
-            sessionService.startMonitoring(
-              user.identityString,
-              context,
-              isPractitioner: false,
-            );
-          }
-        } catch (e) {
-          debugPrint('[SplashScreen] ⚠️ Session check error: $e');
-          // On timeout/error, proceed anyway (better UX than blocking)
-        }
-      } else {
-        // Practitioners: just start monitoring, no conflict check
-        if (mounted) {
-          SessionMonitorService().startMonitoring(
-            user.identityString,
-            context,
-            isPractitioner: true,
-          );
-        }
+      // Start monitoring
+      if (mounted) {
+        SessionMonitorService().startMonitoring(
+          user.identityString,
+          context,
+          isPractitioner: user.role == UserRole.examiner,
+        );
       }
 
-      if (!mounted) return;
-      await NavigationUtils.navigateHome(context);
+      debugPrint('[SplashScreen] Navigating home with new session.');
+      if (mounted)
+        await NavigationUtils.navigateHome(context, preFetchedRole: user.role);
     } else {
-      Navigator.pushReplacementNamed(context, '/login');
+      debugPrint('[SplashScreen] 🚫 No user logged in. Redirecting to login.');
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
