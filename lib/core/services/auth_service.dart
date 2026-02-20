@@ -67,6 +67,48 @@ class AuthService {
     }
   }
 
+  /// Silently re-authenticate using stored credentials.
+  /// This is the fallback when Firebase session persistence fails on cold boot.
+  /// Returns the Firebase User on success, null on failure.
+  Future<User?> signInSilently() async {
+    debugPrint('[AuthService] 🔑 Attempting silent re-authentication...');
+
+    try {
+      final credentials = await LocalStorageService().getCredentials();
+      if (credentials == null) {
+        debugPrint('[AuthService] ⚠️ No stored credentials found.');
+        return null;
+      }
+
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: credentials['email']!,
+        password: credentials['password']!,
+      );
+
+      if (credential.user != null) {
+        debugPrint(
+          '[AuthService] ✅ Silent re-auth successful: ${credential.user!.uid}',
+        );
+        return credential.user;
+      }
+
+      return null;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('[AuthService] ⚠️ Silent re-auth failed: ${e.code}');
+      // Clear invalid credentials (wrong password, disabled account, etc.)
+      if (e.code == 'wrong-password' ||
+          e.code == 'user-disabled' ||
+          e.code == 'user-not-found' ||
+          e.code == 'invalid-credential') {
+        await LocalStorageService().clearCredentials();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('[AuthService] ⚠️ Silent re-auth error: $e');
+      return null;
+    }
+  }
+
   /// Sign in with email and password
   /// OPTIMIZED: Uses cache-first reads and defers non-critical updates
   Future<AuthResult> signInWithEmail({
@@ -299,6 +341,9 @@ class AuthService {
 
         // Save to local cache
         await LocalStorageService().saveUserProfile(userModel);
+
+        // Save credentials securely for auto-login on next app launch
+        await LocalStorageService().saveCredentials(email.trim(), password);
 
         // 2. Save to lookup collection for UID -> Path mapping
         await _firestore

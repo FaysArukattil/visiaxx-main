@@ -2,6 +2,7 @@
 import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/session_monitor_service.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/navigation_utils.dart';
@@ -63,6 +64,12 @@ class _LoginScreenState extends State<LoginScreen> {
         final sessionService = SessionMonitorService();
         final isPractitioner = result.user!.role == UserRole.examiner;
         final identityString = result.user!.identityString;
+
+        // Save credentials securely for auto-login on next app launch
+        await LocalStorageService().saveCredentials(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
 
         // OPTIMIZATION: For practitioners, skip session check entirely (multi-device allowed)
         // For regular users, do the check but don't block on full await

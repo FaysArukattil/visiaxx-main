@@ -150,13 +150,21 @@ class _SplashScreenState extends State<SplashScreen>
     debugPrint('[SplashScreen] Starting session initialization...');
 
     // STEP 1: Wait for Firebase Auth to restore (Strict Stabilization)
-    final firebaseUser = await AuthService().waitForAuth(
+    var firebaseUser = await AuthService().waitForAuth(
       timeout: const Duration(seconds: 5),
     );
 
+    // STEP 1b: If Firebase session didn't restore, try silent re-auth
     if (firebaseUser == null) {
       debugPrint(
-        '[SplashScreen] 🚫 Firebase Auth failed to stabilize. Clearing stale cache.',
+        '[SplashScreen] ⚠️ Firebase session not restored. Trying silent re-auth...',
+      );
+      firebaseUser = await AuthService().signInSilently();
+    }
+
+    if (firebaseUser == null) {
+      debugPrint(
+        '[SplashScreen] 🚫 Firebase Auth failed completely. Clearing stale cache.',
       );
       await LocalStorageService().clearUserData();
       if (mounted) Navigator.pushReplacementNamed(context, '/login');
